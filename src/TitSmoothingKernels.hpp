@@ -101,7 +101,7 @@ Real TGaussianSmoothingKernel<Real,Dim>::Radius_() const noexcept
 template<typename Real, int Dim>
 Real TGaussianSmoothingKernel<Real,Dim>::Weight_() noexcept 
 {
-    static const Real weight = std::pow(s_Pi<Real>, -Real(0.5*Dim));
+    static const Real weight = std::pow(Pi<Real>, -Real(0.5*Dim));
     return weight;
 }
 
@@ -114,7 +114,7 @@ Real TGaussianSmoothingKernel<Real,Dim>::Value_(Real q) const noexcept
 template<typename Real, int Dim>
 Real TGaussianSmoothingKernel<Real,Dim>::ValueDerivative_(Real q) const noexcept 
 {
-    return Weight_()*(-Real(2.0)*q*std::exp(-Pow2(q)));
+    return Weight_()*(-Real(2.0)*q*Exp(-Pow2(q)));
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -156,11 +156,11 @@ Real TCubicSmoothingKernel<Real,Dim>::Weight_() noexcept
     } 
     else if constexpr (Dim == 2) 
     {
-        return Real(10.0/7.0)*s_Pi<Real>;
+        return Real(10.0/7.0)*Pi<Real>;
     } 
     else if constexpr (Dim == 3) 
     {
-        return Real(1.0)/s_Pi<Real>;
+        return Real(1.0)/Pi<Real>;
     }
 }
 
@@ -238,11 +238,11 @@ Real TQuarticSmoothingKernel<Real,Dim>::Weight_() noexcept
     } 
     else if constexpr (Dim == 2) 
     {
-        return Real(96.0/1199.0)/s_Pi<Real>;
+        return Real(96.0/1199.0)/Pi<Real>;
     } 
     else if constexpr (Dim == 3) 
     {
-        return Real(1.0/2.0)/s_Pi<Real>;
+        return Real(1.0/2.0)/Pi<Real>;
     }
 }
 
@@ -310,11 +310,11 @@ Real TQuinticSmoothingKernel<Real,Dim>::Weight_() noexcept
     } 
     else if constexpr (Dim == 2) 
     {
-        return Real(7.0/478.0)/s_Pi<Real>;
+        return Real(7.0/478.0)/Pi<Real>;
     } 
     else if constexpr (Dim == 3) 
     {
-        return Real(1.0/120.0)/s_Pi<Real>;
+        return Real(1.0/120.0)/Pi<Real>;
     }
 }
 
