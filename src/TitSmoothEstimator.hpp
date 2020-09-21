@@ -84,9 +84,9 @@ void TClassicSmoothEstimator<real_t, nDim>::EstimateAcceleration(
             TVector<real_t, nDim> abKernelGradient { 
                 smoothingKernel.GetGradientValue(DeltaPosition(a,b), m_KernelWidth) 
             };
-            a.Acceleration -= b.Mass*(a.Pressure/Square(a.Density) 
-                                    + b.Pressure/Square(b.Density) + kinematicViscosity)*abKernelGradient;
-            a.Heating += b.Mass*(a.Pressure/Square(a.Density) + kinematicViscosity)*Dot(DeltaVelocity(a,b), abKernelGradient);
+            a.Acceleration -= b.Mass*(a.Pressure/Pow2(a.Density) 
+                                    + b.Pressure/Pow2(b.Density) + kinematicViscosity)*abKernelGradient;
+            a.Heating += b.Mass*(a.Pressure/Pow2(a.Density) + kinematicViscosity)*Dot(DeltaVelocity(a,b), abKernelGradient);
         });
     });
 }   // TClassicSmoothEstimator::EstimateAcceleration
@@ -168,11 +168,11 @@ void TGradHSmoothEstimator<real_t, nDim>::EstimateAcceleration(
             TVector<real_t, nDim> abAverageKernelGradient
                 = Average(abaKernelGradient, abbKernelGradient);
             a.Acceleration -= (
-                b.Mass*(a.Pressure/(aOmega*Square(a.Density))*abaKernelGradient 
-                      + b.Pressure/(bOmega*Square(b.Density))*abbKernelGradient 
+                b.Mass*(a.Pressure/(aOmega*Pow2(a.Density))*abaKernelGradient 
+                      + b.Pressure/(bOmega*Pow2(b.Density))*abbKernelGradient 
                                          + kinematicViscosity*abAverageKernelGradient));
             a.Heating += Dot(DeltaVelocity(a,b), 
-                b.Mass*(a.Pressure/(aOmega*Square(a.Density))*abaKernelGradient 
+                b.Mass*(a.Pressure/(aOmega*Pow2(a.Density))*abaKernelGradient 
                                          + kinematicViscosity*abAverageKernelGradient));
         });
     });

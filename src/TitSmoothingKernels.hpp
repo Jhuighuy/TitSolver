@@ -47,7 +47,7 @@ private:
 template<typename Real, int Dim>
 Real TSmoothingKernel<Real,Dim>::GetValue(Vector<Real,Dim> r, Real h) const noexcept 
 {
-    assert(h > 0.0);
+    TIT_ASSERT(h > 0.0);
     Real hInverse = Inverse(h);
     Real q = hInverse*Norm(r);
     return Pow(hInverse, Dim)*GetBaseValue_(q);
@@ -56,7 +56,7 @@ Real TSmoothingKernel<Real,Dim>::GetValue(Vector<Real,Dim> r, Real h) const noex
 template<typename Real, int Dim>
 Vector<Real,Dim> TSmoothingKernel<Real,Dim>::GetGradientValue(Vector<Real,Dim> r, Real h) const noexcept 
 {
-    assert(h > 0.0);
+    TIT_ASSERT(h > 0.0);
     Real hInverse = Inverse(h);
     Real q = hInverse*Norm(r);
     return Pow(hInverse, Dim+1)*Normalize(r)*GetBaseDerivativeValue_(q);
@@ -65,14 +65,14 @@ Vector<Real,Dim> TSmoothingKernel<Real,Dim>::GetGradientValue(Vector<Real,Dim> r
 template<typename Real, int Dim>
 Real TSmoothingKernel<Real,Dim>::GetRadius(Real h) const noexcept 
 {
-    assert(h > 0.0);
+    TIT_ASSERT(h > 0.0);
     return GetBaseRadius_()*h;
 }
 
 template<typename Real, int Dim>
 Real TSmoothingKernel<Real,Dim>::GetRadiusDerivative(Vector<Real,Dim> r, Real h) const noexcept 
 {
-    assert(h > 0.0);
+    TIT_ASSERT(h > 0.0);
     Real hInverse = Inverse(h);
     Real q = hInverse*Norm(r);
     return Pow(hInverse, Dim+1)*(-Dim*GetBaseValue_(q) - q*GetBaseDerivativeValue_(q));
@@ -97,7 +97,12 @@ private:
 };  // class TSmoothingKernel_Gaussian
 
 template<typename Real, int Dim>
-Real TGaussianSmoothingKernel<Real,Dim>::s_Weight = Inverse(Pow(SqrtPi<Real>, Dim));
+Real TGaussianSmoothingKernel<Real,Dim>::s_Weight = 
+Select(
+    Dim == 1, Inverse(SqrtPi<Real>),
+    Dim == 2, Inverse(Pi<Real>),
+    Dim == 3, Inverse(SqrtPi<Real>*Pi<Real>)
+);
 
 template<typename Real, int Dim>
 Real TGaussianSmoothingKernel<Real,Dim>::GetBaseRadius_() const noexcept 
@@ -224,7 +229,7 @@ private:
 template<typename Real, int Dim>
 Real TQuarticSmoothingKernel<Real,Dim>::s_Weight = 
 Select(
-    Dim == 1, Real(   1.0/24.0),
+    Dim == 1, Real(1.0/24.0),
     Dim == 2, Real(96.0/1199.0)/Pi<Real>,
     Dim == 3, Real(    1.0/2.0)/Pi<Real>
 );

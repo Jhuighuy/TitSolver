@@ -89,6 +89,7 @@
         "iomanip": "cpp",
         "stack": "cpp",
         "stop_token": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "codecvt": "cpp"
     }
 }

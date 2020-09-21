@@ -269,22 +269,22 @@ Real Dot(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept {
 template<typename Real>
 Real Norm(Vector<Real,1> p) noexcept 
 {
-    return std::abs(p.x);
+    return Abs(p.x);
 }
 template<typename Real>
 Real Norm(Vector<Real,2> p) noexcept 
 {
-    return std::hypot(p.x, p.y);
+    return Hypot(p.x, p.y);
 }
 template<typename Real>
 Real Norm(Vector<Real,3> p) noexcept 
 {
-    return std::hypot(p.x, p.y, p.z);
+    return Hypot(p.x, p.y, p.z);
 }
 template<typename Real, int Dim>
 Real Norm(Vector<Real,Dim> p) noexcept 
 {
-    return std::sqrt(Dot(p, p));
+    return Sqrt(Dot(p, p));
 }
 /** @} */
 

@@ -112,7 +112,8 @@ void LeapfrogStep(TParticle<real_t>* particles,
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 int main() {
-
+    std::cout.precision(std::numeric_limits<double>::max_digits10);
+    std::cout << std::sqrt(Pi<double>)-SqrtPi<double> << std::endl;
     //std::cout << FindRoot(0.0, 1.5, 
     //    [](double x) { return 4*x-exp(x); }) << std::endl;
     //return 0;

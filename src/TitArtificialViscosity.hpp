@@ -89,7 +89,7 @@ real_t TArtificialViscosity_AlphaBeta<real_t, nDim>::Value(
     static const real_t Epsilon = 1e-2;
     real_t dynamicViscosity = 
         kernelWidth*Dot(deltaVelocity,deltaPosition)/(
-            Dot(deltaPosition,deltaPosition) + Epsilon*Square(kernelWidth)
+            Dot(deltaPosition,deltaPosition) + Epsilon*Pow2(kernelWidth)
         );
     return (-m_AlphaSPH*averageSoundSpeed + m_BetaSPH*dynamicViscosity)*dynamicViscosity/averageDensity;
 }   // TArtificialViscosity_AlphaBeta::Value
