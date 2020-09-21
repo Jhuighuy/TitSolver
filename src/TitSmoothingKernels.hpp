@@ -20,59 +20,62 @@
 template<typename Real, int Dim>
 class TSmoothingKernel 
 {
-private:
+public:
     static_assert(std::is_floating_point_v<Real>);
     static_assert(1 <= Dim && Dim <= 3);
 
-private:
-    /** Unit support radius. */
-    virtual Real Radius_() const noexcept = 0;
-    /** Value of the base smoothing kernel at a point. */ 
-    virtual Real Value_(Real q) const noexcept = 0;
-    /** Derivative value of the base smoothing kernel at a point. */ 
-    virtual Real ValueDerivative_(Real q) const noexcept = 0;
-
 public:
     /** Value of the smoothing kernel at point. */ 
-    Real Value(Vector<Real,Dim> r, Real h) const noexcept;
+    Real GetValue(Vector<Real,Dim> r, Real h) const noexcept;
     /** Spatial gradient value of the smoothing kernel at point. */ 
-    Vector<Real,Dim> GradientValue(Vector<Real,Dim> r, Real h) const noexcept;
+    Vector<Real,Dim> GetGradientValue(Vector<Real,Dim> r, Real h) const noexcept;
 
     /** Support radius. */
-    Real Radius(Real h) const noexcept;
+    Real GetRadius(Real h) const noexcept;
     /** Width derivative value of the smoothing kernel at point. */ 
-    Real RadiusDerivative(Vector<Real,Dim> r, Real h) const noexcept;
+    Real GetRadiusDerivative(Vector<Real,Dim> r, Real h) const noexcept;
+
+private:
+    /** Base support radius. */
+    virtual Real GetBaseRadius_() const noexcept = 0;
+    /** Value of the base smoothing kernel at a point. */ 
+    virtual Real GetBaseValue_(Real q) const noexcept = 0;
+    /** Derivative value of the base smoothing kernel at a point. */ 
+    virtual Real GetBaseDerivativeValue_(Real q) const noexcept = 0;
 };  // class TSmoothingKernel
 
 template<typename Real, int Dim>
-Real TSmoothingKernel<Real,Dim>::Value(Vector<Real,Dim> r, Real h) const noexcept 
+Real TSmoothingKernel<Real,Dim>::GetValue(Vector<Real,Dim> r, Real h) const noexcept 
 {
     assert(h > 0.0);
-    Real q = Norm(r)/h;
-    return Value_(q)*std::pow(h, -Dim);
+    Real hInverse = Inverse(h);
+    Real q = hInverse*Norm(r);
+    return Pow(hInverse, Dim)*GetBaseValue_(q);
 }
 
 template<typename Real, int Dim>
-Vector<Real,Dim> TSmoothingKernel<Real,Dim>::GradientValue(Vector<Real,Dim> r, Real h) const noexcept 
+Vector<Real,Dim> TSmoothingKernel<Real,Dim>::GetGradientValue(Vector<Real,Dim> r, Real h) const noexcept 
 {
     assert(h > 0.0);
-    Real q = Norm(r)/h;
-    return Normalize(r)*ValueDerivative_(q)/std::pow(h, Dim+1);
+    Real hInverse = Inverse(h);
+    Real q = hInverse*Norm(r);
+    return Pow(hInverse, Dim+1)*Normalize(r)*GetBaseDerivativeValue_(q);
 }
 
 template<typename Real, int Dim>
-Real TSmoothingKernel<Real,Dim>::Radius(Real h) const noexcept 
+Real TSmoothingKernel<Real,Dim>::GetRadius(Real h) const noexcept 
 {
     assert(h > 0.0);
-    return Radius_()*h;
+    return GetBaseRadius_()*h;
 }
 
 template<typename Real, int Dim>
-Real TSmoothingKernel<Real,Dim>::RadiusDerivative(Vector<Real,Dim> r, Real h) const noexcept 
+Real TSmoothingKernel<Real,Dim>::GetRadiusDerivative(Vector<Real,Dim> r, Real h) const noexcept 
 {
     assert(h > 0.0);
-    Real q = Norm(r)/h;
-    return -(Dim*Value_(q) + q*ValueDerivative_(q))/std::pow(h, Dim+1);
+    Real hInverse = Inverse(h);
+    Real q = hInverse*Norm(r);
+    return Pow(hInverse, Dim+1)*(-Dim*GetBaseValue_(q) - q*GetBaseDerivativeValue_(q));
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -86,35 +89,32 @@ template<typename Real, int Dim>
 class TGaussianSmoothingKernel final : public TSmoothingKernel<Real,Dim> 
 {
 private:
-    static Real Weight_() noexcept;
-    Real Radius_() const noexcept override;
-    Real Value_(Real q) const noexcept override;
-    Real ValueDerivative_(Real q) const noexcept override;
+    static Real s_Weight;
+private:
+    Real GetBaseRadius_() const noexcept override;
+    Real GetBaseValue_(Real q) const noexcept override;
+    Real GetBaseDerivativeValue_(Real q) const noexcept override;
 };  // class TSmoothingKernel_Gaussian
 
 template<typename Real, int Dim>
-Real TGaussianSmoothingKernel<Real,Dim>::Radius_() const noexcept 
+Real TGaussianSmoothingKernel<Real,Dim>::s_Weight = Inverse(Pow(SqrtPi<Real>, Dim));
+
+template<typename Real, int Dim>
+Real TGaussianSmoothingKernel<Real,Dim>::GetBaseRadius_() const noexcept 
 {
-    return Real(1e+10);
+    return Infinity<Real>;
 }
 
 template<typename Real, int Dim>
-Real TGaussianSmoothingKernel<Real,Dim>::Weight_() noexcept 
+Real TGaussianSmoothingKernel<Real,Dim>::GetBaseValue_(Real q) const noexcept 
 {
-    static const Real weight = std::pow(Pi<Real>, -Real(0.5*Dim));
-    return weight;
+    return s_Weight*Exp(-Pow2(q));
 }
 
 template<typename Real, int Dim>
-Real TGaussianSmoothingKernel<Real,Dim>::Value_(Real q) const noexcept 
+Real TGaussianSmoothingKernel<Real,Dim>::GetBaseDerivativeValue_(Real q) const noexcept 
 {
-    return Weight_()*std::exp(-Pow2(q));
-}
-
-template<typename Real, int Dim>
-Real TGaussianSmoothingKernel<Real,Dim>::ValueDerivative_(Real q) const noexcept 
-{
-    return Weight_()*(-Real(2.0)*q*Exp(-Pow2(q)));
+    return s_Weight*(-Real(2.0)*q*Exp(-Pow2(q)));
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -128,12 +128,54 @@ template<typename Real, int Dim>
 class TCubicSmoothingKernel : public TSmoothingKernel<Real,Dim> 
 {
 protected:
-    static Real Weight_() noexcept;
+    static Real s_Weight;
 private:
-    Real Radius_() const noexcept final;
-    Real Value_(Real q) const noexcept final;
-    Real ValueDerivative_(Real q) const noexcept override;
+    Real GetBaseRadius_() const noexcept final;
+    Real GetBaseValue_(Real q) const noexcept final;
+    Real GetBaseDerivativeValue_(Real q) const noexcept override;
 };  // class TCubicSmoothingKernel
+
+template<typename Real, int Dim>
+Real TCubicSmoothingKernel<Real,Dim>::s_Weight = 
+Select(
+    Dim == 1, Real( 2.0/3.0),
+    Dim == 2, Real(10.0/7.0)/Pi<Real>,
+    Dim == 3, Real(     1.0)/Pi<Real>
+);
+
+template<typename Real, int Dim>
+Real TCubicSmoothingKernel<Real,Dim>::GetBaseRadius_() const noexcept 
+{
+    return Real(2.0);
+}
+
+template<typename Real, int Dim>
+Real TCubicSmoothingKernel<Real,Dim>::GetBaseValue_(Real q) const noexcept 
+{
+    if (Real(0.0) <= q && q < Real(1.0)) 
+    {
+        return s_Weight*(Real(0.25)*Pow3(Real(2.0)-q) - Pow3(Real(1.0)-q));
+    } 
+    else if (Real(1.0) <= q && q < Real(2.0)) 
+    {
+        return s_Weight*(Real(0.25)*Pow3(Real(2.0)-q));
+    } 
+    return Real(0.0);
+}
+
+template<typename Real, int Dim>
+Real TCubicSmoothingKernel<Real,Dim>::GetBaseDerivativeValue_(Real q) const noexcept 
+{
+    if (Real(0.0) <= q && q < Real(1.0)) 
+    {
+        return s_Weight*(-Real(0.75)*Pow2(Real(2.0)-q) + Real(3.0)*Pow2(Real(1.0)-q));
+    } 
+    else if (Real(1.0) <= q && q < Real(2.0)) 
+    {
+        return s_Weight*(-Real(0.75)*Pow2(Real(2.0)-q));
+    }
+    return Real(0.0);
+}
 
 /********************************************************************
  ** The cubic B-spline (M4) smoothing kernel
@@ -143,75 +185,24 @@ template<typename Real, int Dim>
 class TModifiedCubicSmoothingKernel final : public TCubicSmoothingKernel<Real,Dim> 
 {
 private:
-    using TCubicSmoothingKernel<Real,Dim>::Weight_;
-    Real ValueDerivative_(Real q) const noexcept override;
+    using TCubicSmoothingKernel<Real,Dim>::s_Weight;
+    Real GetBaseDerivativeValue_(Real q) const noexcept override;
 };  // class TModifiedCubicSmoothingKernel
 
 template<typename Real, int Dim>
-Real TCubicSmoothingKernel<Real,Dim>::Weight_() noexcept 
-{
-    if constexpr (Dim == 1) 
-    {
-        return Real(2.0/3.0);
-    } 
-    else if constexpr (Dim == 2) 
-    {
-        return Real(10.0/7.0)*Pi<Real>;
-    } 
-    else if constexpr (Dim == 3) 
-    {
-        return Real(1.0)/Pi<Real>;
-    }
-}
-
-template<typename Real, int Dim>
-Real TCubicSmoothingKernel<Real,Dim>::Radius_() const noexcept 
-{
-    return Real(2.0);
-}
-
-template<typename Real, int Dim>
-Real TCubicSmoothingKernel<Real,Dim>::Value_(Real q) const noexcept 
-{
-    if (Real(0.0) <= q && q < Real(1.0)) 
-    {
-        return Weight_()*(Real(0.25)*Pow3(Real(2.0)-q) - Pow3(Real(1.0)-q));
-    } 
-    else if (Real(1.0) <= q && q < Real(2.0)) 
-    {
-        return Weight_()*(Real(0.25)*Pow3(Real(2.0)-q));
-    } 
-    return Real(0.0);
-}
-
-template<typename Real, int Dim>
-Real TCubicSmoothingKernel<Real,Dim>::ValueDerivative_(Real q) const noexcept 
-{
-    if (Real(0.0) <= q && q < Real(1.0)) 
-    {
-        return Weight_()*(-Real(0.75)*Pow2(Real(2.0)-q) + Real(3.0)*Pow2(Real(1.0)-q));
-    } 
-    else if (Real(1.0) <= q && q < Real(2.0)) 
-    {
-        return Weight_()*(-Real(0.75)*Pow2(Real(2.0)-q));
-    }
-    return Real(0.0);
-}
-
-template<typename Real, int Dim>
-Real TModifiedCubicSmoothingKernel<Real,Dim>::ValueDerivative_(Real q) const noexcept 
+Real TModifiedCubicSmoothingKernel<Real,Dim>::GetBaseDerivativeValue_(Real q) const noexcept 
 {
     if (Real(0.0) <= q && q < Real(2.0/3.0)) 
     {
-        return Weight_()*(-Real(1.0));
+        return s_Weight*(-Real(1.0));
     } 
     else if (Real(2.0/3.0) <= q && q < Real(1.0)) 
     {
-        return Weight_()*(Real(2.25)*q - Real(3.0))*q;
+        return s_Weight*(Real(2.25)*q - Real(3.0))*q;
     }
     else if (Real(1.0) <= q && q < Real(2.0))
     {
-        return Weight_()*(Real(0.75)*Pow2(Real(2.0)-q));
+        return s_Weight*(Real(0.75)*Pow2(Real(2.0)-q));
     } 
     return Real(0.0);
 }
@@ -223,67 +214,59 @@ template<typename Real, int Dim>
 class TQuarticSmoothingKernel final : public TSmoothingKernel<Real,Dim> 
 {
 private:
-    static Real Weight_() noexcept;
-    Real Radius_() const noexcept override;
-    Real Value_(Real q) const noexcept override;
-    Real ValueDerivative_(Real q) const noexcept override;
+    static Real s_Weight;
+private:
+    Real GetBaseRadius_() const noexcept override;
+    Real GetBaseValue_(Real q) const noexcept override;
+    Real GetBaseDerivativeValue_(Real q) const noexcept override;
 };  // class TQuarticSmoothingKernel
 
 template<typename Real, int Dim>
-Real TQuarticSmoothingKernel<Real,Dim>::Weight_() noexcept 
-{
-    if constexpr (Dim == 1) 
-    {
-        return Real(1.0/24.0);
-    } 
-    else if constexpr (Dim == 2) 
-    {
-        return Real(96.0/1199.0)/Pi<Real>;
-    } 
-    else if constexpr (Dim == 3) 
-    {
-        return Real(1.0/2.0)/Pi<Real>;
-    }
-}
+Real TQuarticSmoothingKernel<Real,Dim>::s_Weight = 
+Select(
+    Dim == 1, Real(   1.0/24.0),
+    Dim == 2, Real(96.0/1199.0)/Pi<Real>,
+    Dim == 3, Real(    1.0/2.0)/Pi<Real>
+);
 
 template<typename Real, int Dim>
-Real TQuarticSmoothingKernel<Real,Dim>::Radius_() const noexcept 
+Real TQuarticSmoothingKernel<Real,Dim>::GetBaseRadius_() const noexcept 
 {
     return Real(2.5);
 }
 
 template<typename Real, int Dim>
-Real TQuarticSmoothingKernel<Real,Dim>::Value_(Real q) const noexcept 
+Real TQuarticSmoothingKernel<Real,Dim>::GetBaseValue_(Real q) const noexcept 
 {
     if (Real(0.0) <= q && q < Real(0.5)) 
     {
-        return Weight_()*(Pow4(Real(2.5)-q) - Real(5.0)*Pow4(Real(1.5)-q) + Real(10.0)*Pow4(Real(0.5)-q));
+        return s_Weight*(Pow4(Real(2.5)-q) - Real(5.0)*Pow4(Real(1.5)-q) + Real(10.0)*Pow4(Real(0.5)-q));
     } 
     else if (Real(0.5) <= q && q < Real(1.5)) 
     {
-        return Weight_()*(Pow4(Real(2.5)-q) - Real(5.0)*Pow4(Real(1.5)-q));
+        return s_Weight*(Pow4(Real(2.5)-q) - Real(5.0)*Pow4(Real(1.5)-q));
     } 
     else if (Real(1.5) <= q && q < Real(2.5)) 
     {
-        return Weight_()*(Pow4(Real(2.5)-q));
+        return s_Weight*(Pow4(Real(2.5)-q));
     } 
     return Real(0.0);
 }
 
 template<typename Real, int Dim>
-Real TQuarticSmoothingKernel<Real,Dim>::ValueDerivative_(Real q) const noexcept 
+Real TQuarticSmoothingKernel<Real,Dim>::GetBaseDerivativeValue_(Real q) const noexcept 
 {
     if (Real(0.0) <= q && q < Real(0.5)) 
     {
-        return Weight_()*(-Real(4.0)*Pow3(Real(2.5)-q) + Real(20.0)*Pow3(Real(1.5)-q) - Real(40.0)*Pow3(Real(0.5)-q));
+        return s_Weight*(-Real(4.0)*Pow3(Real(2.5)-q) + Real(20.0)*Pow3(Real(1.5)-q) - Real(40.0)*Pow3(Real(0.5)-q));
     } 
     else if (Real(0.5) <= q && q < Real(1.5)) 
     {
-        return Weight_()*(-Real(4.0)*Pow3(Real(2.5)-q) + Real(20.0)*Pow3(Real(1.5)-q));
+        return s_Weight*(-Real(4.0)*Pow3(Real(2.5)-q) + Real(20.0)*Pow3(Real(1.5)-q));
     } 
     else if (Real(1.5) <= q && q < Real(2.5)) 
     {
-        return Weight_()*(-Real(4.0)*Pow3(Real(2.5)-q));
+        return s_Weight*(-Real(4.0)*Pow3(Real(2.5)-q));
     } 
     return Real(0.0);
 }
@@ -295,67 +278,59 @@ template<typename Real, int Dim>
 class TQuinticSmoothingKernel final : public TSmoothingKernel<Real,Dim> 
 {
 private:
-    static Real Weight_() noexcept;
-    Real Radius_() const noexcept override;
-    Real Value_(Real q) const noexcept override;
-    Real ValueDerivative_(Real q) const noexcept override;
+    static Real s_Weight;
+private:
+    Real GetBaseRadius_() const noexcept override;
+    Real GetBaseValue_(Real q) const noexcept override;
+    Real GetBaseDerivativeValue_(Real q) const noexcept override;
 };  // class TQuinticSmoothingKernel
 
 template<typename Real, int Dim>
-Real TQuinticSmoothingKernel<Real,Dim>::Weight_() noexcept 
-{
-    if constexpr (Dim == 1) 
-    {
-        return Real(1.0/120.0);
-    } 
-    else if constexpr (Dim == 2) 
-    {
-        return Real(7.0/478.0)/Pi<Real>;
-    } 
-    else if constexpr (Dim == 3) 
-    {
-        return Real(1.0/120.0)/Pi<Real>;
-    }
-}
+Real TQuinticSmoothingKernel<Real,Dim>::s_Weight = 
+Select(
+    Dim == 1, Real(1.0/120.0),
+    Dim == 2, Real(7.0/478.0)/Pi<Real>,
+    Dim == 3, Real(1.0/120.0)/Pi<Real>
+);
 
 template<typename Real, int Dim>
-Real TQuinticSmoothingKernel<Real,Dim>::Radius_() const noexcept 
+Real TQuinticSmoothingKernel<Real,Dim>::GetBaseRadius_() const noexcept 
 {
     return Real(3.0);
 }
 
 template<typename Real, int Dim>
-Real TQuinticSmoothingKernel<Real,Dim>::Value_(Real q) const noexcept 
+Real TQuinticSmoothingKernel<Real,Dim>::GetBaseValue_(Real q) const noexcept 
 {
     if (Real(0.0) <= q && q < Real(1.0)) 
     {
-        return Weight_()*(Pow5(Real(3.0)-q) - Real(6.0)*Pow5(Real(2.0)-q) + Real(15.0)*Pow5(Real(1.0)-q));
+        return s_Weight*(Pow5(Real(3.0)-q) - Real(6.0)*Pow5(Real(2.0)-q) + Real(15.0)*Pow5(Real(1.0)-q));
     } 
     else if (Real(1.0) <= q && q < Real(2.0))
     {
-        return Weight_()*(Pow5(Real(3.0)-q) - Real(6.0)*Pow5(Real(2.0)-q));
+        return s_Weight*(Pow5(Real(3.0)-q) - Real(6.0)*Pow5(Real(2.0)-q));
     } 
     else if (Real(2.0) <= q && q < Real(3.0)) 
     {
-        return Weight_()*(Pow5(Real(3.0)-q));
+        return s_Weight*(Pow5(Real(3.0)-q));
     } 
     return Real(0.0);
 }
 
 template<typename Real, int Dim>
-Real TQuinticSmoothingKernel<Real,Dim>::ValueDerivative_(Real q) const noexcept 
+Real TQuinticSmoothingKernel<Real,Dim>::GetBaseDerivativeValue_(Real q) const noexcept 
 {
     if (Real(0.0) <= q && q < Real(1.0)) 
     {
-        return Weight_()*(-Real(5.0)*Pow4(Real(3.0)-q) + Real(30.0)*Pow4(Real(2.0)-q) - Real(75.0)*Pow4(Real(1.0)-q));
+        return s_Weight*(-Real(5.0)*Pow4(Real(3.0)-q) + Real(30.0)*Pow4(Real(2.0)-q) - Real(75.0)*Pow4(Real(1.0)-q));
     } 
     else if (Real(1.0) <= q && q < Real(2.0)) 
     {
-        return Weight_()*(-Real(5.0)*Pow4(Real(3.0)-q) + Real(30.0)*Pow4(Real(2.0)-q));
+        return s_Weight*(-Real(5.0)*Pow4(Real(3.0)-q) + Real(30.0)*Pow4(Real(2.0)-q));
     } 
     else if (Real(2.0) <= q && q < Real(3.0)) 
     {
-        return Weight_()*(-Real(5.0)*Pow4(Real(3.0)-q));
+        return s_Weight*(-Real(5.0)*Pow4(Real(3.0)-q));
     } 
     return Real(0.0);
 }

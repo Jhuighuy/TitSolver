@@ -12,6 +12,11 @@
 /** @f$\pi@f$ constant. */
 template<typename Real>
 static const Real Pi = 4.0*std::atan(1.0);
+template<typename Real>
+static const Real SqrtPi = std::tgamma(0.5);
+
+template<typename Real>
+static const Real Infinity = std::numeric_limits<Real>::inifinity();
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -44,10 +49,21 @@ inline Type Pow5(Type value)
 {
     return std::pow(value, 5);
 }
-
-template <typename Type> 
-inline Type Exp(Type value) 
+template <typename Type> constexpr 
+inline Type Pow(Type value, int power) 
 {
+    return std::pow(value, power);
+}
+template <typename Type> 
+inline Type Pow(Type value, Type power) 
+{
+    return std::pow(value, power);
+}
+
+template <typename Real> 
+inline Real Exp(Real value) 
+{
+    static_assert(std::is_floating_point_v<Real>);
     return std::exp(value);
 }
 
@@ -71,13 +87,31 @@ inline int Sign(Type value)
 
 /** Compute safe inverse. */
 template <typename Type> constexpr 
+inline Type Inverse(Type value) 
+{
+    return Type(1)/value;
+}
+/** Compute safe inverse. */
+template <typename Type> constexpr 
 inline Type SafeInverse(Type value) 
 {
-    return value == Type(0) ? Type(0) : Type(1)/value;
+    return value == Type(0) ? Type(0) : Inverse(value);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+template <typename Type, typename... RestArgs> constexpr 
+inline Type Select(bool condition, Type value)
+{
+    assert(condition);
+    return value;
+}
+template <typename Type, typename... RestArgs> constexpr 
+inline Type Select(bool condition, Type value, RestArgs... args)
+{
+    return condition ? value : Select(args...);
+}
 
 #endif  // ifndef TIT_HELPERS_HPP_

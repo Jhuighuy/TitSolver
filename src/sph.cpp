@@ -136,7 +136,7 @@ int main() {
     }
     for (size_t n = 0; n < 3*250; ++n) {
         TGradHSmoothEstimator<double, 1> estimator;
-        TQuinticSmoothingKernel<double, 1> smoothingKernel;
+        TCubicSmoothingKernel<double, 1> smoothingKernel;
         TArtificialViscosity_AlphaBeta<double, 1> artificialViscosity;
         std::vector<Particle> particlesNew(particles);
         LeapfrogStep(particles.data(), particlesNew.data(), particles.size(), 

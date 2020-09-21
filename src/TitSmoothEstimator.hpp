@@ -57,11 +57,11 @@ void TClassicSmoothEstimator<real_t, nDim>::EstimateDensity(
     TParticleArray<real_t, nDim>& particles, 
     const TSmoothingKernel<real_t, nDim>& smoothingKernel
 ) const {
-    real_t fixedSearchWidth = smoothingKernel.Radius(m_KernelWidth);
+    real_t fixedSearchWidth = smoothingKernel.GetRadius(m_KernelWidth);
     ForEach(particles, [&](Particle& a) {
         a.Density = {};
         ForEachNeighbour(particles, a, fixedSearchWidth, [&](const Particle& b) {
-            real_t abKernelValue = smoothingKernel.Value(DeltaPosition(a,b), m_KernelWidth);
+            real_t abKernelValue = smoothingKernel.GetValue(DeltaPosition(a,b), m_KernelWidth);
             a.Density += b.Mass*abKernelValue;
         });
         a.Pressure = EquationOfState_Pressure(a.Density, a.ThermalEnergy);
@@ -75,14 +75,14 @@ void TClassicSmoothEstimator<real_t, nDim>::EstimateAcceleration(
     const TSmoothingKernel<real_t, nDim>& smoothingKernel,
     const TArtificialViscosity<real_t, nDim>& artificialViscosity
 ) const {
-    real_t fixedSearchWidth = smoothingKernel.Radius(m_KernelWidth);
+    real_t fixedSearchWidth = smoothingKernel.GetRadius(m_KernelWidth);
     ForEach(particles, [&](Particle& a) {
         a.Acceleration = {};
         a.Heating = {};
         ForEachNeighbour(particles, a, fixedSearchWidth, [&](const Particle& b) {
             real_t kinematicViscosity = artificialViscosity.Value(a,b, m_KernelWidth);
             TVector<real_t, nDim> abKernelGradient { 
-                smoothingKernel.GradientValue(DeltaPosition(a,b), m_KernelWidth) 
+                smoothingKernel.GetGradientValue(DeltaPosition(a,b), m_KernelWidth) 
             };
             a.Acceleration -= b.Mass*(a.Pressure/Square(a.Density) 
                                     + b.Pressure/Square(b.Density) + kinematicViscosity)*abKernelGradient;
@@ -125,12 +125,12 @@ void TGradHSmoothEstimator<real_t, nDim>::EstimateDensity(
         FindRoot(a.KernelWidth, [&]() {
             a.Density = {}; 
             a.DensityWidthDerivative = {};
-            real_t aSearchWidth = smoothingKernel.Radius(a.KernelWidth);
+            real_t aSearchWidth = smoothingKernel.GetRadius(a.KernelWidth);
             ForEachNeighbour(particles, a, aSearchWidth, [&](const Particle& b) {
                 real_t abaKernelValue 
-                    = smoothingKernel.Value(DeltaPosition(a,b), a.KernelWidth);
+                    = smoothingKernel.GetValue(DeltaPosition(a,b), a.KernelWidth);
                 real_t abaKernelWidthDerivative 
-                    = smoothingKernel.RadiusDerivative(DeltaPosition(a,b), a.KernelWidth);
+                    = smoothingKernel.GetRadiusDerivative(DeltaPosition(a,b), a.KernelWidth);
                 a.Density += b.Mass*abaKernelValue;
                 a.DensityWidthDerivative += b.Mass*abaKernelWidthDerivative;
             });
@@ -155,16 +155,16 @@ void TGradHSmoothEstimator<real_t, nDim>::EstimateAcceleration(
         a.Heating = {};
         real_t aOmega = real_t(1.0) 
             + a.KernelWidth*a.DensityWidthDerivative/(nDim*a.Density);
-        real_t aSearchWidth = smoothingKernel.Radius(a.KernelWidth);
+        real_t aSearchWidth = smoothingKernel.GetRadius(a.KernelWidth);
         ForEachNeighbour(particles, a,aSearchWidth, [&](const Particle& b) {
             real_t bOmega = real_t(1.0) 
                 + b.KernelWidth*b.DensityWidthDerivative/(nDim*b.Density);
             real_t kinematicViscosity 
                 = artificialViscosity.Value(a,b, Average(a.KernelWidth,b.KernelWidth));
             TVector<real_t, nDim> abaKernelGradient 
-                = smoothingKernel.GradientValue(DeltaPosition(a,b), a.KernelWidth);
+                = smoothingKernel.GetGradientValue(DeltaPosition(a,b), a.KernelWidth);
             TVector<real_t, nDim> abbKernelGradient 
-                = smoothingKernel.GradientValue(DeltaPosition(a,b), b.KernelWidth);
+                = smoothingKernel.GetGradientValue(DeltaPosition(a,b), b.KernelWidth);
             TVector<real_t, nDim> abAverageKernelGradient
                 = Average(abaKernelGradient, abbKernelGradient);
             a.Acceleration -= (
