@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <execution>
 
-#include "TitVector.hpp"
+#include "libMath/TitVector.hpp"
 #include "TitSmoothingKernels.hpp"
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//

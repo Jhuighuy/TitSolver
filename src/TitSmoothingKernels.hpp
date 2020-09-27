@@ -8,7 +8,7 @@
 #include <type_traits>
 
 #include "TitHelpers.hpp"
-#include "TitVector.hpp"
+#include "libMath/TitVector.hpp"
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -47,7 +47,7 @@ private:
 template<typename Real, int Dim>
 Real TSmoothingKernel<Real,Dim>::GetValue(Vector<Real,Dim> r, Real h) const noexcept 
 {
-    TIT_ASSERT(h > 0.0);
+    assert(h > 0.0);
     Real hInverse = Inverse(h);
     Real q = hInverse*Norm(r);
     return Pow(hInverse, Dim)*GetBaseValue_(q);
@@ -56,7 +56,7 @@ Real TSmoothingKernel<Real,Dim>::GetValue(Vector<Real,Dim> r, Real h) const noex
 template<typename Real, int Dim>
 Vector<Real,Dim> TSmoothingKernel<Real,Dim>::GetGradientValue(Vector<Real,Dim> r, Real h) const noexcept 
 {
-    TIT_ASSERT(h > 0.0);
+    assert(h > 0.0);
     Real hInverse = Inverse(h);
     Real q = hInverse*Norm(r);
     return Pow(hInverse, Dim+1)*Normalize(r)*GetBaseDerivativeValue_(q);
@@ -65,14 +65,14 @@ Vector<Real,Dim> TSmoothingKernel<Real,Dim>::GetGradientValue(Vector<Real,Dim> r
 template<typename Real, int Dim>
 Real TSmoothingKernel<Real,Dim>::GetRadius(Real h) const noexcept 
 {
-    TIT_ASSERT(h > 0.0);
+    assert(h > 0.0);
     return GetBaseRadius_()*h;
 }
 
 template<typename Real, int Dim>
 Real TSmoothingKernel<Real,Dim>::GetRadiusDerivative(Vector<Real,Dim> r, Real h) const noexcept 
 {
-    TIT_ASSERT(h > 0.0);
+    assert(h > 0.0);
     Real hInverse = Inverse(h);
     Real q = hInverse*Norm(r);
     return Pow(hInverse, Dim+1)*(-Dim*GetBaseValue_(q) - q*GetBaseDerivativeValue_(q));
@@ -89,15 +89,15 @@ template<typename Real, int Dim>
 class TGaussianSmoothingKernel final : public TSmoothingKernel<Real,Dim> 
 {
 private:
-    static Real s_Weight;
+    static const Real s_Weight;
 private:
     Real GetBaseRadius_() const noexcept override;
     Real GetBaseValue_(Real q) const noexcept override;
     Real GetBaseDerivativeValue_(Real q) const noexcept override;
-};  // class TSmoothingKernel_Gaussian
+};  // class TGaussianSmoothingKernel
 
 template<typename Real, int Dim>
-Real TGaussianSmoothingKernel<Real,Dim>::s_Weight = 
+const Real TGaussianSmoothingKernel<Real,Dim>::s_Weight = 
 Select(
     Dim == 1, Inverse(SqrtPi<Real>),
     Dim == 2, Inverse(Pi<Real>),
@@ -107,7 +107,7 @@ Select(
 template<typename Real, int Dim>
 Real TGaussianSmoothingKernel<Real,Dim>::GetBaseRadius_() const noexcept 
 {
-    return Infinity<Real>;
+    return +Infinity<Real>;
 }
 
 template<typename Real, int Dim>
@@ -133,7 +133,7 @@ template<typename Real, int Dim>
 class TCubicSmoothingKernel : public TSmoothingKernel<Real,Dim> 
 {
 protected:
-    static Real s_Weight;
+    static const Real s_Weight;
 private:
     Real GetBaseRadius_() const noexcept final;
     Real GetBaseValue_(Real q) const noexcept final;
@@ -141,7 +141,7 @@ private:
 };  // class TCubicSmoothingKernel
 
 template<typename Real, int Dim>
-Real TCubicSmoothingKernel<Real,Dim>::s_Weight = 
+const Real TCubicSmoothingKernel<Real,Dim>::s_Weight = 
 Select(
     Dim == 1, Real( 2.0/3.0),
     Dim == 2, Real(10.0/7.0)/Pi<Real>,
@@ -219,7 +219,7 @@ template<typename Real, int Dim>
 class TQuarticSmoothingKernel final : public TSmoothingKernel<Real,Dim> 
 {
 private:
-    static Real s_Weight;
+    static const Real s_Weight;
 private:
     Real GetBaseRadius_() const noexcept override;
     Real GetBaseValue_(Real q) const noexcept override;
@@ -227,7 +227,7 @@ private:
 };  // class TQuarticSmoothingKernel
 
 template<typename Real, int Dim>
-Real TQuarticSmoothingKernel<Real,Dim>::s_Weight = 
+const Real TQuarticSmoothingKernel<Real,Dim>::s_Weight = 
 Select(
     Dim == 1, Real(1.0/24.0),
     Dim == 2, Real(96.0/1199.0)/Pi<Real>,
@@ -283,7 +283,7 @@ template<typename Real, int Dim>
 class TQuinticSmoothingKernel final : public TSmoothingKernel<Real,Dim> 
 {
 private:
-    static Real s_Weight;
+    static const Real s_Weight;
 private:
     Real GetBaseRadius_() const noexcept override;
     Real GetBaseValue_(Real q) const noexcept override;
@@ -291,7 +291,7 @@ private:
 };  // class TQuinticSmoothingKernel
 
 template<typename Real, int Dim>
-Real TQuinticSmoothingKernel<Real,Dim>::s_Weight = 
+const Real TQuinticSmoothingKernel<Real,Dim>::s_Weight = 
 Select(
     Dim == 1, Real(1.0/120.0),
     Dim == 2, Real(7.0/478.0)/Pi<Real>,

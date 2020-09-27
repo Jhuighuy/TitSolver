@@ -1,7 +1,7 @@
 /** Copyright (C) Oleg Butakov 2020. */
 #pragma once
-#ifndef TIT_VECTOR_HPP_
-#define TIT_VECTOR_HPP_
+#ifndef TIT_LIBMATH_VECTOR_HPP_
+#define TIT_LIBMATH_VECTOR_HPP_
 
 #include <cmath>
 #include <array>
@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <type_traits>
 
-#include "TitHelpers.hpp"
+#include "libMath/TitMath.hpp"
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -223,7 +223,7 @@ Vector<Real,Dim> Min(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
-        p.Components[iDim] = std::min(p.Components[iDim], q.Components[iDim]);
+        p.Components[iDim] = Min(p.Components[iDim], q.Components[iDim]);
     }
     return p;
 }
@@ -233,20 +233,21 @@ Vector<Real,Dim> Max(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
-        p.Components[iDim] = std::max(p.Components[iDim], q.Components[iDim]);
+        p.Components[iDim] = Max(p.Components[iDim], q.Components[iDim]);
     }
     return p;
 }
 /** Vector component-wise minimum-maximum pair. */
 template<typename Real, int Dim> constexpr 
-std::pair<Vector<Real,Dim>,Vector<Real,Dim>> MinMax(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+Pair<Vector<Real,Dim>,Vector<Real,Dim>> 
+MinMax(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
-        std::tie(p.Components[iDim], q.Components[iDim]) =
-            std::minmax(p.Components[iDim], q.Components[iDim]);
+        Tie(p.Components[iDim], q.Components[iDim]) = 
+            MinMax(p.Components[iDim], q.Components[iDim]);
     }
-    return std::make_pair(p, q);
+    return MakePair(p, q);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -301,7 +302,8 @@ Vector<Real,Dim> Normalize(Vector<Real,Dim> p) noexcept
 
 /** Vector input operator. */
 template<typename char_t, typename Real, int Dim>
-std::basic_istream<char_t>& operator>>(std::basic_istream<char_t>& stream, Vector<Real,Dim>& p) 
+std::basic_istream<char_t>& 
+operator>>(std::basic_istream<char_t>& stream, Vector<Real,Dim>& p) 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -311,7 +313,8 @@ std::basic_istream<char_t>& operator>>(std::basic_istream<char_t>& stream, Vecto
 }
 /** Vector output operator. */
 template<typename char_t, typename Real, int Dim>
-std::basic_ostream<char_t>& operator<<(std::basic_ostream<char_t>& stream, Vector<Real,Dim> p) 
+std::basic_ostream<char_t>& 
+operator<<(std::basic_ostream<char_t>& stream, Vector<Real,Dim> p) 
 {
     stream << p.Components.front();
     for (int iDim = 1; iDim < Dim; ++iDim) 
@@ -325,4 +328,4 @@ std::basic_ostream<char_t>& operator<<(std::basic_ostream<char_t>& stream, Vecto
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#endif  // ifndef TIT_VECTOR_HPP_
+#endif  // ifndef TIT_LIBMATH_VECTOR_HPP_

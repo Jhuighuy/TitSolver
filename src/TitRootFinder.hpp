@@ -13,62 +13,72 @@
 /********************************************************************
  ** Find Root using the Bisection method.
  ********************************************************************/
-template<typename real_t, typename func_t>
-static std::tuple<bool, real_t, real_t> FindRoot_Bisection(
-    real_t minX, real_t maxX, const func_t& F,
-    real_t delta=1e-3, real_t epsilon=1e-2, size_t maxNumIters=100
-) {
-    static_assert(std::is_floating_point_v<real_t>);
+template<typename Real, typename Func>
+static std::tuple<bool,Real,Real> 
+FindRoot_Bisection(Real minX, Real maxX, const Func& F,
+    Real delta=Real(1e-3), Real epsilon=Real(1e-2), size_t maxNumIters=100) 
+{
+    static_assert(std::is_floating_point_v<Real>);
     assert(minX <= maxX);
-    // Compute value at the left end.
-    real_t minF = F(minX);
-    if (std::abs(minF) < epsilon) {
+    Real minF = F(minX);
+    if (Abs(minF) < epsilon) 
+    {
         return std::make_tuple(true, minX, minF);
     }
-    // Compute value at the right end.
-    real_t maxF = F(maxX);
-    if (std::abs(maxF) < epsilon) {
+    Real maxF = F(maxX);
+    if (Abs(maxF) < epsilon) 
+    {
         return std::make_tuple(true, maxX, maxF);
     }
-    // Can we find the root?
-    if (minF*maxF > 0.0) {
-        return std::make_tuple(false, 0.0, 0.0);
+    static constexpr auto errorCode = 
+        std::make_tuple(false, Real(0.0), (0.0));
+    if (Sign(minF) == Sign(maxF)) 
+    {
+        return errorCode;
     }
-    // Find the root!
+    /* Find the root! */
     for (size_t iter = 0; iter < maxNumIters; ++iter) {
-        // Compute value at the average.
-        real_t averageX = 0.5*(minX + maxX);
-        real_t averageF = F(averageX);
-        if (std::abs(averageF) < epsilon) {
-            return std::make_tuple(true, averageX, averageF);
+        Real midX = Average(minX, maxX);
+        Real midF = F(midX);
+        if (Abs(midF) < epsilon) 
+        {
+            return std::make_tuple(true, midX, midF);
         }
-        if (minF*averageF > 0.0) {
-            minX = averageX, minF = averageF;
-        } else if (averageF*maxF > 0.0) {
-            maxX = averageX, maxF = averageF;
-        } else {
-            return std::make_tuple(false, 0.0, 0.0);
+        if (Sign(minF) == Sign(midF)) 
+        {
+            minX = midX; 
+            minF = midF;
+        } 
+        else if (Sign(midF) == Sign(maxF)) 
+        {
+            maxX = midX; 
+            maxF = midF;
+        } 
+        else 
+        {
+            return errorCode;
         }
-        if ((maxX - minX) < delta) {
-            return std::make_tuple(true, averageX, averageF);
+        if ((maxX - minX) < delta) 
+        {
+            return std::make_tuple(true, midX, midF);
         }
     }
-    return std::make_tuple(false, 0.0, 0.0);
+    return errorCode;
 }   // FindRoot_Bisection
 
 /********************************************************************
  ** Find Root using Newton's method.
  ********************************************************************/
-template<typename real_t, typename func_t>
+template<typename Real, typename Func>
 static void FindRoot(
-    real_t& x, const func_t& F,
-    real_t delta=1e-3, size_t maxNumIters=100
+    Real& x, const Func& F,
+    Real delta=1e-3, size_t maxNumIters=100
 ) {
     //std::cout << x << ' ';
     //std::cout.flush();
     for (size_t iter = 0; iter < maxNumIters; ++iter) {
         auto [value, derivativeValue] = F();
-        real_t deltaX = value/derivativeValue;
+        Real deltaX = value/derivativeValue;
         x -= deltaX;
         //std::cout << x << ' ';
         //std::cout.flush();
