@@ -17,34 +17,40 @@
 
 /** @f$\pi@f$ constant. */
 template<typename Real>
-static const std::enable_if_t<std::is_floating_point_v<Real>,Real> 
-Pi = Real(4.0*std::atan(1.0));
+static const std::enable_if_t<std::is_floating_point_v<Real>,Real> Pi 
+{ 
+    Real(4.0*std::atan(1.0)) 
+};
 /** @f$\sqrt{\pi}@f$ constant. */
 template<typename Real>
-static const std::enable_if_t<std::is_floating_point_v<Real>,Real> 
-SqrtPi = Real(std::tgamma(0.5));
+static const std::enable_if_t<std::is_floating_point_v<Real>,Real> SqrtPi 
+{ 
+    Real(std::tgamma(0.5)) 
+};
 
 /** @f$+\infty@f$ constant. */
 template<typename Real>
-static const std::enable_if_t<std::is_floating_point_v<Real>,Real> 
-Infinity = Real(std::numeric_limits<Real>::inifinity());
+static const std::enable_if_t<std::is_floating_point_v<Real>,Real> Infinity 
+{ 
+    Real(std::numeric_limits<Real>::inifinity())
+};
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** Sign function. */
-template<typename Type> constexpr 
-inline int Sign(Type value) noexcept
-{
-    return (Type(0) < value) - (value < Type(0));
-}
 
 /** Absolute value function. */
 template<typename Type> constexpr 
 inline Type Abs(Type value) noexcept
 {
     return std::abs(value);
+}
+
+/** Sign function. */
+template<typename Type> constexpr 
+inline int Sign(Type value) noexcept
+{
+    return (Type(0) < value) - (value < Type(0));
 }
 
 /** Minimum value function. */

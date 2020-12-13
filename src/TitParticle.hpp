@@ -15,11 +15,11 @@
 
 template<typename real_t, int nDim=1>
 struct TParticle {
-    TVector<real_t, nDim> Position;
-    TVector<real_t, nDim> Velocity;
-    TVector<real_t, nDim> Acceleration;
-    real_t ThermalEnergy;
-    real_t Heating;
+    Vector<real_t, nDim> Position;
+    Vector<real_t, nDim> Velocity;
+    Vector<real_t, nDim> VelocityDerivative;
+    real_t InternalEnergy;
+    real_t InternalEnergyDerivative;
 
     real_t Mass;
     real_t Density;

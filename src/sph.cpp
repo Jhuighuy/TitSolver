@@ -10,6 +10,9 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
+#define TIT_HOST
+#define TIT_DEVICE
+
 #include "TitParticle.hpp"
 #include "TitSmoothingKernels.hpp"
 #include "TitRootFinder.hpp"
@@ -70,9 +73,9 @@ void LeapfrogStep(TParticle<real_t>* particles,
         /// @todo Boundary conditions!
         if ((&iParticle - particles) <= 100) return;
         if (numParticles-(&iParticle - particles) <= 10) return;
-        iParticle.Velocity += timeStep*iParticle.Acceleration;
+        iParticle.Velocity += timeStep*iParticle.VelocityDerivative;
         iParticle.Position += timeStep*iParticle.Velocity;
-        iParticle.ThermalEnergy += timeStep*iParticle.Heating;
+        iParticle.InternalEnergy += timeStep*iParticle.InternalEnergyDerivative;
     });
 #else
     SortParticles(particles, numParticles);
@@ -123,7 +126,7 @@ int main() {
         Particle particle;
         particle.Mass = 1.0/1600;
         particle.KernelWidth = 0.001;
-        particle.ThermalEnergy = 1.0/0.4;
+        particle.InternalEnergy = 1.0/0.4;
         particle.Position = i/1600.0;
         particles.push_back(particle); 
     }
@@ -131,7 +134,7 @@ int main() {
         Particle particle;
         particle.Mass = 1.0/1600; 
         particle.KernelWidth = 0.001;  
-        particle.ThermalEnergy = 0.1/(0.4*0.125);
+        particle.InternalEnergy = 0.1/(0.4*0.125);
         particle.Position = 1.0 + i/200.0;
         particles.push_back(particle);
     }
@@ -151,7 +154,7 @@ int main() {
         output << particle.Position << " " << particle.Density << " ";
         output << particle.Velocity << " ";
         output << particle.Pressure << " ";
-        output << particle.ThermalEnergy << " ";
+        output << particle.InternalEnergy << " ";
         output << particle.KernelWidth << " ";
         output << std::endl;
     }

@@ -22,10 +22,10 @@
 template<typename Real, int Dim>
 union Vector;
 template<typename Real, int Dim>
-using TVector = Vector<Real,Dim>;
+using TVector = Vector<Real, Dim>;
 
 template<typename Real>
-union Vector<Real,1> final 
+union Vector<Real, 1> final 
 {
     static_assert(std::is_floating_point_v<Real>);
     std::array<Real, 1> Components;
@@ -36,7 +36,7 @@ union Vector<Real,1> final
 };  // union Vector<1>
 
 template<typename Real>
-union Vector<Real,2> final 
+union Vector<Real, 2> final 
 {
     static_assert(std::is_floating_point_v<Real>);
     std::array<Real, 2> Components;
@@ -58,7 +58,7 @@ union Vector<Real, 3> final
 };  // union Vector<3>
 
 template<typename Real>
-union Vector<Real,4> final 
+union Vector<Real, 4> final 
 {
     static_assert(std::is_floating_point_v<Real>);
     std::array<Real, 4> Components;
@@ -74,19 +74,19 @@ union Vector<Real,4> final
 
 /** Vector unary plus operator. */
 template<typename Real, int Dim> constexpr
-Vector<Real,Dim> operator+(Vector<Real,Dim> p) noexcept 
+Vector<Real, Dim> operator+(Vector<Real, Dim> p) noexcept 
 {
     return p;
 }
 /** Vector addition operator. */
 template<typename Real, int Dim> constexpr
-Vector<Real,Dim> operator+(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+Vector<Real, Dim> operator+(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     return p += q;
 }
 /** Vector addition assignment operator. */
 template<typename Real, int Dim> constexpr 
-Vector<Real,Dim>& operator+=(Vector<Real,Dim>& p, Vector<Real,Dim> q) noexcept 
+Vector<Real, Dim>& operator+=(Vector<Real, Dim>& p, Vector<Real, Dim> q) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -97,7 +97,7 @@ Vector<Real,Dim>& operator+=(Vector<Real,Dim>& p, Vector<Real,Dim> q) noexcept
 
 /** Vector negation operator. */
 template<typename Real, int Dim> constexpr 
-Vector<Real,Dim> operator-(Vector<Real,Dim> p) noexcept 
+Vector<Real, Dim> operator-(Vector<Real, Dim> p) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -107,13 +107,13 @@ Vector<Real,Dim> operator-(Vector<Real,Dim> p) noexcept
 }
 /** Vector subtraction operator. */
 template<typename Real, int Dim> constexpr 
-Vector<Real,Dim> operator-(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+Vector<Real, Dim> operator-(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     return p -= q;
 }
 /** Vector subtraction assignment operator. */
 template<typename Real, int Dim>
-Vector<Real,Dim>& operator-=(Vector<Real,Dim>& p, Vector<Real,Dim> q) noexcept 
+Vector<Real, Dim>& operator-=(Vector<Real, Dim>& p, Vector<Real, Dim> q) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -125,19 +125,19 @@ Vector<Real,Dim>& operator-=(Vector<Real,Dim>& p, Vector<Real,Dim> q) noexcept
 /** Vector multiplication operator. */
 /** @{ */
 template<typename Real, int Dim> constexpr
-Vector<Real,Dim> operator*(Real a, Vector<Real,Dim> p) noexcept 
+Vector<Real, Dim> operator*(Real a, Vector<Real, Dim> p) noexcept 
 {
     return p *= a;
 }
 template<typename Real, int Dim> constexpr
-Vector<Real,Dim> operator*(Vector<Real,Dim> p, Real a) noexcept 
+Vector<Real, Dim> operator*(Vector<Real, Dim> p, Real a) noexcept 
 {
     return p *= a;
 }
 /** @} */
 /** Vector multiplication assignment operator. */
 template<typename Real, int Dim> constexpr
-Vector<Real,Dim>& operator*=(Vector<Real,Dim>& p, Real a) noexcept 
+Vector<Real, Dim>& operator*=(Vector<Real, Dim>& p, Real a) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -148,13 +148,13 @@ Vector<Real,Dim>& operator*=(Vector<Real,Dim>& p, Real a) noexcept
 
 /** Vector division operator. */
 template<typename Real, int Dim> constexpr
-Vector<Real,Dim> operator/(Vector<Real,Dim> p, Real a) noexcept 
+Vector<Real, Dim> operator/(Vector<Real, Dim> p, Real a) noexcept 
 {
     return p /= a;
 }
 /** Vector division assignment operator. */
 template<typename Real, int Dim> constexpr
-Vector<Real,Dim>& operator/=(Vector<Real,Dim>& p, Real a) noexcept 
+Vector<Real, Dim>& operator/=(Vector<Real, Dim>& p, Real a) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -168,7 +168,7 @@ Vector<Real,Dim>& operator/=(Vector<Real,Dim>& p, Real a) noexcept
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template<typename Real, int Dim> constexpr 
-int _Compare(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+int _Compare(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -180,46 +180,46 @@ int _Compare(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept
 
 /** Vector equality operator. */
 template<typename Real, int Dim> constexpr 
-bool operator==(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+bool operator==(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     return _Compare(p, q) == 0;
 }
 /** Vector inequality operator. */
 template<typename Real, int Dim> constexpr 
-bool operator!=(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+bool operator!=(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     return _Compare(p, q) != 0;
 }
 
 /** Vector lexicographical less then operator. */
 template<typename Real, int Dim> constexpr
-bool Less(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+bool Less(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     return _Compare(p, q) < 0;
-}   // Less
+}
 /** Vector lexicographical less then or equal operator. */
 template<typename Real, int Dim> constexpr 
-bool LessOrEqual(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+bool LessOrEqual(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     return _Compare(p, q) <= 0;
 }
 
 /** Vector lexicographical greater then operator. */
 template<typename Real, int Dim> constexpr 
-bool Greater(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+bool Greater(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     return _Compare(p, q) > 0;
 }
 /** Vector lexicographical greater then or equal operator. */
 template<typename Real, int Dim> constexpr 
-bool GreaterOrEqual(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+bool GreaterOrEqual(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     return _Compare(p, q) >= 0;
 }
 
 /** Vector component-wise minimum. */
 template<typename Real, int Dim> constexpr 
-Vector<Real,Dim> Min(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+Vector<Real, Dim> Min(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -229,7 +229,7 @@ Vector<Real,Dim> Min(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept
 }
 /** Vector component-wise maximum. */
 template<typename Real, int Dim> constexpr 
-Vector<Real,Dim> Max(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+Vector<Real, Dim> Max(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -239,8 +239,8 @@ Vector<Real,Dim> Max(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept
 }
 /** Vector component-wise minimum-maximum pair. */
 template<typename Real, int Dim> constexpr 
-Pair<Vector<Real,Dim>,Vector<Real,Dim>> 
-MinMax(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept 
+Pair<Vector<Real, Dim>,Vector<Real, Dim>> 
+MinMax(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -256,7 +256,7 @@ MinMax(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept
 
 /** Vector dot product. */
 template<typename Real, int Dim> constexpr
-Real Dot(Vector<Real,Dim> p, Vector<Real,Dim> q) noexcept {
+Real Dot(Vector<Real, Dim> p, Vector<Real, Dim> q) noexcept {
     Real d(0.0);
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -283,7 +283,7 @@ Real Norm(Vector<Real,3> p) noexcept
     return Hypot(p.x, p.y, p.z);
 }
 template<typename Real, int Dim>
-Real Norm(Vector<Real,Dim> p) noexcept 
+Real Norm(Vector<Real, Dim> p) noexcept 
 {
     return Sqrt(Dot(p, p));
 }
@@ -291,7 +291,7 @@ Real Norm(Vector<Real,Dim> p) noexcept
 
 /** Normalize vector. */
 template<typename Real, int Dim>
-Vector<Real,Dim> Normalize(Vector<Real,Dim> p) noexcept 
+Vector<Real, Dim> Normalize(Vector<Real, Dim> p) noexcept 
 {
     return SafeInverse(Norm(p))*p;
 }
@@ -303,7 +303,7 @@ Vector<Real,Dim> Normalize(Vector<Real,Dim> p) noexcept
 /** Vector input operator. */
 template<typename char_t, typename Real, int Dim>
 std::basic_istream<char_t>& 
-operator>>(std::basic_istream<char_t>& stream, Vector<Real,Dim>& p) 
+operator>>(std::basic_istream<char_t>& stream, Vector<Real, Dim>& p) 
 {
     for (int iDim = 0; iDim < Dim; ++iDim) 
     {
@@ -314,7 +314,7 @@ operator>>(std::basic_istream<char_t>& stream, Vector<Real,Dim>& p)
 /** Vector output operator. */
 template<typename char_t, typename Real, int Dim>
 std::basic_ostream<char_t>& 
-operator<<(std::basic_ostream<char_t>& stream, Vector<Real,Dim> p) 
+operator<<(std::basic_ostream<char_t>& stream, Vector<Real, Dim> p) 
 {
     stream << p.Components.front();
     for (int iDim = 1; iDim < Dim; ++iDim) 
