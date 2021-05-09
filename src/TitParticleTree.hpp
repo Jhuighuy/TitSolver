@@ -19,10 +19,10 @@
  ********************************************************************/
 template<typename real_t, int nDim>
 struct TParticleTreeNode {
-    TVector<real_t, nDim> LowerLeftCorner;
-    TVector<real_t, nDim> UpperRightCorner;
-    TParticleTreeNode* RootNode;
-    std::array<std::unique_ptr<TParticleTreeNode>, (1 << nDim)> LeafNodes;
+  TVector<real_t, nDim> LowerLeftCorner;
+  TVector<real_t, nDim> UpperRightCorner;
+  TParticleTreeNode* RootNode;
+  std::array<std::unique_ptr<TParticleTreeNode>, (1 << nDim)> LeafNodes;
 };  // struct TParticleTreeNode
 
 

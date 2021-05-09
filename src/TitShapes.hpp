@@ -16,18 +16,18 @@
  ********************************************************************/
 template<typename real_t, int nDim>
 struct TSphere {
-    TVector<real_t, nDim> Center;
-    real_t Radius;
-    constexpr TSphere() = default;
+  TVector<real_t, nDim> Center;
+  real_t Radius;
+  constexpr TSphere() = default;
 };  // struct TSphere
 
 /** Test if point is inside a sphere. */
 template<typename real_t, int nDim> constexpr 
 bool IsPointInsideSphere(
-    const TVector<real_t, nDim>& point, const TSphere<real_t, nDim>& sphere
+  const TVector<real_t, nDim>& point, const TSphere<real_t, nDim>& sphere
 ) noexcept {
-    TSphere<real_t, nDim> delta = point - sphere.Center;
-    return Dot(delta, delta) < std::pow(sphere.Radius, 2);
+  TSphere<real_t, nDim> delta = point - sphere.Center;
+  return Dot(delta, delta) < std::pow(sphere.Radius, 2);
 }   // IsPointInside
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -39,8 +39,8 @@ bool IsPointInsideSphere(
  ********************************************************************/
 template<typename real_t, int nDim>
 struct TBox {
-    TVector<real_t, nDim> Min, Max;
-    constexpr TBox() = default;
+  TVector<real_t, nDim> Min, Max;
+  constexpr TBox() = default;
 };  // struct TBox
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
