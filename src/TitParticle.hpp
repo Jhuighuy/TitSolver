@@ -71,70 +71,69 @@ public:
 namespace particle_accessors {
 
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
-      return a.mass;
+    constexpr auto& operator[](auto a) const noexcept {
+      return a->mass;
     }
   } m;
 
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
-      return a.width;
+    constexpr auto& operator[](auto a) const noexcept {
+      return a->width;
     }
   } h;
 
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
-      return a.density;
+    constexpr auto& operator[](auto a) const noexcept {
+      return a->density;
     }
   } rho;
   inline constexpr struct {
     constexpr auto& operator[](auto& a) const noexcept {
-      return a.density_width_deriv;
+      return a->density_width_deriv;
     }
   } drho_dh;
 
   inline constexpr struct {
     constexpr auto& operator[](auto& a) const noexcept {
-      return a.pressure;
+      return a->pressure;
     }
   } p;
-
   inline constexpr struct {
     constexpr auto& operator[](auto& a) const noexcept {
-      return a.sound_speed;
+      return a->sound_speed;
     }
   } cs;
 
   inline constexpr struct {
     constexpr auto& operator[](auto& a) const noexcept {
-      return a.thermal_energy;
+      return a->thermal_energy;
     }
   } eps;
   inline constexpr struct {
     constexpr auto& operator[](auto& a) const noexcept {
-      return a.thermal_energy_deriv;
+      return a->thermal_energy_deriv;
     }
   } deps_dt;
 
   inline constexpr struct {
     constexpr auto& operator[](auto& a) const noexcept {
-      return a.position;
+      return a->position;
     }
     constexpr auto operator[](auto& a, auto& b) const noexcept {
-      return (*this)[a] - (*this)[b];
+      return a->position - b->position;
     }
   } r;
   inline constexpr struct {
     constexpr auto& operator[](auto& a) const noexcept {
-      return a.velocity;
+      return a->velocity;
     }
     constexpr auto operator[](auto& a, auto& b) const noexcept {
-      return (*this)[a] - (*this)[b];
+      return a->velocity - b->velocity;
     }
   } v, dr_dt;
   inline constexpr struct {
     constexpr auto& operator[](auto& a) const noexcept {
-      return a.acceleration;
+      return a->acceleration;
     }
   } a, dv_dt, d2r_dt2;
 
@@ -158,11 +157,13 @@ struct ParticleArray {
 
   template<class Func>
   void for_each(const Func& func) {
-    std::for_each(Particles, Particles + NumParticles, func);
+    std::for_each(Particles, Particles + NumParticles,
+                  [&](auto& a) { func(&a); });
   }
 
   template<class Func>
-  void nearby(Particle<Real, Dim>& a, Real search_width, const Func& func) {
+  void nearby(Particle<Real, Dim>* pa, Real search_width, const Func& func) {
+    auto& a = *pa;
     const size_t aIndex = &a - Particles;
 
     // Neighbours to the left.
@@ -170,34 +171,27 @@ struct ParticleArray {
       Particle<Real, Dim>& b = Particles[bIndex];
       const Vec<Real, Dim> abDeltaPos = a.position - b.position;
       if (norm(abDeltaPos) > search_width) break;
-      func(b);
+      func(&b);
     }
 
     // Particle itself.
-    func(a);
+    func(&a);
 
     // Neighbours to the right.
     for (size_t bIndex = aIndex + 1; bIndex < NumParticles; ++bIndex) {
       Particle<Real, Dim>& b = Particles[bIndex];
       const Vec<Real, Dim> abDeltaPos = a.position - b.position;
       if (norm(abDeltaPos) > search_width) break;
-      func(b);
+      func(&b);
     }
   }
 
 }; // struct ParticleArray
 
-template<class func_t, class Real, dim_t Dim>
-void ForEach(ParticleArray<Real, Dim>& particles, const func_t& func) {
-  particles.for_each(func);
-}
-
-template<class func_t, class Real, dim_t Dim>
-void ForEachNeighbour(ParticleArray<Real, Dim>& particles,
-                      Particle<Real, Dim>& aParticle, Real search_width,
-                      const func_t& func) {
-  particles.for_each_neighbour(aParticle, search_width, func);
-}
+template<class Real, dim_t Dim>
+using ParticleView = Particle<Real, Dim>*;
+template<class Real, dim_t Dim>
+using ConstParticleView = ParticleView<Real, Dim>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*

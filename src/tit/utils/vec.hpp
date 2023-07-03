@@ -217,6 +217,12 @@ constexpr auto normalize(Vec<Num, Dim> a) noexcept {
   return safe_divide(a, norm(a));
 }
 
+/** Vector size. */
+template<class Num, dim_t Dim>
+constexpr auto dim([[maybe_unused]] Vec<Num, Dim> a) noexcept {
+  return Dim;
+}
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit
