@@ -28,6 +28,9 @@
 #include "tit/utils/math.hpp"
 #include "tit/utils/vec.hpp"
 
+#include <optional>
+#include <type_traits>
+
 namespace tit::sph {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -35,81 +38,80 @@ namespace tit::sph {
 /******************************************************************************\
  ** The particle estimator with a fixed kernel width.
 \******************************************************************************/
-template<class Real, dim_t Dim>
-class SmoothEstimator {
-public:
-
-  virtual ~SmoothEstimator() = default;
-
-  /** Estimate density, kernel width, pressure and sound speed. */
-  constexpr virtual void estimate_density( //
-      ParticleArray<Real, Dim>& particles,
-      const SmoothingKernel<Real, Dim>& kernel,
-      const EquationOfState<Real>& eos) const = 0;
-
-  /** Estimate acceleration and thermal heating. */
-  constexpr virtual void estimate_acceleration(
-      ParticleArray<Real, Dim>& particles,
-      const SmoothingKernel<Real, Dim>& kernel,
-      const ArtificialViscosity<Real, Dim>& viscosity) const = 0;
-
-}; // class SmoothEstimator
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/******************************************************************************\
- ** The particle estimator with a fixed kernel width.
-\******************************************************************************/
-template<class Real, dim_t Dim>
-class ClassicSmoothEstimator : public SmoothEstimator<Real, Dim> {
+template<class EquationOfState = GasEquationOfState,
+         class SmoothingKernel = CubicSmoothingKernel,
+         class ArtificialViscosity = AlphaBetaArtificialViscosity>
+  requires std::is_object_v<EquationOfState> &&
+           std::is_object_v<SmoothingKernel> &&
+           std::is_object_v<ArtificialViscosity>
+class ClassicSmoothEstimator final {
 private:
 
-  Real _kernel_width;
+  EquationOfState _eos;
+  SmoothingKernel _kernel;
+  ArtificialViscosity _viscosity;
+  std::optional<real_t> _kernel_width;
 
 public:
 
-  constexpr explicit ClassicSmoothEstimator(Real kernel_width) noexcept
-      : _kernel_width{kernel_width} {}
+  /** Initialize particle estimator. */
+  constexpr explicit ClassicSmoothEstimator(
+      EquationOfState eos = {}, SmoothingKernel kernel = {},
+      ArtificialViscosity viscosity = {},
+      std::optional<real_t> kernel_width = std::nullopt)
+      : _eos{std::move(eos)}, _kernel{std::move(kernel)},
+        _viscosity{std::move(viscosity)}, _kernel_width{kernel_width} {}
+
+  /** Estimator equation of state. */
+  constexpr const EquationOfState& eos() const noexcept {
+    return _eos;
+  }
+
+  /** Estimator kernel. */
+  constexpr const SmoothingKernel& kernel() const noexcept {
+    return _kernel;
+  }
+
+  /** Estimator artificial viscosity scheme. */
+  constexpr const ArtificialViscosity& viscosity() const noexcept {
+    return _viscosity;
+  }
 
   /** Estimate density, kernel width, pressure and sound speed. */
-  constexpr void estimate_density( //
-      ParticleArray<Real, Dim>& particles,
-      const SmoothingKernel<Real, Dim>& kernel,
-      const EquationOfState<Real>& eos) const override {
+  template<class ParticleCloud>
+  constexpr void estimate_density(ParticleCloud& particles) const {
     using namespace particle_accessors;
-    const auto h = _kernel_width;
-    const auto search_radius = kernel.radius(h);
-    particles.for_each([&](Particle<Real, Dim>& a) {
-      h[a] = h;
+    const auto h_ab = *_kernel_width;
+    const auto search_radius = _kernel.radius(h_ab);
+    particles.for_each([&](auto a) {
+      h[a] = h_ab;
       rho[a] = {};
-      particles.nearby(a, search_radius, [&](const Particle<Real, Dim>& b) {
-        rho[a] += m[b] * kernel(r[a, b], h);
+      particles.nearby(a, search_radius, [&](auto b) { //
+        rho[a] += m[b] * _kernel(r[a, b], h_ab);
       });
-      p[a] = eos.pressure(rho[a], eps[a]);
-      cs[a] = eos.sound_speed(rho[a], p[a]);
+      p[a] = _eos.pressure(rho[a], eps[a]);
+      cs[a] = _eos.sound_speed(rho[a], p[a]);
     });
   }
 
   /** Estimate acceleration and thermal heating. */
-  constexpr void estimate_acceleration(
-      ParticleArray<Real, Dim>& particles,
-      const SmoothingKernel<Real, Dim>& kernel,
-      const ArtificialViscosity<Real, Dim>& viscosity) const override {
+  template<class ParticleCloud>
+  constexpr void estimate_acceleration(ParticleCloud& particles) const {
     using namespace particle_accessors;
     const auto h = _kernel_width;
-    const auto search_radius = kernel.radius(h);
-    particles.for_each([&](Particle<Real, Dim>& a) {
+    const auto search_radius = _kernel.radius(h);
+    particles.for_each([&](auto a) {
       dv_dt[a] = {};
       deps_dt[a] = {};
-      particles.nearby(a, search_radius, [&](const Particle<Real, Dim>& b) {
-        const auto Pi_ab = viscosity.kinematic(a, b);
-        const auto grad_ab = kernel.grad(r[a, b], h);
+      particles.nearby(a, search_radius, [&](auto b) {
+        const auto Pi_ab = _viscosity.kinematic(a, b);
+        const auto grad_ab = _kernel.grad(r[a, b], h);
         // clang-format off
-        dv_dt[a] -= m[b] * (p[a] / pow2(rho[a]) + 
-                            p[b] / pow2(rho[b]) + 
+        dv_dt[a] -= m[b] * (p[a] / pow2(rho[a]) +
+                            p[b] / pow2(rho[b]) +
                             Pi_ab) * grad_ab;
-        deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) + 
-                              Pi_ab) * dot(grad_ab, v(a, b));
+        deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) +
+                              Pi_ab) * dot(grad_ab, v[a, b]);
         // clang-format on
       });
     });
@@ -122,58 +124,83 @@ public:
 /******************************************************************************\
  ** The particle estimator with a variable kernel width (Grad-H).
 \******************************************************************************/
-template<class Real, dim_t Dim>
-class GradHSmoothEstimator : public SmoothEstimator<Real, Dim> {
+template<class EquationOfState = GasEquationOfState,
+         class SmoothingKernel = CubicSmoothingKernel,
+         class ArtificialViscosity = AlphaBetaArtificialViscosity>
+  requires std::is_object_v<EquationOfState> &&
+           std::is_object_v<SmoothingKernel> &&
+           std::is_object_v<ArtificialViscosity>
+class GradHSmoothEstimator final {
 private:
 
-  Real _coupling;
+  EquationOfState _eos;
+  SmoothingKernel _kernel;
+  ArtificialViscosity _viscosity;
+  real_t _coupling;
 
 public:
 
-  constexpr explicit GradHSmoothEstimator(Real coupling = Real{3.0}) noexcept
-      : _coupling{coupling} {}
+  /** Initialize particle estimator. */
+  constexpr explicit GradHSmoothEstimator( //
+      EquationOfState eos = {}, SmoothingKernel kernel = {},
+      ArtificialViscosity viscosity = {}, real_t coupling = 3.0) noexcept
+      : _kernel{std::move(kernel)}, _eos{std::move(eos)},
+        _viscosity{std::move(viscosity)}, _coupling{coupling} {}
+
+  /** Estimator equation of state. */
+  constexpr const EquationOfState& eos() const noexcept {
+    return _eos;
+  }
+
+  /** Estimator kernel. */
+  constexpr const SmoothingKernel& kernel() const noexcept {
+    return _kernel;
+  }
+
+  /** Estimator artificial viscosity scheme. */
+  constexpr const ArtificialViscosity& viscosity() const noexcept {
+    return _viscosity;
+  }
 
   /** Estimate density, kernel width, pressure and sound speed. */
-  constexpr void estimate_density( //
-      ParticleArray<Real, Dim>& particles,
-      const SmoothingKernel<Real, Dim>& kernel,
-      const EquationOfState<Real>& eos) const override {
+  template<class ParticleCloud>
+  constexpr void estimate_density(ParticleCloud& particles) const {
     using namespace particle_accessors;
-    particles.for_each([&](Particle<Real, Dim>& a) {
-      // Solve rho(h) * h^Dim = coupling for h.
+    particles.for_each([&](auto a) {
+      // Solve rho(h) * h^d = coupling for h.
+      const auto d = dim(r[a]);
       newton(h[a], [&]() {
         rho[a] = {};
         drho_dh[a] = {};
-        const auto search_radius = kernel.radius(h[a]);
-        particles.nearby(a, search_radius, [&](const Particle<Real, Dim>& b) {
-          rho[a] += m[b] * kernel(r[a, b], h[a]);
-          drho_dh[a] += m[b] * kernel.radius_deriv(r[a, b], h[a]);
+        const auto search_radius = _kernel.radius(h[a]);
+        particles.nearby(a, search_radius, [&](auto b) {
+          rho[a] += m[b] * _kernel(r[a, b], h[a]);
+          drho_dh[a] += m[b] * _kernel.radius_deriv(r[a, b], h[a]);
         });
-        const auto rho_expected = m[a] * pow(divide(_coupling, h[a]), Dim);
-        const auto drho_dh_expected = -Dim * rho_expected / h[a];
+        const auto rho_expected = m[a] * pow(divide(_coupling, h[a]), d);
+        const auto drho_dh_expected = -d * rho_expected / h[a];
         return std::pair{rho_expected - rho[a], drho_dh_expected - drho_dh[a]};
       });
-      p[a] = eos.pressure(rho[a], eps[a]);
-      cs[a] = eos.sound_speed(rho[a], p[a]);
+      p[a] = _eos.pressure(rho[a], eps[a]);
+      cs[a] = _eos.sound_speed(rho[a], p[a]);
     });
   }
 
   /** Estimate acceleration and thermal heating. */
-  constexpr void estimate_acceleration(
-      ParticleArray<Real, Dim>& particles,
-      const SmoothingKernel<Real, Dim>& kernel,
-      const ArtificialViscosity<Real, Dim>& viscosity) const final {
+  template<class ParticleCloud>
+  constexpr void estimate_acceleration(ParticleCloud& particles) const {
     using namespace particle_accessors;
-    particles.for_each([&](Particle<Real, Dim>& a) {
+    particles.for_each([&](auto a) {
       dv_dt[a] = {};
       deps_dt[a] = {};
-      const auto Omega_a = Real{1.0} + h[a] / (Dim * rho[a]) * drho_dh[a];
-      const auto search_radius = kernel.radius(h[a]);
-      particles.nearby(a, search_radius, [&](const Particle<Real, Dim>& b) {
-        const auto Omega_b = Real{1.0} + h[b] / (Dim * rho[b]) * drho_dh[b];
-        const auto Pi_ab = viscosity.kinematic(a, b);
-        const auto grad_aba = kernel.grad(r[a, b], h[a]);
-        const auto grad_abb = kernel.grad(r[a, b], h[b]);
+      const auto d = dim(r[a]);
+      const auto Omega_a = 1 + h[a] / (d * rho[a]) * drho_dh[a];
+      const auto search_radius = _kernel.radius(h[a]);
+      particles.nearby(a, search_radius, [&](auto b) {
+        const auto Omega_b = 1 + h[b] / (d * rho[b]) * drho_dh[b];
+        const auto Pi_ab = _viscosity.kinematic(a, b);
+        const auto grad_aba = _kernel.grad(r[a, b], h[a]);
+        const auto grad_abb = _kernel.grad(r[a, b], h[b]);
         const auto grad_ab = avg(grad_aba, grad_abb);
         dv_dt[a] -= m[b] * (p[a] / (Omega_a * pow2(rho[a])) * grad_aba +
                             p[b] / (Omega_b * pow2(rho[b])) * grad_abb +

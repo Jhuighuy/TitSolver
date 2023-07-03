@@ -12,36 +12,28 @@
 
 #include "TitParticle.hpp"
 #include "tit/sph/smooting_kernel.hpp"
+
 using namespace tit;
 using namespace tit::sph;
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-
-double Kappa = 1.0, Gamma = 1.4;
-
-template<class Real>
-class EquationOfState {
+class GasEquationOfState {
 private:
 
-  Real _gamma = Real{1.4};
+  real_t _gamma = 1.4;
 
 public:
 
+  template<class Real>
   constexpr Real pressure(Real density, Real thermal_energy) const {
     return (_gamma - 1.0) * density * thermal_energy;
   }
 
+  template<class Real>
   constexpr Real sound_speed(Real density, Real pressure) const {
     return sqrt(_gamma * pressure / density);
   }
 
 }; // class EquationOfState
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #include "tit/sph/smooth_estimator.hpp"
 
@@ -49,25 +41,17 @@ public:
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/**
- ** @brief Estimate Density and Pressure.
- **/
-template<class Real, dim_t Dim, class ParticleEstimator,
-         class ArtificialViscosity>
+template<class Real, dim_t Dim, class ParticleEstimator>
 void LeapfrogStep(Particle<Real, Dim>* particles,
                   Particle<Real, Dim>* particlesTemp, size_t numParticles,
-                  const SmoothingKernel<Real, Dim>& smoothingKernel,
-                  const ParticleEstimator& estimator,
-                  const ArtificialViscosity& artificialViscosity) {
+                  const ParticleEstimator& estimator) {
   const double courantFactor = 0.1;
   double timeStep = courantFactor * 0.005, halfTimeStep = 0.5 * timeStep;
 #if 1
-  EquationOfState<Real> eos{};
   ParticleArray<Real, Dim> Particles{particles, numParticles};
   Particles.SortParticles();
-  estimator.estimate_density(Particles, smoothingKernel, eos);
-  estimator.estimate_acceleration(Particles, smoothingKernel,
-                                  artificialViscosity);
+  estimator.estimate_density(Particles);
+  estimator.estimate_acceleration(Particles);
   std::for_each( // std::execution::par_unseq,
       particles, particles + numParticles, [&](Particle<Real, Dim>& iParticle) {
         /// @todo Boundary conditions!
@@ -145,13 +129,13 @@ int main() {
   }
   for (size_t n = 0; n < 3 * 250; ++n) {
     std::cout << n << std::endl;
-    // ClassicSmoothEstimator<double, 1> estimator{0.005};
-    GradHSmoothEstimator<double, 1> estimator{};
-    QuinticSmoothingKernel<double, 1> smoothingKernel;
-    AlphaBetaArtificialViscosity<double, 1> artificialViscosity;
+    // ClassicSmoothEstimator estimator{QuinticSmoothingKernel{},
+    //                                  EquationOfState<double>{},
+    //                                  AlphaBetaArtificialViscosity{}, 0.005};
+    GradHSmoothEstimator estimator{{}, GaussianSmoothingKernel{}};
     std::vector<Particle> particlesNew(particles);
     LeapfrogStep(particles.data(), particlesNew.data(), particles.size(),
-                 smoothingKernel, estimator, artificialViscosity);
+                 estimator);
   }
   std::ofstream output("particles.txt");
   std::sort(particles.begin(), particles.end(),
