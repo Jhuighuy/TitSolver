@@ -1,22 +1,19 @@
-#include <cmath>
-#include <vector>
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
-//#include <execution>
+#include <vector>
+// #include <execution>
 #include <cassert>
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-#define TIT_HOST
-#define TIT_DEVICE
-
 #include "TitParticle.hpp"
-#include "TitSmoothingKernels.hpp"
-#include "TitRootFinder.hpp"
-#include "TitParticleTree.hpp"
+#include "tit/sph/smooting_kernel.hpp"
+using namespace tit;
+using namespace tit::sph;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -24,138 +21,149 @@
 
 double Kappa = 1.0, Gamma = 1.4;
 
-template<typename real_t>
-class TEquationOfState {
+template<class Real>
+class EquationOfState {
+private:
+
+  Real _gamma = Real{1.4};
+
 public:
-};  // class EquationOfState
 
-template<typename real_t>
-inline real_t EquationOfState_Pressure(real_t density, real_t thermalEnergy) {
-  //return Kappa*std::pow(density, Gamma);
-  return (Gamma - 1.0)*density*thermalEnergy;
-}
-template<typename real_t>
-inline real_t EquationOfState_SpeedOfSound(real_t density, real_t pressure) {
-  return std::sqrt(Gamma*pressure/density);
-}
+  constexpr Real pressure(Real density, Real thermal_energy) const {
+    return (_gamma - 1.0) * density * thermal_energy;
+  }
 
-#include "TitSmoothEstimator.hpp"
+  constexpr Real sound_speed(Real density, Real pressure) const {
+    return sqrt(_gamma * pressure / density);
+  }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+}; // class EquationOfState
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+#include "tit/sph/smooth_estimator.hpp"
 
-/** 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/**
  ** @brief Estimate Density and Pressure.
  **/
-template<typename real_t, int nDim,
-     typename TParticleEstimator, typename TArtificialViscosity>
-void LeapfrogStep(TParticle<real_t>* particles, 
-          TParticle<real_t>* particlesTemp, size_t numParticles,
-      const TSmoothingKernel<real_t, nDim>& smoothingKernel,
-      const TParticleEstimator& estimator,
-      const TArtificialViscosity& artificialViscosity) {
+template<class Real, dim_t Dim, class ParticleEstimator,
+         class ArtificialViscosity>
+void LeapfrogStep(Particle<Real, Dim>* particles,
+                  Particle<Real, Dim>* particlesTemp, size_t numParticles,
+                  const SmoothingKernel<Real, Dim>& smoothingKernel,
+                  const ParticleEstimator& estimator,
+                  const ArtificialViscosity& artificialViscosity) {
   const double courantFactor = 0.1;
-  double timeStep = courantFactor*0.005,//estimator.m_KernelWidth, 
-       halfTimeStep = 0.5*timeStep;
+  double timeStep = courantFactor * 0.005, halfTimeStep = 0.5 * timeStep;
 #if 1
-  TParticleArray<real_t, nDim> Particles{particles, numParticles};
+  EquationOfState<Real> eos{};
+  ParticleArray<Real, Dim> Particles{particles, numParticles};
   Particles.SortParticles();
-  estimator.EstimateDensity(Particles, smoothingKernel);
-  estimator.EstimateAcceleration(Particles, smoothingKernel, artificialViscosity);
-  std::for_each(//std::execution::par_unseq,
-          particles, particles+numParticles, [&](Particle& iParticle) {
-    /// @todo Boundary conditions!
-    if ((&iParticle - particles) <= 100) return;
-    if (numParticles-(&iParticle - particles) <= 10) return;
-    iParticle.Velocity += timeStep*iParticle.VelocityDerivative;
-    iParticle.Position += timeStep*iParticle.Velocity;
-    iParticle.InternalEnergy += timeStep*iParticle.InternalEnergyDerivative;
-  });
+  estimator.estimate_density(Particles, smoothingKernel, eos);
+  estimator.estimate_acceleration(Particles, smoothingKernel,
+                                  artificialViscosity);
+  std::for_each( // std::execution::par_unseq,
+      particles, particles + numParticles, [&](Particle<Real, Dim>& iParticle) {
+        /// @todo Boundary conditions!
+        if ((&iParticle - particles) <= 100) return;
+        if (numParticles - (&iParticle - particles) <= 10) return;
+        iParticle.velocity += timeStep * iParticle.acceleration;
+        iParticle.position += timeStep * iParticle.velocity;
+        iParticle.thermal_energy += timeStep * iParticle.thermal_energy_deriv;
+      });
 #else
   SortParticles(particles, numParticles);
-  estimator.EstimateDensity(particles, numParticles, smoothingKernel);
-  estimator.EstimateAcceleration(particles, numParticles, smoothingKernel, artificialViscosity);
-  std::for_each_n(std::execution::par_unseq,
-          particles, numParticles, [&](const Particle& iParticle) {
-    /// @todo Boundary conditions!
-    if ((&iParticle - particles) <= 100) return;
-    Particle& iParticleTemp = *(particlesTemp + (&iParticle - particles));
-    // Extrapolate position and velocity.
-    iParticleTemp.Position = iParticle.Position + halfTimeStep*iParticle.Velocity;
-    iParticleTemp.Velocity = iParticle.Velocity + halfTimeStep*iParticle.Acceleration;
-    //iParticleTemp.ThermalEnergy = iParticle.ThermalEnergy + halfTimeStep*iParticle.Heating;
-    /// @todo Extrapolate hydrodynamical properties (... what?).
-  });
+  estimator.estimate_density(particles, numParticles, smoothingKernel);
+  estimator.estimate_acceleration(particles, numParticles, smoothingKernel,
+                                  artificialViscosity);
+  std::for_each_n(
+      std::execution::par_unseq, particles, numParticles,
+      [&](const Particle& iParticle) {
+        /// @todo Boundary conditions!
+        if ((&iParticle - particles) <= 100) return;
+        Particle& iParticleTemp = *(particlesTemp + (&iParticle - particles));
+        // Extrapolate position and velocity.
+        iParticleTemp.position =
+            iParticle.position + halfTimeStep * iParticle.velocity;
+        iParticleTemp.velocity =
+            iParticle.velocity + halfTimeStep * iParticle.acceleration;
+        // iParticleTemp.ThermalEnergy = iParticle.ThermalEnergy +
+        // halfTimeStep*iParticle.Heating;
+        /// @todo Extrapolate hydrodynamical properties (... what?).
+      });
   SortParticles(particlesTemp, numParticles);
-  estimator.EstimateDensity(particlesTemp, numParticles, smoothingKernel);
-  estimator.EstimateAcceleration(particlesTemp, numParticles, smoothingKernel, artificialViscosity);
-  std::for_each_n(std::execution::par_unseq,
-          particles, numParticles, [&](Particle& iParticle) {
-    /// @todo Boundary conditions!
-    if ((&iParticle - particles) <= 100) return;
-    if (numParticles-(&iParticle - particles) <= 10) return;
-    Particle& iParticleTemp = *(particlesTemp + (&iParticle - particles));
-    // Update position and velocity.
-    iParticleTemp.Velocity = iParticle.Velocity;
-    iParticle.Velocity = iParticleTemp.Velocity + timeStep*iParticleTemp.Acceleration;
-    iParticle.Position += halfTimeStep*(iParticle.Velocity + iParticleTemp.Velocity);
-    iParticle.ThermalEnergy += timeStep*iParticle.Heating;
-  });
+  estimator.estimate_density(particlesTemp, numParticles, smoothingKernel);
+  estimator.estimate_acceleration(particlesTemp, numParticles, smoothingKernel,
+                                  artificialViscosity);
+  std::for_each_n(
+      std::execution::par_unseq, particles, numParticles,
+      [&](Particle& iParticle) {
+        /// @todo Boundary conditions!
+        if ((&iParticle - particles) <= 100) return;
+        if (numParticles - (&iParticle - particles) <= 10) return;
+        Particle& iParticleTemp = *(particlesTemp + (&iParticle - particles));
+        // Update position and velocity.
+        iParticleTemp.velocity = iParticle.velocity;
+        iParticle.velocity =
+            iParticleTemp.velocity + timeStep * iParticleTemp.acceleration;
+        iParticle.position +=
+            halfTimeStep * (iParticle.velocity + iParticleTemp.velocity);
+        iParticle.ThermalEnergy += timeStep * iParticle.Heating;
+      });
 #endif
-}   // LeapfrogStep
+} // LeapfrogStep
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 int main() {
-  std::cout.precision(std::numeric_limits<double>::max_digits10);
-  std::cout << std::sqrt(Pi<double>)-SqrtPi<double> << std::endl;
-  //std::cout << FindRoot(0.0, 1.5, 
-  //  [](double x) { return 4*x-exp(x); }) << std::endl;
-  //return 0;
+  using Particle = ::Particle<double, 1>;
 
   std::vector<Particle> particles;
   for (size_t i = 0; i < 1600; ++i) {
     Particle particle;
-    particle.Mass = 1.0/1600;
-    particle.KernelWidth = 0.001;
-    particle.InternalEnergy = 1.0/0.4;
-    particle.Position = i/1600.0;
-    particles.push_back(particle); 
+    particle.mass = 1.0 / 1600;
+    particle.width = 0.001;
+    particle.thermal_energy = 1.0 / 0.4;
+    particle.position = i / 1600.0;
+    particles.push_back(particle);
   }
   for (size_t i = 0; i < 200; ++i) {
     Particle particle;
-    particle.Mass = 1.0/1600; 
-    particle.KernelWidth = 0.001;  
-    particle.InternalEnergy = 0.1/(0.4*0.125);
-    particle.Position = 1.0 + i/200.0;
+    particle.mass = 1.0 / 1600;
+    particle.width = 0.001;
+    particle.thermal_energy = 0.1 / (0.4 * 0.125);
+    particle.position = 1.0 + i / 200.0;
     particles.push_back(particle);
   }
-  for (size_t n = 0; n < 3*250; ++n) {
-    TGradHSmoothEstimator<double, 1> estimator;
-    TCubicSmoothingKernel<double, 1> smoothingKernel;
-    TArtificialViscosity_AlphaBeta<double, 1> artificialViscosity;
+  for (size_t n = 0; n < 3 * 250; ++n) {
+    std::cout << n << std::endl;
+    // ClassicSmoothEstimator<double, 1> estimator{0.005};
+    GradHSmoothEstimator<double, 1> estimator{};
+    QuinticSmoothingKernel<double, 1> smoothingKernel;
+    AlphaBetaArtificialViscosity<double, 1> artificialViscosity;
     std::vector<Particle> particlesNew(particles);
-    LeapfrogStep(particles.data(), particlesNew.data(), particles.size(), 
-           smoothingKernel, estimator, artificialViscosity);
+    LeapfrogStep(particles.data(), particlesNew.data(), particles.size(),
+                 smoothingKernel, estimator, artificialViscosity);
   }
   std::ofstream output("particles.txt");
-  std::sort(particles.begin(), particles.end(), [&](const Particle& p, const Particle& q) {
-    return Less(p.Position, q.Position);
-  }); 
+  std::sort(particles.begin(), particles.end(),
+            [&](const Particle& p, const Particle& q) {
+              return p.position < q.position;
+            });
   for (const Particle& particle : particles) {
-    output << particle.Position << " " << particle.Density << " ";
-    output << particle.Velocity << " ";
-    output << particle.Pressure << " ";
-    output << particle.InternalEnergy << " ";
-    output << particle.KernelWidth << " ";
+    output << particle.position << " " << particle.density << " ";
+    output << particle.velocity << " ";
+    output << particle.pressure << " ";
+    output << particle.thermal_energy_deriv << " ";
+    output << particle.width << " ";
     output << std::endl;
   }
   return 0;
