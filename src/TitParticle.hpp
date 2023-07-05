@@ -29,119 +29,141 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*\
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
-\*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template<class Real, dim_t Dim>
-class Particle {
-public:
-
-  /** Particle mass. */
-  Real mass;
-
-  /** Particle width. */
-  Real width;
-
-  /** Particle density. */
-  Real density;
-  /** Particle density derivative with respect to particle width. */
-  Real density_width_deriv;
-
-  /** Particle pressure. */
-  Real pressure;
-
-  /** Particle sound speed. */
-  Real sound_speed;
-
-  /** Particle internal (thermal) energy. */
-  Real thermal_energy;
-  /** Particle internal (thermal) energy time derivative. */
-  Real thermal_energy_deriv;
-
-  /** Perticle position. */
-  Point<Real, Dim> position;
-  /** Perticle velocity. */
-  Vec<Real, Dim> velocity;
-  /** Perticle acceleration. */
-  Vec<Real, Dim> acceleration;
-
-}; // struct Particle
-
+/** Particle properties accesstors. */
 namespace particle_accessors {
 
+  /** Particle mass. */
   inline constexpr struct {
     constexpr auto& operator[](auto a) const noexcept {
       return a->mass;
     }
   } m;
 
+  /** Particle width. */
   inline constexpr struct {
     constexpr auto& operator[](auto a) const noexcept {
       return a->width;
     }
   } h;
 
+  /** Particle density. */
   inline constexpr struct {
     constexpr auto& operator[](auto a) const noexcept {
       return a->density;
     }
   } rho;
+  /** WHAT AM I??? */
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
-      return a->density_width_deriv;
+    constexpr auto& operator[](auto a) const noexcept {
+      return a->omega;
     }
-  } drho_dh;
+  } Omega;
 
+  /** Particle pressure. */
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
+    constexpr auto& operator[](auto a) const noexcept {
       return a->pressure;
     }
   } p;
+  /** Particle sound speed. */
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
+    constexpr auto& operator[](auto a) const noexcept {
       return a->sound_speed;
     }
-  } cs;
+  } cs, sqrt_dp_drho;
 
+  /** Particle internal (thermal) energy. */
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
+    constexpr auto& operator[](auto a) const noexcept {
       return a->thermal_energy;
     }
   } eps;
+  /** Particle internal (thermal) energy time derivative. */
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
+    constexpr auto& operator[](auto a) const noexcept {
       return a->thermal_energy_deriv;
     }
   } deps_dt;
 
+  /** Particle position. */
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
+    constexpr auto& operator[](auto a) const noexcept {
       return a->position;
     }
-    constexpr auto operator[](auto& a, auto& b) const noexcept {
+#ifndef __INTELLISENSE__
+    constexpr auto operator[](auto a, auto b) const noexcept {
       return a->position - b->position;
     }
+#endif
   } r;
+  /** Particle velocity. */
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
+    constexpr auto& operator[](auto a) const noexcept {
       return a->velocity;
     }
-    constexpr auto operator[](auto& a, auto& b) const noexcept {
+#ifndef __INTELLISENSE__
+    constexpr auto operator[](auto a, auto b) const noexcept {
       return a->velocity - b->velocity;
     }
+#endif
   } v, dr_dt;
+  /** Particle acceleration. */
   inline constexpr struct {
-    constexpr auto& operator[](auto& a) const noexcept {
+    constexpr auto& operator[](auto a) const noexcept {
       return a->acceleration;
     }
   } a, dv_dt, d2r_dt2;
+  /** Particle velocity divergence. */
+  inline constexpr struct {
+    constexpr auto& operator[](auto a) const noexcept {
+      return a->velocity_divergence;
+    }
+  } div_v;
+  /** Particle velocity curl. */
+  inline constexpr struct {
+    constexpr auto& operator[](auto a) const noexcept {
+      return a->velocity_curl;
+    }
+  } curl_v;
+
+  inline constexpr struct {
+    constexpr auto& operator[](auto a) const noexcept {
+      return a->alpha;
+    }
+  } alpha;
+  inline constexpr struct {
+    constexpr auto& operator[](auto a) const noexcept {
+      return a->alpha_deriv;
+    }
+  } dalpha_dt;
 
 } // namespace particle_accessors
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*\
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
-\*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+template<class Real, dim_t Dim>
+struct Particle {
+  bool fixed;
+  Real mass;
+  Real width;
+  Real density;
+  Real omega;
+  Real pressure;
+  Real sound_speed;
+  Real thermal_energy;
+  Real thermal_energy_deriv;
+  Point<Real, Dim> position;
+  Vec<Real, Dim> velocity;
+  Vec<Real, Dim> acceleration;
+  Real velocity_divergence;
+  Vec<Real, 3> velocity_curl;
+  Real alpha;
+  Real alpha_deriv;
+}; // struct Particle
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template<class Real, dim_t Dim>
 struct ParticleArray {

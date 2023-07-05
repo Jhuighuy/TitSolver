@@ -24,7 +24,7 @@
 
 #include "TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
-#include "tit/sph/smooting_kernel.hpp"
+#include "tit/sph/smooth_kernel.hpp"
 #include "tit/utils/math.hpp"
 #include "tit/utils/vec.hpp"
 
@@ -38,44 +38,27 @@ namespace tit::sph {
 /******************************************************************************\
  ** The particle estimator with a fixed kernel width.
 \******************************************************************************/
-template<class EquationOfState = GasEquationOfState,
-         class SmoothingKernel = CubicSmoothingKernel,
-         class ArtificialViscosity = AlphaBetaArtificialViscosity>
-  requires std::is_object_v<EquationOfState> &&
-           std::is_object_v<SmoothingKernel> &&
+template<class EquationOfState = GasEquationOfState, class Kernel = CubicKernel,
+         class ArtificialViscosity = BalsaraArtificialViscosity>
+  requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
-class ClassicSmoothEstimator final {
+class ClassicSmoothEstimator {
 private:
 
   EquationOfState _eos;
-  SmoothingKernel _kernel;
+  Kernel _kernel;
   ArtificialViscosity _viscosity;
   std::optional<real_t> _kernel_width;
 
 public:
 
   /** Initialize particle estimator. */
-  constexpr explicit ClassicSmoothEstimator(
-      EquationOfState eos = {}, SmoothingKernel kernel = {},
+  constexpr ClassicSmoothEstimator(
+      EquationOfState eos = {}, Kernel kernel = {},
       ArtificialViscosity viscosity = {},
       std::optional<real_t> kernel_width = std::nullopt)
       : _eos{std::move(eos)}, _kernel{std::move(kernel)},
         _viscosity{std::move(viscosity)}, _kernel_width{kernel_width} {}
-
-  /** Estimator equation of state. */
-  constexpr const EquationOfState& eos() const noexcept {
-    return _eos;
-  }
-
-  /** Estimator kernel. */
-  constexpr const SmoothingKernel& kernel() const noexcept {
-    return _kernel;
-  }
-
-  /** Estimator artificial viscosity scheme. */
-  constexpr const ArtificialViscosity& viscosity() const noexcept {
-    return _viscosity;
-  }
 
   /** Estimate density, kernel width, pressure and sound speed. */
   template<class ParticleCloud>
@@ -83,24 +66,42 @@ public:
     using namespace particle_accessors;
     const auto h_ab = *_kernel_width;
     const auto search_radius = _kernel.radius(h_ab);
+    // Compute density, pressure and sound speed.
     particles.for_each([&](auto a) {
       h[a] = h_ab;
       rho[a] = {};
-      particles.nearby(a, search_radius, [&](auto b) { //
+      particles.nearby(a, search_radius, [&](auto b) {
         rho[a] += m[b] * _kernel(r[a, b], h_ab);
       });
       p[a] = _eos.pressure(rho[a], eps[a]);
       cs[a] = _eos.sound_speed(rho[a], p[a]);
     });
+    // Compute velocity divergence and curl.
+    particles.for_each([&](auto a) {
+      div_v[a] = {};
+      curl_v[a] = {};
+      particles.nearby(a, search_radius, [&](auto b) { //
+        const auto grad_ab = _kernel.grad(r[a, b], h_ab);
+        // clang-format off
+        div_v[a] += m[b] * dot(v[a] / pow2(rho[a]) +
+                               v[b] / pow2(rho[b]), grad_ab);
+        curl_v[a] -= m[b] * cross(v[a] / pow2(rho[a]) +
+                                  v[b] / pow2(rho[b]), grad_ab);
+        // clang-format on
+      });
+      div_v[a] *= rho[a];
+      curl_v[a] *= rho[a];
+    });
   }
 
   /** Estimate acceleration and thermal heating. */
   template<class ParticleCloud>
-  constexpr void estimate_acceleration(ParticleCloud& particles) const {
+  constexpr void estimate_forces(ParticleCloud& particles) const {
     using namespace particle_accessors;
-    const auto h = _kernel_width;
+    const auto h = *_kernel_width;
     const auto search_radius = _kernel.radius(h);
     particles.for_each([&](auto a) {
+      // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
       deps_dt[a] = {};
       particles.nearby(a, search_radius, [&](auto b) {
@@ -114,6 +115,12 @@ public:
                               Pi_ab) * dot(grad_ab, v[a, b]);
         // clang-format on
       });
+      // Compute Morris-Monaghan switch forces.
+      // TODO: move me to the switch class once we have an equation system.
+      const auto sigma = 0.2, alpha_min = 0.1;
+      const auto S_a = positive(-div_v[a]);
+      const auto tau_a = sigma * h[a] * cs[a];
+      dalpha_dt[a] = S_a - (alpha[a] - alpha_min) / tau_a;
     });
   }
 
@@ -124,92 +131,103 @@ public:
 /******************************************************************************\
  ** The particle estimator with a variable kernel width (Grad-H).
 \******************************************************************************/
-template<class EquationOfState = GasEquationOfState,
-         class SmoothingKernel = CubicSmoothingKernel,
-         class ArtificialViscosity = AlphaBetaArtificialViscosity>
-  requires std::is_object_v<EquationOfState> &&
-           std::is_object_v<SmoothingKernel> &&
+template<class EquationOfState = GasEquationOfState, class Kernel = CubicKernel,
+         class ArtificialViscosity = MorrisMonaghanArtificialViscosity>
+  requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
-class GradHSmoothEstimator final {
+class GradHSmoothEstimator {
 private:
 
   EquationOfState _eos;
-  SmoothingKernel _kernel;
+  Kernel _kernel;
   ArtificialViscosity _viscosity;
   real_t _coupling;
 
 public:
 
   /** Initialize particle estimator. */
-  constexpr explicit GradHSmoothEstimator( //
-      EquationOfState eos = {}, SmoothingKernel kernel = {},
-      ArtificialViscosity viscosity = {}, real_t coupling = 3.0) noexcept
+  constexpr GradHSmoothEstimator( //
+      EquationOfState eos = {}, Kernel kernel = {},
+      ArtificialViscosity viscosity = {}, real_t coupling = 1.0) noexcept
       : _kernel{std::move(kernel)}, _eos{std::move(eos)},
         _viscosity{std::move(viscosity)}, _coupling{coupling} {}
-
-  /** Estimator equation of state. */
-  constexpr const EquationOfState& eos() const noexcept {
-    return _eos;
-  }
-
-  /** Estimator kernel. */
-  constexpr const SmoothingKernel& kernel() const noexcept {
-    return _kernel;
-  }
-
-  /** Estimator artificial viscosity scheme. */
-  constexpr const ArtificialViscosity& viscosity() const noexcept {
-    return _viscosity;
-  }
 
   /** Estimate density, kernel width, pressure and sound speed. */
   template<class ParticleCloud>
   constexpr void estimate_density(ParticleCloud& particles) const {
     using namespace particle_accessors;
+    // Compute width, density, pressure and sound speed.
+    const auto eta = _coupling;
     particles.for_each([&](auto a) {
-      // Solve rho(h) * h^d = coupling for h.
       const auto d = dim(r[a]);
+      // Solve zeta(h) = 0 for h, where:
+      // zeta(h) = Rho(h) - rho(h), Rho(h) = m * (eta / h)^d - desired density.
       newton(h[a], [&]() {
         rho[a] = {};
-        drho_dh[a] = {};
+        Omega[a] = {};
         const auto search_radius = _kernel.radius(h[a]);
         particles.nearby(a, search_radius, [&](auto b) {
           rho[a] += m[b] * _kernel(r[a, b], h[a]);
-          drho_dh[a] += m[b] * _kernel.radius_deriv(r[a, b], h[a]);
+          Omega[a] += m[b] * _kernel.radius_deriv(r[a, b], h[a]);
         });
-        const auto rho_expected = m[a] * pow(divide(_coupling, h[a]), d);
-        const auto drho_dh_expected = -d * rho_expected / h[a];
-        return std::pair{rho_expected - rho[a], drho_dh_expected - drho_dh[a]};
+        const auto Rho_a = m[a] * pow(eta / h[a], d);
+        const auto dRho_dh_a = -d * Rho_a / h[a];
+        const auto zeta_a = Rho_a - rho[a];
+        const auto dzeta_dh_a = dRho_dh_a - Omega[a];
+        Omega[a] = 1 - Omega[a] / dRho_dh_a;
+        return std::tuple{zeta_a, dzeta_dh_a};
       });
       p[a] = _eos.pressure(rho[a], eps[a]);
       cs[a] = _eos.sound_speed(rho[a], p[a]);
+    });
+    // Compute velocity divergence and curl.
+    particles.for_each([&](auto a) {
+      div_v[a] = {};
+      curl_v[a] = {};
+      const auto search_radius = _kernel.radius(h[a]);
+      particles.nearby(a, search_radius, [&](auto b) {
+        const auto grad_aba = _kernel.grad(r[a, b], h[a]);
+        const auto grad_abb = _kernel.grad(r[a, b], h[b]);
+        div_v[a] += m[b] * (dot(v[a] / pow2(rho[a]), grad_aba) +
+                            dot(v[b] / pow2(rho[b]), grad_abb));
+        curl_v[a] -= m[b] * (cross(v[a] / pow2(rho[a]), grad_aba) +
+                             cross(v[b] / pow2(rho[b]), grad_abb));
+      });
+      div_v[a] *= rho[a];
+      curl_v[a] *= rho[a];
     });
   }
 
   /** Estimate acceleration and thermal heating. */
   template<class ParticleCloud>
-  constexpr void estimate_acceleration(ParticleCloud& particles) const {
+  constexpr void estimate_forces(ParticleCloud& particles) const {
     using namespace particle_accessors;
     particles.for_each([&](auto a) {
+      // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
       deps_dt[a] = {};
       const auto d = dim(r[a]);
-      const auto Omega_a = 1 + h[a] / (d * rho[a]) * drho_dh[a];
       const auto search_radius = _kernel.radius(h[a]);
       particles.nearby(a, search_radius, [&](auto b) {
-        const auto Omega_b = 1 + h[b] / (d * rho[b]) * drho_dh[b];
         const auto Pi_ab = _viscosity.kinematic(a, b);
         const auto grad_aba = _kernel.grad(r[a, b], h[a]);
         const auto grad_abb = _kernel.grad(r[a, b], h[b]);
         const auto grad_ab = avg(grad_aba, grad_abb);
-        dv_dt[a] -= m[b] * (p[a] / (Omega_a * pow2(rho[a])) * grad_aba +
-                            p[b] / (Omega_b * pow2(rho[b])) * grad_abb +
+        dv_dt[a] -= m[b] * (p[a] / (Omega[a] * pow2(rho[a])) * grad_aba +
+                            p[b] / (Omega[b] * pow2(rho[b])) * grad_abb +
                             Pi_ab * grad_ab);
         // clang-format off
-        deps_dt[a] += m[b] * (p[a] / (Omega_a * pow2(rho[a])) * dot(grad_aba, v[a, b]) +
+        deps_dt[a] += m[b] * (p[a] / (Omega[a] * pow2(rho[a])) *
+                                                        dot(grad_aba, v[a, b]) +
                               Pi_ab * dot(grad_ab, v[a, b]));
         // clang-format on
       });
+      // Compute Morris-Monaghan switch forces.
+      // TODO: move me to the switch class once we have an equation system.
+      const auto sigma = 0.2, alpha_min = 0.1;
+      const auto S_a = positive(-div_v[a]);
+      const auto tau_a = sigma * h[a] * cs[a];
+      dalpha_dt[a] = S_a - (alpha[a] - alpha_min) / tau_a;
     });
   }
 

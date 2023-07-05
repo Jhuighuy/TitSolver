@@ -6,12 +6,12 @@
 // #include <execution>
 #include <cassert>
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #include "TitParticle.hpp"
-#include "tit/sph/smooting_kernel.hpp"
+#include "tit/sph/smooth_kernel.hpp"
 
 using namespace tit;
 using namespace tit::sph;
@@ -36,36 +36,25 @@ public:
 }; // class EquationOfState
 
 #include "tit/sph/smooth_estimator.hpp"
+#include "tit/sph/time_integrator.hpp"
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template<class Real, dim_t Dim, class ParticleEstimator>
-void LeapfrogStep(Particle<Real, Dim>* particles,
-                  Particle<Real, Dim>* particlesTemp, size_t numParticles,
-                  const ParticleEstimator& estimator) {
+template<class Real, dim_t Dim, class TimeIntegrator>
+void LeapfrogStep(Particle<Real, Dim>* particles, size_t numParticles,
+                  const TimeIntegrator& timeint) {
   const double courantFactor = 0.1;
-  double timeStep = courantFactor * 0.005, halfTimeStep = 0.5 * timeStep;
-#if 1
+  double timeStep = courantFactor * 0.0005, halfTimeStep = 0.5 * timeStep;
   ParticleArray<Real, Dim> Particles{particles, numParticles};
-  Particles.SortParticles();
-  estimator.estimate_density(Particles);
-  estimator.estimate_acceleration(Particles);
-  std::for_each( // std::execution::par_unseq,
-      particles, particles + numParticles, [&](Particle<Real, Dim>& iParticle) {
-        /// @todo Boundary conditions!
-        if ((&iParticle - particles) <= 100) return;
-        if (numParticles - (&iParticle - particles) <= 10) return;
-        iParticle.velocity += timeStep * iParticle.acceleration;
-        iParticle.position += timeStep * iParticle.velocity;
-        iParticle.thermal_energy += timeStep * iParticle.thermal_energy_deriv;
-      });
-#else
+#if 1
+  timeint.integrate(timeStep, Particles);
+#elif 0
   SortParticles(particles, numParticles);
   estimator.estimate_density(particles, numParticles, smoothingKernel);
-  estimator.estimate_acceleration(particles, numParticles, smoothingKernel,
-                                  artificialViscosity);
+  estimator.estimate_forces(particles, numParticles, smoothingKernel,
+                            artificialViscosity);
   std::for_each_n(
       std::execution::par_unseq, particles, numParticles,
       [&](const Particle& iParticle) {
@@ -83,8 +72,8 @@ void LeapfrogStep(Particle<Real, Dim>* particles,
       });
   SortParticles(particlesTemp, numParticles);
   estimator.estimate_density(particlesTemp, numParticles, smoothingKernel);
-  estimator.estimate_acceleration(particlesTemp, numParticles, smoothingKernel,
-                                  artificialViscosity);
+  estimator.estimate_forces(particlesTemp, numParticles, smoothingKernel,
+                            artificialViscosity);
   std::for_each_n(
       std::execution::par_unseq, particles, numParticles,
       [&](Particle& iParticle) {
@@ -113,30 +102,34 @@ int main() {
   std::vector<Particle> particles;
   for (size_t i = 0; i < 1600; ++i) {
     Particle particle;
+    memset(&particle, 0, sizeof(particle));
+    particle.fixed = i <= 100;
     particle.mass = 1.0 / 1600;
     particle.width = 0.001;
     particle.thermal_energy = 1.0 / 0.4;
     particle.position = i / 1600.0;
+    particle.alpha = 0.1;
     particles.push_back(particle);
   }
   for (size_t i = 0; i < 200; ++i) {
     Particle particle;
+    memset(&particle, 0, sizeof(particle));
+    particle.fixed = i >= 190;
     particle.mass = 1.0 / 1600;
     particle.width = 0.001;
     particle.thermal_energy = 0.1 / (0.4 * 0.125);
+    particle.alpha = 0.1;
     particle.position = 1.0 + i / 200.0;
     particles.push_back(particle);
   }
-  for (size_t n = 0; n < 3 * 250; ++n) {
+
+  GradHSmoothEstimator estimator{};
+  EulerIntegrator timeint{std::move(estimator)};
+  for (size_t n = 0; n < 3 * 2500; ++n) {
     std::cout << n << std::endl;
-    // ClassicSmoothEstimator estimator{QuinticSmoothingKernel{},
-    //                                  EquationOfState<double>{},
-    //                                  AlphaBetaArtificialViscosity{}, 0.005};
-    GradHSmoothEstimator estimator{{}, GaussianSmoothingKernel{}};
-    std::vector<Particle> particlesNew(particles);
-    LeapfrogStep(particles.data(), particlesNew.data(), particles.size(),
-                 estimator);
+    LeapfrogStep(particles.data(), particles.size(), timeint);
   }
+
   std::ofstream output("particles.txt");
   std::sort(particles.begin(), particles.end(),
             [&](const Particle& p, const Particle& q) {

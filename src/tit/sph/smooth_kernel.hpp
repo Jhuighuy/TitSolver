@@ -36,7 +36,7 @@ namespace tit::sph {
  ** Abstract smoothing kernel.
 \******************************************************************************/
 template<class Derived>
-class SmoothingKernel {
+class Kernel {
 private:
 
   constexpr const Derived& _self() const noexcept {
@@ -49,7 +49,8 @@ public:
   template<class Real>
   constexpr Real radius(Real h) const noexcept {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
-    return _self().template unit_radius<Real>() * h;
+    const auto radius = _self().template unit_radius<Real>();
+    return radius * h;
   }
 
   /** Value of the smoothing kernel at point. */
@@ -58,8 +59,8 @@ public:
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
     const auto q = h_inverse * norm(r);
-    return pow(h_inverse, Dim) * _self().template weight<Real, Dim>() *
-           _self().unit_value(q);
+    const auto w = _self().template weight<Real, Dim>();
+    return pow(h_inverse, Dim) * w * _self().unit_value(q);
   }
 
   /** Spatial gradient value of the smoothing kernel at point. */
@@ -68,8 +69,8 @@ public:
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
     const auto q = h_inverse * norm(r);
-    return pow(h_inverse, Dim + 2) * _self().template weight<Real, Dim>() *
-           safe_divide(_self().unit_deriv(q), q) * r;
+    const auto w = _self().template weight<Real, Dim>();
+    return pow(h_inverse, Dim + 1) * w * _self().unit_deriv(q) * normalize(r);
   }
 
   /** Width derivative value of the smoothing kernel at point. */
@@ -78,19 +79,19 @@ public:
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
     const auto q = h_inverse * norm(r);
-    return pow(h_inverse, Dim + 1) * _self().template weight<Real, Dim>() *
+    const auto w = _self().template weight<Real, Dim>();
+    return pow(h_inverse, Dim + 1) * w *
            (-Dim * _self().unit_value(q) - q * _self().unit_deriv(q));
   }
 
-}; // class SmoothingKernel
+}; // class Kernel
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
  ** The gaussian smoothing kernel.
 \******************************************************************************/
-class GaussianSmoothingKernel final :
-    public SmoothingKernel<GaussianSmoothingKernel> {
+class GaussianKernel final : public Kernel<GaussianKernel> {
 public:
 
   /** Kernel weight. */
@@ -103,7 +104,10 @@ public:
   /** Unit support radius. */
   template<class Real>
   static consteval Real unit_radius() noexcept {
-    // Value at this point is approx. 10^-38 for float and 10^-308 for double.
+    // We truncate gaussian at the point, where it reaches minimal non-zero
+    // value for the current floating-point type. It approximately is 9.3454
+    // for float and 26.6157 for double. Gaussian value at this point is
+    // approximately 10^-38 for float and 10^-308 for double.
     return sqrt(-log(std::numeric_limits<Real>::min()));
   }
 
@@ -119,15 +123,14 @@ public:
     return -Real{2.0} * q * exp(-pow2(q));
   }
 
-}; // class GaussianSmoothingKernel
+}; // class GaussianKernel
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
  ** The cubic B-spline (M4) smoothing kernel.
 \******************************************************************************/
-class CubicSmoothingKernel final :
-    public SmoothingKernel<CubicSmoothingKernel> {
+class CubicKernel final : public Kernel<CubicKernel> {
 public:
 
   /** Kernel weight. */
@@ -172,32 +175,31 @@ public:
     return Real{0.0};
   }
 
-}; // class CubicSmoothingKernel
+}; // class CubicKernel
 
 /******************************************************************************\
  ** The cubic B-spline (M4) smoothing kernel
  ** with Thomas-Couchman (1992) modified derivative.
 \******************************************************************************/
-class ThomasCouchmanSmoothingKernel final :
-    public SmoothingKernel<ThomasCouchmanSmoothingKernel> {
+class ThomasCouchmanKernel final : public Kernel<ThomasCouchmanKernel> {
 public:
 
   /** Kernel weight. */
   template<class Real, dim_t Dim>
   static consteval Real weight() noexcept {
-    return CubicSmoothingKernel::weight<Real, Dim>();
+    return CubicKernel::weight<Real, Dim>();
   }
 
   /** Unit support radius. */
   template<class Real>
   static consteval Real unit_radius() noexcept {
-    return CubicSmoothingKernel::unit_radius<Real>();
+    return CubicKernel::unit_radius<Real>();
   }
 
   /** Value of the unit smoothing kernel at a point. */
   template<class Real>
   static constexpr Real unit_value(Real q) noexcept {
-    return CubicSmoothingKernel::unit_value(q);
+    return CubicKernel::unit_value(q);
   }
 
   /** Derivative value of the unit smoothing kernel at a point. */
@@ -215,15 +217,14 @@ public:
     return Real{0.0};
   }
 
-}; // class ThomasCouchmanSmoothingKernel
+}; // class ThomasCouchmanKernel
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
  ** The quartic B-spline (M5) smoothing kernel.
 \******************************************************************************/
-class QuarticSmoothingKernel final :
-    public SmoothingKernel<QuarticSmoothingKernel> {
+class QuarticKernel final : public Kernel<QuarticKernel> {
 public:
 
   /** Kernel weight. */
@@ -279,15 +280,14 @@ public:
     return Real{0.0};
   }
 
-}; // class QuarticSmoothingKernel
+}; // class QuarticKernel
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
  ** The quintic B-spline (M6) smoothing kernel.
 \******************************************************************************/
-class QuinticSmoothingKernel final :
-    public SmoothingKernel<QuinticSmoothingKernel> {
+class QuinticKernel final : public Kernel<QuinticKernel> {
 public:
 
   /** Kernel weight. */
@@ -320,7 +320,7 @@ public:
              Real{6.0} * pow5(Real{2.0} - q);
     }
     if (Real{2.0} <= q && q < Real{3.0}) {
-      return pow5(Real{3.0} - q);
+      return Real{1.0} * pow5(Real{3.0} - q);
     }
     return Real{0.0};
   }
@@ -343,7 +343,7 @@ public:
     return Real{0.0};
   }
 
-}; // class QuinticSmoothingKernel
+}; // class QuinticKernel
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

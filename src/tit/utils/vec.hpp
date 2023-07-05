@@ -59,6 +59,12 @@ public:
 template<class Num, dim_t Dim>
 using Point = Vec<Num, Dim>;
 
+/** Vector size. */
+template<class Num, dim_t Dim>
+constexpr auto dim([[maybe_unused]] Vec<Num, Dim> a) noexcept {
+  return Dim;
+}
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Vector input operator. */
@@ -217,10 +223,13 @@ constexpr auto normalize(Vec<Num, Dim> a) noexcept {
   return safe_divide(a, norm(a));
 }
 
-/** Vector size. */
-template<class Num, dim_t Dim>
-constexpr auto dim([[maybe_unused]] Vec<Num, Dim> a) noexcept {
-  return Dim;
+/** Vector cross prduct. */
+template<class NumA, class NumB, dim_t Dim>
+constexpr auto cross(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
+  static_assert(Dim == 1, "MD cases are not yet implemented!");
+  Vec<add_result_t<mul_result_t<NumA, NumB>>, 3> r;
+  for (dim_t i = 0; i < 3; ++i) r[i] = 0.0;
+  return r;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

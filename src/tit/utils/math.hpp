@@ -110,11 +110,24 @@ template<class Num>
   requires std::integral<Num> || std::floating_point<Num>
 constexpr bool is_zero(Num value) noexcept {
   if constexpr (std::integral<Num>) {
-    return value == 0;
+    return value == Num{};
   } else if constexpr (std::floating_point<Num>) {
     return value * value < std::numeric_limits<Num>::epsilon();
   }
 }
+
+/** Positive value or zero. */
+template<class Num>
+constexpr Num positive(Num value) noexcept {
+  return std::max(Num{}, value);
+}
+/** Negative value or zero. */
+template<class Num>
+constexpr Num negative(Num value) noexcept {
+  return std::min(Num{}, value);
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Inverse number. */
 template<class Real>
