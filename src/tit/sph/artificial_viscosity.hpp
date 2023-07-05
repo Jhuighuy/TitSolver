@@ -31,16 +31,15 @@ namespace tit::sph {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Dummy artificial viscosity scheme.
+ ** Zero artificial viscosity scheme.
 \******************************************************************************/
-class ZeroArtificialViscosity final {
+class ZeroArtificialViscosity {
 public:
 
   /** Compute artificial kinematic viscosity. */
-  template<class ConstParticleView>
-  static consteval auto
-  kinematic([[maybe_unused]] ConstParticleView a,
-            [[maybe_unused]] ConstParticleView b) noexcept {
+  template<class ParticleView>
+  static consteval auto kinematic([[maybe_unused]] ParticleView a,
+                                  [[maybe_unused]] ParticleView b) noexcept {
     return 0.0;
   }
 
@@ -49,9 +48,9 @@ public:
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** The Alpha-Beta artificial viscosity scheme.
+ ** Alpha-Beta artificial viscosity scheme.
 \******************************************************************************/
-class AlphaBetaArtificialViscosity final {
+class AlphaBetaArtificialViscosity {
 private:
 
   real_t _alpha, _beta, _eps;
@@ -59,13 +58,13 @@ private:
 public:
 
   /** Initialize artificial viscosity scheme. */
-  constexpr explicit AlphaBetaArtificialViscosity( //
+  constexpr AlphaBetaArtificialViscosity( //
       real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
       : _alpha{alpha}, _beta{beta}, _eps{eps} {}
 
   /** Compute artificial kinematic viscosity. */
-  template<class ConstParticleView>
-  constexpr auto kinematic(ConstParticleView a, ConstParticleView b) const {
+  template<class ParticleView>
+  constexpr auto kinematic(ParticleView a, ParticleView b) const {
     using namespace particle_accessors;
     if (dot(r[a, b], v[a, b]) >= 0.0) return real_t{0.0};
     const auto h_ab = avg(h[a], h[b]);
@@ -75,10 +74,65 @@ public:
     const auto mu_ab = h_ab * dot(r[a, b], v[a, b]) /
                              (norm2(r[a, b]) + _eps * pow2(h_ab));
     // clang-format on
-    return (-_alpha * cs_ab * mu_ab + _beta * pow2(mu_ab)) / rho_ab;
+    const auto Pi_ab = (-_alpha * cs_ab * mu_ab + _beta * pow2(mu_ab)) / rho_ab;
+    return Pi_ab;
   }
 
 }; // class AlphaBetaArtificialViscosity
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/******************************************************************************\
+ ** Alpha-Beta artificial viscosity scheme with Balsara switch.
+\******************************************************************************/
+class BalsaraArtificialViscosity : public AlphaBetaArtificialViscosity {
+public:
+
+  /** Initialize artificial viscosity scheme. */
+  constexpr BalsaraArtificialViscosity( //
+      real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
+      : AlphaBetaArtificialViscosity(alpha, beta, eps) {}
+
+  /** Compute artificial kinematic viscosity. */
+  template<class ParticleView>
+  constexpr auto kinematic(ParticleView a, ParticleView b) const {
+    using namespace particle_accessors;
+    const auto Pi_ab = AlphaBetaArtificialViscosity::kinematic(a, b);
+    if (is_zero(Pi_ab)) return Pi_ab;
+    const auto f = [](ParticleView c) {
+      return abs(div_v[c]) /
+             (abs(div_v[c]) + norm(curl_v[c]) + 0.0001 * cs[c] / h[c]);
+    };
+    const auto f_ab = avg(f(a), f(b));
+    return f_ab * Pi_ab;
+  }
+
+}; // class BalsaraArtificialViscosity
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/******************************************************************************\
+ ** Alpha-Beta artificial viscosity scheme with Morris-Monaghan switch.
+\******************************************************************************/
+class MorrisMonaghanArtificialViscosity : public AlphaBetaArtificialViscosity {
+public:
+
+  /** Initialize artificial viscosity scheme. */
+  constexpr MorrisMonaghanArtificialViscosity( //
+      real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
+      : AlphaBetaArtificialViscosity(alpha, beta, eps) {}
+
+  /** Compute artificial kinematic viscosity. */
+  template<class ParticleView>
+  constexpr auto kinematic(ParticleView a, ParticleView b) const {
+    using namespace particle_accessors;
+    const auto Pi_ab = AlphaBetaArtificialViscosity::kinematic(a, b);
+    if (is_zero(Pi_ab)) return Pi_ab;
+    const auto alpha_ab = avg(alpha[a], alpha[b]);
+    return alpha_ab * Pi_ab;
+  }
+
+}; // class MorrisMonaghanArtificialViscosity
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
