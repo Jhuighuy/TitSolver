@@ -32,7 +32,7 @@ namespace tit::sph {
 /******************************************************************************\
  ** Semi-implicit Euler time integrator.
 \******************************************************************************/
-template<class SmoothEstimator = GradHSmoothEstimator<>>
+template<class SmoothEstimator>
   requires std::is_object_v<SmoothEstimator>
 class EulerIntegrator {
 private:
@@ -41,13 +41,15 @@ private:
 
 public:
 
+  /** Construct time integrator. */
   constexpr EulerIntegrator(SmoothEstimator estimator = {})
       : _estimator{std::move(estimator)} {}
 
+  /** Make a step in time. */
   template<class Real, class ParticleCloud>
-  constexpr void integrate(Real dt, ParticleCloud& particles) const {
-    using namespace particle_accessors;
-    particles.SortParticles();
+  constexpr void step(Real dt, ParticleCloud& particles) const {
+    using namespace particle_fields;
+    particles.sort();
     _estimator.estimate_density(particles);
     _estimator.estimate_forces(particles);
     particles.for_each([&](auto a) {

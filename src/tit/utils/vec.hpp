@@ -41,7 +41,7 @@ class Vec final : public std::array<Num, Dim> {
 public:
 
   /** Fill-initialize the vector. */
-  constexpr explicit Vec(Num value = Num{}) {
+  constexpr Vec(Num value = Num{}) {
     this->fill(value);
   }
 
@@ -207,7 +207,6 @@ template<class Num, dim_t Dim>
 constexpr auto norm2(Vec<Num, Dim> a) noexcept {
   return dot(a, a);
 }
-
 /** Vector norm. */
 template<class Num, dim_t Dim>
 constexpr auto norm(Vec<Num, Dim> a) noexcept {
@@ -216,19 +215,21 @@ constexpr auto norm(Vec<Num, Dim> a) noexcept {
   if constexpr (Dim == 3) return hypot(a[0], a[1], a[2]);
   return sqrt(norm2(a));
 }
-
 /** Normalize vector. */
 template<class Num, dim_t Dim>
 constexpr auto normalize(Vec<Num, Dim> a) noexcept {
   return safe_divide(a, norm(a));
 }
 
-/** Vector cross prduct. */
+/** Vector cross product.
+ ** @returns 3D vector with a result of cross product. */
 template<class NumA, class NumB, dim_t Dim>
 constexpr auto cross(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
-  static_assert(Dim == 1, "MD cases are not yet implemented!");
-  Vec<add_result_t<mul_result_t<NumA, NumB>>, 3> r;
-  for (dim_t i = 0; i < 3; ++i) r[i] = 0.0;
+  static_assert(1 <= Dim && Dim <= 3);
+  Vec<sub_result_t<mul_result_t<NumA, NumB>>, 3> r{};
+  if constexpr (Dim == 3) r[0] = a[1] * b[2] - a[2] * b[1];
+  if constexpr (Dim == 3) r[1] = a[2] * b[0] - a[0] * b[2];
+  if constexpr (Dim >= 2) r[2] = a[0] * b[1] - a[1] * b[0];
   return r;
 }
 

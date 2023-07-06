@@ -24,6 +24,7 @@
 
 #include "TitParticle.hpp"
 #include "tit/utils/math.hpp"
+#include "tit/utils/meta.hpp"
 #include "tit/utils/vec.hpp"
 
 namespace tit::sph {
@@ -35,6 +36,9 @@ namespace tit::sph {
 \******************************************************************************/
 class ZeroArtificialViscosity {
 public:
+
+  /** Set of particle fields that is required. */
+  using required_fields = meta::Set<>;
 
   /** Compute artificial kinematic viscosity. */
   template<class ParticleView>
@@ -62,17 +66,24 @@ public:
       real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
       : _alpha{alpha}, _beta{beta}, _eps{eps} {}
 
+  /** Set of particle fields that is required. */
+  using required_fields = decltype([] {
+    using namespace particle_fields;
+    return meta::Set{rho, h, r, v, p, cs};
+  }());
+
   /** Compute artificial kinematic viscosity. */
   template<class ParticleView>
+    requires particle_view<ParticleView, required_fields>
   constexpr auto kinematic(ParticleView a, ParticleView b) const {
-    using namespace particle_accessors;
+    using namespace particle_fields;
     if (dot(r[a, b], v[a, b]) >= 0.0) return real_t{0.0};
     const auto h_ab = avg(h[a], h[b]);
     const auto rho_ab = avg(rho[a], rho[b]);
     const auto cs_ab = avg(cs[a], cs[b]);
     // clang-format off
     const auto mu_ab = h_ab * dot(r[a, b], v[a, b]) /
-                             (norm2(r[a, b]) + _eps * pow2(h_ab));
+                              (norm2(r[a, b]) + _eps * pow2(h_ab));
     // clang-format on
     const auto Pi_ab = (-_alpha * cs_ab * mu_ab + _beta * pow2(mu_ab)) / rho_ab;
     return Pi_ab;
@@ -83,21 +94,34 @@ public:
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Alpha-Beta artificial viscosity scheme with Balsara switch.
+ ** Artificial viscosity scheme with Balsara switch.
 \******************************************************************************/
-class BalsaraArtificialViscosity : public AlphaBetaArtificialViscosity {
+template<class ArtificialViscosity = AlphaBetaArtificialViscosity>
+class BalsaraArtificialViscosity {
+private:
+
+  ArtificialViscosity _base_viscosity;
+
 public:
 
   /** Initialize artificial viscosity scheme. */
-  constexpr BalsaraArtificialViscosity( //
-      real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
-      : AlphaBetaArtificialViscosity(alpha, beta, eps) {}
+  constexpr BalsaraArtificialViscosity(
+      ArtificialViscosity base_viscosity = {}) noexcept
+      : _base_viscosity{std::move(base_viscosity)} {}
+
+  /** Set of particle fields that is required. */
+  using required_fields = decltype([] {
+    using namespace particle_fields;
+    return meta::Set{h, cs, div_v, curl_v} |
+           required_fields_t<ArtificialViscosity>{};
+  }());
 
   /** Compute artificial kinematic viscosity. */
   template<class ParticleView>
+    requires particle_view<ParticleView, required_fields>
   constexpr auto kinematic(ParticleView a, ParticleView b) const {
-    using namespace particle_accessors;
-    const auto Pi_ab = AlphaBetaArtificialViscosity::kinematic(a, b);
+    using namespace particle_fields;
+    const auto Pi_ab = _base_viscosity.kinematic(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto f = [](ParticleView c) {
       return abs(div_v[c]) /
@@ -112,24 +136,50 @@ public:
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Alpha-Beta artificial viscosity scheme with Morris-Monaghan switch.
+ ** Artificial viscosity scheme with Morris-Monaghan switch.
 \******************************************************************************/
+template<class ArtificialViscosity = AlphaBetaArtificialViscosity>
 class MorrisMonaghanArtificialViscosity : public AlphaBetaArtificialViscosity {
+private:
+
+  real_t _sigma, _alpha_min;
+  ArtificialViscosity _base_viscosity;
+
 public:
 
   /** Initialize artificial viscosity scheme. */
   constexpr MorrisMonaghanArtificialViscosity( //
-      real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
-      : AlphaBetaArtificialViscosity(alpha, beta, eps) {}
+      real_t sigma = 0.2, real_t alpha_min = 0.1,
+      ArtificialViscosity base_viscosity = {}) noexcept
+      : _sigma{sigma}, _alpha_min{alpha_min}, //
+        _base_viscosity{std::move(base_viscosity)} {}
+
+  /** Set of particle fields that is required. */
+  using required_fields = decltype([] {
+    using namespace particle_fields;
+    return meta::Set{h, cs, div_v, alpha, dalpha_dt} |
+           required_fields_t<ArtificialViscosity>{};
+  }());
 
   /** Compute artificial kinematic viscosity. */
   template<class ParticleView>
+    requires particle_view<ParticleView, required_fields>
   constexpr auto kinematic(ParticleView a, ParticleView b) const {
-    using namespace particle_accessors;
-    const auto Pi_ab = AlphaBetaArtificialViscosity::kinematic(a, b);
+    using namespace particle_fields;
+    const auto Pi_ab = _base_viscosity.kinematic(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto alpha_ab = avg(alpha[a], alpha[b]);
     return alpha_ab * Pi_ab;
+  }
+
+  /** Estimate Morris-Monaghan switch forces. */
+  template<class ParticleView>
+    requires particle_view<ParticleView, required_fields>
+  constexpr auto switch_deriv(ParticleView a) const {
+    using namespace particle_fields;
+    const auto S_a = positive(-div_v[a]);
+    const auto tau_a = _sigma * h[a] * cs[a];
+    return S_a - (alpha[a] - _alpha_min) / tau_a;
   }
 
 }; // class MorrisMonaghanArtificialViscosity
