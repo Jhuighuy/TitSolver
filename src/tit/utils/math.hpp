@@ -159,14 +159,14 @@ constexpr auto safe_divide(Num value, Real divisor) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Find function rool using Newton's method.
+/** Find function rool using Newton-Raphson method.
  ** @returns True on success. */
 template<class Real, class Func>
   requires std::invocable<Func>
-constexpr bool newton(Real& x, const Func& f, //
-                      Real epsilon = Real{1e-9}, size_t max_iter = 10) {
+constexpr bool newton_raphson(Real& x, const Func& f, //
+                              Real epsilon = Real{1e-9}, size_t max_iter = 10) {
   for (size_t iter = 0; iter < max_iter; ++iter) {
-    const auto [y, df_dx] = f();
+    const auto [y, df_dx] = f(/*x*/);
     if (abs(y) < epsilon) return true;
     if (is_zero(df_dx)) break;
     x -= safe_divide(y, df_dx);

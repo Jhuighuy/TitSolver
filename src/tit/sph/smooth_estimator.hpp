@@ -24,8 +24,10 @@
 
 #include "TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
+#include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/smooth_kernel.hpp"
 #include "tit/utils/math.hpp"
+#include "tit/utils/meta.hpp"
 #include "tit/utils/vec.hpp"
 
 #include <optional>
@@ -38,8 +40,8 @@ namespace tit::sph {
 /******************************************************************************\
  ** The particle estimator with a fixed kernel width.
 \******************************************************************************/
-template<class EquationOfState = GasEquationOfState, class Kernel = CubicKernel,
-         class ArtificialViscosity = BalsaraArtificialViscosity>
+template<class EquationOfState, class Kernel = CubicKernel,
+         class ArtificialViscosity = BalsaraArtificialViscosity<>>
   requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
 class ClassicSmoothEstimator {
@@ -60,10 +62,19 @@ public:
       : _eos{std::move(eos)}, _kernel{std::move(kernel)},
         _viscosity{std::move(viscosity)}, _kernel_width{kernel_width} {}
 
+  /** Set of particle fields that is required. */
+  using required_fields = decltype([] {
+    using namespace particle_fields;
+    return meta::Set{h, m, rho, p, r, v, dv_dt} |
+           required_fields_t<EquationOfState>{} |
+           required_fields_t<ArtificialViscosity>{};
+  }());
+
   /** Estimate density, kernel width, pressure and sound speed. */
   template<class ParticleCloud>
+    requires particle_cloud<ParticleCloud, required_fields>
   constexpr void estimate_density(ParticleCloud& particles) const {
-    using namespace particle_accessors;
+    using namespace particle_fields;
     const auto h_ab = *_kernel_width;
     const auto search_radius = _kernel.radius(h_ab);
     // Compute density, pressure and sound speed.
@@ -73,8 +84,8 @@ public:
       particles.nearby(a, search_radius, [&](auto b) {
         rho[a] += m[b] * _kernel(r[a, b], h_ab);
       });
-      p[a] = _eos.pressure(rho[a], eps[a]);
-      cs[a] = _eos.sound_speed(rho[a], p[a]);
+      p[a] = _eos.pressure(a);
+      cs[a] = _eos.sound_speed(a);
     });
     // Compute velocity divergence and curl.
     particles.for_each([&](auto a) {
@@ -96,31 +107,29 @@ public:
 
   /** Estimate acceleration and thermal heating. */
   template<class ParticleCloud>
+    requires particle_cloud<ParticleCloud, required_fields>
   constexpr void estimate_forces(ParticleCloud& particles) const {
-    using namespace particle_accessors;
-    const auto h = *_kernel_width;
-    const auto search_radius = _kernel.radius(h);
+    using namespace particle_fields;
+    const auto h_ab = *_kernel_width;
+    const auto search_radius = _kernel.radius(h_ab);
     particles.for_each([&](auto a) {
       // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
       deps_dt[a] = {};
       particles.nearby(a, search_radius, [&](auto b) {
         const auto Pi_ab = _viscosity.kinematic(a, b);
-        const auto grad_ab = _kernel.grad(r[a, b], h);
+        const auto grad_ab = _kernel.grad(r[a, b], h_ab);
         // clang-format off
         dv_dt[a] -= m[b] * (p[a] / pow2(rho[a]) +
-                            p[b] / pow2(rho[b]) +
-                            Pi_ab) * grad_ab;
+                            p[b] / pow2(rho[b]) + Pi_ab) * grad_ab;
         deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) +
                               Pi_ab) * dot(grad_ab, v[a, b]);
         // clang-format on
       });
-      // Compute Morris-Monaghan switch forces.
-      // TODO: move me to the switch class once we have an equation system.
-      const auto sigma = 0.2, alpha_min = 0.1;
-      const auto S_a = positive(-div_v[a]);
-      const auto tau_a = sigma * h[a] * cs[a];
-      dalpha_dt[a] = S_a - (alpha[a] - alpha_min) / tau_a;
+      // Compute artificial viscosity switch forces.
+      if constexpr (required_fields::contains(dalpha_dt)) {
+        dalpha_dt[a] = _viscosity.switch_deriv(a);
+      }
     });
   }
 
@@ -131,8 +140,8 @@ public:
 /******************************************************************************\
  ** The particle estimator with a variable kernel width (Grad-H).
 \******************************************************************************/
-template<class EquationOfState = GasEquationOfState, class Kernel = CubicKernel,
-         class ArtificialViscosity = MorrisMonaghanArtificialViscosity>
+template<class EquationOfState, class Kernel = CubicKernel,
+         class ArtificialViscosity = MorrisMonaghanArtificialViscosity<>>
   requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
 class GradHSmoothEstimator {
@@ -152,17 +161,26 @@ public:
       : _kernel{std::move(kernel)}, _eos{std::move(eos)},
         _viscosity{std::move(viscosity)}, _coupling{coupling} {}
 
+  /** Set of particle fields that is required. */
+  using required_fields = decltype([] {
+    using namespace particle_fields;
+    return meta::Set{h, Omega, m, rho, p, v, dv_dt} |
+           required_fields_t<EquationOfState>{} |
+           required_fields_t<ArtificialViscosity>{};
+  }());
+
   /** Estimate density, kernel width, pressure and sound speed. */
   template<class ParticleCloud>
+    requires particle_cloud<ParticleCloud, required_fields>
   constexpr void estimate_density(ParticleCloud& particles) const {
-    using namespace particle_accessors;
+    using namespace particle_fields;
     // Compute width, density, pressure and sound speed.
     const auto eta = _coupling;
     particles.for_each([&](auto a) {
       const auto d = dim(r[a]);
-      // Solve zeta(h) = 0 for h, where:
-      // zeta(h) = Rho(h) - rho(h), Rho(h) = m * (eta / h)^d - desired density.
-      newton(h[a], [&]() {
+      // Solve zeta(h) = 0 for h, where: zeta(h) = Rho(h) - rho(h),
+      // Rho(h) = m * (eta / h)^d - desired density.
+      newton_raphson(h[a], [&] {
         rho[a] = {};
         Omega[a] = {};
         const auto search_radius = _kernel.radius(h[a]);
@@ -177,8 +195,8 @@ public:
         Omega[a] = 1 - Omega[a] / dRho_dh_a;
         return std::tuple{zeta_a, dzeta_dh_a};
       });
-      p[a] = _eos.pressure(rho[a], eps[a]);
-      cs[a] = _eos.sound_speed(rho[a], p[a]);
+      p[a] = _eos.pressure(a);
+      cs[a] = _eos.sound_speed(a);
     });
     // Compute velocity divergence and curl.
     particles.for_each([&](auto a) {
@@ -200,8 +218,9 @@ public:
 
   /** Estimate acceleration and thermal heating. */
   template<class ParticleCloud>
+    requires particle_cloud<ParticleCloud, required_fields>
   constexpr void estimate_forces(ParticleCloud& particles) const {
-    using namespace particle_accessors;
+    using namespace particle_fields;
     particles.for_each([&](auto a) {
       // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
@@ -222,12 +241,10 @@ public:
                               Pi_ab * dot(grad_ab, v[a, b]));
         // clang-format on
       });
-      // Compute Morris-Monaghan switch forces.
-      // TODO: move me to the switch class once we have an equation system.
-      const auto sigma = 0.2, alpha_min = 0.1;
-      const auto S_a = positive(-div_v[a]);
-      const auto tau_a = sigma * h[a] * cs[a];
-      dalpha_dt[a] = S_a - (alpha[a] - alpha_min) / tau_a;
+      // Compute artificial viscosity switch forces.
+      if constexpr (required_fields::contains(dalpha_dt)) {
+        dalpha_dt[a] = _viscosity.switch_deriv(a);
+      }
     });
   }
 

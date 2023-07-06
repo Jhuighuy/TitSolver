@@ -32,63 +32,63 @@ namespace tit {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Particle properties accesstors. */
-namespace particle_accessors {
+namespace particle_fields {
 
   /** Particle mass. */
-  inline constexpr struct {
+  inline constexpr struct m_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->mass;
     }
   } m;
 
   /** Particle width. */
-  inline constexpr struct {
+  inline constexpr struct h_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->width;
     }
   } h;
 
   /** Particle density. */
-  inline constexpr struct {
+  inline constexpr struct rho_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->density;
     }
   } rho;
   /** WHAT AM I??? */
-  inline constexpr struct {
+  inline constexpr struct Omega_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->omega;
     }
   } Omega;
 
   /** Particle pressure. */
-  inline constexpr struct {
+  inline constexpr struct p_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->pressure;
     }
   } p;
   /** Particle sound speed. */
-  inline constexpr struct {
+  inline constexpr struct cs_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->sound_speed;
     }
   } cs, sqrt_dp_drho;
 
   /** Particle internal (thermal) energy. */
-  inline constexpr struct {
+  inline constexpr struct eps_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->thermal_energy;
     }
   } eps;
   /** Particle internal (thermal) energy time derivative. */
-  inline constexpr struct {
+  inline constexpr struct deps_dt_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->thermal_energy_deriv;
     }
   } deps_dt;
 
   /** Particle position. */
-  inline constexpr struct {
+  inline constexpr struct r_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->position;
     }
@@ -99,7 +99,7 @@ namespace particle_accessors {
 #endif
   } r;
   /** Particle velocity. */
-  inline constexpr struct {
+  inline constexpr struct v_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->velocity;
     }
@@ -110,7 +110,7 @@ namespace particle_accessors {
 #endif
   } v, dr_dt;
   /** Particle acceleration. */
-  inline constexpr struct {
+  inline constexpr struct a_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->acceleration;
     }
@@ -128,18 +128,18 @@ namespace particle_accessors {
     }
   } curl_v;
 
-  inline constexpr struct {
+  inline constexpr struct alpha_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->alpha;
     }
   } alpha;
-  inline constexpr struct {
+  inline constexpr struct dalpha_dt_t {
     constexpr auto& operator[](auto a) const noexcept {
       return a->alpha_deriv;
     }
   } dalpha_dt;
 
-} // namespace particle_accessors
+} // namespace particle_fields
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -161,38 +161,43 @@ struct Particle {
   Vec<Real, 3> velocity_curl;
   Real alpha;
   Real alpha_deriv;
+  Real concentration;
+  Real chemical_potential;
 }; // struct Particle
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 template<class Real, dim_t Dim>
-struct ParticleArray {
-  Particle<Real, Dim>* Particles;
-  size_t NumParticles;
+class ParticleArray : public std::vector<Particle<Real, Dim>> {
+public:
 
-  void SortParticles() {
-    std::sort(Particles, Particles + NumParticles,
-              [](const Particle<Real, Dim>& a, const Particle<Real, Dim>& b) {
-                return a.position < b.position;
-              });
-  }
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class Func>
   void for_each(const Func& func) {
-    std::for_each(Particles, Particles + NumParticles,
-                  [&](auto& a) { func(&a); });
+    std::for_each(this->begin(), this->end(), [&](auto& a) { func(&a); });
+  }
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+  void sort()
+    requires (Dim == 1)
+  {
+    std::sort(this->begin(), this->end(), [](const auto& a, const auto& b) {
+      return a.position < b.position;
+    });
   }
 
   template<class Func>
-  void nearby(Particle<Real, Dim>* pa, Real search_width, const Func& func) {
+  void nearby(Particle<Real, Dim>* pa, Real search_radius, const Func& func)
+    requires (Dim == 1)
+  {
     auto& a = *pa;
-    const size_t aIndex = &a - Particles;
+    const size_t aIndex = &a - this->data();
 
     // Neighbours to the left.
     for (size_t bIndex = aIndex - 1; bIndex != SIZE_MAX; --bIndex) {
-      Particle<Real, Dim>& b = Particles[bIndex];
+      Particle<Real, Dim>& b = (*this)[bIndex];
       const Vec<Real, Dim> abDeltaPos = a.position - b.position;
-      if (norm(abDeltaPos) > search_width) break;
+      if (norm(abDeltaPos) > search_radius) break;
       func(&b);
     }
 
@@ -200,11 +205,27 @@ struct ParticleArray {
     func(&a);
 
     // Neighbours to the right.
-    for (size_t bIndex = aIndex + 1; bIndex < NumParticles; ++bIndex) {
-      Particle<Real, Dim>& b = Particles[bIndex];
+    for (size_t bIndex = aIndex + 1; bIndex < this->size(); ++bIndex) {
+      Particle<Real, Dim>& b = (*this)[bIndex];
       const Vec<Real, Dim> abDeltaPos = a.position - b.position;
-      if (norm(abDeltaPos) > search_width) break;
+      if (norm(abDeltaPos) > search_radius) break;
       func(&b);
+    }
+  }
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+  void print(const char* path) {
+    std::ofstream output(path);
+    for (const auto& particle : *this) {
+      output << particle.position << " ";
+      output << particle.density << " ";
+      output << particle.velocity << " ";
+      output << particle.pressure << " ";
+      output << particle.thermal_energy << " ";
+      output << particle.width << " ";
+      output << particle.alpha << " ";
+      output << std::endl;
     }
   }
 

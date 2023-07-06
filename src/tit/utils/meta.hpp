@@ -22,14 +22,71 @@
 
 #pragma once
 
-#include <cstdlib>
+#include <concepts>
+#include <type_traits>
 
-namespace tit {
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-using size_t = std::size_t;
+namespace tit::meta {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit
+/** Check that T is in Us. */
+template<class T, class... Us>
+inline constexpr bool in_list_v = //
+    (... || std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<Us>>);
+
+/** Check that all Ts are unique. */
+template<class... Ts>
+inline constexpr bool all_unique_v = true;
+// clang-format off
+template<class T, class... Ts>
+inline constexpr bool all_unique_v<T, Ts...> =
+    (!in_list_v<T, Ts...>) && all_unique_v<Ts...>;
+// clang-format on
+
+template<class... Ts>
+  requires all_unique_v<Ts...>
+class Set {
+public:
+
+  Set() = default;
+
+  consteval Set(Ts...)
+    requires (sizeof...(Ts) != 0)
+  {}
+
+  consteval auto operator|(Set<>) const {
+    return Set<Ts...>{};
+  }
+  template<class U, class... Us>
+  consteval auto operator|(Set<U, Us...>) const {
+    if constexpr (in_list_v<U, Ts...>) return Set<Ts...>{} | Set<Us...>{};
+    else return Set<Ts..., U>{} | Set<Us...>{};
+  }
+
+  template<class U>
+  static consteval bool contains(U) {
+    return in_list_v<U, Ts...>;
+  }
+};
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+template<class T>
+static consteval auto _type_name_impl() {
+  return __PRETTY_FUNCTION__;
+}
+
+template<class T>
+inline constexpr auto type_name = _type_name_impl<T>();
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+} // namespace tit::meta
+
+template<class T>
+using required_fields_t = typename T::required_fields;
+
+template<class ParticleView, class... Fields>
+concept particle_view = true;
+template<class ParticleView, class... Fields>
+concept particle_cloud = true;

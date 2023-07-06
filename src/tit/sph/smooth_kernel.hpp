@@ -297,7 +297,7 @@ public:
     switch (Dim) {
       case 1: return Real{1.0 / 120.0};
       case 2: return Real{7.0 / 478.0 * std::numbers::inv_pi};
-      case 3: return Real{1.0 / 120.0 * std::numbers::inv_pi};
+      case 3: return Real{3.0 / 359.0 * std::numbers::inv_pi};
     }
   }
 
