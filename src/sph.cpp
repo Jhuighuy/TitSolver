@@ -17,30 +17,33 @@ int main() {
   using namespace tit;
   using namespace tit::sph;
 
-  ParticleArray<double, 1> particles{};
+  GradHSmoothEstimator estimator{AdiabaticIdealGasEquationOfState{}, {}, {}};
+  EulerIntegrator timeint{std::move(estimator)};
+
+  using Vars = required_variables_t<decltype(estimator)>;
+  ParticleArray<double, 1, Vars> particles{};
   for (size_t i = 0; i < 1600; ++i) {
-    particles.push_back({
-        .fixed = i < 3,
-        .mass = 1.0 / 1600,
-        .width = 0.001,
-        .thermal_energy = 1.0 / 0.4,
-        .position = i / 1600.0,
-        .alpha = 1.0,
+    particles.append([&]<class A>(A a) {
+      using namespace particle_variables;
+      fixed[a] = i < 100;
+      m[a] = 1.0 / 1600;
+      h[a] = 0.001;
+      r[a] = i / 1600.0;
+      if constexpr (has<A>(eps)) eps[a] = 1.0 / 0.4;
+      if constexpr (has<A>(alpha)) alpha[a] = 1.0;
     });
   }
   for (size_t i = 0; i < 200; ++i) {
-    particles.push_back({
-        .fixed = i >= (200 - 3),
-        .mass = 1.0 / 1600,
-        .width = 0.001,
-        .thermal_energy = 0.1 / (0.4 * 0.125),
-        .position = 1.0 + i / 200.0,
-        .alpha = 1.0,
+    using namespace particle_variables;
+    particles.append([&]<class B>(B b) {
+      fixed[b] = i >= (200 - 10);
+      m[b] = 1.0 / 1600;
+      h[b] = 0.001;
+      r[b] = 1.0 + i / 200.0;
+      if constexpr (has<B>(eps)) eps[b] = 0.1 / (0.4 * 0.125);
+      if constexpr (has<B>(alpha)) alpha[b] = 1.0;
     });
   }
-
-  GradHSmoothEstimator estimator{IdealGasEquationOfState{}, {}, {}};
-  EulerIntegrator timeint{std::move(estimator)};
 
   for (size_t n = 0; n < 3 * 2500; ++n) {
     std::cout << n << std::endl;

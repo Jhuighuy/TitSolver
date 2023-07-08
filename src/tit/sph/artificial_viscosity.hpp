@@ -37,8 +37,8 @@ namespace tit::sph {
 class ZeroArtificialViscosity {
 public:
 
-  /** Set of particle fields that is required. */
-  using required_fields = meta::Set<>;
+  /** Set of particle variables that are required. */
+  using required_variables = meta::Set<>;
 
   /** Compute artificial kinematic viscosity. */
   template<class ParticleView>
@@ -66,17 +66,16 @@ public:
       real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
       : _alpha{alpha}, _beta{beta}, _eps{eps} {}
 
-  /** Set of particle fields that is required. */
-  using required_fields = decltype([] {
-    using namespace particle_fields;
+  /** Set of particle variables that are required. */
+  using required_variables = decltype([] {
+    using namespace particle_variables;
     return meta::Set{rho, h, r, v, p, cs};
   }());
 
   /** Compute artificial kinematic viscosity. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto kinematic(ParticleView a, ParticleView b) const {
-    using namespace particle_fields;
+    using namespace particle_variables;
     if (dot(r[a, b], v[a, b]) >= 0.0) return real_t{0.0};
     const auto h_ab = avg(h[a], h[b]);
     const auto rho_ab = avg(rho[a], rho[b]);
@@ -109,18 +108,17 @@ public:
       ArtificialViscosity base_viscosity = {}) noexcept
       : _base_viscosity{std::move(base_viscosity)} {}
 
-  /** Set of particle fields that is required. */
-  using required_fields = decltype([] {
-    using namespace particle_fields;
+  /** Set of particle variables that are required. */
+  using required_variables = decltype([] {
+    using namespace particle_variables;
     return meta::Set{h, cs, div_v, curl_v} |
-           required_fields_t<ArtificialViscosity>{};
+           required_variables_t<ArtificialViscosity>{};
   }());
 
   /** Compute artificial kinematic viscosity. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto kinematic(ParticleView a, ParticleView b) const {
-    using namespace particle_fields;
+    using namespace particle_variables;
     const auto Pi_ab = _base_viscosity.kinematic(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto f = [](ParticleView c) {
@@ -154,18 +152,17 @@ public:
       : _sigma{sigma}, _alpha_min{alpha_min}, //
         _base_viscosity{std::move(base_viscosity)} {}
 
-  /** Set of particle fields that is required. */
-  using required_fields = decltype([] {
-    using namespace particle_fields;
+  /** Set of particle variables that are required. */
+  using required_variables = decltype([] -> decltype(auto) {
+    using namespace particle_variables;
     return meta::Set{h, cs, div_v, alpha, dalpha_dt} |
-           required_fields_t<ArtificialViscosity>{};
+           required_variables_t<ArtificialViscosity>{};
   }());
 
   /** Compute artificial kinematic viscosity. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto kinematic(ParticleView a, ParticleView b) const {
-    using namespace particle_fields;
+    using namespace particle_variables;
     const auto Pi_ab = _base_viscosity.kinematic(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto alpha_ab = avg(alpha[a], alpha[b]);
@@ -173,10 +170,9 @@ public:
   }
 
   /** Estimate Morris-Monaghan switch forces. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto switch_deriv(ParticleView a) const {
-    using namespace particle_fields;
+    using namespace particle_variables;
     const auto S_a = positive(-div_v[a]);
     const auto tau_a = _sigma * h[a] * cs[a];
     return S_a - (alpha[a] - _alpha_min) / tau_a;
