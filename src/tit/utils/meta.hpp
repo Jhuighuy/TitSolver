@@ -29,10 +29,20 @@ namespace tit::meta {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** An empty object. */
+template<class T>
+concept meta_type = true; // std::is_object_v<T>; // && std::is_empty_v<T>;
+
 /** Check that T is in Us. */
-template<class T, class... Us>
-inline constexpr bool in_list_v = //
-    (... || std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<Us>>);
+template<meta_type T, meta_type... Us>
+inline constexpr bool in_list_v = (... || std::same_as<T, Us>);
+
+template<meta_type T, meta_type U, meta_type... Us>
+  requires in_list_v<T, U, Us...>
+inline constexpr size_t index_v = [] {
+  if constexpr (std::same_as<T, U>) return 0;
+  else return (index_v<T, Us...> + 1);
+}();
 
 /** Check that all Ts are unique. */
 template<class... Ts>
@@ -43,31 +53,46 @@ inline constexpr bool all_unique_v<T, Ts...> =
     (!in_list_v<T, Ts...>) && all_unique_v<Ts...>;
 // clang-format on
 
-template<class... Ts>
+template<meta_type... Ts>
   requires all_unique_v<Ts...>
 class Set {
 public:
 
+  /** Initialize a meta-set. */
   Set() = default;
-
   consteval Set(Ts...)
     requires (sizeof...(Ts) != 0)
   {}
 
+  static consteval size_t size() {
+    return sizeof...(Ts);
+  }
+
+  /** Set union operation. */
   consteval auto operator|(Set<>) const {
     return Set<Ts...>{};
   }
-  template<class U, class... Us>
+  template<meta_type U, meta_type... Us>
   consteval auto operator|(Set<U, Us...>) const {
     if constexpr (in_list_v<U, Ts...>) return Set<Ts...>{} | Set<Us...>{};
     else return Set<Ts..., U>{} | Set<Us...>{};
   }
 
-  template<class U>
+  template<meta_type U>
   static consteval bool contains(U) {
     return in_list_v<U, Ts...>;
   }
+
+  template<meta_type... Us>
+  static consteval bool includes(Set<Us...>) {
+    return std::is_same_v<Set<Ts...>, decltype(Set<Ts...>{} | Set<Us...>{})>;
+  }
 };
+
+template<class T>
+inline constexpr bool is_set_v = false;
+template<class... Ts>
+inline constexpr bool is_set_v<Set<Ts...>> = true;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -82,11 +107,3 @@ inline constexpr auto type_name = _type_name_impl<T>();
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit::meta
-
-template<class T>
-using required_fields_t = typename T::required_fields;
-
-template<class ParticleView, class... Fields>
-concept particle_view = true;
-template<class ParticleView, class... Fields>
-concept particle_cloud = true;

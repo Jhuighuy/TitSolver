@@ -23,193 +23,211 @@
 #pragma once
 
 #include <algorithm>
-#include <execution>
+#include <string_view>
+#include <tuple>
+#include <vector>
 
+#include "tit/utils/meta.hpp"
 #include "tit/utils/vec.hpp"
+
+#define TIT_PASS(...) __VA_ARGS__
 
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Particle properties accesstors. */
-namespace particle_fields {
+/** Declare a particle variable. */
+#define TIT_DEF_VARIABLE(type, name, ...)                                      \
+  inline constexpr struct name##_t {                                           \
+    /** Variable type. */                                                      \
+    template<class Real, dim_t Dim>                                            \
+    using var_type = type;                                                     \
+    /** Variable name. */                                                      \
+    static constexpr std::string_view var_name = #name;                        \
+    /** Variable value for the specified particle. */                          \
+    template<has_variable<name##_t> ParticleView>                              \
+    constexpr auto& operator[](ParticleView a) const noexcept {                \
+      return a->template get<name##_t>();                                      \
+    }                                                                          \
+    /** Variable value delta for the specified particles. */                   \
+    template<has_variable<name##_t> ParticleView>                              \
+    constexpr auto operator[](ParticleView a, ParticleView b) const noexcept { \
+      return (*this)[a] - (*this)[b];                                          \
+    }                                                                          \
+  } name __VA_OPT__(, __VA_ARGS__)
 
+/** Declare a scalar particle variable. */
+#define TIT_DEF_SCALAR_VARIABLE(name, ...) \
+  TIT_DEF_VARIABLE(Real, name __VA_OPT__(, __VA_ARGS__))
+/** Declare a scalar particle variable. */
+#define TIT_DEF_VECTOR_VARIABLE(name, ...) \
+  TIT_DEF_VARIABLE(TIT_PASS(Vec<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
+
+/** Variable type. */
+template<class Var, class Real, dim_t Dim>
+using variable_type_t = typename Var::var_type<Real, Dim>;
+
+/** Variable name. */
+template<class Var>
+inline constexpr std::string_view variable_name_v = Var::var_name;
+
+/** Variables that are present in the particle. */
+template<class T>
+  requires meta::is_set_v<typename std::remove_cvref_t<
+               std::remove_pointer_t<T>>::variables>
+using variables_t =
+    typename std::remove_cvref_t<std::remove_pointer_t<T>>::variables;
+/** Variables that are required by this equation. */
+template<class Equation>
+  requires meta::is_set_v<typename Equation::required_variables>
+using required_variables_t = typename Equation::required_variables;
+
+/** Check that particle has a variable. */
+template<class T, class Var>
+concept has_variable = variables_t<T>::contains(Var{});
+
+/** Check that particle has a set of variable. */
+template<class T, class Vars>
+concept has_variables = true;
+// meta::is_set_v<Vars> && variables_t<T>::includes(Vars{});
+
+template<class A, class Var>
+static consteval bool has(Var) {
+  return (has_variable<A, Var>);
+}
+template<class A, class... Vars>
+static consteval bool has(Vars...) {
+  return (has_variable<A, Vars> && ...);
+}
+
+/** Particle properties accesstors. */
+namespace particle_variables {
   /** Particle mass. */
-  inline constexpr struct m_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->mass;
-    }
-  } m;
+  TIT_DEF_SCALAR_VARIABLE(m);
+  /** Particle density. */
+  TIT_DEF_SCALAR_VARIABLE(rho);
+  /** Particle is fixed? */
+  TIT_DEF_VARIABLE(bool, fixed);
 
   /** Particle width. */
-  inline constexpr struct h_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->width;
-    }
-  } h;
-
-  /** Particle density. */
-  inline constexpr struct rho_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->density;
-    }
-  } rho;
+  TIT_DEF_SCALAR_VARIABLE(h);
   /** WHAT AM I??? */
-  inline constexpr struct Omega_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->omega;
-    }
-  } Omega;
+  TIT_DEF_SCALAR_VARIABLE(Omega);
 
   /** Particle pressure. */
-  inline constexpr struct p_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->pressure;
-    }
-  } p;
+  TIT_DEF_SCALAR_VARIABLE(p);
   /** Particle sound speed. */
-  inline constexpr struct cs_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->sound_speed;
-    }
-  } cs, sqrt_dp_drho;
+  TIT_DEF_SCALAR_VARIABLE(cs);
 
   /** Particle internal (thermal) energy. */
-  inline constexpr struct eps_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->thermal_energy;
-    }
-  } eps;
+  TIT_DEF_SCALAR_VARIABLE(eps);
   /** Particle internal (thermal) energy time derivative. */
-  inline constexpr struct deps_dt_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->thermal_energy_deriv;
-    }
-  } deps_dt;
+  TIT_DEF_SCALAR_VARIABLE(deps_dt);
+
+  /** Particle artificial viscosity switch. */
+  TIT_DEF_SCALAR_VARIABLE(alpha);
+  /** Particle artificial viscosity switch time derivative. */
+  TIT_DEF_SCALAR_VARIABLE(dalpha_dt);
 
   /** Particle position. */
-  inline constexpr struct r_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->position;
-    }
-#ifndef __INTELLISENSE__
-    constexpr auto operator[](auto a, auto b) const noexcept {
-      return a->position - b->position;
-    }
-#endif
-  } r;
+  TIT_DEF_VECTOR_VARIABLE(r);
+
   /** Particle velocity. */
-  inline constexpr struct v_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->velocity;
-    }
-#ifndef __INTELLISENSE__
-    constexpr auto operator[](auto a, auto b) const noexcept {
-      return a->velocity - b->velocity;
-    }
-#endif
-  } v, dr_dt;
-  /** Particle acceleration. */
-  inline constexpr struct a_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->acceleration;
-    }
-  } a, dv_dt, d2r_dt2;
+  TIT_DEF_VECTOR_VARIABLE(v, dr_dt);
   /** Particle velocity divergence. */
-  inline constexpr struct {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->velocity_divergence;
-    }
-  } div_v;
+  TIT_DEF_SCALAR_VARIABLE(div_v);
   /** Particle velocity curl. */
-  inline constexpr struct {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->velocity_curl;
-    }
-  } curl_v;
+  TIT_DEF_VARIABLE(TIT_PASS(Vec<Real, 3>), curl_v);
 
-  inline constexpr struct alpha_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->alpha;
-    }
-  } alpha;
-  inline constexpr struct dalpha_dt_t {
-    constexpr auto& operator[](auto a) const noexcept {
-      return a->alpha_deriv;
-    }
-  } dalpha_dt;
+  /** Particle acceleration. */
+  TIT_DEF_VECTOR_VARIABLE(a, dv_dt);
 
-} // namespace particle_fields
+} // namespace particle_variables
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template<class Real, dim_t Dim>
-struct Particle {
-  bool fixed;
-  Real mass;
-  Real width;
-  Real density;
-  Real omega;
-  Real pressure;
-  Real sound_speed;
-  Real thermal_energy;
-  Real thermal_energy_deriv;
-  Point<Real, Dim> position;
-  Vec<Real, Dim> velocity;
-  Vec<Real, Dim> acceleration;
-  Real velocity_divergence;
-  Vec<Real, 3> velocity_curl;
-  Real alpha;
-  Real alpha_deriv;
-  Real concentration;
-  Real chemical_potential;
-}; // struct Particle
+template<class Real, dim_t Dim, class Vars>
+class Particle;
 
-template<class Real, dim_t Dim>
-class ParticleArray : public std::vector<Particle<Real, Dim>> {
+template<class Real, dim_t Dim, class... Vars>
+class Particle<Real, Dim, meta::Set<Vars...>> :
+    public std::tuple<variable_type_t<Vars, Real, Dim>...> {
 public:
+
+  using variables = meta::Set<Vars...>;
+
+  template<class Var>
+  static consteval bool has(Var var) {
+    return has_variable<Particle, Var>;
+  }
+
+  template<class Var>
+    requires meta::in_list_v<Var, Vars...>
+  constexpr auto& get() noexcept {
+    return std::get<meta::index_v<Var, Vars...>>(*this);
+  }
+  template<class Var>
+    requires meta::in_list_v<Var, Vars...>
+  constexpr const auto& get() const noexcept {
+    return std::get<meta::index_v<Var, Vars...>>(*this);
+  }
+
+}; // class Particle
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+template<class Real, dim_t Dim, class Vars>
+class ParticleArray : public std::vector<Particle<Real, Dim, Vars>> {
+public:
+
+  using variables = Vars;
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class Func>
-  void for_each(const Func& func) {
-    std::for_each(this->begin(), this->end(), [&](auto& a) { func(&a); });
+  constexpr void append(const Func& func) {
+    func(&this->emplace_back());
   }
+
+  template<class Func>
+  constexpr void for_each(const Func& func) {
+    std::for_each(this->begin(), this->end(), [&](auto& a) { func(&a); });
+  } // namespace tit
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  void sort()
+  constexpr void sort()
     requires (Dim == 1)
   {
-    std::sort(this->begin(), this->end(), [](const auto& a, const auto& b) {
-      return a.position < b.position;
+    std::sort(this->begin(), this->end(), [](const auto& va, const auto& vb) {
+      using namespace particle_variables;
+      return r[&va][0] < r[&vb][0];
     });
   }
 
   template<class Func>
-  void nearby(Particle<Real, Dim>* pa, Real search_radius, const Func& func)
+  constexpr void nearby(auto a, Real search_radius, const Func& func)
     requires (Dim == 1)
   {
-    auto& a = *pa;
-    const size_t aIndex = &a - this->data();
+    const size_t aIndex = a - this->data();
 
     // Neighbours to the left.
     for (size_t bIndex = aIndex - 1; bIndex != SIZE_MAX; --bIndex) {
-      Particle<Real, Dim>& b = (*this)[bIndex];
-      const Vec<Real, Dim> abDeltaPos = a.position - b.position;
-      if (norm(abDeltaPos) > search_radius) break;
-      func(&b);
+      using namespace particle_variables;
+      auto b = &(*this)[bIndex];
+      if (r[a][0] - r[b][0] > search_radius) break;
+      func(b);
     }
 
     // Particle itself.
-    func(&a);
+    func(a);
 
     // Neighbours to the right.
     for (size_t bIndex = aIndex + 1; bIndex < this->size(); ++bIndex) {
-      Particle<Real, Dim>& b = (*this)[bIndex];
-      const Vec<Real, Dim> abDeltaPos = a.position - b.position;
-      if (norm(abDeltaPos) > search_radius) break;
-      func(&b);
+      using namespace particle_variables;
+      auto b = &(*this)[bIndex];
+      if (r[b][0] - r[a][0] > search_radius) break;
+      func(b);
     }
   }
 
@@ -217,24 +235,18 @@ public:
 
   void print(const char* path) {
     std::ofstream output(path);
-    for (const auto& particle : *this) {
-      output << particle.position << " ";
-      output << particle.density << " ";
-      output << particle.velocity << " ";
-      output << particle.pressure << " ";
-      output << particle.thermal_energy << " ";
-      output << particle.width << " ";
-      output << particle.alpha << " ";
+    ([&]<class... TheVars>(meta::Set<TheVars...>) {
+      using namespace particle_variables;
+      ((output << variable_name_v<TheVars> << " "), ...);
       output << std::endl;
-    }
+      for (const auto& va : *this) {
+        auto a = &va;
+        ((output << TheVars{}[a] << " "), ...);
+        output << std::endl;
+      };
+    }(Vars{}));
   }
-
 }; // struct ParticleArray
-
-template<class Real, dim_t Dim>
-using ParticleView = Particle<Real, Dim>*;
-template<class Real, dim_t Dim>
-using ConstParticleView = ParticleView<Real, Dim>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*

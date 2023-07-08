@@ -48,17 +48,17 @@ public:
   /** Make a step in time. */
   template<class Real, class ParticleCloud>
   constexpr void step(Real dt, ParticleCloud& particles) const {
-    using namespace particle_fields;
+    using namespace particle_variables;
     particles.sort();
     _estimator.estimate_density(particles);
     _estimator.estimate_forces(particles);
-    particles.for_each([&](auto a) {
-      if (a->fixed) return;
+    particles.for_each([&]<class A>(A a) {
+      if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];
       r[a] += dt * dr_dt[a];
-      eps[a] += dt * deps_dt[a];
-      alpha[a] += dt * dalpha_dt[a];
+      if constexpr (has<A>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
+      if constexpr (has<A>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
   }
 

@@ -43,25 +43,23 @@ public:
   constexpr IdealGasEquationOfState(real_t gamma = 1.4) noexcept
       : _gamma{gamma} {}
 
-  /** Set of particle fields that is required. */
-  using required_fields = decltype([] {
-    using namespace particle_fields;
+  /** Set of particle variables that are required. */
+  using required_variables = decltype([] {
+    using namespace particle_variables;
     return meta::Set{rho, p, eps, deps_dt};
   }());
 
   /** Compute particle pressure. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto pressure(ParticleView a) const noexcept {
-    using namespace particle_fields;
+    using namespace particle_variables;
     return (_gamma - 1.0) * rho[a] * eps[a];
   }
 
   /** Compute particle sound speed. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto sound_speed(ParticleView a) const noexcept {
-    using namespace particle_fields;
+    using namespace particle_variables;
     return sqrt(_gamma * p[a] / rho[a]);
   }
 
@@ -82,25 +80,23 @@ public:
       real_t kappa = 1.0, real_t gamma = 1.4) noexcept
       : _kappa{kappa}, _gamma{gamma} {}
 
-  /** Set of particle fields that is required. */
-  using required_fields = decltype([] {
-    using namespace particle_fields;
+  /** Set of particle variables that are required. */
+  using required_variables = decltype([] {
+    using namespace particle_variables;
     return meta::Set{rho, p};
   }());
 
   /** Compute particle pressure. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto pressure(ParticleView a) const noexcept {
-    using namespace particle_fields;
+    using namespace particle_variables;
     return _kappa * pow(rho[a], _gamma);
   }
 
   /** Compute particle sound speed. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto sound_speed(ParticleView a) const noexcept {
-    using namespace particle_fields;
+    using namespace particle_variables;
     return sqrt(_gamma * p[a] / rho[a]);
   }
 
@@ -124,23 +120,22 @@ public:
       real_t cs, real_t rho_0, real_t p_0 = 0.0, real_t gamma = 7.0) noexcept
       : _cs{cs}, _rho_0{rho_0}, _p_0{p_0}, _gamma{gamma} {}
 
-  /** Set of particle fields that is required. */
-  using required_fields = decltype([] {
-    using namespace particle_fields;
+  /** Set of particle variables that are required. */
+  using required_variables = decltype([] {
+    using namespace particle_variables;
     return meta::Set{rho};
   }());
 
   /** Compute particle pressure. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto pressure(ParticleView a) const noexcept {
-    using namespace particle_fields;
+    using namespace particle_variables;
     return _p_0 +
            _rho_0 * pow2(_cs) / _gamma * (pow(rho[a] / _rho_0, _gamma) - 1.0);
   }
 
   /** Compute particle sound speed. */
-  template<class ParticleView>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto sound_speed([[maybe_unused]] ParticleView a) const noexcept {
     return _cs;
   }
@@ -162,22 +157,21 @@ public:
       real_t cs, real_t rho_0, real_t p_0 = 0.0) noexcept
       : _cs{cs}, _rho_0{rho_0}, _p_0{p_0} {}
 
-  /** Set of particle fields that is required. */
-  using required_fields = decltype([] {
-    using namespace particle_fields;
+  /** Set of particle variables that are required. */
+  using required_variables = decltype([] {
+    using namespace particle_variables;
     return meta::Set{rho};
   }());
 
   /** Compute particle pressure. */
-  template<class ParticleView>
-    requires particle_view<ParticleView, required_fields>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto pressure(ParticleView a) const noexcept {
-    using namespace particle_fields;
+    using namespace particle_variables;
     return _p_0 + pow2(_cs) * (rho[a] - _rho_0);
   }
 
   /** Compute particle sound speed. */
-  template<class ParticleView>
+  template<has_variables<required_variables> ParticleView>
   constexpr auto sound_speed([[maybe_unused]] ParticleView a) const noexcept {
     return _cs;
   }
