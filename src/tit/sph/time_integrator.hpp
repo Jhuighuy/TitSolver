@@ -38,21 +38,23 @@ class EulerIntegrator {
 private:
 
   SmoothEstimator _estimator{};
+  mutable size_t _count;
 
 public:
 
   /** Construct time integrator. */
   constexpr EulerIntegrator(SmoothEstimator estimator = {})
-      : _estimator{std::move(estimator)} {}
+      : _estimator{std::move(estimator)}, _count{0} {}
 
   /** Make a step in time. */
   template<class Real, class ParticleCloud>
   constexpr void step(Real dt, ParticleCloud& particles) const {
-    using namespace particle_variables;
+    if (_count++ == 0) _estimator.init(particles);
     particles.sort();
     _estimator.estimate_density(particles);
     _estimator.estimate_forces(particles);
     particles.for_each([&]<class A>(A a) {
+      using namespace particle_variables;
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];

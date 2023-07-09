@@ -65,11 +65,23 @@ public:
   /** Set of particle variables that are required. */
   using required_variables = decltype([] {
     using namespace particle_variables;
-    return meta::Set{fixed, // TODO: fixed should not be here.
-                     h,     m, rho, p, r, v, dv_dt} |
+    return meta::Set{fixed} | // TODO: fixed should not be here.
+           meta::Set{h, m, rho, p, r, v, dv_dt} |
            required_variables_t<EquationOfState>{} |
            required_variables_t<ArtificialViscosity>{};
   }());
+
+  template<class Particles>
+  constexpr void init(Particles& particles) const {
+    using namespace particle_variables;
+    const auto h_ab = *_kernel_width;
+    particles.for_each([&](auto a) {
+      if (!fixed[a]) return;
+      h[a] = h_ab;
+      p[a] = _eos.pressure(a);
+      cs[a] = _eos.sound_speed(a);
+    });
+  }
 
   /** Estimate density, kernel width, pressure and sound speed. */
   template<class ParticleCloud>
@@ -80,6 +92,7 @@ public:
     const auto search_radius = _kernel.radius(h_ab);
     // Compute density, pressure and sound speed.
     particles.for_each([&]<class A>(A a) {
+      if (fixed[a]) return;
       h[a] = h_ab;
       rho[a] = {};
       particles.nearby(a, search_radius, [&]<class B>(B b) {
@@ -120,6 +133,7 @@ public:
     const auto h_ab = *_kernel_width;
     const auto search_radius = _kernel.radius(h_ab);
     particles.for_each([&]<class A>(A a) {
+      if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
       if constexpr (has<A>(eps, deps_dt)) deps_dt[a] = {};
@@ -175,11 +189,25 @@ public:
   /** Set of particle variables that are required. */
   using required_variables = decltype([] {
     using namespace particle_variables;
-    return meta::Set{fixed, // TODO: fixed should not be here.
-                     h,     Omega, m, rho, p, cs, r, v, dv_dt} |
+    return meta::Set{fixed} | // TODO: fixed should not be here.
+           meta::Set{h, Omega, m, rho, p, cs, r, v, dv_dt} |
            required_variables_t<EquationOfState>{} |
            required_variables_t<ArtificialViscosity>{};
   }());
+
+  template<class Particles>
+  constexpr void init(Particles& particles) const {
+    using namespace particle_variables;
+    const auto eta = _coupling;
+    particles.for_each([&](auto a) {
+      if (!fixed[a]) return;
+      const auto d = dim(r[a]);
+      h[a] = eta * pow(rho[a] / m[a], -inverse(1.0 * d));
+      Omega[a] = 1.0;
+      p[a] = _eos.pressure(a);
+      cs[a] = _eos.sound_speed(a);
+    });
+  }
 
   /** Estimate density, kernel width, pressure and sound speed. */
   template</*has_variables<required_variables>*/ class Particles>
@@ -188,6 +216,7 @@ public:
     // Compute width, density, pressure and sound speed.
     const auto eta = _coupling;
     particles.for_each([&](auto a) {
+      if (fixed[a]) return;
       const auto d = dim(r[a]);
       // Solve zeta(h) = 0 for h, where: zeta(h) = Rho(h) - rho(h),
       // Rho(h) = m * (eta / h)^d - desired density.
@@ -203,7 +232,7 @@ public:
         const auto dRho_dh_a = -d * Rho_a / h[a];
         const auto zeta_a = Rho_a - rho[a];
         const auto dzeta_dh_a = dRho_dh_a - Omega[a];
-        Omega[a] = 1 - Omega[a] / dRho_dh_a;
+        Omega[a] = 1.0 - Omega[a] / dRho_dh_a;
         return std::tuple{zeta_a, dzeta_dh_a};
       });
       p[a] = _eos.pressure(a);
@@ -236,13 +265,16 @@ public:
   constexpr void estimate_forces(Particles& particles) const {
     using namespace particle_variables;
     particles.for_each([&]<class A>(A a) {
+      if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
-      if constexpr (has<A>(eps, deps_dt)) deps_dt[a] = {};
+      if constexpr (has<A>(eps, deps_dt)) {
+        deps_dt[a] = {};
+      }
       const auto d = dim(r[a]);
       const auto search_radius = _kernel.radius(h[a]);
       particles.nearby(a, search_radius, [&]<class B>(B b) {
-        const auto Pi_ab = _viscosity.kinematic(a, b);
+        const auto Pi_ab = 1.0 + _viscosity.kinematic(a, b);
         const auto grad_aba = _kernel.grad(r[a, b], h[a]);
         const auto grad_abb = _kernel.grad(r[a, b], h[b]);
         const auto grad_ab = avg(grad_aba, grad_abb);

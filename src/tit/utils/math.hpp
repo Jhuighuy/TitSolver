@@ -169,7 +169,7 @@ constexpr bool newton_raphson(Real& x, const Func& f, //
     const auto [y, df_dx] = f(/*x*/);
     if (abs(y) < epsilon) return true;
     if (is_zero(df_dx)) break;
-    x -= safe_divide(y, df_dx);
+    x -= y / df_dx;
   }
   return false;
 }

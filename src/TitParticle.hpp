@@ -43,7 +43,7 @@ namespace tit {
     template<class Real, dim_t Dim>                                            \
     using var_type = type;                                                     \
     /** Variable name. */                                                      \
-    static constexpr std::string_view var_name = #name;                        \
+    static constexpr const char* var_name = #name;                             \
     /** Variable value for the specified particle. */                          \
     template<has_variable<name##_t> ParticleView>                              \
     constexpr auto& operator[](ParticleView a) const noexcept {                \
@@ -69,7 +69,7 @@ using variable_type_t = typename Var::var_type<Real, Dim>;
 
 /** Variable name. */
 template<class Var>
-inline constexpr std::string_view variable_name_v = Var::var_name;
+inline constexpr auto variable_name_v = Var::var_name;
 
 /** Variables that are present in the particle. */
 template<class T>
@@ -233,11 +233,43 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  void print(const char* path) {
+  constexpr void sort()
+    requires (Dim > 1)
+  {}
+
+  template<class Func>
+  constexpr void nearby(auto a, Real search_radius, const Func& func)
+    requires (Dim > 1)
+  {
+    using namespace particle_variables;
+    for_each([&](auto b) {
+      if (norm(r[a, b]) <= search_radius) func(b);
+    });
+  }
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+  template<class x>
+  static auto _make_name(std::string n, meta::Set<x>) {
+    return n;
+  }
+  template<class Realx, dim_t Dimx>
+  static auto _make_name(std::string n, meta::Set<Vec<Realx, Dimx>>) {
+    if constexpr (Dimx == 1) return n;
+    if constexpr (Dimx == 2) return n + "_x " + n + "_y";
+    if constexpr (Dimx == 3) return n + "_x " + n + "_y " + n + "_z";
+  }
+
+  static auto _make_name(auto v) {
+    return _make_name(variable_name_v<decltype(v)>,
+                      meta::Set<variable_type_t<decltype(v), Real, Dim>>{});
+  }
+
+  void print(const std::string& path) {
     std::ofstream output(path);
     ([&]<class... TheVars>(meta::Set<TheVars...>) {
       using namespace particle_variables;
-      ((output << variable_name_v<TheVars> << " "), ...);
+      ((output << _make_name(TheVars{}) << " "), ...);
       output << std::endl;
       for (const auto& va : *this) {
         auto a = &va;
@@ -245,6 +277,7 @@ public:
         output << std::endl;
       };
     }(Vars{}));
+    output.flush();
   }
 }; // struct ParticleArray
 
