@@ -165,7 +165,7 @@ public:
 /******************************************************************************\
  ** The particle estimator with a variable kernel width (Grad-H).
 \******************************************************************************/
-template<class EquationOfState, class Kernel = CubicKernel,
+template<class EquationOfState, class Kernel = QuinticKernel,
          class ArtificialViscosity = MorrisMonaghanArtificialViscosity<>>
   requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
@@ -274,6 +274,7 @@ public:
       const auto d = dim(r[a]);
       const auto search_radius = _kernel.radius(h[a]);
       particles.nearby(a, search_radius, [&]<class B>(B b) {
+        // TODO: -----------v
         const auto Pi_ab = 1.0 + _viscosity.kinematic(a, b);
         const auto grad_aba = _kernel.grad(r[a, b], h[a]);
         const auto grad_abb = _kernel.grad(r[a, b], h[b]);
@@ -289,6 +290,8 @@ public:
           // clang-format on
         }
       });
+      // TODO: Gravity.
+      dv_dt[a][1] -= 20;
       // Compute artificial viscosity switch forces.
       if constexpr (has<A>(dalpha_dt)) {
         dalpha_dt[a] = _viscosity.switch_deriv(a);

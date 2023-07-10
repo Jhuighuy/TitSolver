@@ -1,3 +1,12 @@
 #!/bin/bash
+function compile() {
+  g++-13 \
+    -I./src \
+    -I/opt/homebrew/include \
+    -std=c++23 \
+    -Ofast -march=native \
+    -o $(echo $1 | sed 's/\.[^.]*$/.out/') \
+    $1
+}
 
-g++-13 -Isrc src/sph.cpp -std=c++23 -Ofast -march=native -DNDEBUG -o Tit.out && echo 'compiled.'
+compile ./src/sph.cpp
