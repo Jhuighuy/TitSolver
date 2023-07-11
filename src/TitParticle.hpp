@@ -23,9 +23,12 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 #include <string_view>
 #include <tuple>
 #include <vector>
+
+#include <nanoflann.hpp>
 
 #include "tit/utils/meta.hpp"
 #include "tit/utils/vec.hpp"
@@ -233,18 +236,57 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+  struct NanoflannAdapter {
+    ParticleArray* _array;
+    using coord_t = Real;
+    constexpr size_t kdtree_get_point_count() const {
+      return _array->size();
+    }
+    constexpr Real kdtree_get_pt(size_t idx, size_t dim) const noexcept {
+      using namespace particle_variables;
+      auto a = &(*_array)[idx];
+      return r[a][dim];
+    }
+    constexpr bool kdtree_get_bbox([[maybe_unused]] auto&& bbox) const {
+      return false;
+    }
+  }; // class NanoflannAdapter
+
+  using my_kd_tree_t = nanoflann::KDTreeSingleIndexAdaptor<
+      nanoflann::L2_Simple_Adaptor<Real, NanoflannAdapter>, NanoflannAdapter,
+      Dim>;
+
+  std::unique_ptr<NanoflannAdapter> _adapter;
+  std::unique_ptr<my_kd_tree_t> _index;
+
   constexpr void sort()
     requires (Dim > 1)
-  {}
+  {
+    _adapter.reset(new NanoflannAdapter{this});
+    _index.reset(new my_kd_tree_t(Dim, *_adapter, {10 /* max leaf */}));
+  }
 
   template<class Func>
   constexpr void nearby(auto a, Real search_radius, const Func& func)
     requires (Dim > 1)
   {
     using namespace particle_variables;
-    for_each([&](auto b) {
-      if (norm(r[a, b]) <= search_radius) func(b);
-    });
+
+    const Real squaredRadius = search_radius * search_radius;
+    std::vector<nanoflann::ResultItem<size_t, Real>> indices_dists;
+    nanoflann::RadiusResultSet<Real> resultSet(squaredRadius, indices_dists);
+
+    _index->findNeighbors(resultSet, &r[a][0]);
+
+    for (auto& x : indices_dists) {
+      size_t bIndex = x.first;
+      auto b = &(*this)[bIndex];
+      func(b);
+    }
+
+    // for_each([&](auto b) {
+    //   if (norm(r[a, b]) <= search_radius) func(b);
+    // });
   }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -281,8 +323,6 @@ public:
   }
 }; // struct ParticleArray
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit
