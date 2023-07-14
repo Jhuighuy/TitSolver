@@ -32,16 +32,18 @@ namespace tit::meta {
 /** An empty object. */
 template<class T>
 concept meta_type = true; // std::is_object_v<T>; // && std::is_empty_v<T>;
+template<class T>
+concept type = std::is_object_v<T> && std::is_empty_v<T>;
 
 /** Check that T is in Us. */
 template<meta_type T, meta_type... Us>
-inline constexpr bool in_list_v = (... || std::same_as<T, Us>);
+inline constexpr bool contains_v = (... || std::same_as<T, Us>);
 
 template<meta_type T, meta_type U, meta_type... Us>
-  requires in_list_v<T, U, Us...>
-inline constexpr size_t index_v = [] {
+  requires contains_v<T, U, Us...>
+inline constexpr size_t index_of_v = [] {
   if constexpr (std::same_as<T, U>) return 0;
-  else return (index_v<T, Us...> + 1);
+  else return (index_of_v<T, Us...> + 1);
 }();
 
 /** Check that all Ts are unique. */
@@ -50,7 +52,7 @@ inline constexpr bool all_unique_v = true;
 // clang-format off
 template<class T, class... Ts>
 inline constexpr bool all_unique_v<T, Ts...> =
-    (!in_list_v<T, Ts...>) && all_unique_v<Ts...>;
+    (!contains_v<T, Ts...>) && all_unique_v<Ts...>;
 // clang-format on
 
 template<meta_type... Ts>
@@ -74,13 +76,26 @@ public:
   }
   template<meta_type U, meta_type... Us>
   consteval auto operator|(Set<U, Us...>) const {
-    if constexpr (in_list_v<U, Ts...>) return Set<Ts...>{} | Set<Us...>{};
+    if constexpr (contains_v<U, Ts...>) return Set<Ts...>{} | Set<Us...>{};
     else return Set<Ts..., U>{} | Set<Us...>{};
+  }
+
+  /** Set minus operation. */
+  consteval auto operator-(Set<>) const {
+    return Set<Ts...>{};
+  }
+  template<meta_type U, meta_type... Us>
+  consteval auto operator-(Set<U, Us...>) const {
+    if constexpr (contains_v<U, Ts...>) {
+      return []<class X, class... Xs>(Set<X, Xs...>) {
+        return Set<Xs...>{} - Set<Us...>{};
+      }(Set<U>{} | Set<Ts...>{});
+    } else return Set<Ts...>{} - Set<Us...>{};
   }
 
   template<meta_type U>
   static consteval bool contains(U) {
-    return in_list_v<U, Ts...>;
+    return contains_v<U, Ts...>;
   }
 
   template<meta_type... Us>

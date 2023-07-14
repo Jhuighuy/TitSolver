@@ -26,7 +26,7 @@ int main() {
   ParticleArray<double, 1, Vars> particles{};
   for (size_t i = 0; i < 1600; ++i) {
     particles.append([&]<class A>(A a) {
-      using namespace particle_variables;
+      using namespace particle_fields;
       fixed[a] = i < 3;
       m[a] = 1.0 / 1600;
       rho[a] = 1.0;
@@ -37,7 +37,7 @@ int main() {
     });
   }
   for (size_t i = 0; i < 200; ++i) {
-    using namespace particle_variables;
+    using namespace particle_fields;
     particles.append([&]<class B>(B b) {
       fixed[b] = i >= (200 - 1 - 3);
       rho[b] = 0.125;
@@ -67,52 +67,74 @@ int main() {
 
 #if 1
 
-int main() {
+template<class Real>
+int sph_main() {
   using namespace tit;
-  using namespace tit::sph;
+  using namespace sph;
+  using namespace particle_fields;
 
   const dim_t N = 100;
-  const real_t N_x = 4 * N;
-  const real_t N_y = 3 * N;
-  const real_t N_fixed = 3;
-  const real_t N_x_dam = 1 * N;
-  const real_t N_y_dam = 2 * N;
+  const dim_t N_x = 4 * N;
+  const dim_t N_y = 3 * N;
+  const dim_t N_fixed = 3;
+  const dim_t N_x_dam = 1 * N;
+  const dim_t N_y_dam = 2 * N;
 
-  const real_t L = 1.0;
-  const real_t spacing = L / N;
-  const real_t timestep = 5.0e-5;
-  const real_t h_0 = 1.5 * spacing;
-  const real_t rho_0 = 1000.0;
-  const real_t cs_0 = 120.0;
+  const Real L = 1.0;
+  const Real spacing = L / N;
+  const Real timestep = 5.0e-5;
+  const Real h_0 = /*1.5 */ spacing;
+  const Real rho_0 = 1000.0;
+  const Real cs_0 = 120.0;
 
+  // Setup the SPH estimator:
   GradHSmoothEstimator estimator{
-      WeaklyCompressibleFluidEquationOfState{cs_0, rho_0}, QuarticKernel{},
+      // Weakly compressible equation of state.
+      WeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+      // Standart cubic spline kernel.
+      CubicKernel{},
+      // Standard alpha-beta artificial viscosity scheme.
       AlphaBetaArtificialViscosity{}};
+
+  // Setup the time itegrator:
   EulerIntegrator timeint{std::move(estimator)};
 
-  using Vars = required_variables_t<decltype(estimator)>;
-  ParticleArray<real_t, 2, Vars> particles{};
+  // Setup the particles array:
+  ParticleArray particles{
+      // 2D space.
+      Space<Real, 2>{},
+      // Fields that are required by the estimator.
+      estimator.required_fields,
+      // Set of whole system constants.
+      m,    // Particle mass assumed constant.
+      /*h*/ // Particle width assumed constant.
+  };
+
+  // Generate individual particles.
   for (dim_t i = -N_fixed; i < N_x + N_fixed; ++i) {
     for (dim_t j = -N_fixed; j < N_y; ++j) {
       const bool is_fixed = (i < 0 || i >= N_x) || (j < 0);
       const bool is_water = (i < N_x_dam) && (j < N_y_dam);
       if (!(is_fixed || is_water)) continue;
-      particles.append([&]<class A>(A a) {
-        using namespace particle_variables;
-        fixed[a] = is_fixed;
-        rho[a] = rho_0;
-        m[a] = rho_0 / (N_x_dam * N_y_dam) * 2;
-        h[a] = h_0;
-        r[a][0] = i * spacing;
-        r[a][1] = j * spacing;
-        if constexpr (has<A>(alpha)) alpha[a] = 1.0;
-      });
+      auto a = particles.append();
+      fixed[a] = is_fixed;
+      r[a][0] = i * spacing;
+      r[a][1] = j * spacing;
     }
   }
+  // Set global particle variables.
+  rho[particles] = rho_0;
+  m[particles] = rho_0 / (N_x_dam * N_y_dam) * 2;
+  h[particles] = h_0;
+  if constexpr (has<decltype(particles)>(alpha)) {
+    alpha[particles] = 1.0;
+  }
+
+  // ParticleSpatialIndex spatial_index{particles};
 
   particles.print("particles-dam.csv");
 
-  for (size_t n = 0; n < 100000; ++n) {
+  for (size_t n = 0; n < 1 + 100000; ++n) {
     std::cout << n << std::endl;
     timeint.step(timestep, particles);
     if (n % 100 == 0) particles.print("particles-dam.csv");
@@ -126,3 +148,7 @@ int main() {
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+int main() {
+  return sph_main<double>();
+}

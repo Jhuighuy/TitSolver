@@ -22,14 +22,30 @@
 
 #pragma once
 
-#include <cstdlib>
-
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Unsigned sized type. */
-using size_t = std::size_t;
+#define TIT_PASS(...) __VA_ARGS__
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+template<class Func>
+class OnAssignment {
+private:
+
+  Func _func;
+
+public:
+
+  constexpr explicit OnAssignment(Func func) : _func{std::move(func)} {}
+
+  template<class Arg>
+  constexpr void operator=(Arg&& arg) {
+    _func(std::forward<Arg>(arg));
+  }
+
+}; // class OnAssignment
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
