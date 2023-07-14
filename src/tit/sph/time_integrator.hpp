@@ -54,7 +54,7 @@ public:
     _estimator.estimate_density(particles);
     _estimator.estimate_forces(particles);
     particles.for_each([&]<class A>(A a) {
-      using namespace particle_variables;
+      using namespace particle_fields;
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];

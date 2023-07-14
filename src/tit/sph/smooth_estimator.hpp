@@ -50,93 +50,91 @@ private:
   EquationOfState _eos;
   Kernel _kernel;
   ArtificialViscosity _viscosity;
-  std::optional<real_t> _kernel_width;
 
 public:
 
   /** Initialize particle estimator. */
-  constexpr ClassicSmoothEstimator(
+  constexpr ClassicSmoothEstimator( //
       EquationOfState eos = {}, Kernel kernel = {},
-      ArtificialViscosity viscosity = {},
-      std::optional<real_t> kernel_width = 0.005 /*std::nullopt*/)
+      ArtificialViscosity viscosity = {})
       : _eos{std::move(eos)}, _kernel{std::move(kernel)},
-        _viscosity{std::move(viscosity)}, _kernel_width{kernel_width} {}
+        _viscosity{std::move(viscosity)} {}
 
-  /** Set of particle variables that are required. */
-  using required_variables = decltype([] {
-    using namespace particle_variables;
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = [] {
+    using namespace particle_fields;
     return meta::Set{fixed} | // TODO: fixed should not be here.
            meta::Set{h, m, rho, p, r, v, dv_dt} |
-           required_variables_t<EquationOfState>{} |
-           required_variables_t<ArtificialViscosity>{};
-  }());
+           EquationOfState::required_fields |
+           ArtificialViscosity::required_fields;
+  }();
 
   template<class Particles>
+    requires (has<Particles>(required_fields))
   constexpr void init(Particles& particles) const {
-    using namespace particle_variables;
-    const auto h_ab = *_kernel_width;
+    using namespace particle_fields;
     particles.for_each([&](auto a) {
       if (!fixed[a]) return;
-      h[a] = h_ab;
-      p[a] = _eos.pressure(a);
-      cs[a] = _eos.sound_speed(a);
+      // Init particle pressure (and sound speed).
+      _eos.compute_pressure(a);
     });
   }
 
   /** Estimate density, kernel width, pressure and sound speed. */
-  template<class ParticleCloud>
-    requires has_variables<ParticleCloud, required_variables>
-  constexpr void estimate_density(ParticleCloud& particles) const {
-    using namespace particle_variables;
+  template<class Particles>
+    requires (has<Particles>(required_fields))
+  constexpr void estimate_density(Particles& particles) const {
+    using namespace particle_fields;
     const auto h_ab = *_kernel_width;
     const auto search_radius = _kernel.radius(h_ab);
-    // Compute density, pressure and sound speed.
-    particles.for_each([&]<class A>(A a) {
+    particles.for_each([&](auto a) {
       if (fixed[a]) return;
-      h[a] = h_ab;
+      // Compute particle density, width.
       rho[a] = {};
-      particles.nearby(a, search_radius, [&]<class B>(B b) {
+      particles.nearby(a, search_radius, [&](auto b) {
         rho[a] += m[b] * _kernel(r[a, b], h_ab);
       });
-      p[a] = _eos.pressure(a);
-      cs[a] = _eos.sound_speed(a);
+      // Compute particle pressure (and sound speed).
+      _eos.compute_pressure(a);
     });
     // Compute velocity divergence and curl.
-    particles.for_each([&]<class A>(A a) {
-      if constexpr (has<A>(div_v)) div_v[a] = {};
-      if constexpr (has<A>(curl_v)) curl_v[a] = {};
-      particles.nearby(a, search_radius, [&]<class B>(B b) {
+    particles.for_each([&]<class PV>(PV a) {
+      if constexpr (has<PV>(div_v)) div_v[a] = {};
+      if constexpr (has<PV>(curl_v)) curl_v[a] = {};
+      particles.nearby(a, search_radius, [&](PV b) {
         const auto grad_ab = _kernel.grad(r[a, b], h_ab);
-        if constexpr (has<A>(div_v)) {
+        if constexpr (has<PV>(div_v)) {
           // clang-format off
           div_v[a] += m[b] * dot(v[a] / pow2(rho[a]) +
                                  v[b] / pow2(rho[b]), grad_ab);
           // clang-format on
         }
-        if constexpr (has<A>(curl_v)) {
+        if constexpr (has<PV>(curl_v)) {
           // clang-format off
           curl_v[a] -= m[b] * cross(v[a] / pow2(rho[a]) +
                                     v[b] / pow2(rho[b]), grad_ab);
           // clang-format on
         }
       });
-      if constexpr (has<A>(div_v)) div_v[a] *= rho[a];
-      if constexpr (has<A>(curl_v)) curl_v[a] *= rho[a];
+      if constexpr (has<PV>(div_v)) div_v[a] *= rho[a];
+      if constexpr (has<PV>(curl_v)) curl_v[a] *= rho[a];
     });
   }
 
   /** Estimate acceleration and thermal heating. */
-  template<class ParticleCloud>
-    requires has_variables<ParticleCloud, required_variables>
-  constexpr void estimate_forces(ParticleCloud& particles) const {
-    using namespace particle_variables;
+  template<class Particles>
+    requires (has<Particles>(required_fields))
+  constexpr void estimate_forces(Particles& particles) const {
+    using namespace particle_fields;
     const auto h_ab = *_kernel_width;
     const auto search_radius = _kernel.radius(h_ab);
-    particles.for_each([&]<class A>(A a) {
+    particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
-      if constexpr (has<A>(eps, deps_dt)) deps_dt[a] = {};
+      if constexpr (has<PV>(eps, deps_dt)) {
+        deps_dt[a] = {};
+      }
       particles.nearby(a, search_radius, [&]<class B>(B b) {
         const auto Pi_ab = _viscosity.kinematic(a, b);
         const auto grad_ab = _kernel.grad(r[a, b], h_ab);
@@ -144,16 +142,20 @@ public:
         dv_dt[a] -= m[b] * (p[a] / pow2(rho[a]) +
                             p[b] / pow2(rho[b]) + Pi_ab) * grad_ab;
         // clang-format on
-        if constexpr (has<A>(eps, deps_dt)) {
+        if constexpr (has<PV>(eps, deps_dt)) {
           // clang-format off
           deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) +
                                 Pi_ab) * dot(grad_ab, v[a, b]);
           // clang-format on
         }
+#if 1
+        // TODO: Gravity.
+        dv_dt[a][1] -= 9.81;
+#endif
       });
       // Compute artificial viscosity switch forces.
-      if constexpr (has<A>(alpha, dalpha_dt)) {
-        dalpha_dt[a] = _viscosity.switch_deriv(a);
+      if constexpr (has<PV>(alpha, dalpha_dt)) {
+        _viscosity.compute_switch_deriv(a);
       }
     });
   }
@@ -186,38 +188,41 @@ public:
       : _kernel{std::move(kernel)}, _eos{std::move(eos)},
         _viscosity{std::move(viscosity)}, _coupling{coupling} {}
 
-  /** Set of particle variables that are required. */
-  using required_variables = decltype([] {
-    using namespace particle_variables;
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = [] {
+    using namespace particle_fields;
     return meta::Set{fixed} | // TODO: fixed should not be here.
            meta::Set{h, Omega, m, rho, p, cs, r, v, dv_dt} |
-           required_variables_t<EquationOfState>{} |
-           required_variables_t<ArtificialViscosity>{};
-  }());
+           EquationOfState::required_fields |
+           ArtificialViscosity::required_fields;
+  }();
 
   template<class Particles>
+    requires (has<Particles>(required_fields))
   constexpr void init(Particles& particles) const {
-    using namespace particle_variables;
+    using namespace particle_fields;
     const auto eta = _coupling;
     particles.for_each([&](auto a) {
       if (!fixed[a]) return;
       const auto d = dim(r[a]);
+      // Init particle width (and Omega).
       h[a] = eta * pow(rho[a] / m[a], -inverse(1.0 * d));
       Omega[a] = 1.0;
-      p[a] = _eos.pressure(a);
-      cs[a] = _eos.sound_speed(a);
+      // Init particle pressure (and sound speed).
+      _eos.compute_pressure(a);
     });
   }
 
   /** Estimate density, kernel width, pressure and sound speed. */
-  template</*has_variables<required_variables>*/ class Particles>
+  template<class Particles>
+    requires (has<Particles>(required_fields))
   constexpr void estimate_density(Particles& particles) const {
-    using namespace particle_variables;
-    // Compute width, density, pressure and sound speed.
+    using namespace particle_fields;
     const auto eta = _coupling;
     particles.for_each([&](auto a) {
       if (fixed[a]) return;
       const auto d = dim(r[a]);
+      // Compute particle density, width (and Omega).
       // Solve zeta(h) = 0 for h, where: zeta(h) = Rho(h) - rho(h),
       // Rho(h) = m * (eta / h)^d - desired density.
       newton_raphson(h[a], [&] {
@@ -235,45 +240,46 @@ public:
         Omega[a] = 1.0 - Omega[a] / dRho_dh_a;
         return std::tuple{zeta_a, dzeta_dh_a};
       });
-      p[a] = _eos.pressure(a);
-      cs[a] = _eos.sound_speed(a);
+      // Compute particle pressure (and sound speed).
+      _eos.compute_pressure(a);
     });
     // Compute velocity divergence and curl.
-    particles.for_each([&]<class A>(A a) {
-      if constexpr (has<A>(div_v)) div_v[a] = {};
-      if constexpr (has<A>(curl_v)) curl_v[a] = {};
+    particles.for_each([&]<class PV>(PV a) {
+      if constexpr (has<PV>(div_v)) div_v[a] = {};
+      if constexpr (has<PV>(curl_v)) curl_v[a] = {};
       const auto search_radius = _kernel.radius(h[a]);
       particles.nearby(a, search_radius, [&]<class B>(B b) {
         const auto grad_aba = _kernel.grad(r[a, b], h[a]);
         const auto grad_abb = _kernel.grad(r[a, b], h[b]);
-        if constexpr (has<A>(div_v)) {
+        if constexpr (has<PV>(div_v)) {
           div_v[a] += m[b] * (dot(v[a] / pow2(rho[a]), grad_aba) +
                               dot(v[b] / pow2(rho[b]), grad_abb));
         }
-        if constexpr (has<A>(curl_v)) {
+        if constexpr (has<PV>(curl_v)) {
           curl_v[a] -= m[b] * (cross(v[a] / pow2(rho[a]), grad_aba) +
                                cross(v[b] / pow2(rho[b]), grad_abb));
         }
       });
-      if constexpr (has<A>(div_v)) div_v[a] *= rho[a];
-      if constexpr (has<A>(curl_v)) curl_v[a] *= rho[a];
+      if constexpr (has<PV>(div_v)) div_v[a] *= rho[a];
+      if constexpr (has<PV>(curl_v)) curl_v[a] *= rho[a];
     });
   }
 
   /** Estimate acceleration and thermal heating. */
-  template</*has_variables<required_variables>*/ class Particles>
+  template<class Particles>
+    requires (has<Particles>(required_fields))
   constexpr void estimate_forces(Particles& particles) const {
-    using namespace particle_variables;
-    particles.for_each([&]<class A>(A a) {
+    using namespace particle_fields;
+    particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
-      if constexpr (has<A>(eps, deps_dt)) {
+      if constexpr (has<PV>(eps, deps_dt)) {
         deps_dt[a] = {};
       }
       const auto d = dim(r[a]);
       const auto search_radius = _kernel.radius(h[a]);
-      particles.nearby(a, search_radius, [&]<class B>(B b) {
+      particles.nearby(a, search_radius, [&](PV b) {
         const auto Pi_ab = _viscosity.kinematic(a, b);
         const auto grad_aba = _kernel.grad(r[a, b], h[a]);
         const auto grad_abb = _kernel.grad(r[a, b], h[b]);
@@ -281,7 +287,7 @@ public:
         dv_dt[a] -= m[b] * (p[a] / (Omega[a] * pow2(rho[a])) * grad_aba +
                             p[b] / (Omega[b] * pow2(rho[b])) * grad_abb +
                             Pi_ab * grad_ab);
-        if constexpr (has<A>(eps, deps_dt)) {
+        if constexpr (has<PV>(eps, deps_dt)) {
           // clang-format off
           deps_dt[a] += m[b] * (p[a] / (Omega[a] * pow2(rho[a])) *
                                                         dot(grad_aba, v[a, b]) +
@@ -294,8 +300,8 @@ public:
       dv_dt[a][1] -= 9.81;
 #endif
       // Compute artificial viscosity switch forces.
-      if constexpr (has<A>(dalpha_dt)) {
-        dalpha_dt[a] = _viscosity.switch_deriv(a);
+      if constexpr (has<PV>(dalpha_dt)) {
+        _viscosity.compute_switch_deriv(a);
       }
     });
   }

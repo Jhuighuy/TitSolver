@@ -33,9 +33,6 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Dimension type. */
-using dim_t = int;
-
 /** Real type. */
 using real_t = double;
 
@@ -61,6 +58,11 @@ using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Dimension type. */
+using dim_t = int;
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 using std::abs;
 
 /** Sign function. */
@@ -69,10 +71,18 @@ constexpr int sign(Num value) noexcept {
   return int(Num{0} < value) - int(value < Num{0});
 }
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 /** Average function. */
 template<class... Nums>
 constexpr auto avg(Nums... values) noexcept {
   return (values + ...) / (sizeof...(Nums));
+}
+
+/** Harmonic average function. */
+template<class... Nums>
+constexpr auto havg(Nums... values) noexcept {
+  return (sizeof...(Nums)) / (inverse(values) + ...);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -167,6 +177,11 @@ constexpr bool newton_raphson(Real& x, const Func& f, //
                               Real epsilon = Real{1e-9}, size_t max_iter = 10) {
   for (size_t iter = 0; iter < max_iter; ++iter) {
     const auto [y, df_dx] = f(/*x*/);
+#if 0
+    std::cout << "NR: i = " << iter             //
+              << ", x = " << x << ", y = " << y //
+              << ", df/dx = " << df_dx << std::endl;
+#endif
     if (abs(y) < epsilon) return true;
     if (is_zero(df_dx)) break;
     x -= y / df_dx;
