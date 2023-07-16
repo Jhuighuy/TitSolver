@@ -26,11 +26,11 @@
 *
 *~
 !*/
-!.git*
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Configuration files.
+!/.git*
 !/.clang-*
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
@@ -43,6 +43,7 @@
 
 # Scripts.
 !*.sh
+!*.gnuplot
 
 # Markdown files.
 !*.md
