@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -83,18 +84,18 @@ int sph_main() {
   const Real L = 1.0;
   const Real spacing = L / N;
   const Real timestep = 5.0e-5;
-  const Real h_0 = /*1.5 */ spacing;
+  const Real h_0 = 1.5 * spacing;
   const Real rho_0 = 1000.0;
   const Real cs_0 = 120.0;
 
   // Setup the SPH estimator:
-  GradHSmoothEstimator estimator{
+  ClassicSmoothEstimator estimator{
       // Weakly compressible equation of state.
-      WeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+      LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
       // Standart cubic spline kernel.
       CubicKernel{},
       // Standard alpha-beta artificial viscosity scheme.
-      AlphaBetaArtificialViscosity{}};
+      MorrisMonaghanArtificialViscosity{}};
 
   // Setup the time itegrator:
   EulerIntegrator timeint{std::move(estimator)};
@@ -134,9 +135,15 @@ int sph_main() {
 
   particles.print("particles-dam.csv");
 
-  for (size_t n = 0; n < 1 + 100000; ++n) {
-    std::cout << n << std::endl;
+  real_t time = 0.0, exectime = 0.0;
+  for (size_t n = 0; n < 100 && time <= 0.5; ++n, time += timestep) {
+    std::cout << n << "\t\t" << time << "\t\t" << exectime / n << std::endl;
+    const auto start = std::chrono::high_resolution_clock::now();
     timeint.step(timestep, particles);
+    const auto delta = std::chrono::high_resolution_clock::now() - start;
+    exectime +=
+        1.0e-9 *
+        std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
     if (n % 100 == 0) particles.print("particles-dam.csv");
   }
 

@@ -36,6 +36,7 @@
     "*.f90pp": "FortranFreeForm",
     "*.ipp": "cpp",
     "*.tcc": "cpp",
+    "__availability": "cpp",
     "__bit_reference": "cpp",
     "__bits": "cpp",
     "__config": "cpp",
@@ -120,6 +121,7 @@
     "span": "cpp",
     "sstream": "cpp",
     "stack": "cpp",
+    "stdfloat": "cpp",
     "stdexcept": "cpp",
     "stop_token": "cpp",
     "streambuf": "cpp",
@@ -139,7 +141,6 @@
     "variant": "cpp",
     "vector": "cpp",
     "version": "cpp",
-    "future": "cpp",
-    "__availability": "cpp"
+    "future": "cpp"
   },
 }

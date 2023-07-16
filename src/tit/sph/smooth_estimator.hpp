@@ -41,7 +41,7 @@ namespace tit::sph {
  ** The particle estimator with a fixed kernel width.
 \******************************************************************************/
 template<class EquationOfState, class Kernel = CubicKernel,
-         class ArtificialViscosity = BalsaraArtificialViscosity<>>
+         class ArtificialViscosity = MorrisMonaghanArtificialViscosity<>>
   requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
 class ClassicSmoothEstimator {
@@ -85,14 +85,13 @@ public:
     requires (has<Particles>(required_fields))
   constexpr void estimate_density(Particles& particles) const {
     using namespace particle_fields;
-    const auto h_ab = *_kernel_width;
-    const auto search_radius = _kernel.radius(h_ab);
     particles.for_each([&](auto a) {
       if (fixed[a]) return;
       // Compute particle density, width.
       rho[a] = {};
+      const auto search_radius = _kernel.radius(h[a]);
       particles.nearby(a, search_radius, [&](auto b) {
-        rho[a] += m[b] * _kernel(r[a, b], h_ab);
+        rho[a] += m[b] * _kernel(r[a, b], h[a]);
       });
       // Compute particle pressure (and sound speed).
       _eos.compute_pressure(a);
@@ -101,8 +100,9 @@ public:
     particles.for_each([&]<class PV>(PV a) {
       if constexpr (has<PV>(div_v)) div_v[a] = {};
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
+      const auto search_radius = _kernel.radius(h[a]);
       particles.nearby(a, search_radius, [&](PV b) {
-        const auto grad_ab = _kernel.grad(r[a, b], h_ab);
+        const auto grad_ab = _kernel.grad(r[a, b], h[a]);
         if constexpr (has<PV>(div_v)) {
           // clang-format off
           div_v[a] += m[b] * dot(v[a] / pow2(rho[a]) +
@@ -126,8 +126,6 @@ public:
     requires (has<Particles>(required_fields))
   constexpr void estimate_forces(Particles& particles) const {
     using namespace particle_fields;
-    const auto h_ab = *_kernel_width;
-    const auto search_radius = _kernel.radius(h_ab);
     particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
@@ -135,9 +133,10 @@ public:
       if constexpr (has<PV>(eps, deps_dt)) {
         deps_dt[a] = {};
       }
-      particles.nearby(a, search_radius, [&]<class B>(B b) {
+      const auto search_radius = _kernel.radius(h[a]);
+      particles.nearby(a, search_radius, [&](PV b) {
         const auto Pi_ab = _viscosity.kinematic(a, b);
-        const auto grad_ab = _kernel.grad(r[a, b], h_ab);
+        const auto grad_ab = _kernel.grad(r[a, b], h[a]);
         // clang-format off
         dv_dt[a] -= m[b] * (p[a] / pow2(rho[a]) +
                             p[b] / pow2(rho[b]) + Pi_ab) * grad_ab;
@@ -148,11 +147,11 @@ public:
                                 Pi_ab) * dot(grad_ab, v[a, b]);
           // clang-format on
         }
-#if 1
-        // TODO: Gravity.
-        dv_dt[a][1] -= 9.81;
-#endif
       });
+#if 1
+      // TODO: Gravity.
+      dv_dt[a][1] -= 9.81;
+#endif
       // Compute artificial viscosity switch forces.
       if constexpr (has<PV>(alpha, dalpha_dt)) {
         _viscosity.compute_switch_deriv(a);
@@ -168,7 +167,7 @@ public:
  ** The particle estimator with a variable kernel width (Grad-H).
 \******************************************************************************/
 template<class EquationOfState, class Kernel = CubicKernel,
-         class ArtificialViscosity = BalsaraArtificialViscosity<>>
+         class ArtificialViscosity = MorrisMonaghanArtificialViscosity<>>
   requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
 class GradHSmoothEstimator {

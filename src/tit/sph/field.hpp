@@ -63,43 +63,43 @@ consteval bool has() {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Declare a particle variable. */
-#define TIT_DEF_VARIABLE(type, name, ...)                                  \
-  namespace particle_fields {                                              \
-    class name##_t {                                                       \
-    public:                                                                \
-                                                                           \
-      /** Field name. */                                                   \
-      static constexpr std::string field_name = #name;                     \
-                                                                           \
-      /** Field type. */                                                   \
-      template<class Real, dim_t Dim>                                      \
-      using field_value_type = type;                                       \
-                                                                           \
-      /** Field value for the specified particle (or particles). */        \
-      template<_has_fields PV>                                             \
-        requires (has<PV, name##_t>())                                     \
-      static constexpr decltype(auto) operator[](PV&& a) noexcept {        \
-        return a[name##_t{}];                                              \
-      }                                                                    \
-      /** Field value delta for the specified particles (or particles). */ \
-      template<_has_fields PV>                                             \
-        requires (has<PV, name##_t>())                                     \
-      constexpr auto operator[](PV&& a, PV&& b) const noexcept {           \
-        return (*this)[a] - (*this)[b];                                    \
-      }                                                                    \
-                                                                           \
-    }; /* class name##_t */                                                \
-    inline constexpr name##_t name __VA_OPT__(, __VA_ARGS__);              \
+/** Declare a particle field. */
+#define TIT_DEFINE_FIELD(type, name, ...)                           \
+  namespace particle_fields {                                       \
+    class name##_t {                                                \
+    public:                                                         \
+                                                                    \
+      /** Field name. */                                            \
+      static constexpr std::string field_name = #name;              \
+                                                                    \
+      /** Field type. */                                            \
+      template<class Real, dim_t Dim>                               \
+      using field_value_type = type;                                \
+                                                                    \
+      /** Field value for the specified particle view. */           \
+      template<_has_fields PV>                                      \
+        requires (has<PV, name##_t>())                              \
+      static constexpr decltype(auto) operator[](PV&& a) noexcept { \
+        return a[name##_t{}];                                       \
+      }                                                             \
+      /** Field value delta for the specified particle view. */     \
+      template<_has_fields PV>                                      \
+        requires (has<PV, name##_t>())                              \
+      static constexpr auto operator[](PV&& a, PV&& b) noexcept {   \
+        return a[name##_t{}] - b[name##_t{}];                       \
+      }                                                             \
+                                                                    \
+    }; /* class name##_t */                                         \
+    inline constexpr name##_t name __VA_OPT__(, __VA_ARGS__);       \
   } // namespace particle_fields
 
-/** Declare a scalar particle variable. */
-#define TIT_DEF_SCALAR_VARIABLE(name, ...) \
-  TIT_DEF_VARIABLE(Real, name __VA_OPT__(, __VA_ARGS__))
+/** Declare a scalar particle field. */
+#define TIT_DEFINE_SCALAR_FIELD(name, ...) \
+  TIT_DEFINE_FIELD(Real, name __VA_OPT__(, __VA_ARGS__))
 
-/** Declare a scalar particle variable. */
-#define TIT_DEF_VECTOR_VARIABLE(name, ...) \
-  TIT_DEF_VARIABLE(TIT_PASS(Vec<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
+/** Declare a scalar particle field. */
+#define TIT_DEFINE_VECTOR_FIELD(name, ...) \
+  TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
 
 /** Field name. */
 template<meta::type Field>
@@ -114,48 +114,48 @@ using field_value_type_t =
 
 /** Is particle fixed? For the fixed particles,
  ** no variables are updated during the simulation. */
-TIT_DEF_VARIABLE(bool, fixed);
+TIT_DEFINE_FIELD(bool, fixed);
 
 /** Particle position. */
-TIT_DEF_VECTOR_VARIABLE(r);
+TIT_DEFINE_VECTOR_FIELD(r);
 
 /** Particle velocity. */
-TIT_DEF_VECTOR_VARIABLE(v, dr_dt);
+TIT_DEFINE_VECTOR_FIELD(v, dr_dt);
 /** Particle velocity (XSPH model). */
-TIT_DEF_VECTOR_VARIABLE(v_xsph, dr_dt_xsph);
+TIT_DEFINE_VECTOR_FIELD(v_xsph, dr_dt_xsph);
 
 /** Particle velocity divergence. */
-TIT_DEF_SCALAR_VARIABLE(div_v);
+TIT_DEFINE_SCALAR_FIELD(div_v);
 /** Particle velocity curl (always 3D). */
-TIT_DEF_VARIABLE(TIT_PASS(Vec<Real, 3>), curl_v);
+TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, 3>), curl_v);
 
 /** Particle acceleration. */
-TIT_DEF_VECTOR_VARIABLE(a, dv_dt);
+TIT_DEFINE_VECTOR_FIELD(a, dv_dt);
 
 /** Particle mass. */
-TIT_DEF_SCALAR_VARIABLE(m);
+TIT_DEFINE_SCALAR_FIELD(m);
 /** Particle density. */
-TIT_DEF_SCALAR_VARIABLE(rho);
+TIT_DEFINE_SCALAR_FIELD(rho);
 
 /** Particle width. */
-TIT_DEF_SCALAR_VARIABLE(h);
+TIT_DEFINE_SCALAR_FIELD(h);
 /** Particle "Omega" variable (Grad-H model) */
-TIT_DEF_SCALAR_VARIABLE(Omega);
+TIT_DEFINE_SCALAR_FIELD(Omega);
 
 /** Particle pressure. */
-TIT_DEF_SCALAR_VARIABLE(p);
+TIT_DEFINE_SCALAR_FIELD(p);
 /** Particle sound speed. */
-TIT_DEF_SCALAR_VARIABLE(cs);
+TIT_DEFINE_SCALAR_FIELD(cs);
 
 /** Particle thermal energy. */
-TIT_DEF_SCALAR_VARIABLE(eps);
+TIT_DEFINE_SCALAR_FIELD(eps);
 /** Particle thermal energy time derivative. */
-TIT_DEF_SCALAR_VARIABLE(deps_dt);
+TIT_DEFINE_SCALAR_FIELD(deps_dt);
 
 /** Particle artificial viscosity switch. */
-TIT_DEF_SCALAR_VARIABLE(alpha);
+TIT_DEFINE_SCALAR_FIELD(alpha);
 /** Particle artificial viscosity switch time derivative. */
-TIT_DEF_SCALAR_VARIABLE(dalpha_dt);
+TIT_DEFINE_SCALAR_FIELD(dalpha_dt);
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

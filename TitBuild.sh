@@ -4,7 +4,7 @@ function compile() {
     -I./src \
     -I/opt/homebrew/include \
     -std=c++23 \
-    -Ofast -march=native \
+    -Ofast -march=native -DNDEBUG \
     -o $(echo $1 | sed 's/\.[^.]*$/.out/') \
     $1
 }
