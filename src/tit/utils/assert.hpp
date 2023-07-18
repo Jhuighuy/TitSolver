@@ -29,7 +29,11 @@ namespace tit {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Assertion macro. */
-#define TIT_ASSERT(expr, msg, ...) assert(expr)
+#ifndef NDEBUG
+#  define TIT_ASSERT(expr, msg, ...) assert(expr)
+#else
+#  define TIT_ASSERT(expr, msg, ...) [[assume(expr)]]
+#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
