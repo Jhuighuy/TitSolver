@@ -167,7 +167,7 @@ public:
   static constexpr auto unit_value(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{2.0}, Real{1.0}};
     constexpr auto wi = Vec{Real{0.25}, Real{-1.0}};
-#if TIT_KERNELS_BRANCHLESS
+#if TIT_BRANCHLESS_KERNELS
     const auto qv = Vec<Real, 2>(q);
     return sum(merge(qv < qi, wi * pow3(qi - qv)));
 #else
@@ -187,7 +187,7 @@ public:
   static constexpr Real unit_deriv(Real q) noexcept {
     constexpr auto qi = Vec{Real{2.0}, Real{1.0}};
     constexpr auto wi = Vec{Real{0.25}, Real{-1.0}};
-#if TIT_KERNELS_BRANCHLESS
+#if TIT_BRANCHLESS_KERNELS
     const auto qv = Vec<Real, 2>(q);
     return sum(merge(qv < qi, wi * Real{-3.0} * pow2(qi - qv)));
 #else
@@ -232,7 +232,7 @@ public:
   static constexpr auto unit_value(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{2.5}, Real{1.5}, Real{0.5}};
     constexpr auto wi = Vec{Real{1.0}, Real{-5.0}, Real{10.0}};
-#if TIT_KERNELS_BRANCHLESS
+#if TIT_BRANCHLESS_KERNELS
     const auto qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * pow4(qi - qv)));
 #else
@@ -255,7 +255,7 @@ public:
   static constexpr auto unit_deriv(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{2.5}, Real{1.5}, Real{0.5}};
     constexpr auto wi = Vec{Real{1.0}, Real{-5.0}, Real{10.0}};
-#if TIT_KERNELS_BRANCHLESS
+#if TIT_BRANCHLESS_KERNELS
     const auto qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * Real{-4.0} * pow3(qi - qv)));
 #else
@@ -303,7 +303,7 @@ public:
   static constexpr auto unit_value(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{3.0}, Real{2.0}, Real{1.0}};
     constexpr auto wi = Vec{Real{1.0}, Real{-6.0}, Real{15.0}};
-#if TIT_KERNELS_BRANCHLESS
+#if TIT_BRANCHLESS_KERNELS
     const auto qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * pow5(qi - qv)));
 #else
@@ -326,7 +326,7 @@ public:
   static constexpr auto unit_deriv(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{3.0}, Real{2.0}, Real{1.0}};
     constexpr auto wi = Vec{Real{1.0}, Real{-6.0}, Real{15.0}};
-#if TIT_KERNELS_BRANCHLESS
+#if TIT_BRANCHLESS_KERNELS
     const auto qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * Real{-5.0} * pow4(qi - qv)));
 #else
@@ -377,7 +377,7 @@ public:
     const auto k = [&]() {
       return (Real{1.0} + Real{2.0} * q) * pow4(Real{1.0} - Real{0.5} * q);
     };
-#if TIT_KERNELS_BRANCHLESS
+#if TIT_BRANCHLESS_KERNELS
     return merge(q < Real{2.0}, k());
 #else
     return (q < Real{2.0}) ? k() : Real{0.0};
@@ -392,7 +392,7 @@ public:
       // multiplications. Formula that is used requires 4.
       return Real{5.0 / 8.0} * q * pow3(q - Real{2.0});
     };
-#if TIT_KERNELS_BRANCHLESS
+#if TIT_BRANCHLESS_KERNELS
     return merge(q < Real{2.0}, dk_dq());
 #else
     return (q < Real{2.0}) ? dk_dq() : Real{0.0};

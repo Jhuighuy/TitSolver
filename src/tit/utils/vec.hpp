@@ -311,10 +311,18 @@ constexpr auto operator>=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
 }
 /** @} */
 
+/** Standard comparison operator. */
+template<class Op>
+concept std_cmp_op =
+    std::same_as<Op, std::equal_to<>> ||
+    std::same_as<Op, std::not_equal_to<>> || //
+    std::same_as<Op, std::less<>> || std::same_as<Op, std::less_equal<>> ||
+    std::same_as<Op, std::greater<>> || std::same_as<Op, std::greater_equal<>>;
+
 /** Evalulate comparison result. */
-template<class Cmp, class NumX, class NumY, dim_t Dim>
+template<class Op, class NumX, class NumY, dim_t Dim>
 constexpr auto eval( //
-    std::tuple<Cmp, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp) noexcept {
+    std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp) noexcept {
   Vec<bool, Dim> r;
   const auto& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = op(x[i], y[i]);
@@ -322,8 +330,8 @@ constexpr auto eval( //
 }
 
 /** Merge vector with zero vector based on comparison result. */
-template<class Cmp, class NumX, class NumY, class NumA, dim_t Dim>
-constexpr auto merge(std::tuple<Cmp, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
+template<class Op, class NumX, class NumY, class NumA, dim_t Dim>
+constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
                      Vec<NumA, Dim> a) noexcept {
   Vec<NumA, Dim> r;
   const auto& [op, x, y] = cmp;
@@ -334,8 +342,8 @@ constexpr auto merge(std::tuple<Cmp, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
   return r;
 }
 /** Merge two vectors bases on comparison result. */
-template<class Cmp, class NumX, class NumY, class NumA, class NumB, dim_t Dim>
-constexpr auto merge(std::tuple<Cmp, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
+template<class Op, class NumX, class NumY, class NumA, class NumB, dim_t Dim>
+constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
                      Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   // Supposed to be overriden by intrisics.
   Vec<sub_result_t<NumA, NumB>, Dim> r;
@@ -350,3 +358,12 @@ constexpr auto merge(std::tuple<Cmp, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+// Enable SIMD.
+#if TIT_ENABLE_SIMD
+#include "tit/utils/vec_simd.hpp"
+#endif
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
