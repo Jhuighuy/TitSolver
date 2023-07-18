@@ -119,8 +119,7 @@ int sph_main() {
       if (!(is_fixed || is_water)) continue;
       auto a = particles.append();
       fixed[a] = is_fixed;
-      r[a][0] = i * spacing;
-      r[a][1] = j * spacing;
+      r[a] = spacing * Vec{i, j};
     }
   }
   // Set global particle variables.

@@ -1,4 +1,4 @@
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*\
  * Copyright (C) 2020-2023 Oleg Butakov                                       *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -18,48 +18,14 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
  * DEALINGS IN THE SOFTWARE.                                                  *
-\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+\*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #pragma once
 
-namespace tit {
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#define TIT_PASS(...) __VA_ARGS__
-
-#define TIT_ALWAYS_INLINE inline __attribute__((always_inline))
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-template<class T, class U>
-TIT_ALWAYS_INLINE T union_cast(U u) noexcept {
-  union Union {
-    U u;
-    T t;
-  };
-  return Union{.u = u}.t;
-}
+#ifndef TIT_KERNELS_BRANCHLESS
+#  define TIT_KERNELS_BRANCHLESS 1
+#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-template<class Func>
-class OnAssignment {
-private:
-
-  Func _func;
-
-public:
-
-  constexpr explicit OnAssignment(Func func) : _func{std::move(func)} {}
-
-  template<class Arg>
-  constexpr void operator=(Arg&& arg) {
-    _func(std::forward<Arg>(arg));
-  }
-
-}; // class OnAssignment
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-} // namespace tit
