@@ -24,8 +24,20 @@
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#ifndef TIT_KERNELS_BRANCHLESS
-#  define TIT_KERNELS_BRANCHLESS 1
+#ifndef TIT_ENABLE_SIMD
+#define TIT_ENABLE_SIMD 1
+#endif
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#ifndef TIT_ENABLE_INTRISICS
+#define TIT_ENABLE_INTRISICS 1
+#endif
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#ifndef TIT_BRANCHLESS_KERNELS
+#define TIT_BRANCHLESS_KERNELS 1
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

@@ -1,0 +1,222 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Copyright (C) 2020-2023 Oleg Butakov                                       *
+ *                                                                            *
+ * Permission is hereby granted, free of charge, to any person obtaining a    *
+ * copy of this software and associated documentation files (the "Software"), *
+ * to deal in the Software without restriction, including without limitation  *
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
+ * and/or sell copies of the Software, and to permit persons to whom the      *
+ * Software is furnished to do so, subject to the following conditions:       *
+ *                                                                            *
+ * The above copyright notice and this permission notice shall be included in *
+ * all copies or substantial portions of the Software.                        *
+ *                                                                            *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER *
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
+ * DEALINGS IN THE SOFTWARE.                                                  *
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+// TODO: implement NEON for float32_t.
+#pragma once
+
+#include <array>
+#include <concepts>
+#include <functional>
+
+#include <arm_neon.h>
+
+#include "tit/utils/math.hpp"
+#include "tit/utils/misc.hpp"
+#include "tit/utils/vec.hpp"
+
+namespace tit {
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+namespace simd {
+
+  template<>
+  inline constexpr auto reg_size_v<float64_t> = size_t{2};
+
+} // namespace simd
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+template<>
+class alignas(16) Vec<float64_t, 2> final {
+public:
+
+  static constexpr auto num_scalars = size_t{2};
+
+  union {
+    std::array<float64_t, num_scalars> _scalars;
+    float64x2_t _reg;
+  };
+
+  constexpr Vec(float64_t qx, float64_t qy) noexcept {
+    if consteval {
+      _scalars = {qx, qy};
+    } else {
+      _reg = vsetq_lane_f64(qx, _reg, 0);
+      _reg = vsetq_lane_f64(qy, _reg, 1);
+    }
+  }
+
+  constexpr Vec(float64_t q = 0.0) noexcept {
+    if consteval {
+      _scalars.fill(q);
+    } else {
+      _reg = vdupq_n_f64(q);
+    }
+  }
+  constexpr auto& operator=(float64_t q) noexcept {
+    if consteval {
+      _scalars.fill(q);
+    } else {
+      _reg = vdupq_n_f64(q);
+    }
+    return *this;
+  }
+
+  constexpr auto& operator[](size_t i) noexcept {
+    TIT_ASSERT(i < num_scalars, "Index is out of range!");
+    return _scalars[i];
+  }
+  constexpr auto operator[](size_t i) const noexcept {
+    TIT_ASSERT(i < num_scalars, "Index is out of range!");
+    if consteval {
+      return _scalars[i];
+    } else {
+      return vdupd_laneq_f64(_reg, i);
+    }
+  }
+
+}; // class Vec<float64_t, 2>
+
+TIT_VEC_SIMD_FUNC_VV(operator+, 2, float64_t, a, float64_t, b, {
+  Vec<float64_t, 2> r;
+  r._reg = vaddq_f64(a._reg, b._reg);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_VV(operator+=, 2, float64_t, &a, float64_t, b, {
+  a._reg = vaddq_f64(a._reg, b._reg);
+  return a;
+})
+
+TIT_VEC_SIMD_FUNC_V(operator-, 2, float64_t, a, {
+  Vec<float64_t, 2> r;
+  r._reg = vnegq_f64(a._reg);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_VV(operator-, 2, float64_t, a, float64_t, b, {
+  Vec<float64_t, 2> r;
+  r._reg = vsubq_f64(a._reg, b._reg);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_VV(operator-=, 2, float64_t, &a, float64_t, b, {
+  a._reg = vsubq_f64(a._reg, b._reg);
+  return a;
+})
+
+TIT_VEC_SIMD_FUNC_SV(operator*, 2, Num, a, float64_t, b, {
+  Vec<float64_t, 2> r;
+  r._reg = vmulq_f64(vdupq_n_f64(static_cast<float64_t>(a)), b._reg);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_VS(operator*, 2, float64_t, a, Num, b, {
+  Vec<float64_t, 2> r;
+  r._reg = vmulq_f64(a._reg, vdupq_n_f64(static_cast<float64_t>(b)));
+  return r;
+})
+TIT_VEC_SIMD_FUNC_VV(operator*, 2, float64_t, a, float64_t, b, {
+  Vec<float64_t, 2> r;
+  r._reg = vmulq_f64(a._reg, b._reg);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_VS(operator*=, 2, float64_t, &a, Num, b, {
+  a._reg = vmulq_f64(a._reg, vdupq_n_f64(static_cast<float64_t>(b)));
+  return a;
+})
+TIT_VEC_SIMD_FUNC_VV(operator*=, 2, float64_t, &a, float64_t, b, {
+  a._reg = vmulq_f64(a._reg, b._reg);
+  return a;
+})
+
+TIT_VEC_SIMD_FUNC_VS(operator/, 2, float64_t, a, Num, b, {
+  Vec<float64_t, 2> r;
+  r._reg = vdivq_f64(a._reg, vdupq_n_f64(static_cast<float64_t>(b)));
+  return r;
+})
+TIT_VEC_SIMD_FUNC_VV(operator/, 2, float64_t, a, float64_t, b, {
+  Vec<float64_t, 2> r;
+  r._reg = vdivq_f64(a._reg, b._reg);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_VS(operator/=, 2, float64_t, &a, Num, b, {
+  a._reg = vdivq_f64(a._reg, vdupq_n_f64(static_cast<float64_t>(b)));
+  return a;
+})
+TIT_VEC_SIMD_FUNC_VV(operator/=, 2, float64_t, &a, float64_t, b, {
+  a._reg = vdivq_f64(a._reg, b._reg);
+  return a;
+})
+
+TIT_VEC_SIMD_FUNC_V(sum, 2, float64_t, a, {
+  return vaddvq_f64(a._reg); //
+})
+
+namespace {
+  // vmvnq_u64 does not exist for some reason.
+  inline uint64x2_t vmvnq_u64(uint64x2_t a_reg) noexcept {
+    return vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(a_reg)));
+  }
+} // namespace
+
+// Helper to compare two NEON registers based on the compare functor.
+template<std_cmp_op Op>
+auto _cmp_neon([[maybe_unused]] const Op& op, //
+               float64x2_t a_reg, float64x2_t b_reg) noexcept -> uint64x2_t {
+  if constexpr (std::is_same_v<Op, std::equal_to<>>) {
+    return vceqq_f64(a_reg, b_reg);
+  } else if constexpr (std::is_same_v<Op, std::not_equal_to<>>) {
+    return vmvnq_u64(vceqq_f64(a_reg, b_reg));
+  } else if constexpr (std::is_same_v<Op, std::less<>>) {
+    return vcltq_f64(a_reg, b_reg);
+  } else if constexpr (std::is_same_v<Op, std::less_equal<>>) {
+    return vcleq_f64(a_reg, b_reg);
+  } else if constexpr (std::is_same_v<Op, std::greater<>>) {
+    return vcgtq_f64(a_reg, b_reg);
+  } else if constexpr (std::is_same_v<Op, std::greater_equal<>>) {
+    return vcgeq_f64(a_reg, b_reg);
+  }
+}
+
+// clang-format off
+TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp,
+                   float64_t, a, {
+  Vec<float64_t, 2> r;
+  const auto& [op, x, y] = cmp;
+  const auto mask = _cmp_neon(op, x._reg, y._reg);
+  r._reg = vreinterpretq_f64_u64(
+      vandq_u64(vreinterpretq_u64_f64(a._reg), mask));
+  return r;
+})
+TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
+                     float64_t, a, float64_t, b, {
+  Vec<float64_t, 2> r;
+  const auto& [op, x, y] = cmp;
+  const auto mask = _cmp_neon(op, x._reg, y._reg);
+  r._reg = vreinterpretq_f64_u64(
+        vorrq_u64(vandq_u64(vreinterpretq_u64_f64(a._reg), mask),
+                  vandq_u64(vreinterpretq_u64_f64(b._reg), vmvnq_u64(mask))));
+  return r;
+})
+// clang-format on
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+} // namespace tit

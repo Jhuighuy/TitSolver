@@ -51,7 +51,6 @@ ContinuationIndentWidth: 4
 IndentCaseLabels: true
 IndentRequiresClause: true
 RequiresClausePosition: OwnLine
-IndentPPDirectives: AfterHash
 IndentWidth: 2
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
