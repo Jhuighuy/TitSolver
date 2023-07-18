@@ -346,7 +346,8 @@ public:
     using namespace particle_fields;
 
     const Real squaredRadius = search_radius * search_radius;
-    std::vector<nanoflann::ResultItem<size_t, Real>> indices_dists;
+    thread_local std::vector<nanoflann::ResultItem<size_t, Real>> indices_dists;
+    indices_dists.clear();
     nanoflann::RadiusResultSet<Real> resultSet(squaredRadius, indices_dists);
 
     // resultSet contains a;

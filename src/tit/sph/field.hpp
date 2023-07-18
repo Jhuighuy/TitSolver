@@ -64,41 +64,41 @@ consteval bool has() {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Declare a particle field. */
-#define TIT_DEFINE_FIELD(type, name, ...)                           \
-  namespace particle_fields {                                       \
-    class name##_t {                                                \
-    public:                                                         \
-                                                                    \
-      /** Field name. */                                            \
-      static constexpr std::string field_name = #name;              \
-                                                                    \
-      /** Field type. */                                            \
-      template<class Real, dim_t Dim>                               \
-      using field_value_type = type;                                \
-                                                                    \
-      /** Field value for the specified particle view. */           \
-      template<_has_fields PV>                                      \
-        requires (has<PV, name##_t>())                              \
-      static constexpr decltype(auto) operator[](PV&& a) noexcept { \
-        return a[name##_t{}];                                       \
-      }                                                             \
-      /** Field value delta for the specified particle view. */     \
-      template<_has_fields PV>                                      \
-        requires (has<PV, name##_t>())                              \
-      static constexpr auto operator[](PV&& a, PV&& b) noexcept {   \
-        return a[name##_t{}] - b[name##_t{}];                       \
-      }                                                             \
-                                                                    \
-    }; /* class name##_t */                                         \
-    inline constexpr name##_t name __VA_OPT__(, __VA_ARGS__);       \
+#define TIT_DEFINE_FIELD(type, name, ...)                                      \
+  namespace particle_fields {                                                  \
+    class name##_t {                                                           \
+    public:                                                                    \
+                                                                               \
+      /** Field name. */                                                       \
+      static constexpr std::string field_name = #name;                         \
+                                                                               \
+      /** Field type. */                                                       \
+      template<class Real, dim_t Dim>                                          \
+      using field_value_type = type;                                           \
+                                                                               \
+      /** Field value for the specified particle view. */                      \
+      template<_has_fields PV>                                                 \
+        requires (has<PV, name##_t>())                                         \
+      static constexpr decltype(auto) operator[](PV&& a) noexcept {            \
+        return a[name##_t{}];                                                  \
+      }                                                                        \
+      /** Field value delta for the specified particle view. */                \
+      template<_has_fields PV>                                                 \
+        requires (has<PV, name##_t>())                                         \
+      static constexpr auto operator[](PV&& a, PV&& b) noexcept {              \
+        return a[name##_t{}] - b[name##_t{}];                                  \
+      }                                                                        \
+                                                                               \
+    }; /* class name##_t */                                                    \
+    inline constexpr name##_t name __VA_OPT__(, __VA_ARGS__);                  \
   } // namespace particle_fields
 
 /** Declare a scalar particle field. */
-#define TIT_DEFINE_SCALAR_FIELD(name, ...) \
+#define TIT_DEFINE_SCALAR_FIELD(name, ...)                                     \
   TIT_DEFINE_FIELD(Real, name __VA_OPT__(, __VA_ARGS__))
 
 /** Declare a scalar particle field. */
-#define TIT_DEFINE_VECTOR_FIELD(name, ...) \
+#define TIT_DEFINE_VECTOR_FIELD(name, ...)                                     \
   TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
 
 /** Field name. */
