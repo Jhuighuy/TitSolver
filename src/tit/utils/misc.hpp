@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <bit>
+#include <concepts>
+
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -39,6 +42,31 @@ TIT_ALWAYS_INLINE T union_cast(U u) noexcept {
     T t;
   };
   return Union{.u = u}.t;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+template<std::unsigned_integral Int>
+constexpr auto ceil_divide(Int value, Int divisor) noexcept -> Int {
+  return (value + divisor - 1) / divisor;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Check if value is power of two. */
+template<std::unsigned_integral Int>
+constexpr auto is_power_of_two(Int x) noexcept -> bool {
+  return (x & (x - 1)) == 0;
+}
+
+template<std::unsigned_integral Int>
+constexpr auto pow2(Int x) noexcept -> Int {
+  return Int{1} << x;
+}
+
+template<std::unsigned_integral Int>
+constexpr auto log2(Int x) noexcept -> Int {
+  return std::bit_width(x) - 1;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

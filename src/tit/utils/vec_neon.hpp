@@ -37,15 +37,6 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-namespace simd {
-
-  template<>
-  inline constexpr auto reg_size_v<float64_t> = size_t{2};
-
-} // namespace simd
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 template<>
 class alignas(16) Vec<float64_t, 2> final {
 public:

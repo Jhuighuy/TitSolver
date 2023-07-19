@@ -36,21 +36,44 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+// Set up the default register size.
+// Assuming 128-bit SIMD registers by default.
+// TODO: auto-decect me!
+#ifndef TIT_SIMD_REGISTER_SIZE
+#define TIT_SIMD_REGISTER_SIZE (4 * sizeof(float))
+#endif
+
 namespace simd {
 
-  /** SIMD register size. */
-  template<class Num>
-  inline constexpr auto reg_size_v =
-      std::max<size_t>(1, 4 * sizeof(float) / sizeof(Num));
+  static_assert(is_power_of_two(TIT_SIMD_REGISTER_SIZE));
 
-  /** Should SIMD registors be used for this amount scalars? */
-  template<dim_t Dim, class Num>
-  concept use_regs = (Dim > 1) && (Dim != reg_size_v<Num>);
+  /** Maximum SIMD register size. */
+  template<class Num>
+  inline constexpr auto max_reg_size_v =
+      std::max<size_t>(1, TIT_SIMD_REGISTER_SIZE / sizeof(Num));
+
+  /** @brief Should SIMD registors be used for the amount scalars?
+   ** Registers are used if either number of dimensions is greater than register
+   ** size for the scalar type (e.g., 3*double on NEON CPU), or it is less than
+   ** register size for the scalar type (e.g. 3*double on AVX CPU) and number of
+   ** dimensions is not power of two (in this case fractions of registers are
+   ** used, e.g. 2*double on AVX CPU). */
+  template<size_t Size, class Num>
+  concept use_regs = (Size > max_reg_size_v<Num>) ||
+                     (Size < max_reg_size_v<Num> && !is_power_of_two(Size));
+
+  /** SIMD register size for the specified amount of scalars. */
+  template<size_t Size, class Num>
+    requires use_regs<Size, Num>
+  inline constexpr auto reg_size_v =
+      std::min(max_reg_size_v<Num>,
+               (is_power_of_two(Size) ? Size : pow2(log2(Size) + 1)));
 
   /** Do SIMD registors match for the specified types? */
-  template<dim_t Dim, class Num, class... RestNums>
-  concept regs_match = use_regs<Dim, Num> && (use_regs<Dim, RestNums> && ...) &&
-                       ((reg_size_v<Num> == reg_size_v<RestNums>) &&...);
+  template<size_t Size, class Num, class... RestNums>
+  concept regs_match =
+      use_regs<Size, Num> && (use_regs<Size, RestNums> && ...) &&
+      ((reg_size_v<Size, Num> == reg_size_v<Size, RestNums>) &&...);
 
 } // namespace simd
 
@@ -68,10 +91,10 @@ public:
   static constexpr auto num_scalars = size_t{Dim};
 
   /** SIMD register size. */
-  static constexpr auto reg_size = simd::reg_size_v<Num>;
+  static constexpr auto reg_size = simd::reg_size_v<Dim, Num>;
 
   /** Number of SIMD register. */
-  static constexpr auto num_regs = (num_scalars + reg_size - 1) / reg_size;
+  static constexpr auto num_regs = ceil_divide(num_scalars, reg_size);
 
   /** Padding. */
   static constexpr auto padding = reg_size * num_regs - num_scalars;
