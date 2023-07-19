@@ -238,8 +238,6 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
   return r;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 /** Vector dot product. */
 template<class NumA, class NumB, dim_t Dim>
 constexpr auto dot(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
