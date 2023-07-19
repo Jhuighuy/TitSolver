@@ -24,13 +24,16 @@
 
 #include <algorithm>
 #include <array>
-#include <functional>
+#include <concepts>
 #include <tuple>
-#include <type_traits>
+#include <utility>
 
+#include "tit/utils/assert.hpp"
 #include "tit/utils/config.hpp"
 #include "tit/utils/math.hpp"
 #include "tit/utils/misc.hpp"
+#include "tit/utils/types.hpp"
+#include "tit/utils/vec.hpp" // IWYU pragma: keep
 
 namespace tit {
 
@@ -409,12 +412,12 @@ consteval auto& _unwrap(auto* value) noexcept {
 
 } // namespace tit
 
-#if defined(__SSE__) && (__SSE__)
-#include "tit/utils/vec_avx.hpp"
+#ifdef __SSE__
+#include "tit/utils/vec_avx.hpp" // IWYU pragma: export
 #endif
 
-#if defined(__ARM_NEON) && (__ARM_NEON)
-#include "tit/utils/vec_neon.hpp"
+#ifdef __ARM_NEON
+#include "tit/utils/vec_neon.hpp" // IWYU pragma: export
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

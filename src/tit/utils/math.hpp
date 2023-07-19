@@ -31,8 +31,7 @@
 #include <utility>
 
 #include "tit/utils/assert.hpp"
-#include "tit/utils/config.hpp"
-#include "tit/utils/misc.hpp"
+#include "tit/utils/types.hpp"
 
 namespace tit {
 
@@ -64,11 +63,14 @@ using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Dimension type. */
-using dim_t = ptrdiff_t;
+using dim_t = ssize_t;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-using std::abs;
+template<class Num>
+constexpr auto abs(Num value) noexcept -> Num {
+  return std::abs(value);
+}
 
 /** Sign function. */
 template<class Num>
@@ -92,16 +94,41 @@ constexpr auto havg(Nums... values) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-using std::exp;
-using std::log;
+template<class Num>
+constexpr auto exp(Num value) noexcept -> Num {
+  return std::exp(value);
+}
+
+template<class Num>
+constexpr auto log(Num value) noexcept -> Num {
+  return std::log(value);
+}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-using std::cbrt;
-using std::hypot;
-using std::pow;
-using std::sqrt;
+template<class Num>
+constexpr auto sqrt(Num value) noexcept -> Num {
+  return std::sqrt(value);
+}
 
+template<class Num>
+constexpr auto cbrt(Num value) noexcept -> Num {
+  return std::cbrt(value);
+}
+
+template<class Num>
+constexpr auto hypot(Num x, Num y) noexcept -> Num {
+  return std::hypot(x, y);
+}
+template<class Num>
+constexpr auto hypot(Num x, Num y, Num z) noexcept -> Num {
+  return std::hypot(x, y, z);
+}
+
+template<class Num>
+constexpr auto pow2(Num value, Num power) noexcept -> Num {
+  return std::hypot(value, power);
+}
 template<class Num>
 constexpr auto pow2(Num value) noexcept -> Num {
   // 1 multiplication.

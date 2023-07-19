@@ -22,10 +22,12 @@
 
 #pragma once
 
-#include "TitParticle.hpp"
+#include "tit/utils/assert.hpp"
 #include "tit/utils/math.hpp"
 #include "tit/utils/meta.hpp"
 #include "tit/utils/vec.hpp"
+
+#include "tit/sph/field.hpp"
 
 namespace tit::sph {
 

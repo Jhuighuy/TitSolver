@@ -22,16 +22,17 @@
 
 #pragma once
 
-#include "TitParticle.hpp"
-#include "tit/sph/artificial_viscosity.hpp"
-#include "tit/sph/equation_of_state.hpp"
-#include "tit/sph/smooth_kernel.hpp"
 #include "tit/utils/math.hpp"
 #include "tit/utils/meta.hpp"
 #include "tit/utils/vec.hpp"
 
-#include <optional>
-#include <type_traits>
+#include "tit/sph/artificial_viscosity.hpp"
+#include "tit/sph/equation_of_state.hpp" // IWYU pragma: keep
+#include "tit/sph/field.hpp"
+#include "tit/sph/smooth_kernel.hpp"
+
+#include <tuple>
+#include <type_traits> // IWYU pragma: keep
 
 namespace tit::sph {
 

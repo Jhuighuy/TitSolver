@@ -22,8 +22,12 @@
 
 #pragma once
 
-#include "TitParticle.hpp"
-#include "tit/sph/smooth_estimator.hpp"
+#include <type_traits> // IWYU pragma: keep
+
+#include "tit/utils/types.hpp"
+
+#include "tit/sph/field.hpp"
+#include "tit/sph/smooth_estimator.hpp" // IWYU pragma: keep
 
 namespace tit::sph {
 

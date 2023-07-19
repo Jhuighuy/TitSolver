@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <type_traits>
+
+#include "tit/utils/math.hpp"
 #include "tit/utils/meta.hpp"
 #include "tit/utils/misc.hpp"
 #include "tit/utils/vec.hpp"
@@ -70,7 +73,7 @@ consteval bool has() {
     public:                                                                    \
                                                                                \
       /** Field name. */                                                       \
-      static constexpr std::string field_name = #name;                         \
+      static constexpr const char* field_name = #name;                         \
                                                                                \
       /** Field type. */                                                       \
       template<class Real, dim_t Dim>                                          \
@@ -108,7 +111,7 @@ inline constexpr auto field_name_v = std::remove_cvref_t<Field>::field_name;
 /** Field type. */
 template<meta::type Field, class Real, dim_t Dim>
 using field_value_type_t =
-    typename std::remove_cvref_t<Field>::field_value_type<Real, Dim>;
+    typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

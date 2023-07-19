@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <cstdlib>
+#include <cstddef>
 
 namespace tit {
 
@@ -30,6 +30,9 @@ namespace tit {
 
 /** Unsigned sized type. */
 using size_t = std::size_t;
+
+/** Signed sized type. */
+using ssize_t = std::ptrdiff_t;
 
 /** 32-bit floating point type. */
 using float32_t = float;
