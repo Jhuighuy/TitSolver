@@ -23,10 +23,14 @@
 #pragma once
 
 #include <array>
+#include <concepts>
 #include <functional>
-#include <type_traits>
+#include <tuple>
 
+#include "tit/utils/assert.hpp"
+#include "tit/utils/config.hpp"
 #include "tit/utils/math.hpp"
+#include "tit/utils/types.hpp"
 
 namespace tit {
 
@@ -361,7 +365,7 @@ constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
 
 // Enable SIMD.
 #if TIT_ENABLE_SIMD
-#include "tit/utils/vec_simd.hpp"
+#include "tit/utils/vec_simd.hpp" // IWYU pragma: export
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

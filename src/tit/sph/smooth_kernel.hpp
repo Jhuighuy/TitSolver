@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <limits>
 #include <numbers>
 
 #include "tit/utils/assert.hpp"

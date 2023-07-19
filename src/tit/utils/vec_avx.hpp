@@ -21,17 +21,16 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
+#ifdef __SSE__
 
 #include <array>
-#include <concepts>
 #include <functional>
 
 #include <x86intrin.h>
 
-#include "tit/utils/math.hpp"
-#include "tit/utils/misc.hpp"
+#include "tit/utils/assert.hpp"
 #include "tit/utils/types.hpp"
-#include "tit/utils/vec.hpp"
+#include "tit/utils/vec.hpp" // IWYU pragma: keep
 
 namespace tit {
 
@@ -78,12 +77,7 @@ public:
   }
   constexpr auto operator[](size_t i) const noexcept {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
-    if consteval {
-      return _scalars[i];
-    } else {
-      // TODO: there must be an instruction for it!.
-      return _scalars[i];
-    }
+    return _scalars[i];
   }
 
 }; // class Vec<float64_t, 4>
@@ -198,7 +192,7 @@ TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
   Vec<float64_t, 2> r;
   const auto& [op, x, y] = cmp;
   const auto mask = _cmp_sse(op, x._reg, y._reg);
-  // Falsy value comes first!
+  // Falsy value comes first.
   r._reg = _mm_blend_pd(b._reg, a._reg, mask);
   return r;
 })
@@ -248,12 +242,7 @@ public:
   }
   constexpr auto operator[](size_t i) const noexcept {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
-    if consteval {
-      return _scalars[i];
-    } else {
-      // TODO: there must be an instruction for it!.
-      return _scalars[i];
-    }
+    return _scalars[i];
   }
 
 }; // class Vec<float64_t, 4>
@@ -367,7 +356,7 @@ TIT_VEC_SIMD_MERGE_2(4, Op, float64_t, float64_t, cmp,
   Vec<float64_t, 4> r;
   const auto& [op, x, y] = cmp;
   const auto mask = _cmp_avx(op, x._reg, y._reg);
-  // Falsy value comes first!
+  // Falsy value comes first.
   r._reg = _mm256_blend_pd(b._reg, a._reg, mask);
   return r;
 })
@@ -376,3 +365,5 @@ TIT_VEC_SIMD_MERGE_2(4, Op, float64_t, float64_t, cmp,
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit
+
+#endif // __SSE__

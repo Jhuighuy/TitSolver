@@ -20,18 +20,17 @@
  * DEALINGS IN THE SOFTWARE.                                                  *
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// TODO: implement NEON for float32_t.
 #pragma once
+#ifdef __ARM_NEON
 
 #include <array>
-#include <concepts>
 #include <functional>
 
 #include <arm_neon.h>
 
-#include "tit/utils/math.hpp"
-#include "tit/utils/misc.hpp"
-#include "tit/utils/vec.hpp"
+#include "tit/utils/assert.hpp"
+#include "tit/utils/types.hpp"
+#include "tit/utils/vec.hpp" // IWYU pragma: keep
 
 namespace tit {
 
@@ -79,11 +78,7 @@ public:
   }
   constexpr auto operator[](size_t i) const noexcept {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
-    if consteval {
-      return _scalars[i];
-    } else {
-      return vdupd_laneq_f64(_reg, i);
-    }
+    return _scalars[i];
   }
 
 }; // class Vec<float64_t, 2>
@@ -211,3 +206,5 @@ TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit
+
+#endif // __ARM_NEON

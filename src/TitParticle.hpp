@@ -23,19 +23,26 @@
 #pragma once
 
 #include <algorithm>
+#include <concepts>
+#include <cstdint>
+#include <fstream>
 #include <memory>
 #include <ranges>
-#include <string_view>
+#include <string>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include <nanoflann.hpp>
 
-#include "tit/sph/field.hpp"
+#include "tit/utils/assert.hpp"
+#include "tit/utils/math.hpp"
 #include "tit/utils/meta.hpp"
 #include "tit/utils/misc.hpp"
 #include "tit/utils/types.hpp"
 #include "tit/utils/vec.hpp"
+
+#include "tit/sph/field.hpp"
 
 namespace tit {
 

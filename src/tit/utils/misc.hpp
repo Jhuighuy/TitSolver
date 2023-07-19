@@ -24,6 +24,7 @@
 
 #include <bit>
 #include <concepts>
+#include <utility>
 
 namespace tit {
 
@@ -31,12 +32,10 @@ namespace tit {
 
 #define TIT_PASS(...) __VA_ARGS__
 
-#define TIT_ALWAYS_INLINE inline __attribute__((always_inline))
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template<class T, class U>
-TIT_ALWAYS_INLINE T union_cast(U u) noexcept {
+inline T union_cast(U u) noexcept {
   union Union {
     U u;
     T t;

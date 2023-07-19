@@ -23,7 +23,9 @@
 #pragma once
 
 #include <concepts>
-#include <type_traits>
+#include <type_traits> // IWYU pragma: keep
+
+#include "tit/utils/types.hpp"
 
 namespace tit::meta {
 
@@ -31,7 +33,7 @@ namespace tit::meta {
 
 /** An empty object. */
 template<class T>
-concept meta_type = true; // std::is_object_v<T>; // && std::is_empty_v<T>;
+concept meta_type = true;
 template<class T>
 concept type = std::is_object_v<T> && std::is_empty_v<T>;
 
@@ -39,6 +41,7 @@ concept type = std::is_object_v<T> && std::is_empty_v<T>;
 template<meta_type T, meta_type... Us>
 inline constexpr bool contains_v = (... || std::same_as<T, Us>);
 
+/** Index of T in list U, Us. */
 template<meta_type T, meta_type U, meta_type... Us>
   requires contains_v<T, U, Us...>
 inline constexpr size_t index_of_v = [] {
