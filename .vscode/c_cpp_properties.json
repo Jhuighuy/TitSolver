@@ -21,6 +21,7 @@
 \*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 {
   "configurations": [
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     {
       "name": "macOS",
       "includePath": [
@@ -34,7 +35,24 @@
       "cStandard": "c11",
       "cppStandard": "c++23",
       "intelliSenseMode": "macos-gcc-arm64"
+    },
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    {
+      "name": "Windows (MSYS2)",
+      "includePath": [
+        // TODO: here should be a better path.
+        "C:/msys64/home/Oleg/nanoflann/include",
+        "${workspaceFolder}/src/**"
+      ],
+      "defines": [
+        "__INTELLISENSE__"
+      ],
+      "compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+      "cStandard": "c11",
+      "cppStandard": "c++23",
+      "intelliSenseMode": "windows-gcc-x64"
     }
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
   ],
   "version": 4
 }
