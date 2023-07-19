@@ -31,6 +31,12 @@ namespace tit {
 /** Unsigned sized type. */
 using size_t = std::size_t;
 
+/** 32-bit floating point type. */
+using float32_t = float;
+
+/** 64-bit floating point type. */
+using float64_t = double;
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit

@@ -100,7 +100,7 @@ public:
   static constexpr auto padding = reg_size * num_regs - num_scalars;
 
   /** SIMD register type. */
-  using Reg = Vec<Num, simd::reg_size_v<Num>>;
+  using Reg = Vec<Num, simd::reg_size_v<Dim, Num>>;
 
 private:
 
@@ -218,7 +218,7 @@ template<class NumA, class NumB, dim_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator*(NumA a, Vec<NumB, Dim> b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
-  const auto a_reg = Vec<NumA, simd::reg_size_v<NumA>>(a);
+  const auto a_reg = typename Vec<NumA, Dim>::Reg(a);
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = a_reg * b.reg(i);
   return r;
 }
@@ -226,7 +226,7 @@ template<class NumA, class NumB, dim_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator*(Vec<NumA, Dim> a, NumB b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
-  const auto b_reg = Vec<NumB, simd::reg_size_v<NumB>>(b);
+  const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = a.reg(i) * b_reg;
   return r;
 }
@@ -244,7 +244,7 @@ constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 template<class NumA, class NumB, dim_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto& operator*=(Vec<NumA, Dim>& a, NumB b) noexcept {
-  const auto b_reg = Vec<NumB, simd::reg_size_v<NumB>>(b);
+  const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) *= b_reg;
   return a;
 }
@@ -264,7 +264,7 @@ template<class NumA, class NumB, dim_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator/(Vec<NumA, Dim> a, NumB b) noexcept {
   Vec<div_result_t<NumA, NumB>, Dim> r;
-  const auto b_reg = Vec<NumB, simd::reg_size_v<NumB>>(b);
+  const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = a.reg(i) / b_reg;
   return r;
 }
@@ -282,7 +282,7 @@ constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 template<class NumA, class NumB, dim_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto& operator/=(Vec<NumA, Dim>& a, NumB b) noexcept {
-  const auto b_reg = Vec<NumB, simd::reg_size_v<NumB>>(b);
+  const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) /= b_reg;
   return a;
 }
@@ -305,6 +305,8 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
   for (size_t i = 1; i < a.num_regs; ++i) r_reg += a.reg(i);
   return sum(r_reg);
 }
+
+// TODO: implement dot product for SIMD.
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -407,11 +409,11 @@ consteval auto& _unwrap(auto* value) noexcept {
 
 } // namespace tit
 
-#if defined(__AVX__)
+#if defined(__SSE__) && (__SSE__)
 #include "tit/utils/vec_avx.hpp"
 #endif
 
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) && (__ARM_NEON)
 #include "tit/utils/vec_neon.hpp"
 #endif
 
