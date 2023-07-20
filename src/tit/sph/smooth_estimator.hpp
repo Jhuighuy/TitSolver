@@ -43,7 +43,7 @@ namespace tit::sph {
  ** The particle estimator with a fixed kernel width.
 \******************************************************************************/
 template<class EquationOfState, class Kernel = CubicKernel,
-         class ArtificialViscosity = MorrisMonaghanArtificialViscosity<>>
+         class ArtificialViscosity = MorrisMonaghanArtificialViscosity>
   requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
 class ClassicSmoothEstimator {
@@ -177,7 +177,7 @@ public:
  ** The particle estimator with a variable kernel width (Grad-H).
 \******************************************************************************/
 template<class EquationOfState, class Kernel = CubicKernel,
-         class ArtificialViscosity = MorrisMonaghanArtificialViscosity<>>
+         class ArtificialViscosity = MorrisMonaghanArtificialViscosity>
   requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
 class GradHSmoothEstimator {
