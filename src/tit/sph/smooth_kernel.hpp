@@ -32,6 +32,8 @@
 #include "tit/utils/types.hpp"
 #include "tit/utils/vec.hpp"
 
+#include "tit/sph/field.hpp"
+
 namespace tit::sph {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -49,6 +51,39 @@ protected:
   }
 
 public:
+
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = meta::Set{rho, h};
+
+  /** Support radius for particle. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto radius(PV a) const noexcept {
+    return radius(h[a]);
+  }
+
+  /** Value of the smoothing kernel for two particles. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto operator()(PV a, PV b) const noexcept {
+    return (*this)(r[a, b], h[a]);
+  }
+
+  /** Value of the smoothing kernel for two particles. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto grad(PV a, PV b) const noexcept {
+    return grad(r[a, b], h[a]);
+  }
+
+  /** Width derivative of the smoothing kernel for two points. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto radius_deriv(PV a, PV b) const noexcept {
+    return radius_deriv(r[a, b], h[a]);
+  }
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   /** Kernel weight. */
   template<class Real, size_t Dim>
@@ -104,6 +139,12 @@ public:
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
+ ** Bell-shaped smoothing kernel.
+\******************************************************************************/
+// TODO: Implement me! What am I?
+class BellShapedKernel {};
+
+/******************************************************************************\
  ** Gaussian smoothing kernel (Monaghan, 1992).
 \******************************************************************************/
 class GaussianKernel final : public Kernel<GaussianKernel> {
@@ -139,6 +180,12 @@ public:
   }
 
 }; // class GaussianKernel
+
+/******************************************************************************\
+ ** Super-gaussian smoothing kernel (Monaghan, 1992).
+\******************************************************************************/
+// TODO: implement me!
+class SuperGaussianKernel {};
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
