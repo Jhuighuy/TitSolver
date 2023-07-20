@@ -164,20 +164,20 @@ namespace {
 
 // Helper to compare two NEON registers based on the compare functor.
 template<std_cmp_op Op>
-auto _cmp_neon([[maybe_unused]] const Op& op, //
-               float64x2_t a_reg, float64x2_t b_reg) noexcept -> uint64x2_t {
+auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> uint64x2_t {
+  const auto& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
-    return vceqq_f64(a_reg, b_reg);
+    return vceqq_f64(x._reg, y._reg);
   } else if constexpr (std::is_same_v<Op, std::not_equal_to<>>) {
-    return vmvnq_u64(vceqq_f64(a_reg, b_reg));
+    return vmvnq_u64(vceqq_f64(x._reg, y._reg));
   } else if constexpr (std::is_same_v<Op, std::less<>>) {
-    return vcltq_f64(a_reg, b_reg);
+    return vcltq_f64(x._reg, y._reg);
   } else if constexpr (std::is_same_v<Op, std::less_equal<>>) {
-    return vcleq_f64(a_reg, b_reg);
+    return vcleq_f64(x._reg, y._reg);
   } else if constexpr (std::is_same_v<Op, std::greater<>>) {
-    return vcgtq_f64(a_reg, b_reg);
+    return vcgtq_f64(x._reg, y._reg);
   } else if constexpr (std::is_same_v<Op, std::greater_equal<>>) {
-    return vcgeq_f64(a_reg, b_reg);
+    return vcgeq_f64(x._reg, y._reg);
   }
 }
 
@@ -185,8 +185,7 @@ auto _cmp_neon([[maybe_unused]] const Op& op, //
 TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp,
                    float64_t, a, {
   Vec<float64_t, 2> r;
-  const auto& [op, x, y] = cmp;
-  const auto mask = _cmp_neon(op, x._reg, y._reg);
+  const auto mask = _cmp_to_mask(cmp);
   r._reg = vreinterpretq_f64_u64(
       vandq_u64(vreinterpretq_u64_f64(a._reg), mask));
   return r;
@@ -194,8 +193,7 @@ TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp,
 TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
                      float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  const auto& [op, x, y] = cmp;
-  const auto mask = _cmp_neon(op, x._reg, y._reg);
+  const auto mask = _cmp_to_mask(cmp);
   r._reg = vreinterpretq_f64_u64(
         vorrq_u64(vandq_u64(vreinterpretq_u64_f64(a._reg), mask),
                   vandq_u64(vreinterpretq_u64_f64(b._reg), vmvnq_u64(mask))));

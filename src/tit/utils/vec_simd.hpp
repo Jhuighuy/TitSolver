@@ -315,19 +315,19 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
 /** Merge vector with zero vector based on comparison result. */
 template<class Op, class NumX, class NumY, class NumA, size_t Dim>
   requires simd::regs_match<Dim, NumX, NumY, NumA>
-constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
+constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
                      Vec<NumA, Dim> a) noexcept {
   Vec<NumA, Dim> r;
   const auto& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_regs; ++i) {
-    r.reg(i) = merge(std::tuple{op, x.reg(i), y.reg(i)}, a.reg(i));
+    r.reg(i) = merge(VecCmp{op, x.reg(i), y.reg(i)}, a.reg(i));
   }
   return r;
 }
 /** Merge two vectors bases on comparison result. */
 template<class Op, class NumX, class NumY, class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumX, NumY, NumA, NumB>
-constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
+constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
                      Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<sub_result_t<NumA, NumB>, Dim> r;
   const auto& [op, x, y] = cmp;
@@ -391,7 +391,7 @@ consteval auto& _unwrap(auto* value) noexcept {
 // Generate a constexpr-aware overload for a vector merge function.
 #define TIT_VEC_SIMD_MERGE(Dim, Op, NumX, NumY, cmp, NumA, a, ...)             \
   template<std_cmp_op Op>                                                      \
-  constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,     \
+  constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,                        \
                        Vec<NumA, Dim> a) noexcept {                            \
     if consteval {                                                             \
       return merge<Op, NumX, NumY, NumA, Dim>(_unwrap(cmp), _unwrap(a));       \
@@ -401,8 +401,8 @@ consteval auto& _unwrap(auto* value) noexcept {
 // Generate a constexpr-aware overload for a two vector merge function.
 #define TIT_VEC_SIMD_MERGE_2(Dim, Op, NumX, NumY, cmp, NumA, a, NumB, b, ...)  \
   template<std_cmp_op Op>                                                      \
-  constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,     \
-                       Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {          \
+  constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, Vec<NumA, Dim> a,      \
+                       Vec<NumB, Dim> b) noexcept {                            \
     if consteval {                                                             \
       return merge<Op, NumX, NumY, NumA, NumB, Dim>(_unwrap(cmp), _unwrap(a),  \
                                                     _unwrap(b));               \
