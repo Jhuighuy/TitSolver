@@ -75,7 +75,11 @@ public:
    ** @param eps A small number to prevent division by zero. */
   constexpr AlphaBetaArtificialViscosity( //
       real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
-      : _alpha{alpha}, _beta{beta}, _eps{eps} {}
+      : _alpha{alpha}, _beta{beta}, _eps{eps} {
+    TIT_ASSERT(alpha > 0.0, "First coefficient must be positive.");
+    TIT_ASSERT(beta > 0.0, "Second coefficient must be positive.");
+    TIT_ASSERT(eps >= 0.0, "Epsilon must be non-negative.");
+  }
 
   /** Compute artificial kinematic viscosity. */
   template<class PV>
@@ -141,33 +145,34 @@ public:
 /******************************************************************************\
  ** Artificial viscosity scheme with Morris-Monaghan switch.
 \******************************************************************************/
-template<class ArtificialViscosity = AlphaBetaArtificialViscosity>
-  requires std::is_object_v<ArtificialViscosity>
 class MorrisMonaghanArtificialViscosity final {
 private:
 
   real_t _alpha_min, _sigma;
-  ArtificialViscosity _base_viscosity;
+  AlphaBetaArtificialViscosity _base_viscosity;
 
 public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
       meta::Set{h, cs, div_v, alpha, dalpha_dt} |
-      ArtificialViscosity::required_fields;
+      AlphaBetaArtificialViscosity::required_fields;
 
   /** Initialize artificial viscosity scheme.
-   ** @param base_viscosity Base artificial viscosity scheme.
-   ** @param alpha_min Minimal value of the artificial viscosity switch.
-   ** @param sigma Decay time inverse scale factor. */
-  constexpr MorrisMonaghanArtificialViscosity(
-      ArtificialViscosity base_viscosity = {}, //
-      real_t alpha_min = 0.1, real_t sigma = 0.2) noexcept
+   ** @param alpha_min Minimal value of the first
+   **                  Alpha-Beta scheme coefficient.
+   ** @param sigma Decay time inverse scale factor.
+   ** @param beta_alpha_ratio Ratio between the second and the first
+   **                         Alpha-Beta scheme coefficients.
+   ** @param eps A small number to prevent division by zero. */
+  constexpr MorrisMonaghanArtificialViscosity(    //
+      real_t alpha_min = 0.1, real_t sigma = 0.2, //
+      real_t beta_alpha_ratio = 2.0, real_t eps = 0.01) noexcept
       : _alpha_min{alpha_min}, _sigma{sigma},
-        _base_viscosity{std::move(base_viscosity)} {
-    TIT_ASSERT(0.0 <= _alpha_min && _alpha_min <= 1.0,
-               "Switch minimal value must be in range [0,1].");
-    TIT_ASSERT(_sigma >= 0,
+        _base_viscosity{/*alpha=*/1.0, /*beta=*/beta_alpha_ratio, eps} {
+    TIT_ASSERT(_alpha_min > 0.0,
+               "First coefficient minimal value must be positive.");
+    TIT_ASSERT(_sigma > 0.0,
                "Decay time inverse scale factor must be positive.");
   }
 
@@ -175,9 +180,8 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto kinematic(PV a, PV b) const {
-    // TODO: this is actually an incorrect implementation!
-    // we should not multiply by alpha, rather than change alpha in the
-    // alpha-beta viscosity scheme!
+    // Base viscosity was calculated with alpha = 1, so now we
+    // multiply it by the true alpha value from the Morris-Monaghan switch
     auto nu_ab = _base_viscosity.kinematic(a, b);
     if (is_zero(nu_ab)) return nu_ab;
     const auto alpha_ab = avg(alpha[a], alpha[b]);
