@@ -154,27 +154,28 @@ constexpr auto pow5(Num value) noexcept -> Num {
 template<class Num>
 constexpr auto pow6(Num value) noexcept -> Num {
   // 3 multiplications.
-  const auto value_cube = value * value * value;
-  return value_cube * value_cube;
+  const auto value_cubed = value * value * value;
+  return value_cubed * value_cubed;
 }
 template<class Num>
 constexpr auto pow7(Num value) noexcept -> Num {
   // 4 multiplications.
-  const auto value_cube = value * value * value;
-  return value_cube * value_cube * value;
+  // TODO: can pow7 be implemented with 3 multiplications?
+  const auto value_cubed = value * value * value;
+  return value_cubed * value_cubed * value;
 }
 template<class Num>
 constexpr auto pow8(Num value) noexcept -> Num {
   // 3 multiplications.
   const auto value_sqr = value * value;
-  const auto value_sqr_sqr = value_sqr * value_sqr;
-  return value_sqr_sqr * value_sqr_sqr;
+  const auto value_pow_4 = value_sqr * value_sqr;
+  return value_pow_4 * value_pow_4;
 }
 template<class Num>
 constexpr auto pow9(Num value) noexcept -> Num {
   // 4 multiplications.
-  const auto value_cube = value * value * value;
-  return value_cube * value_cube * value_cube;
+  const auto value_cubed = value * value * value;
+  return value_cubed * value_cubed * value_cubed;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
