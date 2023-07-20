@@ -161,20 +161,20 @@ TIT_VEC_SIMD_FUNC_VV(dot, 2, float64_t, a, float64_t, b, {
 
 // Helper to compare two SSE registers based on the compare functor.
 template<std_cmp_op Op>
-auto _cmp_sse([[maybe_unused]] const Op& op, //
-              __m128d a_reg, __m128d b_reg) noexcept -> __m128d {
+auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> __m128d {
+  const auto& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
-    return _mm_cmp_pd(a_reg, b_reg, _CMP_EQ_OQ);
+    return _mm_cmp_pd(x._reg, y._reg, _CMP_EQ_OQ);
   } else if constexpr (std::is_same_v<Op, std::not_equal_to<>>) {
-    return _mm_cmp_pd(a_reg, b_reg, _CMP_NEQ_OQ);
+    return _mm_cmp_pd(x._reg, y._reg, _CMP_NEQ_OQ);
   } else if constexpr (std::is_same_v<Op, std::less<>>) {
-    return _mm_cmp_pd(a_reg, b_reg, _CMP_LT_OQ);
+    return _mm_cmp_pd(x._reg, y._reg, _CMP_LT_OQ);
   } else if constexpr (std::is_same_v<Op, std::less_equal<>>) {
-    return _mm_cmp_pd(a_reg, b_reg, _CMP_LE_OQ);
+    return _mm_cmp_pd(x._reg, y._reg, _CMP_LE_OQ);
   } else if constexpr (std::is_same_v<Op, std::greater<>>) {
-    return _mm_cmp_pd(a_reg, b_reg, _CMP_GT_OQ);
+    return _mm_cmp_pd(x._reg, y._reg, _CMP_GT_OQ);
   } else if constexpr (std::is_same_v<Op, std::greater_equal<>>) {
-    return _mm_cmp_pd(a_reg, b_reg, _CMP_GE_OQ);
+    return _mm_cmp_pd(x._reg, y._reg, _CMP_GE_OQ);
   }
 }
 
@@ -182,16 +182,14 @@ auto _cmp_sse([[maybe_unused]] const Op& op, //
 TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp,
                    float64_t, a, {
   Vec<float64_t, 2> r;
-  const auto& [op, x, y] = cmp;
-  const auto mask = _cmp_sse(op, x._reg, y._reg);
+  const auto mask = _cmp_to_mask(cmp);
   r._reg = _mm_and_pd(mask, a._reg);
   return r;
 })
 TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
                      float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  const auto& [op, x, y] = cmp;
-  const auto mask = _cmp_sse(op, x._reg, y._reg);
+  const auto mask = _cmp_to_mask(cmp);
   // Falsy value comes first.
   r._reg = _mm_blend_pd(b._reg, a._reg, mask);
   return r;
@@ -325,20 +323,20 @@ TIT_VEC_SIMD_FUNC_V(sum, 4, float64_t, a, {
 
 // Helper to compare two AVX registers based on the compare functor.
 template<std_cmp_op Op>
-auto _cmp_avx([[maybe_unused]] const Op& op, //
-              __m256d a_reg, __m256d b_reg) noexcept -> __m256d {
+auto _cmp_to_mask(VecCmp<Op, 4, float64_t> cmp) noexcept -> __m256d {
+  const auto& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
-    return _mm256_cmp_pd(a_reg, b_reg, _CMP_EQ_OQ);
+    return _mm256_cmp_pd(x._reg, y._reg, _CMP_EQ_OQ);
   } else if constexpr (std::is_same_v<Op, std::not_equal_to<>>) {
-    return _mm256_cmp_pd(a_reg, b_reg, _CMP_NEQ_OQ);
+    return _mm256_cmp_pd(x._reg, y._reg, _CMP_NEQ_OQ);
   } else if constexpr (std::is_same_v<Op, std::less<>>) {
-    return _mm256_cmp_pd(a_reg, b_reg, _CMP_LT_OQ);
+    return _mm256_cmp_pd(x._reg, y._reg, _CMP_LT_OQ);
   } else if constexpr (std::is_same_v<Op, std::less_equal<>>) {
-    return _mm256_cmp_pd(a_reg, b_reg, _CMP_LE_OQ);
+    return _mm256_cmp_pd(x._reg, y._reg, _CMP_LE_OQ);
   } else if constexpr (std::is_same_v<Op, std::greater<>>) {
-    return _mm256_cmp_pd(a_reg, b_reg, _CMP_GT_OQ);
+    return _mm256_cmp_pd(x._reg, y._reg, _CMP_GT_OQ);
   } else if constexpr (std::is_same_v<Op, std::greater_equal<>>) {
-    return _mm256_cmp_pd(a_reg, b_reg, _CMP_GE_OQ);
+    return _mm256_cmp_pd(x._reg, y._reg, _CMP_GE_OQ);
   }
 }
 
@@ -346,16 +344,14 @@ auto _cmp_avx([[maybe_unused]] const Op& op, //
 TIT_VEC_SIMD_MERGE(4, Op, float64_t, float64_t, cmp,
                    float64_t, a, {
   Vec<float64_t, 4> r;
-  const auto& [op, x, y] = cmp;
-  const auto mask = _cmp_avx(op, x._reg, y._reg);
+  const auto mask = _cmp_to_mask(cmp);
   r._reg = _mm256_and_pd(mask, a._reg);
   return r;
 })
 TIT_VEC_SIMD_MERGE_2(4, Op, float64_t, float64_t, cmp,
                      float64_t, a, float64_t, b, {
   Vec<float64_t, 4> r;
-  const auto& [op, x, y] = cmp;
-  const auto mask = _cmp_avx(op, x._reg, y._reg);
+  const auto mask = _cmp_to_mask(cmp);
   // Falsy value comes first.
   r._reg = _mm256_blend_pd(b._reg, a._reg, mask);
   return r;

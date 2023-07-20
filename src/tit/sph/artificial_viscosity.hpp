@@ -193,7 +193,7 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_switch_deriv(PV a) const {
-    const auto S_a = positive(-div_v[a]);
+    const auto S_a = plus(-div_v[a]);
     const auto tau_a = h[a] / (_sigma * cs[a]);
     dalpha_dt[a] = S_a - (alpha[a] - _alpha_min) / tau_a;
   }

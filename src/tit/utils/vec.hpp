@@ -25,7 +25,6 @@
 #include <array>
 #include <concepts>
 #include <functional>
-#include <tuple>
 
 #include "tit/utils/assert.hpp"
 #include "tit/utils/config.hpp"
@@ -281,33 +280,17 @@ constexpr auto cross(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 // A little bit of the 𝑒𝑥𝑝𝑟𝑒𝑠𝑠𝑖𝑜𝑛 𝑡𝑒𝑚𝑝𝑙𝑎𝑡𝑒𝑠 𝑚𝑎𝑔𝑖𝑐 happens here.
 
-/** Vector component-wise comparison. */
-/** @{ */
-template<class NumX, class NumY, size_t Dim>
-constexpr auto operator==(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
-  return std::tuple{std::equal_to{}, x, y};
-}
-template<class NumX, class NumY, size_t Dim>
-constexpr auto operator!=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
-  return std::tuple{std::not_equal_to{}, x, y};
-}
-template<class NumX, class NumY, size_t Dim>
-constexpr auto operator<(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
-  return std::tuple{std::less{}, x, y};
-}
-template<class NumX, class NumY, size_t Dim>
-constexpr auto operator<=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
-  return std::tuple{std::less_equal{}, x, y};
-}
-template<class NumX, class NumY, size_t Dim>
-constexpr auto operator>(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
-  return std::tuple{std::greater{}, x, y};
-}
-template<class NumX, class NumY, size_t Dim>
-constexpr auto operator>=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
-  return std::tuple{std::greater_equal{}, x, y};
-}
-/** @} */
+/** Vector comparison. */
+template<std::copy_constructible Op, size_t Dim, class NumX, class NumY = NumX>
+  requires std::invocable<Op, NumX, NumY>
+class VecCmp {
+public:
+
+  Op op;            /**< Comparison operation. */
+  Vec<NumX, Dim> x; /**< Left operand. */
+  Vec<NumY, Dim> y; /**< Right operand. */
+
+}; // class VecCmp
 
 /** Standard comparison operator. */
 template<class Op>
@@ -317,10 +300,37 @@ concept std_cmp_op =
     std::same_as<Op, std::less<>> || std::same_as<Op, std::less_equal<>> ||
     std::same_as<Op, std::greater<>> || std::same_as<Op, std::greater_equal<>>;
 
+/** Vector component-wise comparison. */
+/** @{ */
+template<class NumX, class NumY, size_t Dim>
+constexpr auto operator==(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
+  return VecCmp{std::equal_to{}, x, y};
+}
+template<class NumX, class NumY, size_t Dim>
+constexpr auto operator!=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
+  return VecCmp{std::not_equal_to{}, x, y};
+}
+template<class NumX, class NumY, size_t Dim>
+constexpr auto operator<(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
+  return VecCmp{std::less{}, x, y};
+}
+template<class NumX, class NumY, size_t Dim>
+constexpr auto operator<=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
+  return VecCmp{std::less_equal{}, x, y};
+}
+template<class NumX, class NumY, size_t Dim>
+constexpr auto operator>(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
+  return VecCmp{std::greater{}, x, y};
+}
+template<class NumX, class NumY, size_t Dim>
+constexpr auto operator>=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
+  return VecCmp{std::greater_equal{}, x, y};
+}
+/** @} */
+
 /** Evalulate comparison result. */
 template<class Op, class NumX, class NumY, size_t Dim>
-constexpr auto eval( //
-    std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp) noexcept {
+constexpr auto eval(VecCmp<Op, Dim, NumX, NumY> cmp) noexcept {
   Vec<bool, Dim> r;
   const auto& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = op(x[i], y[i]);
@@ -329,7 +339,7 @@ constexpr auto eval( //
 
 /** Merge vector with zero vector based on comparison result. */
 template<class Op, class NumX, class NumY, class NumA, size_t Dim>
-constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
+constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
                      Vec<NumA, Dim> a) noexcept {
   Vec<NumA, Dim> r;
   const auto& [op, x, y] = cmp;
@@ -341,7 +351,7 @@ constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
 }
 /** Merge two vectors bases on comparison result. */
 template<class Op, class NumX, class NumY, class NumA, class NumB, size_t Dim>
-constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
+constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
                      Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   // Supposed to be overriden by intrisics.
   Vec<sub_result_t<NumA, NumB>, Dim> r;
