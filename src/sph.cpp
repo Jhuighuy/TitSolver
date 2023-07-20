@@ -121,7 +121,7 @@ int sph_main() {
   }
   // Set global particle variables.
   rho[particles] = rho_0;
-  m[particles] = rho_0 / (N_x_dam * N_y_dam) * 2;
+  m[particles] = rho_0 / (N_x_dam * N_y_dam);
   h[particles] = h_0;
   if constexpr (has<decltype(particles)>(alpha)) {
     alpha[particles] = 1.0;

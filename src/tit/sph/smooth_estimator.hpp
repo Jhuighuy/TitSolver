@@ -60,7 +60,8 @@ public:
       meta::Set{fixed} | // TODO: fixed should not be here.
       meta::Set{h, m, rho, p, r, v, dv_dt} |
       meta::Set{drho_dt} | // TODO: move me to appropiate place.
-      EquationOfState::required_fields | ArtificialViscosity::required_fields;
+      EquationOfState::required_fields | Kernel::required_fields |
+      ArtificialViscosity::required_fields;
 
   /** Initialize particle estimator. */
   constexpr ClassicSmoothEstimator( //
@@ -85,32 +86,44 @@ public:
   constexpr void estimate_density(Particles& particles) const {
     particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
-      // Compute particle density, width.
-      rho[a] = {};
-      const auto search_radius = _kernel.radius(h[a]);
-      particles.nearby(a, search_radius, [&](auto b) {
-        rho[a] += m[b] * _kernel(r[a, b], h[a]);
-      });
+      // Compute particle density (or density time derivative).
+      const auto search_radius = _kernel.radius(a);
+      if constexpr (has<PV>(drho_dt)) {
+        // Continuity equation approach.
+        drho_dt[a] = {};
+        particles.nearby(a, search_radius, [&](PV b) {
+          const auto grad_k_ab = _kernel.grad(a, b);
+          drho_dt[a] += m[b] * dot(v[a, b], grad_k_ab);
+        });
+      } else {
+        // Density summation approach.
+        rho[a] = {};
+        particles.nearby(a, search_radius, [&](PV b) {
+          const auto k_ab = _kernel(a, b);
+          rho[a] += m[b] * k_ab;
+        });
+      }
       // Compute particle pressure (and sound speed).
       _eos.compute_pressure(a);
     });
     // Compute velocity divergence and curl.
     particles.for_each([&]<class PV>(PV a) {
+      if (fixed[a]) return;
       if constexpr (has<PV>(div_v)) div_v[a] = {};
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
-      const auto search_radius = _kernel.radius(h[a]);
+      const auto search_radius = _kernel.radius(a);
       particles.nearby(a, search_radius, [&](PV b) {
-        const auto grad_ab = _kernel.grad(r[a, b], h[a]);
+        const auto grad_k_ab = _kernel.grad(a, b);
         if constexpr (has<PV>(div_v)) {
           // clang-format off
           div_v[a] += m[b] * dot(v[a] / pow2(rho[a]) +
-                                 v[b] / pow2(rho[b]), grad_ab);
+                                 v[b] / pow2(rho[b]), grad_k_ab);
           // clang-format on
         }
         if constexpr (has<PV>(curl_v)) {
           // clang-format off
           curl_v[a] -= m[b] * cross(v[a] / pow2(rho[a]) +
-                                    v[b] / pow2(rho[b]), grad_ab);
+                                    v[b] / pow2(rho[b]), grad_k_ab);
           // clang-format on
         }
       });
@@ -130,18 +143,18 @@ public:
       if constexpr (has<PV>(eps, deps_dt)) {
         deps_dt[a] = {};
       }
-      const auto search_radius = _kernel.radius(h[a]);
+      const auto search_radius = _kernel.radius(a);
       particles.nearby(a, search_radius, [&](PV b) {
         const auto Pi_ab = _viscosity.kinematic(a, b);
-        const auto grad_ab = _kernel.grad(r[a, b], h[a]);
+        const auto grad_k_ab = _kernel.grad(a, b);
         // clang-format off
         dv_dt[a] -= m[b] * (p[a] / pow2(rho[a]) +
-                            p[b] / pow2(rho[b]) + Pi_ab) * grad_ab;
+                            p[b] / pow2(rho[b]) + Pi_ab) * grad_k_ab;
         // clang-format on
         if constexpr (has<PV>(eps, deps_dt)) {
           // clang-format off
           deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) +
-                                Pi_ab) * dot(grad_ab, v[a, b]);
+                                Pi_ab) * dot(grad_k_ab, v[a, b]);
           // clang-format on
         }
       });
@@ -181,7 +194,8 @@ public:
   static constexpr auto required_fields =
       meta::Set{fixed} | // TODO: fixed should not be here.
       meta::Set{h, Omega, m, rho, p, cs, r, v, dv_dt} |
-      EquationOfState::required_fields | ArtificialViscosity::required_fields;
+      EquationOfState::required_fields | Kernel::required_fields |
+      ArtificialViscosity::required_fields;
 
   /** Initialize particle estimator. */
   constexpr GradHSmoothEstimator( //

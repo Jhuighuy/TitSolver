@@ -137,6 +137,8 @@ TIT_DEFINE_VECTOR_FIELD(a, dv_dt);
 TIT_DEFINE_SCALAR_FIELD(m);
 /** Particle density. */
 TIT_DEFINE_SCALAR_FIELD(rho);
+/** Particle density time derivative. */
+TIT_DEFINE_SCALAR_FIELD(drho_dt);
 
 /** Particle width. */
 TIT_DEFINE_SCALAR_FIELD(h);

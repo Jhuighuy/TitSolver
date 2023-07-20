@@ -62,6 +62,7 @@ public:
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];
       r[a] += dt * dr_dt[a];
+      if constexpr (has<PV>(rho, drho_dt)) rho[a] += dt * drho_dt[a];
       if constexpr (has<PV>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
