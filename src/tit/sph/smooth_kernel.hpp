@@ -28,6 +28,8 @@
 #include "tit/utils/assert.hpp"
 #include "tit/utils/config.hpp"
 #include "tit/utils/math.hpp"
+#include "tit/utils/meta.hpp"
+#include "tit/utils/types.hpp"
 #include "tit/utils/vec.hpp"
 
 namespace tit::sph {
@@ -49,7 +51,7 @@ protected:
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   constexpr auto weight() const noexcept -> Real {
     // A shortcut in order not to write `.template weight<...>` all the time.
     return self().template weight<Real, Dim>();
@@ -64,36 +66,35 @@ public:
   }
 
   /** Value of the smoothing kernel at point. */
-  template<class Real, dim_t Dim>
-  constexpr auto operator()(Point<Real, Dim> r, Real h) const noexcept -> Real {
+  template<class Real, size_t Dim>
+  constexpr auto operator()(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
     const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
-    const auto q = h_inverse * norm(r);
+    const auto q = h_inverse * norm(x);
     return w * self().unit_value(q);
   }
 
   /** Spatial gradient of the smoothing kernel at point. */
-  template<class Real, dim_t Dim>
-  constexpr auto grad(Point<Real, Dim> r, Real h) const noexcept
+  template<class Real, size_t Dim>
+  constexpr auto grad(Vec<Real, Dim> x, Real h) const noexcept
       -> Vec<Real, Dim> {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
     const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
-    const auto q = h_inverse * norm(r);
-    const auto grad_q = normalize(r) * h_inverse;
+    const auto q = h_inverse * norm(x);
+    const auto grad_q = normalize(x) * h_inverse;
     return w * self().unit_deriv(q) * grad_q;
   }
 
   /** Width derivative of the smoothing kernel at point. */
-  template<class Real, dim_t Dim>
-  constexpr auto radius_deriv(Point<Real, Dim> r, Real h) const noexcept
-      -> Real {
+  template<class Real, size_t Dim>
+  constexpr auto radius_deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
     const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
-    const auto dw_dh = -Dim * w * h_inverse;
-    const auto q = h_inverse * norm(r);
+    const auto dw_dh = -int{Dim} * w * h_inverse;
+    const auto q = h_inverse * norm(x);
     const auto dq_dh = -q * h_inverse;
     return dw_dh * self().unit_value(q) + w * self().unit_deriv(q) * dq_dh;
   }
@@ -109,7 +110,7 @@ class GaussianKernel final : public Kernel<GaussianKernel> {
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   static constexpr Real weight() noexcept {
     static_assert(1 <= Dim);
     return pow(std::numbers::inv_sqrtpi_v<Real>, Dim);
@@ -148,7 +149,7 @@ class CubicKernel final : public Kernel<CubicKernel> {
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
     switch (Dim) {
@@ -214,7 +215,7 @@ class ThomasCouchmanKernel final : public Kernel<ThomasCouchmanKernel> {
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   static consteval auto weight() noexcept -> Real {
     return CubicKernel::weight<Real, Dim>();
   }
@@ -250,7 +251,7 @@ class QuarticKernel final : public Kernel<QuarticKernel> {
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
     switch (Dim) {
@@ -321,7 +322,7 @@ class QuinticKernel final : public Kernel<QuinticKernel> {
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   static constexpr auto weight() noexcept {
     static_assert(1 <= Dim && Dim <= 3);
     switch (Dim) {
@@ -435,7 +436,7 @@ class WendlandQuarticKernel final :
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
     switch (Dim) {
@@ -448,7 +449,7 @@ public:
   /** Value of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto not_truncated_unit_value(Real q) noexcept -> Real {
-    return pow4(Real{1.0} - Real{0.5} * q) * (Real{1.0} + Real{2.0} * q);
+    return (Real{1.0} + Real{2.0} * q) * pow4(Real{1.0} - Real{0.5} * q);
   }
 
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
@@ -469,7 +470,7 @@ class WendlandSixthOrderKernel final :
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
     switch (Dim) {
@@ -482,15 +483,15 @@ public:
   /** Value of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto not_truncated_unit_value(Real q) noexcept -> Real {
-    return pow6(Real{1.0} - Real{0.5} * q) *
-           (Real{1.0} + (Real{3.0} + Real{35.0 / 12.0} * q) * q);
+    return (Real{1.0} + (Real{3.0} + Real{35.0 / 12.0} * q) * q) *
+           pow6(Real{1.0} - Real{0.5} * q);
   }
 
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto not_truncated_unit_deriv(Real q) noexcept -> Real {
-    return q * pow5(q - Real{2.0}) * //
-           Real{7.0 / 96.0} * (Real{2.0} + Real{5.0} * q);
+    return Real{7.0 / 96.0} * (Real{2.0} + Real{5.0} * q) * q *
+           pow5(q - Real{2.0});
   }
 
 }; // class WendlandSixthOrderKernel
@@ -503,7 +504,7 @@ class WendlandEighthOrderKernel final :
 public:
 
   /** Kernel weight. */
-  template<class Real, dim_t Dim>
+  template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
     switch (Dim) {
@@ -523,8 +524,8 @@ public:
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto not_truncated_unit_deriv(Real q) noexcept -> Real {
-    return q * pow7(q - Real{2.0}) * //
-           Real{11.0 / 512.0} * (Real{2.0} + (Real{7.0} + Real{8.0} * q) * q);
+    return Real{11.0 / 512.0} * (Real{2.0} + (Real{7.0} + Real{8.0} * q) * q) *
+           q * pow7(q - Real{2.0});
   }
 
 }; // class WendlandSixthOrderKernel

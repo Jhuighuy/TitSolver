@@ -39,7 +39,7 @@ namespace tit {
 /******************************************************************************\
  ** Algebraic vector.
 \******************************************************************************/
-template<class Num, dim_t Dim>
+template<class Num, size_t Dim>
 class Vec final {
 public:
 
@@ -87,27 +87,23 @@ Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Point. */
-template<class Num, dim_t Dim>
-using Point = Vec<Num, Dim>;
-
 /** Vector size. */
-template<class Num, dim_t Dim>
+template<class Num, size_t Dim>
 constexpr auto dim([[maybe_unused]] Vec<Num, Dim> a) noexcept {
-  return Dim;
+  return int(Dim);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Vector input operator. */
-template<class Stream, class Num, dim_t Dim>
+template<class Stream, class Num, size_t Dim>
 Stream& operator>>(Stream& stream, Vec<Num, Dim>& a) {
   for (size_t i = 0; i < a.num_scalars; ++i) stream >> a[i];
   return stream;
 }
 
 /** Vector output operator. */
-template<class Stream, class Num, dim_t Dim>
+template<class Stream, class Num, size_t Dim>
 Stream& operator<<(Stream& stream, Vec<Num, Dim> a) {
   stream << a[0];
   for (size_t i = 1; i < a.num_scalars; ++i) stream << " " << a[i];
@@ -117,13 +113,13 @@ Stream& operator<<(Stream& stream, Vec<Num, Dim> a) {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Vector unary plus. */
-template<class Num, dim_t Dim>
+template<class Num, size_t Dim>
 constexpr auto operator+(Vec<Num, Dim> a) noexcept {
   return a;
 }
 
 /** Vector addition. */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<add_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] + b[i];
@@ -131,7 +127,7 @@ constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 }
 
 /** Vector addition assignment. */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < a.num_scalars; ++i) a[i] += b[i];
   return a;
@@ -140,7 +136,7 @@ constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Vector negation. */
-template<class Num, dim_t Dim>
+template<class Num, size_t Dim>
 constexpr auto operator-(Vec<Num, Dim> a) noexcept {
   Vec<negate_result_t<Num>, Dim> r;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = -a[i];
@@ -148,7 +144,7 @@ constexpr auto operator-(Vec<Num, Dim> a) noexcept {
 }
 
 /** Vector subtraction. */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<sub_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] - b[i];
@@ -156,7 +152,7 @@ constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 }
 
 /** Vector subtraction assignment. */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < a.num_scalars; ++i) a[i] -= b[i];
   return a;
@@ -166,19 +162,19 @@ constexpr auto& operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 
 /** Vector multiplication. */
 /** @{ */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(NumA a, Vec<NumB, Dim> b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a * b[i];
   return r;
 }
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(Vec<NumA, Dim> a, NumB b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] * b;
   return r;
 }
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] * b[i];
@@ -188,12 +184,12 @@ constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 /** Vector multiplication assignment. */
 /** @{ */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator*=(Vec<NumA, Dim>& a, NumB b) noexcept {
   for (size_t i = 0; i < a.num_scalars; ++i) a[i] *= b;
   return a;
 }
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < a.num_scalars; ++i) a[i] *= b[i];
   return a;
@@ -204,13 +200,13 @@ constexpr auto& operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 
 /** Vector division. */
 /** @{ */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto operator/(Vec<NumA, Dim> a, NumB b) noexcept {
   Vec<div_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] / b;
   return r;
 }
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<div_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] / b[i];
@@ -220,12 +216,12 @@ constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 /** Vector division assignment. */
 /** @{ */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator/=(Vec<NumA, Dim>& a, NumB b) noexcept {
   for (size_t i = 0; i < a.num_scalars; ++i) a[i] /= b;
   return a;
 }
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < a.num_scalars; ++i) a[i] /= b[i];
   return a;
@@ -235,7 +231,7 @@ constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Sum of the vector components. */
-template<class Num, dim_t Dim>
+template<class Num, size_t Dim>
 constexpr auto sum(Vec<Num, Dim> a) noexcept {
   add_result_t<Num> r{a[0]};
   for (size_t i = 1; i < a.num_scalars; ++i) r += a[i];
@@ -243,18 +239,18 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
 }
 
 /** Vector dot product. */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto dot(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   return sum(a * b);
 }
 
 /** Vector norm square. */
-template<class Num, dim_t Dim>
+template<class Num, size_t Dim>
 constexpr auto norm2(Vec<Num, Dim> a) noexcept {
   return dot(a, a);
 }
 /** Vector norm. */
-template<class Num, dim_t Dim>
+template<class Num, size_t Dim>
 constexpr auto norm(Vec<Num, Dim> a) noexcept {
   if constexpr (Dim == 1) return abs(a[0]);
   if constexpr (Dim == 2) return hypot(a[0], a[1]);
@@ -262,7 +258,7 @@ constexpr auto norm(Vec<Num, Dim> a) noexcept {
   return sqrt(norm2(a));
 }
 /** Normalize vector. */
-template<class Num, dim_t Dim>
+template<class Num, size_t Dim>
 constexpr auto normalize(Vec<Num, Dim> a) noexcept {
   return safe_divide(a, norm(a));
 }
@@ -271,7 +267,7 @@ constexpr auto normalize(Vec<Num, Dim> a) noexcept {
 
 /** Vector cross product.
  ** @returns 3D vector with a result of cross product. */
-template<class NumA, class NumB, dim_t Dim>
+template<class NumA, class NumB, size_t Dim>
 constexpr auto cross(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   static_assert(1 <= Dim && Dim <= 3);
   Vec<sub_result_t<mul_result_t<NumA, NumB>>, 3> r{};
@@ -287,27 +283,27 @@ constexpr auto cross(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 /** Vector component-wise comparison. */
 /** @{ */
-template<class NumX, class NumY, dim_t Dim>
+template<class NumX, class NumY, size_t Dim>
 constexpr auto operator==(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
   return std::tuple{std::equal_to{}, x, y};
 }
-template<class NumX, class NumY, dim_t Dim>
+template<class NumX, class NumY, size_t Dim>
 constexpr auto operator!=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
   return std::tuple{std::not_equal_to{}, x, y};
 }
-template<class NumX, class NumY, dim_t Dim>
+template<class NumX, class NumY, size_t Dim>
 constexpr auto operator<(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
   return std::tuple{std::less{}, x, y};
 }
-template<class NumX, class NumY, dim_t Dim>
+template<class NumX, class NumY, size_t Dim>
 constexpr auto operator<=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
   return std::tuple{std::less_equal{}, x, y};
 }
-template<class NumX, class NumY, dim_t Dim>
+template<class NumX, class NumY, size_t Dim>
 constexpr auto operator>(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
   return std::tuple{std::greater{}, x, y};
 }
-template<class NumX, class NumY, dim_t Dim>
+template<class NumX, class NumY, size_t Dim>
 constexpr auto operator>=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
   return std::tuple{std::greater_equal{}, x, y};
 }
@@ -322,7 +318,7 @@ concept std_cmp_op =
     std::same_as<Op, std::greater<>> || std::same_as<Op, std::greater_equal<>>;
 
 /** Evalulate comparison result. */
-template<class Op, class NumX, class NumY, dim_t Dim>
+template<class Op, class NumX, class NumY, size_t Dim>
 constexpr auto eval( //
     std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp) noexcept {
   Vec<bool, Dim> r;
@@ -332,7 +328,7 @@ constexpr auto eval( //
 }
 
 /** Merge vector with zero vector based on comparison result. */
-template<class Op, class NumX, class NumY, class NumA, dim_t Dim>
+template<class Op, class NumX, class NumY, class NumA, size_t Dim>
 constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
                      Vec<NumA, Dim> a) noexcept {
   Vec<NumA, Dim> r;
@@ -344,7 +340,7 @@ constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
   return r;
 }
 /** Merge two vectors bases on comparison result. */
-template<class Op, class NumX, class NumY, class NumA, class NumB, dim_t Dim>
+template<class Op, class NumX, class NumY, class NumA, class NumB, size_t Dim>
 constexpr auto merge(std::tuple<Op, Vec<NumX, Dim>, Vec<NumY, Dim>> cmp,
                      Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   // Supposed to be overriden by intrisics.

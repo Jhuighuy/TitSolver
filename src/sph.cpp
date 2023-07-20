@@ -27,7 +27,6 @@ int main() {
   ParticleArray<double, 1, Vars> particles{};
   for (size_t i = 0; i < 1600; ++i) {
     particles.append([&]<class A>(A a) {
-      using namespace particle_fields;
       fixed[a] = i < 3;
       m[a] = 1.0 / 1600;
       rho[a] = 1.0;
@@ -38,7 +37,6 @@ int main() {
     });
   }
   for (size_t i = 0; i < 200; ++i) {
-    using namespace particle_fields;
     particles.append([&]<class B>(B b) {
       fixed[b] = i >= (200 - 1 - 3);
       rho[b] = 0.125;
@@ -72,14 +70,13 @@ template<class Real>
 int sph_main() {
   using namespace tit;
   using namespace sph;
-  using namespace particle_fields;
 
-  const dim_t N = 100;
-  const dim_t N_x = 4 * N;
-  const dim_t N_y = 3 * N;
-  const dim_t N_fixed = 3;
-  const dim_t N_x_dam = 1 * N;
-  const dim_t N_y_dam = 2 * N;
+  const auto N = 100;
+  const auto N_x = 4 * N;
+  const auto N_y = 3 * N;
+  const auto N_fixed = 3;
+  const auto N_x_dam = 1 * N;
+  const auto N_y_dam = 2 * N;
 
   const Real L = 1.0;
   const Real spacing = L / N;
@@ -112,8 +109,8 @@ int sph_main() {
   };
 
   // Generate individual particles.
-  for (dim_t i = -N_fixed; i < N_x + N_fixed; ++i) {
-    for (dim_t j = -N_fixed; j < N_y; ++j) {
+  for (auto i = -N_fixed; i < N_x + N_fixed; ++i) {
+    for (auto j = -N_fixed; j < N_y; ++j) {
       const bool is_fixed = (i < 0 || i >= N_x) || (j < 0);
       const bool is_water = (i < N_x_dam) && (j < N_y_dam);
       if (!(is_fixed || is_water)) continue;

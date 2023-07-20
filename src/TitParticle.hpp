@@ -36,7 +36,6 @@
 #include <nanoflann.hpp>
 
 #include "tit/utils/assert.hpp"
-#include "tit/utils/math.hpp"
 #include "tit/utils/meta.hpp"
 #include "tit/utils/misc.hpp"
 #include "tit/utils/types.hpp"
@@ -51,7 +50,7 @@ namespace tit {
 /******************************************************************************\
  ** Space specification.
 \******************************************************************************/
-template<class _Real, dim_t Dim>
+template<class _Real, size_t Dim>
   requires (1 <= Dim && Dim <= 3)
 class Space {
 public:
@@ -60,7 +59,7 @@ public:
   using Real = _Real;
 
   /** Number of spatial dimensions. */
-  static constexpr dim_t dim = Dim;
+  static constexpr size_t dim = Dim;
 
 }; // class Space
 
@@ -82,7 +81,7 @@ public:
   /** Real type that is used for the particles. */
   using Real = typename std::remove_const_t<ParticleArray>::Real;
   /** Number of the spatial dimensions. */
-  static constexpr dim_t dim = std::remove_const_t<ParticleArray>::dim;
+  static constexpr auto dim = std::remove_const_t<ParticleArray>::dim;
 
   /** Set of particle fields that are present. */
   static constexpr auto fields = std::remove_const_t<ParticleArray>::fields;
@@ -135,7 +134,7 @@ ParticleArray(Space, Fields, Consts...)
 /******************************************************************************\
  ** Particle array.
 \******************************************************************************/
-template<class _Real, dim_t Dim, meta::type... Fields, meta::type... Consts>
+template<class _Real, size_t Dim, meta::type... Fields, meta::type... Consts>
 class ParticleArray<Space<_Real, Dim>, //
                     meta::Set<Fields...>, meta::Set<Consts...>> {
 public:
@@ -143,7 +142,7 @@ public:
   /** Real type that is used for the particles. */
   using Real = _Real;
   /** Number of the spatial dimensions. */
-  static constexpr dim_t dim = Dim;
+  static constexpr auto dim = Dim;
 
   /** Set of particle fields that are present. */
   static constexpr auto fields = meta::Set<Fields...>{};
@@ -283,7 +282,6 @@ public:
     requires (Dim == 1)
   {
     std::sort(this->begin(), this->end(), [](const auto& va, const auto& vb) {
-      using namespace particle_fields;
       return r[&va][0] < r[&vb][0];
     });
   }
@@ -296,7 +294,6 @@ public:
 
     // Neighbours to the left.
     for (size_t bIndex = aIndex - 1; bIndex != SIZE_MAX; --bIndex) {
-      using namespace particle_fields;
       auto b = &(*this)[bIndex];
       if (r[a][0] - r[b][0] > search_radius) break;
       func(b);
@@ -307,7 +304,6 @@ public:
 
     // Neighbours to the right.
     for (size_t bIndex = aIndex + 1; bIndex < this->size(); ++bIndex) {
-      using namespace particle_fields;
       auto b = &(*this)[bIndex];
       if (r[b][0] - r[a][0] > search_radius) break;
       func(b);
@@ -323,7 +319,6 @@ public:
       return _array->size();
     }
     constexpr Real kdtree_get_pt(size_t idx, size_t dim) const noexcept {
-      using namespace particle_fields;
       auto a = (*_array)[idx];
       return r[a][dim];
     }
@@ -350,8 +345,6 @@ public:
   constexpr void nearby(auto a, Real search_radius, const Func& func)
     requires (Dim > 1)
   {
-    using namespace particle_fields;
-
     const Real squaredRadius = search_radius * search_radius;
     thread_local std::vector<nanoflann::ResultItem<size_t, Real>> indices_dists;
     indices_dists.clear();
@@ -373,7 +366,7 @@ public:
   static auto _make_name(std::string n, meta::Set<x>) {
     return n;
   }
-  template<class Realx, dim_t Dimx>
+  template<class Realx, size_t Dimx>
   static auto _make_name(std::string n, meta::Set<Vec<Realx, Dimx>>) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2) return n + "_x " + n + "_y";
@@ -387,7 +380,6 @@ public:
 
   void print(const std::string& path) {
     std::ofstream output(path);
-    using namespace particle_fields;
     ((output << _make_name(Fields{}) << " "), ...);
     output << std::endl;
     for (size_t i = 0; i < size(); ++i) {

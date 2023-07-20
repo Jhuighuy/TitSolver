@@ -22,12 +22,14 @@
 
 #pragma once
 
+#include <bit>
 #include <cmath>
 #include <limits>
 
 #include <algorithm>
 #include <concepts>
 #include <cstdlib>
+#include <type_traits>
 #include <utility>
 
 #include "tit/utils/assert.hpp"
@@ -36,9 +38,6 @@
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** Real type. */
-using real_t = double;
 
 /** Negation result type. */
 template<class Num>
@@ -62,20 +61,187 @@ using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Dimension type. */
-using dim_t = ssize_t;
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
+/** Absolute value. */
 template<class Num>
 constexpr auto abs(Num value) noexcept -> Num {
   return std::abs(value);
 }
-
-/** Sign function. */
+/** Sign of the value. */
 template<class Num>
 constexpr auto sign(Num value) noexcept -> int {
   return int(Num{0} < value) - int(value < Num{0});
+}
+
+/** Small number, treated as zero. */
+template<class Real>
+  requires std::floating_point<Real>
+constexpr auto small_number_v = sqrt(std::numeric_limits<Real>::epsilon());
+
+/** Check if number is approximately zero. */
+template<class Real>
+constexpr auto is_zero(Real value) noexcept -> bool {
+  return abs(value) < small_number_v<Real>;
+}
+/** Check if numbers are approximately equal. */
+template<class Real>
+constexpr auto approx_equal(Real a, Real b) noexcept -> bool {
+  return is_zero(a - b);
+}
+
+/** Positive value or zero. */
+template<class Num>
+constexpr auto plus(Num value) noexcept -> Num {
+  return std::max(Num{0}, value);
+}
+/** Negative value or zero. */
+template<class Num>
+constexpr auto minus(Num value) noexcept -> Num {
+  return std::min(Num{0}, value);
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Inverse number. */
+template<class Real>
+constexpr auto inverse(Real value) noexcept -> Real {
+  TIT_ASSERT(!is_zero(value), "Cannot invert zero!");
+  return Real{1.0} / value;
+}
+
+/** Safe inverse number.
+ ** @returns Inverse for non-zero input, zero for zero input. */
+template<class Real>
+constexpr auto safe_inverse(Real value) noexcept -> Real {
+  return is_zero(value) ? Real{0.0} : inverse(value);
+}
+/** Safe divide number by divisor.
+ ** @returns Division result for non-zero divisor, zero for zero divisor. */
+template<class Num, class Real>
+constexpr auto safe_divide(Num value, Real divisor) noexcept {
+  return is_zero(divisor) ? div_result_t<Num, Real>{} : value / divisor;
+}
+
+/** Ceiling divide unsigned integer. */
+template<std::unsigned_integral Int>
+constexpr auto ceil_divide(Int value, Int divisor) noexcept -> Int {
+  return (value + divisor - 1u) / divisor;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Raise to the second power. */
+template<class Num>
+constexpr auto pow2(Num value) noexcept -> Num {
+  // 1 multiplication.
+  return value * value;
+}
+/** Raise to the third power. */
+template<class Num>
+constexpr auto pow3(Num value) noexcept -> Num {
+  // 2 multiplications.
+  return value * value * value;
+}
+/** Raise to the fourth power. */
+template<class Num>
+constexpr auto pow4(Num value) noexcept -> Num {
+  // 2 multiplications.
+  const auto value_sqr = value * value;
+  return value_sqr * value_sqr;
+}
+/** Raise to the fifth power. */
+template<class Num>
+constexpr auto pow5(Num value) noexcept -> Num {
+  // 3 multiplications.
+  const auto value_sqr = value * value;
+  return value_sqr * value_sqr * value;
+}
+/** Raise to the sixth power. */
+template<class Num>
+constexpr auto pow6(Num value) noexcept -> Num {
+  // 3 multiplications.
+  const auto value_cubed = value * value * value;
+  return value_cubed * value_cubed;
+}
+/** Raise to the seventh power. */
+template<class Num>
+constexpr auto pow7(Num value) noexcept -> Num {
+  // 4 multiplications.
+  // TODO: can pow7 be implemented with 3 multiplications?
+  const auto value_cubed = value * value * value;
+  return value_cubed * value_cubed * value;
+}
+/** Raise to the eighth power. */
+template<class Num>
+constexpr auto pow8(Num value) noexcept -> Num {
+  // 3 multiplications.
+  const auto value_sqr = value * value;
+  const auto value_pow4 = value_sqr * value_sqr;
+  return value_pow4 * value_pow4;
+}
+/** Raise to the nineth power. */
+template<class Num>
+constexpr auto pow9(Num value) noexcept -> Num {
+  // 4 multiplications.
+  const auto value_cubed = value * value * value;
+  return value_cubed * value_cubed * value_cubed;
+}
+/** Raise to power. */
+template<class Num>
+constexpr auto pow(Num value, std::type_identity_t<Num> power) noexcept {
+  return std::pow(value, power);
+}
+
+/** Square root. */
+template<class Num>
+constexpr auto sqrt(Num value) noexcept {
+  return std::sqrt(value);
+}
+
+/** Cube root. */
+template<class Num>
+constexpr auto cbrt(Num value) noexcept {
+  return std::cbrt(value);
+}
+
+/** Hypot. */
+/** @{ */
+template<class Num>
+constexpr auto hypot(Num x, Num y) noexcept {
+  return std::hypot(x, y);
+}
+template<class Num>
+constexpr auto hypot(Num x, Num y, Num z) noexcept {
+  return std::hypot(x, y, z);
+}
+/** @} */
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Exponent. */
+template<class Num>
+constexpr auto exp(Num value) noexcept -> Num {
+  return std::exp(value);
+}
+/** Logarithm. */
+template<class Num>
+constexpr auto log(Num value) noexcept -> Num {
+  return std::log(value);
+}
+
+/** Integer exponent base-2. */
+template<std::unsigned_integral Int>
+constexpr auto exp2(Int x) noexcept -> Int {
+  return Int{1u} << x;
+}
+/** Integer logarithm base-2. */
+template<std::unsigned_integral Int>
+constexpr auto log2(Int x) noexcept -> Int {
+  return std::bit_width(x) - Int{1u};
+}
+/** Check if integer value is power of two. */
+template<std::unsigned_integral Int>
+constexpr auto is_power_of_two(Int x) noexcept -> bool {
+  return (x & (x - Int{1u})) == 0;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -85,154 +251,11 @@ template<class... Nums>
 constexpr auto avg(Nums... values) noexcept {
   return (values + ...) / (sizeof...(Nums));
 }
-
 /** Harmonic average function. */
 template<class... Nums>
 constexpr auto havg(Nums... values) noexcept {
   return (sizeof...(Nums)) / (inverse(values) + ...);
 }
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-template<class Num>
-constexpr auto exp(Num value) noexcept -> Num {
-  return std::exp(value);
-}
-
-template<class Num>
-constexpr auto log(Num value) noexcept -> Num {
-  return std::log(value);
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-template<class Num>
-constexpr auto sqrt(Num value) noexcept -> Num {
-  return std::sqrt(value);
-}
-
-template<class Num>
-constexpr auto cbrt(Num value) noexcept -> Num {
-  return std::cbrt(value);
-}
-
-template<class Num>
-constexpr auto hypot(Num x, Num y) noexcept -> Num {
-  return std::hypot(x, y);
-}
-template<class Num>
-constexpr auto hypot(Num x, Num y, Num z) noexcept -> Num {
-  return std::hypot(x, y, z);
-}
-
-template<class Num>
-constexpr auto pow2(Num value, Num power) noexcept -> Num {
-  return std::hypot(value, power);
-}
-template<class Num>
-constexpr auto pow2(Num value) noexcept -> Num {
-  // 1 multiplication.
-  return value * value;
-}
-template<class Num>
-constexpr auto pow3(Num value) noexcept -> Num {
-  // 2 multiplications.
-  return value * value * value;
-}
-template<class Num>
-constexpr auto pow4(Num value) noexcept -> Num {
-  // 2 multiplications.
-  const auto value_sqr = value * value;
-  return value_sqr * value_sqr;
-}
-template<class Num>
-constexpr auto pow5(Num value) noexcept -> Num {
-  // 3 multiplications.
-  const auto value_sqr = value * value;
-  return value_sqr * value_sqr * value;
-}
-template<class Num>
-constexpr auto pow6(Num value) noexcept -> Num {
-  // 3 multiplications.
-  const auto value_cubed = value * value * value;
-  return value_cubed * value_cubed;
-}
-template<class Num>
-constexpr auto pow7(Num value) noexcept -> Num {
-  // 4 multiplications.
-  // TODO: can pow7 be implemented with 3 multiplications?
-  const auto value_cubed = value * value * value;
-  return value_cubed * value_cubed * value;
-}
-template<class Num>
-constexpr auto pow8(Num value) noexcept -> Num {
-  // 3 multiplications.
-  const auto value_sqr = value * value;
-  const auto value_pow_4 = value_sqr * value_sqr;
-  return value_pow_4 * value_pow_4;
-}
-template<class Num>
-constexpr auto pow9(Num value) noexcept -> Num {
-  // 4 multiplications.
-  const auto value_cubed = value * value * value;
-  return value_cubed * value_cubed * value_cubed;
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** Check if number is approximately zero. */
-template<class Num>
-  requires std::integral<Num> || std::floating_point<Num>
-constexpr auto is_zero(Num value) noexcept -> bool {
-  if constexpr (std::integral<Num>) {
-    return value == Num{};
-  } else if constexpr (std::floating_point<Num>) {
-    return value * value < std::numeric_limits<Num>::epsilon();
-  }
-}
-
-/** Positive value or zero. */
-template<class Num>
-constexpr auto positive(Num value) noexcept -> Num {
-  return std::max(Num{}, value);
-}
-/** Negative value or zero. */
-template<class Num>
-constexpr auto negative(Num value) noexcept -> Num {
-  return std::min(Num{}, value);
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** Inverse number. */
-template<class Num>
-constexpr auto inverse(Num value) noexcept -> Num {
-  TIT_ASSERT(!is_zero(value), "Cannot invert zero!");
-  return Num{1} / value;
-}
-
-/** Divide number by divisor. */
-template<class Num, class Real>
-constexpr auto divide(Num value, Real divisor) noexcept {
-  TIT_ASSERT(!is_zero(divisor), "Cannot divide by zero!");
-  return value / divisor;
-}
-
-/** Safe inverse number.
- ** @returns Inverse for non-zero input, zero for zero input. */
-template<class Real>
-constexpr Real safe_inverse(Real value) noexcept {
-  return is_zero(value) ? Real{0.0} : inverse(value);
-}
-
-/** Safe divide number by divisor.
- ** @returns Division result for non-zero divisor, zero for zero divisor. */
-template<class Num, class Real>
-constexpr auto safe_divide(Num value, Real divisor) noexcept {
-  return is_zero(divisor) ? div_result_t<Num, Real>{} : value / divisor;
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Merge number with zero vector based on condition. */
 template<class Num>
@@ -246,28 +269,6 @@ constexpr auto merge(bool m, NumA a, NumB b) noexcept {
   // Supposed to be overriden by intrisics or optimized.
   return m * a + (!m) * b;
 }
-
-#if 0
-/** Merge floating-point number with zero vector based on condition. */
-template<std::floating_point Float>
-constexpr Float merge(bool b, Num t) noexcept -> Float {
-  if consteval {
-    return b * t;
-  } else {
-    // Explicitly tell the compiler that multiplication by boolean
-    // is a bitwise and operation rather then real multiplication.
-    using mask_t = decltype([] {
-      if constexpr (sizeof(Float) == 1) return uint8_t{};
-      else if constexpr (sizeof(Float) == 2) return uint16_t{};
-      else if constexpr (sizeof(Float) == 4) return uint32_t{};
-      else if constexpr (sizeof(Float) == 8) return uint64_t{};
-      else static_assert(false, "Floating point type is too long.");
-    }());
-    const auto mask = b ? ~mask_t{0} : mask_t{0};
-    return union_cast<Float>(mask & union_cast<mask_t>(t));
-  }
-}
-#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

@@ -22,51 +22,15 @@
 
 #pragma once
 
-#include <bit>
-#include <concepts>
 #include <utility>
 
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Use this macro to wrap a macro argument with commas to pass it to another
+ ** macro. */
 #define TIT_PASS(...) __VA_ARGS__
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-template<class T, class U>
-inline T union_cast(U u) noexcept {
-  union Union {
-    U u;
-    T t;
-  };
-  return Union{.u = u}.t;
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-template<std::unsigned_integral Int>
-constexpr auto ceil_divide(Int value, Int divisor) noexcept -> Int {
-  return (value + divisor - 1) / divisor;
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** Check if value is power of two. */
-template<std::unsigned_integral Int>
-constexpr auto is_power_of_two(Int x) noexcept -> bool {
-  return (x & (x - 1)) == 0;
-}
-
-template<std::unsigned_integral Int>
-constexpr auto pow2(Int x) noexcept -> Int {
-  return Int{1} << x;
-}
-
-template<std::unsigned_integral Int>
-constexpr auto log2(Int x) noexcept -> Int {
-  return std::bit_width(x) - 1;
-}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

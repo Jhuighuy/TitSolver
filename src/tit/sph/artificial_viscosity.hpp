@@ -25,6 +25,7 @@
 #include "tit/utils/assert.hpp"
 #include "tit/utils/math.hpp"
 #include "tit/utils/meta.hpp"
+#include "tit/utils/types.hpp"
 #include "tit/utils/vec.hpp"
 
 #include "tit/sph/field.hpp"
@@ -40,7 +41,7 @@ class ZeroArtificialViscosity final {
 public:
 
   /** Set of particle fields that are required. */
-  static constexpr auto required_fields = meta::Set{};
+  static constexpr auto required_fields = meta::Set();
 
   /** Compute artificial kinematic viscosity. */
   template<class PV>
@@ -65,6 +66,9 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = meta::Set{rho, h, r, v, p, cs};
+
   /** Initialize artificial viscosity scheme.
    ** @param alpha First scheme constant.
    ** @param beta Second scheme constant, typically 2x first constant.
@@ -73,17 +77,10 @@ public:
       real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
       : _alpha{alpha}, _beta{beta}, _eps{eps} {}
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{rho, h, r, v, p, cs};
-  }();
-
   /** Compute artificial kinematic viscosity. */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto kinematic(PV a, PV b) const {
-    using namespace particle_fields;
     if (dot(r[a, b], v[a, b]) >= 0.0) return 0.0;
     const auto h_ab = avg(h[a], h[b]);
     const auto rho_ab = avg(rho[a], rho[b]);
@@ -92,7 +89,7 @@ public:
     const auto mu_ab = h_ab * dot(r[a, b], v[a, b]) /
                               (norm2(r[a, b]) + _eps * pow2(h_ab));
     // clang-format on
-    const auto nu_ab = (-_alpha * cs_ab * mu_ab + _beta * pow2(mu_ab)) / rho_ab;
+    const auto nu_ab = ((-_alpha * cs_ab + _beta * mu_ab) * mu_ab) / rho_ab;
     return nu_ab;
   }
 
@@ -112,24 +109,20 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields =
+      meta::Set{h, cs, div_v, curl_v} | ArtificialViscosity::required_fields;
+
   /** Initialize artificial viscosity scheme.
    ** @param base_viscosity Base artificial viscosity scheme. */
   constexpr BalsaraArtificialViscosity(
       ArtificialViscosity base_viscosity = {}) noexcept
       : _base_viscosity{std::move(base_viscosity)} {}
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{h, cs, div_v, curl_v} |
-           ArtificialViscosity::required_fields;
-  }();
-
   /** Compute artificial kinematic viscosity. */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto kinematic(PV a, PV b) const {
-    using namespace particle_fields;
     auto nu_ab = _base_viscosity.kinematic(a, b);
     if (is_zero(nu_ab)) return nu_ab;
     const auto f = [](PV c) {
@@ -158,6 +151,11 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields =
+      meta::Set{h, cs, div_v, alpha, dalpha_dt} |
+      ArtificialViscosity::required_fields;
+
   /** Initialize artificial viscosity scheme.
    ** @param base_viscosity Base artificial viscosity scheme.
    ** @param alpha_min Minimal value of the artificial viscosity switch.
@@ -173,18 +171,13 @@ public:
                "Decay time inverse scale factor must be positive.");
   }
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{h, cs, div_v, alpha, dalpha_dt} |
-           ArtificialViscosity::required_fields;
-  }();
-
   /** Compute artificial kinematic viscosity. */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto kinematic(PV a, PV b) const {
-    using namespace particle_fields;
+    // TODO: this is actually an incorrect implementation!
+    // we should not multiply by alpha, rather than change alpha in the
+    // alpha-beta viscosity scheme!
     auto nu_ab = _base_viscosity.kinematic(a, b);
     if (is_zero(nu_ab)) return nu_ab;
     const auto alpha_ab = avg(alpha[a], alpha[b]);
@@ -196,7 +189,6 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_switch_deriv(PV a) const {
-    using namespace particle_fields;
     const auto S_a = positive(-div_v[a]);
     const auto tau_a = h[a] / (_sigma * cs[a]);
     dalpha_dt[a] = S_a - (alpha[a] - _alpha_min) / tau_a;
