@@ -25,6 +25,7 @@
 #include "tit/utils/assert.hpp"
 #include "tit/utils/math.hpp"
 #include "tit/utils/meta.hpp"
+#include "tit/utils/types.hpp"
 
 #include "tit/sph/field.hpp"
 
@@ -42,6 +43,9 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = meta::Set{rho, p, cs, eps, deps_dt};
+
   /** Initialize the equation of state.
    ** @param gamma Adiabatic index. */
   constexpr IdealGasEquationOfState(real_t gamma = 1.4) noexcept
@@ -49,17 +53,10 @@ public:
     TIT_ASSERT(_gamma > 1.0, "Adiabatic index must be greater than 1.");
   }
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{rho, p, cs, eps, deps_dt};
-  }();
-
   /** Compute particle pressure (and sound speed). */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
-    using namespace particle_fields;
     p[a] = (_gamma - 1.0) * rho[a] * eps[a];
     // The same as sqrt(gamma * p / rho).
     cs[a] = sqrt(_gamma * (_gamma - 1.0) * eps[a]);
@@ -77,6 +74,9 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = meta::Set{rho, p, cs};
+
   /** Initialize the equation of state.
    ** @param kappa Thermal conductivity coefficient. (???)
    ** @param gamma Adiabatic index. */
@@ -88,17 +88,10 @@ public:
     TIT_ASSERT(_gamma > 1.0, "Adiabatic index must be greater than 1.");
   }
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{rho, p, cs};
-  }();
-
   /** Compute particle pressure (and sound speed). */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
-    using namespace particle_fields;
     p[a] = _kappa * pow(rho[a], _gamma);
     cs[a] = sqrt(_gamma * p[a] / rho[a]);
   }
@@ -118,6 +111,9 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = meta::Set{rho, p};
+
   /** Initialize the equation of state.
    ** @param cs Reference sound speed, typically 10x of the expected velocity.
    ** @param rho_0 Reference density.
@@ -131,17 +127,10 @@ public:
     TIT_ASSERT(_gamma > 1.0, "Adiabatic index must be greater than 1.");
   }
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{rho, p};
-  }();
-
   /** Compute particle pressure (and sound speed). */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
-    using namespace particle_fields;
     const auto p_1 = _rho_0 * pow2(_cs) / _gamma;
     p[a] = _p_0 + p_1 * (pow(rho[a] / _rho_0, _gamma) - 1.0);
     if constexpr (has<PV>(cs)) {
@@ -161,6 +150,9 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = meta::Set{rho, p};
+
   /** Initialize the equation of state.
    ** @param cs Reference sound speed, typically 10x of the expected velocity.
    ** @param rho_0 Reference density.
@@ -172,17 +164,10 @@ public:
     TIT_ASSERT(_rho_0 > 0.0, "Reference density speed must be positive.");
   }
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{rho, p};
-  }();
-
   /** Compute particle pressure (and sound speed). */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
-    using namespace particle_fields;
     p[a] = _p_0 + pow2(_cs) * (rho[a] - _rho_0);
     if constexpr (has<PV>(cs)) {
       // The same as sqrt(gamma * (p - p_0) / rho), where gamma = 1.

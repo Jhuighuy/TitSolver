@@ -57,14 +57,13 @@ public:
     particles.sort();
     _estimator.estimate_density(particles);
     _estimator.estimate_forces(particles);
-    particles.for_each([&]<class A>(A a) {
-      using namespace particle_fields;
+    particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];
       r[a] += dt * dr_dt[a];
-      if constexpr (has<A>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
-      if constexpr (has<A>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
+      if constexpr (has<PV>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
+      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
   }
 

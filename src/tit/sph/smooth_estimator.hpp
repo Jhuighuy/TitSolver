@@ -24,6 +24,7 @@
 
 #include "tit/utils/math.hpp"
 #include "tit/utils/meta.hpp"
+#include "tit/utils/types.hpp"
 #include "tit/utils/vec.hpp"
 
 #include "tit/sph/artificial_viscosity.hpp"
@@ -54,6 +55,13 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields =
+      meta::Set{fixed} | // TODO: fixed should not be here.
+      meta::Set{h, m, rho, p, r, v, dv_dt} |
+      meta::Set{drho_dt} | // TODO: move me to appropiate place.
+      EquationOfState::required_fields | ArtificialViscosity::required_fields;
+
   /** Initialize particle estimator. */
   constexpr ClassicSmoothEstimator( //
       EquationOfState eos = {}, Kernel kernel = {},
@@ -61,19 +69,9 @@ public:
       : _eos{std::move(eos)}, _kernel{std::move(kernel)},
         _viscosity{std::move(viscosity)} {}
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{fixed} | // TODO: fixed should not be here.
-           meta::Set{h, m, rho, p, r, v, dv_dt} |
-           EquationOfState::required_fields |
-           ArtificialViscosity::required_fields;
-  }();
-
   template<class Particles>
     requires (has<Particles>(required_fields))
   constexpr void init(Particles& particles) const {
-    using namespace particle_fields;
     particles.for_each([&](auto a) {
       if (!fixed[a]) return;
       // Init particle pressure (and sound speed).
@@ -85,8 +83,7 @@ public:
   template<class Particles>
     requires (has<Particles>(required_fields))
   constexpr void estimate_density(Particles& particles) const {
-    using namespace particle_fields;
-    particles.for_each([&](auto a) {
+    particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
       // Compute particle density, width.
       rho[a] = {};
@@ -126,7 +123,6 @@ public:
   template<class Particles>
     requires (has<Particles>(required_fields))
   constexpr void estimate_forces(Particles& particles) const {
-    using namespace particle_fields;
     particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
@@ -181,6 +177,12 @@ private:
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields =
+      meta::Set{fixed} | // TODO: fixed should not be here.
+      meta::Set{h, Omega, m, rho, p, cs, r, v, dv_dt} |
+      EquationOfState::required_fields | ArtificialViscosity::required_fields;
+
   /** Initialize particle estimator. */
   constexpr GradHSmoothEstimator( //
       EquationOfState eos = {}, Kernel kernel = {},
@@ -188,19 +190,9 @@ public:
       : _kernel{std::move(kernel)}, _eos{std::move(eos)},
         _viscosity{std::move(viscosity)}, _coupling{coupling} {}
 
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields = [] {
-    using namespace particle_fields;
-    return meta::Set{fixed} | // TODO: fixed should not be here.
-           meta::Set{h, Omega, m, rho, p, cs, r, v, dv_dt} |
-           EquationOfState::required_fields |
-           ArtificialViscosity::required_fields;
-  }();
-
   template<class Particles>
     requires (has<Particles>(required_fields))
   constexpr void init(Particles& particles) const {
-    using namespace particle_fields;
     const auto eta = _coupling;
     particles.for_each([&](auto a) {
       if (!fixed[a]) return;
@@ -217,7 +209,6 @@ public:
   template<class Particles>
     requires (has<Particles>(required_fields))
   constexpr void estimate_density(Particles& particles) const {
-    using namespace particle_fields;
     const auto eta = _coupling;
     particles.for_each([&](auto a) {
       if (fixed[a]) return;
@@ -269,7 +260,6 @@ public:
   template<class Particles>
     requires (has<Particles>(required_fields))
   constexpr void estimate_forces(Particles& particles) const {
-    using namespace particle_fields;
     particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
