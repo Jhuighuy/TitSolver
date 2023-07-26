@@ -277,8 +277,9 @@ constexpr auto merge(bool m, NumA a, NumB b) noexcept {
  ** @returns True on success. */
 template<class Real, class Func>
   requires std::invocable<Func>
-constexpr bool newton_raphson(Real& x, const Func& f, //
-                              Real epsilon = Real{1e-9}, size_t max_iter = 10) {
+constexpr auto newton_raphson(Real& x, const Func& f, //
+                              Real epsilon = Real{1e-9}, size_t max_iter = 10)
+    -> bool {
   for (size_t iter = 0; iter < max_iter; ++iter) {
     const auto [y, df_dx] = f(/*x*/);
 #if 0
@@ -297,8 +298,9 @@ constexpr bool newton_raphson(Real& x, const Func& f, //
  ** @returns True on success. */
 template<class Real, class Func>
   requires std::invocable<Func, Real>
-constexpr bool bisection(Real& min_x, Real& max_x, const Func& f,
-                         Real epsilon = Real{1e-9}, size_t max_iter = 10) {
+constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
+                         Real epsilon = Real{1e-9}, size_t max_iter = 10)
+    -> bool {
   TIT_ASSERT(min_x <= max_x, "Inverted search range!");
   auto min_f = f(min_x);
   if (abs(min_f) < epsilon) {

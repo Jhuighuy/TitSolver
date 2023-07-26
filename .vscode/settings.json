@@ -86,11 +86,13 @@
     "cwctype": "cpp",
     "deque": "cpp",
     "exception": "cpp",
+    "execution": "cpp",
     "filesystem": "cpp",
     "format": "cpp",
     "forward_list": "cpp",
     "fstream": "cpp",
     "functional": "cpp",
+    "future": "cpp",
     "initializer_list": "cpp",
     "iomanip": "cpp",
     "ios": "cpp",
@@ -141,6 +143,5 @@
     "variant": "cpp",
     "vector": "cpp",
     "version": "cpp",
-    "future": "cpp"
   },
 }

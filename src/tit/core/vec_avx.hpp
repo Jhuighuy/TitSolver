@@ -62,7 +62,7 @@ public:
       _reg = _mm_set1_pd(q);
     }
   }
-  constexpr auto& operator=(float64_t q) noexcept {
+  constexpr auto operator=(float64_t q) noexcept -> Vec& {
     if consteval {
       _scalars.fill(q);
     } else {
@@ -71,11 +71,11 @@ public:
     return *this;
   }
 
-  constexpr auto& operator[](size_t i) noexcept {
+  constexpr auto operator[](size_t i) noexcept -> float64_t& {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
     return _scalars[i];
   }
-  constexpr auto operator[](size_t i) const noexcept {
+  constexpr auto operator[](size_t i) const noexcept -> float64_t {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
     return _scalars[i];
   }
@@ -160,7 +160,7 @@ TIT_VEC_SIMD_FUNC_VV(dot, 2, float64_t, a, float64_t, b, {
 })
 
 // Helper to compare two SSE registers based on the compare functor.
-template<std_cmp_op Op>
+template<common_cmp_op Op>
 auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> __m128d {
   const auto& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
@@ -198,6 +198,8 @@ TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+#ifdef __AVX__
+
 template<>
 class alignas(32) Vec<float64_t, 4> final {
 public:
@@ -225,7 +227,7 @@ public:
       _reg = _mm256_set1_pd(q);
     }
   }
-  constexpr auto& operator=(float64_t q) noexcept {
+  constexpr auto operator=(float64_t q) noexcept -> Vec& {
     if consteval {
       _scalars.fill(q);
     } else {
@@ -234,11 +236,11 @@ public:
     return *this;
   }
 
-  constexpr auto& operator[](size_t i) noexcept {
+  constexpr auto operator[](size_t i) noexcept -> float64_t& {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
     return _scalars[i];
   }
-  constexpr auto operator[](size_t i) const noexcept {
+  constexpr auto operator[](size_t i) const noexcept -> float64_t {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
     return _scalars[i];
   }
@@ -322,7 +324,7 @@ TIT_VEC_SIMD_FUNC_V(sum, 4, float64_t, a, {
 })
 
 // Helper to compare two AVX registers based on the compare functor.
-template<std_cmp_op Op>
+template<common_cmp_op Op>
 auto _cmp_to_mask(VecCmp<Op, 4, float64_t> cmp) noexcept -> __m256d {
   const auto& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
@@ -357,6 +359,23 @@ TIT_VEC_SIMD_MERGE_2(4, Op, float64_t, float64_t, cmp,
   return r;
 })
 // clang-format on
+
+#endif // __AVX__
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#ifdef __AVX512F__
+
+// TODO: implement me!
+template<>
+class alignas(64) Vec<float64_t, 8> final {
+public:
+
+  static constexpr auto num_scalars = size_t{8};
+
+}; // Vec<float64_t, 8>
+
+#endif // __AVX512F__
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
