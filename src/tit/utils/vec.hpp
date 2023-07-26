@@ -22,9 +22,12 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 #include <functional>
+#include <type_traits>
+#include <utility>
 
 #include "tit/utils/assert.hpp"
 #include "tit/utils/config.hpp"
@@ -85,6 +88,23 @@ template<class Num, class... RestNums>
 Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Test if is a specialization of a vector. */
+/** @{ */
+template<class>
+inline constexpr auto is_vec_v = false;
+template<class Real, size_t Dim>
+inline constexpr auto is_vec_v<Vec<Real, Dim>> = true;
+/** @} */
+
+/** Vector number type. */
+template<class Vec>
+  requires is_vec_v<Vec>
+using vec_num_t = std::remove_cvref_t<decltype(std::declval<Vec>()[0])>;
+/** Vector size. */
+template<class Vec>
+  requires is_vec_v<Vec>
+inline constexpr auto vec_dim_v = Vec::num_scalars;
 
 /** Vector size. */
 template<class Num, size_t Dim>
@@ -237,6 +257,42 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
   return r;
 }
 
+/** Minimal vector element. */
+template<class Num, size_t Dim>
+constexpr auto min_value(Vec<Num, Dim> a) noexcept -> Num {
+  Num r{a[0]};
+  for (size_t i = 1; i < a.num_scalars; ++i) r = std::min(r, a[i]);
+  return r;
+}
+/** Maximal vector element. */
+template<class Num, size_t Dim>
+constexpr auto max_value(Vec<Num, Dim> a) noexcept -> Num {
+  Num r{a[0]};
+  for (size_t i = 1; i < a.num_scalars; ++i) r = std::max(r, a[i]);
+  return r;
+}
+
+/** Minimal vector element index. */
+template<class Num, size_t Dim>
+constexpr auto argmin_value(Vec<Num, Dim> a) noexcept -> size_t {
+  size_t ir = 0;
+  for (size_t i = 1; i < a.num_scalars; ++i) {
+    if (a[i] < a[ir]) ir = i;
+  }
+  return ir;
+}
+/** Maximal vector element index. */
+template<class Num, size_t Dim>
+constexpr auto argmax_value(Vec<Num, Dim> a) noexcept -> size_t {
+  size_t ir = 0;
+  for (size_t i = 1; i < a.num_scalars; ++i) {
+    if (a[i] > a[ir]) ir = i;
+  }
+  return ir;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 /** Vector dot product. */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto dot(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
@@ -361,6 +417,21 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
     r[i] = merge(op(x[i], y[i]), a[i], b[i]);
   }
   return r;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Component-wise minumum. */
+template<class Num, size_t Dim>
+constexpr auto minimum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
+    -> Vec<Num, Dim> {
+  return merge(a < b, a, b);
+}
+/** Component-wise maximum. */
+template<class Num, size_t Dim>
+constexpr auto maximum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
+    -> Vec<Num, Dim> {
+  return merge(a > b, a, b);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
