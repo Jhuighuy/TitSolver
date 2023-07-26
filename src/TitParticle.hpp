@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <concepts>
 #include <fstream>
-#include <memory>
+#include <iterator>
 #include <ranges>
 #include <string>
 #include <tuple>
@@ -33,8 +33,10 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/graph.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/misc.hpp"
+#include "tit/core/search_engine.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/sph/field.hpp"
@@ -90,6 +92,7 @@ public:
 
   /** Associated particle array. */
   constexpr ParticleArray& array() const noexcept {
+    TIT_ASSERT(_particles != nullptr, "Particle array was not set.");
     return *_particles;
   }
 
@@ -112,6 +115,69 @@ ParticleView(ParticleArray&) -> ParticleView<ParticleArray>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/******************************************************************************\
+ ** Particle adjacency graph.
+\******************************************************************************/
+template<class ParticleArray, class EngineFactory = KDTreeFactory>
+  requires std::is_object_v<ParticleArray> && std::is_object_v<EngineFactory>
+class ParticleAdjacency final {
+private:
+
+  ParticleArray* _particles;
+  EngineFactory _engine_factory;
+  Graph _adjacency_graph;
+
+public:
+
+  /** Construct a particle adjacency graph.
+   ** @param engine_factory Nearest-neighbours search engine factory. */
+  constexpr ParticleAdjacency(ParticleArray& particles,
+                              EngineFactory engine_factory = {}) noexcept
+      : _particles{&particles}, _engine_factory{std::move(engine_factory)} {}
+
+  /** Associated particle array. */
+  constexpr ParticleArray& array() const noexcept {
+    TIT_ASSERT(_particles != nullptr, "Particle array was not set.");
+    return *_particles;
+  }
+
+  /** Build an adjacency graph.
+   ** @param radius_func Function that returns search radius for the
+   **                    specified particle view. */
+  template<class SearchRadiusFunc>
+  constexpr void build(SearchRadiusFunc radius_func) noexcept {
+    using PV = ParticleView<ParticleArray>;
+    auto positions = array().views() | //
+                     std::views::transform([](PV a) { return a[r]; });
+    const auto engine = _engine_factory(std::move(positions));
+    _adjacency_graph.clear();
+    std::ranges::for_each(array().views(), [&](PV a) {
+      const auto search_radius = radius_func(a);
+      TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
+      thread_local std::vector<size_t> search_results;
+      search_results.clear();
+      engine.search(a[r], search_radius, std::back_inserter(search_results));
+      _adjacency_graph.append_row(search_results);
+    });
+  }
+
+  /** Adjacent particles. */
+  constexpr auto operator[](ParticleView<ParticleArray> a) noexcept {
+    TIT_ASSERT(&a.array() != &array(),
+               "Particle belongs to a different array.");
+    TIT_ASSERT(a.index() < array().size(), "Particle is out of range.");
+    return std::views::all(_adjacency_graph[a.index()]) |
+           std::views::transform(
+               [&](size_t b_index) { return (*_particles)[b_index]; });
+  }
+
+}; // class ParticleAdjacency
+
+template<class ParticleArray>
+ParticleAdjacency(ParticleArray&) -> ParticleAdjacency<ParticleArray>;
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 template<meta::type Space, meta::type Fields, meta::type Consts = meta::Set<>>
 class ParticleArray;
 
@@ -121,11 +187,6 @@ ParticleArray(Space, Fields, Consts) -> ParticleArray<Space, Fields, Consts>;
 template<class Space, class Fields, class... Consts>
 ParticleArray(Space, Fields, Consts...)
     -> ParticleArray<Space, Fields, meta::Set<Consts...>>;
-
-// TODO: remove me!
-template<class ParticleArray>
-  requires std::is_object_v<ParticleArray>
-class KDTreeParticleNNS; // IWYU pragma: keep
 
 /******************************************************************************\
  ** Particle array.
@@ -281,19 +342,6 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  std::unique_ptr<KDTreeParticleNNS<ParticleArray>> _index;
-
-  constexpr void sort() {
-    _index.reset(new KDTreeParticleNNS<ParticleArray>(*this));
-  }
-
-  template<class Func>
-  constexpr void nearby(auto a, Real search_radius, const Func& func) {
-    std::ranges::for_each(_index->nearby(a, search_radius), func);
-  }
-
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
   template<class x>
   static auto _make_name(std::string n, meta::Set<x>) {
     return n;
@@ -327,6 +375,3 @@ public:
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit
-
-// TODO: remove me!
-#include "tit/sph/nns_kd_tree.hpp" // IWYU pragma: keep

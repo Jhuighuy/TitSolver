@@ -25,7 +25,7 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // IWYU pragma: begin_exports
-#include "tit/sph/nns_kd_tree.hpp"
+#include "tit/core/kd_tree.hpp"
 // IWYU pragma: end_exports
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

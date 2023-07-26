@@ -1,4 +1,4 @@
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*\
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
  * Copyright (C) 2020-2023 Oleg Butakov                                       *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -18,61 +18,67 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
  * DEALINGS IN THE SOFTWARE.                                                  *
-\*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
-#include <type_traits> // IWYU pragma: keep
+#include <algorithm>
+#include <concepts>
+#include <iterator>
+#include <ranges>
+#include <span>
+#include <vector>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/types.hpp"
 
-#include "TitParticle.hpp"
-#include "tit/sph/field.hpp"
-#include "tit/sph/smooth_estimator.hpp" // IWYU pragma: keep
-
-namespace tit::sph {
+namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Semi-implicit Euler time integrator.
+ ** Compressed sparse adjacency graph.
 \******************************************************************************/
-template<class SmoothEstimator>
-  requires std::is_object_v<SmoothEstimator>
-class EulerIntegrator {
+class Graph {
 private:
 
-  SmoothEstimator _estimator{};
-  mutable size_t _count;
+  std::vector<size_t> _row_addrs{0};
+  std::vector<size_t> _col_indices;
 
 public:
 
-  /** Construct time integrator. */
-  constexpr EulerIntegrator(SmoothEstimator estimator = {})
-      : _estimator{std::move(estimator)}, _count{0} {}
-
-  /** Make a step in time. */
-  template<class Real, class ParticleArray>
-  constexpr void step(Real dt, ParticleArray& particles) const {
-    using PV = ParticleView<ParticleArray>;
-    if (_count++ == 0) _estimator.init(particles);
-    auto particle_adjacency = ParticleAdjacency{particles};
-    _estimator.index(particles, particle_adjacency);
-    _estimator.estimate_density(particles, particle_adjacency);
-    _estimator.estimate_forces(particles, particle_adjacency);
-    particles.for_each([&](PV a) {
-      if (fixed[a]) return;
-      // Velocity is updated first, so the integrator is semi-implicit.
-      v[a] += dt * dv_dt[a];
-      r[a] += dt * dr_dt[a];
-      if constexpr (has<PV>(rho, drho_dt)) rho[a] += dt * drho_dt[a];
-      if constexpr (has<PV>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
-    });
+  /** Number of graph rows. */
+  constexpr auto num_rows() const noexcept -> size_t {
+    return _row_addrs.size() - 1;
   }
 
-}; // class EulerIntegrator
+  /** Clear the graph. */
+  constexpr void clear() noexcept {
+    _row_addrs.clear();
+    _row_addrs.push_back(0);
+    _col_indices.clear();
+  }
+
+  /** Append a row to the graph. */
+  template<std::ranges::input_range ColIndices>
+    requires std::same_as<std::ranges::range_value_t<ColIndices>, size_t>
+  constexpr void append_row(ColIndices&& col_indices) {
+    std::ranges::copy(col_indices, std::back_inserter(_col_indices));
+    std::sort(_col_indices.begin() + _row_addrs.back(), _col_indices.end());
+    _row_addrs.push_back(_col_indices.size());
+  }
+
+  /** Column indices for the specified row. */
+  constexpr auto operator[](size_t row_index) const noexcept
+      -> std::span<const size_t> {
+    TIT_ASSERT(row_index < num_rows(), "Row index is out of range.");
+    const auto first_pointer = _col_indices.data() + _row_addrs[row_index],
+               last_pointer = _col_indices.data() + _row_addrs[row_index + 1];
+    return std::span{first_pointer, last_pointer};
+  }
+
+}; // class Graph
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit::sph
+} // namespace tit

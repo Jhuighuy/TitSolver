@@ -22,17 +22,21 @@
 
 #pragma once
 
+#include <algorithm>
+#include <ranges>      // IWYU pragma: keep
+#include <tuple>       // IWYU pragma: keep
+#include <type_traits> // IWYU pragma: keep
+
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/types.hpp"
+#include "tit/core/types.hpp" // IWYU pragma: keep
 #include "tit/core/vec.hpp"
+
+#include "TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/equation_of_state.hpp" // IWYU pragma: keep
 #include "tit/sph/field.hpp"
 #include "tit/sph/smooth_kernel.hpp"
-
-#include <tuple>
-#include <type_traits> // IWYU pragma: keep
 
 namespace tit::sph {
 
@@ -69,9 +73,9 @@ public:
       : _eos{std::move(eos)}, _kernel{std::move(kernel)},
         _viscosity{std::move(viscosity)} {}
 
-  template<class Particles>
-    requires (has<Particles>(required_fields))
-  constexpr void init(Particles& particles) const {
+  template<class ParticleArray>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void init(ParticleArray& particles) const {
     particles.for_each([&](auto a) {
       if (!fixed[a]) return;
       // Init particle pressure (and sound speed).
@@ -79,25 +83,34 @@ public:
     });
   }
 
+  template<class ParticleArray, class ParticleAdjacency>
+  constexpr auto index(ParticleArray& particles,
+                       ParticleAdjacency& adjacent_particles) const {
+    using PV = ParticleView<ParticleArray>;
+    adjacent_particles.build([&](PV a) { return _kernel.radius(a); });
+  }
+
   /** Estimate density, kernel width, pressure and sound speed. */
-  template<class Particles>
-    requires (has<Particles>(required_fields))
-  constexpr void estimate_density(Particles& particles) const {
-    particles.for_each([&]<class PV>(PV a) {
+  template<class ParticleArray, class ParticleAdjacency>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void estimate_density(ParticleArray& particles,
+                                  ParticleAdjacency& adjacent_particles) const {
+    using PV = ParticleView<ParticleArray>;
+    std::ranges::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       // Compute particle density (or density time derivative).
       const auto search_radius = _kernel.radius(a);
       if constexpr (has<PV>(drho_dt)) {
         // Continuity equation approach.
         drho_dt[a] = {};
-        particles.nearby(a, search_radius, [&](PV b) {
+        std::ranges::for_each(adjacent_particles[a], [&](PV b) {
           const auto grad_k_ab = _kernel.grad(a, b);
           drho_dt[a] += m[b] * dot(v[a, b], grad_k_ab);
         });
       } else {
         // Density summation approach.
         rho[a] = {};
-        particles.nearby(a, search_radius, [&](PV b) {
+        particles.nearby(a, [&](PV b) {
           const auto k_ab = _kernel(a, b);
           rho[a] += m[b] * k_ab;
         });
@@ -111,7 +124,7 @@ public:
       if constexpr (has<PV>(div_v)) div_v[a] = {};
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
       const auto search_radius = _kernel.radius(a);
-      particles.nearby(a, search_radius, [&](PV b) {
+      std::ranges::for_each(adjacent_particles[a], [&](PV b) {
         const auto grad_k_ab = _kernel.grad(a, b);
         if constexpr (has<PV>(div_v)) {
           // clang-format off
@@ -132,10 +145,12 @@ public:
   }
 
   /** Estimate acceleration and thermal heating. */
-  template<class Particles>
-    requires (has<Particles>(required_fields))
-  constexpr void estimate_forces(Particles& particles) const {
-    particles.for_each([&]<class PV>(PV a) {
+  template<class ParticleArray, class ParticleAdjacency>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void estimate_forces(ParticleArray& particles,
+                                 ParticleAdjacency& adjacent_particles) const {
+    using PV = ParticleView<ParticleArray>;
+    std::ranges::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
@@ -143,7 +158,7 @@ public:
         deps_dt[a] = {};
       }
       const auto search_radius = _kernel.radius(a);
-      particles.nearby(a, search_radius, [&](PV b) {
+      std::ranges::for_each(adjacent_particles[a], [&](PV b) {
         const auto Pi_ab = _viscosity.kinematic(a, b);
         const auto grad_k_ab = _kernel.grad(a, b);
         // clang-format off
@@ -172,6 +187,7 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+#if 0
 /******************************************************************************\
  ** The particle estimator with a variable kernel width (Grad-H).
 \******************************************************************************/
@@ -203,9 +219,9 @@ public:
       : _kernel{std::move(kernel)}, _eos{std::move(eos)},
         _viscosity{std::move(viscosity)}, _coupling{coupling} {}
 
-  template<class Particles>
-    requires (has<Particles>(required_fields))
-  constexpr void init(Particles& particles) const {
+  template<class ParticleArray>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void init(ParticleArray& particles) const {
     const auto eta = _coupling;
     particles.for_each([&](auto a) {
       if (!fixed[a]) return;
@@ -219,9 +235,9 @@ public:
   }
 
   /** Estimate density, kernel width, pressure and sound speed. */
-  template<class Particles>
-    requires (has<Particles>(required_fields))
-  constexpr void estimate_density(Particles& particles) const {
+  template<class ParticleArray>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void estimate_density(ParticleArray& particles) const {
     const auto eta = _coupling;
     particles.for_each([&](auto a) {
       if (fixed[a]) return;
@@ -270,9 +286,9 @@ public:
   }
 
   /** Estimate acceleration and thermal heating. */
-  template<class Particles>
-    requires (has<Particles>(required_fields))
-  constexpr void estimate_forces(Particles& particles) const {
+  template<class ParticleArray>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void estimate_forces(ParticleArray& particles) const {
     particles.for_each([&]<class PV>(PV a) {
       if (fixed[a]) return;
       // Compute velocity and thermal energy forces.
@@ -310,6 +326,7 @@ public:
   }
 
 }; // class GradHSmoothEstimator
+#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
