@@ -23,6 +23,7 @@
 #pragma once
 
 #include <algorithm>
+#include <iterator>
 #include <ranges>
 #include <tuple>
 #include <utility>
@@ -198,7 +199,7 @@ private:
 public:
 
   /** Find the points within the radius to the given point. */
-  template<class OutputIterator>
+  template<std::output_iterator<size_t> OutputIterator>
   constexpr auto search(Point search_point, Real search_radius,
                         OutputIterator output) const noexcept
       -> OutputIterator {
@@ -217,7 +218,7 @@ private:
 
   // Search for the point neighbours in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
-  template<class OutputIterator>
+  template<std::output_iterator<size_t> OutputIterator>
   constexpr void _search_subtree(const KDTreeNode* node, Point dists,
                                  const Point& search_point, Real search_dist,
                                  OutputIterator& output) const noexcept {
@@ -264,6 +265,33 @@ private:
 // Wrap a viewable range into a view on construction.
 template<class Points, class... Args>
 KDTree(Points&&, Args...) -> KDTree<std::views::all_t<Points>>;
+
+template<class... Args>
+concept _can_kd_tree = requires { KDTree{std::declval<Args>()...}; };
+
+/******************************************************************************\
+ ** K-dimensional tree factory.
+\******************************************************************************/
+class KDTreeFactory final {
+private:
+
+  size_t _max_leaf_size;
+
+public:
+
+  /** Construct a K-dimensional tree factory.
+   ** @param max_leaf_size Maximum amount of points in the leaf node. */
+  constexpr KDTreeFactory(size_t max_leaf_size = 1)
+      : _max_leaf_size{max_leaf_size} {}
+
+  /** Produce a K-dimensional tree for the specified set op points. */
+  template<std::ranges::viewable_range Points>
+    requires _can_kd_tree<Points, size_t>
+  constexpr auto operator()(Points&& points) const noexcept {
+    return KDTree{std::forward<Points>(points), _max_leaf_size};
+  }
+
+}; // class KDTreeFactory
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
