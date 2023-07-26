@@ -63,7 +63,7 @@ template<meta_type... Ts>
 class Set {
 public:
 
-  /** Initialize a meta-set. */
+  /** Construct a meta-set. */
   Set() = default;
   consteval Set(Ts...)
     requires (sizeof...(Ts) != 0)

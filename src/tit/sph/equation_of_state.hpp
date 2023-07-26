@@ -45,7 +45,7 @@ public:
   /** Set of particle fields that are required. */
   static constexpr auto required_fields = meta::Set{rho, p, cs, eps, deps_dt};
 
-  /** Initialize the equation of state.
+  /** Construct an equation of state.
    ** @param gamma Adiabatic index. */
   constexpr IdealGasEquationOfState(real_t gamma = 1.4) noexcept
       : _gamma{gamma} {
@@ -76,7 +76,7 @@ public:
   /** Set of particle fields that are required. */
   static constexpr auto required_fields = meta::Set{rho, p, cs};
 
-  /** Initialize the equation of state.
+  /** Construct an equation of state.
    ** @param kappa Thermal conductivity coefficient. (???)
    ** @param gamma Adiabatic index. */
   constexpr AdiabaticIdealGasEquationOfState( //
@@ -113,7 +113,7 @@ public:
   /** Set of particle fields that are required. */
   static constexpr auto required_fields = meta::Set{rho, p};
 
-  /** Initialize the equation of state.
+  /** Construct an equation of state.
    ** @param cs Reference sound speed, typically 10x of the expected velocity.
    ** @param rho_0 Reference density.
    ** @param p_0 Background pressure.
@@ -152,7 +152,7 @@ public:
   /** Set of particle fields that are required. */
   static constexpr auto required_fields = meta::Set{rho, p};
 
-  /** Initialize the equation of state.
+  /** Construct an equation of state.
    ** @param cs Reference sound speed, typically 10x of the expected velocity.
    ** @param rho_0 Reference density.
    ** @param p_0 Background pressure. */

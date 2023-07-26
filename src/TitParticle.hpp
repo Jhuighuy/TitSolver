@@ -24,7 +24,6 @@
 
 #include <algorithm>
 #include <concepts>
-#include <cstdint>
 #include <fstream>
 #include <memory>
 #include <ranges>
@@ -33,14 +32,11 @@
 #include <type_traits>
 #include <vector>
 
-#include <H5Cpp.h> // IWYU pragma: keep
-
 #include "tit/core/assert.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/misc.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/sph/field.hpp"
 
 namespace tit {
@@ -87,7 +83,7 @@ public:
   static constexpr auto variables =
       std::remove_const_t<ParticleArray>::variables;
 
-  /** Initialize a particle view. */
+  /** Construct a particle view. */
   constexpr ParticleView(ParticleArray& particles,
                          size_t particle_index) noexcept
       : _particles{&particles}, _particle_index{particle_index} {}
@@ -233,11 +229,12 @@ public:
   /** @{ */
   template<meta::type Field>
     requires meta::contains_v<Field, Fields...>
-  constexpr decltype(auto) operator[]([[maybe_unused]] size_t particle_index,
-                                      [[maybe_unused]] Field field) noexcept {
+  constexpr auto operator[]([[maybe_unused]] size_t particle_index,
+                            [[maybe_unused]] Field field) noexcept
+      -> decltype(auto) {
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
     if constexpr (meta::contains_v<Field, Consts...>) {
-      return auto((*this)[field]); // Return a copy for constants.
+      return auto{(*this)[field]}; // Return a copy for constants.
     } else {
       return [&]<class... Vars>(meta::Set<Vars...>) -> decltype(auto) {
         auto& particle = _particles[particle_index];
@@ -265,7 +262,8 @@ public:
   /** @{ */
   template<meta::type Field>
     requires meta::contains_v<Field, Fields...>
-  constexpr decltype(auto) operator[]([[maybe_unused]] Field field) noexcept {
+  constexpr auto operator[]([[maybe_unused]] Field field) noexcept
+      -> decltype(auto) {
     if constexpr (meta::contains_v<Field, Consts...>) {
       return std::get<meta::index_of_v<Field, Consts...>>(_constants);
     } else {
@@ -283,52 +281,14 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  constexpr void sort()
-    requires (Dim == 1)
-  {
-    std::sort(this->begin(), this->end(), [](const auto& va, const auto& vb) {
-      return r[&va][0] < r[&vb][0];
-    });
-  }
-
-  template<class Func>
-  constexpr void nearby(auto a, Real search_radius, const Func& func)
-    requires (Dim == 1)
-  {
-    const size_t aIndex = a - this->data();
-
-    // Neighbours to the left.
-    for (size_t bIndex = aIndex - 1; bIndex != SIZE_MAX; --bIndex) {
-      auto b = &(*this)[bIndex];
-      if (r[a][0] - r[b][0] > search_radius) break;
-      func(b);
-    }
-
-    // Particle itself.
-    func(a);
-
-    // Neighbours to the right.
-    for (size_t bIndex = aIndex + 1; bIndex < this->size(); ++bIndex) {
-      auto b = &(*this)[bIndex];
-      if (r[b][0] - r[a][0] > search_radius) break;
-      func(b);
-    }
-  }
-
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
   std::unique_ptr<KDTreeParticleNNS<ParticleArray>> _index;
 
-  constexpr void sort()
-    requires (Dim > 1)
-  {
+  constexpr void sort() {
     _index.reset(new KDTreeParticleNNS<ParticleArray>(*this));
   }
 
   template<class Func>
-  constexpr void nearby(auto a, Real search_radius, const Func& func)
-    requires (Dim > 1)
-  {
+  constexpr void nearby(auto a, Real search_radius, const Func& func) {
     std::ranges::for_each(_index->nearby(a, search_radius), func);
   }
 

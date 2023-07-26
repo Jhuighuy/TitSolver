@@ -54,7 +54,7 @@ private:
 
 public:
 
-  /** Initialize the vector with scalars. */
+  /** Construct a vector with scalars. */
   template<class... Args>
     requires (sizeof...(Args) == Dim)
   constexpr explicit Vec(Args... qi) noexcept : _scalars{qi...} {}
@@ -65,18 +65,18 @@ public:
   }
 
   /** Fill-assign the vector. */
-  constexpr auto& operator=(Num q) noexcept {
+  constexpr auto operator=(Num q) noexcept -> Vec& {
     _scalars.fill(q);
     return *this;
   }
 
   /** Vector component at index. */
   /** @{ */
-  constexpr auto& operator[](size_t i) noexcept {
+  constexpr auto operator[](size_t i) noexcept -> Num& {
     TIT_ASSERT(i < num_scalars, "Component index is out of range.");
     return _scalars[i];
   }
-  constexpr auto operator[](size_t i) const noexcept {
+  constexpr auto operator[](size_t i) const noexcept -> Num {
     TIT_ASSERT(i < num_scalars, "Component index is out of range.");
     return _scalars[i];
   }
@@ -116,14 +116,14 @@ constexpr auto dim([[maybe_unused]] Vec<Num, Dim> a) noexcept {
 
 /** Vector input operator. */
 template<class Stream, class Num, size_t Dim>
-Stream& operator>>(Stream& stream, Vec<Num, Dim>& a) {
+constexpr auto operator>>(Stream& stream, Vec<Num, Dim>& a) -> Stream& {
   for (size_t i = 0; i < a.num_scalars; ++i) stream >> a[i];
   return stream;
 }
 
 /** Vector output operator. */
 template<class Stream, class Num, size_t Dim>
-Stream& operator<<(Stream& stream, Vec<Num, Dim> a) {
+constexpr auto operator<<(Stream& stream, Vec<Num, Dim> a) -> Stream& {
   stream << a[0];
   for (size_t i = 1; i < a.num_scalars; ++i) stream << " " << a[i];
   return stream;
@@ -350,7 +350,7 @@ public:
 
 /** Standard comparison operator. */
 template<class Op>
-concept std_cmp_op =
+concept common_cmp_op =
     std::same_as<Op, std::equal_to<>> ||
     std::same_as<Op, std::not_equal_to<>> || //
     std::same_as<Op, std::less<>> || std::same_as<Op, std::less_equal<>> ||

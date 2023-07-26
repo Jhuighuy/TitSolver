@@ -68,7 +68,7 @@ public:
   /** Set of particle fields that are required. */
   static constexpr auto required_fields = meta::Set{rho, h, r, v, p, cs};
 
-  /** Initialize artificial viscosity scheme.
+  /** Construct artificial viscosity scheme.
    ** @param alpha First scheme constant.
    ** @param beta Second scheme constant, typically 2x first constant.
    ** @param eps A small number to prevent division by zero. */
@@ -116,7 +116,7 @@ public:
   static constexpr auto required_fields =
       meta::Set{h, cs, div_v, curl_v} | ArtificialViscosity::required_fields;
 
-  /** Initialize artificial viscosity scheme.
+  /** Construct artificial viscosity scheme.
    ** @param base_viscosity Base artificial viscosity scheme. */
   constexpr BalsaraArtificialViscosity(
       ArtificialViscosity base_viscosity = {}) noexcept
@@ -157,7 +157,7 @@ public:
       meta::Set{h, cs, div_v, alpha, dalpha_dt} |
       AlphaBetaArtificialViscosity::required_fields;
 
-  /** Initialize artificial viscosity scheme.
+  /** Construct artificial viscosity scheme.
    ** @param alpha_min Minimal value of the first
    **                  Alpha-Beta scheme coefficient.
    ** @param sigma Decay time inverse scale factor.

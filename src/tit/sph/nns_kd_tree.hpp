@@ -59,7 +59,7 @@ private:
 
 public:
 
-  /** Initialize a particle NNS algorithm. */
+  /** Construct a particle NNS algorithm. */
   /** @{ */
   constexpr KDTreeParticleNNS() noexcept = default;
   constexpr KDTreeParticleNNS(ParticleArray& particles)

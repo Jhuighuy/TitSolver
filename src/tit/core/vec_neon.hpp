@@ -63,7 +63,7 @@ public:
       _reg = vdupq_n_f64(q);
     }
   }
-  constexpr auto& operator=(float64_t q) noexcept {
+  constexpr auto operator=(float64_t q) noexcept -> Vec& {
     if consteval {
       _scalars.fill(q);
     } else {
@@ -72,11 +72,11 @@ public:
     return *this;
   }
 
-  constexpr auto& operator[](size_t i) noexcept {
+  constexpr auto operator[](size_t i) noexcept -> float64_t& {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
     return _scalars[i];
   }
-  constexpr auto operator[](size_t i) const noexcept {
+  constexpr auto operator[](size_t i) const noexcept -> float64_t {
     TIT_ASSERT(i < num_scalars, "Index is out of range!");
     return _scalars[i];
   }
@@ -157,13 +157,13 @@ TIT_VEC_SIMD_FUNC_V(sum, 2, float64_t, a, {
 
 namespace {
   // vmvnq_u64 does not exist for some reason.
-  inline uint64x2_t vmvnq_u64(uint64x2_t a_reg) noexcept {
+  inline auto vmvnq_u64(uint64x2_t a_reg) noexcept -> uint64x2_t {
     return vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(a_reg)));
   }
 } // namespace
 
 // Helper to compare two NEON registers based on the compare functor.
-template<std_cmp_op Op>
+template<common_cmp_op Op>
 auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> uint64x2_t {
   const auto& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {

@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
-#include <tuple>
 #include <utility>
 
 #include "tit/core/assert.hpp"
@@ -40,9 +39,15 @@ namespace tit {
 
 // Set up the default register size.
 // Assuming 128-bit SIMD registers by default.
-// TODO: auto-decect me!
-#ifndef TIT_SIMD_REGISTER_SIZE
-#define TIT_SIMD_REGISTER_SIZE (4 * sizeof(float))
+#if defined(__AVX__)
+#define TIT_SIMD_REGISTER_SIZE (4 * sizeof(double))
+#elif defined(__AVX512F__)
+#define TIT_SIMD_REGISTER_SIZE (8 * sizeof(double))
+#elif defined(__ARM_NEON) || defined(__SSE__)
+#define TIT_SIMD_REGISTER_SIZE (2 * sizeof(double))
+#else
+// Assuming 128-bit SIMD registers by default.
+#define TIT_SIMD_REGISTER_SIZE (2 * sizeof(double))
 #endif
 
 namespace simd {
@@ -60,13 +65,13 @@ namespace simd {
    ** register size for the scalar type (e.g. 3*double on AVX CPU) and number of
    ** dimensions is not power of two (in this case fractions of registers are
    ** used, e.g. 2*double on AVX CPU). */
-  template<size_t Dim, class Num>
+  template<class Num, size_t Dim>
   concept use_regs = (Dim > max_reg_size_v<Num>) ||
                      (Dim < max_reg_size_v<Num> && !is_power_of_two(Dim));
 
   /** SIMD register size for the specified amount of scalars. */
-  template<size_t Dim, class Num>
-    requires use_regs<Dim, Num>
+  template<class Num, size_t Dim>
+    requires use_regs<Num, Dim>
   inline constexpr auto reg_size_v =
       std::min(max_reg_size_v<Num>, //
                (is_power_of_two(Dim) ? Dim : exp2(log2(Dim) + 1)));
@@ -74,8 +79,8 @@ namespace simd {
   /** Do SIMD registors match for the specified types? */
   template<size_t Dim, class Num, class... RestNums>
   concept regs_match =
-      use_regs<Dim, Num> && (use_regs<Dim, RestNums> && ...) &&
-      ((reg_size_v<Dim, Num> == reg_size_v<Dim, RestNums>) &&...);
+      use_regs<Num, Dim> && (use_regs<RestNums, Dim> && ...) &&
+      ((reg_size_v<Num, Dim> == reg_size_v<RestNums, Dim>) &&...);
 
 } // namespace simd
 
@@ -85,7 +90,7 @@ namespace simd {
  ** Algebraic vector (blockified version).
 \******************************************************************************/
 template<class Num, size_t Dim>
-  requires simd::use_regs<Dim, Num>
+  requires simd::use_regs<Num, Dim>
 class Vec<Num, Dim> final {
 public:
 
@@ -93,7 +98,7 @@ public:
   static constexpr auto num_scalars = Dim;
 
   /** SIMD register size. */
-  static constexpr auto reg_size = simd::reg_size_v<Dim, Num>;
+  static constexpr auto reg_size = simd::reg_size_v<Num, Dim>;
 
   /** Number of SIMD register. */
   static constexpr auto num_regs = ceil_divide(num_scalars, reg_size);
@@ -102,7 +107,7 @@ public:
   static constexpr auto padding = reg_size * num_regs - num_scalars;
 
   /** SIMD register type. */
-  using Reg = Vec<Num, simd::reg_size_v<Dim, Num>>;
+  using Reg = Vec<Num, simd::reg_size_v<Num, Dim>>;
 
 private:
 
@@ -123,7 +128,7 @@ private:
 
 public:
 
-  /** Initialize the vector with components. */
+  /** Construct a vector with components. */
   template<class... Args>
     requires (sizeof...(Args) == Dim)
   constexpr explicit Vec(Args... qi) noexcept : _regs{_pack_regs(qi...)} {}
@@ -134,18 +139,18 @@ public:
   }
 
   /** Fill-assign the vector. */
-  constexpr auto& operator=(Num q) noexcept {
+  constexpr auto operator=(Num q) noexcept -> Vec& {
     _regs.fill(Reg(q));
     return *this;
   }
 
   /** Vector register at index. */
   /** @{ */
-  constexpr auto& reg(size_t i) noexcept {
+  constexpr auto reg(size_t i) noexcept -> Reg& {
     TIT_ASSERT(i < num_regs, "Register index is out of range.");
     return _regs[i];
   }
-  constexpr auto reg(size_t i) const noexcept {
+  constexpr auto reg(size_t i) const noexcept -> Reg {
     TIT_ASSERT(i < num_regs, "Register index is out of range.");
     return _regs[i];
   }
@@ -153,11 +158,11 @@ public:
 
   /** Vector component at index. */
   /** @{ */
-  constexpr auto& operator[](size_t i) noexcept {
+  constexpr auto operator[](size_t i) noexcept -> Num& {
     TIT_ASSERT(i < num_scalars, "Component index is out of range.");
     return _regs[i / reg_size][i % reg_size];
   }
-  constexpr auto operator[](size_t i) const noexcept {
+  constexpr auto operator[](size_t i) const noexcept -> Num {
     TIT_ASSERT(i < num_scalars, "Component index is out of range.");
     return _regs[i / reg_size][i % reg_size];
   }
@@ -188,7 +193,7 @@ constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 
 /** Vector negation. */
 template<class Num, size_t Dim>
-  requires simd::use_regs<Dim, Num>
+  requires simd::use_regs<Num, Dim>
 constexpr auto operator-(Vec<Num, Dim> a) noexcept {
   Vec<negate_result_t<Num>, Dim> r;
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = -a.reg(i);
@@ -301,7 +306,7 @@ constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 /** Sum of the vector components. */
 // TODO: implement sum with non-zero padding.
 template<class Num, size_t Dim>
-  requires simd::use_regs<Dim, Num> && (Vec<Num, Dim>::padding == 0)
+  requires simd::use_regs<Num, Dim> && (Vec<Num, Dim>::padding == 0)
 constexpr auto sum(Vec<Num, Dim> a) noexcept {
   auto r_reg(a.reg(0));
   for (size_t i = 1; i < a.num_regs; ++i) r_reg += a.reg(i);
@@ -332,7 +337,7 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
   Vec<sub_result_t<NumA, NumB>, Dim> r;
   const auto& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_regs; ++i) {
-    r.reg(i) = merge(std::tuple{op, x.reg(i), y.reg(i)}, a.reg(i), b.reg(i));
+    r.reg(i) = merge(VecCmp{op, x.reg(i), y.reg(i)}, a.reg(i), b.reg(i));
   }
   return r;
 }
@@ -343,16 +348,16 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 
 #if TIT_ENABLE_INTRISICS
 
-namespace tit {
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+namespace tit {
 consteval auto _unwrap(auto value) noexcept {
   return value;
 }
 consteval auto& _unwrap(auto* value) noexcept {
   return *value;
 }
+} // namespace tit
 
 // Generate a constexpr-aware overload for a unary vector function.
 #define TIT_VEC_SIMD_FUNC_V(func, Dim, Num, a, ...)                            \
@@ -390,7 +395,7 @@ consteval auto& _unwrap(auto* value) noexcept {
 
 // Generate a constexpr-aware overload for a vector merge function.
 #define TIT_VEC_SIMD_MERGE(Dim, Op, NumX, NumY, cmp, NumA, a, ...)             \
-  template<std_cmp_op Op>                                                      \
+  template<common_cmp_op Op>                                                   \
   constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,                        \
                        Vec<NumA, Dim> a) noexcept {                            \
     if consteval {                                                             \
@@ -400,7 +405,7 @@ consteval auto& _unwrap(auto* value) noexcept {
 
 // Generate a constexpr-aware overload for a two vector merge function.
 #define TIT_VEC_SIMD_MERGE_2(Dim, Op, NumX, NumY, cmp, NumA, a, NumB, b, ...)  \
-  template<std_cmp_op Op>                                                      \
+  template<common_cmp_op Op>                                                   \
   constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, Vec<NumA, Dim> a,      \
                        Vec<NumB, Dim> b) noexcept {                            \
     if consteval {                                                             \
@@ -409,15 +414,13 @@ consteval auto& _unwrap(auto* value) noexcept {
     } else __VA_ARGS__                                                         \
   }
 
-} // namespace tit
-
-#ifdef __SSE__
-#include "tit/core/vec_avx.hpp" // IWYU pragma: export
+// IWYU pragma: begin_exports
+#if defined(__SSE__)
+#include "tit/core/vec_avx.hpp"
+#elif defined(__ARM_NEON)
+#include "tit/core/vec_neon.hpp"
 #endif
-
-#ifdef __ARM_NEON
-#include "tit/core/vec_neon.hpp" // IWYU pragma: export
-#endif
+// IWYU pragma: end_exports
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
