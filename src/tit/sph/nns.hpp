@@ -22,38 +22,10 @@
 
 #pragma once
 
-#include <cstddef>
-
-namespace tit {
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Unsigned sized type. */
-using size_t = std::size_t;
-/** Signed sized type. */
-using ssize_t = std::ptrdiff_t;
-
-/** 32-bit floating point type. */
-using float32_t = float;
-/** 64-bit floating point type. */
-using float64_t = double;
-/** Default floating-point type type. */
-using real_t = float64_t;
+// IWYU pragma: begin_exports
+#include "tit/sph/nns_kd_tree.hpp"
+// IWYU pragma: end_exports
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** A non-copyable (and non-copy-assignable type). */
-class NonCopyable {
-public:
-
-  NonCopyable() = default;
-  NonCopyable(NonCopyable&&) = default;
-  NonCopyable(const NonCopyable&) = default;
-  NonCopyable& operator=(NonCopyable&&) = default;
-  NonCopyable& operator=(const NonCopyable&) = default;
-
-}; // class NonCopyable
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-} // namespace tit

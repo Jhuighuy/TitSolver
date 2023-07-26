@@ -1,4 +1,4 @@
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*\
  * Copyright (C) 2020-2023 Oleg Butakov                                       *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -18,41 +18,57 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING    *
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
  * DEALINGS IN THE SOFTWARE.                                                  *
-\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+\*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #pragma once
 
-#include <cstddef>
+#include "tit/utils/math.hpp"
+#include "tit/utils/types.hpp"
+#include "tit/utils/vec.hpp"
 
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Unsigned sized type. */
-using size_t = std::size_t;
-/** Signed sized type. */
-using ssize_t = std::ptrdiff_t;
-
-/** 32-bit floating point type. */
-using float32_t = float;
-/** 64-bit floating point type. */
-using float64_t = double;
-/** Default floating-point type type. */
-using real_t = float64_t;
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** A non-copyable (and non-copy-assignable type). */
-class NonCopyable {
+/******************************************************************************\
+ ** Bounding box.
+\******************************************************************************/
+template<class Num, size_t Dim>
+class BBox final {
 public:
 
-  NonCopyable() = default;
-  NonCopyable(NonCopyable&&) = default;
-  NonCopyable(const NonCopyable&) = default;
-  NonCopyable& operator=(NonCopyable&&) = default;
-  NonCopyable& operator=(const NonCopyable&) = default;
+  Vec<Num, Dim> low, high;
 
-}; // class NonCopyable
+  constexpr BBox() = default;
+  constexpr BBox(Vec<Num, Dim> point) noexcept : low(point), high(point) {}
+  constexpr BBox(Vec<Num, Dim> point1, Vec<Num, Dim> point2) noexcept
+      : low(point1), high(point1) {
+    update(point2);
+  }
+
+  constexpr void update(Vec<Num, Dim> point) noexcept {
+    low = minimum(low, point);
+    high = maximum(high, point);
+  }
+  constexpr void update(BBox<Num, Dim> bbox) noexcept {
+    low = minimum(low, bbox.low);
+    high = maximum(high, bbox.high);
+  }
+
+  constexpr auto clip(Vec<Num, Dim> point) const noexcept {
+    point = maximum(low, point);
+    point = minimum(high, point);
+    return point;
+  }
+
+  constexpr auto center() const noexcept {
+    return avg(low, high);
+  }
+  constexpr auto span() const noexcept {
+    return high - low;
+  }
+
+}; // class BBox
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

@@ -33,7 +33,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <nanoflann.hpp>
+#include <H5Cpp.h> // IWYU pragma: keep
 
 #include "tit/utils/assert.hpp"
 #include "tit/utils/meta.hpp"
@@ -77,11 +77,6 @@ private:
   size_t _particle_index;
 
 public:
-
-  /** Real type that is used for the particles. */
-  using Real = typename std::remove_const_t<ParticleArray>::Real;
-  /** Number of the spatial dimensions. */
-  static constexpr auto dim = std::remove_const_t<ParticleArray>::dim;
 
   /** Set of particle fields that are present. */
   static constexpr auto fields = std::remove_const_t<ParticleArray>::fields;
@@ -131,18 +126,18 @@ template<class Space, class Fields, class... Consts>
 ParticleArray(Space, Fields, Consts...)
     -> ParticleArray<Space, Fields, meta::Set<Consts...>>;
 
+// TODO: remove me!
+template<class ParticleArray>
+  requires std::is_object_v<ParticleArray>
+class KDTreeParticleNNS; // IWYU pragma: keep
+
 /******************************************************************************\
  ** Particle array.
 \******************************************************************************/
-template<class _Real, size_t Dim, meta::type... Fields, meta::type... Consts>
-class ParticleArray<Space<_Real, Dim>, //
+template<class Real, size_t Dim, meta::type... Fields, meta::type... Consts>
+class ParticleArray<Space<Real, Dim>, //
                     meta::Set<Fields...>, meta::Set<Consts...>> {
 public:
-
-  /** Real type that is used for the particles. */
-  using Real = _Real;
-  /** Number of the spatial dimensions. */
-  static constexpr auto dim = Dim;
 
   /** Set of particle fields that are present. */
   static constexpr auto fields = meta::Set<Fields...>{};
@@ -191,23 +186,33 @@ public:
     return (*this)[size() - 1];
   }
 
+  /** Range of particles. */
+  /** @{ */
+  constexpr auto views() noexcept {
+    return std::views::iota(size_t{0}, size()) |
+           std::views::transform([this](size_t particle_index) {
+             return ParticleView{*this, particle_index};
+           });
+  }
+  constexpr auto views() const noexcept {
+    return std::views::iota(size_t{0}, size()) |
+           std::views::transform([this](size_t particle_index) {
+             return ParticleView{*this, particle_index};
+           });
+  }
+  /** @} */
+
   /** Iterate through the particles. */
   /** @{ */
   template<class Func>
     requires std::invocable<Func, ParticleView<ParticleArray>>
   constexpr void for_each(const Func& func) {
-    std::ranges::for_each( //
-        std::views::iota(size_t{0}, size()), [&](size_t particle_index) {
-          return func(ParticleView{*this, particle_index});
-        });
+    std::ranges::for_each(views(), func);
   }
   template<class Func>
     requires std::invocable<Func, ParticleView</*const*/ ParticleArray>>
   constexpr void for_each(const Func& func) const {
-    std::ranges::for_each( //
-        std::views::iota(size_t{0}, size()), [&](size_t particle_index) {
-          return func(ParticleView{*this, particle_index});
-        });
+    std::ranges::for_each(views(), func);
   }
   /** @} */
 
@@ -312,52 +317,19 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  struct NanoflannAdapter {
-    ParticleArray* _array;
-    using coord_t = Real;
-    constexpr size_t kdtree_get_point_count() const {
-      return _array->size();
-    }
-    constexpr Real kdtree_get_pt(size_t idx, size_t dim) const noexcept {
-      auto a = (*_array)[idx];
-      return r[a][dim];
-    }
-    constexpr bool kdtree_get_bbox([[maybe_unused]] auto&& bbox) const {
-      return false;
-    }
-  }; // class NanoflannAdapter
-
-  using my_kd_tree_t = nanoflann::KDTreeSingleIndexAdaptor<
-      nanoflann::L2_Simple_Adaptor<Real, NanoflannAdapter>, NanoflannAdapter,
-      Dim>;
-
-  std::unique_ptr<NanoflannAdapter> _adapter;
-  std::unique_ptr<my_kd_tree_t> _index;
+  std::unique_ptr<KDTreeParticleNNS<ParticleArray>> _index;
 
   constexpr void sort()
     requires (Dim > 1)
   {
-    _adapter.reset(new NanoflannAdapter{this});
-    _index.reset(new my_kd_tree_t(Dim, *_adapter, {10 /* max leaf */}));
+    _index.reset(new KDTreeParticleNNS<ParticleArray>(*this));
   }
 
   template<class Func>
   constexpr void nearby(auto a, Real search_radius, const Func& func)
     requires (Dim > 1)
   {
-    const Real squaredRadius = search_radius * search_radius;
-    thread_local std::vector<nanoflann::ResultItem<size_t, Real>> indices_dists;
-    indices_dists.clear();
-    nanoflann::RadiusResultSet<Real> resultSet(squaredRadius, indices_dists);
-
-    // resultSet contains a;
-    _index->findNeighbors(resultSet, &r[a][0]);
-
-    for (auto& x : indices_dists) {
-      size_t bIndex = x.first;
-      auto b = (*this)[bIndex];
-      func(b);
-    }
+    std::ranges::for_each(_index->nearby(a, search_radius), func);
   }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -390,8 +362,11 @@ public:
     output.flush();
   }
 
-}; // struct ParticleArray
+}; // class ParticleArray
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit
+
+// TODO: remove me!
+#include "tit/sph/nns_kd_tree.hpp" // IWYU pragma: keep
