@@ -29,10 +29,10 @@
 #include <type_traits>
 #include <utility>
 
-#include "tit/utils/assert.hpp"
-#include "tit/utils/config.hpp"
-#include "tit/utils/math.hpp"
-#include "tit/utils/types.hpp"
+#include "tit/core/assert.hpp"
+#include "tit/core/config.hpp"
+#include "tit/core/math.hpp"
+#include "tit/core/types.hpp"
 
 namespace tit {
 
@@ -442,7 +442,7 @@ constexpr auto maximum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
 
 // Enable SIMD.
 #if TIT_ENABLE_SIMD
-#include "tit/utils/vec_simd.hpp" // IWYU pragma: export
+#include "tit/core/vec_simd.hpp" // IWYU pragma: export
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

@@ -27,11 +27,10 @@
 #include <utility>
 #include <vector>
 
-#include "tit/utils/assert.hpp"
-#include "tit/utils/kd_tree.hpp"
-#include "tit/utils/types.hpp"
-
 #include "TitParticle.hpp" // IWYU pragma: keep
+#include "tit/core/assert.hpp"
+#include "tit/core/kd_tree.hpp"
+#include "tit/core/types.hpp"
 #include "tit/sph/field.hpp"
 
 namespace tit {

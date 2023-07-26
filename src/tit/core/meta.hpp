@@ -25,7 +25,7 @@
 #include <concepts>
 #include <type_traits> // IWYU pragma: keep
 
-#include "tit/utils/types.hpp"
+#include "tit/core/types.hpp"
 
 namespace tit::meta {
 

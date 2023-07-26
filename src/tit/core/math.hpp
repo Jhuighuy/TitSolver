@@ -32,8 +32,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "tit/utils/assert.hpp"
-#include "tit/utils/types.hpp"
+#include "tit/core/assert.hpp"
+#include "tit/core/types.hpp"
 
 namespace tit {
 

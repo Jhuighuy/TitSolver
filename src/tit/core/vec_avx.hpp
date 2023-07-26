@@ -28,9 +28,9 @@
 
 #include <x86intrin.h>
 
-#include "tit/utils/assert.hpp"
-#include "tit/utils/types.hpp"
-#include "tit/utils/vec.hpp" // IWYU pragma: keep
+#include "tit/core/assert.hpp"
+#include "tit/core/types.hpp"
+#include "tit/core/vec.hpp" // IWYU pragma: keep
 
 namespace tit {
 
