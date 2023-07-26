@@ -98,47 +98,49 @@ public:
     using PV = ParticleView<ParticleArray>;
     std::ranges::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
-      // Compute particle density (or density time derivative).
-      const auto search_radius = _kernel.radius(a);
-      if constexpr (has<PV>(drho_dt)) {
-        // Continuity equation approach.
-        drho_dt[a] = {};
-        std::ranges::for_each(adjacent_particles[a], [&](PV b) {
-          const auto grad_k_ab = _kernel.grad(a, b);
-          drho_dt[a] += m[b] * dot(v[a, b], grad_k_ab);
-        });
-      } else {
-        // Density summation approach.
-        rho[a] = {};
-        particles.nearby(a, [&](PV b) {
-          const auto k_ab = _kernel(a, b);
-          rho[a] += m[b] * k_ab;
-        });
-      }
-      // Compute particle pressure (and sound speed).
-      _eos.compute_pressure(a);
-    });
-    // Compute velocity divergence and curl.
-    particles.for_each([&]<class PV>(PV a) {
-      if (fixed[a]) return;
+      if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
+      else rho[a] = {};
       if constexpr (has<PV>(div_v)) div_v[a] = {};
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
-      const auto search_radius = _kernel.radius(a);
-      std::ranges::for_each(adjacent_particles[a], [&](PV b) {
-        const auto grad_k_ab = _kernel.grad(a, b);
-        if constexpr (has<PV>(div_v)) {
-          // clang-format off
-          div_v[a] += m[b] * dot(v[a] / pow2(rho[a]) +
-                                 v[b] / pow2(rho[b]), grad_k_ab);
-          // clang-format on
-        }
-        if constexpr (has<PV>(curl_v)) {
-          // clang-format off
-          curl_v[a] -= m[b] * cross(v[a] / pow2(rho[a]) +
-                                    v[b] / pow2(rho[b]), grad_k_ab);
-          // clang-format on
-        }
-      });
+    });
+    std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {
+      const auto [a, b] = ab;
+      if (fixed[a] && fixed[b]) return;
+      [[maybe_unused]] const auto k_ab = _kernel(a, b);
+      [[maybe_unused]] const auto grad_k_ab = _kernel.grad(a, b);
+      // Update density (or density time derivative).
+      if constexpr (has<PV>(drho_dt)) {
+        const auto rho_flux = dot(v[a, b], grad_k_ab);
+        drho_dt[a] += m[b] * rho_flux;
+        drho_dt[b] += m[a] * rho_flux;
+      } else {
+        if (!fixed[a]) rho[a] += m[b] * k_ab;
+        if (!fixed[b]) rho[b] += m[a] * k_ab;
+      }
+      // Update velocity divergence.
+      if constexpr (has<PV>(div_v)) {
+        // clang-format off
+        const auto div_flux = dot(v[a] / pow2(rho[a]) +
+                                  v[b] / pow2(rho[b]), grad_k_ab);
+        // clang-format on
+        div_v[a] += m[b] * div_flux;
+        div_v[b] -= m[a] * div_flux;
+      }
+      // Update velocity curl.
+      if constexpr (has<PV>(curl_v)) {
+        // clang-format off
+        const auto curl_flux = -cross(v[a] / pow2(rho[a]) +
+                                      v[b] / pow2(rho[b]), grad_k_ab);
+        // clang-format on
+        curl_v[a] += m[b] * curl_flux;
+        curl_v[b] -= m[a] * curl_flux;
+      }
+    });
+    std::ranges::for_each(particles.views(), [&](PV a) {
+      if (fixed[a]) return;
+      // Compute velocity pressure (and sound speed).
+      _eos.compute_pressure(a);
+      // Finalize velocity divergence and curl.
       if constexpr (has<PV>(div_v)) div_v[a] *= rho[a];
       if constexpr (has<PV>(curl_v)) curl_v[a] *= rho[a];
     });
@@ -151,35 +153,37 @@ public:
                                  ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     std::ranges::for_each(particles.views(), [&](PV a) {
-      if (fixed[a]) return;
-      // Compute velocity and thermal energy forces.
       dv_dt[a] = {};
-      if constexpr (has<PV>(eps, deps_dt)) {
-        deps_dt[a] = {};
-      }
-      const auto search_radius = _kernel.radius(a);
-      std::ranges::for_each(adjacent_particles[a], [&](PV b) {
-        const auto Pi_ab = _viscosity.kinematic(a, b);
-        const auto grad_k_ab = _kernel.grad(a, b);
-        // clang-format off
-        dv_dt[a] -= m[b] * (p[a] / pow2(rho[a]) +
+      if constexpr (has<PV>(eps, deps_dt)) deps_dt[a] = {};
+    });
+    std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {
+      const auto [a, b] = ab;
+      if (fixed[a] && fixed[b]) return;
+      const auto grad_k_ab = _kernel.grad(a, b);
+      const auto Pi_ab = _viscosity.kinematic(a, b);
+      // Update velocity time derivative.
+      // clang-format off
+      const auto v_flux = -(p[a] / pow2(rho[a]) +
                             p[b] / pow2(rho[b]) + Pi_ab) * grad_k_ab;
+      // clang-format on
+      dv_dt[a] += m[b] * v_flux;
+      dv_dt[b] -= m[a] * v_flux;
+      if constexpr (has<PV>(eps, deps_dt)) {
+        // Update internal enegry time derivative.
+        // clang-format off
+        deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) +
+                              Pi_ab) * dot(grad_k_ab, v[a, b]);
+        deps_dt[b] += m[a] * (p[b] / pow2(rho[b]) +
+                              Pi_ab) * dot(grad_k_ab, v[a, b]);
         // clang-format on
-        if constexpr (has<PV>(eps, deps_dt)) {
-          // clang-format off
-          deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) +
-                                Pi_ab) * dot(grad_k_ab, v[a, b]);
-          // clang-format on
-        }
-      });
-#if 1
+      }
+    });
+    std::ranges::for_each(particles.views(), [&](PV a) {
+      if (fixed[a]) return;
       // TODO: Gravity.
       dv_dt[a][1] -= 9.81;
-#endif
-      // Compute artificial viscosity switch forces.
-      if constexpr (has<PV>(alpha, dalpha_dt)) {
-        _viscosity.compute_switch_deriv(a);
-      }
+      // Compute artificial viscosity switch.
+      if constexpr (has<PV>(dalpha_dt)) _viscosity.compute_switch_deriv(a);
     });
   }
 

@@ -60,23 +60,23 @@ public:
 
 private:
 
-  union KDTreeNode {
+  union _KDTreeNode {
     struct {
       size_t leaf_left, leaf_right;
     };
     struct {
       size_t cut_dim;
       Real cut_left, cut_right;
-      KDTreeNode* left_subtree;
-      KDTreeNode* right_subtree;
+      _KDTreeNode* left_subtree;
+      _KDTreeNode* right_subtree;
     };
-  }; // union KDTreeNode
+  }; // union _KDTreeNode
 
   Points _points;
   size_t _max_leaf_size;
-  PoolAllocator<KDTreeNode> _allocator;
+  PoolAllocator<_KDTreeNode> _allocator;
   std::vector<size_t> _point_perm;
-  KDTreeNode* _root_node = nullptr;
+  _KDTreeNode* _root_node = nullptr;
   PointBBox _root_bbox;
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -125,7 +125,7 @@ private:
   // caller. On return it contains an exact bounding box of the subtree.
   template<bool IsRoot = false>
   constexpr auto _build_subtree(size_t left, size_t right, PointBBox& bbox)
-      -> KDTreeNode* {
+      -> _KDTreeNode* {
     TIT_ASSERT(right <= _point_perm.size(), "`right` index is out of range.");
     TIT_ASSERT(left < right, "`left` index is out of range.");
     // Allocate node.
@@ -204,7 +204,7 @@ public:
                         OutputIterator output) const noexcept
       -> OutputIterator {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
-    TIT_ASSERT(_root_node, "Tree was not built.");
+    TIT_ASSERT(_root_node != nullptr, "Tree was not built.");
     // Compute distance from the query point to the root bounding box
     // per each dimension. (By "dist" square distances are ment.)
     const auto dists = pow2(search_point - _root_bbox.clip(search_point));
@@ -219,7 +219,7 @@ private:
   // Search for the point neighbours in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
   template<std::output_iterator<size_t> OutputIterator>
-  constexpr void _search_subtree(const KDTreeNode* node, Point dists,
+  constexpr void _search_subtree(const _KDTreeNode* node, Point dists,
                                  const Point& search_point, Real search_dist,
                                  OutputIterator& output) const noexcept {
     // Is leaf node reached?

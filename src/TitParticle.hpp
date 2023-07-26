@@ -97,14 +97,14 @@ public:
   }
 
   /** Associated particle index. */
-  constexpr size_t index() const noexcept {
+  constexpr auto index() const noexcept -> size_t {
     return _particle_index;
   }
 
   /** Particle field value. */
   template<meta::type Field>
     requires (has<ParticleView, Field>())
-  constexpr decltype(auto) operator[](Field field) const noexcept {
+  constexpr auto operator[](Field field) const noexcept -> decltype(auto) {
     return array()[index(), field];
   }
 
@@ -126,6 +126,10 @@ private:
   ParticleArray* _particles;
   EngineFactory _engine_factory;
   Graph _adjacency_graph;
+
+  constexpr auto _to_views() const noexcept {
+    return;
+  }
 
 public:
 
@@ -162,13 +166,26 @@ public:
   }
 
   /** Adjacent particles. */
-  constexpr auto operator[](ParticleView<ParticleArray> a) noexcept {
+  constexpr auto operator[](ParticleView<ParticleArray> a) const noexcept {
     TIT_ASSERT(&a.array() != &array(),
                "Particle belongs to a different array.");
     TIT_ASSERT(a.index() < array().size(), "Particle is out of range.");
     return std::views::all(_adjacency_graph[a.index()]) |
-           std::views::transform(
-               [&](size_t b_index) { return (*_particles)[b_index]; });
+           std::views::transform([this](size_t b_index) {
+             TIT_ASSERT(b_index < array().size(), "Particle is out of range.");
+             return array()[b_index];
+           });
+  }
+
+  /** Pairs of the adjacent particles. */
+  constexpr auto pairs() const noexcept {
+    return std::views::all(_adjacency_graph.edges()) |
+           std::views::transform([this](auto ab_indices) {
+             auto [a_index, b_index] = ab_indices;
+             TIT_ASSERT(a_index < array().size(), "Particle is out of range.");
+             TIT_ASSERT(b_index < array().size(), "Particle is out of range.");
+             return std::tuple{array()[a_index], array()[b_index]};
+           });
   }
 
 }; // class ParticleAdjacency

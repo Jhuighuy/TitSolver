@@ -52,7 +52,7 @@ protected:
 public:
 
   /** Set of particle fields that are required. */
-  static constexpr auto required_fields = meta::Set{rho, h};
+  static constexpr auto required_fields = meta::Set{r, h};
 
   /** Support radius for particle. */
   template<class PV>

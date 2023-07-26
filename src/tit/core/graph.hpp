@@ -77,6 +77,22 @@ public:
     return std::span{first_pointer, last_pointer};
   }
 
+  /** Range of the unique graph edges. */
+  constexpr auto edges() const noexcept {
+    return std::views::iota(size_t{0}, num_rows()) |
+           std::views::transform([&](size_t row_index) {
+             auto col_indices = (*this)[row_index];
+             return std::views::all(std::move(col_indices)) |
+                    std::views::filter([=](size_t col_index) {
+                      return col_index >= row_index;
+                    }) |
+                    std::views::transform([=](size_t col_index) {
+                      return std::tuple{row_index, col_index};
+                    });
+           }) |
+           std::views::join;
+  }
+
 }; // class Graph
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
