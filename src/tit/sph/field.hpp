@@ -43,11 +43,6 @@ concept _has_constants =
     requires { std::remove_cvref_t<PV>::constants; } && //
     meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::constants))>;
 
-template<class PV>
-concept _has_variables =
-    requires { std::remove_cvref_t<PV>::variables; } && //
-    meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::variables))>;
-
 /** Check particle fields presense. */
 /** @{ */
 template<_has_fields PV, meta::type... Fields>
@@ -81,13 +76,13 @@ consteval bool has() {
     /** Field value for the specified particle view. */                        \
     template<_has_fields PV>                                                   \
       requires (has<PV, name##_t>())                                           \
-    static constexpr decltype(auto) operator[](PV&& a) noexcept {              \
+    constexpr auto operator[](PV&& a) const noexcept -> decltype(auto) {       \
       return a[name##_t{}];                                                    \
     }                                                                          \
     /** Field value delta for the specified particle view. */                  \
     template<_has_fields PV>                                                   \
       requires (has<PV, name##_t>())                                           \
-    static constexpr auto operator[](PV&& a, PV&& b) noexcept {                \
+    constexpr auto operator[](PV&& a, PV&& b) const noexcept {                 \
       return a[name##_t{}] - b[name##_t{}];                                    \
     }                                                                          \
                                                                                \

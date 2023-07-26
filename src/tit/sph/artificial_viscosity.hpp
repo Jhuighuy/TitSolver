@@ -40,7 +40,7 @@ class ZeroArtificialViscosity final {
 public:
 
   /** Set of particle fields that are required. */
-  static constexpr auto required_fields = meta::Set();
+  static constexpr auto required_fields = meta::Set{};
 
   /** Compute artificial kinematic viscosity. */
   template<class PV>
