@@ -28,11 +28,11 @@
 #include <tuple>
 #include <utility>
 
-#include "tit/utils/assert.hpp"
-#include "tit/utils/config.hpp"
-#include "tit/utils/math.hpp"
-#include "tit/utils/types.hpp"
-#include "tit/utils/vec.hpp" // IWYU pragma: keep
+#include "tit/core/assert.hpp"
+#include "tit/core/config.hpp"
+#include "tit/core/math.hpp"
+#include "tit/core/types.hpp"
+#include "tit/core/vec.hpp" // IWYU pragma: keep
 
 namespace tit {
 
@@ -412,11 +412,11 @@ consteval auto& _unwrap(auto* value) noexcept {
 } // namespace tit
 
 #ifdef __SSE__
-#include "tit/utils/vec_avx.hpp" // IWYU pragma: export
+#include "tit/core/vec_avx.hpp" // IWYU pragma: export
 #endif
 
 #ifdef __ARM_NEON
-#include "tit/utils/vec_neon.hpp" // IWYU pragma: export
+#include "tit/core/vec_neon.hpp" // IWYU pragma: export
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

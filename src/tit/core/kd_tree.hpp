@@ -28,12 +28,12 @@
 #include <utility>
 #include <vector>
 
-#include "tit/utils/assert.hpp"
-#include "tit/utils/bbox.hpp"
-#include "tit/utils/math.hpp"
-#include "tit/utils/pool_allocator.hpp"
-#include "tit/utils/types.hpp"
-#include "tit/utils/vec.hpp"
+#include "tit/core/assert.hpp"
+#include "tit/core/bbox.hpp"
+#include "tit/core/math.hpp"
+#include "tit/core/pool_allocator.hpp"
+#include "tit/core/types.hpp"
+#include "tit/core/vec.hpp"
 
 namespace tit {
 

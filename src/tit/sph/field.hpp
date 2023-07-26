@@ -24,10 +24,10 @@
 
 #include <type_traits>
 
-#include "tit/utils/meta.hpp"
-#include "tit/utils/misc.hpp"
-#include "tit/utils/types.hpp"
-#include "tit/utils/vec.hpp"
+#include "tit/core/meta.hpp"
+#include "tit/core/misc.hpp"
+#include "tit/core/types.hpp"
+#include "tit/core/vec.hpp"
 
 namespace tit {
 

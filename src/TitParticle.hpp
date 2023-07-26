@@ -35,11 +35,11 @@
 
 #include <H5Cpp.h> // IWYU pragma: keep
 
-#include "tit/utils/assert.hpp"
-#include "tit/utils/meta.hpp"
-#include "tit/utils/misc.hpp"
-#include "tit/utils/types.hpp"
-#include "tit/utils/vec.hpp"
+#include "tit/core/assert.hpp"
+#include "tit/core/meta.hpp"
+#include "tit/core/misc.hpp"
+#include "tit/core/types.hpp"
+#include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
 

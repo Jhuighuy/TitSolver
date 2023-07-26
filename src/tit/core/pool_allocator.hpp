@@ -27,7 +27,7 @@
 #include <mutex>
 #include <new>
 
-#include "tit/utils/types.hpp"
+#include "tit/core/types.hpp"
 
 namespace tit {
 

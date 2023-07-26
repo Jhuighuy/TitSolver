@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include "tit/utils/math.hpp"
-#include "tit/utils/meta.hpp"
-#include "tit/utils/types.hpp"
-#include "tit/utils/vec.hpp"
-
+#include "tit/core/math.hpp"
+#include "tit/core/meta.hpp"
+#include "tit/core/types.hpp"
+#include "tit/core/vec.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/equation_of_state.hpp" // IWYU pragma: keep
 #include "tit/sph/field.hpp"
