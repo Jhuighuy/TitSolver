@@ -23,7 +23,6 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
 #include <fstream>
 #include <iterator>
 #include <ranges>
@@ -127,10 +126,6 @@ private:
   EngineFactory _engine_factory;
   Graph _adjacency_graph;
 
-  constexpr auto _to_views() const noexcept {
-    return;
-  }
-
 public:
 
   /** Construct a particle adjacency graph.
@@ -149,7 +144,7 @@ public:
    ** @param radius_func Function that returns search radius for the
    **                    specified particle view. */
   template<class SearchRadiusFunc>
-  constexpr void build(SearchRadiusFunc radius_func) noexcept {
+  constexpr void build(const SearchRadiusFunc& radius_func) noexcept {
     using PV = ParticleView<ParticleArray>;
     auto positions = array().views() | //
                      std::views::transform([](PV a) { return a[r]; });
@@ -198,12 +193,17 @@ ParticleAdjacency(ParticleArray&) -> ParticleAdjacency<ParticleArray>;
 template<meta::type Space, meta::type Fields, meta::type Consts = meta::Set<>>
 class ParticleArray;
 
+// This template deduction guides ensure that constants are always included
+// into a set of fields.
 template<class Space, class Fields, class Consts>
-  requires meta::is_set_v<Consts>
-ParticleArray(Space, Fields, Consts) -> ParticleArray<Space, Fields, Consts>;
+  requires meta::is_set_v<Fields> && meta::is_set_v<Consts>
+ParticleArray(Space, Fields, Consts)
+    -> ParticleArray<Space, decltype(Fields{} | Consts{}), Consts>;
 template<class Space, class Fields, class... Consts>
+  requires meta::is_set_v<Fields>
 ParticleArray(Space, Fields, Consts...)
-    -> ParticleArray<Space, Fields, meta::Set<Consts...>>;
+    -> ParticleArray<Space, decltype(Fields{} | meta::Set<Consts...>{}),
+                     meta::Set<Consts...>>;
 
 /******************************************************************************\
  ** Particle array.
@@ -236,12 +236,20 @@ public:
 
   /** Construct a particle array. */
   /** @{ */
+  // clang-format off
+  template<meta::type FieldSubset, meta::type ConstSubset>
+    requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
+             meta::is_set_v<ConstSubset> && (constants.includes(FieldSubset{}))
   constexpr ParticleArray([[maybe_unused]] Space<Real, Dim> space,
-                          [[maybe_unused]] meta::Set<Fields...> fields = {},
-                          [[maybe_unused]] Consts... consts) {}
+                          [[maybe_unused]] FieldSubset fields = {},
+                          [[maybe_unused]] ConstSubset consts = {}) {}
+  // clang-format on
+  template<meta::type FieldSubset, meta::type... ConstSubset>
+    requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
+             (constants.includes(meta::Set<ConstSubset...>{}))
   constexpr ParticleArray([[maybe_unused]] Space<Real, Dim> space,
-                          [[maybe_unused]] meta::Set<Fields...> fields = {},
-                          [[maybe_unused]] meta::Set<Consts...> consts = {}) {}
+                          [[maybe_unused]] FieldSubset fields = {},
+                          [[maybe_unused]] ConstSubset... consts) {}
   /** @} */
 
   /** Number of particles. */
@@ -273,20 +281,6 @@ public:
            std::views::transform([this](size_t particle_index) {
              return ParticleView{*this, particle_index};
            });
-  }
-  /** @} */
-
-  /** Iterate through the particles. */
-  /** @{ */
-  template<class Func>
-    requires std::invocable<Func, ParticleView<ParticleArray>>
-  constexpr void for_each(const Func& func) {
-    std::ranges::for_each(views(), func);
-  }
-  template<class Func>
-    requires std::invocable<Func, ParticleView</*const*/ ParticleArray>>
-  constexpr void for_each(const Func& func) const {
-    std::ranges::for_each(views(), func);
   }
   /** @} */
 
@@ -346,7 +340,9 @@ public:
       return std::get<meta::index_of_v<Field, Consts...>>(_constants);
     } else {
       return OnAssignment{[&](auto value) {
-        for_each([&](ParticleView<ParticleArray> a) { a[field] = value; });
+        std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) { //
+          a[field] = value;
+        });
       }};
     }
   }

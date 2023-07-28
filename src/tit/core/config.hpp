@@ -24,6 +24,16 @@
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+#ifndef TIT_DOXYGEN
+#define TIT_DOXYGEN 0
+#endif
+
+#ifndef TIT_IWYU
+#define TIT_IWYU 0
+#endif
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 #ifndef TIT_ENABLE_SIMD
 #define TIT_ENABLE_SIMD 1
 #endif

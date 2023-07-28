@@ -45,7 +45,7 @@ namespace tit::sph {
 /******************************************************************************\
  ** The particle estimator with a fixed kernel width.
 \******************************************************************************/
-template<class EquationOfState, class Kernel = CubicKernel,
+template<class EquationOfState, class Kernel = QuarticSplineKernel,
          class ArtificialViscosity = MorrisMonaghanArtificialViscosity>
   requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
            std::is_object_v<ArtificialViscosity>
@@ -54,7 +54,7 @@ private:
 
   EquationOfState _eos;
   Kernel _kernel;
-  ArtificialViscosity _viscosity;
+  ArtificialViscosity _artvisc;
 
 public:
 
@@ -69,19 +69,9 @@ public:
   /** Initialize particle estimator. */
   constexpr ClassicSmoothEstimator( //
       EquationOfState eos = {}, Kernel kernel = {},
-      ArtificialViscosity viscosity = {})
+      ArtificialViscosity artvisc = {})
       : _eos{std::move(eos)}, _kernel{std::move(kernel)},
-        _viscosity{std::move(viscosity)} {}
-
-  template<class ParticleArray>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void init(ParticleArray& particles) const {
-    particles.for_each([&](auto a) {
-      if (!fixed[a]) return;
-      // Init particle pressure (and sound speed).
-      _eos.compute_pressure(a);
-    });
-  }
+        _artvisc{std::move(artvisc)} {}
 
   template<class ParticleArray, class ParticleAdjacency>
   constexpr auto index(ParticleArray& particles,
@@ -90,12 +80,23 @@ public:
     adjacent_particles.build([&](PV a) { return _kernel.radius(a); });
   }
 
-  /** Estimate density, kernel width, pressure and sound speed. */
+  template<class ParticleArray>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void init(ParticleArray& particles) const {
+    std::ranges::for_each(particles.views(), [&](auto a) {
+      if (!fixed[a]) return;
+      // Init particle pressure (and sound speed).
+      _eos.compute_pressure(a);
+    });
+  }
+
+  /** Compute density, pressure (and sound speed). */
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void estimate_density(ParticleArray& particles,
-                                  ParticleAdjacency& adjacent_particles) const {
+  constexpr void compute_density(ParticleArray& particles,
+                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
+    // Clean fields that would be calculated.
     std::ranges::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
@@ -106,22 +107,25 @@ public:
     std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {
       const auto [a, b] = ab;
       if (fixed[a] && fixed[b]) return;
-      [[maybe_unused]] const auto k_ab = _kernel(a, b);
-      [[maybe_unused]] const auto grad_k_ab = _kernel.grad(a, b);
+      [[maybe_unused]] const auto W_ab = _kernel(a, b);
+      [[maybe_unused]] const auto grad_W_ab = _kernel.grad(a, b);
       // Update density (or density time derivative).
       if constexpr (has<PV>(drho_dt)) {
-        const auto rho_flux = dot(v[a, b], grad_k_ab);
+        // Continuity equation approach. Density flux is symmetric with respect
+        // to `a` and `b`, so it always added.
+        const auto rho_flux = dot(v[a, b], grad_W_ab);
         drho_dt[a] += m[b] * rho_flux;
         drho_dt[b] += m[a] * rho_flux;
       } else {
-        if (!fixed[a]) rho[a] += m[b] * k_ab;
-        if (!fixed[b]) rho[b] += m[a] * k_ab;
+        // Density summation approach.
+        if (!fixed[a]) rho[a] += m[b] * W_ab;
+        if (!fixed[b]) rho[b] += m[a] * W_ab;
       }
       // Update velocity divergence.
       if constexpr (has<PV>(div_v)) {
         // clang-format off
         const auto div_flux = dot(v[a] / pow2(rho[a]) +
-                                  v[b] / pow2(rho[b]), grad_k_ab);
+                                  v[b] / pow2(rho[b]), grad_W_ab);
         // clang-format on
         div_v[a] += m[b] * div_flux;
         div_v[b] -= m[a] * div_flux;
@@ -130,7 +134,7 @@ public:
       if constexpr (has<PV>(curl_v)) {
         // clang-format off
         const auto curl_flux = -cross(v[a] / pow2(rho[a]) +
-                                      v[b] / pow2(rho[b]), grad_k_ab);
+                                      v[b] / pow2(rho[b]), grad_W_ab);
         // clang-format on
         curl_v[a] += m[b] * curl_flux;
         curl_v[b] -= m[a] * curl_flux;
@@ -146,11 +150,11 @@ public:
     });
   }
 
-  /** Estimate acceleration and thermal heating. */
+  /** Compute acceleration and thermal heating. */
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void estimate_forces(ParticleArray& particles,
-                                 ParticleAdjacency& adjacent_particles) const {
+  constexpr void compute_forces(ParticleArray& particles,
+                                ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     std::ranges::for_each(particles.views(), [&](PV a) {
       dv_dt[a] = {};
@@ -159,22 +163,23 @@ public:
     std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {
       const auto [a, b] = ab;
       if (fixed[a] && fixed[b]) return;
-      const auto grad_k_ab = _kernel.grad(a, b);
-      const auto Pi_ab = _viscosity.kinematic(a, b);
-      // Update velocity time derivative.
-      // clang-format off
-      const auto v_flux = -(p[a] / pow2(rho[a]) +
-                            p[b] / pow2(rho[b]) + Pi_ab) * grad_k_ab;
-      // clang-format on
-      dv_dt[a] += m[b] * v_flux;
-      dv_dt[b] -= m[a] * v_flux;
+      const auto grad_W_ab = _kernel.grad(a, b);
+      const auto Pi_ab = _artvisc.stress_tensor_flux(a, b);
+      { // Update velocity time derivative.
+        // clang-format off
+        const auto v_flux = -(p[a] / pow2(rho[a]) +
+                              p[b] / pow2(rho[b]) + Pi_ab) * grad_W_ab;
+        // clang-format on
+        dv_dt[a] += m[b] * v_flux;
+        dv_dt[b] -= m[a] * v_flux;
+      }
       if constexpr (has<PV>(eps, deps_dt)) {
         // Update internal enegry time derivative.
         // clang-format off
         deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) +
-                              Pi_ab) * dot(grad_k_ab, v[a, b]);
+                              Pi_ab) * dot(grad_W_ab, v[a, b]);
         deps_dt[b] += m[a] * (p[b] / pow2(rho[b]) +
-                              Pi_ab) * dot(grad_k_ab, v[a, b]);
+                              Pi_ab) * dot(grad_W_ab, v[a, b]);
         // clang-format on
       }
     });
@@ -183,7 +188,7 @@ public:
       // TODO: Gravity.
       dv_dt[a][1] -= 9.81;
       // Compute artificial viscosity switch.
-      if constexpr (has<PV>(dalpha_dt)) _viscosity.compute_switch_deriv(a);
+      if constexpr (has<PV>(dalpha_dt)) _artvisc.compute_switch_deriv(a);
     });
   }
 
@@ -204,7 +209,7 @@ private:
 
   EquationOfState _eos;
   Kernel _kernel;
-  ArtificialViscosity _viscosity;
+  ArtificialViscosity _artvisc;
   real_t _coupling;
 
 public:
@@ -221,7 +226,7 @@ public:
       EquationOfState eos = {}, Kernel kernel = {},
       ArtificialViscosity viscosity = {}, real_t coupling = 1.0) noexcept
       : _kernel{std::move(kernel)}, _eos{std::move(eos)},
-        _viscosity{std::move(viscosity)}, _coupling{coupling} {}
+        _artvisc{std::move(viscosity)}, _coupling{coupling} {}
 
   template<class ParticleArray>
     requires (has<ParticleArray>(required_fields))
@@ -303,7 +308,7 @@ public:
       const auto d = dim(r[a]);
       const auto search_radius = _kernel.radius(h[a]);
       particles.nearby(a, search_radius, [&](PV b) {
-        const auto Pi_ab = _viscosity.kinematic(a, b);
+        const auto Pi_ab = _artvisc.kinematic(a, b);
         const auto grad_aba = _kernel.grad(r[a, b], h[a]);
         const auto grad_abb = _kernel.grad(r[a, b], h[b]);
         const auto grad_ab = avg(grad_aba, grad_abb);
@@ -324,7 +329,7 @@ public:
 #endif
       // Compute artificial viscosity switch forces.
       if constexpr (has<PV>(dalpha_dt)) {
-        _viscosity.compute_switch_deriv(a);
+        _artvisc.compute_switch_deriv(a);
       }
     });
   }

@@ -27,9 +27,11 @@
 #include <iterator>
 #include <ranges>
 #include <span>
+#include <tuple>
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/config.hpp" // IWYU pragma: keep
 #include "tit/core/types.hpp"
 
 namespace tit {
@@ -79,6 +81,11 @@ public:
 
   /** Range of the unique graph edges. */
   constexpr auto edges() const noexcept {
+#if TIT_IWYU
+    // Include-what-you-use's clang has no `std::views::join`.
+    // Return something with matching type.
+    return std::views::single(std::tuple<size_t, size_t>{});
+#else
     return std::views::iota(size_t{0}, num_rows()) |
            std::views::transform([&](size_t row_index) {
              auto col_indices = (*this)[row_index];
@@ -91,6 +98,7 @@ public:
                     });
            }) |
            std::views::join;
+#endif
   }
 
 }; // class Graph

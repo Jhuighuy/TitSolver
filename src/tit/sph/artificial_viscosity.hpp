@@ -36,22 +36,22 @@ namespace tit::sph {
 /******************************************************************************\
  ** Zero artificial viscosity scheme.
 \******************************************************************************/
-class ZeroArtificialViscosity final {
+class NoArtificialViscosity final {
 public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields = meta::Set{};
 
-  /** Compute artificial kinematic viscosity. */
+  /** Compute artificial viscosity stress tensor flux. */
   template<class PV>
     requires (has<PV>(required_fields))
-  constexpr auto kinematic([[maybe_unused]] PV a,
-                           [[maybe_unused]] PV b) const noexcept {
-    const auto nu_ab = 0.0;
-    return nu_ab;
+  constexpr auto stress_tensor_flux([[maybe_unused]] PV a,
+                                    [[maybe_unused]] PV b) const noexcept {
+    const auto Pi_ab = 0.0;
+    return Pi_ab;
   }
 
-}; // class ZeroArtificialViscosity
+}; // class NoArtificialViscosity
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -76,14 +76,14 @@ public:
       real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
       : _alpha{alpha}, _beta{beta}, _eps{eps} {
     TIT_ASSERT(alpha > 0.0, "First coefficient must be positive.");
-    TIT_ASSERT(beta > 0.0, "Second coefficient must be positive.");
+    TIT_ASSERT(beta >= 0.0, "Second coefficient must be non-negative.");
     TIT_ASSERT(eps >= 0.0, "Epsilon must be non-negative.");
   }
 
-  /** Compute artificial kinematic viscosity. */
+  /** Compute artificial viscosity stress tensor flux. */
   template<class PV>
     requires (has<PV>(required_fields))
-  constexpr auto kinematic(PV a, PV b) const {
+  constexpr auto stress_tensor_flux(PV a, PV b) const {
     if (dot(r[a, b], v[a, b]) >= 0.0) return 0.0;
     const auto h_ab = avg(h[a], h[b]);
     const auto rho_ab = avg(rho[a], rho[b]);
@@ -92,8 +92,8 @@ public:
     const auto mu_ab = h_ab * dot(r[a, b], v[a, b]) /
                               (norm2(r[a, b]) + _eps * pow2(h_ab));
     // clang-format on
-    const auto nu_ab = ((-_alpha * cs_ab + _beta * mu_ab) * mu_ab) / rho_ab;
-    return nu_ab;
+    const auto Pi_ab = ((-_alpha * cs_ab + _beta * mu_ab) * mu_ab) / rho_ab;
+    return Pi_ab;
   }
 
 }; // class AlphaBetaArtificialViscosity
@@ -122,19 +122,19 @@ public:
       ArtificialViscosity base_viscosity = {}) noexcept
       : _base_viscosity{std::move(base_viscosity)} {}
 
-  /** Compute artificial kinematic viscosity. */
+  /** Compute artificial viscosity stress tensor flux. */
   template<class PV>
     requires (has<PV>(required_fields))
-  constexpr auto kinematic(PV a, PV b) const {
-    auto nu_ab = _base_viscosity.kinematic(a, b);
-    if (is_zero(nu_ab)) return nu_ab;
+  constexpr auto stress_tensor_flux(PV a, PV b) const {
+    auto Pi_ab = _base_viscosity.stress_tensor_flux(a, b);
+    if (is_zero(Pi_ab)) return Pi_ab;
     const auto f = [](PV c) {
       return abs(div_v[c]) /
              (abs(div_v[c]) + norm(curl_v[c]) + 0.0001 * cs[c] / h[c]);
     };
     const auto f_ab = avg(f(a), f(b));
-    nu_ab *= f_ab;
-    return nu_ab;
+    Pi_ab *= f_ab;
+    return Pi_ab;
   }
 
 }; // class BalsaraArtificialViscosity
@@ -175,17 +175,17 @@ public:
                "Decay time inverse scale factor must be positive.");
   }
 
-  /** Compute artificial kinematic viscosity. */
+  /** Compute artificial viscosity stress tensor flux. */
   template<class PV>
     requires (has<PV>(required_fields))
-  constexpr auto kinematic(PV a, PV b) const {
+  constexpr auto stress_tensor_flux(PV a, PV b) const {
     // Base viscosity was calculated with alpha = 1, so now we
     // multiply it by the true alpha value from the Morris-Monaghan switch
-    auto nu_ab = _base_viscosity.kinematic(a, b);
-    if (is_zero(nu_ab)) return nu_ab;
+    auto Pi_ab = _base_viscosity.stress_tensor_flux(a, b);
+    if (is_zero(Pi_ab)) return Pi_ab;
     const auto alpha_ab = avg(alpha[a], alpha[b]);
-    nu_ab *= alpha_ab;
-    return nu_ab;
+    Pi_ab *= alpha_ab;
+    return Pi_ab;
   }
 
   /** Compute Morris-Monaghan switch forces. */
