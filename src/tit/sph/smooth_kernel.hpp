@@ -68,6 +68,13 @@ public:
     return (*this)(r[a, b], h[a]);
   }
 
+  /** Directional derivative of the smooting kernel for two particles. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto deriv(PV a, PV b) const noexcept {
+    return deriv(r[a, b], h[a]);
+  }
+
   /** Value of the smoothing kernel for two particles. */
   template<class PV>
     requires (has<PV>(required_fields))
@@ -107,6 +114,16 @@ public:
     const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
     const auto q = h_inverse * norm(x);
     return w * self().unit_value(q);
+  }
+
+  /** Directional derivative of the smooting kernel at point. */
+  template<class Real, size_t Dim>
+  constexpr auto deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
+    TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
+    const auto h_inverse = inverse(h);
+    const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
+    const auto q = h_inverse * norm(x);
+    return w * self().unit_deriv(q) * h_inverse;
   }
 
   /** Spatial gradient of the smoothing kernel at point. */
@@ -191,7 +208,7 @@ class SuperGaussianKernel {};
 /******************************************************************************\
  ** Cubic B-spline (M4) smoothing kernel.
 \******************************************************************************/
-class CubicKernel final : public Kernel<CubicKernel> {
+class CubicSplineKernel final : public Kernel<CubicSplineKernel> {
 public:
 
   /** Kernel weight. */
@@ -220,14 +237,14 @@ public:
     const auto qv = Vec<Real, 2>(q);
     return sum(merge(qv < qi, wi * pow3(qi - qv)));
 #else
-    auto k = Real{0.0};
+    auto W = Real{0.0};
     if (q < qi[0]) {
-      k += wi[0] * pow3(qi[0] - q);
+      W += wi[0] * pow3(qi[0] - q);
       if (q < qi[1]) {
-        k += wi[1] * pow3(qi[1] - q);
+        W += wi[1] * pow3(qi[1] - q);
       }
     }
-    return k;
+    return W;
 #endif
   }
 
@@ -240,18 +257,18 @@ public:
     const auto qv = Vec<Real, 2>(q);
     return sum(merge(qv < qi, wi * Real{-3.0} * pow2(qi - qv)));
 #else
-    auto dk_dq = Real{0.0};
+    auto dW_dq = Real{0.0};
     if (q < qi[0]) {
-      dk_dq += wi[0] * Real{-3.0} * pow2(qi[0] - q);
+      dW_dq += wi[0] * Real{-3.0} * pow2(qi[0] - q);
       if (q < qi[1]) {
-        dk_dq += wi[1] * Real{-3.0} * pow2(qi[1] - q);
+        dW_dq += wi[1] * Real{-3.0} * pow2(qi[1] - q);
       }
     }
-    return dk_dq;
+    return dW_dq;
 #endif
   }
 
-}; // class CubicKernel
+}; // class CubicSplineKernel
 
 /******************************************************************************\
  ** Cubic B-spline (M4) smoothing kernel
@@ -263,19 +280,19 @@ public:
   /** Kernel weight. */
   template<class Real, size_t Dim>
   static consteval auto weight() noexcept -> Real {
-    return CubicKernel::weight<Real, Dim>();
+    return CubicSplineKernel::weight<Real, Dim>();
   }
 
   /** Unit support radius. */
   template<class Real>
   static consteval auto unit_radius() noexcept -> Real {
-    return CubicKernel::unit_radius<Real>();
+    return CubicSplineKernel::unit_radius<Real>();
   }
 
   /** Value of the unit smoothing kernel at a point. */
   template<class Real>
   static constexpr auto unit_value(Real q) noexcept -> Real {
-    return CubicKernel::unit_value(q);
+    return CubicSplineKernel::unit_value(q);
   }
 
   /** Derivative of the unit smoothing kernel at a point. */
@@ -293,7 +310,7 @@ public:
 /******************************************************************************\
  ** The quartic B-spline (M5) smoothing kernel.
 \******************************************************************************/
-class QuarticKernel final : public Kernel<QuarticKernel> {
+class QuarticSplineKernel final : public Kernel<QuarticSplineKernel> {
 public:
 
   /** Kernel weight. */
@@ -322,17 +339,17 @@ public:
     const auto qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * pow4(qi - qv)));
 #else
-    auto k = Real{0.0};
+    auto W = Real{0.0};
     if (q < qi[0]) {
-      k += wi[0] * pow4(qi[0] - q);
+      W += wi[0] * pow4(qi[0] - q);
       if (q < qi[1]) {
-        k += wi[1] * pow4(qi[1] - q);
+        W += wi[1] * pow4(qi[1] - q);
         if (q < qi[2]) {
-          k += wi[2] * pow4(qi[2] - q);
+          W += wi[2] * pow4(qi[2] - q);
         }
       }
     }
-    return k;
+    return W;
 #endif
   }
 
@@ -345,26 +362,26 @@ public:
     const auto qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * Real{-4.0} * pow3(qi - qv)));
 #else
-    auto dk_dq = Real{0.0};
+    auto dW_dq = Real{0.0};
     if (q < qi[0]) {
-      dk_dq += wi[0] * Real{-4.0} * pow3(qi[0] - q);
+      dW_dq += wi[0] * Real{-4.0} * pow3(qi[0] - q);
       if (q < qi[1]) {
-        dk_dq += wi[1] * Real{-4.0} * pow3(qi[1] - q);
+        dW_dq += wi[1] * Real{-4.0} * pow3(qi[1] - q);
         if (q < qi[2]) {
-          dk_dq += wi[2] * Real{-4.0} * pow3(qi[2] - q);
+          dW_dq += wi[2] * Real{-4.0} * pow3(qi[2] - q);
         }
       }
     }
-    return dk_dq;
+    return dW_dq;
 #endif
   }
 
-}; // class QuarticKernel
+}; // class QuarticSplineKernel
 
 /******************************************************************************\
  ** Quintic B-spline (M6) smoothing kernel.
 \******************************************************************************/
-class QuinticKernel final : public Kernel<QuinticKernel> {
+class QuinticSplineKernel final : public Kernel<QuinticSplineKernel> {
 public:
 
   /** Kernel weight. */
@@ -393,17 +410,17 @@ public:
     const auto qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * pow5(qi - qv)));
 #else
-    auto k = Real{0.0};
+    auto W = Real{0.0};
     if (q < qi[0]) {
-      k += wi[0] * pow5(qi[0] - q);
+      W += wi[0] * pow5(qi[0] - q);
       if (q < qi[1]) {
-        k += wi[1] * pow5(qi[1] - q);
+        W += wi[1] * pow5(qi[1] - q);
         if (q < qi[2]) {
-          k += wi[2] * pow5(qi[2] - q);
+          W += wi[2] * pow5(qi[2] - q);
         }
       }
     }
-    return k;
+    return W;
 #endif
   }
 
@@ -416,21 +433,21 @@ public:
     const auto qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * Real{-5.0} * pow4(qi - qv)));
 #else
-    auto dk_dq = Real{0.0};
+    auto dW_dq = Real{0.0};
     if (q < qi[0]) {
-      dk_dq += wi[0] * Real{-5.0} * pow4(qi[0] - q);
+      dW_dq += wi[0] * Real{-5.0} * pow4(qi[0] - q);
       if (q < qi[1]) {
-        dk_dq += wi[1] * Real{-5.0} * pow4(qi[1] - q);
+        dW_dq += wi[1] * Real{-5.0} * pow4(qi[1] - q);
         if (q < qi[2]) {
-          dk_dq += wi[2] * Real{-5.0} * pow4(qi[2] - q);
+          dW_dq += wi[2] * Real{-5.0} * pow4(qi[2] - q);
         }
       }
     }
-    return dk_dq;
+    return dW_dq;
 #endif
   }
 
-}; // class QuinticKernel
+}; // class QuinticSplineKernel
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -477,8 +494,8 @@ public:
 /******************************************************************************\
  ** Wendland's quartic (C2) smoothing kernel (Wendland, 1995).
 \******************************************************************************/
-class WendlandQuarticKernel final :
-    public WendlandKernel<WendlandQuarticKernel> {
+class QuarticWendlandKernel final :
+    public WendlandKernel<QuarticWendlandKernel> {
 public:
 
   /** Kernel weight. */
@@ -501,18 +518,18 @@ public:
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto not_truncated_unit_deriv(Real q) noexcept -> Real {
-    // Common formula is dk/dq = -5 * q * (1 - q/2)^3, but it requires 5
+    // Common formula is dW/dq = -5 * q * (1 - q/2)^3, but it requires 5
     // multiplications. Formula that is used requires 4.
     return Real{5.0 / 8.0} * q * pow3(q - Real{2.0});
   }
 
-}; // class WendlandQuarticKernel
+}; // class QuarticWendlandKernel
 
 /******************************************************************************\
  ** Wendland's 6-th order (C4) smoothing kernel (Wendland, 1995).
 \******************************************************************************/
-class WendlandSixthOrderKernel final :
-    public WendlandKernel<WendlandSixthOrderKernel> {
+class SixthOrderWendlandKernel final :
+    public WendlandKernel<SixthOrderWendlandKernel> {
 public:
 
   /** Kernel weight. */
@@ -540,13 +557,13 @@ public:
            pow5(q - Real{2.0});
   }
 
-}; // class WendlandSixthOrderKernel
+}; // class SixthOrderWendlandKernel
 
 /******************************************************************************\
  ** Wendland's 8-th order (C6) smoothing kernel (Wendland, 1995).
 \******************************************************************************/
-class WendlandEighthOrderKernel final :
-    public WendlandKernel<WendlandEighthOrderKernel> {
+class EighthOrderWendlandKernel final :
+    public WendlandKernel<EighthOrderWendlandKernel> {
 public:
 
   /** Kernel weight. */
@@ -574,7 +591,7 @@ public:
            q * pow7(q - Real{2.0});
   }
 
-}; // class WendlandSixthOrderKernel
+}; // class SixthOrderWendlandKernel
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

@@ -22,8 +22,10 @@
 
 #pragma once
 
+#include <algorithm>
 #include <type_traits> // IWYU pragma: keep
 
+#include "tit/core/meta.hpp"
 #include "tit/core/types.hpp"
 
 #include "TitParticle.hpp"
@@ -43,32 +45,55 @@ class EulerIntegrator {
 private:
 
   SmoothEstimator _estimator{};
-  mutable size_t _count;
+  size_t _count;
+  size_t _adjacency_recalc_freq;
 
 public:
 
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields =
+      meta::Set{fixed, r, v, dv_dt} | SmoothEstimator::required_fields;
+
   /** Construct time integrator. */
-  constexpr EulerIntegrator(SmoothEstimator estimator = {})
-      : _estimator{std::move(estimator)}, _count{0} {}
+  constexpr EulerIntegrator(SmoothEstimator estimator = {},
+                            size_t adjacency_recalc_freq = 10) noexcept
+      : _estimator{std::move(estimator)}, _count{0},
+        _adjacency_recalc_freq{adjacency_recalc_freq} {}
 
   /** Make a step in time. */
-  template<class Real, class ParticleArray>
-  constexpr void step(Real dt, ParticleArray& particles) const {
+  template<class ParticleArray, class ParticleAdjacency>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void step(real_t dt, ParticleArray& particles,
+                      ParticleAdjacency& adjacent_particles) {
     using PV = ParticleView<ParticleArray>;
-    if (_count++ == 0) _estimator.init(particles);
-    auto particle_adjacency = ParticleAdjacency{particles};
-    _estimator.index(particles, particle_adjacency);
-    _estimator.estimate_density(particles, particle_adjacency);
-    _estimator.estimate_forces(particles, particle_adjacency);
-    particles.for_each([&](PV a) {
+    // Initialize and index particles.
+    if (_count == 0) {
+      // Initialize particles.
+      _estimator.init(particles);
+    }
+    if (_count % _adjacency_recalc_freq == 0) {
+      // Update particle adjacency.
+      _estimator.index(particles, adjacent_particles);
+    }
+    // Integrate particle density.
+    _estimator.compute_density(particles, adjacent_particles);
+    if (has<PV>(drho_dt)) {
+      std::ranges::for_each(particles.views(), [&](PV a) {
+        if (fixed[a]) return;
+        rho[a] += dt * drho_dt[a];
+      });
+    }
+    // Integrate particle velocty (internal enegry, and rest).
+    _estimator.compute_forces(particles, adjacent_particles);
+    std::ranges::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];
       r[a] += dt * dr_dt[a];
-      if constexpr (has<PV>(rho, drho_dt)) rho[a] += dt * drho_dt[a];
       if constexpr (has<PV>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
+    ++_count;
   }
 
 }; // class EulerIntegrator

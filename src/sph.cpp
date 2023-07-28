@@ -78,34 +78,34 @@ int sph_main() {
   const auto N_x_dam = 1 * N;
   const auto N_y_dam = 2 * N;
 
-  const Real L = 1.0;
-  const Real spacing = L / N;
+  const Real length = 1.0;
+  const Real spacing = length / N;
   const Real timestep = 5.0e-5;
   const Real h_0 = 1.5 * spacing;
   const Real rho_0 = 1000.0;
   const Real cs_0 = 120.0;
 
   // Setup the SPH estimator:
-  ClassicSmoothEstimator estimator{
+  auto estimator = ClassicSmoothEstimator{
       // Weakly compressible equation of state.
       LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
       // Standart cubic spline kernel.
-      CubicKernel{},
+      CubicSplineKernel{},
       // Standard alpha-beta artificial viscosity scheme.
-      MorrisMonaghanArtificialViscosity{}};
+      AlphaBetaArtificialViscosity{}};
 
   // Setup the time itegrator:
-  EulerIntegrator timeint{std::move(estimator)};
+  auto timeint = EulerIntegrator{std::move(estimator)};
 
   // Setup the particles array:
   ParticleArray particles{
       // 2D space.
       Space<Real, 2>{},
       // Fields that are required by the estimator.
-      estimator.required_fields,
+      timeint.required_fields,
       // Set of whole system constants.
-      m,    // Particle mass assumed constant.
-      /*h*/ // Particle width assumed constant.
+      m, // Particle mass assumed constant.
+      h, // Particle width assumed constant.
   };
 
   // Generate individual particles.
@@ -127,23 +127,34 @@ int sph_main() {
     alpha[particles] = 1.0;
   }
 
-  // ParticleSpatialIndex spatial_index{particles};
+  // Setup the particle adjacency structure.
+  auto adjacent_particles = ParticleAdjacency{particles};
 
   particles.print("particles-dam.csv");
 
-  real_t time = 0.0, exectime = 0.0;
-  for (size_t n = 0; n < 100 && time <= 0.5; ++n, time += timestep) {
-    std::cout << n << "\t\t" << time << "\t\t" << exectime / n << std::endl;
-    const auto start = std::chrono::high_resolution_clock::now();
-    timeint.step(timestep, particles);
-    const auto delta = std::chrono::high_resolution_clock::now() - start;
+  real_t time = 0.0, exectime = 0.0, printtime = 0.0;
+  for (size_t n = 0; time <= 0.5; ++n, time += timestep) {
+    std::cout << n << "\t\t" << time << "\t\t" << exectime / n << "\t\t"
+              << printtime / (n / 200) << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    timeint.step(timestep, particles, adjacent_particles);
+    auto delta = std::chrono::high_resolution_clock::now() - start;
     exectime +=
         1.0e-9 *
         std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
-    if (n % 100 == 0) particles.print("particles-dam.csv");
+    if (n % 200 == 0) {
+      start = std::chrono::high_resolution_clock::now();
+      particles.print("particles-dam.csv");
+      auto delta = std::chrono::high_resolution_clock::now() - start;
+      printtime +=
+          1.0e-9 *
+          std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
+    }
   }
 
   particles.print("particles-dam.csv");
+
+  std::cout << "Total time: " << (exectime + printtime) / 60.0 << std::endl;
 
   return 0;
 }
@@ -153,5 +164,5 @@ int sph_main() {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 int main() {
-  return sph_main<double>();
+  return sph_main<tit::real_t>();
 }
