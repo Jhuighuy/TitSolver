@@ -43,7 +43,7 @@ namespace tit {
 #define TIT_SIMD_REGISTER_SIZE (4 * sizeof(double))
 #elif defined(__AVX512F__)
 #define TIT_SIMD_REGISTER_SIZE (8 * sizeof(double))
-#elif defined(__ARM_NEON) || defined(__SSE__)
+#elif defined(__SSE__) || defined(__ARM_NEON)
 #define TIT_SIMD_REGISTER_SIZE (2 * sizeof(double))
 #else
 // Assuming 128-bit SIMD registers by default.
@@ -94,17 +94,17 @@ template<class Num, size_t Dim>
 class Vec<Num, Dim> final {
 public:
 
-  /** Number of scalars. */
-  static constexpr auto num_scalars = Dim;
+  /** Number of rows. */
+  static constexpr auto num_rows = Dim;
 
   /** SIMD register size. */
   static constexpr auto reg_size = simd::reg_size_v<Num, Dim>;
 
   /** Number of SIMD register. */
-  static constexpr auto num_regs = ceil_divide(num_scalars, reg_size);
+  static constexpr auto num_regs = ceil_divide(num_rows, reg_size);
 
   /** Padding. */
-  static constexpr auto padding = reg_size * num_regs - num_scalars;
+  static constexpr auto padding = reg_size * num_regs - num_rows;
 
   /** SIMD register type. */
   using Reg = Vec<Num, simd::reg_size_v<Num, Dim>>;
@@ -115,7 +115,7 @@ private:
 
   template<class... Args>
   static constexpr auto _pack_regs(Args... qi) noexcept {
-    const auto qi_padded = std::array<Num, num_scalars + padding>{qi...};
+    const auto qi_padded = std::array<Num, num_rows + padding>{qi...};
     const auto pack_reg = [&]<size_t ri>(std::index_sequence<ri>) {
       return [&]<size_t... ss>(std::index_sequence<ss...>) {
         return Reg{qi_padded[ri * reg_size + ss]...};
@@ -128,9 +128,10 @@ private:
 
 public:
 
-  /** Construct a vector with components. */
+  /** Construct a vector with elements. */
   template<class... Args>
-    requires (sizeof...(Args) == Dim)
+    requires (sizeof...(Args) == Dim) &&
+             (std::constructible_from<Num, Args> && ...)
   constexpr explicit Vec(Args... qi) noexcept : _regs{_pack_regs(qi...)} {}
 
   /** Fill-initialize the vector. */
@@ -159,11 +160,11 @@ public:
   /** Vector component at index. */
   /** @{ */
   constexpr auto operator[](size_t i) noexcept -> Num& {
-    TIT_ASSERT(i < num_scalars, "Component index is out of range.");
+    TIT_ASSERT(i < num_rows, "Row index is out of range.");
     return _regs[i / reg_size][i % reg_size];
   }
   constexpr auto operator[](size_t i) const noexcept -> Num {
-    TIT_ASSERT(i < num_scalars, "Component index is out of range.");
+    TIT_ASSERT(i < num_rows, "Row index is out of range.");
     return _regs[i / reg_size][i % reg_size];
   }
   /** @} */
@@ -351,10 +352,10 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 namespace tit {
-consteval auto _unwrap(auto value) noexcept {
+constexpr auto _unwrap(auto value) noexcept {
   return value;
 }
-consteval auto& _unwrap(auto* value) noexcept {
+constexpr auto& _unwrap(auto* value) noexcept {
   return *value;
 }
 } // namespace tit

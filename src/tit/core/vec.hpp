@@ -45,40 +45,41 @@ template<class Num, size_t Dim>
 class Vec final {
 public:
 
-  /** Number of scalars. */
-  static constexpr auto num_scalars = size_t{Dim};
+  /** Number of rows. */
+  static constexpr auto num_rows = Dim;
 
 private:
 
-  std::array<Num, num_scalars> _scalars;
+  std::array<Num, num_rows> _col;
 
 public:
 
-  /** Construct a vector with scalars. */
+  /** Construct a vector with elements. */
   template<class... Args>
-    requires (sizeof...(Args) == Dim)
-  constexpr explicit Vec(Args... qi) noexcept : _scalars{qi...} {}
+    requires (sizeof...(Args) == Dim) &&
+             (std::constructible_from<Num, Args> && ...)
+  constexpr explicit Vec(Args... qi) noexcept : _col{qi...} {}
 
   /** Fill-initialize the vector. */
   constexpr Vec(Num q = Num{}) noexcept {
-    _scalars.fill(q);
+    _col.fill(q);
   }
 
   /** Fill-assign the vector. */
   constexpr auto operator=(Num q) noexcept -> Vec& {
-    _scalars.fill(q);
+    _col.fill(q);
     return *this;
   }
 
   /** Vector component at index. */
   /** @{ */
   constexpr auto operator[](size_t i) noexcept -> Num& {
-    TIT_ASSERT(i < num_scalars, "Component index is out of range.");
-    return _scalars[i];
+    TIT_ASSERT(i < num_rows, "Row index is out of range.");
+    return _col[i];
   }
   constexpr auto operator[](size_t i) const noexcept -> Num {
-    TIT_ASSERT(i < num_scalars, "Component index is out of range.");
-    return _scalars[i];
+    TIT_ASSERT(i < num_rows, "Row index is out of range.");
+    return _col[i];
   }
   /** @} */
 
@@ -104,7 +105,7 @@ using vec_num_t = std::remove_cvref_t<decltype(std::declval<Vec>()[0])>;
 /** Vector size. */
 template<class Vec>
   requires is_vec_v<Vec>
-inline constexpr auto vec_dim_v = Vec::num_scalars;
+inline constexpr auto vec_dim_v = Vec::num_rows;
 
 /** Vector size. */
 template<class Num, size_t Dim>
@@ -117,7 +118,7 @@ constexpr auto dim([[maybe_unused]] Vec<Num, Dim> a) noexcept {
 /** Vector input operator. */
 template<class Stream, class Num, size_t Dim>
 constexpr auto operator>>(Stream& stream, Vec<Num, Dim>& a) -> Stream& {
-  for (size_t i = 0; i < a.num_scalars; ++i) stream >> a[i];
+  for (size_t i = 0; i < a.num_rows; ++i) stream >> a[i];
   return stream;
 }
 
@@ -125,7 +126,7 @@ constexpr auto operator>>(Stream& stream, Vec<Num, Dim>& a) -> Stream& {
 template<class Stream, class Num, size_t Dim>
 constexpr auto operator<<(Stream& stream, Vec<Num, Dim> a) -> Stream& {
   stream << a[0];
-  for (size_t i = 1; i < a.num_scalars; ++i) stream << " " << a[i];
+  for (size_t i = 1; i < a.num_rows; ++i) stream << " " << a[i];
   return stream;
 }
 
@@ -141,14 +142,14 @@ constexpr auto operator+(Vec<Num, Dim> a) noexcept {
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<add_result_t<NumA, NumB>, Dim> r;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] + b[i];
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] + b[i];
   return r;
 }
 
 /** Vector addition assignment. */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
-  for (size_t i = 0; i < a.num_scalars; ++i) a[i] += b[i];
+  for (size_t i = 0; i < a.num_rows; ++i) a[i] += b[i];
   return a;
 }
 
@@ -158,7 +159,7 @@ constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 template<class Num, size_t Dim>
 constexpr auto operator-(Vec<Num, Dim> a) noexcept {
   Vec<negate_result_t<Num>, Dim> r;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = -a[i];
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = -a[i];
   return r;
 }
 
@@ -166,14 +167,14 @@ constexpr auto operator-(Vec<Num, Dim> a) noexcept {
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<sub_result_t<NumA, NumB>, Dim> r;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] - b[i];
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] - b[i];
   return r;
 }
 
 /** Vector subtraction assignment. */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
-  for (size_t i = 0; i < a.num_scalars; ++i) a[i] -= b[i];
+  for (size_t i = 0; i < a.num_rows; ++i) a[i] -= b[i];
   return a;
 }
 
@@ -184,19 +185,19 @@ constexpr auto& operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(NumA a, Vec<NumB, Dim> b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a * b[i];
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = a * b[i];
   return r;
 }
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(Vec<NumA, Dim> a, NumB b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] * b;
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] * b;
   return r;
 }
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] * b[i];
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] * b[i];
   return r;
 }
 /** @} */
@@ -205,12 +206,12 @@ constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 /** @{ */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator*=(Vec<NumA, Dim>& a, NumB b) noexcept {
-  for (size_t i = 0; i < a.num_scalars; ++i) a[i] *= b;
+  for (size_t i = 0; i < a.num_rows; ++i) a[i] *= b;
   return a;
 }
 template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
-  for (size_t i = 0; i < a.num_scalars; ++i) a[i] *= b[i];
+  for (size_t i = 0; i < a.num_rows; ++i) a[i] *= b[i];
   return a;
 }
 /** @} */
@@ -222,13 +223,13 @@ constexpr auto& operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator/(Vec<NumA, Dim> a, NumB b) noexcept {
   Vec<div_result_t<NumA, NumB>, Dim> r;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] / b;
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] / b;
   return r;
 }
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<div_result_t<NumA, NumB>, Dim> r;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = a[i] / b[i];
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] / b[i];
   return r;
 }
 /** @} */
@@ -237,12 +238,12 @@ constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 /** @{ */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator/=(Vec<NumA, Dim>& a, NumB b) noexcept {
-  for (size_t i = 0; i < a.num_scalars; ++i) a[i] /= b;
+  for (size_t i = 0; i < a.num_rows; ++i) a[i] /= b;
   return a;
 }
 template<class NumA, class NumB, size_t Dim>
 constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
-  for (size_t i = 0; i < a.num_scalars; ++i) a[i] /= b[i];
+  for (size_t i = 0; i < a.num_rows; ++i) a[i] /= b[i];
   return a;
 }
 /** @} */
@@ -253,7 +254,7 @@ constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 template<class Num, size_t Dim>
 constexpr auto sum(Vec<Num, Dim> a) noexcept {
   add_result_t<Num> r{a[0]};
-  for (size_t i = 1; i < a.num_scalars; ++i) r += a[i];
+  for (size_t i = 1; i < a.num_rows; ++i) r += a[i];
   return r;
 }
 
@@ -261,14 +262,14 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
 template<class Num, size_t Dim>
 constexpr auto min_value(Vec<Num, Dim> a) noexcept -> Num {
   Num r{a[0]};
-  for (size_t i = 1; i < a.num_scalars; ++i) r = std::min(r, a[i]);
+  for (size_t i = 1; i < a.num_rows; ++i) r = std::min(r, a[i]);
   return r;
 }
 /** Maximal vector element. */
 template<class Num, size_t Dim>
 constexpr auto max_value(Vec<Num, Dim> a) noexcept -> Num {
   Num r{a[0]};
-  for (size_t i = 1; i < a.num_scalars; ++i) r = std::max(r, a[i]);
+  for (size_t i = 1; i < a.num_rows; ++i) r = std::max(r, a[i]);
   return r;
 }
 
@@ -276,7 +277,7 @@ constexpr auto max_value(Vec<Num, Dim> a) noexcept -> Num {
 template<class Num, size_t Dim>
 constexpr auto argmin_value(Vec<Num, Dim> a) noexcept -> size_t {
   size_t ir = 0;
-  for (size_t i = 1; i < a.num_scalars; ++i) {
+  for (size_t i = 1; i < a.num_rows; ++i) {
     if (a[i] < a[ir]) ir = i;
   }
   return ir;
@@ -285,7 +286,7 @@ constexpr auto argmin_value(Vec<Num, Dim> a) noexcept -> size_t {
 template<class Num, size_t Dim>
 constexpr auto argmax_value(Vec<Num, Dim> a) noexcept -> size_t {
   size_t ir = 0;
-  for (size_t i = 1; i < a.num_scalars; ++i) {
+  for (size_t i = 1; i < a.num_rows; ++i) {
     if (a[i] > a[ir]) ir = i;
   }
   return ir;
@@ -346,6 +347,10 @@ public:
   Vec<NumX, Dim> x; /**< Left operand. */
   Vec<NumY, Dim> y; /**< Right operand. */
 
+  /** Construct vector comparison. */
+  constexpr VecCmp(Op op, Vec<NumX, Dim> x, Vec<NumX, Dim> y) noexcept
+      : op{std::move(op)}, x{x}, y{y} {}
+
 }; // class VecCmp
 
 /** Standard comparison operator. */
@@ -389,7 +394,7 @@ template<class Op, class NumX, class NumY, size_t Dim>
 constexpr auto eval(VecCmp<Op, Dim, NumX, NumY> cmp) noexcept {
   Vec<bool, Dim> r;
   const auto& [op, x, y] = cmp;
-  for (size_t i = 0; i < r.num_scalars; ++i) r[i] = op(x[i], y[i]);
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = op(x[i], y[i]);
   return r;
 }
 
@@ -399,7 +404,7 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
                      Vec<NumA, Dim> a) noexcept {
   Vec<NumA, Dim> r;
   const auto& [op, x, y] = cmp;
-  for (size_t i = 0; i < r.num_scalars; ++i) {
+  for (size_t i = 0; i < r.num_rows; ++i) {
     // Supposed to be overriden by intrisics or optimized.
     r[i] = merge(op(x[i], y[i]), a[i]);
   }
@@ -412,7 +417,7 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
   // Supposed to be overriden by intrisics.
   Vec<sub_result_t<NumA, NumB>, Dim> r;
   const auto& [op, x, y] = cmp;
-  for (size_t i = 0; i < r.num_scalars; ++i) {
+  for (size_t i = 0; i < r.num_rows; ++i) {
     // Supposed to be overriden by intrisics or optimized.
     r[i] = merge(op(x[i], y[i]), a[i], b[i]);
   }

@@ -21,7 +21,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
-#ifdef __ARM_NEON
+#if __ARM_NEON
 
 #include <array>
 #include <functional>
@@ -40,16 +40,16 @@ template<>
 class alignas(16) Vec<float64_t, 2> final {
 public:
 
-  static constexpr auto num_scalars = size_t{2};
+  static constexpr auto num_rows = size_t{2};
 
   union {
-    std::array<float64_t, num_scalars> _scalars;
+    std::array<float64_t, num_rows> _col;
     float64x2_t _reg;
   };
 
   constexpr Vec(float64_t qx, float64_t qy) noexcept {
     if consteval {
-      _scalars = {qx, qy};
+      _col = {qx, qy};
     } else {
       _reg = vsetq_lane_f64(qx, _reg, 0);
       _reg = vsetq_lane_f64(qy, _reg, 1);
@@ -58,14 +58,14 @@ public:
 
   constexpr Vec(float64_t q = 0.0) noexcept {
     if consteval {
-      _scalars.fill(q);
+      _col = {q, q};
     } else {
       _reg = vdupq_n_f64(q);
     }
   }
   constexpr auto operator=(float64_t q) noexcept -> Vec& {
     if consteval {
-      _scalars.fill(q);
+      _col.fill(q);
     } else {
       _reg = vdupq_n_f64(q);
     }
@@ -73,12 +73,12 @@ public:
   }
 
   constexpr auto operator[](size_t i) noexcept -> float64_t& {
-    TIT_ASSERT(i < num_scalars, "Index is out of range!");
-    return _scalars[i];
+    TIT_ASSERT(i < num_rows, "Row index is out of range.");
+    return _col[i];
   }
   constexpr auto operator[](size_t i) const noexcept -> float64_t {
-    TIT_ASSERT(i < num_scalars, "Index is out of range!");
-    return _scalars[i];
+    TIT_ASSERT(i < num_rows, "Row index is out of range.");
+    return _col[i];
   }
 
 }; // class Vec<float64_t, 2>
