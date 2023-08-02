@@ -33,6 +33,7 @@
 #include <utility>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/config.hpp" // IWYU pragma: keep
 #include "tit/core/types.hpp"
 
 namespace tit {
@@ -75,7 +76,14 @@ constexpr auto sign(Num a) noexcept -> Num {
 /** Small number, treated as zero. */
 template<class Real>
   requires std::floating_point<Real>
-constexpr auto small_number_v = sqrt(std::numeric_limits<Real>::epsilon());
+constexpr auto small_number_v {
+#if TIT_IWYU
+  // IWYU's clang's `sqrt` is not constexpr yet.
+  std::numeric_limits<Real>::epsilon()
+#else
+  sqrt(std::numeric_limits<Real>::epsilon())
+#endif
+};
 
 /** Check if number is approximately zero. */
 template<class Real>

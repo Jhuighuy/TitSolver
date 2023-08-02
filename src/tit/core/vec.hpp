@@ -90,7 +90,7 @@ Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Test if is a specialization of a vector. */
+/** Check if type is a specialization of vector. */
 /** @{ */
 template<class>
 inline constexpr auto is_vec_v = false;

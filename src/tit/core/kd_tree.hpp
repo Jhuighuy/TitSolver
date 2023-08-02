@@ -139,7 +139,7 @@ private:
       node->leaf_left = left, node->leaf_right = right;
     } else {
       // Split the points based on the "widest" bounding box dimension.
-      const auto cut_dim = argmax_value(actual_bbox.span());
+      const auto cut_dim = argmax_value(actual_bbox.extents());
       const auto cut_value = actual_bbox.clip(bbox.center())[cut_dim];
       const auto pivot = _partition_subtree(left, right, cut_dim, cut_value);
       TIT_ASSERT(left <= pivot && pivot <= right, "Invalid pivot.");

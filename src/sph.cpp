@@ -8,8 +8,8 @@
 
 #include "TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
+#include "tit/sph/kernel.hpp"
 #include "tit/sph/smooth_estimator.hpp"
-#include "tit/sph/smooth_kernel.hpp"
 #include "tit/sph/time_integrator.hpp"
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

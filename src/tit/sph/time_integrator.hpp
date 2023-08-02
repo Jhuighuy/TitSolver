@@ -77,7 +77,7 @@ public:
     }
     // Integrate particle density.
     _estimator.compute_density(particles, adjacent_particles);
-    if (has<PV>(drho_dt)) {
+    if constexpr (has<PV>(drho_dt)) {
       std::ranges::for_each(particles.views(), [&](PV a) {
         if (fixed[a]) return;
         rho[a] += dt * drho_dt[a];

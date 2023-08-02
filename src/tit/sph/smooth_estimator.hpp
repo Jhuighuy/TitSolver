@@ -36,7 +36,7 @@
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/equation_of_state.hpp" // IWYU pragma: keep
 #include "tit/sph/field.hpp"
-#include "tit/sph/smooth_kernel.hpp"
+#include "tit/sph/kernel.hpp"
 
 namespace tit::sph {
 
