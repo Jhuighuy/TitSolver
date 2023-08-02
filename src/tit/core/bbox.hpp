@@ -64,7 +64,7 @@ public:
   constexpr auto center() const noexcept {
     return avg(low, high);
   }
-  constexpr auto span() const noexcept {
+  constexpr auto extents() const noexcept {
     return high - low;
   }
 

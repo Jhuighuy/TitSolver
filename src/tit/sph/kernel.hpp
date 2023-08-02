@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <limits>
 #include <numbers>
 
@@ -45,7 +46,8 @@ class Kernel {
 protected:
 
   /** Derived class reference. */
-  constexpr auto self() const noexcept -> const Derived& {
+  constexpr auto derived() const noexcept -> const Derived& {
+    static_assert(std::derived_from<Derived, Kernel<Derived>>);
     return static_cast<const Derived&>(*this);
   }
 
@@ -95,14 +97,14 @@ public:
   template<class Real, size_t Dim>
   constexpr auto weight() const noexcept -> Real {
     // A shortcut in order not to write `.template weight<...>` all the time.
-    return self().template weight<Real, Dim>();
+    return derived().template weight<Real, Dim>();
   }
 
   /** Support radius. */
   template<class Real>
   constexpr auto radius(Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
-    const auto radius = self().template unit_radius<Real>();
+    const auto radius = derived().template unit_radius<Real>();
     return radius * h;
   }
 
@@ -113,7 +115,7 @@ public:
     const auto h_inverse = inverse(h);
     const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
     const auto q = h_inverse * norm(x);
-    return w * self().unit_value(q);
+    return w * derived().unit_value(q);
   }
 
   /** Directional derivative of the smooting kernel at point. */
@@ -123,7 +125,7 @@ public:
     const auto h_inverse = inverse(h);
     const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
     const auto q = h_inverse * norm(x);
-    return w * self().unit_deriv(q) * h_inverse;
+    return w * derived().unit_deriv(q) * h_inverse;
   }
 
   /** Spatial gradient of the smoothing kernel at point. */
@@ -135,7 +137,7 @@ public:
     const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
     const auto q = h_inverse * norm(x);
     const auto grad_q = normalize(x) * h_inverse;
-    return w * self().unit_deriv(q) * grad_q;
+    return w * derived().unit_deriv(q) * grad_q;
   }
 
   /** Width derivative of the smoothing kernel at point. */
@@ -147,7 +149,8 @@ public:
     const auto dw_dh = -int{Dim} * w * h_inverse;
     const auto q = h_inverse * norm(x);
     const auto dq_dh = -q * h_inverse;
-    return dw_dh * self().unit_value(q) + w * self().unit_deriv(q) * dq_dh;
+    return dw_dh * derived().unit_value(q) +
+           w * derived().unit_deriv(q) * dq_dh;
   }
 
 }; // class Kernel
@@ -458,7 +461,7 @@ template<class Derived>
 class WendlandKernel : public Kernel<Derived> {
 protected:
 
-  using Kernel<Derived>::self;
+  using Kernel<Derived>::derived;
 
 public:
 
@@ -473,9 +476,9 @@ public:
   template<class Real>
   constexpr auto unit_value(Real q) const noexcept -> Real {
 #if TIT_BRANCHLESS_KERNELS
-    return merge(q < Real{2.0}, self().not_truncated_unit_value(q));
+    return merge(q < Real{2.0}, derived().unit_value_notrunc(q));
 #else
-    return q < Real{2.0} ? self().not_truncated_unit_value(q) : Real{0.0};
+    return q < Real{2.0} ? derived().unit_value_notrunc(q) : Real{0.0};
 #endif
   }
 
@@ -483,9 +486,9 @@ public:
   template<class Real>
   constexpr auto unit_deriv(Real q) const noexcept -> Real {
 #if TIT_BRANCHLESS_KERNELS
-    return merge(q < Real{2.0}, self().not_truncated_unit_deriv(q));
+    return merge(q < Real{2.0}, derived().unit_deriv_notrunc(q));
 #else
-    return q < Real{2.0} ? self().not_truncated_unit_deriv(q) : Real{0.0};
+    return q < Real{2.0} ? derived().unit_deriv_notrunc(q) : Real{0.0};
 #endif
   }
 
@@ -511,14 +514,14 @@ public:
 
   /** Value of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
-  static constexpr auto not_truncated_unit_value(Real q) noexcept -> Real {
+  static constexpr auto unit_value_notrunc(Real q) noexcept -> Real {
     return (Real{1.0} + Real{2.0} * q) * pow4(Real{1.0} - Real{0.5} * q);
   }
 
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
-  static constexpr auto not_truncated_unit_deriv(Real q) noexcept -> Real {
-    // Common formula is dW/dq = -5 * q * (1 - q/2)^3, but it requires 5
+  static constexpr auto unit_deriv_notrunc(Real q) noexcept -> Real {
+    // Well known formula is dW/dq = -5 * q * (1 - q/2)^3, but it requires 5
     // multiplications. Formula that is used requires 4.
     return Real{5.0 / 8.0} * q * pow3(q - Real{2.0});
   }
@@ -545,14 +548,14 @@ public:
 
   /** Value of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
-  static constexpr auto not_truncated_unit_value(Real q) noexcept -> Real {
+  static constexpr auto unit_value_notrunc(Real q) noexcept -> Real {
     return (Real{1.0} + (Real{3.0} + Real{35.0 / 12.0} * q) * q) *
            pow6(Real{1.0} - Real{0.5} * q);
   }
 
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
-  static constexpr auto not_truncated_unit_deriv(Real q) noexcept -> Real {
+  static constexpr auto unit_deriv_notrunc(Real q) noexcept -> Real {
     return Real{7.0 / 96.0} * (Real{2.0} + Real{5.0} * q) * q *
            pow5(q - Real{2.0});
   }
@@ -579,14 +582,14 @@ public:
 
   /** Value of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
-  static constexpr auto not_truncated_unit_value(Real q) noexcept -> Real {
+  static constexpr auto unit_value_notrunc(Real q) noexcept -> Real {
     return pow8(Real{1.0} - Real{0.5} * q) *
            (Real{1.0} + (Real{4.0} + (Real{6.25} + Real{4.0} * q) * q) * q);
   }
 
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
-  static constexpr auto not_truncated_unit_deriv(Real q) noexcept -> Real {
+  static constexpr auto unit_deriv_notrunc(Real q) noexcept -> Real {
     return Real{11.0 / 512.0} * (Real{2.0} + (Real{7.0} + Real{8.0} * q) * q) *
            q * pow7(q - Real{2.0});
   }
