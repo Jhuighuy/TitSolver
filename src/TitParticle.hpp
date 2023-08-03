@@ -124,7 +124,7 @@ private:
 
   ParticleArray* _particles;
   EngineFactory _engine_factory;
-  Graph _adjacency_graph;
+  Graph _adjacency;
 
 public:
 
@@ -149,14 +149,16 @@ public:
     auto positions = array().views() | //
                      std::views::transform([](PV a) { return a[r]; });
     const auto engine = _engine_factory(std::move(positions));
-    _adjacency_graph.clear();
+    _adjacency.clear();
     std::ranges::for_each(array().views(), [&](PV a) {
+      const auto search_point = r[a];
       const auto search_radius = radius_func(a);
       TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
       thread_local std::vector<size_t> search_results;
       search_results.clear();
-      engine.search(a[r], search_radius, std::back_inserter(search_results));
-      _adjacency_graph.append_row(search_results);
+      engine.search(search_point, search_radius,
+                    std::back_inserter(search_results));
+      _adjacency.append_row(search_results);
     });
   }
 
@@ -165,7 +167,7 @@ public:
     TIT_ASSERT(&a.array() != &array(),
                "Particle belongs to a different array.");
     TIT_ASSERT(a.index() < array().size(), "Particle is out of range.");
-    return std::views::all(_adjacency_graph[a.index()]) |
+    return std::views::all(_adjacency[a.index()]) |
            std::views::transform([this](size_t b_index) {
              TIT_ASSERT(b_index < array().size(), "Particle is out of range.");
              return array()[b_index];
@@ -174,7 +176,7 @@ public:
 
   /** Pairs of the adjacent particles. */
   constexpr auto pairs() const noexcept {
-    return std::views::all(_adjacency_graph.edges()) |
+    return std::views::all(_adjacency.edges()) |
            std::views::transform([this](auto ab_indices) {
              auto [a_index, b_index] = ab_indices;
              TIT_ASSERT(a_index < array().size(), "Particle is out of range.");
@@ -364,6 +366,17 @@ public:
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2) return n + "_x " + n + "_y";
     if constexpr (Dimx == 3) return n + "_x " + n + "_y " + n + "_z";
+  }
+  template<class Realx, size_t Dimx>
+  static auto _make_name(std::string n, meta::Set<Mat<Realx, Dimx>>) {
+    if constexpr (Dimx == 1) return n;
+    if constexpr (Dimx == 2)
+      return n + "_xx " + n + "_xy " + //
+             n + "_yx " + n + "_yy";
+    if constexpr (Dimx == 3)
+      return n + "_xx " + n + "_xy " + n + "_xz " + //
+             n + "_yx " + n + "_yy " + n + "_yz " + //
+             n + "_zx " + n + "_zy " + n + "_zz";
   }
 
   static auto _make_name(auto v) {

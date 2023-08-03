@@ -64,7 +64,6 @@ public:
   constexpr Vec(Num q = Num{}) noexcept {
     _col.fill(q);
   }
-
   /** Fill-assign the vector. */
   constexpr auto operator=(Num q) noexcept -> Vec& {
     _col.fill(q);
@@ -437,6 +436,16 @@ template<class Num, size_t Dim>
 constexpr auto maximum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
     -> Vec<Num, Dim> {
   return merge(a > b, a, b);
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Evaluate polynomial @f$ \sum c_k q^k @f$. */
+template<class NumQ, class NumC, size_t Dim>
+constexpr auto poly(NumQ q, Vec<NumC, Dim> ci) noexcept {
+  add_result_t<mul_result_t<NumQ, NumC>> r{ci[Dim - 1]};
+  for (ssize_t i = Dim - 2; i >= 0; --i) r = ci[i] + r * q;
+  return r;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

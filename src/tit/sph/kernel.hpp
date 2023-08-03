@@ -549,14 +549,14 @@ public:
   /** Value of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto unit_value_notrunc(Real q) noexcept -> Real {
-    return (Real{1.0} + (Real{3.0} + Real{35.0 / 12.0} * q) * q) *
+    return poly(q, Vec{Real{1.0}, Real{3.0}, Real{35.0 / 12.0}}) *
            pow6(Real{1.0} - Real{0.5} * q);
   }
 
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto unit_deriv_notrunc(Real q) noexcept -> Real {
-    return Real{7.0 / 96.0} * (Real{2.0} + Real{5.0} * q) * q *
+    return poly(q, Real{7.0 / 96.0} * Vec{Real{2.0}, Real{5.0}}) * q *
            pow5(q - Real{2.0});
   }
 
@@ -583,14 +583,14 @@ public:
   /** Value of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto unit_value_notrunc(Real q) noexcept -> Real {
-    return pow8(Real{1.0} - Real{0.5} * q) *
-           (Real{1.0} + (Real{4.0} + (Real{6.25} + Real{4.0} * q) * q) * q);
+    return poly(q, Vec{Real{1.0}, Real{4.0}, Real{25.0 / 4.0}, Real{4.0}}) *
+           pow8(Real{1.0} - Real{0.5} * q);
   }
 
   /** Derivative of the unit smoothing kernel at a point (not truncated). */
   template<class Real>
   static constexpr auto unit_deriv_notrunc(Real q) noexcept -> Real {
-    return Real{11.0 / 512.0} * (Real{2.0} + (Real{7.0} + Real{8.0} * q) * q) *
+    return poly(q, Real{11.0 / 512.0} * Vec{Real{2.0}, Real{7.0}, Real{8.0}}) *
            q * pow7(q - Real{2.0});
   }
 

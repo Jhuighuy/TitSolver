@@ -1,4 +1,7 @@
 #!/bin/bash
+
+./etc/scripts/iwyu.sh src || exit $?
+
 function compile() {
   g++-13 \
     -I./src \
