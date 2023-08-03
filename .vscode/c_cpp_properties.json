@@ -40,8 +40,6 @@
     {
       "name": "Windows (MSYS2)",
       "includePath": [
-        // TODO: here should be a better path.
-        "C:/msys64/home/Oleg/nanoflann/include",
         "${workspaceFolder}/src/**"
       ],
       "defines": [

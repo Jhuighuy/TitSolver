@@ -24,6 +24,7 @@
 
 #include <type_traits>
 
+#include "tit/core/mat.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/misc.hpp"
 #include "tit/core/types.hpp"
@@ -59,6 +60,26 @@ consteval bool has() {
 }
 /** @} */
 
+/** Check particle constant presense. */
+/** @{ */
+template<_has_fields PV, meta::type... Consts>
+consteval bool has_const(meta::Set<Consts...> consts) {
+  if constexpr (!_has_constants<PV>) return false;
+  else {
+    return has<PV>(consts) &&
+           std::remove_cvref_t<PV>::constants.includes(consts);
+  }
+}
+template<_has_fields PV, meta::type... Consts>
+consteval bool has_const(Consts... consts) {
+  return has_const<PV>(meta::Set{consts...});
+}
+template<_has_fields PV, meta::type... Consts>
+consteval bool has_const() {
+  return has_const<PV>(Consts{}...);
+}
+/** @} */
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Declare a particle field. */
@@ -77,13 +98,13 @@ consteval bool has() {
     template<_has_fields PV>                                                   \
       requires (has<PV, name##_t>())                                           \
     constexpr auto operator[](PV&& a) const noexcept -> decltype(auto) {       \
-      return a[name##_t{}];                                                    \
+      return a[*this];                                                         \
     }                                                                          \
     /** Field value delta for the specified particle view. */                  \
     template<_has_fields PV>                                                   \
       requires (has<PV, name##_t>())                                           \
     constexpr auto operator[](PV&& a, PV&& b) const noexcept {                 \
-      return a[name##_t{}] - b[name##_t{}];                                    \
+      return a[*this] - b[*this];                                              \
     }                                                                          \
                                                                                \
   }; /* class name##_t */                                                      \
@@ -93,9 +114,13 @@ consteval bool has() {
 #define TIT_DEFINE_SCALAR_FIELD(name, ...)                                     \
   TIT_DEFINE_FIELD(Real, name __VA_OPT__(, __VA_ARGS__))
 
-/** Declare a scalar particle field. */
+/** Declare a vector particle field. */
 #define TIT_DEFINE_VECTOR_FIELD(name, ...)                                     \
   TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
+
+/** Declare a matrix particle field. */
+#define TIT_DEFINE_MATRIX_FIELD(name, ...)                                     \
+  TIT_DEFINE_FIELD(TIT_PASS(Mat<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
 
 /** Field name. */
 template<meta::type Field>

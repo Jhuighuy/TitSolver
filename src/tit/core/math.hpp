@@ -137,65 +137,57 @@ constexpr auto ceil_divide(UInt a, UInt b) noexcept -> UInt {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Raise to the second power. */
+/** Raise to the second power with 1 multiplication. */
 template<class Num>
 constexpr auto pow2(Num a) noexcept -> Num {
-  // 1 multiplication.
   return a * a;
 }
-/** Raise to the third power. */
+/** Raise to the third power with 2 multiplications. */
 template<class Num>
 constexpr auto pow3(Num a) noexcept -> Num {
-  // 2 multiplications.
   return a * a * a;
 }
-/** Raise to the fourth power. */
+/** Raise to the fourth power with 2 multiplications. */
 template<class Num>
 constexpr auto pow4(Num a) noexcept -> Num {
-  // 2 multiplications.
   const auto a_sqr = a * a;
   return a_sqr * a_sqr;
 }
-/** Raise to the fifth power. */
+/** Raise to the fifth power with 3 multiplications. */
 template<class Num>
 constexpr auto pow5(Num a) noexcept -> Num {
-  // 3 multiplications.
   const auto a_sqr = a * a;
   return a_sqr * a_sqr * a;
 }
-/** Raise to the sixth power. */
+/** Raise to the sixth power with 3 multiplications. */
 template<class Num>
 constexpr auto pow6(Num a) noexcept -> Num {
-  // 3 multiplications.
   const auto a_cubed = a * a * a;
   return a_cubed * a_cubed;
 }
-/** Raise to the seventh power. */
+/** Raise to the seventh power with 4 multiplications. */
 template<class Num>
 constexpr auto pow7(Num a) noexcept -> Num {
-  // 4 multiplications.
-  // TODO: can pow7 be implemented with 3 multiplications?
+  // TODO: can `pow7` be implemented with 3 multiplications?
   const auto a_cubed = a * a * a;
   return a_cubed * a_cubed * a;
 }
-/** Raise to the eighth power. */
+/** Raise to the eighth power with 3 multiplications. */
 template<class Num>
 constexpr auto pow8(Num a) noexcept -> Num {
-  // 3 multiplications.
   const auto a_sqr = a * a;
   const auto a_pow4 = a_sqr * a_sqr;
   return a_pow4 * a_pow4;
 }
-/** Raise to the nineth power. */
+/** Raise to the nineth power with 4 multiplications. */
 template<class Num>
 constexpr auto pow9(Num a) noexcept -> Num {
-  // 4 multiplications.
   const auto a_cubed = a * a * a;
   return a_cubed * a_cubed * a_cubed;
 }
 /** Raise to the power. */
 template<class Num>
-constexpr auto pow(Num a, std::type_identity_t<Num> power) noexcept {
+constexpr auto pow(Num a, std::type_identity_t<Num> power) noexcept -> Num {
   return std::pow(a, power);
 }
 

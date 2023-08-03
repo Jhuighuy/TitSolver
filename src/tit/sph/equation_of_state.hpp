@@ -105,7 +105,7 @@ public:
 class WeaklyCompressibleFluidEquationOfState {
 private:
 
-  real_t _cs, _rho_0, _p_0;
+  real_t _cs_0, _rho_0, _p_0;
   real_t _gamma;
 
 public:
@@ -114,14 +114,14 @@ public:
   static constexpr auto required_fields = meta::Set{rho, p};
 
   /** Construct an equation of state.
-   ** @param cs Reference sound speed, typically 10x of the expected velocity.
+   ** @param cs_0 Reference sound speed, typically 10x of the expected velocity.
    ** @param rho_0 Reference density.
    ** @param p_0 Background pressure.
    ** @param gamma Adiabatic index. */
   constexpr WeaklyCompressibleFluidEquationOfState( //
-      real_t cs, real_t rho_0, real_t p_0 = 0.0, real_t gamma = 7.0) noexcept
-      : _cs{cs}, _rho_0{rho_0}, _p_0{p_0}, _gamma{gamma} {
-    TIT_ASSERT(_cs > 0.0, "Reference sound speed must be positive.");
+      real_t cs_0, real_t rho_0, real_t p_0 = 0.0, real_t gamma = 7.0) noexcept
+      : _cs_0{cs_0}, _rho_0{rho_0}, _p_0{p_0}, _gamma{gamma} {
+    TIT_ASSERT(_cs_0 > 0.0, "Reference sound speed must be positive.");
     TIT_ASSERT(_rho_0 > 0.0, "Reference density speed must be positive.");
     TIT_ASSERT(_gamma > 1.0, "Adiabatic index must be greater than 1.");
   }
@@ -130,7 +130,7 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
-    const auto p_1 = _rho_0 * pow2(_cs) / _gamma;
+    const auto p_1 = _rho_0 * pow2(_cs_0) / _gamma;
     p[a] = _p_0 + p_1 * (pow(rho[a] / _rho_0, _gamma) - 1.0);
     if constexpr (has<PV>(cs)) {
       cs[a] = sqrt(_gamma * (p[a] - _p_0 + p_1) / rho[a]);
@@ -145,7 +145,7 @@ public:
 class LinearWeaklyCompressibleFluidEquationOfState {
 private:
 
-  real_t _cs, _rho_0, _p_0;
+  real_t _cs_0, _rho_0, _p_0;
 
 public:
 
@@ -153,13 +153,13 @@ public:
   static constexpr auto required_fields = meta::Set{rho, p};
 
   /** Construct an equation of state.
-   ** @param cs Reference sound speed, typically 10x of the expected velocity.
+   ** @param cs_0 Reference sound speed, typically 10x of the expected velocity.
    ** @param rho_0 Reference density.
    ** @param p_0 Background pressure. */
   constexpr LinearWeaklyCompressibleFluidEquationOfState( //
-      real_t cs, real_t rho_0, real_t p_0 = 0.0) noexcept
-      : _cs{cs}, _rho_0{rho_0}, _p_0{p_0} {
-    TIT_ASSERT(_cs > 0.0, "Reference sound speed must be positive.");
+      real_t cs_0, real_t rho_0, real_t p_0 = 0.0) noexcept
+      : _cs_0{cs_0}, _rho_0{rho_0}, _p_0{p_0} {
+    TIT_ASSERT(_cs_0 > 0.0, "Reference sound speed must be positive.");
     TIT_ASSERT(_rho_0 > 0.0, "Reference density speed must be positive.");
   }
 
@@ -167,10 +167,10 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
-    p[a] = _p_0 + pow2(_cs) * (rho[a] - _rho_0);
+    p[a] = _p_0 + pow2(_cs_0) * (rho[a] - _rho_0);
     if constexpr (has<PV>(cs)) {
       // The same as sqrt(gamma * (p - p_0) / rho), where gamma = 1.
-      cs[a] = _cs;
+      cs[a] = _cs_0;
     }
   }
 

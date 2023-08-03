@@ -113,32 +113,27 @@ private:
 
   std::array<Reg, num_regs> _regs;
 
-  template<class... Args>
-  static constexpr auto _pack_regs(Args... qi) noexcept {
-    const auto qi_padded = std::array<Num, num_rows + padding>{qi...};
-    const auto pack_reg = [&]<size_t ri>(std::index_sequence<ri>) {
-      return [&]<size_t... ss>(std::index_sequence<ss...>) {
-        return Reg{qi_padded[ri * reg_size + ss]...};
-      }(std::make_index_sequence<reg_size>{});
-    };
-    return [&]<size_t... rs>(std::index_sequence<rs...>) {
-      return std::array{pack_reg(std::index_sequence<rs>{})...};
-    }(std::make_index_sequence<num_regs>{});
-  }
-
 public:
 
   /** Construct a vector with elements. */
   template<class... Args>
     requires (sizeof...(Args) == Dim) &&
              (std::constructible_from<Num, Args> && ...)
-  constexpr explicit Vec(Args... qi) noexcept : _regs{_pack_regs(qi...)} {}
+  constexpr explicit Vec(Args... qi) noexcept
+      : _regs{[&]<size_t... rs>(std::index_sequence<rs...>) {
+          const auto qi_padded = std::array<Num, num_rows + padding>{qi...};
+          const auto pack_reg = [&]<size_t ri>(std::index_sequence<ri>) {
+            return [&]<size_t... ss>(std::index_sequence<ss...>) {
+              return Reg{qi_padded[ri * reg_size + ss]...};
+            }(std::make_index_sequence<reg_size>{});
+          };
+          return std::array{pack_reg(std::index_sequence<rs>{})...};
+        }(std::make_index_sequence<num_regs>{})} {}
 
   /** Fill-initialize the vector. */
   constexpr Vec(Num q = Num{}) noexcept {
     _regs.fill(Reg(q));
   }
-
   /** Fill-assign the vector. */
   constexpr auto operator=(Num q) noexcept -> Vec& {
     _regs.fill(Reg(q));
@@ -415,6 +410,8 @@ constexpr auto& _unwrap(auto* value) noexcept {
     } else __VA_ARGS__                                                         \
   }
 
+// IntelliSense goes crazy when it encounters intrinsics. Especially NEON.
+#ifndef __INTELLISENSE__
 // IWYU pragma: begin_exports
 #if defined(__SSE__)
 #include "tit/core/vec_avx.hpp"
@@ -422,6 +419,7 @@ constexpr auto& _unwrap(auto* value) noexcept {
 #include "tit/core/vec_neon.hpp"
 #endif
 // IWYU pragma: end_exports
+#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

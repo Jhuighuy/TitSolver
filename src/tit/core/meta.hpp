@@ -64,14 +64,13 @@ class Set {
 public:
 
   /** Construct a meta-set. */
-#ifndef __INTELLISENSE__
-  Set() = default;
+  consteval Set() = default;
   consteval Set(Ts...)
+#ifndef __INTELLISENSE__
     requires (sizeof...(Ts) != 0)
-  {}
-#else
-  consteval Set(Ts...) {}
 #endif
+  {
+  }
 
   static consteval size_t size() {
     return sizeof...(Ts);
