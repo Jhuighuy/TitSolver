@@ -70,7 +70,7 @@ public:
 /******************************************************************************\
  ** α-β artificial viscosity (Monaghan, 1992).
 \******************************************************************************/
-class AlphaBetaArtificialViscosity final : public NoArtificialViscosity {
+class AlphaBetaArtificialViscosity : public NoArtificialViscosity {
 private:
 
   real_t _alpha, _beta;
@@ -111,45 +111,29 @@ public:
 /******************************************************************************\
  ** Artificial viscosity with Balsara switch (Balsara, 1995).
 \******************************************************************************/
-template<class ArtificialViscosity = AlphaBetaArtificialViscosity>
-  requires std::is_object_v<ArtificialViscosity>
-class BalsaraArtificialViscosity final {
-private:
-
-  ArtificialViscosity _base_viscosity;
-
+template<class BaseArtificialViscosity = AlphaBetaArtificialViscosity>
+  requires std::derived_from<BaseArtificialViscosity, NoArtificialViscosity>
+class BalsaraArtificialViscosity : public BaseArtificialViscosity {
 public:
 
   /** Set of particle fields that are required. */
-  static constexpr auto required_fields = meta::Set{h, cs, div_v, curl_v} | //
-                                          ArtificialViscosity::required_fields;
+  static constexpr auto required_fields =
+      meta::Set{h, cs, div_v, curl_v} |
+      BaseArtificialViscosity::required_fields;
 
-  /** Construct artificial viscosity scheme.
-   ** @param base_viscosity Base artificial viscosity scheme. */
-  constexpr BalsaraArtificialViscosity(
-      ArtificialViscosity base_viscosity) noexcept
-      : _base_viscosity{std::move(base_viscosity)} {}
   /** Construct artificial viscosity scheme.
    ** @param args Arguments for the base viscosity. */
   template<class... Args>
-    requires std::constructible_from<ArtificialViscosity, Args...>
+    requires std::constructible_from<BaseArtificialViscosity, Args...>
   constexpr BalsaraArtificialViscosity(Args&&... args) noexcept
-      : _base_viscosity{std::forward<Args>(args)...} {}
-
-  /** Compute continuity equation diffusive term. */
-  template<class PV>
-    requires (has<PV>(required_fields))
-  constexpr auto density_term(PV a, PV b) const noexcept {
-    TIT_ASSERT(a != b, "Particles must be different.");
-    return _base_viscosity.density_term(a, b);
-  }
+      : BaseArtificialViscosity{std::forward<Args>(args)...} {}
 
   /** Compute momentum equation diffusive term. */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    auto Pi_ab = _base_viscosity.velocity_term(a, b);
+    auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto f = [](PV c) {
       return abs(div_v[c]) /
@@ -165,42 +149,34 @@ public:
 /******************************************************************************\
  ** Artificial viscosity with Morris-Monaghan switch (Morris, Monaghan, 1997).
 \******************************************************************************/
-class MorrisMonaghanArtificialViscosity final {
+template<class BaseArtificialViscosity = BalsaraArtificialViscosity<>>
+  requires std::derived_from<BaseArtificialViscosity, NoArtificialViscosity>
+class MorrisMonaghanArtificialViscosity : public BaseArtificialViscosity {
 private:
 
   real_t _alpha_min, _sigma;
-  AlphaBetaArtificialViscosity _base_viscosity;
 
 public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
       meta::Set{h, cs, div_v, alpha, dalpha_dt} |
-      AlphaBetaArtificialViscosity::required_fields;
+      BaseArtificialViscosity::required_fields;
 
   /** Construct artificial viscosity scheme.
    ** @param alpha_min Minimal value of the first
    **                  Alpha-Beta scheme coefficient.
    ** @param sigma Decay time inverse scale factor.
-   ** @param beta_alpha_ratio Ratio between the second and the first
-   **                         Alpha-Beta scheme coefficients. */
-  constexpr MorrisMonaghanArtificialViscosity(    //
-      real_t alpha_min = 0.1, real_t sigma = 0.2, //
-      real_t beta_alpha_ratio = 2.0) noexcept
-      : _alpha_min{alpha_min}, _sigma{sigma},
-        _base_viscosity{/*alpha=*/1.0, /*beta=*/beta_alpha_ratio} {
-    TIT_ASSERT(_alpha_min > 0.0,
-               "Linear coefficient minimal value must be positive.");
-    TIT_ASSERT(_sigma > 0.0,
-               "Decay time inverse scale factor must be positive.");
-  }
-
-  /** Compute continuity equation diffusive term. */
-  template<class PV>
-    requires (has<PV>(required_fields))
-  constexpr auto density_term(PV a, PV b) const noexcept {
-    TIT_ASSERT(a != b, "Particles must be different.");
-    return _base_viscosity.density_term(a, b);
+   ** @param args Arguments for the base viscosity. */
+  template<class... Args>
+    requires std::constructible_from<BaseArtificialViscosity, Args...>
+  constexpr MorrisMonaghanArtificialViscosity( //
+      real_t alpha_min = 0.1, real_t sigma = 0.2, Args&&... args) noexcept
+      : BaseArtificialViscosity{std::forward<Args>(args)...},
+        _alpha_min{alpha_min}, _sigma{sigma} {
+    TIT_ASSERT(_alpha_min > 0.0, "Switch minimal value must be positive.");
+    TIT_ASSERT(_sigma > 0.0, "Switch decay time inverse scale factor "
+                             "must be positive.");
   }
 
   /** Compute momentum equation diffusive term. */
@@ -208,9 +184,7 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    auto Pi_ab = _base_viscosity.velocity_term(a, b);
-    // Base viscosity was calculated with alpha = 1, so now we
-    // multiply it by the true alpha value from the Morris-Monaghan switch
+    auto Pi_ab = AlphaBetaArtificialViscosity::velocity_term(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto alpha_ab = avg(alpha[a], alpha[b]);
     Pi_ab *= alpha_ab;
@@ -233,7 +207,7 @@ public:
 /******************************************************************************\
  ** δ-SPH artificial viscosity (Marrone, 2011).
 \******************************************************************************/
-class DeltaSPHArtificialViscosity final : public NoArtificialViscosity {
+class DeltaSPHArtificialViscosity : public NoArtificialViscosity {
 private:
 
   real_t _rho_0, _cs_0;
@@ -243,7 +217,7 @@ public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
-      meta::Set{rho, grad_rho, h, r, L, v, cs};
+      meta::Set{rho, grad_rho, drho_dt, h, r, L, v, cs};
 
   /** Construct artificial viscosity scheme.
    ** @param cs_0 Reference sound speed, as defined for equation of state.
@@ -283,7 +257,7 @@ public:
     return Pi_ab;
   }
 
-}; // class AlphaBetaArtificialViscosity
+}; // class DeltaSPHArtificialViscosity
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
