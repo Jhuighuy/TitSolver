@@ -123,7 +123,7 @@ int sph_main() {
       else continue;
       auto a = particles.append();
       fixed[a] = is_fixed;
-      r[a] = spacing * Vec{i, j};
+      r[a] = spacing * Vec{i + 0.5, j + 0.5};
     }
   }
   std::cout << "Num. fixed particles: " << num_fixed_particles << std::endl;
