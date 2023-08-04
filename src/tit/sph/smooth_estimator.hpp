@@ -27,6 +27,8 @@
 #include <tuple>       // IWYU pragma: keep
 #include <type_traits> // IWYU pragma: keep
 
+#include "tit/core/bbox.hpp"
+#include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/types.hpp" // IWYU pragma: keep
@@ -98,6 +100,7 @@ public:
                                  ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     // Clean fields that would be calculated.
+    size_t xxx = 0;
     std::ranges::for_each(particles.views(), [&](PV a) {
       { // Density fields.
         if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
@@ -112,6 +115,65 @@ public:
       { // And other fields.
         if constexpr (has<PV>(L)) L[a] = {};
       }
+#if 1
+      // -----------------------------------------------------------------------
+      if (fixed[a]) {
+        const auto search_point = a[r];
+        const auto clipped_point = Domain.clip(search_point);
+        real_t S = {};
+        Mat<real_t, 3> M{};
+        std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
+          if (fixed[b]) return;
+          const auto r_a = 2 * clipped_point - search_point;
+          const auto r_ab = r_a - r[b];
+          const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
+          const auto W_ab = _kernel(r_ab, 2 * h[a]);
+          S += W_ab * m[b] / rho[b];
+          M += outer(B_ab, B_ab * W_ab * m[b] / rho[b]);
+        });
+        MatInv inv(M);
+        if (inv) {
+          Vec<real_t, 3> e{1.0, 0.0, 0.0};
+          auto E = inv(e);
+          rho[a] = {};
+          v[a] = {};
+          std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
+            if (fixed[b]) return;
+            const auto r_a = 2 * clipped_point - search_point;
+            const auto r_ab = r_a - r[b];
+            const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
+            auto W_ab = dot(E, B_ab) * _kernel(r_ab, 2 * h[a]);
+            rho[a] += m[b] * W_ab;
+            v[a] += m[b] / rho[b] * v[b] * W_ab;
+          });
+        } else if (!is_zero(S)) {
+          rho[a] = {};
+          v[a] = {};
+          std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
+            if (fixed[b]) return;
+            const auto r_a = 2 * clipped_point - search_point;
+            const auto r_ab = r_a - r[b];
+            auto W_ab = (1 / S) * _kernel(r_ab, 2 * h[a]);
+            rho[a] += m[b] * W_ab;
+            v[a] += m[b] / rho[b] * v[b] * W_ab;
+          });
+        } else {
+          goto fail;
+        }
+#if 0
+        const auto N = normalize(clipped_point - search_point);
+        auto V = v[a]; // V = (V)
+        auto Vn = dot(V, N) * N;
+        auto Vt = V - Vn;
+        v[a] = Vt - Vn;
+#else
+        v[a] *= -1;
+#endif
+      fail:
+        ++xxx;
+      }
+      // -----------------------------------------------------------------------
+#endif
     });
     // Compute updates for fields.
     std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {

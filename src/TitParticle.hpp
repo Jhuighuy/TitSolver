@@ -23,16 +23,20 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <fstream>
 #include <iterator>
 #include <ranges>
+#include <span> // IWUY wants me to include it..
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/bbox.hpp"
 #include "tit/core/graph.hpp"
+#include "tit/core/mat.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/misc.hpp"
 #include "tit/core/search_engine.hpp"
@@ -127,6 +131,9 @@ ParticleView(ParticleArray&) -> ParticleView<ParticleArray>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+// TODO: move it to an appropriate place!
+inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{4.0, 3.0}};
+
 /******************************************************************************\
  ** Particle adjacency graph.
 \******************************************************************************/
@@ -138,6 +145,7 @@ private:
   ParticleArray* _particles;
   EngineFactory _engine_factory;
   Graph _adjacency;
+  Graph _interp_adjacency;
 
 public:
 
@@ -163,6 +171,7 @@ public:
                      std::views::transform([](PV a) { return a[r]; });
     const auto engine = _engine_factory(std::move(positions));
     _adjacency.clear();
+    _interp_adjacency.clear();
     std::ranges::for_each(array().views(), [&](PV a) {
       const auto search_point = r[a];
       const auto search_radius = radius_func(a);
@@ -172,6 +181,16 @@ public:
       engine.search(search_point, search_radius,
                     std::back_inserter(search_results));
       _adjacency.append_row(search_results);
+#if 1
+      if (fixed[a]) {
+        const auto clipped_point = Domain.clip(search_point);
+        const auto interp_point = 2 * clipped_point - search_point;
+        search_results.clear();
+        engine.search(interp_point, 3 * search_radius,
+                      std::back_inserter(search_results));
+        _interp_adjacency.append_row(search_results);
+      }
+#endif
     });
   }
 
@@ -181,6 +200,14 @@ public:
                "Particle belongs to a different array.");
     TIT_ASSERT(a.index() < array().size(), "Particle is out of range.");
     return std::views::all(_adjacency[a.index()]) |
+           std::views::transform([this](size_t b_index) {
+             TIT_ASSERT(b_index < array().size(), "Particle is out of range.");
+             return array()[b_index];
+           });
+  }
+  /** Adjacent particles. */
+  constexpr auto operator[](std::nullptr_t, size_t a) const noexcept {
+    return std::views::all(_interp_adjacency[a]) |
            std::views::transform([this](size_t b_index) {
              TIT_ASSERT(b_index < array().size(), "Particle is out of range.");
              return array()[b_index];
