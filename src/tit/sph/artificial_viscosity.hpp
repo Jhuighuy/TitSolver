@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <concepts>
+#include <utility>
+
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
@@ -34,20 +37,29 @@ namespace tit::sph {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Zero artificial viscosity scheme.
+ ** No artificial viscosity (for the braves).
 \******************************************************************************/
-class NoArtificialViscosity final {
+class NoArtificialViscosity {
 public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields = meta::Set{};
 
-  /** Compute artificial viscosity stress tensor flux. */
+  /** Compute continuity equation diffusive term. */
   template<class PV>
     requires (has<PV>(required_fields))
-  constexpr auto stress_tensor_flux([[maybe_unused]] PV a,
-                                    [[maybe_unused]] PV b) const noexcept {
-    const auto Pi_ab = 0.0;
+  constexpr auto density_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    constexpr auto Psi_ab = decltype(auto(v[a]))(0.0);
+    return Psi_ab;
+  }
+
+  /** Compute momentum equation diffusive term. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto velocity_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    constexpr auto Pi_ab = 0.0;
     return Pi_ab;
   }
 
@@ -56,12 +68,12 @@ public:
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Alpha-Beta artificial viscosity scheme.
+ ** α-β artificial viscosity (Monaghan, 1992).
 \******************************************************************************/
-class AlphaBetaArtificialViscosity final {
+class AlphaBetaArtificialViscosity final : public NoArtificialViscosity {
 private:
 
-  real_t _alpha, _beta, _eps;
+  real_t _alpha, _beta;
 
 public:
 
@@ -69,39 +81,35 @@ public:
   static constexpr auto required_fields = meta::Set{rho, h, r, v, p, cs};
 
   /** Construct artificial viscosity scheme.
-   ** @param alpha First scheme constant.
-   ** @param beta Second scheme constant, typically 2x first constant.
-   ** @param eps A small number to prevent division by zero. */
+   ** @param alpha Linear viscosity coefficient.
+   ** @param beta Quadratic viscosity coefficient. Typically two times greater
+   **             than linear coefficient for compressible flows and
+   **             zero for weakly-compressible or incompressble flows. */
   constexpr AlphaBetaArtificialViscosity( //
-      real_t alpha = 1.0, real_t beta = 2.0, real_t eps = 0.01) noexcept
-      : _alpha{alpha}, _beta{beta}, _eps{eps} {
-    TIT_ASSERT(alpha > 0.0, "First coefficient must be positive.");
-    TIT_ASSERT(beta >= 0.0, "Second coefficient must be non-negative.");
-    TIT_ASSERT(eps >= 0.0, "Epsilon must be non-negative.");
+      real_t alpha = 1.0, real_t beta = 2.0) noexcept
+      : _alpha{alpha}, _beta{beta} {
+    TIT_ASSERT(_alpha > 0.0, "Linear coefficient must be positive.");
+    TIT_ASSERT(_beta >= 0.0, "Quadratic coefficient must be non-negative.");
   }
 
-  /** Compute artificial viscosity stress tensor flux. */
+  /** Compute momentum equation diffusive term. */
   template<class PV>
     requires (has<PV>(required_fields))
-  constexpr auto stress_tensor_flux(PV a, PV b) const {
-    if (dot(r[a, b], v[a, b]) >= 0.0) return 0.0;
+  constexpr auto velocity_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    if (dot(v[a, b], r[a, b]) >= 0.0) return 0.0;
     const auto h_ab = avg(h[a], h[b]);
     const auto rho_ab = avg(rho[a], rho[b]);
     const auto cs_ab = avg(cs[a], cs[b]);
-    // clang-format off
-    const auto mu_ab = h_ab * dot(r[a, b], v[a, b]) /
-                              (norm2(r[a, b]) + _eps * pow2(h_ab));
-    // clang-format on
-    const auto Pi_ab = ((-_alpha * cs_ab + _beta * mu_ab) * mu_ab) / rho_ab;
+    const auto mu_ab = h_ab * dot(r[a, b], v[a, b]) / norm2(r[a, b]);
+    const auto Pi_ab = (-_alpha * cs_ab + _beta * mu_ab) * mu_ab / rho_ab;
     return Pi_ab;
   }
 
 }; // class AlphaBetaArtificialViscosity
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 /******************************************************************************\
- ** Artificial viscosity scheme with Balsara switch.
+ ** Artificial viscosity with Balsara switch (Balsara, 1995).
 \******************************************************************************/
 template<class ArtificialViscosity = AlphaBetaArtificialViscosity>
   requires std::is_object_v<ArtificialViscosity>
@@ -113,20 +121,35 @@ private:
 public:
 
   /** Set of particle fields that are required. */
-  static constexpr auto required_fields =
-      meta::Set{h, cs, div_v, curl_v} | ArtificialViscosity::required_fields;
+  static constexpr auto required_fields = meta::Set{h, cs, div_v, curl_v} | //
+                                          ArtificialViscosity::required_fields;
 
   /** Construct artificial viscosity scheme.
    ** @param base_viscosity Base artificial viscosity scheme. */
   constexpr BalsaraArtificialViscosity(
-      ArtificialViscosity base_viscosity = {}) noexcept
+      ArtificialViscosity base_viscosity) noexcept
       : _base_viscosity{std::move(base_viscosity)} {}
+  /** Construct artificial viscosity scheme.
+   ** @param args Arguments for the base viscosity. */
+  template<class... Args>
+    requires std::constructible_from<ArtificialViscosity, Args...>
+  constexpr BalsaraArtificialViscosity(Args&&... args) noexcept
+      : _base_viscosity{std::forward<Args>(args)...} {}
 
-  /** Compute artificial viscosity stress tensor flux. */
+  /** Compute continuity equation diffusive term. */
   template<class PV>
     requires (has<PV>(required_fields))
-  constexpr auto stress_tensor_flux(PV a, PV b) const {
-    auto Pi_ab = _base_viscosity.stress_tensor_flux(a, b);
+  constexpr auto density_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    return _base_viscosity.density_term(a, b);
+  }
+
+  /** Compute momentum equation diffusive term. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto velocity_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    auto Pi_ab = _base_viscosity.velocity_term(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto f = [](PV c) {
       return abs(div_v[c]) /
@@ -139,10 +162,8 @@ public:
 
 }; // class BalsaraArtificialViscosity
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 /******************************************************************************\
- ** Artificial viscosity scheme with Morris-Monaghan switch.
+ ** Artificial viscosity with Morris-Monaghan switch (Morris, Monaghan, 1997).
 \******************************************************************************/
 class MorrisMonaghanArtificialViscosity final {
 private:
@@ -162,26 +183,34 @@ public:
    **                  Alpha-Beta scheme coefficient.
    ** @param sigma Decay time inverse scale factor.
    ** @param beta_alpha_ratio Ratio between the second and the first
-   **                         Alpha-Beta scheme coefficients.
-   ** @param eps A small number to prevent division by zero. */
+   **                         Alpha-Beta scheme coefficients. */
   constexpr MorrisMonaghanArtificialViscosity(    //
       real_t alpha_min = 0.1, real_t sigma = 0.2, //
-      real_t beta_alpha_ratio = 2.0, real_t eps = 0.01) noexcept
+      real_t beta_alpha_ratio = 2.0) noexcept
       : _alpha_min{alpha_min}, _sigma{sigma},
-        _base_viscosity{/*alpha=*/1.0, /*beta=*/beta_alpha_ratio, eps} {
+        _base_viscosity{/*alpha=*/1.0, /*beta=*/beta_alpha_ratio} {
     TIT_ASSERT(_alpha_min > 0.0,
-               "First coefficient minimal value must be positive.");
+               "Linear coefficient minimal value must be positive.");
     TIT_ASSERT(_sigma > 0.0,
                "Decay time inverse scale factor must be positive.");
   }
 
-  /** Compute artificial viscosity stress tensor flux. */
+  /** Compute continuity equation diffusive term. */
   template<class PV>
     requires (has<PV>(required_fields))
-  constexpr auto stress_tensor_flux(PV a, PV b) const {
+  constexpr auto density_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    return _base_viscosity.density_term(a, b);
+  }
+
+  /** Compute momentum equation diffusive term. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto velocity_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    auto Pi_ab = _base_viscosity.velocity_term(a, b);
     // Base viscosity was calculated with alpha = 1, so now we
     // multiply it by the true alpha value from the Morris-Monaghan switch
-    auto Pi_ab = _base_viscosity.stress_tensor_flux(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto alpha_ab = avg(alpha[a], alpha[b]);
     Pi_ab *= alpha_ab;
@@ -198,6 +227,63 @@ public:
   }
 
 }; // class MorrisMonaghanArtificialViscosity
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/******************************************************************************\
+ ** δ-SPH artificial viscosity (Marrone, 2011).
+\******************************************************************************/
+class DeltaSPHArtificialViscosity final : public NoArtificialViscosity {
+private:
+
+  real_t _rho_0, _cs_0;
+  real_t _alpha, _delta;
+
+public:
+
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields =
+      meta::Set{rho, grad_rho, h, r, L, v, cs};
+
+  /** Construct artificial viscosity scheme.
+   ** @param cs_0 Reference sound speed, as defined for equation of state.
+   ** @param rho_0 Reference density, as defined for equation of state.
+   ** @param alpha Velocity viscosity coefficient. Typically 0.01~0.005.
+   ** @param delta Density diffusion coefficient. Typically 0.1. */
+  constexpr DeltaSPHArtificialViscosity( //
+      real_t cs_0, real_t rho_0,         //
+      real_t alpha = 0.05, real_t delta = 0.1) noexcept
+      : _cs_0{cs_0}, _rho_0{rho_0}, _alpha{alpha}, _delta{delta} {
+    TIT_ASSERT(_cs_0 > 0.0, "Reference sound speed must be positive.");
+    TIT_ASSERT(_rho_0 > 0.0, "Reference density speed must be positive.");
+    TIT_ASSERT(_alpha > 0.0, "Velocity coefficient must be positive.");
+    TIT_ASSERT(_delta > 0.0, "Density coefficient must be non-negative.");
+  }
+
+  /** Compute continuity equation diffusive term. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto density_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    const auto h_ab = avg(h[a], h[b]);
+    const auto D_ab = 2 * rho[a, b] - //
+                      dot(L[a] * grad_rho[a] + L[b] * grad_rho[b], r[a, b]);
+    const auto Psi_ab = _delta * h_ab * _cs_0 * D_ab * r[a, b] / norm2(r[a, b]);
+    return Psi_ab;
+  }
+
+  /** Compute momentum equation diffusive term. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto velocity_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    const auto h_ab = avg(h[a], h[b]);
+    const auto Pi_ab = -_alpha * h_ab * _cs_0 * _rho_0 / (rho[a] * rho[b]) *
+                       dot(r[a, b], v[a, b]) / norm2(r[a, b]);
+    return Pi_ab;
+  }
+
+}; // class AlphaBetaArtificialViscosity
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

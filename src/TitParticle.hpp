@@ -94,11 +94,24 @@ public:
     TIT_ASSERT(_particles != nullptr, "Particle array was not set.");
     return *_particles;
   }
-
   /** Associated particle index. */
   constexpr auto index() const noexcept -> size_t {
     return _particle_index;
   }
+
+  /** Compare particle views. */
+  /** @{ */
+  constexpr auto operator==(ParticleView<ParticleArray> other) const noexcept {
+    TIT_ASSERT(&array() == &other.array(),
+               "Particles must belong to the same array.");
+    return index() == other.index();
+  }
+  constexpr auto operator!=(ParticleView<ParticleArray> other) const noexcept {
+    TIT_ASSERT(&array() == &other.array(),
+               "Particles must belong to the same array.");
+    return index() != other.index();
+  }
+  /** @} */
 
   /** Particle field value. */
   template<meta::type Field>

@@ -45,7 +45,7 @@ class EulerIntegrator {
 private:
 
   SmoothEstimator _estimator{};
-  size_t _count;
+  size_t _step_index;
   size_t _adjacency_recalc_freq;
 
 public:
@@ -57,7 +57,7 @@ public:
   /** Construct time integrator. */
   constexpr EulerIntegrator(SmoothEstimator estimator = {},
                             size_t adjacency_recalc_freq = 10) noexcept
-      : _estimator{std::move(estimator)}, _count{0},
+      : _estimator{std::move(estimator)}, _step_index{0},
         _adjacency_recalc_freq{adjacency_recalc_freq} {}
 
   /** Make a step in time. */
@@ -67,11 +67,11 @@ public:
                       ParticleAdjacency& adjacent_particles) {
     using PV = ParticleView<ParticleArray>;
     // Initialize and index particles.
-    if (_count == 0) {
+    if (_step_index == 0) {
       // Initialize particles.
       _estimator.init(particles);
     }
-    if (_count % _adjacency_recalc_freq == 0) {
+    if (_step_index % _adjacency_recalc_freq == 0) {
       // Update particle adjacency.
       _estimator.index(particles, adjacent_particles);
     }
@@ -89,11 +89,16 @@ public:
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];
-      r[a] += dt * dr_dt[a];
+      if constexpr (has<PV>(v_xsph)) {
+        // TODO: extract "0.5" to parameter epsilon.
+        r[a] += dt * (v[a] - 0.5 * v_xsph[a]);
+      } else {
+        r[a] += dt * v[a];
+      }
       if constexpr (has<PV>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
-    ++_count;
+    ++_step_index;
   }
 
 }; // class EulerIntegrator

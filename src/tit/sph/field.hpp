@@ -141,22 +141,22 @@ TIT_DEFINE_FIELD(bool, fixed);
 TIT_DEFINE_VECTOR_FIELD(r);
 
 /** Particle velocity. */
-TIT_DEFINE_VECTOR_FIELD(v, dr_dt);
+TIT_DEFINE_VECTOR_FIELD(v);
 /** Particle velocity (XSPH model). */
-TIT_DEFINE_VECTOR_FIELD(v_xsph, dr_dt_xsph);
-
+TIT_DEFINE_VECTOR_FIELD(v_xsph);
+/** Particle acceleration. */
+TIT_DEFINE_VECTOR_FIELD(dv_dt);
 /** Particle velocity divergence. */
 TIT_DEFINE_SCALAR_FIELD(div_v);
 /** Particle velocity curl (always 3D). */
 TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, 3>), curl_v);
 
-/** Particle acceleration. */
-TIT_DEFINE_VECTOR_FIELD(a, dv_dt);
-
 /** Particle mass. */
 TIT_DEFINE_SCALAR_FIELD(m);
 /** Particle density. */
 TIT_DEFINE_SCALAR_FIELD(rho);
+/** Particle density gradient. */
+TIT_DEFINE_VECTOR_FIELD(grad_rho);
 /** Particle density time derivative. */
 TIT_DEFINE_SCALAR_FIELD(drho_dt);
 
@@ -179,6 +179,9 @@ TIT_DEFINE_SCALAR_FIELD(deps_dt);
 TIT_DEFINE_SCALAR_FIELD(alpha);
 /** Particle artificial viscosity switch time derivative. */
 TIT_DEFINE_SCALAR_FIELD(dalpha_dt);
+
+/** Inverse position gradient (for renormalization). */
+TIT_DEFINE_MATRIX_FIELD(L);
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
