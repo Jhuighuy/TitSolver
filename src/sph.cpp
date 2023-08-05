@@ -93,6 +93,8 @@ int sph_main() {
   auto estimator = ClassicSmoothEstimator{
       // Weakly compressible equation of state.
       LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+      // Continuity equation instead of density summation.
+      ContinuityEquation{},
       // Standart quartic spline kernel.
       EighthOrderWendlandKernel{},
       // No artificial viscosity is required.

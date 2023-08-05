@@ -81,7 +81,7 @@ constexpr auto small_number_v {
   // IWYU's clang's `sqrt` is not constexpr yet.
   std::numeric_limits<Real>::epsilon()
 #else
-  sqrt(std::numeric_limits<Real>::epsilon())
+  sqrt(sqrt(std::numeric_limits<Real>::epsilon()))
 #endif
 };
 

@@ -65,6 +65,12 @@ public:
 
 }; // class NoArtificialViscosity
 
+/** Artificial viscosity type. */
+template<class ArtificialViscosity>
+concept artificial_viscosity =
+    std::movable<ArtificialViscosity> &&
+    std::derived_from<ArtificialViscosity, NoArtificialViscosity>;
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
@@ -206,6 +212,7 @@ public:
 
 /******************************************************************************\
  ** δ-SPH artificial viscosity (Marrone, 2011).
+ ** Continuity equation and weakly-compressible equation of state are assumed.
 \******************************************************************************/
 class DeltaSPHArtificialViscosity : public NoArtificialViscosity {
 private:
@@ -217,7 +224,7 @@ public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
-      meta::Set{rho, grad_rho, drho_dt, h, r, L, v, cs};
+      meta::Set{rho, grad_rho, h, r, S, L, v, cs};
 
   /** Construct artificial viscosity scheme.
    ** @param cs_0 Reference sound speed, as defined for equation of state.

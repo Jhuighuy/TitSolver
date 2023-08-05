@@ -155,6 +155,11 @@ public:
 
 }; // class Kernel
 
+/** Smoothing kernel type. */
+template<class DerivedKernel>
+concept kernel = std::movable<DerivedKernel> &&
+                 std::derived_from<DerivedKernel, Kernel<DerivedKernel>>;
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\

@@ -180,7 +180,9 @@ TIT_DEFINE_SCALAR_FIELD(alpha);
 /** Particle artificial viscosity switch time derivative. */
 TIT_DEFINE_SCALAR_FIELD(dalpha_dt);
 
-/** Inverse position gradient (for renormalization). */
+/** Kernel renormalization coefficient (Shepard filter) */
+TIT_DEFINE_SCALAR_FIELD(S);
+/** Kernel gradient renormalization matrix. */
 TIT_DEFINE_MATRIX_FIELD(L);
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
