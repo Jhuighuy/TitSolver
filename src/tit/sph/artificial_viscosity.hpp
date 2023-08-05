@@ -153,14 +153,15 @@ public:
 }; // class BalsaraArtificialViscosity
 
 /******************************************************************************\
- ** Artificial viscosity with Morris-Monaghan switch (Morris, Monaghan, 1997).
+ ** Artificial viscosity with Rosswog switch (Rosswog, 2000).
 \******************************************************************************/
 template<class BaseArtificialViscosity = BalsaraArtificialViscosity<>>
   requires std::derived_from<BaseArtificialViscosity, NoArtificialViscosity>
-class MorrisMonaghanArtificialViscosity : public BaseArtificialViscosity {
+class RosswogArtificialViscosity : public BaseArtificialViscosity {
 private:
 
-  real_t _alpha_min, _sigma;
+  real_t _alpha_min, _alpha_max;
+  real_t _sigma;
 
 public:
 
@@ -170,17 +171,20 @@ public:
       BaseArtificialViscosity::required_fields;
 
   /** Construct artificial viscosity scheme.
-   ** @param alpha_min Minimal value of the first
-   **                  Alpha-Beta scheme coefficient.
+   ** @param alpha_min Minimal value of the switch coefficient.
+   ** @param alpha_max Maximal value of the switch coefficient.
    ** @param sigma Decay time inverse scale factor.
    ** @param args Arguments for the base viscosity. */
   template<class... Args>
     requires std::constructible_from<BaseArtificialViscosity, Args...>
-  constexpr MorrisMonaghanArtificialViscosity( //
-      real_t alpha_min = 0.1, real_t sigma = 0.2, Args&&... args) noexcept
+  constexpr RosswogArtificialViscosity( //
+      real_t alpha_min = 0.1, real_t alpha_max = 1.5, real_t sigma = 0.1,
+      Args&&... args) noexcept
       : BaseArtificialViscosity{std::forward<Args>(args)...},
-        _alpha_min{alpha_min}, _sigma{sigma} {
+        _alpha_min{alpha_min}, _alpha_max{alpha_max}, _sigma{sigma} {
     TIT_ASSERT(_alpha_min > 0.0, "Switch minimal value must be positive.");
+    TIT_ASSERT(_alpha_max > alpha_min, "Switch maximal value must be "
+                                       "greater than miminal.");
     TIT_ASSERT(_sigma > 0.0, "Switch decay time inverse scale factor "
                              "must be positive.");
   }
@@ -190,23 +194,24 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    auto Pi_ab = AlphaBetaArtificialViscosity::velocity_term(a, b);
+    auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
     const auto alpha_ab = avg(alpha[a], alpha[b]);
     Pi_ab *= alpha_ab;
     return Pi_ab;
   }
 
-  /** Compute Morris-Monaghan switch forces. */
+  /** Compute switch temporal derivative. */
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_switch_deriv(PV a) const {
     const auto S_a = plus(-div_v[a]);
     const auto tau_a = h[a] / (_sigma * cs[a]);
-    dalpha_dt[a] = S_a - (alpha[a] - _alpha_min) / tau_a;
+    dalpha_dt[a] = (_alpha_max - alpha[a]) * S_a - //
+                   (alpha[a] - _alpha_min) / tau_a;
   }
 
-}; // class MorrisMonaghanArtificialViscosity
+}; // class RosswogArtificialViscosity
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
