@@ -6,7 +6,13 @@ then
   exit 0
 fi
 
-SCRIPTPATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
+SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
+MAPPING_FILE=$SCRIPT_PATH/iwyu.imp
+if [[ ! -f $MAPPING_FILE ]]
+then
+    echo "include-what-you-use mapping file was not found."
+    exit 0
+fi
 
 function check_file() {
   echo ""
@@ -15,7 +21,7 @@ function check_file() {
   include-what-you-use \
     -Xiwyu --error \
     -Xiwyu --no_fwd_decls \
-    -Xiwyu --mapping_file=$SCRIPTPATH/iwyu.imp \
+    -Xiwyu --mapping_file=$MAPPING_FILE \
     -DTIT_IWYU=1 \
     -std=gnu++2b -stdlib=libc++ \
     -I/opt/homebrew/include -I./src $1
