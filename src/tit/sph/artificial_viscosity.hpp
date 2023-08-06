@@ -117,7 +117,8 @@ public:
 /******************************************************************************\
  ** Artificial viscosity with Balsara switch (Balsara, 1995).
 \******************************************************************************/
-template<class BaseArtificialViscosity = AlphaBetaArtificialViscosity>
+template<artificial_viscosity BaseArtificialViscosity =
+             AlphaBetaArtificialViscosity>
   requires std::derived_from<BaseArtificialViscosity, NoArtificialViscosity>
 class BalsaraArtificialViscosity : public BaseArtificialViscosity {
 public:
@@ -155,7 +156,8 @@ public:
 /******************************************************************************\
  ** Artificial viscosity with Rosswog switch (Rosswog, 2000).
 \******************************************************************************/
-template<class BaseArtificialViscosity = BalsaraArtificialViscosity<>>
+template<artificial_viscosity BaseArtificialViscosity =
+             BalsaraArtificialViscosity<>>
   requires std::derived_from<BaseArtificialViscosity, NoArtificialViscosity>
 class RosswogArtificialViscosity : public BaseArtificialViscosity {
 private:
@@ -178,7 +180,7 @@ public:
   template<class... Args>
     requires std::constructible_from<BaseArtificialViscosity, Args...>
   constexpr RosswogArtificialViscosity( //
-      real_t alpha_min = 0.1, real_t alpha_max = 1.5, real_t sigma = 0.1,
+      real_t alpha_min = 0.1, real_t alpha_max = 2.0, real_t sigma = 0.1,
       Args&&... args) noexcept
       : BaseArtificialViscosity{std::forward<Args>(args)...},
         _alpha_min{alpha_min}, _alpha_max{alpha_max}, _sigma{sigma} {
@@ -217,7 +219,7 @@ public:
 
 /******************************************************************************\
  ** δ-SPH artificial viscosity (Marrone, 2011).
- ** Continuity equation and weakly-compressible equation of state are assumed.
+ ** Weakly-compressible SPH formulation is assumed.
 \******************************************************************************/
 class DeltaSPHArtificialViscosity : public NoArtificialViscosity {
 private:
@@ -228,8 +230,7 @@ private:
 public:
 
   /** Set of particle fields that are required. */
-  static constexpr auto required_fields =
-      meta::Set{rho, grad_rho, h, r, S, L, v, cs};
+  static constexpr auto required_fields = meta::Set{rho, grad_rho, h, r, L, v};
 
   /** Construct artificial viscosity scheme.
    ** @param cs_0 Reference sound speed, as defined for equation of state.
@@ -252,8 +253,9 @@ public:
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     const auto h_ab = avg(h[a], h[b]);
-    const auto D_ab = 2 * rho[a, b] - //
-                      dot(L[a] * grad_rho[a] + L[b] * grad_rho[b], r[a, b]);
+    // Here we assume that density gradients are renormalized because
+    // kernel gradient renormalization filter (`L`) was requested.
+    const auto D_ab = 2 * rho[a, b] - dot(grad_rho[a] + grad_rho[b], r[a, b]);
     const auto Psi_ab = _delta * h_ab * _cs_0 * D_ab * r[a, b] / norm2(r[a, b]);
     return Psi_ab;
   }
