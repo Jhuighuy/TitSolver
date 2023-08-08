@@ -239,7 +239,7 @@ public:
    ** @param delta Density diffusion coefficient. Typically 0.1. */
   constexpr DeltaSPHArtificialViscosity( //
       real_t cs_0, real_t rho_0,         //
-      real_t alpha = 0.05, real_t delta = 0.1) noexcept
+      real_t alpha = 0.02, real_t delta = 0.1) noexcept
       : _cs_0{cs_0}, _rho_0{rho_0}, _alpha{alpha}, _delta{delta} {
     TIT_ASSERT(_cs_0 > 0.0, "Reference sound speed must be positive.");
     TIT_ASSERT(_rho_0 > 0.0, "Reference density speed must be positive.");

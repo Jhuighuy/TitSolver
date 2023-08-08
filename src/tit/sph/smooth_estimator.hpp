@@ -23,6 +23,7 @@
 #pragma once
 
 #include <algorithm>
+#include <concepts>
 #include <ranges>      // IWYU pragma: keep
 #include <tuple>       // IWYU pragma: keep
 #include <type_traits> // IWYU pragma: keep
@@ -63,6 +64,9 @@ public:
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
       meta::Set{fixed} | // TODO: fixed should not be here.
+#if HARD_DAM_BREAKING
+      meta::Set{v_xsph} |
+#endif
       meta::Set{h, m, rho, p, r, v, dv_dt} | EquationOfState::required_fields |
       DensityEquation::required_fields | Kernel::required_fields |
       ArtificialViscosity::required_fields;
@@ -106,11 +110,11 @@ public:
       if (!fixed[a]) return;
       const auto search_point = a[r];
       const auto clipped_point = Domain.clip(search_point);
+      const auto r_a = 2 * clipped_point - search_point;
       real_t S = {};
       Mat<real_t, 3> M{};
       std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
         if (fixed[b]) return;
-        const auto r_a = 2 * clipped_point - search_point;
         const auto r_ab = r_a - r[b];
         const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
         const auto W_ab = _kernel(r_ab, 2 * h[a]);
@@ -125,7 +129,6 @@ public:
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
           if (fixed[b]) return;
-          const auto r_a = 2 * clipped_point - search_point;
           const auto r_ab = r_a - r[b];
           const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
           auto W_ab = dot(E, B_ab) * _kernel(r_ab, 2 * h[a]);
@@ -137,7 +140,6 @@ public:
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
           if (fixed[b]) return;
-          const auto r_a = 2 * clipped_point - search_point;
           const auto r_ab = r_a - r[b];
           auto W_ab = (1 / S) * _kernel(r_ab, 2 * h[a]);
           rho[a] += m[b] * W_ab;
@@ -146,7 +148,7 @@ public:
       } else {
         goto fail;
       }
-#if 0
+#if EASY_DAM_BREAKING
       { // SLIP WALL.
         const auto N = normalize(clipped_point - search_point);
         auto V = v[a]; // V = (V)
@@ -154,7 +156,7 @@ public:
         auto Vt = V - Vn;
         v[a] = Vt - Vn;
       }
-#elif 1
+#elif HARD_DAM_BREAKING
       // NOSLIP WALL.
       v[a] *= -1;
 #endif
@@ -306,11 +308,74 @@ public:
           // clang-format on
         }
       }
+#if HARD_DAM_BREAKING
+      // TODO: Viscosity.
+      // -----------------------------------------------------------------------
+      if constexpr (has<PV>(mu)) {
+        // Viscous updates.
+        const auto d = dim(r[a]);
+        const auto mu_ab = avg(mu[a], mu[b]);
+        if constexpr (true) {
+          /// Laplacian viscosity approach.
+          /// Update velocity time derivative.
+          // clang-format off
+          const auto visc_flux = mu_ab / (rho[a] * rho[b] * norm2(r[a, b])) *
+                                 (2 * (d + 2) * dot(v[a, b], r[a, b]) *
+                                  grad_W_ab);
+          // clang-format on
+          dv_dt[a] += m[b] * visc_flux;
+          dv_dt[b] -= m[a] * visc_flux;
+          if constexpr (has<PV>(eps, deps_dt)) {
+            /// Update internal enegry time derivative.
+            deps_dt[a] += m[b] * dot(v[a, b], visc_flux);
+            deps_dt[a] -= m[a] * dot(v[a, b], visc_flux);
+          }
+        } else {
+          // Full stress tensor approach.
+          /// Update velocity time derivative.
+          // clang-format off
+          const auto visc_flux = mu_ab / (rho[a] * rho[b] * norm2(r[a, b])) *
+                                 ((d + 2) * dot(v[a, b], r[a, b]) * grad_W_ab +
+                                  v[a, b] * dot(r[a, b], grad_W_ab));
+          // clang-format on
+          dv_dt[a] += m[b] * visc_flux;
+          dv_dt[b] -= m[a] * visc_flux;
+          if constexpr (has<PV>(eps, deps_dt)) {
+            /// Update internal enegry time derivative.
+            deps_dt[a] += m[b] * dot(v[a, b], visc_flux);
+            deps_dt[a] -= m[a] * dot(v[a, b], visc_flux);
+          }
+        }
+      }
+      // -----------------------------------------------------------------------
+#endif
+#if WITH_WALLS
+      // TODO: Lennard-Jones forces.
+      // -----------------------------------------------------------------------
+      [&](PV a, PV b) {
+        if (!fixed[a] && !fixed[b]) return;
+        if (fixed[a]) std::swap(a, b);
+#if HARD_DAM_BREAKING
+        const auto r_0 = 0.01 * 0.7, E_0 = 15.0;
+#elif EASY_DAM_BREAKING
+        const auto r_0 = 0.6 / 80.0 * 0.7, E_0 = 9.81 * 0.6;
+#endif
+        const auto r_ab = norm(r[a, b]);
+        if (r_ab < r_0) {
+          auto P1 = 4, P2 = 2;
+          dv_dt[a] += (E_0 / m[a] / pow2(r_ab)) *
+                      (pow(r_0 / r_ab, P1) - pow(r_0 / r_ab, P2)) * r[a, b];
+        } //
+      }(a, b);
+      // -----------------------------------------------------------------------
+#endif
     });
     std::ranges::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
+#if WITH_GRAVITY
       // TODO: Gravity.
       dv_dt[a][1] -= 9.81;
+#endif
       // Compute artificial viscosity switch.
       if constexpr (has<PV>(dalpha_dt)) _artvisc.compute_switch_deriv(a);
     });

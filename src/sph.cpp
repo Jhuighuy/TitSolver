@@ -6,6 +6,12 @@
 #include <iostream>
 #include <vector>
 
+#define COMPRESSIBLE_SOD_PROBLEM 0
+#define HARD_DAM_BREAKING 1
+#define EASY_DAM_BREAKING 0
+#define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
+#define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
+
 #include "TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/kernel.hpp"
@@ -14,7 +20,7 @@
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#if 0
+#if COMPRESSIBLE_SOD_PROBLEM
 
 int main() {
   using namespace tit;
@@ -60,11 +66,9 @@ int main() {
   return 0;
 }
 
-#endif
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#if 1
+#elif HARD_DAM_BREAKING
 
 template<class Real>
 int sph_main() {
@@ -80,25 +84,27 @@ int sph_main() {
 
   const Real length = 1.0;
   const Real spacing = length / N;
-  const Real timestep = 1.0e-5;
-  const Real h_0 = 2.0 * spacing;
+  const Real timestep = 5.0e-5;
+  const Real h_0 = 1.5 * spacing;
   const Real rho_0 = 1000.0;
-  const Real m_0 = rho_0 * pow2(spacing) / //
-                   /* 1162.056 * 1000.0*/  // cubic kernel
-                   1252.71379884 * 1000.0  // wend quartic
-      ;
+  const Real m_0 = rho_0 * pow2(spacing) / 2;
   const Real cs_0 = 120.0;
+  const Real mu_0 = 1.0e-3;
 
   // Setup the SPH estimator:
   auto estimator = ClassicSmoothEstimator{
       // Weakly compressible equation of state.
-      LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+      WeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
       // Continuity equation instead of density summation.
       ContinuityEquation{},
-      // Standart quartic spline kernel.
-      EighthOrderWendlandKernel{},
-      // No artificial viscosity is required.
-      DeltaSPHArtificialViscosity{cs_0, rho_0}};
+      // Quartic spline kernel.
+      QuarticSplineKernel{},
+      // No artificial viscosity is used.
+      // NoArtificialViscosity{}
+      // For now, we use alpha-beta viscosity. This is due to the fact that
+      // D. Violeau uses k-epsilon turbulense as some sort of stabilizer.
+      // and we do not have any turbulence at the moment.
+      AlphaBetaArtificialViscosity{0.1, 0.0}};
 
   // Setup the time itegrator:
   auto timeint = EulerIntegrator{std::move(estimator)};
@@ -110,8 +116,9 @@ int sph_main() {
       // Fields that are required by the estimator.
       timeint.required_fields,
       // Set of whole system constants.
-      m, // Particle mass assumed constant.
-      h, // Particle width assumed constant.
+      m,  // Particle mass assumed constant.
+      h,  // Particle width assumed constant.
+      mu, // Particle molecular viscosity assumed constant.
   };
 
   // Generate individual particles.
@@ -131,13 +138,11 @@ int sph_main() {
   std::cout << "Num. fixed particles: " << num_fixed_particles << std::endl;
   std::cout << "Num. fluid particles: " << num_fluid_particles << std::endl;
 
-  // Set global particle variables.
-  rho[particles] = rho_0;
+  // Set global particle constants.
   m[particles] = m_0;
   h[particles] = h_0;
-  if constexpr (has<decltype(particles)>(alpha)) {
-    alpha[particles] = 1.0;
-  }
+  rho[particles] = rho_0;
+  mu[particles] = mu_0;
 
   // Setup the particle adjacency structure.
   auto adjacent_particles = ParticleAdjacency{particles};
@@ -166,15 +171,152 @@ int sph_main() {
 
   particles.print("particles-dam.csv");
 
-  std::cout << "Total time: " << (exectime + printtime) / 60.0 << std::endl;
+  const auto totaltime = exectime + printtime;
+  std::cout << "Total time: " << totaltime / 60.0
+            << "m, exec: " << exectime * 100 / totaltime
+            << "%, print: " << printtime * 100 / totaltime << "%" << std::endl;
 
   return 0;
 }
 
-#endif
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#elif EASY_DAM_BREAKING
+
+template<class Real>
+int sph_main() {
+  using namespace tit;
+  using namespace sph;
+
+  constexpr Real H = 0.6;   // Water column height.
+  constexpr Real L = 2 * H; // Water column length.
+
+  constexpr Real POOL_WIDTH = 5.366 * H;
+  constexpr Real POOL_HEIGHT = 2.5 * H;
+
+  constexpr Real dt = 5.0e-5;
+  constexpr Real dr = H / 80.0;
+
+  constexpr auto N_fixed = 4;
+  constexpr auto WATER_M = int(round(L / dr));
+  constexpr auto WATER_N = int(round(H / dr));
+  constexpr auto POOL_M = int(round(POOL_WIDTH / dr));
+  constexpr auto POOL_N = int(round(POOL_HEIGHT / dr));
+
+  constexpr Real g = 9.81;
+  constexpr Real rho_0 = 1000.0;
+  constexpr Real cs_0 = 10 * sqrt(2 * g * H);
+  constexpr Real h_0 = 2.0 * dr;
+  constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
+
+  // Setup the SPH estimator:
+  auto estimator = ClassicSmoothEstimator{
+      // Weakly compressible equation of state.
+      LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+      // Continuity equation instead of density summation.
+      ContinuityEquation{},
+      // C2 Wendland's spline kernel.
+      QuarticWendlandKernel{},
+      // Use delta-SPH artificial viscosity formulation.
+      DeltaSPHArtificialViscosity{cs_0, rho_0}};
+
+  // Setup the time itegrator:
+  auto timeint = EulerIntegrator{std::move(estimator)};
+
+  // Setup the particles array:
+  ParticleArray particles{
+      // 2D space.
+      Space<Real, 2>{},
+      // Fields that are required by the estimator.
+      timeint.required_fields,
+      // Set of whole system constants.
+      m, // Particle mass assumed constant.
+      h  // Particle width assumed constant.
+  };
+
+  // Generate individual particles.
+  auto num_fixed_particles = 0, num_fluid_particles = 0;
+  for (auto i = -N_fixed; i < POOL_M + N_fixed; ++i) {
+    for (auto j = -N_fixed; j < POOL_N; ++j) {
+      const bool is_fixed = (i < 0 || i >= POOL_M) || (j < 0);
+      const bool is_fluid = (i < WATER_M) && (j < WATER_N);
+      if (is_fixed) ++num_fixed_particles;
+      else if (is_fluid) ++num_fluid_particles;
+      else continue;
+      auto a = particles.append();
+      fixed[a] = is_fixed;
+      r[a] = dr * Vec{i + 0.5, j + 0.5};
+    }
+  }
+  std::cout << "Num. fixed particles: " << num_fixed_particles << std::endl;
+  std::cout << "Num. fluid particles: " << num_fluid_particles << std::endl;
+
+  // Set global particle constants.
+  m[particles] = m_0;
+  h[particles] = h_0;
+
+  // Density hydrostatic initialization.
+  std::ranges::for_each(particles.views(), [&]<class PV>(PV a) {
+    if (fixed[a]) {
+      rho[a] = rho_0;
+      return;
+    }
+    // Compute pressure from Poisson problem.
+    const auto x = r[a][0], y = r[a][1];
+    p[a] = rho_0 * g * (H - y);
+    for (size_t N = 1; N < 100; N += 2) {
+      constexpr auto pi = std::numbers::pi_v<Real>;
+      p[a] -= 8 * rho_0 * g * H / pow2(pi) *
+              (exp(N * pi * (x - L) / (2 * H)) * cos(N * pi * y / (2 * H))) /
+              pow2(N);
+    }
+    // Recalculate density from EOS.
+    rho[a] = rho_0 + p[a] / pow2(cs_0);
+  });
+
+  // Setup the particle adjacency structure.
+  auto adjacent_particles = ParticleAdjacency{particles};
+
+  particles.print("particles-dam.csv");
+  // particles.print("out/particles-0.csv");
+
+  real_t time = 0.0, exectime = 0.0, printtime = 0.0;
+  for (size_t n = 0; time * sqrt(g / H) <= 6.90; ++n, time += dt) {
+    std::cout << n << "\t\t" << time * sqrt(g / H) << "\t\t" << exectime / n
+              << "\t\t" << printtime / (n / 200) << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    timeint.step(dt, particles, adjacent_particles);
+    auto delta = std::chrono::high_resolution_clock::now() - start;
+    exectime +=
+        1.0e-9 *
+        std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
+    if (n % 200 == 0 && n != 0) {
+      start = std::chrono::high_resolution_clock::now();
+      particles.print("particles-dam.csv");
+      // particles.print("out/particles-" + std::to_string(n / 200) + ".csv");
+      auto delta = std::chrono::high_resolution_clock::now() - start;
+      printtime +=
+          1.0e-9 *
+          std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
+    }
+  }
+
+  particles.print("particles-dam.csv");
+
+  const auto totaltime = exectime + printtime;
+  std::cout << "Total time: " << totaltime / 60.0
+            << "m, exec: " << exectime * 100 / totaltime
+            << "%, print: " << printtime * 100 / totaltime << "%" << std::endl;
+
+  return 0;
+}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#endif
 
 int main() {
   return sph_main<tit::real_t>();
 }
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
