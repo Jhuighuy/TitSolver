@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <concepts>
+
 #include "tit/core/meta.hpp"
 #include "tit/sph/field.hpp"
 

@@ -175,6 +175,8 @@ TIT_DEFINE_SCALAR_FIELD(eps);
 /** Particle thermal energy time derivative. */
 TIT_DEFINE_SCALAR_FIELD(deps_dt);
 
+/** Particle molecular viscosity. */
+TIT_DEFINE_SCALAR_FIELD(mu);
 /** Particle artificial viscosity switch. */
 TIT_DEFINE_SCALAR_FIELD(alpha);
 /** Particle artificial viscosity switch time derivative. */

@@ -132,7 +132,13 @@ ParticleView(ParticleArray&) -> ParticleView<ParticleArray>;
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // TODO: move it to an appropriate place!
+#if HARD_DAM_BREAKING
 inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{4.0, 3.0}};
+#elif EASY_DAM_BREAKING
+inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
+#else
+inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
+#endif
 
 /******************************************************************************\
  ** Particle adjacency graph.
