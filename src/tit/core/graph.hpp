@@ -26,7 +26,6 @@
 #include <concepts>
 #include <iterator>
 #include <ranges>
-#include <span>
 #include <tuple>
 #include <vector>
 
@@ -56,8 +55,7 @@ public:
 
   /** Clear the graph. */
   constexpr void clear() noexcept {
-    _row_addrs.clear();
-    _row_addrs.push_back(0);
+    _row_addrs.clear(), _row_addrs.push_back(0);
     _col_indices.clear();
   }
 
@@ -71,12 +69,11 @@ public:
   }
 
   /** Column indices for the specified row. */
-  constexpr auto operator[](size_t row_index) const noexcept
-      -> std::span<const size_t> {
+  constexpr auto operator[](size_t row_index) const noexcept {
     TIT_ASSERT(row_index < num_rows(), "Row index is out of range.");
-    const auto first_pointer = _col_indices.data() + _row_addrs[row_index],
-               last_pointer = _col_indices.data() + _row_addrs[row_index + 1];
-    return std::span{first_pointer, last_pointer};
+    return std::ranges::subrange{
+        _col_indices.cbegin() + _row_addrs[row_index], //
+        _col_indices.cbegin() + _row_addrs[row_index + 1]};
   }
 
   /** Range of the unique graph edges. */
@@ -87,14 +84,15 @@ public:
     return std::views::single(std::tuple<size_t, size_t>{});
 #else
     return std::views::iota(size_t{0}, num_rows()) |
-           std::views::transform([&](size_t row_index) {
-             auto col_indices = (*this)[row_index];
-             return std::views::all(std::move(col_indices)) |
-                    std::views::filter([=](size_t col_index) {
-                      return col_index >= row_index;
+           std::views::transform([this](size_t row_index) {
+             return (*this)[row_index] |
+                    // Take only lower part of the row.
+                    std::views::take_while([=](size_t col_index) {
+                      return col_index <= row_index;
                     }) |
+                    // Pack row and column indices into a tuple.
                     std::views::transform([=](size_t col_index) {
-                      return std::tuple{row_index, col_index};
+                      return std::tuple{col_index, row_index};
                     });
            }) |
            std::views::join;

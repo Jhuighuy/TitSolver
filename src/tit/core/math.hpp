@@ -78,10 +78,10 @@ template<class Real>
   requires std::floating_point<Real>
 constexpr auto small_number_v {
 #if TIT_IWYU
-  // IWYU's clang's `sqrt` is not constexpr yet.
+  // IWYU's clang's `cbrt` is not constexpr yet.
   std::numeric_limits<Real>::epsilon()
 #else
-  sqrt(sqrt(std::numeric_limits<Real>::epsilon()))
+  std::cbrt(std::numeric_limits<Real>::epsilon())
 #endif
 };
 
@@ -133,6 +133,11 @@ constexpr auto safe_divide(Num a, Real b) noexcept {
 template<std::unsigned_integral UInt>
 constexpr auto ceil_divide(UInt a, UInt b) noexcept -> UInt {
   return (a + b - 1u) / b;
+}
+/** Align unsigned integer. */
+template<std::unsigned_integral UInt>
+constexpr auto align(UInt a, UInt alignment) noexcept -> UInt {
+  return ceil_divide(a, alignment) * alignment;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

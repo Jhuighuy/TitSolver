@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <concepts>
+
 #include "tit/core/math.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
@@ -37,35 +39,55 @@ template<class Num, size_t Dim>
 class BBox final {
 public:
 
-  Vec<Num, Dim> low, high;
+  /** Low bounding box point. */
+  Vec<Num, Dim> low;
+  /** High bounding box point. */
+  Vec<Num, Dim> high;
 
+  // TODO: remove this constructor.
   constexpr BBox() = default;
-  constexpr BBox(Vec<Num, Dim> point) noexcept : low(point), high(point) {}
-  constexpr BBox(Vec<Num, Dim> point1, Vec<Num, Dim> point2) noexcept
-      : low(point1), high(point1) {
-    update(point2);
+
+  /** Construct bounding box with set of points. */
+  /** @{ */
+  constexpr BBox(Vec<Num, Dim> point) noexcept : low{point}, high{point} {}
+  template<class... RestPoints>
+    requires (std::constructible_from<Vec<Num, Dim>, RestPoints> && ...)
+  constexpr BBox(Vec<Num, Dim> point, RestPoints... rest_points) noexcept
+      : BBox{point} {
+    (update(rest_points), ...);
+  }
+  /** @} */
+
+  /** Bounding box center. */
+  constexpr auto center() const noexcept {
+    return avg(low, high);
+  }
+  /** Bounding box extents. */
+  constexpr auto extents() const noexcept {
+    return high - low;
   }
 
-  constexpr void update(Vec<Num, Dim> point) noexcept {
+  /** Update bounding box with point. */
+  constexpr auto update(Vec<Num, Dim> point) noexcept -> BBox& {
     low = minimum(low, point);
     high = maximum(high, point);
-  }
-  constexpr void update(BBox<Num, Dim> bbox) noexcept {
-    low = minimum(low, bbox.low);
-    high = maximum(high, bbox.high);
+    return *this;
   }
 
-  constexpr auto clip(Vec<Num, Dim> point) const noexcept {
+  /** Clamp point into the bounding box. */
+  constexpr auto clamp(Vec<Num, Dim> point) const noexcept {
     point = maximum(low, point);
     point = minimum(high, point);
     return point;
   }
-
-  constexpr auto center() const noexcept {
-    return avg(low, high);
-  }
-  constexpr auto extents() const noexcept {
-    return high - low;
+  /** Find nearest point on the bounding box boundary. */
+  constexpr auto proj(Vec<Num, Dim> point) const noexcept {
+    // TODO there should be much better implementation for this.
+    point = clamp(point);
+    const auto delta = point - center();
+    size_t i = argmax_value(pow2(delta));
+    point[i] = delta[i] >= 0 ? high[i] : low[i];
+    return point;
   }
 
 }; // class BBox

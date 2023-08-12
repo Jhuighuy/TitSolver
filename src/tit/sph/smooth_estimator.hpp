@@ -28,7 +28,6 @@
 #include <tuple>       // IWYU pragma: keep
 #include <type_traits> // IWYU pragma: keep
 
-#include "tit/core/bbox.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
@@ -105,19 +104,21 @@ public:
     using PV = ParticleView<ParticleArray>;
     // -------------------------------------------------------------------------
     // BOUNDARY CONDITIONS.
+#if WITH_WALLS
     size_t xxx = 0;
     std::ranges::for_each(particles.views(), [&](PV a) {
       if (!fixed[a]) return;
       const auto search_point = a[r];
-      const auto clipped_point = Domain.clip(search_point);
+      const auto clipped_point = Domain.clamp(search_point);
       const auto r_a = 2 * clipped_point - search_point;
       real_t S = {};
       Mat<real_t, 3> M{};
+      constexpr auto SCALE = 3;
       std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
         if (fixed[b]) return;
         const auto r_ab = r_a - r[b];
         const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
-        const auto W_ab = _kernel(r_ab, 2 * h[a]);
+        const auto W_ab = _kernel(r_ab, SCALE * h[a]);
         S += W_ab * m[b] / rho[b];
         M += outer(B_ab, B_ab * W_ab * m[b] / rho[b]);
       });
@@ -131,7 +132,7 @@ public:
           if (fixed[b]) return;
           const auto r_ab = r_a - r[b];
           const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
-          auto W_ab = dot(E, B_ab) * _kernel(r_ab, 2 * h[a]);
+          auto W_ab = dot(E, B_ab) * _kernel(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
         });
@@ -141,28 +142,40 @@ public:
         std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
           if (fixed[b]) return;
           const auto r_ab = r_a - r[b];
-          auto W_ab = (1 / S) * _kernel(r_ab, 2 * h[a]);
+          auto W_ab = (1 / S) * _kernel(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
         });
       } else {
         goto fail;
       }
+      {
+        const auto N = normalize(search_point - clipped_point);
+        const auto D = norm(r_a - r[a]);
+        // drho/dn = rho_0/(cs_0^2)*dot(g,n).
 #if EASY_DAM_BREAKING
-      { // SLIP WALL.
-        const auto N = normalize(clipped_point - search_point);
-        auto V = v[a]; // V = (V)
-        auto Vn = dot(V, N) * N;
-        auto Vt = V - Vn;
-        v[a] = Vt - Vn;
-      }
+        constexpr auto rho_0 = 1000.0, cs_0 = 20 * sqrt(9.81 * 0.6);
 #elif HARD_DAM_BREAKING
-      // NOSLIP WALL.
-      v[a] *= -1;
+        constexpr auto rho_0 = 1000.0, cs_0 = 120.0;
 #endif
+        constexpr auto G = Vec{0.0, -9.81};
+        rho[a] += D * rho_0 / pow2(cs_0) * dot(G, N);
+#if EASY_DAM_BREAKING
+        { // SLIP WALL.
+          auto Vn = dot(v[a], N) * N;
+          auto Vt = v[a] - Vn;
+          v[a] = Vt - Vn;
+        }
+#elif HARD_DAM_BREAKING
+        { // NOSLIP WALL.
+          v[a] *= -1;
+        }
+#endif
+      }
     fail:
       ++xxx;
     });
+#endif
     // -------------------------------------------------------------------------
     // Calculate density (if density summation is used).
     using DE = DensityEquation;
@@ -213,6 +226,8 @@ public:
     });
     // Renormalize fields.
     std::ranges::for_each(particles.views(), [&](PV a) {
+      // Do not renormalize fixed particles.
+      if (fixed[a]) return;
       // Renormalize density (if possible).
       if constexpr (has<PV>(S)) {
         if (!is_zero(S[a])) rho[a] /= S[a];
@@ -349,7 +364,7 @@ public:
       }
       // -----------------------------------------------------------------------
 #endif
-#if WITH_WALLS
+#if WITH_WALLS && 0
       // TODO: Lennard-Jones forces.
       // -----------------------------------------------------------------------
       [&](PV a, PV b) {
@@ -365,7 +380,7 @@ public:
           auto P1 = 4, P2 = 2;
           dv_dt[a] += (E_0 / m[a] / pow2(r_ab)) *
                       (pow(r_0 / r_ab, P1) - pow(r_0 / r_ab, P2)) * r[a, b];
-        } //
+        }
       }(a, b);
       // -----------------------------------------------------------------------
 #endif
