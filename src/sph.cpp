@@ -147,9 +147,10 @@ int sph_main() {
   // Setup the particle adjacency structure.
   auto adjacent_particles = ParticleAdjacency{particles};
 
-  particles.print("particles-dam.csv");
+  particles.print("out/particles-0.csv");
+  system("ln -sf out/particles-0.csv particles-dam.csv");
 
-  real_t time = 0.0, exectime = 0.0, printtime = 0.0;
+  Real time = 0.0, exectime = 0.0, printtime = 0.0;
   for (size_t n = 0; time <= 2.7; ++n, time += timestep) {
     std::cout << n << "\t\t" << time << "\t\t" << exectime / n << "\t\t"
               << printtime / (n / 200) << std::endl;
@@ -161,7 +162,9 @@ int sph_main() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
     if (n % 200 == 0 && n != 0) {
       start = std::chrono::high_resolution_clock::now();
-      particles.print("particles-dam.csv");
+      const auto path = "out/particles-" + std::to_string(n / 200) + ".csv";
+      particles.print(path);
+      system(("ln -sf " + path + " particles-dam.csv").c_str());
       auto delta = std::chrono::high_resolution_clock::now() - start;
       printtime +=
           1.0e-9 *
@@ -205,7 +208,7 @@ int sph_main() {
 
   constexpr Real g = 9.81;
   constexpr Real rho_0 = 1000.0;
-  constexpr Real cs_0 = 10 * sqrt(2 * g * H);
+  constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
 
@@ -277,10 +280,10 @@ int sph_main() {
   // Setup the particle adjacency structure.
   auto adjacent_particles = ParticleAdjacency{particles};
 
-  particles.print("particles-dam.csv");
-  // particles.print("out/particles-0.csv");
+  particles.print("out/particles-0.csv");
+  system("ln -sf out/particles-0.csv particles-dam.csv");
 
-  real_t time = 0.0, exectime = 0.0, printtime = 0.0;
+  Real time = 0.0, exectime = 0.0, printtime = 0.0;
   for (size_t n = 0; time * sqrt(g / H) <= 6.90; ++n, time += dt) {
     std::cout << n << "\t\t" << time * sqrt(g / H) << "\t\t" << exectime / n
               << "\t\t" << printtime / (n / 200) << std::endl;
@@ -292,8 +295,9 @@ int sph_main() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
     if (n % 200 == 0 && n != 0) {
       start = std::chrono::high_resolution_clock::now();
-      particles.print("particles-dam.csv");
-      // particles.print("out/particles-" + std::to_string(n / 200) + ".csv");
+      const auto path = "out/particles-" + std::to_string(n / 200) + ".csv";
+      particles.print(path);
+      system(("ln -sf " + path + " particles-dam.csv").c_str());
       auto delta = std::chrono::high_resolution_clock::now() - start;
       printtime +=
           1.0e-9 *

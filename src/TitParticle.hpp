@@ -27,7 +27,6 @@
 #include <fstream>
 #include <iterator>
 #include <ranges>
-#include <span> // IWUY wants me to include it..
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -189,7 +188,7 @@ public:
       _adjacency.append_row(search_results);
 #if 1
       if (fixed[a]) {
-        const auto clipped_point = Domain.clip(search_point);
+        const auto clipped_point = Domain.clamp(search_point);
         const auto interp_point = 2 * clipped_point - search_point;
         search_results.clear();
         engine.search(interp_point, 3 * search_radius,
@@ -287,7 +286,7 @@ public:
   // clang-format off
   template<meta::type FieldSubset, meta::type ConstSubset>
     requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
-             meta::is_set_v<ConstSubset> && (constants.includes(FieldSubset{}))
+             meta::is_set_v<ConstSubset> && (constants.includes(ConstSubset{}))
   constexpr ParticleArray([[maybe_unused]] Space<Real, Dim> space,
                           [[maybe_unused]] FieldSubset fields = {},
                           [[maybe_unused]] ConstSubset consts = {}) {}

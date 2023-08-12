@@ -74,7 +74,7 @@ private:
 
   Points _points;
   size_t _max_leaf_size;
-  PoolAllocator<_KDTreeNode> _allocator;
+  PoolAllocator<_KDTreeNode> _alloc;
   std::vector<size_t> _point_perm;
   _KDTreeNode* _root_node = nullptr;
   PointBBox _root_bbox;
@@ -129,7 +129,7 @@ private:
     TIT_ASSERT(right <= _point_perm.size(), "`right` index is out of range.");
     TIT_ASSERT(left < right, "`left` index is out of range.");
     // Allocate node.
-    const auto node = _allocator.allocate();
+    const auto node = _alloc.allocate(1);
     const auto actual_bbox = _subtree_bbox</*Parallel=*/IsRoot>(left, right);
     if constexpr (IsRoot) bbox = actual_bbox;
     // Is leaf node reached?
@@ -140,7 +140,7 @@ private:
     } else {
       // Split the points based on the "widest" bounding box dimension.
       const auto cut_dim = argmax_value(actual_bbox.extents());
-      const auto cut_value = actual_bbox.clip(bbox.center())[cut_dim];
+      const auto cut_value = actual_bbox.clamp(bbox.center())[cut_dim];
       const auto pivot = _partition_subtree(left, right, cut_dim, cut_value);
       TIT_ASSERT(left <= pivot && pivot <= right, "Invalid pivot.");
       node->cut_dim = cut_dim;
@@ -176,10 +176,10 @@ private:
                right_iter = _point_perm.begin() + right;
     // Shift the points that are to the left of the splititng plane to the
     // front of the list.
-    const auto on_the_left = [&](size_t index) {
+    const auto to_the_left = [&](size_t index) {
       return _points[index][cut_dim] < cut_value;
     };
-    auto pivot_iter = std::partition(left_iter, right_iter, on_the_left);
+    auto pivot_iter = std::partition(left_iter, right_iter, to_the_left);
     auto pivot = pivot_iter - _point_perm.begin();
     if (pivot > middle) return pivot;
     // Now at the pivot are the points which are on the splitting plane
@@ -207,7 +207,7 @@ public:
     TIT_ASSERT(_root_node != nullptr, "Tree was not built.");
     // Compute distance from the query point to the root bounding box
     // per each dimension. (By "dist" square distances are ment.)
-    const auto dists = pow2(search_point - _root_bbox.clip(search_point));
+    const auto dists = pow2(search_point - _root_bbox.clamp(search_point));
     const auto search_dist = pow2(search_radius);
     // Do the actual search.
     _search_subtree(_root_node, dists, search_point, search_dist, output);

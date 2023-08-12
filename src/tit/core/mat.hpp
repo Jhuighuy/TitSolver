@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 
@@ -261,9 +262,11 @@ public:
         for (size_t k = 0; k < i; ++k) _u[i, j] -= _l[i, k] * _u[k, j];
       }
     }
-    // Compute determinant.
-    _det = _l[0, 0] * _u[0, 0];
-    for (size_t i = 1; i < a.num_rows; ++i) _det *= _l[i, i] * _u[i, i];
+    // Compute "determinant".
+    _det = abs(_l[0, 0] * _u[0, 0]);
+    for (size_t i = 1; i < a.num_rows; ++i) {
+      _det = std::min(_det, abs(_l[i, i] * _u[i, i]));
+    }
   }
 
   /** Determinant of the matrix. */
