@@ -32,6 +32,7 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/bbox.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/pool_allocator.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
@@ -158,8 +159,9 @@ private:
         node->right_subtree = _build_subtree(pivot, right, right_bbox);
         node->cut_right = right_bbox.low[cut_dim];
       };
-      // TODO: execute as tasks!
-      build_left_subtree(), build_right_subtree();
+      // Execute tasks.
+      par::invoke(std::move(build_left_subtree),
+                  std::move(build_right_subtree));
     }
     bbox = actual_bbox;
     return node;

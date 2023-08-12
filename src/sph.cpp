@@ -319,8 +319,8 @@ int sph_main() {
 
 #endif
 
-int main() {
-  return sph_main<tit::real_t>();
+int main(int argc, char** argv) {
+  return tit::par::main(argc, argv, [] { return sph_main<tit::real_t>(); });
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
