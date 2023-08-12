@@ -31,6 +31,7 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/types.hpp" // IWYU pragma: keep
 #include "tit/core/vec.hpp"
 
@@ -88,7 +89,7 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void init(ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    std::ranges::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       // Initialize particle pressure (and sound speed).
       _eos.compute_pressure(a);
     });
@@ -181,7 +182,7 @@ public:
     using DE = DensityEquation;
     if constexpr (std::same_as<DE, SummationDensity>) {
       // Classic density summation.
-      std::ranges::for_each(particles.views(), [&](PV a) {
+      par::for_each(particles.views(), [&](PV a) {
         if (fixed[a]) return;
         rho[a] = {};
         std::ranges::for_each(adjacent_particles[a], [&](PV b) {
@@ -191,7 +192,7 @@ public:
       });
     }
     // Clean density-related fields.
-    std::ranges::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       // Density fields.
       if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
       if constexpr (has<PV>(grad_rho)) grad_rho[a] = {};
@@ -225,7 +226,7 @@ public:
       }
     });
     // Renormalize fields.
-    std::ranges::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       // Do not renormalize fixed particles.
       if (fixed[a]) return;
       // Renormalize density (if possible).
@@ -265,7 +266,7 @@ public:
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
-    std::ranges::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       // Compute pressure (and sound speed).
       _eos.compute_pressure(a);
       // Clean velocity-related fields.
@@ -385,7 +386,7 @@ public:
       // -----------------------------------------------------------------------
 #endif
     });
-    std::ranges::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
 #if WITH_GRAVITY
       // TODO: Gravity.

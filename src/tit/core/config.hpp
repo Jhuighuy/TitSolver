@@ -38,10 +38,18 @@
 #define TIT_ENABLE_SIMD 1
 #endif
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 #ifndef TIT_ENABLE_INTRISICS
 #define TIT_ENABLE_INTRISICS 1
+#endif
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#ifndef TIT_ENABLE_TBB
+#define TIT_ENABLE_TBB 1
+#endif
+
+#ifndef TIT_ENABLE_MPI
+#define TIT_ENABLE_MPI 0
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

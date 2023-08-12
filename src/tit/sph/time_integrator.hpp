@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include <algorithm>
 #include <type_traits> // IWYU pragma: keep
 
 #include "tit/core/meta.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/types.hpp"
 
 #include "TitParticle.hpp"
@@ -78,14 +78,14 @@ public:
     // Integrate particle density.
     _estimator.compute_density(particles, adjacent_particles);
     if constexpr (has<PV>(drho_dt)) {
-      std::ranges::for_each(particles.views(), [&](PV a) {
+      par::for_each(particles.views(), [&](PV a) {
         if (fixed[a]) return;
         rho[a] += dt * drho_dt[a];
       });
     }
     // Integrate particle velocty (internal enegry, and rest).
     _estimator.compute_forces(particles, adjacent_particles);
-    std::ranges::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];
