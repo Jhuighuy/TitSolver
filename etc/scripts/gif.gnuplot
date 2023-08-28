@@ -20,12 +20,15 @@
 #* DEALINGS IN THE SOFTWARE.                                                  *#
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 
-set terminal gif animate size 1600,1200 delay 0
+#set terminal gif animate size 1600,1200 delay 0
+set terminal gif animate size 1920,1080 delay 0
 set output 'velocity.gif'
 
-set xrange [-0.1:4.1]
-set yrange [-0.1:3.1]
-set cbrange [0.0:10.0]
+set xrange [-0.1:3.6]
+set yrange [-0.1:2.6]
+#set xrange [-0.1:4.1]
+#set yrange [-0.1:3.1]
+set cbrange [-0.05:1.05]
 
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 # MATLAB jet color pallete
@@ -69,8 +72,11 @@ min(x,y) = x < y ? x : y
 max(x,y) = x > y ? x : y
 clamp(a,mn,mx) = max(min(a,mx),mn)
 
+H = 0.6
+#H = 2.0
+
 do for [i=0:100000000] {
-	plot 'out/particles-dam-'.i.'.csv' \
-       u 'r_x':'r_y':(clamp(sqrt(column('v_x')**2 + column('v_y')**2), 0, 10)) \
+	plot 'out/particles-'.i.'.csv' \
+       u 'r_x':'r_y':(clamp(column('p')/(1000*9.81*H), -0.1, 1.5)) \
        w p pt 7 palette notitle
 }

@@ -63,7 +63,7 @@ public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
-      meta::Set{fixed} | // TODO: fixed should not be here.
+      meta::Set{fixed, parinfo} | // TODO: fixed should not be here.
 #if HARD_DAM_BREAKING
       meta::Set{v_xsph} |
 #endif
@@ -89,7 +89,7 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void init(ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    par::for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.views(), [&](PV a) {
       // Initialize particle pressure (and sound speed).
       _eos.compute_pressure(a);
     });
@@ -106,17 +106,15 @@ public:
     // -------------------------------------------------------------------------
     // BOUNDARY CONDITIONS.
 #if WITH_WALLS
-    size_t xxx = 0;
-    std::ranges::for_each(particles.views(), [&](PV a) {
-      if (!fixed[a]) return;
+    par::for_each(adjacent_particles.__fixed(), [&](auto ia) {
+      auto [i, a] = ia;
       const auto search_point = a[r];
       const auto clipped_point = Domain.clamp(search_point);
       const auto r_a = 2 * clipped_point - search_point;
       real_t S = {};
       Mat<real_t, 3> M{};
       constexpr auto SCALE = 3;
-      std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
-        if (fixed[b]) return;
+      std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
         const auto r_ab = r_a - r[b];
         const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
         const auto W_ab = _kernel(r_ab, SCALE * h[a]);
@@ -129,8 +127,7 @@ public:
         auto E = inv(e);
         rho[a] = {};
         v[a] = {};
-        std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
-          if (fixed[b]) return;
+        std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
           const auto r_ab = r_a - r[b];
           const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
           auto W_ab = dot(E, B_ab) * _kernel(r_ab, SCALE * h[a]);
@@ -140,8 +137,7 @@ public:
       } else if (!is_zero(S)) {
         rho[a] = {};
         v[a] = {};
-        std::ranges::for_each(adjacent_particles[nullptr, xxx], [&](PV b) {
-          if (fixed[b]) return;
+        std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
           const auto r_ab = r_a - r[b];
           auto W_ab = (1 / S) * _kernel(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
@@ -174,7 +170,6 @@ public:
 #endif
       }
     fail:
-      ++xxx;
     });
 #endif
     // -------------------------------------------------------------------------
@@ -182,7 +177,7 @@ public:
     using DE = DensityEquation;
     if constexpr (std::same_as<DE, SummationDensity>) {
       // Classic density summation.
-      par::for_each(particles.views(), [&](PV a) {
+      par::static_for_each(particles.views(), [&](PV a) {
         if (fixed[a]) return;
         rho[a] = {};
         std::ranges::for_each(adjacent_particles[a], [&](PV b) {
@@ -192,7 +187,7 @@ public:
       });
     }
     // Clean density-related fields.
-    par::for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.views(), [&](PV a) {
       // Density fields.
       if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
       if constexpr (has<PV>(grad_rho)) grad_rho[a] = {};
@@ -201,12 +196,11 @@ public:
       if constexpr (has<PV>(L)) L[a] = {};
     });
     // Compute auxilary density fields.
-    std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {
+    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       // Here we use Monaghan's orignal expression for derivatives because
       // it is both cheaper and more consistent with across classic and
       // Grad-H density summations.
       const auto [a, b] = ab;
-      if (a == b) return;
       [[maybe_unused]] const auto W_ab = _kernel(a, b);
       [[maybe_unused]] const auto grad_W_ab = _kernel.grad(a, b);
       [[maybe_unused]] const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
@@ -226,7 +220,7 @@ public:
       }
     });
     // Renormalize fields.
-    par::for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.views(), [&](PV a) {
       // Do not renormalize fixed particles.
       if (fixed[a]) return;
       // Renormalize density (if possible).
@@ -243,9 +237,8 @@ public:
     // loop because some artificial viscosities (e.g. δ-SPH) require desinty
     // gradients (or renormalized density gradients).
     if constexpr (has<PV>(drho_dt)) {
-      std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {
+      par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
         const auto [a, b] = ab;
-        if (a == b) return;
         const auto grad_W_ab = _kernel.grad(a, b);
         const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
         // Compute artificial viscosity diffusive term.
@@ -266,7 +259,7 @@ public:
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
-    par::for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.views(), [&](PV a) {
       // Compute pressure (and sound speed).
       _eos.compute_pressure(a);
       // Clean velocity-related fields.
@@ -277,9 +270,8 @@ public:
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
     });
     // Compute auxilary velocity fields.
-    std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {
+    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
-      if (a == b) return;
       [[maybe_unused]] const auto grad_W_ab = _kernel.grad(a, b);
       [[maybe_unused]] const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
       [[maybe_unused]] const auto W_ab = _kernel(a, b);
@@ -300,9 +292,8 @@ public:
       }
     });
     // Compute velocity time derivative.
-    std::ranges::for_each(adjacent_particles.pairs(), [&](auto ab) {
+    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
-      if (a == b) return;
       const auto grad_W_ab = _kernel.grad(a, b);
       { // Convective updates.
         /// Compute artificial viscosity diffusive term.
@@ -386,11 +377,28 @@ public:
       // -----------------------------------------------------------------------
 #endif
     });
-    par::for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
 #if WITH_GRAVITY
       // TODO: Gravity.
       dv_dt[a][1] -= 9.81;
+#endif
+#if WITH_WALLS && 0
+      {
+#if HARD_DAM_BREAKING
+        const auto r_0 = 0.01 * 0.6, E_0 = 15.0;
+#elif EASY_DAM_BREAKING
+        const auto r_0 = 0.6 / 80.0 * 0.25, E_0 = 9.81 * 0.6;
+#endif
+        const auto clipped_point = Domain.proj(r[a]);
+        const auto r_ab = norm(r[a] - clipped_point);
+        if (r_ab < r_0) {
+          auto P1 = 4, P2 = 2;
+          dv_dt[a] += (E_0 / m[a] / pow2(r_ab)) *
+                      (pow(r_0 / r_ab, P1) - pow(r_0 / r_ab, P2)) *
+                      (r[a] - clipped_point);
+        }
+      }
 #endif
       // Compute artificial viscosity switch.
       if constexpr (has<PV>(dalpha_dt)) _artvisc.compute_switch_deriv(a);
