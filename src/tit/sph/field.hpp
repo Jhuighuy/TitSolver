@@ -107,6 +107,13 @@ consteval bool has_const() {
       return a[*this] - b[*this];                                              \
     }                                                                          \
                                                                                \
+    /** Field value for the specified particle view or default value. */       \
+    template<_has_fields PV>                                                   \
+    constexpr auto get(PV&& a, auto def) const noexcept {                      \
+      if constexpr (has<PV>(*this)) return a[name##_t{}];                      \
+      else return def;                                                         \
+    }                                                                          \
+                                                                               \
   }; /* class name##_t */                                                      \
   inline constexpr name##_t name __VA_OPT__(, __VA_ARGS__);
 
@@ -133,9 +140,32 @@ using field_value_type_t =
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+enum class ParState {
+  /** Particle is far from subdomain boundary. */
+  INNER,
+  /** Particle is near subdomain boundary, and is in halo of some other
+   ** subdomain. Fields of such particles are send to the corresponding
+   ** processes during syncronization. */
+  NEAR_HALO,
+  /** Particle is on the subdomain boundary. Fields of such particles are
+   ** recieved from the corresponding processes during syncronization. */
+  HALO
+};
+struct ParInfo {
+  size_t part;
+  size_t global_index;
+  ParState state;
+};
+template<class Stream>
+constexpr auto operator<<(Stream& stream, ParInfo p) -> Stream& {
+  stream << p.part;
+  return stream;
+}
+
 /** Is particle fixed? For the fixed particles,
  ** no variables are updated during the simulation. */
 TIT_DEFINE_FIELD(bool, fixed);
+TIT_DEFINE_FIELD(ParInfo, parinfo);
 
 /** Particle position. */
 TIT_DEFINE_VECTOR_FIELD(r);
@@ -177,6 +207,11 @@ TIT_DEFINE_SCALAR_FIELD(deps_dt);
 
 /** Particle molecular viscosity. */
 TIT_DEFINE_SCALAR_FIELD(mu);
+/** Particle molecular turbulent viscosity. */
+TIT_DEFINE_SCALAR_FIELD(mu_T);
+/** Particle second viscosity. */
+TIT_DEFINE_SCALAR_FIELD(lambda);
+
 /** Particle artificial viscosity switch. */
 TIT_DEFINE_SCALAR_FIELD(alpha);
 /** Particle artificial viscosity switch time derivative. */

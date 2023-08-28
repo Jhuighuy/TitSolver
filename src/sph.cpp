@@ -7,8 +7,8 @@
 #include <vector>
 
 #define COMPRESSIBLE_SOD_PROBLEM 0
-#define HARD_DAM_BREAKING 1
-#define EASY_DAM_BREAKING 0
+#define HARD_DAM_BREAKING 0
+#define EASY_DAM_BREAKING 1
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 
@@ -108,6 +108,7 @@ int sph_main() {
 
   // Setup the time itegrator:
   auto timeint = EulerIntegrator{std::move(estimator)};
+  // auto timeint = RungeKuttaIntegrator{std::move(estimator)};
 
   // Setup the particles array:
   ParticleArray particles{
@@ -225,6 +226,7 @@ int sph_main() {
 
   // Setup the time itegrator:
   auto timeint = EulerIntegrator{std::move(estimator)};
+  // auto timeint = RungeKuttaIntegrator{std::move(estimator)};
 
   // Setup the particles array:
   ParticleArray particles{

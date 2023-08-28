@@ -22,12 +22,20 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cstdlib>
-#include <mutex>
-#include <new>
+#include <algorithm> // IWYU pragma: keep
+#include <cstdlib>   // IWYU pragma: keep
+#include <memory>    // IWYU pragma: keep
+#include <mutex>     // IWYU pragma: keep
+#include <new>       // IWYU pragma: keep
 
-#include "tit/core/types.hpp"
+#include "tit/core/config.hpp" // IWYU pragma: keep
+#include "tit/core/types.hpp"  // IWYU pragma: keep
+
+#if !TIT_ENABLE_TBB
+#error Pool allocator requires TBB for now.
+#endif
+#define TBB_PREVIEW_MEMORY_POOL 1
+#include <oneapi/tbb/memory_pool.h>
 
 namespace tit {
 
@@ -36,40 +44,67 @@ namespace tit {
 /******************************************************************************\
  ** Simple pool (arena) allocator.
 \******************************************************************************/
+#if TIT_ENABLE_TBB
+template<class Val>
+class PoolAllocator :
+    public tbb::memory_pool_allocator<Val,
+                                      tbb::memory_pool<std::allocator<Val>>> {
+private:
+
+  tbb::memory_pool<std::allocator<Val>> _mem_pool;
+
+public:
+
+  PoolAllocator()
+      : tbb::memory_pool_allocator<Val, tbb::memory_pool<std::allocator<Val>>>{
+            _mem_pool} {}
+
+}; // class PoolAllocator
+#else
 template<class Val>
 class PoolAllocator final {
 private:
 
   // Individual allocations would be aligned to this value.
-  static constexpr auto _word_size = size_t{16};
+  static constexpr auto _word_size = round_up(size_t{16}, sizeof(Val));
   // Amount of the block.
-  static constexpr auto _block_size = size_t{64 * 1024};
+  static constexpr auto _block_size = round_up(size_t{64 * 1024}, _word_size);
 
-  size_t _remaining = 0; // Number of bytes left in current block of storage.
-  void* _base = nullptr; // Pointer to base of current block of storage.
-  void* _loc = nullptr;  // Current location in block to next allocate.
+  // Number of bytes left in current block of storage.
+  size_t _remaining = 0;
+  // Pointer to base of current block of storage.
+  void* _base = nullptr;
+  // Current location in block to next allocate.
+  void* _loc = nullptr;
+  // Mutex to make this guy thread-safe.
   std::mutex _mutex;
 
 public:
 
+  /** Construct pool allocator. */
   PoolAllocator() = default;
 
+  /** Move-construct the pool allocator. */
   PoolAllocator(PoolAllocator&&) = default;
+  /** Move-assign the K-dimensional tree. */
   auto operator=(PoolAllocator&&) -> PoolAllocator& = default;
 
+  /** Pool allocator is non-copy-constructible. */
   PoolAllocator(const PoolAllocator&) = delete;
+  /** Pool allocator is non-copyable. */
   auto operator=(const PoolAllocator&) -> PoolAllocator& = delete;
 
-  ~PoolAllocator() {
+  /** Destroy pool allocator and free all memory. */
+  constexpr ~PoolAllocator() {
     while (_base != nullptr) {
-      // Get pointer to prev block.
+      // Get pointer to previous block.
       const auto prev = *static_cast<void**>(_base);
       std::free(_base);
       _base = prev;
     }
   }
 
-  Val* allocate(size_t count = 1) {
+  constexpr Val* allocate(size_t count = 1) {
     auto size = sizeof(Val) * count;
     size = (size + (_word_size - 1)) & ~(_word_size - 1);
     const auto lock = std::unique_lock{_mutex};
@@ -91,6 +126,7 @@ public:
   }
 
 }; // class PoolAllocator
+#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

@@ -23,6 +23,7 @@
 #pragma once
 
 #include <concepts>
+#include <tuple>
 
 #include "tit/core/math.hpp"
 #include "tit/core/types.hpp"
@@ -88,6 +89,13 @@ public:
     size_t i = argmax_value(pow2(delta));
     point[i] = delta[i] >= 0 ? high[i] : low[i];
     return point;
+  }
+
+  /** Split bbox in two. */
+  constexpr auto split(Vec<Num, Dim> point, size_t axis) const noexcept {
+    auto left = *this, right = *this;
+    left.high[axis] = point[axis], right.low[axis] = point[axis];
+    return std::tuple{left, right};
   }
 
 }; // class BBox

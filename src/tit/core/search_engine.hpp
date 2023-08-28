@@ -25,6 +25,7 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // IWYU pragma: begin_exports
+#include "tit/core/grid.hpp"
 #include "tit/core/kd_tree.hpp"
 // IWYU pragma: end_exports
 

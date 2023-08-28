@@ -5,9 +5,11 @@
 
 # Normal setup.
 CXX=g++-13
+
 # MPI setup (for the future).
 #export OMPI_CXX=$CXX
 #CXX=mpic++
+
 function compile() {
   $CXX \
     -I./src \
