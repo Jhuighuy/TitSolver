@@ -58,30 +58,30 @@ public:
 
 private:
 
-  Points _points;
-  std::vector<size_t> _point_perm;
+  Points points_;
+  std::vector<size_t> point_perm_;
 
 public:
 
   /** Initialze and build the K-dimensional tree.
    ** @param max_leaf_size Maximum amount of points in the leaf node. */
   constexpr explicit ZCurveOrdering(Points points)
-      : _points{std::move(points)} {
-    if (std::ranges::empty(_points)) return;
+      : points_{std::move(points)} {
+    if (std::ranges::empty(points_)) return;
     // Initialize identity points permutation.
-    const auto size = std::ranges::size(_points);
-    _point_perm.resize(size);
-    std::ranges::copy(std::views::iota(size_t{0}, size), _point_perm.begin());
+    const auto size = std::ranges::size(points_);
+    point_perm_.resize(size);
+    std::ranges::copy(std::views::iota(size_t{0}, size), point_perm_.begin());
     // Compute bounding box.
-    auto bbox = BBox{_points[0]};
-    for (const auto& p : _points | std::views::drop(1)) bbox.update(p);
+    auto bbox = BBox{points_[0]};
+    for (const auto& p : points_ | std::views::drop(1)) bbox.update(p);
     // Compute the root bounding box and build ordering.
-    _partition(_point_perm.data(), //
-               _point_perm.data() + _point_perm.size(), bbox);
+    partition_(point_perm_.data(), //
+               point_perm_.data() + point_perm_.size(), bbox);
   }
 
   void GetHilbertElementOrdering(std::vector<size_t>& ordering) {
-    ordering = std::move(_point_perm);
+    ordering = std::move(point_perm_);
   }
 
 private:
@@ -89,17 +89,17 @@ private:
   // Build the K-dimensional subtree.
   // On the input `bbox` contains a rough estimate that was guessed by the
   // caller. On return it contains an exact bounding box of the subtree.
-  constexpr void _partition(size_t* first, size_t* last,
+  constexpr void partition_(size_t* first, size_t* last,
                             PointBBox bbox) noexcept {
     TIT_ASSERT(first < last, "Invalid point iterators.");
     if (last - first <= 1) return;
     const auto center = bbox.center();
     if constexpr (Dim == 2) {
       const auto in_upper_part = [&](size_t index) {
-        return _points[index][1] > center[1];
+        return points_[index][1] > center[1];
       };
       const auto to_the_left = [&](size_t index) {
-        return _points[index][0] < center[0];
+        return points_[index][0] < center[0];
       };
       // Split subtree vertically.
       const auto [lower_bbox, upper_bbox] = bbox.split(center, 1);
@@ -117,10 +117,10 @@ private:
       const auto lower_right = std::partition(lower, last, to_the_left);
       // Recursively build quadrants.
       par::invoke(
-          [=, this] { _partition(upper_left, upper_right, upper_left_bbox); },
-          [=, this] { _partition(upper_right, lower_left, upper_right_bbox); },
-          [=, this] { _partition(lower_left, lower_right, lower_left_bbox); },
-          [=, this] { _partition(lower_right, last, lower_right_bbox); });
+          [=, this] { partition_(upper_left, upper_right, upper_left_bbox); },
+          [=, this] { partition_(upper_right, lower_left, upper_right_bbox); },
+          [=, this] { partition_(lower_left, lower_right, lower_left_bbox); },
+          [=, this] { partition_(lower_right, last, lower_right_bbox); });
     }
   }
 

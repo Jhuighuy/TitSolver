@@ -61,22 +61,22 @@ public:
 
 private:
 
-  union _KDTreeNode {
+  union KDTreeNode_ {
     std::ranges::subrange<const size_t*> leaf;
     struct {
       size_t cut_dim;
       Real cut_left, cut_right;
-      _KDTreeNode* left_subtree;
-      _KDTreeNode* right_subtree;
+      KDTreeNode_* left_subtree;
+      KDTreeNode_* right_subtree;
     };
-  }; // union _KDTreeNode
+  }; // union KDTreeNode_
 
-  Points _points;
-  size_t _max_leaf_size;
-  PoolAllocator<_KDTreeNode> _alloc;
-  std::vector<size_t> _point_perm;
-  const _KDTreeNode* _root_node = nullptr;
-  PointBBox _root_bbox;
+  Points points_;
+  size_t max_leaf_size_;
+  PoolAllocator<KDTreeNode_> alloc_;
+  std::vector<size_t> point_perm_;
+  const KDTreeNode_* root_node_ = nullptr;
+  PointBBox root_bbox_;
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -95,28 +95,28 @@ public:
   /** Initialze and build the K-dimensional tree.
    ** @param max_leaf_size Maximum amount of points in the leaf node. */
   constexpr explicit KDTree(Points points, size_t max_leaf_size = 1)
-      : _points{std::move(points)}, _max_leaf_size{max_leaf_size} {
-    TIT_ASSERT(_max_leaf_size > 0, "Maximal leaf size should be positive.");
-    if (std::ranges::empty(_points)) return;
+      : points_{std::move(points)}, max_leaf_size_{max_leaf_size} {
+    TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
+    if (std::ranges::empty(points_)) return;
     // Initialize identity points permutation.
-    const auto size = std::ranges::size(_points);
-    _point_perm.resize(size);
-    std::ranges::copy(std::views::iota(size_t{0}, size), _point_perm.begin());
+    const auto size = std::ranges::size(points_);
+    point_perm_.resize(size);
+    std::ranges::copy(std::views::iota(size_t{0}, size), point_perm_.begin());
     // Compute the root tree node (and bounding box).
-    _root_node = _build_subtree</*IsRoot=*/true>(
-        _point_perm.data(), _point_perm.data() + size, _root_bbox);
+    root_node_ = build_subtree_</*IsRoot=*/true>(
+        point_perm_.data(), point_perm_.data() + size, root_bbox_);
   }
 
 private:
 
   // Compute bounding box for the K-dimensional subtree.
   template<bool Parallel>
-  constexpr auto _subtree_bbox(const size_t* first,
+  constexpr auto subtree_bbox_(const size_t* first,
                                const size_t* last) const noexcept -> PointBBox {
     TIT_ASSERT(first < last, "Invalid subtree range.");
     // TODO: run in parallel!
-    auto bbox = BBox{_points[*first]};
-    while (++first != last) bbox.update(_points[*first]);
+    auto bbox = BBox{points_[*first]};
+    while (++first != last) bbox.update(points_[*first]);
     return bbox;
   }
 
@@ -124,15 +124,15 @@ private:
   // On the input `bbox` contains a rough estimate that was guessed by the
   // caller. On return it contains an exact bounding box of the subtree.
   template<bool IsRoot = false>
-  constexpr auto _build_subtree(size_t* first, size_t* last, PointBBox& bbox)
-      -> _KDTreeNode* {
+  constexpr auto build_subtree_(size_t* first, size_t* last, PointBBox& bbox)
+      -> KDTreeNode_* {
     TIT_ASSERT(first < last, "Invalid subtree range.");
     // Allocate node.
-    const auto node = _alloc.allocate(1);
-    const auto actual_bbox = _subtree_bbox</*Parallel=*/IsRoot>(first, last);
+    const auto node = alloc_.allocate(1);
+    const auto actual_bbox = subtree_bbox_</*Parallel=*/IsRoot>(first, last);
     if constexpr (IsRoot) bbox = actual_bbox;
     // Is leaf node reached?
-    if (last - first <= _max_leaf_size) {
+    if (last - first <= max_leaf_size_) {
       // Fill the leaf node and end partitioning.
       node->left_subtree = node->right_subtree = nullptr;
       node->leaf = {first, last};
@@ -140,21 +140,21 @@ private:
       // Split the points based on the "widest" bounding box dimension.
       const auto cut_dim = argmax_value(actual_bbox.extents());
       const auto cut_value = actual_bbox.clamp(bbox.center())[cut_dim];
-      const auto pivot = _partition_subtree(first, last, cut_dim, cut_value);
+      const auto pivot = partition_subtree_(first, last, cut_dim, cut_value);
       TIT_ASSERT(first <= pivot && pivot <= last, "Invalid pivot.");
       node->cut_dim = cut_dim;
       auto build_left_subtree = [=, this] {
         // Build left subtree and update it's bounding box.
         auto left_bbox = bbox;
         left_bbox.high[cut_dim] = cut_value;
-        node->left_subtree = _build_subtree(first, pivot, left_bbox);
+        node->left_subtree = build_subtree_(first, pivot, left_bbox);
         node->cut_left = left_bbox.high[cut_dim];
       };
       auto build_right_subtree = [=, this] {
         // Build right subtree and update it's bounding box.
         auto right_bbox = bbox;
         right_bbox.low[cut_dim] = cut_value;
-        node->right_subtree = _build_subtree(pivot, last, right_bbox);
+        node->right_subtree = build_subtree_(pivot, last, right_bbox);
         node->cut_right = right_bbox.low[cut_dim];
       };
       // Execute tasks.
@@ -166,14 +166,14 @@ private:
   }
 
   // Partition the K-dimensional subtree points.
-  constexpr auto _partition_subtree(size_t* first, size_t* last, //
+  constexpr auto partition_subtree_(size_t* first, size_t* last, //
                                     size_t cut_dim, Real cut_value) noexcept
       -> size_t* {
     TIT_ASSERT(first < last, "Invalid subtree range.");
     // Shift the points that are to the left of the splititng plane to the
     // front of the list.
     const auto to_the_left = [&](size_t index) {
-      return _points[index][cut_dim] < cut_value;
+      return points_[index][cut_dim] < cut_value;
     };
     auto pivot = std::partition(first, last, to_the_left);
     const auto middle = first + (last - first) / 2;
@@ -182,7 +182,7 @@ private:
     // or to the right of it. Now shift to the pivot points that are on the
     // plane and find the optimal pivot value to maintain the tree balanced.
     const auto on_the_plane = [&](size_t index) {
-      return _points[index][cut_dim] == cut_value;
+      return points_[index][cut_dim] == cut_value;
     };
     pivot = std::partition(pivot, last, on_the_plane);
     if (pivot < middle) return pivot;
@@ -198,13 +198,13 @@ public:
   constexpr auto search(Point search_point, Real search_radius,
                         OutIter out) const noexcept -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
-    TIT_ASSERT(_root_node != nullptr, "Tree was not built.");
+    TIT_ASSERT(root_node_ != nullptr, "Tree was not built.");
     // Compute distance from the query point to the root bounding box
     // per each dimension. (By "dist" square distances are ment.)
-    const auto dists = pow2(search_point - _root_bbox.clamp(search_point));
+    const auto dists = pow2(search_point - root_bbox_.clamp(search_point));
     const auto search_dist = pow2(search_radius);
     // Do the actual search.
-    _search_subtree(_root_node, dists, search_point, search_dist, out);
+    search_subtree_(root_node_, dists, search_point, search_dist, out);
     return out;
   }
 
@@ -213,7 +213,7 @@ private:
   // Search for the point neighbours in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
   template<std::output_iterator<size_t> OutIter>
-  constexpr void _search_subtree(const _KDTreeNode* node, Point dists,
+  constexpr void search_subtree_(const KDTreeNode_* node, Point dists,
                                  const Point& search_point, Real search_dist,
                                  OutIter& out) const noexcept {
     // Is leaf node reached?
@@ -221,7 +221,7 @@ private:
       TIT_ASSERT(node->right_subtree == nullptr, "Invalid leaf node.");
       // Iterate through the points.
       for (size_t i : node->leaf) {
-        const auto dist = norm2(search_point - _points[i]);
+        const auto dist = norm2(search_point - points_[i]);
         if (dist < search_dist) *out++ = i;
       }
     } else {
@@ -243,11 +243,11 @@ private:
         }
       }();
       // Search in the first subtree.
-      _search_subtree(first_node, dists, search_point, search_dist, out);
+      search_subtree_(first_node, dists, search_point, search_dist, out);
       // Search in the second subtree (if it not too far).
       dists[cut_dim] = cut_dist;
       if (const auto dist = sum(dists); dist < search_dist) {
-        _search_subtree(second_node, dists, search_point, search_dist, out);
+        search_subtree_(second_node, dists, search_point, search_dist, out);
       }
     }
   }
@@ -259,7 +259,7 @@ template<class Points, class... Args>
 KDTree(Points&&, Args...) -> KDTree<std::views::all_t<Points>>;
 
 template<class... Args>
-concept _can_kd_tree = requires { KDTree{std::declval<Args>()...}; };
+concept can_kd_tree_ = requires { KDTree{std::declval<Args>()...}; };
 
 /******************************************************************************\
  ** K-dimensional tree factory.
@@ -267,20 +267,20 @@ concept _can_kd_tree = requires { KDTree{std::declval<Args>()...}; };
 class KDTreeFactory final {
 private:
 
-  size_t _max_leaf_size;
+  size_t max_leaf_size_;
 
 public:
 
   /** Construct a K-dimensional tree factory.
    ** @param max_leaf_size Maximum amount of points in the leaf node. */
   constexpr KDTreeFactory(size_t max_leaf_size = 1)
-      : _max_leaf_size{max_leaf_size} {}
+      : max_leaf_size_{max_leaf_size} {}
 
   /** Produce a K-dimensional tree for the specified set op points. */
   template<std::ranges::viewable_range Points>
-    requires _can_kd_tree<Points, size_t>
+    requires can_kd_tree_<Points, size_t>
   constexpr auto operator()(Points&& points) const noexcept {
-    return KDTree{std::forward<Points>(points), _max_leaf_size};
+    return KDTree{std::forward<Points>(points), max_leaf_size_};
   }
 
 }; // class KDTreeFactory

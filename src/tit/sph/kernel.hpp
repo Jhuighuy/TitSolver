@@ -64,32 +64,60 @@ public:
   }
 
   /** Value of the smoothing kernel for two particles. */
+  /** @{ */
   template<class PV>
-    requires (has<PV>(required_fields))
+    requires (has<PV>(required_fields) && has_const<PV>(h))
   constexpr auto operator()(PV a, PV b) const noexcept {
     return (*this)(r[a, b], h[a]);
   }
+  template<class PV, class Real>
+    requires (has<PV>(required_fields) && !has_const<PV>(h))
+  constexpr auto operator()(PV a, PV b, Real h) const noexcept {
+    return (*this)(r[a, b], h);
+  }
+  /** @} */
 
   /** Directional derivative of the smooting kernel for two particles. */
+  /** @{ */
   template<class PV>
-    requires (has<PV>(required_fields))
+    requires (has<PV>(required_fields) && has_const<PV>(h))
   constexpr auto deriv(PV a, PV b) const noexcept {
     return deriv(r[a, b], h[a]);
   }
+  template<class PV, class Real>
+    requires (has<PV>(required_fields) && !has_const<PV>(h))
+  constexpr auto deriv(PV a, PV b, Real h) const noexcept {
+    return deriv(r[a, b], h);
+  }
+  /** @} */
 
   /** Value of the smoothing kernel for two particles. */
+  /** @{ */
   template<class PV>
-    requires (has<PV>(required_fields))
+    requires (has<PV>(required_fields) && has_const<PV>(h))
   constexpr auto grad(PV a, PV b) const noexcept {
     return grad(r[a, b], h[a]);
   }
+  template<class PV, class Real>
+    requires (has<PV>(required_fields) && !has_const<PV>(h))
+  constexpr auto grad(PV a, PV b, Real h) const noexcept {
+    return grad(r[a, b], h);
+  }
+  /** @} */
 
   /** Width derivative of the smoothing kernel for two points. */
+  /** @{ */
   template<class PV>
-    requires (has<PV>(required_fields))
-  constexpr auto radius_deriv(PV a, PV b) const noexcept {
-    return radius_deriv(r[a, b], h[a]);
+  // requires (has<PV>(required_fields) && has_const<PV>(h))
+  constexpr auto width_deriv(PV a, PV b) const noexcept {
+    return width_deriv(r[a, b], h[a]);
   }
+  template<class PV, class Real>
+    requires (has<PV>(required_fields) && !has_const<PV>(h))
+  constexpr auto width_deriv(PV a, PV b, Real h) const noexcept {
+    return width_deriv(r[a, b], h);
+  }
+  /** @} */
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -142,7 +170,7 @@ public:
 
   /** Width derivative of the smoothing kernel at point. */
   template<class Real, size_t Dim>
-  constexpr auto radius_deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
+  constexpr auto width_deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
     const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);

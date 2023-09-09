@@ -38,7 +38,7 @@
 #include "TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/density_equation.hpp"
-#include "tit/sph/equation_of_state.hpp" // IWYU pragma: keep
+#include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 
@@ -49,17 +49,31 @@ namespace tit::sph {
 /******************************************************************************\
  ** The particle estimator with a fixed kernel width.
 \******************************************************************************/
-template<std::movable EquationOfState, density_equation DensityEquation,
+// TODO: I am not sure whether we should separate "symmetric" and
+// "non-symmetric" SPH equations. Basically, implementation of the cases
+// are both different and similar at the same time. The entire logic the same,
+// although there is a difference is a way we compute interations.
+// In symmetric case the best option is to compute pair interactions,
+// since the very similar term is added to or subtracted from each particle
+// in pair. In non-symmetric case this is no more true, an the most terms are
+// generally not similar (mainly because of the different width). So
+// implementing loops using unique pair is not sensible any more. (And it
+// also requires an additional symmetrization step).
+// So first step during this mess would be to split symmetric and
+// symmetric adjacency implementations.
+template<equation_of_state EquationOfState, density_equation DensityEquation,
          kernel Kernel, artificial_viscosity ArtificialViscosity>
 class ClassicSmoothEstimator {
 private:
 
-  EquationOfState _eos;
-  DensityEquation _density_equation;
-  Kernel _kernel;
-  ArtificialViscosity _artvisc;
+  EquationOfState eos_;
+  DensityEquation density_equation_;
+  Kernel kernel_;
+  ArtificialViscosity artvisc_;
 
 public:
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
@@ -71,19 +85,25 @@ public:
       DensityEquation::required_fields | Kernel::required_fields |
       ArtificialViscosity::required_fields;
 
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
   /** Initialize particle estimator. */
   constexpr ClassicSmoothEstimator( //
       EquationOfState eos = {}, DensityEquation density_equation = {},
       Kernel kernel = {}, ArtificialViscosity artvisc = {})
-      : _eos{std::move(eos)}, _density_equation{std::move(density_equation)},
-        _kernel{std::move(kernel)}, _artvisc{std::move(artvisc)} {}
+      : eos_{std::move(eos)}, density_equation_{std::move(density_equation)},
+        kernel_{std::move(kernel)}, artvisc_{std::move(artvisc)} {}
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class ParticleArray, class ParticleAdjacency>
   constexpr auto index(ParticleArray& particles,
                        ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
-    adjacent_particles.build([&](PV a) { return _kernel.radius(a); });
+    adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
   }
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class ParticleArray>
     requires (has<ParticleArray>(required_fields))
@@ -91,20 +111,25 @@ public:
     using PV = ParticleView<ParticleArray>;
     par::static_for_each(particles.views(), [&](PV a) {
       // Initialize particle pressure (and sound speed).
-      _eos.compute_pressure(a);
+      eos_.compute_pressure(a);
+      // Inititalize particle width and Omega.
+      if constexpr (std::same_as<DensityEquation, GradHSummationDensity>) {
+        h[a] = density_equation_.width(a);
+        Omega[a] = 1.0;
+      }
+      // Initialize particle artificial viscosity switch value.
+      if constexpr (has<PV>(alpha)) alpha[a] = 1.0;
     });
   }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Compute density-related fields. */
+  /** Setup boundary particles. */
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void compute_density(ParticleArray& particles,
-                                 ParticleAdjacency& adjacent_particles) const {
+  constexpr void setup_boundary(ParticleArray& particles,
+                                ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
-    // -------------------------------------------------------------------------
-    // BOUNDARY CONDITIONS.
 #if WITH_WALLS
     par::for_each(adjacent_particles.__fixed(), [&](auto ia) {
       auto [i, a] = ia;
@@ -117,7 +142,7 @@ public:
       std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
         const auto r_ab = r_a - r[b];
         const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
-        const auto W_ab = _kernel(r_ab, SCALE * h[a]);
+        const auto W_ab = kernel_(r_ab, SCALE * h[a]);
         S += W_ab * m[b] / rho[b];
         M += outer(B_ab, B_ab * W_ab * m[b] / rho[b]);
       });
@@ -130,7 +155,7 @@ public:
         std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
           const auto r_ab = r_a - r[b];
           const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
-          auto W_ab = dot(E, B_ab) * _kernel(r_ab, SCALE * h[a]);
+          auto W_ab = dot(E, B_ab) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
         });
@@ -139,7 +164,7 @@ public:
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
           const auto r_ab = r_a - r[b];
-          auto W_ab = (1 / S) * _kernel(r_ab, SCALE * h[a]);
+          auto W_ab = (1 / S) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
         });
@@ -155,8 +180,10 @@ public:
 #elif HARD_DAM_BREAKING
         constexpr auto rho_0 = 1000.0, cs_0 = 120.0;
 #endif
+#if WITH_GRAVITY
         constexpr auto G = Vec{0.0, -9.81};
         rho[a] += D * rho_0 / pow2(cs_0) * dot(G, N);
+#endif
 #if EASY_DAM_BREAKING
         { // SLIP WALL.
           auto Vn = dot(v[a], N) * N;
@@ -172,17 +199,46 @@ public:
     fail:
     });
 #endif
-    // -------------------------------------------------------------------------
+  }
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+  /** Compute density-related fields. */
+  template<class ParticleArray, class ParticleAdjacency>
+    requires (has<ParticleArray>(required_fields))
+  constexpr void compute_density(ParticleArray& particles,
+                                 ParticleAdjacency& adjacent_particles) const {
+    setup_boundary(particles, adjacent_particles);
+    using PV = ParticleView<ParticleArray>;
     // Calculate density (if density summation is used).
-    using DE = DensityEquation;
-    if constexpr (std::same_as<DE, SummationDensity>) {
+    if constexpr (std::same_as<DensityEquation, SummationDensity>) {
       // Classic density summation.
-      par::static_for_each(particles.views(), [&](PV a) {
+      par::for_each(particles.views(), [&](PV a) {
         if (fixed[a]) return;
         rho[a] = {};
         std::ranges::for_each(adjacent_particles[a], [&](PV b) {
-          const auto W_ab = _kernel(a, b);
+          const auto W_ab = kernel_(a, b);
           rho[a] += m[b] * W_ab;
+        });
+      });
+    } else if constexpr (std::same_as<DensityEquation, GradHSummationDensity>) {
+      // Grad-H density summation.
+      par::for_each(particles.views(), [&](PV a) {
+        if (fixed[a]) return;
+        // Solve zeta(h) = 0 for h, where: zeta(h) = Rho(h) - rho(h),
+        // Rho(h) - desired density, defined by the density equation.
+        newton_raphson(h[a], [&] {
+          rho[a] = {}, Omega[a] = {};
+          std::ranges::for_each(adjacent_particles[a], [&](PV b) {
+            const auto W_ab = kernel_(a, b, h[a]);
+            const auto dW_dh_ab = kernel_.width_deriv(a, b, h[a]);
+            rho[a] += m[b] * W_ab, Omega[a] += m[b] * dW_dh_ab;
+          });
+          const auto [Rho_a, dRho_dh_a] = density_equation_.density(a);
+          const auto zeta_a = Rho_a - rho[a];
+          const auto dzeta_dh_a = dRho_dh_a - Omega[a];
+          Omega[a] = 1.0 - Omega[a] / dRho_dh_a;
+          return std::tuple{zeta_a, dzeta_dh_a};
         });
       });
     }
@@ -197,12 +253,9 @@ public:
     });
     // Compute auxilary density fields.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
-      // Here we use Monaghan's orignal expression for derivatives because
-      // it is both cheaper and more consistent with across classic and
-      // Grad-H density summations.
       const auto [a, b] = ab;
-      [[maybe_unused]] const auto W_ab = _kernel(a, b);
-      [[maybe_unused]] const auto grad_W_ab = _kernel.grad(a, b);
+      [[maybe_unused]] const auto W_ab = kernel_(a, b);
+      [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
       [[maybe_unused]] const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
       // Update density gradient.
       if constexpr (has<PV>(grad_rho)) {
@@ -239,13 +292,17 @@ public:
     if constexpr (has<PV>(drho_dt)) {
       par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
         const auto [a, b] = ab;
-        const auto grad_W_ab = _kernel.grad(a, b);
+        const auto grad_W_ab = kernel_.grad(a, b);
         const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
         // Compute artificial viscosity diffusive term.
-        const auto Psi_ab = _artvisc.density_term(a, b);
+        const auto Psi_ab = artvisc_.density_term(a, b);
         // Update density time derivative.
-        drho_dt[a] += dot(m[b] * v[a, b] + V_b * Psi_ab, grad_W_ab);
-        drho_dt[b] -= dot(m[a] * v[b, a] + V_a * Psi_ab, grad_W_ab);
+        // clang-format off
+        drho_dt[a] += dot(m[b] * v[a, b] + V_b * Psi_ab,
+                          grad_W_ab) / Omega.get(a, 1.0);
+        drho_dt[b] -= dot(m[a] * v[b, a] + V_a * Psi_ab,
+                          grad_W_ab) / Omega.get(b, 1.0);
+        // clang-format on
       });
     }
   }
@@ -261,10 +318,10 @@ public:
     // Prepare velocity-related fields.
     par::static_for_each(particles.views(), [&](PV a) {
       // Compute pressure (and sound speed).
-      _eos.compute_pressure(a);
+      eos_.compute_pressure(a);
       // Clean velocity-related fields.
       dv_dt[a] = {};
-      if constexpr (has<PV>(eps, deps_dt)) deps_dt[a] = {};
+      if constexpr (has<PV>(u, du_dt)) du_dt[a] = {};
       if constexpr (has<PV>(v_xsph)) v_xsph[a] = {};
       if constexpr (has<PV>(div_v)) div_v[a] = {};
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
@@ -272,9 +329,9 @@ public:
     // Compute auxilary velocity fields.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
-      [[maybe_unused]] const auto grad_W_ab = _kernel.grad(a, b);
+      [[maybe_unused]] const auto W_ab = kernel_(a, b);
+      [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
       [[maybe_unused]] const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
-      [[maybe_unused]] const auto W_ab = _kernel(a, b);
       /// Update averaged velocity (XSPH).
       if constexpr (has<PV>(v_xsph)) {
         const auto xsph_flux = v[a, b] / havg(rho[a], rho[b]) * W_ab;
@@ -291,30 +348,50 @@ public:
         curl_v[a] += V_b * curl_flux, curl_v[b] += V_a * curl_flux;
       }
     });
-    // Compute velocity time derivative.
+    // Compute velocity and internal energy time derivatives.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
-      const auto grad_W_ab = _kernel.grad(a, b);
-      { // Convective updates.
+      const auto grad_W_ab = [&] {
+        // Convective updates.
         /// Compute artificial viscosity diffusive term.
-        const auto Pi_ab = _artvisc.velocity_term(a, b);
-        /// Update velocity time derivative.
-        // clang-format off
-        const auto conv_flux = -(p[a] / pow2(rho[a]) +
-                                 p[b] / pow2(rho[b]) + Pi_ab) * grad_W_ab;
-        // clang-format on
-        dv_dt[a] += m[b] * conv_flux;
-        dv_dt[b] -= m[a] * conv_flux;
-        if constexpr (has<PV>(eps, deps_dt)) {
-          /// Update internal enegry time derivative.
-          // clang-format off
-          deps_dt[a] += m[b] * (p[a] / pow2(rho[a]) + Pi_ab) *
-                               dot(v[a, b], grad_W_ab);
-          deps_dt[b] += m[a] * (p[b] / pow2(rho[b]) + Pi_ab) *
-                               dot(v[a, b], grad_W_ab);
-          // clang-format on
+        const auto Pi_ab = artvisc_.velocity_term(a, b);
+        if constexpr (has_const<PV>(h)) {
+          const auto grad_W_ab = kernel_.grad(a, b);
+          /// Update velocity time derivative.
+          const auto v_flux = (-p[a] / pow2(rho[a]) + //
+                               -p[b] / pow2(rho[b]) + Pi_ab) *
+                              grad_W_ab;
+          dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
+          if constexpr (has<PV>(u, du_dt)) {
+            /// Update internal enegry time derivative.
+            const auto u_flux = dot(v[b, a], grad_W_ab);
+            du_dt[a] += m[b] * (-p[a] / pow2(rho[a]) + Pi_ab) * u_flux;
+            du_dt[b] += m[a] * (-p[b] / pow2(rho[b]) + Pi_ab) * u_flux;
+          }
+          return grad_W_ab;
+        } else {
+          /// Update velocity time derivative.
+          const auto grad_W_aba = kernel_.grad(a, b, h[a]);
+          const auto grad_W_abb = kernel_.grad(a, b, h[b]);
+          const auto grad_W_ab = avg(grad_W_aba, grad_W_abb);
+          /// Update velocity time derivative.
+          const auto v_flux = -p[a] / (Omega[a] * pow2(rho[a])) * grad_W_aba +
+                              -p[b] / (Omega[b] * pow2(rho[b])) * grad_W_abb +
+                              Pi_ab * grad_W_ab;
+          dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
+          if constexpr (has<PV>(u, du_dt)) {
+            /// Update internal enegry time derivative.
+            const auto u_flux = dot(v[b, a], grad_W_ab);
+            // clang-format off
+            du_dt[a] += m[b] * (-p[a] / (Omega[a] * pow2(rho[a])) *
+                                dot(v[b, a], grad_W_aba) + Pi_ab * u_flux);
+            du_dt[b] += m[a] * (-p[b] / (Omega[b] * pow2(rho[b])) *
+                                dot(v[b, a], grad_W_abb) + Pi_ab * u_flux);
+            // clang-format on
+          }
+          return grad_W_ab;
         }
-      }
+      }();
 #if HARD_DAM_BREAKING
       // TODO: Viscosity.
       // -----------------------------------------------------------------------
@@ -332,10 +409,10 @@ public:
           // clang-format on
           dv_dt[a] += m[b] * visc_flux;
           dv_dt[b] -= m[a] * visc_flux;
-          if constexpr (has<PV>(eps, deps_dt)) {
+          if constexpr (has<PV>(u, du_dt)) {
             /// Update internal enegry time derivative.
-            deps_dt[a] += m[b] * dot(v[a, b], visc_flux);
-            deps_dt[a] -= m[a] * dot(v[a, b], visc_flux);
+            du_dt[a] += m[b] * dot(v[a, b], visc_flux);
+            du_dt[a] -= m[a] * dot(v[a, b], visc_flux);
           }
         } else {
           // Full stress tensor approach.
@@ -347,10 +424,10 @@ public:
           // clang-format on
           dv_dt[a] += m[b] * visc_flux;
           dv_dt[b] -= m[a] * visc_flux;
-          if constexpr (has<PV>(eps, deps_dt)) {
+          if constexpr (has<PV>(u, du_dt)) {
             /// Update internal enegry time derivative.
-            deps_dt[a] += m[b] * dot(v[a, b], visc_flux);
-            deps_dt[a] -= m[a] * dot(v[a, b], visc_flux);
+            du_dt[a] += m[b] * dot(v[a, b], visc_flux);
+            du_dt[a] -= m[a] * dot(v[a, b], visc_flux);
           }
         }
       }
@@ -401,154 +478,11 @@ public:
       }
 #endif
       // Compute artificial viscosity switch.
-      if constexpr (has<PV>(dalpha_dt)) _artvisc.compute_switch_deriv(a);
+      if constexpr (has<PV>(dalpha_dt)) artvisc_.compute_switch_deriv(a);
     });
   }
 
 }; // class ClassicSmoothEstimator
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#if 0
-/******************************************************************************\
- ** The particle estimator with a variable kernel width (Grad-H).
-\******************************************************************************/
-template<class EquationOfState, class Kernel = CubicKernel,
-         class ArtificialViscosity = MorrisMonaghanArtificialViscosity>
-  requires std::is_object_v<EquationOfState> && std::is_object_v<Kernel> &&
-           std::is_object_v<ArtificialViscosity>
-class GradHSmoothEstimator {
-private:
-
-  EquationOfState _eos;
-  Kernel _kernel;
-  ArtificialViscosity _artvisc;
-  real_t _coupling;
-
-public:
-
-  /** Set of particle fields that are required. */
-  static constexpr auto required_fields =
-      meta::Set{fixed} | // TODO: fixed should not be here.
-      meta::Set{h, Omega, m, rho, p, cs, r, v, dv_dt} |
-      EquationOfState::required_fields | Kernel::required_fields |
-      ArtificialViscosity::required_fields;
-
-  /** Initialize particle estimator. */
-  constexpr GradHSmoothEstimator( //
-      EquationOfState eos = {}, Kernel kernel = {},
-      ArtificialViscosity viscosity = {}, real_t coupling = 1.0) noexcept
-      : _kernel{std::move(kernel)}, _eos{std::move(eos)},
-        _artvisc{std::move(viscosity)}, _coupling{coupling} {}
-
-  template<class ParticleArray>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void init(ParticleArray& particles) const {
-    const auto eta = _coupling;
-    particles.for_each([&](auto a) {
-      if (!fixed[a]) return;
-      const auto d = dim(r[a]);
-      // Init particle width (and Omega).
-      h[a] = eta * pow(rho[a] / m[a], -inverse(1.0 * d));
-      Omega[a] = 1.0;
-      // Init particle pressure (and sound speed).
-      _eos.compute_pressure(a);
-    });
-  }
-
-  /** Estimate density, kernel width, pressure and sound speed. */
-  template<class ParticleArray>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void estimate_density(ParticleArray& particles) const {
-    const auto eta = _coupling;
-    particles.for_each([&](auto a) {
-      if (fixed[a]) return;
-      const auto d = dim(r[a]);
-      // Compute particle density, width (and Omega).
-      // Solve zeta(h) = 0 for h, where: zeta(h) = Rho(h) - rho(h),
-      // Rho(h) = m * (eta / h)^d - desired density.
-      newton_raphson(h[a], [&] {
-        rho[a] = {};
-        Omega[a] = {};
-        const auto search_radius = _kernel.radius(h[a]);
-        particles.nearby(a, search_radius, [&]<class B>(B b) {
-          rho[a] += m[b] * _kernel(r[a, b], h[a]);
-          Omega[a] += m[b] * _kernel.radius_deriv(r[a, b], h[a]);
-        });
-        const auto Rho_a = m[a] * pow(eta / h[a], d);
-        const auto dRho_dh_a = -d * Rho_a / h[a];
-        const auto zeta_a = Rho_a - rho[a];
-        const auto dzeta_dh_a = dRho_dh_a - Omega[a];
-        Omega[a] = 1.0 - Omega[a] / dRho_dh_a;
-        return std::tuple{zeta_a, dzeta_dh_a};
-      });
-      // Compute particle pressure (and sound speed).
-      _eos.compute_pressure(a);
-    });
-    // Compute velocity divergence and curl.
-    particles.for_each([&]<class PV>(PV a) {
-      if constexpr (has<PV>(div_v)) div_v[a] = {};
-      if constexpr (has<PV>(curl_v)) curl_v[a] = {};
-      const auto search_radius = _kernel.radius(h[a]);
-      particles.nearby(a, search_radius, [&]<class B>(B b) {
-        const auto grad_aba = _kernel.grad(r[a, b], h[a]);
-        const auto grad_abb = _kernel.grad(r[a, b], h[b]);
-        if constexpr (has<PV>(div_v)) {
-          div_v[a] += m[b] * (dot(v[a] / pow2(rho[a]), grad_aba) +
-                              dot(v[b] / pow2(rho[b]), grad_abb));
-        }
-        if constexpr (has<PV>(curl_v)) {
-          curl_v[a] -= m[b] * (cross(v[a] / pow2(rho[a]), grad_aba) +
-                               cross(v[b] / pow2(rho[b]), grad_abb));
-        }
-      });
-      if constexpr (has<PV>(div_v)) div_v[a] *= rho[a];
-      if constexpr (has<PV>(curl_v)) curl_v[a] *= rho[a];
-    });
-  }
-
-  /** Estimate acceleration and thermal heating. */
-  template<class ParticleArray>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void estimate_forces(ParticleArray& particles) const {
-    particles.for_each([&]<class PV>(PV a) {
-      if (fixed[a]) return;
-      // Compute velocity and thermal energy forces.
-      dv_dt[a] = {};
-      if constexpr (has<PV>(eps, deps_dt)) {
-        deps_dt[a] = {};
-      }
-      const auto d = dim(r[a]);
-      const auto search_radius = _kernel.radius(h[a]);
-      particles.nearby(a, search_radius, [&](PV b) {
-        const auto Pi_ab = _artvisc.kinematic(a, b);
-        const auto grad_aba = _kernel.grad(r[a, b], h[a]);
-        const auto grad_abb = _kernel.grad(r[a, b], h[b]);
-        const auto grad_ab = avg(grad_aba, grad_abb);
-        dv_dt[a] -= m[b] * (p[a] / (Omega[a] * pow2(rho[a])) * grad_aba +
-                            p[b] / (Omega[b] * pow2(rho[b])) * grad_abb +
-                            Pi_ab * grad_ab);
-        if constexpr (has<PV>(eps, deps_dt)) {
-          // clang-format off
-          deps_dt[a] += m[b] * (p[a] / (Omega[a] * pow2(rho[a])) *
-                                                        dot(grad_aba, v[a, b]) +
-                                Pi_ab * dot(grad_ab, v[a, b]));
-          // clang-format on
-        }
-      });
-#if 1
-      // TODO: Gravity.
-      dv_dt[a][1] -= 9.81;
-#endif
-      // Compute artificial viscosity switch forces.
-      if constexpr (has<PV>(dalpha_dt)) {
-        _artvisc.compute_switch_deriv(a);
-      }
-    });
-  }
-
-}; // class GradHSmoothEstimator
-#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

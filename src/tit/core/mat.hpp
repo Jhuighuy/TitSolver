@@ -50,7 +50,7 @@ public:
 
 private:
 
-  std::array<Row, Dim> _rows;
+  std::array<Row, Dim> rows_;
 
 public:
 
@@ -58,7 +58,7 @@ public:
   template<class... Args>
     requires (sizeof...(Args) == Dim) &&
              (std::constructible_from<Row, Args> && ...)
-  constexpr explicit Mat(Args... ri) noexcept : _rows{ri...} {}
+  constexpr explicit Mat(Args... ri) noexcept : rows_{ri...} {}
 
   /** Construct a scalar matrix. */
   constexpr Mat(Num q = Num{}) noexcept {
@@ -78,11 +78,11 @@ public:
   /** @{ */
   constexpr auto operator[](size_t i) noexcept -> Row& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
-    return _rows[i];
+    return rows_[i];
   }
   constexpr auto operator[](size_t i) const noexcept -> Row {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
-    return _rows[i];
+    return rows_[i];
   }
   /** @} */
 
@@ -91,12 +91,12 @@ public:
   constexpr auto operator[](size_t i, size_t j) noexcept -> Num& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     TIT_ASSERT(j < num_rows, "Column index is out of range.");
-    return _rows[i][j];
+    return rows_[i][j];
   }
   constexpr auto operator[](size_t i, size_t j) const noexcept -> Num {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     TIT_ASSERT(j < num_rows, "Column index is out of range.");
-    return _rows[i][j];
+    return rows_[i][j];
   }
   /** @} */
 

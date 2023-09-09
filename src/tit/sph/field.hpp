@@ -35,26 +35,26 @@ namespace tit {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template<class PV>
-concept _has_fields =
+concept has_fields_ =
     requires { std::remove_cvref_t<PV>::fields; } && //
     meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::fields))>;
 
 template<class PV>
-concept _has_constants =
+concept has_constants_ =
     requires { std::remove_cvref_t<PV>::constants; } && //
     meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::constants))>;
 
 /** Check particle fields presense. */
 /** @{ */
-template<_has_fields PV, meta::type... Fields>
+template<has_fields_ PV, meta::type... Fields>
 consteval bool has(meta::Set<Fields...> fields) {
   return std::remove_cvref_t<PV>::fields.includes(fields);
 }
-template<_has_fields PV, meta::type... Fields>
+template<has_fields_ PV, meta::type... Fields>
 consteval bool has(Fields... fields) {
   return has<PV>(meta::Set{fields...});
 }
-template<_has_fields PV, meta::type... Fields>
+template<has_fields_ PV, meta::type... Fields>
 consteval bool has() {
   return has<PV>(Fields{}...);
 }
@@ -62,19 +62,19 @@ consteval bool has() {
 
 /** Check particle constant presense. */
 /** @{ */
-template<_has_fields PV, meta::type... Consts>
+template<has_fields_ PV, meta::type... Consts>
 consteval bool has_const(meta::Set<Consts...> consts) {
-  if constexpr (!_has_constants<PV>) return false;
+  if constexpr (!has_constants_<PV>) return false;
   else {
     return has<PV>(consts) &&
            std::remove_cvref_t<PV>::constants.includes(consts);
   }
 }
-template<_has_fields PV, meta::type... Consts>
+template<has_fields_ PV, meta::type... Consts>
 consteval bool has_const(Consts... consts) {
   return has_const<PV>(meta::Set{consts...});
 }
-template<_has_fields PV, meta::type... Consts>
+template<has_fields_ PV, meta::type... Consts>
 consteval bool has_const() {
   return has_const<PV>(Consts{}...);
 }
@@ -95,23 +95,23 @@ consteval bool has_const() {
     using field_value_type = type;                                             \
                                                                                \
     /** Field value for the specified particle view. */                        \
-    template<_has_fields PV>                                                   \
+    template<has_fields_ PV>                                                   \
       requires (has<PV, name##_t>())                                           \
     constexpr auto operator[](PV&& a) const noexcept -> decltype(auto) {       \
       return a[*this];                                                         \
     }                                                                          \
     /** Field value delta for the specified particle view. */                  \
-    template<_has_fields PV>                                                   \
+    template<has_fields_ PV>                                                   \
       requires (has<PV, name##_t>())                                           \
     constexpr auto operator[](PV&& a, PV&& b) const noexcept {                 \
       return a[*this] - b[*this];                                              \
     }                                                                          \
                                                                                \
     /** Field value for the specified particle view or default value. */       \
-    template<_has_fields PV>                                                   \
-    constexpr auto get(PV&& a, auto def) const noexcept {                      \
-      if constexpr (has<PV>(*this)) return a[name##_t{}];                      \
-      else return def;                                                         \
+    template<has_fields_ PV>                                                   \
+    constexpr auto get(PV&& a, auto default_) const noexcept {                 \
+      if constexpr (has<PV, name##_t>()) return a[*this];                      \
+      else return default_;                                                    \
     }                                                                          \
                                                                                \
   }; /* class name##_t */                                                      \
@@ -201,9 +201,9 @@ TIT_DEFINE_SCALAR_FIELD(p);
 TIT_DEFINE_SCALAR_FIELD(cs);
 
 /** Particle thermal energy. */
-TIT_DEFINE_SCALAR_FIELD(eps);
+TIT_DEFINE_SCALAR_FIELD(u);
 /** Particle thermal energy time derivative. */
-TIT_DEFINE_SCALAR_FIELD(deps_dt);
+TIT_DEFINE_SCALAR_FIELD(du_dt);
 
 /** Particle molecular viscosity. */
 TIT_DEFINE_SCALAR_FIELD(mu);
