@@ -43,116 +43,116 @@ public:
   static constexpr auto num_rows = size_t{2};
 
   union {
-    std::array<float64_t, num_rows> _col;
-    float64x2_t _reg;
+    std::array<float64_t, num_rows> col_;
+    float64x2_t reg_;
   };
 
   constexpr Vec(float64_t qx, float64_t qy) noexcept {
     if consteval {
-      _col = {qx, qy};
+      col_ = {qx, qy};
     } else {
-      _reg = vsetq_lane_f64(qx, _reg, 0);
-      _reg = vsetq_lane_f64(qy, _reg, 1);
+      reg_ = vsetq_lane_f64(qx, reg_, 0);
+      reg_ = vsetq_lane_f64(qy, reg_, 1);
     }
   }
 
   constexpr Vec(float64_t q = 0.0) noexcept {
     if consteval {
-      _col = {q, q};
+      col_ = {q, q};
     } else {
-      _reg = vdupq_n_f64(q);
+      reg_ = vdupq_n_f64(q);
     }
   }
   constexpr auto operator=(float64_t q) noexcept -> Vec& {
     if consteval {
-      _col.fill(q);
+      col_.fill(q);
     } else {
-      _reg = vdupq_n_f64(q);
+      reg_ = vdupq_n_f64(q);
     }
     return *this;
   }
 
   constexpr auto operator[](size_t i) noexcept -> float64_t& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
-    return _col[i];
+    return col_[i];
   }
   constexpr auto operator[](size_t i) const noexcept -> float64_t {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
-    return _col[i];
+    return col_[i];
   }
 
 }; // class Vec<float64_t, 2>
 
 TIT_VEC_SIMD_FUNC_VV(operator+, 2, float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  r._reg = vaddq_f64(a._reg, b._reg);
+  r.reg_ = vaddq_f64(a.reg_, b.reg_);
   return r;
 })
 TIT_VEC_SIMD_FUNC_VV(operator+=, 2, float64_t, &a, float64_t, b, {
-  a._reg = vaddq_f64(a._reg, b._reg);
+  a.reg_ = vaddq_f64(a.reg_, b.reg_);
   return a;
 })
 
 TIT_VEC_SIMD_FUNC_V(operator-, 2, float64_t, a, {
   Vec<float64_t, 2> r;
-  r._reg = vnegq_f64(a._reg);
+  r.reg_ = vnegq_f64(a.reg_);
   return r;
 })
 TIT_VEC_SIMD_FUNC_VV(operator-, 2, float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  r._reg = vsubq_f64(a._reg, b._reg);
+  r.reg_ = vsubq_f64(a.reg_, b.reg_);
   return r;
 })
 TIT_VEC_SIMD_FUNC_VV(operator-=, 2, float64_t, &a, float64_t, b, {
-  a._reg = vsubq_f64(a._reg, b._reg);
+  a.reg_ = vsubq_f64(a.reg_, b.reg_);
   return a;
 })
 
 TIT_VEC_SIMD_FUNC_SV(operator*, 2, Num, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  r._reg = vmulq_f64(vdupq_n_f64(static_cast<float64_t>(a)), b._reg);
+  r.reg_ = vmulq_f64(vdupq_n_f64(static_cast<float64_t>(a)), b.reg_);
   return r;
 })
 TIT_VEC_SIMD_FUNC_VS(operator*, 2, float64_t, a, Num, b, {
   Vec<float64_t, 2> r;
-  r._reg = vmulq_f64(a._reg, vdupq_n_f64(static_cast<float64_t>(b)));
+  r.reg_ = vmulq_f64(a.reg_, vdupq_n_f64(static_cast<float64_t>(b)));
   return r;
 })
 TIT_VEC_SIMD_FUNC_VV(operator*, 2, float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  r._reg = vmulq_f64(a._reg, b._reg);
+  r.reg_ = vmulq_f64(a.reg_, b.reg_);
   return r;
 })
 TIT_VEC_SIMD_FUNC_VS(operator*=, 2, float64_t, &a, Num, b, {
-  a._reg = vmulq_f64(a._reg, vdupq_n_f64(static_cast<float64_t>(b)));
+  a.reg_ = vmulq_f64(a.reg_, vdupq_n_f64(static_cast<float64_t>(b)));
   return a;
 })
 TIT_VEC_SIMD_FUNC_VV(operator*=, 2, float64_t, &a, float64_t, b, {
-  a._reg = vmulq_f64(a._reg, b._reg);
+  a.reg_ = vmulq_f64(a.reg_, b.reg_);
   return a;
 })
 
 TIT_VEC_SIMD_FUNC_VS(operator/, 2, float64_t, a, Num, b, {
   Vec<float64_t, 2> r;
-  r._reg = vdivq_f64(a._reg, vdupq_n_f64(static_cast<float64_t>(b)));
+  r.reg_ = vdivq_f64(a.reg_, vdupq_n_f64(static_cast<float64_t>(b)));
   return r;
 })
 TIT_VEC_SIMD_FUNC_VV(operator/, 2, float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  r._reg = vdivq_f64(a._reg, b._reg);
+  r.reg_ = vdivq_f64(a.reg_, b.reg_);
   return r;
 })
 TIT_VEC_SIMD_FUNC_VS(operator/=, 2, float64_t, &a, Num, b, {
-  a._reg = vdivq_f64(a._reg, vdupq_n_f64(static_cast<float64_t>(b)));
+  a.reg_ = vdivq_f64(a.reg_, vdupq_n_f64(static_cast<float64_t>(b)));
   return a;
 })
 TIT_VEC_SIMD_FUNC_VV(operator/=, 2, float64_t, &a, float64_t, b, {
-  a._reg = vdivq_f64(a._reg, b._reg);
+  a.reg_ = vdivq_f64(a.reg_, b.reg_);
   return a;
 })
 
 TIT_VEC_SIMD_FUNC_V(sum, 2, float64_t, a, {
-  return vaddvq_f64(a._reg); //
+  return vaddvq_f64(a.reg_); //
 })
 
 namespace {
@@ -167,17 +167,17 @@ template<common_cmp_op Op>
 auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> uint64x2_t {
   const auto& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
-    return vceqq_f64(x._reg, y._reg);
+    return vceqq_f64(x.reg_, y.reg_);
   } else if constexpr (std::is_same_v<Op, std::not_equal_to<>>) {
-    return vmvnq_u64(vceqq_f64(x._reg, y._reg));
+    return vmvnq_u64(vceqq_f64(x.reg_, y.reg_));
   } else if constexpr (std::is_same_v<Op, std::less<>>) {
-    return vcltq_f64(x._reg, y._reg);
+    return vcltq_f64(x.reg_, y.reg_);
   } else if constexpr (std::is_same_v<Op, std::less_equal<>>) {
-    return vcleq_f64(x._reg, y._reg);
+    return vcleq_f64(x.reg_, y.reg_);
   } else if constexpr (std::is_same_v<Op, std::greater<>>) {
-    return vcgtq_f64(x._reg, y._reg);
+    return vcgtq_f64(x.reg_, y.reg_);
   } else if constexpr (std::is_same_v<Op, std::greater_equal<>>) {
-    return vcgeq_f64(x._reg, y._reg);
+    return vcgeq_f64(x.reg_, y.reg_);
   }
 }
 
@@ -186,17 +186,17 @@ TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp,
                    float64_t, a, {
   Vec<float64_t, 2> r;
   const auto mask = _cmp_to_mask(cmp);
-  r._reg = vreinterpretq_f64_u64(
-      vandq_u64(vreinterpretq_u64_f64(a._reg), mask));
+  r.reg_ = vreinterpretq_f64_u64(
+      vandq_u64(vreinterpretq_u64_f64(a.reg_), mask));
   return r;
 })
 TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
                      float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
   const auto mask = _cmp_to_mask(cmp);
-  r._reg = vreinterpretq_f64_u64(
-        vorrq_u64(vandq_u64(vreinterpretq_u64_f64(a._reg), mask),
-                  vandq_u64(vreinterpretq_u64_f64(b._reg), vmvnq_u64(mask))));
+  r.reg_ = vreinterpretq_f64_u64(
+        vorrq_u64(vandq_u64(vreinterpretq_u64_f64(a.reg_), mask),
+                  vandq_u64(vreinterpretq_u64_f64(b.reg_), vmvnq_u64(mask))));
   return r;
 })
 // clang-format on

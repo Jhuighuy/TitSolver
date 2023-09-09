@@ -22,45 +22,57 @@
 
 #if COMPRESSIBLE_SOD_PROBLEM
 
-int main() {
+template<class Real>
+int sph_main() {
   using namespace tit;
   using namespace tit::sph;
 
-  GradHSmoothEstimator estimator{IdealGasEquationOfState{}, {}, {}};
-  EulerIntegrator timeint{std::move(estimator)};
+  auto estimator = ClassicSmoothEstimator{
+      // Ideal gas equation of state.
+      IdealGasEquationOfState{},
+      // Use basic summation density.
+      GradHSummationDensity{},
+      // Cubic spline kernel.
+      GaussianKernel{},
+      // Use Rosswog's artificial viscosity switch with Balsara's limiter.
+      AlphaBetaArtificialViscosity{}};
+  EulerIntegrator timeint{std::move(estimator), 1};
 
-  using Vars = required_variables_t<decltype(estimator)>;
-  ParticleArray<double, 1, Vars> particles{};
-  for (size_t i = 0; i < 1600; ++i) {
-    particles.append([&]<class A>(A a) {
-      fixed[a] = i < 3;
-      m[a] = 1.0 / 1600;
-      rho[a] = 1.0;
-      h[a] = 0.001;
-      r[a] = i / 1600.0;
-      if constexpr (has<A>(eps)) eps[a] = 1.0 / 0.4;
-      if constexpr (has<A>(alpha)) alpha[a] = 1.0;
-    });
+  ParticleArray particles{
+      // 1D space.
+      Space<Real, 1>{},
+      // Fields that are required by the estimator.
+      timeint.required_fields,
+  };
+  for (int i = -10; i < 1600; ++i) {
+    auto a = particles.append();
+    fixed[a] = i < 0;
+    m[a] = 1.0 / 1600;
+    rho[a] = 1.0;
+    h[a] = 0.015;
+    r[a] = (i + 0.5) / 1600.0;
+    u[a] = 1.0 / 0.4;
   }
-  for (size_t i = 0; i < 200; ++i) {
-    particles.append([&]<class B>(B b) {
-      fixed[b] = i >= (200 - 1 - 3);
-      rho[b] = 0.125;
-      m[b] = 1.0 / 1600;
-      h[b] = 0.001;
-      r[b] = 1.0 + i / 200.0;
-      if constexpr (has<B>(eps)) eps[b] = 0.1 / (0.4 * 0.125);
-      if constexpr (has<B>(alpha)) alpha[b] = 1.0;
-    });
+  for (size_t i = 0; i < 200 + 10; ++i) {
+    auto b = particles.append();
+    fixed[b] = i >= 200;
+    rho[b] = 0.125;
+    m[b] = 1.0 / 1600;
+    h[b] = 0.015;
+    r[b] = 1.0 + (i + 0.5) / 200.0;
+    u[b] = 0.1 / (0.4 * 0.125);
   }
+
+  // Setup the particle adjacency structure.
+  auto adjacent_particles = ParticleAdjacency{particles, KDTreeFactory{}};
 
   for (size_t n = 0; n < 3 * 2500; ++n) {
     std::cout << n << std::endl;
     constexpr double dt = 0.00005;
-    timeint.step(dt, particles);
+    timeint.step(dt, particles, adjacent_particles);
   }
 
-  particles.sort();
+  // particles.sort();
   particles.print("particles-sod.csv");
 
   return 0;

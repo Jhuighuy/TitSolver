@@ -44,9 +44,9 @@ template<class SmoothEstimator>
 class EulerIntegrator {
 private:
 
-  SmoothEstimator _estimator{};
-  size_t _step_index;
-  size_t _adjacency_recalc_freq;
+  SmoothEstimator estimator_{};
+  size_t step_index_;
+  size_t adjacency_recalc_freq_;
 
 public:
 
@@ -57,8 +57,8 @@ public:
   /** Construct time integrator. */
   constexpr EulerIntegrator(SmoothEstimator estimator = {},
                             size_t adjacency_recalc_freq = 10) noexcept
-      : _estimator{std::move(estimator)}, _step_index{0},
-        _adjacency_recalc_freq{adjacency_recalc_freq} {}
+      : estimator_{std::move(estimator)}, step_index_{0},
+        adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /** Make a step in time. */
   template<class ParticleArray, class ParticleAdjacency>
@@ -67,16 +67,16 @@ public:
                       ParticleAdjacency& adjacent_particles) {
     using PV = ParticleView<ParticleArray>;
     // Initialize and index particles.
-    if (_step_index == 0) {
+    if (step_index_ == 0) {
       // Initialize particles.
-      _estimator.init(particles);
+      estimator_.init(particles);
     }
-    if (_step_index % _adjacency_recalc_freq == 0) {
+    if (step_index_ % adjacency_recalc_freq_ == 0) {
       // Update particle adjacency.
-      _estimator.index(particles, adjacent_particles);
+      estimator_.index(particles, adjacent_particles);
     }
     // Integrate particle density.
-    _estimator.compute_density(particles, adjacent_particles);
+    estimator_.compute_density(particles, adjacent_particles);
     if constexpr (has<PV>(drho_dt)) {
       par::static_for_each(particles.views(), [&](PV a) {
         if (fixed[a]) return;
@@ -84,7 +84,7 @@ public:
       });
     }
     // Integrate particle velocty (internal enegry, and rest).
-    _estimator.compute_forces(particles, adjacent_particles);
+    estimator_.compute_forces(particles, adjacent_particles);
     par::static_for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
@@ -95,10 +95,10 @@ public:
       } else {
         r[a] += dt * v[a];
       }
-      if constexpr (has<PV>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
+      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
-    ++_step_index;
+    ++step_index_;
   }
 
 }; // class EulerIntegrator
@@ -113,9 +113,9 @@ template<class SmoothEstimator>
 class RungeKuttaIntegrator {
 private:
 
-  SmoothEstimator _estimator{};
-  size_t _step_index;
-  size_t _adjacency_recalc_freq;
+  SmoothEstimator estimator_{};
+  size_t step_index_;
+  size_t adjacency_recalc_freq_;
 
 public:
 
@@ -126,8 +126,8 @@ public:
   /** Construct time integrator. */
   constexpr RungeKuttaIntegrator(SmoothEstimator estimator = {},
                                  size_t adjacency_recalc_freq = 10) noexcept
-      : _estimator{std::move(estimator)}, _step_index{0},
-        _adjacency_recalc_freq{adjacency_recalc_freq} {}
+      : estimator_{std::move(estimator)}, step_index_{0},
+        adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /** Make a step in time. */
   template<class ParticleArray, class ParticleAdjacency>
@@ -136,20 +136,20 @@ public:
                       ParticleAdjacency& adjacent_particles) {
     using PV = ParticleView<ParticleArray>;
     // Initialize and index particles.
-    if (_step_index == 0) {
+    if (step_index_ == 0) {
       // Initialize particles.
-      _estimator.init(particles);
+      estimator_.init(particles);
     }
-    if (_step_index % _adjacency_recalc_freq == 0) {
+    if (step_index_ % adjacency_recalc_freq_ == 0) {
       // Update particle adjacency.
-      _estimator.index(particles, adjacent_particles);
+      estimator_.index(particles, adjacent_particles);
     }
 #if 1
     // Do an explicit Euler substep.
     const auto substep = [&](auto& particles) {
       // Calculate right hand sides for the given particle array.
-      _estimator.compute_density(particles, adjacent_particles);
-      _estimator.compute_forces(particles, adjacent_particles);
+      estimator_.compute_density(particles, adjacent_particles);
+      estimator_.compute_forces(particles, adjacent_particles);
       // Integrate.
       par::for_each(particles.views(), [&]<class PV>(PV a) {
         if (fixed[a]) return;
@@ -161,7 +161,7 @@ public:
           r[a] += dt * v[a];
         }
         v[a] += dt * dv_dt[a];
-        if constexpr (has<PV>(eps, deps_dt)) eps[a] += dt * deps_dt[a];
+        if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
         if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
       });
     };
@@ -201,7 +201,7 @@ public:
     }
 #endif
 #endif
-    ++_step_index;
+    ++step_index_;
   }
 
 }; // class RungeKuttaIntegrator

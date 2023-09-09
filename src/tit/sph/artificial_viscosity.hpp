@@ -23,7 +23,6 @@
 #pragma once
 
 #include <concepts>
-#include <utility>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
@@ -79,7 +78,7 @@ concept artificial_viscosity =
 class AlphaBetaArtificialViscosity : public NoArtificialViscosity {
 private:
 
-  real_t _alpha, _beta;
+  real_t alpha_, beta_;
 
 public:
 
@@ -93,9 +92,9 @@ public:
    **             zero for weakly-compressible or incompressble flows. */
   constexpr AlphaBetaArtificialViscosity( //
       real_t alpha = 1.0, real_t beta = 2.0) noexcept
-      : _alpha{alpha}, _beta{beta} {
-    TIT_ASSERT(_alpha > 0.0, "Linear coefficient must be positive.");
-    TIT_ASSERT(_beta >= 0.0, "Quadratic coefficient must be non-negative.");
+      : alpha_{alpha}, beta_{beta} {
+    TIT_ASSERT(alpha_ > 0.0, "Linear coefficient must be positive.");
+    TIT_ASSERT(beta_ >= 0.0, "Quadratic coefficient must be non-negative.");
   }
 
   /** Compute momentum equation diffusive term. */
@@ -108,7 +107,7 @@ public:
     const auto rho_ab = avg(rho[a], rho[b]);
     const auto cs_ab = avg(cs[a], cs[b]);
     const auto mu_ab = h_ab * dot(r[a, b], v[a, b]) / norm2(r[a, b]);
-    const auto Pi_ab = (-_alpha * cs_ab + _beta * mu_ab) * mu_ab / rho_ab;
+    const auto Pi_ab = (alpha_ * cs_ab - beta_ * mu_ab) * mu_ab / rho_ab;
     return Pi_ab;
   }
 
@@ -119,7 +118,6 @@ public:
 \******************************************************************************/
 template<artificial_viscosity BaseArtificialViscosity =
              AlphaBetaArtificialViscosity>
-  requires std::derived_from<BaseArtificialViscosity, NoArtificialViscosity>
 class BalsaraArtificialViscosity : public BaseArtificialViscosity {
 public:
 
@@ -128,12 +126,11 @@ public:
       meta::Set{h, cs, div_v, curl_v} |
       BaseArtificialViscosity::required_fields;
 
-  /** Construct artificial viscosity scheme.
-   ** @param args Arguments for the base viscosity. */
-  template<class... Args>
-    requires std::constructible_from<BaseArtificialViscosity, Args...>
-  constexpr BalsaraArtificialViscosity(Args&&... args) noexcept
-      : BaseArtificialViscosity{std::forward<Args>(args)...} {}
+  /** Construct artificial viscosity.
+   ** @param base Base artificial viscosity. */
+  constexpr BalsaraArtificialViscosity(
+      BaseArtificialViscosity base = {}) noexcept
+      : BaseArtificialViscosity{std::move(base)} {}
 
   /** Compute momentum equation diffusive term. */
   template<class PV>
@@ -158,12 +155,11 @@ public:
 \******************************************************************************/
 template<artificial_viscosity BaseArtificialViscosity =
              BalsaraArtificialViscosity<>>
-  requires std::derived_from<BaseArtificialViscosity, NoArtificialViscosity>
 class RosswogArtificialViscosity : public BaseArtificialViscosity {
 private:
 
-  real_t _alpha_min, _alpha_max;
-  real_t _sigma;
+  real_t alpha_min_, alpha_max_;
+  real_t sigma_;
 
 public:
 
@@ -173,21 +169,20 @@ public:
       BaseArtificialViscosity::required_fields;
 
   /** Construct artificial viscosity scheme.
+   ** @param base Base artificial viscosity.
    ** @param alpha_min Minimal value of the switch coefficient.
    ** @param alpha_max Maximal value of the switch coefficient.
-   ** @param sigma Decay time inverse scale factor.
-   ** @param args Arguments for the base viscosity. */
-  template<class... Args>
-    requires std::constructible_from<BaseArtificialViscosity, Args...>
-  constexpr RosswogArtificialViscosity( //
-      real_t alpha_min = 0.1, real_t alpha_max = 2.0, real_t sigma = 0.1,
-      Args&&... args) noexcept
-      : BaseArtificialViscosity{std::forward<Args>(args)...},
-        _alpha_min{alpha_min}, _alpha_max{alpha_max}, _sigma{sigma} {
-    TIT_ASSERT(_alpha_min > 0.0, "Switch minimal value must be positive.");
-    TIT_ASSERT(_alpha_max > alpha_min, "Switch maximal value must be "
-                                       "greater than miminal.");
-    TIT_ASSERT(_sigma > 0.0, "Switch decay time inverse scale factor "
+   ** @param sigma Decay time inverse scale factor. */
+  constexpr RosswogArtificialViscosity(  //
+      BaseArtificialViscosity base = {}, //
+      real_t alpha_min = 0.1, real_t alpha_max = 2.0,
+      real_t sigma = 0.1) noexcept
+      : BaseArtificialViscosity{std::move(base)}, //
+        alpha_min_{alpha_min}, alpha_max_{alpha_max}, sigma_{sigma} {
+    TIT_ASSERT(alpha_min_ > 0.0, "Switch minimal value must be positive.");
+    TIT_ASSERT(alpha_max_ > alpha_min_, "Switch maximal value must be "
+                                        "greater than miminal.");
+    TIT_ASSERT(sigma_ > 0.0, "Switch decay time inverse scale factor "
                              "must be positive.");
   }
 
@@ -208,14 +203,67 @@ public:
     requires (has<PV>(required_fields))
   constexpr void compute_switch_deriv(PV a) const {
     const auto S_a = plus(-div_v[a]);
-    const auto tau_a = h[a] / (_sigma * cs[a]);
-    dalpha_dt[a] = (_alpha_max - alpha[a]) * S_a - //
-                   (alpha[a] - _alpha_min) / tau_a;
+    const auto tau_a = h[a] / (sigma_ * cs[a]);
+    dalpha_dt[a] = (alpha_max_ - alpha[a]) * S_a - //
+                   (alpha[a] - alpha_min_) / tau_a;
   }
 
 }; // class RosswogArtificialViscosity
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/******************************************************************************\
+ ** ξ-SPH artificial viscosity (Molteni, Colagrossi, 2009).
+ ** Weakly-compressible SPH formulation is assumed.
+\******************************************************************************/
+class MolteniColagrossiArtificialViscosity : public NoArtificialViscosity {
+private:
+
+  real_t rho_0_, cs_0_;
+  real_t alpha_, xi_;
+
+public:
+
+  /** Set of particle fields that are required. */
+  static constexpr auto required_fields = meta::Set{rho, grad_rho, h, r, v};
+
+  /** Construct artificial viscosity scheme.
+   ** @param cs_0 Reference sound speed, as defined for equation of state.
+   ** @param rho_0 Reference density, as defined for equation of state.
+   ** @param alpha Velocity viscosity coefficient. Typically 0.01~0.005.
+   ** @param xi Density diffusion coefficient. Typically 0.1. */
+  constexpr MolteniColagrossiArtificialViscosity( //
+      real_t cs_0, real_t rho_0, real_t alpha = 0.05, real_t xi = 0.1) noexcept
+      : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, xi_{xi} {
+    TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive.");
+    TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");
+    TIT_ASSERT(alpha_ > 0.0, "Velocity coefficient must be positive.");
+    TIT_ASSERT(xi_ > 0.0, "Density coefficient must be positive.");
+  }
+
+  /** Compute continuity equation diffusive term. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto density_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    const auto h_ab = avg(h[a], h[b]);
+    const auto D_ab = 2 * rho[a, b];
+    const auto Psi_ab = xi_ * h_ab * cs_0_ * D_ab * r[a, b] / norm2(r[a, b]);
+    return Psi_ab;
+  }
+
+  /** Compute momentum equation diffusive term. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto velocity_term(PV a, PV b) const noexcept {
+    TIT_ASSERT(a != b, "Particles must be different.");
+    const auto h_ab = avg(h[a], h[b]);
+    const auto Pi_ab = alpha_ * h_ab * cs_0_ * rho_0_ / (rho[a] * rho[b]) *
+                       dot(r[a, b], v[a, b]) / norm2(r[a, b]);
+    return Pi_ab;
+  }
+
+}; // class DeltaSPHArtificialViscosity
 
 /******************************************************************************\
  ** δ-SPH artificial viscosity (Marrone, 2011).
@@ -224,8 +272,8 @@ public:
 class DeltaSPHArtificialViscosity : public NoArtificialViscosity {
 private:
 
-  real_t _rho_0, _cs_0;
-  real_t _alpha, _delta;
+  real_t rho_0_, cs_0_;
+  real_t alpha_, delta_;
 
 public:
 
@@ -240,11 +288,11 @@ public:
   constexpr DeltaSPHArtificialViscosity( //
       real_t cs_0, real_t rho_0,         //
       real_t alpha = 0.02, real_t delta = 0.1) noexcept
-      : _cs_0{cs_0}, _rho_0{rho_0}, _alpha{alpha}, _delta{delta} {
-    TIT_ASSERT(_cs_0 > 0.0, "Reference sound speed must be positive.");
-    TIT_ASSERT(_rho_0 > 0.0, "Reference density speed must be positive.");
-    TIT_ASSERT(_alpha > 0.0, "Velocity coefficient must be positive.");
-    TIT_ASSERT(_delta > 0.0, "Density coefficient must be non-negative.");
+      : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, delta_{delta} {
+    TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive.");
+    TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");
+    TIT_ASSERT(alpha_ > 0.0, "Velocity coefficient must be positive.");
+    TIT_ASSERT(delta_ > 0.0, "Density coefficient must be positive.");
   }
 
   /** Compute continuity equation diffusive term. */
@@ -256,7 +304,7 @@ public:
     // Here we assume that density gradients are renormalized because
     // kernel gradient renormalization filter (`L`) was requested.
     const auto D_ab = 2 * rho[a, b] - dot(grad_rho[a] + grad_rho[b], r[a, b]);
-    const auto Psi_ab = _delta * h_ab * _cs_0 * D_ab * r[a, b] / norm2(r[a, b]);
+    const auto Psi_ab = delta_ * h_ab * cs_0_ * D_ab * r[a, b] / norm2(r[a, b]);
     return Psi_ab;
   }
 
@@ -266,7 +314,7 @@ public:
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     const auto h_ab = avg(h[a], h[b]);
-    const auto Pi_ab = -_alpha * h_ab * _cs_0 * _rho_0 / (rho[a] * rho[b]) *
+    const auto Pi_ab = alpha_ * h_ab * cs_0_ * rho_0_ / (rho[a] * rho[b]) *
                        dot(r[a, b], v[a, b]) / norm2(r[a, b]);
     return Pi_ab;
   }

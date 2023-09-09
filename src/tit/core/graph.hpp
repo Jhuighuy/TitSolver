@@ -46,37 +46,37 @@ class Multivector {
 private:
 
   // These two zeroes are intentional!
-  std::vector<size_t> _val_ranges{0};
-  std::vector<Val> _vals;
+  std::vector<size_t> val_ranges_{0};
+  std::vector<Val> vals_;
 
 public:
 
   /** Multivector size. */
   constexpr auto size() const noexcept -> size_t {
-    return _val_ranges.size() - 1;
+    return val_ranges_.size() - 1;
   }
   /** Is multivector empty? */
   constexpr auto empty() const noexcept -> bool {
-    return _val_ranges.size() == 1;
+    return val_ranges_.size() == 1;
   }
 
   /** Clear the multivector. */
   constexpr void clear() noexcept {
-    _val_ranges.clear(), _val_ranges.push_back(0);
-    _vals.clear();
+    val_ranges_.clear(), val_ranges_.push_back(0);
+    vals_.clear();
   }
 
   /** Range of values at index. */
   /** @{ */
   constexpr auto operator[](size_t index) noexcept {
     TIT_ASSERT(index < size(), "Multivector index is out of range.");
-    return std::ranges::subrange{_vals.begin() + _val_ranges[index],
-                                 _vals.begin() + _val_ranges[index + 1]};
+    return std::ranges::subrange{vals_.begin() + val_ranges_[index],
+                                 vals_.begin() + val_ranges_[index + 1]};
   }
   constexpr auto operator[](size_t index) const noexcept {
     TIT_ASSERT(index < size(), "Multivector index is out of range.");
-    return std::ranges::subrange{_vals.begin() + _val_ranges[index],
-                                 _vals.begin() + _val_ranges[index + 1]};
+    return std::ranges::subrange{vals_.begin() + val_ranges_[index],
+                                 vals_.begin() + val_ranges_[index + 1]};
   }
   /** @} */
 
@@ -85,8 +85,8 @@ public:
     requires std::indirectly_copyable<std::ranges::iterator_t<Vals>,
                                       std::ranges::iterator_t<std::vector<Val>>>
   constexpr void push_back(Vals&& vals) {
-    std::ranges::copy(vals, std::back_inserter(_vals));
-    _val_ranges.push_back(_vals.size());
+    std::ranges::copy(vals, std::back_inserter(vals_));
+    val_ranges_.push_back(vals_.size());
   }
 
   /** Sort values of each index. */
@@ -112,31 +112,31 @@ public:
                                IndexOf index_of, ValueOf value_of = {}) {
     // Compute value ranges.
     /// First compute how many values there are per each index.
-    _val_ranges.clear(), _val_ranges.resize(count + 1);
+    val_ranges_.clear(), val_ranges_.resize(count + 1);
     par::for_each(handles, [&](auto handle) {
       const auto index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      __sync_fetch_and_add(&_val_ranges[index + 1], 1);
+      __sync_fetch_and_add(&val_ranges_[index + 1], 1);
     });
     /// Perform a partial sum of the computed values to form ranges.
-    for (size_t index = 2; index < _val_ranges.size(); ++index) {
-      _val_ranges[index] += _val_ranges[index - 1];
+    for (size_t index = 2; index < val_ranges_.size(); ++index) {
+      val_ranges_[index] += val_ranges_[index - 1];
     }
     // Place values according to the ranges.
     /// Place each value into position of the first element of it's index range,
     /// then increment the position.
-    const auto num_vals = _val_ranges.back();
-    _vals.resize(num_vals); // No need to clear the `_vals`!
+    const auto num_vals = val_ranges_.back();
+    vals_.resize(num_vals); // No need to clear the `vals_`!
     par::for_each(handles, [&](auto handle) {
       const auto index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      const auto addr = __sync_fetch_and_add(&_val_ranges[index], 1);
-      _vals[addr] = value_of(handle);
+      const auto addr = __sync_fetch_and_add(&val_ranges_[index], 1);
+      vals_[addr] = value_of(handle);
     });
     /// Fix value ranges, since after incrementing the entire array is shifted
     /// left. So we need to shift it right and restore the leading zero.
-    std::shift_right(_val_ranges.begin(), _val_ranges.end(), 1);
-    _val_ranges[0] = 0;
+    std::shift_right(val_ranges_.begin(), val_ranges_.end(), 1);
+    val_ranges_[0] = 0;
   }
   /** This version of the function works best when array size is much less
    ** than typical amount of values in bucket (multivector is "wide"). */
@@ -146,7 +146,8 @@ public:
                                IndexOf index_of, ValueOf value_of = {}) {
     // Compute value ranges.
     /// First compute how many values there are per each index per each thread.
-    _val_ranges.clear(), _val_ranges.resize(count + 1);
+    val_ranges_.clear(), val_ranges_.resize(count + 1);
+    // TODO: `std::array<size_t, 8>` should be replaced!
     std::vector<std::array<size_t, 8>> val_ranges_per_thread(count + 1);
     par::static_for_each(handles, [&](auto handle) {
       const auto index = index_of(handle);
@@ -154,30 +155,30 @@ public:
       val_ranges_per_thread[index][par::thread_index()]++;
     });
     /// Perform a partial sum of the computed values to form ranges.
-    for (size_t index = 1; index < _val_ranges.size(); ++index) {
+    for (size_t index = 1; index < val_ranges_.size(); ++index) {
       /// First, compute partial sums across the threads.
       auto& thread_ranges = val_ranges_per_thread[index - 1];
       for (size_t thread = 1; thread < par::num_threads(); ++thread) {
         thread_ranges[thread] += thread_ranges[thread - 1];
       }
       /// Second, form the per index ranges.
-      _val_ranges[index] = thread_ranges.back();
-      _val_ranges[index] += _val_ranges[index - 1];
+      val_ranges_[index] = thread_ranges.back();
+      val_ranges_[index] += val_ranges_[index - 1];
       /// Third, adjust partial sums per threads threads to form the ranges.
       std::shift_right(thread_ranges.begin(), thread_ranges.end(), 1);
       thread_ranges[0] = 0;
-      for (auto& first : thread_ranges) first += _val_ranges[index - 1];
+      for (auto& first : thread_ranges) first += val_ranges_[index - 1];
     }
     // Place values according to the ranges.
     /// Place each value into position of the first element of it's index range,
     /// then increment the position.
-    const auto num_vals = _val_ranges.back();
-    _vals.resize(num_vals); // No need to clear the `_vals`!
+    const auto num_vals = val_ranges_.back();
+    vals_.resize(num_vals); // No need to clear the `vals_`!
     par::static_for_each(handles, [&](auto handle) {
       const auto index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
       const auto addr = val_ranges_per_thread[index][par::thread_index()]++;
-      _vals[addr] = value_of(handle);
+      vals_[addr] = value_of(handle);
     });
   }
   /** @} */

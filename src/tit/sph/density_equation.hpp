@@ -23,8 +23,12 @@
 #pragma once
 
 #include <concepts>
+#include <tuple>
 
+#include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
+#include "tit/core/types.hpp"
+#include "tit/core/vec.hpp"
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {
@@ -43,14 +47,40 @@ public:
 }; // class SummationDensity
 
 /******************************************************************************\
- ** Basic summation density.
+ ** Grad-H summation density.
 \******************************************************************************/
 class GradHSummationDensity : public SummationDensity {
+private:
+
+  real_t eta_;
+
 public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
-      meta::Set{Omega} | SummationDensity::required_fields;
+      meta::Set{h, m, r, rho, Omega} | SummationDensity::required_fields;
+
+  /** Construct Grad-H summation density.
+   ** @param eta Coupling factor. Typically 1.0~1.2. */
+  constexpr GradHSummationDensity(real_t eta = 1.0) noexcept : eta_{eta} {}
+
+  /** Particle width with respect to density. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto width(PV a) const noexcept {
+    const auto d = dim(r[a]);
+    return eta_ * pow(rho[a] / m[a], -1.0 / d);
+  }
+
+  /** Particle density (and it's width derivative) with respect to width. */
+  template<class PV>
+    requires (has<PV>(required_fields))
+  constexpr auto density(PV a) const noexcept {
+    const auto d = dim(r[a]);
+    const auto Rho_a = m[a] * pow(eta_ / h[a], d);
+    const auto dRho_dh_a = -d * Rho_a / h[a];
+    return std::tuple{Rho_a, dRho_dh_a};
+  }
 
 }; // class GradHSummationDensity
 

@@ -38,15 +38,15 @@ template<class Func>
 class OnAssignment {
 private:
 
-  Func _func;
+  Func func_;
 
 public:
 
-  constexpr explicit OnAssignment(Func func) : _func{std::move(func)} {}
+  constexpr explicit OnAssignment(Func func) : func_{std::move(func)} {}
 
   template<class Arg>
   constexpr void operator=(Arg&& arg) {
-    _func(std::forward<Arg>(arg));
+    func_(std::forward<Arg>(arg));
   }
 
 }; // class OnAssignment

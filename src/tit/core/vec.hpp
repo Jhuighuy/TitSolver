@@ -50,7 +50,7 @@ public:
 
 private:
 
-  std::array<Num, num_rows> _col;
+  std::array<Num, num_rows> col_;
 
 public:
 
@@ -58,15 +58,15 @@ public:
   template<class... Args>
     requires (sizeof...(Args) == Dim) &&
              (std::constructible_from<Num, Args> && ...)
-  constexpr explicit Vec(Args... qi) noexcept : _col{qi...} {}
+  constexpr explicit Vec(Args... qi) noexcept : col_{qi...} {}
 
   /** Fill-initialize the vector. */
   constexpr Vec(Num q = Num{}) noexcept {
-    _col.fill(q);
+    col_.fill(q);
   }
   /** Fill-assign the vector. */
   constexpr auto operator=(Num q) noexcept -> Vec& {
-    _col.fill(q);
+    col_.fill(q);
     return *this;
   }
 
@@ -74,11 +74,11 @@ public:
   /** @{ */
   constexpr auto operator[](size_t i) noexcept -> Num& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
-    return _col[i];
+    return col_[i];
   }
   constexpr auto operator[](size_t i) const noexcept -> Num {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
-    return _col[i];
+    return col_[i];
   }
   /** @} */
 

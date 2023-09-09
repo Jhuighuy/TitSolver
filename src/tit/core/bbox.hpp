@@ -42,6 +42,7 @@ public:
 
   /** Low bounding box point. */
   Vec<Num, Dim> low;
+
   /** High bounding box point. */
   Vec<Num, Dim> high;
 

@@ -32,7 +32,7 @@
 #include "tit/core/types.hpp"  // IWYU pragma: keep
 
 #if !TIT_ENABLE_TBB
-#error Pool allocator requires TBB for now.
+// #error Pool allocator requires TBB for now.
 #endif
 #define TBB_PREVIEW_MEMORY_POOL 1
 #include <oneapi/tbb/memory_pool.h>
@@ -66,18 +66,18 @@ class PoolAllocator final {
 private:
 
   // Individual allocations would be aligned to this value.
-  static constexpr auto _word_size = round_up(size_t{16}, sizeof(Val));
+  static constexpr auto word_size_ = align(size_t{16}, sizeof(Val));
   // Amount of the block.
-  static constexpr auto _block_size = round_up(size_t{64 * 1024}, _word_size);
+  static constexpr auto block_size_ = align(size_t{64 * 1024}, word_size_);
 
   // Number of bytes left in current block of storage.
-  size_t _remaining = 0;
+  size_t remaining_ = 0;
   // Pointer to base of current block of storage.
-  void* _base = nullptr;
+  void* base_ = nullptr;
   // Current location in block to next allocate.
-  void* _loc = nullptr;
+  void* loc_ = nullptr;
   // Mutex to make this guy thread-safe.
-  std::mutex _mutex;
+  std::mutex mutex_;
 
 public:
 
@@ -96,32 +96,32 @@ public:
 
   /** Destroy pool allocator and free all memory. */
   constexpr ~PoolAllocator() {
-    while (_base != nullptr) {
+    while (base_ != nullptr) {
       // Get pointer to previous block.
-      const auto prev = *static_cast<void**>(_base);
-      std::free(_base);
-      _base = prev;
+      const auto prev = *static_cast<void**>(base_);
+      std::free(base_);
+      base_ = prev;
     }
   }
 
   constexpr Val* allocate(size_t count = 1) {
     auto size = sizeof(Val) * count;
-    size = (size + (_word_size - 1)) & ~(_word_size - 1);
-    const auto lock = std::unique_lock{_mutex};
-    if (size > _remaining) {
+    size = (size + (word_size_ - 1)) & ~(word_size_ - 1);
+    const auto lock = std::unique_lock{mutex_};
+    if (size > remaining_) {
       /* Allocate new storage. */
       const auto blocksize =
-          std::max(size + sizeof(void*) + (_word_size - 1), _block_size);
+          std::max(size + sizeof(void*) + (word_size_ - 1), block_size_);
       const auto m = std::malloc(blocksize);
       if (m == nullptr) throw std::bad_alloc();
-      static_cast<void**>(m)[0] = _base;
-      _base = m;
-      _remaining = blocksize - sizeof(void*);
-      _loc = (static_cast<char*>(m) + sizeof(void*));
+      static_cast<void**>(m)[0] = base_;
+      base_ = m;
+      remaining_ = blocksize - sizeof(void*);
+      loc_ = (static_cast<char*>(m) + sizeof(void*));
     }
-    auto rloc = _loc;
-    _loc = static_cast<char*>(_loc) + size;
-    _remaining -= size;
+    auto rloc = loc_;
+    loc_ = static_cast<char*>(loc_) + size;
+    remaining_ -= size;
     return static_cast<Val*>(rloc);
   }
 

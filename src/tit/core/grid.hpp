@@ -60,18 +60,18 @@ public:
 
 private:
 
-  Points _points;
-  PointBBox _grid_bbox;
-  Vec<size_t, Dim> _num_cells;
-  Point _cell_size;
-  Multivector<size_t> _cell_points;
+  Points points_;
+  PointBBox grid_bbox_;
+  Vec<size_t, Dim> num_cells_;
+  Point cell_size_;
+  Multivector<size_t> cell_points_;
 
 public:
 
   constexpr explicit Grid(Points points, Real spacing = 2 * 0.6 / 80.0)
-      : _points{std::move(points)} {
+      : points_{std::move(points)} {
     TIT_ASSERT(spacing > 0, "Spacing must be positive.");
-    if (std::ranges::empty(_points)) return;
+    if (std::ranges::empty(points_)) return;
     // Build the grid.
     _build_grid(spacing);
   }
@@ -80,16 +80,16 @@ private:
 
   // Compute index of the point.
   constexpr auto _point_to_cell_index(Point point) const noexcept -> size_t {
-    point -= _grid_bbox.low, point /= _cell_size;
+    point -= grid_bbox_.low, point /= cell_size_;
     auto index = static_cast<size_t>(std::floor(point[0]));
     for (size_t i = 1; i < Dim; ++i) {
-      index *= _num_cells[i];
+      index *= num_cells_[i];
       index += static_cast<size_t>(std::floor(point[i]));
     }
     return index;
   }
   constexpr auto _point_to_cell_md_index(Point point) const noexcept {
-    point -= _grid_bbox.low, point /= _cell_size;
+    point -= grid_bbox_.low, point /= cell_size_;
     Vec<size_t, Dim> md_index;
     for (size_t i = 0; i < Dim; ++i) {
       md_index[i] = static_cast<size_t>(std::floor(point[i]));
@@ -99,27 +99,27 @@ private:
 
   constexpr void _build_grid(Real spacing) {
     // Compute grid bounding box.
-    _grid_bbox = BBox{_points[0]};
-    for (const auto& p : _points | std::views::drop(1)) _grid_bbox.update(p);
-    _grid_bbox.low -= 0.5 * spacing, _grid_bbox.high += 0.5 * spacing;
+    grid_bbox_ = BBox{points_[0]};
+    for (const auto& p : points_ | std::views::drop(1)) grid_bbox_.update(p);
+    grid_bbox_.low -= 0.5 * spacing, grid_bbox_.high += 0.5 * spacing;
     // Compute number of cells and cell sizes.
-    const auto extents = _grid_bbox.extents();
+    const auto extents = grid_bbox_.extents();
     const auto approx_num_cells = extents / spacing;
     // TODO: refactor these by introducing functionality into `Vec`.
     auto total_num_cells = size_t{1};
     for (size_t i = 0; i < Dim; ++i) {
-      _num_cells[i] = static_cast<size_t>(std::ceil(approx_num_cells[i]));
-      total_num_cells *= _num_cells[i];
+      num_cells_[i] = static_cast<size_t>(std::ceil(approx_num_cells[i]));
+      total_num_cells *= num_cells_[i];
     }
-    _cell_size = extents / _num_cells;
+    cell_size_ = extents / num_cells_;
     // Pack the points into a multivector.
-    _cell_points.assemble_tall(
+    cell_points_.assemble_tall(
         total_num_cells,
 #if TIT_IWYU
         // IWYU's clang has no `std::views::enumerate`.
-        std::views::single(std::tuple{size_t{0}, _points[0]}),
+        std::views::single(std::tuple{size_t{0}, points_[0]}),
 #else
-        std::views::enumerate(_points),
+        std::views::enumerate(points_),
 #endif
         [&](auto index_and_point) {
           const auto& [_, point] = index_and_point;
@@ -141,17 +141,17 @@ public:
     const auto search_dist = pow2(search_radius);
     // Convert point to bounding box.
     const auto search_bbox =
-        BBox{search_point - Point(search_radius) - 0.5 * _cell_size,
-             search_point + Point(search_radius) + 0.5 * _cell_size};
+        BBox{search_point - Point(search_radius) - 0.5 * cell_size_,
+             search_point + Point(search_radius) + 0.5 * cell_size_};
     const auto low = _point_to_cell_md_index( //
-        _grid_bbox.clamp(search_bbox.low) + 0.5 * _cell_size);
+        grid_bbox_.clamp(search_bbox.low) + 0.5 * cell_size_);
     const auto high = _point_to_cell_md_index(
-        _grid_bbox.clamp(search_bbox.high) - 0.5 * _cell_size);
+        grid_bbox_.clamp(search_bbox.high) - 0.5 * cell_size_);
     for (size_t i = low[0]; i <= high[0]; ++i) {
       for (size_t j = low[1]; j <= high[1]; ++j) {
-        const size_t cell_index = i * _num_cells[1] + j;
-        for (size_t k : _cell_points[cell_index]) {
-          const auto dist = norm2(search_point - _points[k]);
+        const size_t cell_index = i * num_cells_[1] + j;
+        for (size_t k : cell_points_[cell_index]) {
+          const auto dist = norm2(search_point - points_[k]);
           if (dist < search_dist) *out++ = k;
         }
       }

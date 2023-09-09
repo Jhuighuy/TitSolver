@@ -55,13 +55,13 @@ namespace tit {
 /******************************************************************************\
  ** Space specification.
 \******************************************************************************/
-template<class _Real, size_t Dim>
+template<class Real_, size_t Dim>
   requires (1 <= Dim && Dim <= 3)
 class Space {
 public:
 
   /** Real number type, used in this space. */
-  using Real = _Real;
+  using Real = Real_;
 
   /** Number of spatial dimensions. */
   static constexpr size_t dim = Dim;
@@ -78,8 +78,8 @@ template<class ParticleArray>
 class ParticleView final {
 private:
 
-  ParticleArray* _particles;
-  size_t _particle_index;
+  ParticleArray* particles_;
+  size_t particle_index_;
 
 public:
 
@@ -95,16 +95,16 @@ public:
   /** Construct a particle view. */
   constexpr ParticleView(ParticleArray& particles,
                          size_t particle_index) noexcept
-      : _particles{&particles}, _particle_index{particle_index} {}
+      : particles_{&particles}, particle_index_{particle_index} {}
 
   /** Associated particle array. */
   constexpr ParticleArray& array() const noexcept {
-    TIT_ASSERT(_particles != nullptr, "Particle array was not set.");
-    return *_particles;
+    TIT_ASSERT(particles_ != nullptr, "Particle array was not set.");
+    return *particles_;
   }
   /** Associated particle index. */
   constexpr auto index() const noexcept -> size_t {
-    return _particle_index;
+    return particle_index_;
   }
 
   /** Compare particle views. */
@@ -136,7 +136,9 @@ ParticleView(ParticleArray&) -> ParticleView<ParticleArray>;
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // TODO: move it to an appropriate place!
-#if HARD_DAM_BREAKING
+#if COMPRESSIBLE_SOD_PROBLEM
+inline constexpr auto Domain = BBox{Vec{0.0}, Vec{2.0}};
+#elif HARD_DAM_BREAKING
 inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{4.0, 3.0}};
 #elif EASY_DAM_BREAKING
 inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
@@ -152,12 +154,12 @@ template<class ParticleArray, class EngineFactory = GridFactory>
 class ParticleAdjacency final {
 private:
 
-  ParticleArray* _particles;
-  EngineFactory _engine_factory;
-  Graph _adjacency;
-  std::vector<size_t> _fixed;
-  Graph _interp_adjacency;
-  Multivector<std::tuple<size_t, size_t>> _block_adjacency;
+  ParticleArray* particles_;
+  EngineFactory engine_factory_;
+  Graph adjacency_;
+  std::vector<size_t> fixed_;
+  Graph interp_adjacency_;
+  Multivector<std::tuple<size_t, size_t>> block_adjacency_;
 
 public:
 
@@ -165,12 +167,12 @@ public:
    ** @param engine_factory Nearest-neighbours search engine factory. */
   constexpr ParticleAdjacency(ParticleArray& particles,
                               EngineFactory engine_factory = {}) noexcept
-      : _particles{&particles}, _engine_factory{std::move(engine_factory)} {}
+      : particles_{&particles}, engine_factory_{std::move(engine_factory)} {}
 
   /** Associated particle array. */
   constexpr ParticleArray& array() const noexcept {
-    TIT_ASSERT(_particles != nullptr, "Particle array was not set.");
-    return *_particles;
+    TIT_ASSERT(particles_ != nullptr, "Particle array was not set.");
+    return *particles_;
   }
 
   /** Build an adjacency graph.
@@ -183,10 +185,10 @@ public:
     // STEP I: neighbours search.
     auto positions = array().views() | //
                      std::views::transform([](PV a) { return a[r]; });
-    const auto engine = _engine_factory(std::move(positions));
-    _adjacency.clear();
-    _fixed.clear();
-    _interp_adjacency.clear();
+    const auto engine = engine_factory_(std::move(positions));
+    adjacency_.clear();
+    fixed_.clear();
+    interp_adjacency_.clear();
     std::ranges::for_each(array().views(), [&](PV a) {
       const auto search_point = r[a];
       const auto search_radius = radius_func(a);
@@ -195,24 +197,24 @@ public:
       search_results.clear();
       engine.search(search_point, search_radius,
                     std::back_inserter(search_results));
-      _adjacency.push_back(search_results);
+      adjacency_.push_back(search_results);
 #if 1
       if (fixed[a]) {
-        _fixed.push_back(a.index());
+        fixed_.push_back(a.index());
         const auto clipped_point = Domain.clamp(search_point);
         const auto interp_point = 2 * clipped_point - search_point;
         search_results.clear();
         engine.search(interp_point, 3 * search_radius,
                       std::back_inserter(search_results));
-        _interp_adjacency.push_back(std::views::all(search_results) |
+        interp_adjacency_.push_back(std::views::all(search_results) |
                                     std::views::filter([&](size_t b_index) {
                                       return !fixed[array()[b_index]];
                                     }));
       }
 #endif
     });
-    _adjacency.sort();
-    _interp_adjacency.sort();
+    adjacency_.sort();
+    interp_adjacency_.sort();
 #if 1
     // -------------------------------------------------------------------------
     // STEP I: reordering.
@@ -222,7 +224,7 @@ public:
     std::vector<size_t> parts(perm.size());
     for (size_t i = 0; i < parts.size(); ++i) parts[perm[i]] = i;
     // -------------------------------------------------------------------------
-    // STEP III: partitioning.
+    // STEP II: partitioning.
     size_t nparts = par::num_threads();
     size_t partsize = ceil_divide(parts.size(), nparts);
     // Compute partitioning.
@@ -231,15 +233,15 @@ public:
       parinfo[array()[i]].part = parts[i];
     }
     nparts += 1; // since we have the leftover
-    _block_adjacency.assemble_wide(nparts, _adjacency.edges(), [&](auto ij) {
+    block_adjacency_.assemble_wide(nparts, adjacency_.edges(), [&](auto ij) {
       auto [i, j] = ij;
       return parts[i] == parts[j] ? parts[i] : (nparts - 1);
     });
     {
       // Finalize color ranges.
       std::cout << "NCOL: ";
-      for (size_t i = 0; i < _block_adjacency.size(); ++i) {
-        std::cout << _block_adjacency[i].size() << " ";
+      for (size_t i = 0; i < block_adjacency_.size(); ++i) {
+        std::cout << block_adjacency_[i].size() << " ";
       }
       std::cout << std::endl;
     }
@@ -247,9 +249,9 @@ public:
   }
 
   constexpr auto __fixed() const noexcept {
-    return std::views::iota(size_t{0}, _fixed.size()) |
+    return std::views::iota(size_t{0}, fixed_.size()) |
            std::views::transform([&](size_t i) {
-             return std::tuple{i, array()[_fixed[i]]};
+             return std::tuple{i, array()[fixed_[i]]};
            });
   }
 
@@ -258,42 +260,35 @@ public:
     TIT_ASSERT(&a.array() != &array(),
                "Particle belongs to a different array.");
     TIT_ASSERT(a.index() < array().size(), "Particle is out of range.");
-    return std::views::all(_adjacency[a.index()]) |
-           std::views::transform([this](size_t b_index) {
-             TIT_ASSERT(b_index < array().size(), "Particle is out of range.");
-             return array()[b_index];
-           });
+    return std::views::all(adjacency_[a.index()]) |
+           std::views::transform(
+               [this](size_t b_index) { return array()[b_index]; });
   }
   /** Adjacent particles. */
   constexpr auto operator[](std::nullptr_t, size_t a) const noexcept {
-    return std::views::all(_interp_adjacency[a]) |
-           std::views::transform([this](size_t b_index) {
-             TIT_ASSERT(b_index < array().size(), "Particle is out of range.");
-             return array()[b_index];
-           });
+    return std::views::all(interp_adjacency_[a]) |
+           std::views::transform(
+               [this](size_t b_index) { return array()[b_index]; });
   }
 
-  /** Pairs of the adjacent particles. */
+  /** All pairs of the adjacent particles. */
+  constexpr auto all_pairs() const noexcept {}
+
+  /** Unique pairs of the adjacent particles. */
   constexpr auto pairs() const noexcept {
-    return std::views::all(_adjacency.edges()) |
+    return std::views::all(adjacency_.edges()) |
            std::views::transform([this](auto ab_indices) {
              auto [a_index, b_index] = ab_indices;
-             TIT_ASSERT(a_index < array().size(), "Particle is out of range.");
-             TIT_ASSERT(b_index < array().size(), "Particle is out of range.");
              return std::tuple{array()[a_index], array()[b_index]};
            });
   }
 #if 1
   constexpr auto block_pairs() const noexcept {
-    return std::views::iota(size_t{0}, _block_adjacency.size()) |
+    return std::views::iota(size_t{0}, block_adjacency_.size()) |
            std::views::transform([&](size_t block_index) {
-             return _block_adjacency[block_index] |
+             return block_adjacency_[block_index] |
                     std::views::transform([this](auto ab_indices) {
                       auto [a_index, b_index] = ab_indices;
-                      TIT_ASSERT(a_index < array().size(),
-                                 "Particle is out of range.");
-                      TIT_ASSERT(b_index < array().size(),
-                                 "Particle is out of range.");
                       return std::tuple{array()[a_index], array()[b_index]};
                     });
            });
@@ -356,13 +351,13 @@ public:
 
 private:
 
-  using _Constants = std::tuple<field_value_type_t<Consts, Real, Dim>...>;
-  using _Particle = decltype([]<class... Vars>(meta::Set<Vars...>) {
+  using Constants_ = std::tuple<field_value_type_t<Consts, Real, Dim>...>;
+  using Particle_ = decltype([]<class... Vars>(meta::Set<Vars...>) {
     return std::tuple<field_value_type_t<Vars, Real, Dim>...>{};
   }(variables));
 
-  _Constants _constants;
-  std::vector<_Particle> _particles;
+  Constants_ constants_;
+  std::vector<Particle_> particles_;
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -388,26 +383,18 @@ public:
 
   /** Number of particles. */
   constexpr size_t size() const noexcept {
-    return _particles.size();
+    return particles_.size();
   }
 
   /** Reserve amount of particles. */
   constexpr void reserve(size_t capacity) {
-    _particles.reserve(capacity);
+    particles_.reserve(capacity);
   }
 
   /** Appends a new particle. */
   constexpr auto append() {
-    _particles.emplace_back();
+    particles_.emplace_back();
     return (*this)[size() - 1];
-  }
-
-  constexpr void reorder(auto&& ordering) {
-    auto new_particles = decltype(_particles)(_particles.size());
-    for (size_t i = 0; i < ordering.size(); ++i) {
-      new_particles[i] = std::move(_particles[ordering[i]]);
-    }
-    _particles = std::move(new_particles);
   }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -452,7 +439,7 @@ public:
       return auto{(*this)[field]}; // Return a copy for constants.
     } else {
       return [&]<class... Vars>(meta::Set<Vars...>) -> decltype(auto) {
-        auto& particle = _particles[particle_index];
+        auto& particle = particles_[particle_index];
         return std::get<meta::index_of_v<Field, Vars...>>(particle);
       }(variables);
     }
@@ -466,7 +453,7 @@ public:
       return (*this)[field];
     } else {
       return [&]<class... Vars>(meta::Set<Vars...>) {
-        const auto& particle = _particles[particle_index];
+        const auto& particle = particles_[particle_index];
         return std::get<meta::index_of_v<Field, Vars...>>(particle);
       }(variables);
     }
@@ -480,7 +467,7 @@ public:
   constexpr auto operator[]([[maybe_unused]] Field field) noexcept
       -> decltype(auto) {
     if constexpr (meta::contains_v<Field, Consts...>) {
-      return std::get<meta::index_of_v<Field, Consts...>>(_constants);
+      return std::get<meta::index_of_v<Field, Consts...>>(constants_);
     } else {
       return OnAssignment{[&](auto value) {
         std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) { //
@@ -492,79 +479,9 @@ public:
   template<meta::type Field>
     requires meta::contains_v<Field, Consts...>
   constexpr auto operator[]([[maybe_unused]] Field field) const noexcept {
-    return std::get<meta::index_of_v<Field, Consts...>>(_constants);
+    return std::get<meta::index_of_v<Field, Consts...>>(constants_);
   }
   /** @} */
-
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#if 0
-  /** Sort particles into subranges according to their subdomains.
-   ** First subrange of particles are particles that belong to the current
-   ** process subdomain. Next blocks are sorted according to their subdomain. */
-  void sort(ParticleAdjacency<ParticleArray>& adjacent_particles) {}
-
-  /** Distribute particles after they were created by user. */
-  void distribute(ParticleAdjacency<ParticleArray>& adjacent_particles) {
-    if (par::main_process()) {
-      // Compute partitioning.
-      const auto num_parts = par::num_processes();
-      const auto parts = adjacent_particles.parts(num_parts);
-      // Assign global indices and part indices to particles.
-      std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) {
-        parinfo[a].global_index = a.index();
-        parinfo[a].part = parts[a.index()];
-      });
-      // Sort particles according to their part indices.
-      std::ranges::sort(_particles, [&](auto& a_data, auto& b_data) {
-        const auto a_index = &a_data - _particles.data(),
-                   b_index = &b_data - _particles.data();
-        return parinfo[(*this)[a_index]].part < parinfo[(*this)[b_index]].part;
-      });
-      // Compute ranges for the particles per part.
-      std::vector<size_t> part_ranges(num_parts + 1);
-      std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) {
-        part_ranges[parinfo[a].part + 1]++;
-      });
-      std::vector<MPI_Request> requests(num_parts - 1);
-      // Send amount of particles each part has.
-      for (size_t part = 1; part < num_parts; ++part) {
-        MPI_Isend(&part_ranges[part + 1], 1, MPI_UNSIGNED_LONG, part, 0,
-                  MPI_COMM_WORLD, &requests[part - 1]);
-      }
-      std::vector<MPI_Status> statuses(num_parts - 1);
-      MPI_Waitall(num_parts - 1, requests.data(), statuses.data());
-      // Compute ranges for particles.
-      for (size_t part = 1; part <= num_parts; ++part) {
-        part_ranges[part] += part_ranges[part - 1];
-      }
-      for (size_t part = 1; part < num_parts; ++part) {
-        MPI_Isend(&_particles[part_ranges[part]],
-                  sizeof(_particles[0]) *
-                      (part_ranges[part + 1] - part_ranges[part]),
-                  MPI_PACKED, part, 10, MPI_COMM_WORLD, &requests[part - 1]);
-      }
-      MPI_Waitall(num_parts - 1, requests.data(), statuses.data());
-    } else {
-      size_t num_particles{};
-      MPI_Request request{};
-      MPI_Status status{};
-      MPI_Irecv(&num_particles, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD,
-                &request);
-      MPI_Wait(&request, &status);
-      std::cout << "rcvd: " << num_particles << std::endl;
-      _particles.resize(num_particles);
-      MPI_Irecv(&_particles[0], sizeof(_particles[0]) * num_particles,
-                MPI_PACKED, 0, 10, MPI_COMM_WORLD, &request);
-      MPI_Wait(&request, &status);
-      std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) {
-        if (parinfo[a].part != par::process_index()) {
-          throw "invalid particle recieved.";
-        }
-      });
-    }
-  }
-#endif
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -596,23 +513,17 @@ public:
   }
 
   void print(const std::string& path) {
-    par::mp_ordered([&] {
-      std::ofstream output{};
-      if (par::is_main_proc()) {
-        output.open(path);
-        ((output << _make_name(Fields{}) << " "), ...);
-        output << std::endl;
-      } else {
-        output.open(path, std::ios_base::app);
-      }
-      for (size_t i = 0; i < size(); ++i) {
-        auto a = (*this)[i];
-        // if (a[parinfo].part != par::proc_index()) continue;
-        ((output << Fields{}[a] << " "), ...);
-        output << std::endl;
-      };
-      output.flush();
-    });
+    std::ofstream output{};
+    output.open(path);
+    ((output << _make_name(Fields{}) << " "), ...);
+    output << std::endl;
+    for (size_t i = 0; i < size(); ++i) {
+      auto a = (*this)[i];
+      // if (a[parinfo].part != par::proc_index()) continue;
+      ((output << Fields{}[a] << " "), ...);
+      output << std::endl;
+    };
+    output.flush();
   }
 
 }; // class ParticleArray

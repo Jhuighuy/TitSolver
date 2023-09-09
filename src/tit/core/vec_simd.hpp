@@ -39,10 +39,10 @@ namespace tit {
 
 // Set up the default register size.
 // Assuming 128-bit SIMD registers by default.
-#if defined(__AVX__)
-#define TIT_SIMD_REGISTER_SIZE (4 * sizeof(double))
-#elif defined(__AVX512F__)
+#if defined(__AVX512F__)
 #define TIT_SIMD_REGISTER_SIZE (8 * sizeof(double))
+#elif defined(__AVX__)
+#define TIT_SIMD_REGISTER_SIZE (4 * sizeof(double))
 #elif defined(__SSE__) || defined(__ARM_NEON)
 #define TIT_SIMD_REGISTER_SIZE (2 * sizeof(double))
 #else
@@ -111,7 +111,7 @@ public:
 
 private:
 
-  std::array<Reg, num_regs> _regs;
+  std::array<Reg, num_regs> regs_;
 
 public:
 
@@ -120,7 +120,7 @@ public:
     requires (sizeof...(Args) == Dim) &&
              (std::constructible_from<Num, Args> && ...)
   constexpr explicit Vec(Args... qi) noexcept
-      : _regs{[&]<size_t... rs>(std::index_sequence<rs...>) {
+      : regs_{[&]<size_t... rs>(std::index_sequence<rs...>) {
           const auto qi_padded = std::array<Num, num_rows + padding>{qi...};
           const auto pack_reg = [&]<size_t ri>(std::index_sequence<ri>) {
             return [&]<size_t... ss>(std::index_sequence<ss...>) {
@@ -132,11 +132,11 @@ public:
 
   /** Fill-initialize the vector. */
   constexpr Vec(Num q = Num{}) noexcept {
-    _regs.fill(Reg(q));
+    regs_.fill(Reg(q));
   }
   /** Fill-assign the vector. */
   constexpr auto operator=(Num q) noexcept -> Vec& {
-    _regs.fill(Reg(q));
+    regs_.fill(Reg(q));
     return *this;
   }
 
@@ -144,11 +144,11 @@ public:
   /** @{ */
   constexpr auto reg(size_t i) noexcept -> Reg& {
     TIT_ASSERT(i < num_regs, "Register index is out of range.");
-    return _regs[i];
+    return regs_[i];
   }
   constexpr auto reg(size_t i) const noexcept -> Reg {
     TIT_ASSERT(i < num_regs, "Register index is out of range.");
-    return _regs[i];
+    return regs_[i];
   }
   /** @} */
 
@@ -156,11 +156,11 @@ public:
   /** @{ */
   constexpr auto operator[](size_t i) noexcept -> Num& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
-    return _regs[i / reg_size][i % reg_size];
+    return regs_[i / reg_size][i % reg_size];
   }
   constexpr auto operator[](size_t i) const noexcept -> Num {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
-    return _regs[i / reg_size][i % reg_size];
+    return regs_[i / reg_size][i % reg_size];
   }
   /** @} */
 
