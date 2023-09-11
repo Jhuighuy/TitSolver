@@ -30,14 +30,14 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
-#include "tit/core/bbox.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/par.hpp"
 #include "tit/core/pool_allocator.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
+#include "tit/geom/bbox.hpp"
+#include "tit/par/thread.hpp"
 
-namespace tit {
+namespace tit::geom {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -287,4 +287,4 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit
+} // namespace tit::geom

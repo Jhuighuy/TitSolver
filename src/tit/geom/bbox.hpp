@@ -29,7 +29,7 @@
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 
-namespace tit {
+namespace tit::geom {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -103,4 +103,4 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit
+} // namespace tit::geom

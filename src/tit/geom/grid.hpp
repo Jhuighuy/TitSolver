@@ -23,11 +23,11 @@
 #pragma once
 
 #include "tit/core/assert.hpp"
-#include "tit/core/bbox.hpp"
-#include "tit/core/graph.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
+#include "tit/geom/bbox.hpp"
 
 #include <cmath>
 #include <iterator>
@@ -35,7 +35,7 @@
 #include <tuple>
 #include <utility>
 
-namespace tit {
+namespace tit::geom {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -188,4 +188,4 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit
+} // namespace tit::geom
