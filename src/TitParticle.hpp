@@ -35,17 +35,18 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
-#include "tit/core/bbox.hpp"
 #include "tit/core/graph.hpp"
-#include "tit/core/hilbert_ordering.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/misc.hpp"
-#include "tit/core/par.hpp"
-#include "tit/core/search_engine.hpp"
+#include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
+#include "tit/geom/bbox.hpp"
+#include "tit/geom/hilbert_ordering.hpp"
+#include "tit/geom/search_engine.hpp"
+#include "tit/par/thread.hpp"
 #include "tit/sph/field.hpp"
 
 namespace tit {
@@ -137,19 +138,19 @@ ParticleView(ParticleArray&) -> ParticleView<ParticleArray>;
 
 // TODO: move it to an appropriate place!
 #if COMPRESSIBLE_SOD_PROBLEM
-inline constexpr auto Domain = BBox{Vec{0.0}, Vec{2.0}};
+inline constexpr auto Domain = geom::BBox{Vec{0.0}, Vec{2.0}};
 #elif HARD_DAM_BREAKING
-inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{4.0, 3.0}};
+inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{4.0, 3.0}};
 #elif EASY_DAM_BREAKING
-inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
+inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
 #else
-inline constexpr auto Domain = BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
+inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 #endif
 
 /******************************************************************************\
  ** Particle adjacency graph.
 \******************************************************************************/
-template<class ParticleArray, class EngineFactory = GridFactory>
+template<class ParticleArray, class EngineFactory = geom::GridFactory>
   requires std::is_object_v<ParticleArray> && std::is_object_v<EngineFactory>
 class ParticleAdjacency final {
 private:
@@ -218,7 +219,7 @@ public:
 #if 1
     // -------------------------------------------------------------------------
     // STEP I: reordering.
-    auto ordering = ZCurveOrdering{positions};
+    auto ordering = geom::ZCurveOrdering{positions};
     std::vector<size_t> perm;
     ordering.GetHilbertElementOrdering(perm);
     std::vector<size_t> parts(perm.size());

@@ -25,8 +25,8 @@
 #include <type_traits> // IWYU pragma: keep
 
 #include "tit/core/meta.hpp"
-#include "tit/core/par.hpp"
 #include "tit/core/types.hpp"
+#include "tit/par/thread.hpp"
 
 #include "TitParticle.hpp"
 #include "tit/sph/field.hpp"

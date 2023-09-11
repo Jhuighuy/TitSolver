@@ -106,6 +106,9 @@ constexpr void invoke(Funcs&&... funcs) noexcept {
 #endif
 }
 
+template<class Range>
+concept input_range = std::ranges::input_range<Range>;
+
 template<class Range, class Func>
 concept _can_par =
     std::ranges::input_range<Range> && std::ranges::sized_range<Range> &&
