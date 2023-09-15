@@ -4,37 +4,24 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Ignore everything by default, but scan all directories.
-*
-*~
-!*/
+# Specify the list of sources.
+set(CXX_SOURCES
+    bbox.hpp
+    grid.hpp
+    hilbert_ordering.hpp
+    kd_tree.hpp
+    search_engine.hpp)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Configuration files.
-!.git*
-!/.clang-*
-!/.vscode/c_cpp_properties.json
-!/.vscode/settings.json
-!/src/cmake/IWYU.imp
+# Create the library.
+add_library(tit_geom INTERFACE ${CXX_SOURCES})
+add_library(tit::geom ALIAS tit_geom)
 
-# Output
-/output/
+# Link with the dependant libraries.
+target_link_libraries(tit_geom INTERFACE tit::core tit::par)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# CMake sources.
-!CMakeLists.txt
-!*.cmake
-
-# C++ files.
-!*.hpp
-!*.cpp
-
-# Scripts.
-!*.sh
-
-# Markdown files.
-!*.md
+# Enable static analysis.
+check_includes(tit::geom)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

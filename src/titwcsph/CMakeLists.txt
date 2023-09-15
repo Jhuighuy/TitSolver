@@ -4,37 +4,22 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Ignore everything by default, but scan all directories.
-*
-*~
-!*/
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Specify the list of sources.
+set(CXX_SOURCES
+    wcsph.cpp)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Configuration files.
-!.git*
-!/.clang-*
-!/.vscode/c_cpp_properties.json
-!/.vscode/settings.json
-!/src/cmake/IWYU.imp
+# Create the library.
+add_executable(titwcsph ${CXX_SOURCES})
+add_executable(tit::wcsph ALIAS titwcsph)
 
-# Output
-/output/
+# Link with the dependant libraries.
+target_link_libraries(titwcsph PRIVATE tit::core tit::geom tit::par tit::sph)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# CMake sources.
-!CMakeLists.txt
-!*.cmake
-
-# C++ files.
-!*.hpp
-!*.cpp
-
-# Scripts.
-!*.sh
-
-# Markdown files.
-!*.md
+# Enable static analysis.
+# check_includes(tit::wcsph)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

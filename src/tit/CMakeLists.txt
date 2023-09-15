@@ -4,37 +4,11 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Ignore everything by default, but scan all directories.
-*
-*~
-!*/
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Configuration files.
-!.git*
-!/.clang-*
-!/.vscode/c_cpp_properties.json
-!/.vscode/settings.json
-!/src/cmake/IWYU.imp
-
-# Output
-/output/
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# CMake sources.
-!CMakeLists.txt
-!*.cmake
-
-# C++ files.
-!*.hpp
-!*.cpp
-
-# Scripts.
-!*.sh
-
-# Markdown files.
-!*.md
+add_subdirectory(core)
+add_subdirectory(geom)
+add_subdirectory(par)
+add_subdirectory(sph)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
