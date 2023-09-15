@@ -4,40 +4,33 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Ignore everything by default, but scan all directories.
-*
-*~
-!*/
+# Find Qt.
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+if(NOT Qt6_FOUND)
+  return()
+endif()
+
+# Setup Qt.
+qt_standard_project_setup()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Configuration files.
-!.git*
-!/.clang-*
-!/.vscode/c_cpp_properties.json
-!/.vscode/settings.json
-!/src/cmake/IWYU.imp
-
-# Output
-/output/
+# Specify the list of sources.
+set(CXX_SOURCES
+    main_window.cpp
+    main_window.hpp
+    main_window.ui
+    main.cpp)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# CMake sources.
-!CMakeLists.txt
-!*.cmake
+# Create the executable.
+qt_add_executable(titgui ${CXX_SOURCES})
+add_executable(tit::gui ALIAS titgui)
 
-# C++ files.
-!*.hpp
-!*.cpp
+target_link_libraries(titgui PRIVATE tit::core Qt6::Widgets)
 
-# Qt files.
-!*.ui
-
-# Scripts.
-!*.sh
-
-# Markdown files.
-!*.md
+# Enable static analysis.
+# check_includes(tit::gui)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
