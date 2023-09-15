@@ -6,18 +6,18 @@
 
 #pragma once
 
+#include <cmath>
+#include <iterator>
+#include <ranges>
+#include <tuple>
+#include <utility>
+
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
-
-#include <cmath>
-#include <iterator>
-#include <ranges>
-#include <tuple>
-#include <utility>
 
 namespace tit::geom {
 
@@ -105,7 +105,7 @@ private:
 #else
         std::views::enumerate(points_),
 #endif
-        [&](auto index_and_point) {
+        [this](auto index_and_point) {
           const auto& [_, point] = index_and_point;
           return _point_to_cell_index(point);
         },
@@ -150,7 +150,7 @@ template<class Points, class... Args>
 Grid(Points&&, Args...) -> Grid<std::views::all_t<Points>>;
 
 template<class... Args>
-concept _can_grid = requires { Grid{std::declval<Args>()...}; };
+concept can_grid_ = requires { Grid{std::declval<Args>()...}; };
 
 /******************************************************************************\
  ** K-dimensional tree factory.
@@ -163,7 +163,7 @@ public:
 
   /** Produce a K-dimensional tree for the specified set op points. */
   template<std::ranges::viewable_range Points>
-    requires _can_grid<Points>
+    requires can_grid_<Points>
   constexpr auto operator()(Points&& points) const noexcept {
     return Grid{std::forward<Points>(points)};
   }
