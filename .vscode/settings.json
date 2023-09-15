@@ -7,6 +7,7 @@
   "[cpp]": {
     "editor.defaultFormatter": "xaver.clang-format"
   },
+  "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
@@ -128,5 +129,5 @@
     "variant": "cpp",
     "vector": "cpp",
     "version": "cpp",
-  },
+  }
 }

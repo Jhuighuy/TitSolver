@@ -46,11 +46,11 @@ function(check_includes TARGET_OR_ALIAS)
   set(ALL_TAGS)
   foreach(SOURCE ${TARGET_SOURCES})
     # Skip non-C/C++ files.
-    get_source_file_property(SOURCE_LANGUAGE ${SOURCE} LANGUAGE)
-    if(NOT ("${SOURCE_LANGUAGE}" STREQUAL "C") AND
-       NOT ("${SOURCE_LANGUAGE}" STREQUAL "CXX"))
-       continue()
-    endif()
+    # get_source_file_property(SOURCE_LANGUAGE ${SOURCE} LANGUAGE)
+    # if(NOT ("${SOURCE_LANGUAGE}" STREQUAL "C") AND
+    #    NOT ("${SOURCE_LANGUAGE}" STREQUAL "CXX"))
+    #    continue()
+    # endif()
     # Execute include-what-you-use.
     set(TAG ${SOURCE}.iwuy_tag)
     list(APPEND ALL_TAGS ${TAG})

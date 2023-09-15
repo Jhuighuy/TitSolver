@@ -160,8 +160,9 @@ int sph_main() {
   // Setup the particle adjacency structure.
   auto adjacent_particles = ParticleAdjacency{particles};
 
-  particles.print("out/particles-0.csv");
-  system("ln -sf out/particles-0.csv particles-dam.csv");
+  particles.print("output/test_output/particles-0.csv");
+  system("ln -sf output/test_output/particles-0.csv "
+         "output/test_output/particles.csv");
 
   Real time = 0.0, exectime = 0.0, printtime = 0.0;
   for (size_t n = 0; time <= 2.7; ++n, time += timestep) {
@@ -175,9 +176,10 @@ int sph_main() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
     if (n % 200 == 0 && n != 0) {
       start = std::chrono::high_resolution_clock::now();
-      const auto path = "out/particles-" + std::to_string(n / 200) + ".csv";
+      const auto path =
+          "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
-      system(("ln -sf " + path + " particles-dam.csv").c_str());
+      system(("ln -sf " + path + " output/test_output/particles.csv").c_str());
       auto delta = std::chrono::high_resolution_clock::now() - start;
       printtime +=
           1.0e-9 *
@@ -294,8 +296,9 @@ int sph_main() {
   // Setup the particle adjacency structure.
   auto adjacent_particles = ParticleAdjacency{particles};
 
-  particles.print("out/particles-0.csv");
-  system("ln -sf out/particles-0.csv particles-dam.csv");
+  particles.print("output/test_output/particles-0.csv");
+  system("ln -sf output/test_output/particles-0.csv "
+         "output/test_output/particles.csv");
 
   Real time = 0.0, exectime = 0.0, printtime = 0.0;
   for (size_t n = 0; time * sqrt(g / H) <= 6.90; ++n, time += dt) {
@@ -309,9 +312,10 @@ int sph_main() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
     if (n % 200 == 0 && n != 0) {
       start = std::chrono::high_resolution_clock::now();
-      const auto path = "out/particles-" + std::to_string(n / 200) + ".csv";
+      const auto path =
+          "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
-      system(("ln -sf " + path + " particles-dam.csv").c_str());
+      system(("ln -sf " + path + " output/test_output/particles.csv").c_str());
       auto delta = std::chrono::high_resolution_clock::now() - start;
       printtime +=
           1.0e-9 *

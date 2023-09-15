@@ -3,8 +3,8 @@
 ## Clean up the mess around parallelization
 
 - [x] Introduce `par/atomics.hpp`.
-- [ ] Introduce multidimensional vector with slicing.
-- [ ] Fix `Multivector::assemble_wide` using it.
+- [x] Introduce multidimensional vector with slicing.
+- [x] Fix `Multivector::assemble_wide` using it.
 - [ ] Fix `geom::Grid` using it.
 - [ ] Introduce partitioner.
 - [ ] Clean-up the mess inside `par/thread.hpp`.
