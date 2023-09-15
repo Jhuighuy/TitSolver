@@ -12,7 +12,7 @@
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 
-#include "TitParticle.hpp"
+#include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/smooth_estimator.hpp"
