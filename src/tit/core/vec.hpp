@@ -233,6 +233,42 @@ constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Cast vector components to a different type. */
+template<class To, class From, size_t Dim>
+constexpr auto static_vec_cast(Vec<From, Dim> a) noexcept {
+  Vec<To, Dim> r;
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = static_cast<To>(a[i]);
+  return r;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Compute the largest integer value not greater than vector component. */
+template<class Num, size_t Dim>
+constexpr auto floor(Vec<Num, Dim> a) noexcept {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = floor(a[i]);
+  return r;
+}
+
+/** Computes the nearest integer value to vector component. */
+template<class Num, size_t Dim>
+constexpr auto round(Vec<Num, Dim> a) noexcept {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = round(a[i]);
+  return r;
+}
+
+/** Compute the least integer value not less than number. */
+template<class Num, size_t Dim>
+constexpr auto ceil(Vec<Num, Dim> a) noexcept {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < r.num_rows; ++i) r[i] = ceil(a[i]);
+  return r;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 /** Sum of the vector components. */
 template<class Num, size_t Dim>
 constexpr auto sum(Vec<Num, Dim> a) noexcept {
