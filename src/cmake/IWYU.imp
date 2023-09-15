@@ -1,0 +1,20 @@
+[
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+  # Standard headers.
+  { include: [ "@<__fwd/string.h>"  , private, "<string>"      , public     ] },
+  { include: [ "@<__algorithm/.*>"  , private, "<algorithm>"   , public     ] },
+  { include: [ "@<__bit/.*>"        , private, "<bit>"         , public     ] },
+  { include: [ "@<__functional/.*>" , private, "<functional>"  , public     ] },
+  { include: [ "@<__iterator/.*>"   , private, "<iterator>"    , public     ] },
+  { include: [ "@<__concepts/.*>"   , private, "<concepts>"    , public     ] },
+  { include: [ "@<__memory/.*>"     , private, "<memory>"      , public     ] },
+  { include: [ "@<__mutex_base>"    , private, "<mutex>"       , public     ] },
+  { include: [ "@<__random/.*>"     , private, "<random>"      , public     ] },
+  { include: [ "@<__ranges/.*>"     , private, "<ranges>"      , public     ] },
+  { include: [ "@<__utility/.*>"    , private, "<utility>"     , public     ] },
+  { include: [ "@<__type_traits/.*>", private, "<type_traits>" , public     ] },
+  { include: [ "@<__tuple_dir/.*>"  , private, "<tuple>"       , public     ] },
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+]
