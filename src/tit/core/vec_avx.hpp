@@ -134,6 +134,9 @@ TIT_VEC_SIMD_FUNC_VV(operator/=, 2, float64_t, &a, float64_t, b, {
   return a;
 })
 
+// TODO: implement rounding. See
+// https://stackoverflow.com/questions/37091422/avx-sse-round-floats-down-and-return-vector-of-ints
+
 TIT_VEC_SIMD_FUNC_V(sum, 2, float64_t, a, {
   const auto reverse = _mm_unpackhi_pd(a.reg_, a.reg_);
   return _mm_cvtsd_f64(_mm_add_sd(a.reg_, reverse));

@@ -135,6 +135,22 @@ TIT_VEC_SIMD_FUNC_VV(operator/=, 2, float64_t, &a, float64_t, b, {
   return a;
 })
 
+TIT_VEC_SIMD_FUNC_V(floor, 2, float64_t, a, {
+  Vec<float64_t, 2> r;
+  r.reg_ = vrndmq_f64(a.reg_);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_V(round, 2, float64_t, a, {
+  Vec<float64_t, 2> r;
+  r.reg_ = vrndnq_f64(a.reg_);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_V(ceil, 2, float64_t, a, {
+  Vec<float64_t, 2> r;
+  r.reg_ = vrndpq_f64(a.reg_);
+  return r;
+})
+
 TIT_VEC_SIMD_FUNC_V(sum, 2, float64_t, a, {
   return vaddvq_f64(a.reg_); //
 })

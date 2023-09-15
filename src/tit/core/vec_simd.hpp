@@ -152,7 +152,6 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Vector addition. */
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
@@ -161,7 +160,6 @@ constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   return r;
 }
 
-/** Vector addition assignment. */
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
@@ -171,7 +169,6 @@ constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Vector negation. */
 template<class Num, size_t Dim>
   requires simd::use_regs<Num, Dim>
 constexpr auto operator-(Vec<Num, Dim> a) noexcept {
@@ -180,7 +177,6 @@ constexpr auto operator-(Vec<Num, Dim> a) noexcept {
   return r;
 }
 
-/** Vector subtraction. */
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
@@ -189,7 +185,6 @@ constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   return r;
 }
 
-/** Vector subtraction assignment. */
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto& operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
@@ -199,8 +194,6 @@ constexpr auto& operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Vector multiplication. */
-/** @{ */
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator*(NumA a, Vec<NumB, Dim> b) noexcept {
@@ -224,10 +217,7 @@ constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = a.reg(i) * b.reg(i);
   return r;
 }
-/** @} */
 
-/** Vector multiplication assignment. */
-/** @{ */
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto& operator*=(Vec<NumA, Dim>& a, NumB b) noexcept {
@@ -241,12 +231,9 @@ constexpr auto& operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) *= b.reg(i);
   return a;
 }
-/** @} */
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Vector division. */
-/** @{ */
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator/(Vec<NumA, Dim> a, NumB b) noexcept {
@@ -262,10 +249,7 @@ constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = a.reg(i) / b.reg(i);
   return r;
 }
-/** @} */
 
-/** Vector division assignment. */
-/** @{ */
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto& operator/=(Vec<NumA, Dim>& a, NumB b) noexcept {
@@ -279,11 +263,50 @@ constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) /= b.reg(i);
   return a;
 }
-/** @} */
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Sum of the vector components. */
+template<class To, class From, size_t Dim>
+  requires simd::regs_match<Dim, From, To>
+constexpr auto static_vec_cast(Vec<From, Dim> a) noexcept {
+  Vec<To, Dim> r;
+  for (size_t i = 0; i < r.num_regs; ++i) {
+    r.reg(i) = static_vec_cast<To>(a.reg(i));
+  }
+  return r;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+// TODO: implement with SIMD intrinsics (where possible).
+template<class Num, size_t Dim>
+  requires simd::use_regs<Num, Dim>
+constexpr auto floor(Vec<Num, Dim> a) noexcept {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = floor(a.reg(i));
+  return r;
+}
+
+// TODO: implement with SIMD intrinsics (where possible).
+template<class Num, size_t Dim>
+  requires simd::use_regs<Num, Dim>
+constexpr auto round(Vec<Num, Dim> a) noexcept {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = round(a.reg(i));
+  return r;
+}
+
+// TODO: implement with SIMD intrinsics (where possible).
+template<class Num, size_t Dim>
+  requires simd::use_regs<Num, Dim>
+constexpr auto ceil(Vec<Num, Dim> a) noexcept {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = ceil(a.reg(i));
+  return r;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 // TODO: implement sum with non-zero padding.
 template<class Num, size_t Dim>
   requires simd::use_regs<Num, Dim> && (Vec<Num, Dim>::padding == 0)
@@ -297,7 +320,6 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Merge vector with zero vector based on comparison result. */
 template<class Op, class NumX, class NumY, class NumA, size_t Dim>
   requires simd::regs_match<Dim, NumX, NumY, NumA>
 constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
@@ -309,7 +331,6 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
   }
   return r;
 }
-/** Merge two vectors bases on comparison result. */
 template<class Op, class NumX, class NumY, class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumX, NumY, NumA, NumB>
 constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //

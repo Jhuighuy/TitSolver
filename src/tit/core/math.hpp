@@ -93,6 +93,26 @@ constexpr auto minus(Num a) noexcept -> Num {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Compute the largest integer value not greater than number. */
+template<class Real>
+constexpr auto floor(Real a) noexcept -> Real {
+  return std::floor(a);
+}
+
+/** Computes the nearest integer value to number. */
+template<class Real>
+constexpr auto round(Real a) noexcept -> Real {
+  return std::round(a);
+}
+
+/** Compute the least integer value not less than number. */
+template<class Real>
+constexpr auto ceil(Real a) noexcept -> Real {
+  return std::ceil(a);
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 /** Inverse number. */
 template<class Real>
 constexpr auto inverse(Real a) noexcept -> Real {
