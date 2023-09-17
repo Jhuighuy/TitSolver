@@ -14,7 +14,7 @@
 
 #include "TitParticle.hpp"
 #include "tit/sph/field.hpp"
-#include "tit/sph/smooth_estimator.hpp" // IWYU pragma: keep
+#include "tit/sph/fluid_equations.hpp" // IWYU pragma: keep
 
 namespace tit::sph {
 
@@ -23,12 +23,12 @@ namespace tit::sph {
 /******************************************************************************\
  ** Semi-implicit Euler time integrator.
 \******************************************************************************/
-template<class SmoothEstimator>
-  requires std::is_object_v<SmoothEstimator>
+template<class FluidEquations>
+  requires std::is_object_v<FluidEquations>
 class EulerIntegrator {
 private:
 
-  SmoothEstimator estimator_{};
+  FluidEquations equations_{};
   size_t step_index_;
   size_t adjacency_recalc_freq_;
 
@@ -36,12 +36,12 @@ public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
-      meta::Set{fixed, r, v, dv_dt} | SmoothEstimator::required_fields;
+      meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
 
   /** Construct time integrator. */
-  constexpr EulerIntegrator(SmoothEstimator estimator = {},
+  constexpr EulerIntegrator(FluidEquations estimator = {},
                             size_t adjacency_recalc_freq = 10) noexcept
-      : estimator_{std::move(estimator)}, step_index_{0},
+      : equations_{std::move(estimator)}, step_index_{0},
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /** Make a step in time. */
@@ -53,14 +53,14 @@ public:
     // Initialize and index particles.
     if (step_index_ == 0) {
       // Initialize particles.
-      estimator_.init(particles);
+      equations_.init(particles);
     }
     if (step_index_ % adjacency_recalc_freq_ == 0) {
       // Update particle adjacency.
-      estimator_.index(particles, adjacent_particles);
+      equations_.index(particles, adjacent_particles);
     }
     // Integrate particle density.
-    estimator_.compute_density(particles, adjacent_particles);
+    equations_.compute_density(particles, adjacent_particles);
     if constexpr (has<PV>(drho_dt)) {
       par::static_for_each(particles.views(), [&](PV a) {
         if (fixed[a]) return;
@@ -68,7 +68,7 @@ public:
       });
     }
     // Integrate particle velocty (internal enegry, and rest).
-    estimator_.compute_forces(particles, adjacent_particles);
+    equations_.compute_forces(particles, adjacent_particles);
     par::static_for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
@@ -92,12 +92,12 @@ public:
 /******************************************************************************\
  ** Runge-Kutta time integrator.
 \******************************************************************************/
-template<class SmoothEstimator>
-  requires std::is_object_v<SmoothEstimator>
+template<class FluidEquations>
+  requires std::is_object_v<FluidEquations>
 class RungeKuttaIntegrator {
 private:
 
-  SmoothEstimator estimator_{};
+  FluidEquations equations_{};
   size_t step_index_;
   size_t adjacency_recalc_freq_;
 
@@ -105,12 +105,12 @@ public:
 
   /** Set of particle fields that are required. */
   static constexpr auto required_fields =
-      meta::Set{fixed, r, v, dv_dt} | SmoothEstimator::required_fields;
+      meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
 
   /** Construct time integrator. */
-  constexpr RungeKuttaIntegrator(SmoothEstimator estimator = {},
+  constexpr RungeKuttaIntegrator(FluidEquations estimator = {},
                                  size_t adjacency_recalc_freq = 10) noexcept
-      : estimator_{std::move(estimator)}, step_index_{0},
+      : equations_{std::move(estimator)}, step_index_{0},
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /** Make a step in time. */
@@ -122,18 +122,18 @@ public:
     // Initialize and index particles.
     if (step_index_ == 0) {
       // Initialize particles.
-      estimator_.init(particles);
+      equations_.init(particles);
     }
     if (step_index_ % adjacency_recalc_freq_ == 0) {
       // Update particle adjacency.
-      estimator_.index(particles, adjacent_particles);
+      equations_.index(particles, adjacent_particles);
     }
 #if 1
     // Do an explicit Euler substep.
     const auto substep = [&](auto& particles) {
       // Calculate right hand sides for the given particle array.
-      estimator_.compute_density(particles, adjacent_particles);
-      estimator_.compute_forces(particles, adjacent_particles);
+      equations_.compute_density(particles, adjacent_particles);
+      equations_.compute_forces(particles, adjacent_particles);
       // Integrate.
       par::for_each(particles.views(), [&]<class PV>(PV a) {
         if (fixed[a]) return;

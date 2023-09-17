@@ -14,8 +14,8 @@
 
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
+#include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/kernel.hpp"
-#include "tit/sph/smooth_estimator.hpp"
 #include "tit/sph/time_integrator.hpp"
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -27,7 +27,7 @@ int sph_main() {
   using namespace tit;
   using namespace tit::sph;
 
-  auto estimator = ClassicSmoothEstimator{
+  auto equations = FluidEquations{
       // Ideal gas equation of state.
       IdealGasEquationOfState{},
       // Use basic summation density.
@@ -36,12 +36,12 @@ int sph_main() {
       GaussianKernel{},
       // Use Rosswog's artificial viscosity switch with Balsara's limiter.
       AlphaBetaArtificialViscosity{}};
-  EulerIntegrator timeint{std::move(estimator), 1};
+  EulerIntegrator timeint{std::move(equations), 1};
 
   ParticleArray particles{
       // 1D space.
       Space<Real, 1>{},
-      // Fields that are required by the estimator.
+      // Fields that are required by the equations.
       timeint.required_fields,
   };
   for (int i = -10; i < 1600; ++i) {
@@ -103,8 +103,8 @@ int sph_main() {
   const Real cs_0 = 120.0;
   const Real mu_0 = 1.0e-3;
 
-  // Setup the SPH estimator:
-  auto estimator = ClassicSmoothEstimator{
+  // Setup the SPH equations:
+  auto equations = FluidEquations{
       // Weakly compressible equation of state.
       WeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
       // Continuity equation instead of density summation.
@@ -119,14 +119,14 @@ int sph_main() {
       AlphaBetaArtificialViscosity{0.1, 0.0}};
 
   // Setup the time itegrator:
-  auto timeint = EulerIntegrator{std::move(estimator)};
-  // auto timeint = RungeKuttaIntegrator{std::move(estimator)};
+  auto timeint = EulerIntegrator{std::move(equations)};
+  // auto timeint = RungeKuttaIntegrator{std::move(equations)};
 
   // Setup the particles array:
   ParticleArray particles{
       // 2D space.
       Space<Real, 2>{},
-      // Fields that are required by the estimator.
+      // Fields that are required by the equations.
       timeint.required_fields,
       // Set of whole system constants.
       m,  // Particle mass assumed constant.
@@ -227,26 +227,26 @@ int sph_main() {
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
 
-  // Setup the SPH estimator:
-  auto estimator = ClassicSmoothEstimator{
-      // Weakly compressible equation of state.
-      LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-      // Continuity equation instead of density summation.
-      ContinuityEquation{},
-      // C2 Wendland's spline kernel.
-      QuarticWendlandKernel{},
-      // Use delta-SPH artificial viscosity formulation.
-      DeltaSPHArtificialViscosity{cs_0, rho_0}};
+  // Setup the SPH equations:
+  auto equations =
+      FluidEquations{// Weakly compressible equation of state.
+                     LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+                     // Continuity equation instead of density summation.
+                     ContinuityEquation{},
+                     // C2 Wendland's spline kernel.
+                     QuarticWendlandKernel{},
+                     // Use delta-SPH artificial viscosity formulation.
+                     DeltaSPHArtificialViscosity{cs_0, rho_0}};
 
   // Setup the time itegrator:
-  auto timeint = EulerIntegrator{std::move(estimator)};
-  // auto timeint = RungeKuttaIntegrator{std::move(estimator)};
+  auto timeint = EulerIntegrator{std::move(equations)};
+  // auto timeint = RungeKuttaIntegrator{std::move(equations)};
 
   // Setup the particles array:
   ParticleArray particles{
       // 2D space.
       Space<Real, 2>{},
-      // Fields that are required by the estimator.
+      // Fields that are required by the equations.
       timeint.required_fields,
       // Set of whole system constants.
       m, // Particle mass assumed constant.
@@ -297,8 +297,7 @@ int sph_main() {
   auto adjacent_particles = ParticleAdjacency{particles};
 
   particles.print("output/test_output/particles-0.csv");
-  system("ln -sf output/test_output/particles-0.csv "
-         "output/test_output/particles.csv");
+  system("ln -sf output/test_output/particles-0.csv particles.csv");
 
   Real time = 0.0, exectime = 0.0, printtime = 0.0;
   for (size_t n = 0; time * sqrt(g / H) <= 6.90; ++n, time += dt) {
@@ -315,7 +314,7 @@ int sph_main() {
       const auto path =
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
-      system(("ln -sf " + path + " output/test_output/particles.csv").c_str());
+      system(("ln -sf ./" + path + " particles.csv").c_str());
       auto delta = std::chrono::high_resolution_clock::now() - start;
       printtime +=
           1.0e-9 *

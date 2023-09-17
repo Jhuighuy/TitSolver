@@ -1,3 +1,3 @@
 # `titwcsph`
 
-This executable contains the WCSPH solver.
+This executable contains the weakly compressible SPH solver.
