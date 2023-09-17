@@ -47,7 +47,7 @@ namespace tit::sph {
 // symmetric adjacency implementations.
 template<equation_of_state EquationOfState, density_equation DensityEquation,
          kernel Kernel, artificial_viscosity ArtificialViscosity>
-class ClassicSmoothEstimator {
+class FluidEquations {
 private:
 
   EquationOfState eos_;
@@ -71,10 +71,10 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Initialize particle estimator. */
-  constexpr ClassicSmoothEstimator( //
-      EquationOfState eos = {}, DensityEquation density_equation = {},
-      Kernel kernel = {}, ArtificialViscosity artvisc = {})
+  /** Initialize fluid equations. */
+  constexpr FluidEquations(EquationOfState eos = {},
+                           DensityEquation density_equation = {},
+                           Kernel kernel = {}, ArtificialViscosity artvisc = {})
       : eos_{std::move(eos)}, density_equation_{std::move(density_equation)},
         kernel_{std::move(kernel)}, artvisc_{std::move(artvisc)} {}
 
@@ -466,7 +466,7 @@ public:
     });
   }
 
-}; // class ClassicSmoothEstimator
+}; // class FluidEquations
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

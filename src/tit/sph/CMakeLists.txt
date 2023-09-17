@@ -10,8 +10,8 @@ set(CXX_SOURCES
     density_equation.hpp
     equation_of_state.hpp
     field.hpp
+    fluid_equations.hpp
     kernel.hpp
-    smooth_estimator.hpp
     time_integrator.hpp
     TitParticle.hpp)
 
