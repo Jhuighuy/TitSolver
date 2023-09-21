@@ -67,7 +67,7 @@ private:
 public:
 
   /** Set of particle fields that are required. */
-  static constexpr auto required_fields = meta::Set{rho, h, r, v, p, cs};
+  static constexpr auto required_fields = meta::Set{rho, h, r, v, cs};
 
   /** Construct artificial viscosity scheme.
    ** @param alpha Linear viscosity coefficient.
@@ -90,7 +90,7 @@ public:
     const auto h_ab = avg(h[a], h[b]);
     const auto rho_ab = avg(rho[a], rho[b]);
     const auto cs_ab = avg(cs[a], cs[b]);
-    const auto mu_ab = h_ab * dot(r[a, b], v[a, b]) / norm2(r[a, b]);
+    const auto mu_ab = h_ab * dot(v[a, b], r[a, b]) / norm2(r[a, b]);
     const auto Pi_ab = (alpha_ * cs_ab - beta_ * mu_ab) * mu_ab / rho_ab;
     return Pi_ab;
   }

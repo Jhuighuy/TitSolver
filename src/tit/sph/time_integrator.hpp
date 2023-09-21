@@ -155,7 +155,9 @@ public:
       par::for_each(in_particles.views(), [&]<class PV>(PV a) {
         if (fixed[a]) return;
         auto out_a = out_particles[a.index()];
-        rho[out_a] = wa * rho[a] + wb * rho[out_a];
+        if constexpr (has<PV>(rho) && !has_const<PV>(rho)) {
+          rho[out_a] = wa * rho[a] + wb * rho[out_a];
+        }
         v[out_a] = wa * v[a] + wb * v[out_a];
         r[out_a] = wa * r[a] + wb * r[out_a];
       });

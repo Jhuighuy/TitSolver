@@ -208,12 +208,41 @@ constexpr auto operator*(const Mat<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = dot(a[i], b);
   return r;
 }
+/** Matrix-matrix multiplication. */
+template<class NumA, class NumB, size_t Dim>
+constexpr auto operator*(const Mat<NumA, Dim>& a,
+                         const Mat<NumB, Dim>& b) noexcept {
+  Mat<mul_result_t<NumA, NumB>, Dim> r(0.0);
+  for (size_t i = 0; i < r.num_rows; ++i) {
+    for (size_t j = 0; j < r.num_rows; ++j) {
+      for (size_t k = 0; k < r.num_rows; ++k) r[i, j] += a[i, k] * b[k, j];
+    }
+  }
+  return r;
+}
 
 /** Vector outer product. */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto outer(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Mat<mul_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] * b;
+  return r;
+}
+
+/** Matrix transpose. */
+template<class Num, size_t Dim>
+constexpr auto transpose(Mat<Num, Dim> a) noexcept {
+  for (size_t i = 0; i < a.num_rows; ++i) {
+    for (size_t j = 0; j < i; ++j) std::swap(a[i, j], a[j, i]);
+  }
+  return a;
+}
+
+/** Matrix trace. */
+template<class Num, size_t Dim>
+constexpr auto tr(Mat<Num, Dim> a) noexcept {
+  add_result_t<Num> r = a[0, 0];
+  for (size_t i = 1; i < a.num_rows; ++i) r += a[i, i];
   return r;
 }
 
@@ -251,6 +280,14 @@ public:
     for (size_t i = 1; i < a.num_rows; ++i) {
       _det = std::min(_det, abs(_l[i, i] * _u[i, i]));
     }
+  }
+
+  constexpr auto tdet() const noexcept {
+    auto det = _l[0, 0] * _u[0, 0];
+    for (size_t i = 1; i < _l.num_rows; ++i) {
+      det *= _l[i, i] * _u[i, i];
+    }
+    return det;
   }
 
   /** Determinant of the matrix. */
