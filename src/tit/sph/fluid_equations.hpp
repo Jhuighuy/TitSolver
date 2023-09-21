@@ -74,18 +74,10 @@ public:
   /** Initialize fluid equations. */
   constexpr FluidEquations(EquationOfState eos = {},
                            DensityEquation density_equation = {},
-                           Kernel kernel = {}, ArtificialViscosity artvisc = {})
+                           Kernel kernel = {},
+                           ArtificialViscosity artvisc = {}) noexcept
       : eos_{std::move(eos)}, density_equation_{std::move(density_equation)},
         kernel_{std::move(kernel)}, artvisc_{std::move(artvisc)} {}
-
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-  template<class ParticleArray, class ParticleAdjacency>
-  constexpr auto index(ParticleArray& particles,
-                       ParticleAdjacency& adjacent_particles) const {
-    using PV = ParticleView<ParticleArray>;
-    adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
-  }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -104,6 +96,15 @@ public:
       // Initialize particle artificial viscosity switch value.
       if constexpr (has<PV>(alpha)) alpha[a] = 1.0;
     });
+  }
+
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+  template<class ParticleArray, class ParticleAdjacency>
+  constexpr auto index(ParticleArray& particles,
+                       ParticleAdjacency& adjacent_particles) const {
+    using PV = ParticleView<ParticleArray>;
+    adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
   }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -301,9 +302,9 @@ public:
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
     par::static_for_each(particles.views(), [&](PV a) {
-      // Compute pressure (and sound speed).
+      /// Compute pressure (and sound speed).
       eos_.compute_pressure(a);
-      // Clean velocity-related fields.
+      /// Clean velocity-related fields.
       dv_dt[a] = {};
       if constexpr (has<PV>(u, du_dt)) du_dt[a] = {};
       if constexpr (has<PV>(v_xsph)) v_xsph[a] = {};
