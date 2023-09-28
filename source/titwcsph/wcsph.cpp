@@ -220,9 +220,9 @@ auto sph_main(CmdArgs /*args*/) -> int {
 } // namespace tit::sph
 
 void tit::tit_main(CmdArgs args) {
-  if (argc > 1 && std::string_view{argv[1]} == "riemann") {
-    sph::sph_main<float64_t, true>(argc, argv);
+  if (args.argc() > 1 && std::string_view{args.argv()[1]} == "riemann") {
+    sph::sph_main<float64_t, true>(args);
   } else {
-    sph::sph_main<float64_t, false>(argc, argv);
+    sph::sph_main<float64_t, false>(args);
   }
 }
