@@ -24,6 +24,7 @@ add_tit_library(
     "reconstruction.hpp"
     "riemann_solver.hpp"
     "time_integrator.hpp"
+    "total_lagrangian.hpp"
     "viscosity.hpp"
   DEPENDS
     tit::core
