@@ -113,7 +113,7 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Compute velocity related fields.
+  /// Compute velocity-related fields.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void compute_forces(ParticleMesh& mesh, ParticleArray& particles) const {

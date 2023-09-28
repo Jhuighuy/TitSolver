@@ -15,6 +15,7 @@ add_tit_library(
     "field.hpp"
     "fluid_equations_riemann.hpp"
     "fluid_equations.hpp"
+    "fsi.hpp"
     "heat_conductivity.hpp"
     "kernel.hpp"
     "momentum_equation.hpp"
