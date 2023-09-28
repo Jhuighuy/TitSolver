@@ -27,8 +27,8 @@ function(check_includes TARGET_OR_ALIAS)
       -Xiwyu --error
       -Xiwyu --no_fwd_decls
       -Xiwyu --verbose=-1
-      -Xiwyu --mapping_file=${CMAKE_CURRENT_FUNCTION_LIST_DIR}/IWYU.imp
-      -std=gnu++2b # IWYU has no C++23
+      -Xiwyu --mapping_file=${CMAKE_SOURCE_DIR}/cmake/IWYU.imp
+      -std=c++2b # IWYU has no C++23.
       -stdlib=libc++ # Force use G++'s stdlib.
       -DTIT_IWYU=1)
   # Append target's include directories and definitions.

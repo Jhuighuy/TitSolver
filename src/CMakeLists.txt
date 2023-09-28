@@ -66,6 +66,11 @@ list(APPEND CXX_COMPILE_OPTIONS
 list(APPEND CXX_COMPILE_OPTIONS
      -g -Ofast -march=native -finline-limit=10000000 -ffp-contract=fast)
 
+# Enable "classic" linker for macOS.
+if(${APPLE})
+  list(APPEND CXX_LINK_OPTIONS -ld_classic)
+endif()
+
 # Apply the options.
 target_compile_definitions(tit_iface INTERFACE ${CXX_DEFINITIONS})
 target_compile_options(tit_iface INTERFACE ${CXX_COMPILE_OPTIONS})
