@@ -9,6 +9,7 @@
 #include <type_traits>
 
 #include "tit/core/mat.hpp"
+#include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/misc.hpp"
 #include "tit/core/types.hpp"
@@ -66,9 +67,63 @@ consteval bool has_const() {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Abstract class for fields specification. */
+template<class field_t>
+class Field {
+public:
+
+  /** Field value for the specified particle view. */
+  template<has_fields_ PV>
+    requires (has<PV, field_t>())
+  constexpr auto operator[](PV&& a) const noexcept -> decltype(auto) {
+    return a[field_t{}];
+  }
+
+  /** Field value for the specified particle view or default value. */
+  template<has_fields_ PV>
+  constexpr auto get(PV&& a, auto default_) const noexcept {
+    if constexpr (has<PV, field_t>()) return a[field_t{}];
+    else return default_;
+  }
+
+  /** Field value delta for the specified particle view. */
+  template<has_fields_ PV>
+    requires (has<PV, field_t>())
+  constexpr auto operator[](PV&& a, PV&& b) const noexcept {
+    return a[field_t{}] - b[field_t{}];
+  }
+
+  /** Average of the field values over the specified particle views. */
+  // TODO: here we should check for all `PVs` types to be the same and avoid
+  // avergaing if the current field is const.
+  template<has_fields_... PVs>
+    requires (... && has<PVs, field_t>())
+  constexpr auto avg(PVs&&... ai) const noexcept {
+    // Namespace prefix is a must here to avoid recursion.
+    return tit::avg(ai[field_t{}]...);
+  }
+
+  /** Weighted average of the field values over the specified particle views. */
+  template<has_fields_... PVs>
+    requires (... && has<PVs, field_t>())
+  constexpr auto wavg(PVs&&... ai) const noexcept {
+    // Namespace prefix is a must here to avoid recursion.
+    return tit::avg(ai[field_t{}]...);
+  }
+
+  /** Harmonic average of the field values over the specified particle views. */
+  template<has_fields_... PVs>
+    requires (... && has<PVs, field_t>())
+  constexpr auto havg(PVs&&... ai) const noexcept {
+    // Namespace prefix is a must here to avoid recursion.
+    return tit::havg(ai[field_t{}]...);
+  }
+
+}; // class Field
+
 /** Declare a particle field. */
 #define TIT_DEFINE_FIELD(type, name, ...)                                      \
-  class name##_t {                                                             \
+  class name##_t final : public Field<name##_t> {                              \
   public:                                                                      \
                                                                                \
     /** Field name. */                                                         \
@@ -77,26 +132,6 @@ consteval bool has_const() {
     /** Field type. */                                                         \
     template<class Real, size_t Dim>                                           \
     using field_value_type = type;                                             \
-                                                                               \
-    /** Field value for the specified particle view. */                        \
-    template<has_fields_ PV>                                                   \
-      requires (has<PV, name##_t>())                                           \
-    constexpr auto operator[](PV&& a) const noexcept -> decltype(auto) {       \
-      return a[*this];                                                         \
-    }                                                                          \
-    /** Field value delta for the specified particle view. */                  \
-    template<has_fields_ PV>                                                   \
-      requires (has<PV, name##_t>())                                           \
-    constexpr auto operator[](PV&& a, PV&& b) const noexcept {                 \
-      return a[*this] - b[*this];                                              \
-    }                                                                          \
-                                                                               \
-    /** Field value for the specified particle view or default value. */       \
-    template<has_fields_ PV>                                                   \
-    constexpr auto get(PV&& a, auto default_) const noexcept {                 \
-      if constexpr (has<PV, name##_t>()) return a[*this];                      \
-      else return default_;                                                    \
-    }                                                                          \
                                                                                \
   }; /* class name##_t */                                                      \
   inline constexpr name##_t name __VA_OPT__(, __VA_ARGS__);

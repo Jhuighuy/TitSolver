@@ -319,7 +319,7 @@ public:
       [[maybe_unused]] const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
       /// Update averaged velocity (XSPH).
       if constexpr (has<PV>(v_xsph)) {
-        const auto xsph_flux = v[a, b] / havg(rho[a], rho[b]) * W_ab;
+        const auto xsph_flux = v[a, b] / rho.havg(a, b) * W_ab;
         v_xsph[a] += m[b] * xsph_flux, v_xsph[b] -= m[a] * xsph_flux;
       }
       /// Update velocity divergence.
@@ -383,7 +383,7 @@ public:
       if constexpr (has<PV>(mu)) {
         // Viscous updates.
         const auto d = dim(r[a]);
-        const auto mu_ab = avg(mu[a], mu[b]);
+        const auto mu_ab = mu.avg(a, b);
         if constexpr (true) {
           /// Laplacian viscosity approach.
           /// Update velocity time derivative.
