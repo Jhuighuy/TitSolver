@@ -6,26 +6,18 @@
 
 # Specify the list of sources.
 set(CXX_SOURCES
-    artificial_viscosity.hpp
-    density_equation.hpp
-    equation_of_state.hpp
-    field.hpp
-    fluid_equations.hpp
-    fsi.hpp
-    kernel.hpp
-    time_integrator.hpp
-    TitParticle.hpp)
+    esph.cpp)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Create the library.
-add_library(tit_sph INTERFACE ${CXX_SOURCES})
-add_library(tit::sph ALIAS tit_sph)
+add_executable(titesph ${CXX_SOURCES})
+add_executable(tit::esph ALIAS titesph)
 
 # Link with the dependant libraries.
-target_link_libraries(tit_sph INTERFACE tit::core tit::geom tit::par)
+target_link_libraries(titesph PRIVATE tit::core tit::geom tit::par tit::sph)
 
 # Enable static analysis.
-check_includes(tit::sph)
+# check_includes(tit::esph)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
