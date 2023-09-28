@@ -87,9 +87,9 @@ public:
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     if (dot(v[a, b], r[a, b]) >= 0.0) return 0.0;
-    const auto h_ab = avg(h[a], h[b]);
-    const auto rho_ab = avg(rho[a], rho[b]);
-    const auto cs_ab = avg(cs[a], cs[b]);
+    const auto h_ab = h.avg(a, b);
+    const auto rho_ab = rho.avg(a, b);
+    const auto cs_ab = cs.avg(a, b);
     const auto mu_ab = h_ab * dot(v[a, b], r[a, b]) / norm2(r[a, b]);
     const auto Pi_ab = (alpha_ * cs_ab - beta_ * mu_ab) * mu_ab / rho_ab;
     return Pi_ab;
@@ -177,7 +177,7 @@ public:
     TIT_ASSERT(a != b, "Particles must be different.");
     auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
-    const auto alpha_ab = avg(alpha[a], alpha[b]);
+    const auto alpha_ab = alpha.avg(a, b);
     Pi_ab *= alpha_ab;
     return Pi_ab;
   }
@@ -230,7 +230,7 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    const auto h_ab = avg(h[a], h[b]);
+    const auto h_ab = h.avg(a, b);
     const auto D_ab = 2 * rho[a, b];
     const auto Psi_ab = xi_ * h_ab * cs_0_ * D_ab * r[a, b] / norm2(r[a, b]);
     return Psi_ab;
@@ -241,7 +241,7 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    const auto h_ab = avg(h[a], h[b]);
+    const auto h_ab = h.avg(a, b);
     const auto Pi_ab = alpha_ * h_ab * cs_0_ * rho_0_ / (rho[a] * rho[b]) *
                        dot(r[a, b], v[a, b]) / norm2(r[a, b]);
     return Pi_ab;
@@ -284,7 +284,7 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    const auto h_ab = avg(h[a], h[b]);
+    const auto h_ab = h.avg(a, b);
     // Here we assume that density gradients are renormalized because
     // kernel gradient renormalization filter (`L`) was requested.
     const auto D_ab = 2 * rho[a, b] - dot(grad_rho[a] + grad_rho[b], r[a, b]);
@@ -297,7 +297,7 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    const auto h_ab = avg(h[a], h[b]);
+    const auto h_ab = h.avg(a, b);
     const auto Pi_ab = alpha_ * h_ab * cs_0_ * rho_0_ / (rho[a] * rho[b]) *
                        dot(r[a, b], v[a, b]) / norm2(r[a, b]);
     return Pi_ab;
