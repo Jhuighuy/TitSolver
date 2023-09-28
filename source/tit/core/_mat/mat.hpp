@@ -212,6 +212,14 @@ constexpr auto diag(const Mat<Num, Dim>& D) -> Vec<Num, Dim> {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Trace of the matrix.
+template<class Num, size_t Dim>
+constexpr auto tr(const Mat<Num, Dim>& A) -> Num {
+  auto r = A[0, 0];
+  for (size_t i = 1; i < Dim; ++i) r += A[i, i];
+  return r;
+}
+
 /// Product of the diagonal elements.
 template<class Num, size_t Dim>
 constexpr auto prod_diag(const Mat<Num, Dim>& A) -> Num {
