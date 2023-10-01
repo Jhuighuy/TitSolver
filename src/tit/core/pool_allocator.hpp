@@ -6,45 +6,66 @@
 
 #pragma once
 
-#include <algorithm> // IWYU pragma: keep
-#include <cstdlib>   // IWYU pragma: keep
-#include <memory>    // IWYU pragma: keep
-#include <mutex>     // IWYU pragma: keep
-#include <new>       // IWYU pragma: keep
+#include "tit/core/config.hpp"
+#include "tit/core/math.hpp"
+#include "tit/core/types.hpp"
 
-#include "tit/core/config.hpp" // IWYU pragma: keep
-#include "tit/core/types.hpp"  // IWYU pragma: keep
-
-#if !TIT_ENABLE_TBB
-// #error Pool allocator requires TBB for now.
-#endif
+#if TIT_ENABLE_TBB
 #define TBB_PREVIEW_MEMORY_POOL 1
 #include <oneapi/tbb/memory_pool.h>
+#else
+#include <algorithm>
+#include <cstdlib>
+#include <mutex>
+#include <new>
+#endif
 
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+#if TIT_ENABLE_TBB
+
 /******************************************************************************\
  ** Simple pool (arena) allocator.
 \******************************************************************************/
-#if TIT_ENABLE_TBB
 template<class Val>
-class PoolAllocator :
-    public tbb::memory_pool_allocator<Val,
-                                      tbb::memory_pool<std::allocator<Val>>> {
+class PoolAllocator {
 private:
 
-  tbb::memory_pool<std::allocator<Val>> _mem_pool;
+  tbb::memory_pool<std::allocator<Val>> pool_;
+  tbb::memory_pool_allocator<Val, tbb::memory_pool<std::allocator<Val>>> alloc_;
 
 public:
 
-  PoolAllocator()
-      : tbb::memory_pool_allocator<Val, tbb::memory_pool<std::allocator<Val>>>{
-            _mem_pool} {}
+  /** Construct pool allocator. */
+  constexpr PoolAllocator() : pool_{}, alloc_{pool_} {}
+
+  /** Move-construct the pool allocator. */
+  PoolAllocator(PoolAllocator&&) = default;
+  /** Move-assign the pool allocator. */
+  auto operator=(PoolAllocator&&) -> PoolAllocator& = default;
+
+  /** Pool allocator is non-copy-constructible. */
+  PoolAllocator(const PoolAllocator&) = delete;
+  /** Pool allocator is non-copyable. */
+  auto operator=(const PoolAllocator&) -> PoolAllocator& = delete;
+
+  /** Destroy pool allocator and free all memory. */
+  ~PoolAllocator() = default;
+
+  /** Allocate space for the given amount of objects. */
+  constexpr Val* allocate(size_t count = 1) {
+    return alloc_.allocate(count);
+  }
 
 }; // class PoolAllocator
+
 #else
+
+/******************************************************************************\
+ ** Simple pool (arena) allocator.
+\******************************************************************************/
 template<class Val>
 class PoolAllocator final {
 private:
@@ -54,14 +75,10 @@ private:
   // Amount of the block.
   static constexpr auto block_size_ = align(size_t{64 * 1024}, word_size_);
 
-  // Number of bytes left in current block of storage.
-  size_t remaining_ = 0;
-  // Pointer to base of current block of storage.
-  void* base_ = nullptr;
-  // Current location in block to next allocate.
-  void* loc_ = nullptr;
-  // Mutex to make this guy thread-safe.
-  std::mutex mutex_;
+  size_t remaining_ = 0; // Number of bytes left in current block of storage.
+  void* base_ = nullptr; // Pointer to base of current block of storage.
+  void* loc_ = nullptr;  // Current location in block to next allocate.
+  std::mutex mutex_;     // Mutex to make this guy thread-safe.
 
 public:
 
@@ -70,7 +87,7 @@ public:
 
   /** Move-construct the pool allocator. */
   PoolAllocator(PoolAllocator&&) = default;
-  /** Move-assign the K-dimensional tree. */
+  /** Move-assign the pool allocator. */
   auto operator=(PoolAllocator&&) -> PoolAllocator& = default;
 
   /** Pool allocator is non-copy-constructible. */
@@ -79,7 +96,7 @@ public:
   auto operator=(const PoolAllocator&) -> PoolAllocator& = delete;
 
   /** Destroy pool allocator and free all memory. */
-  constexpr ~PoolAllocator() {
+  /*constexpr*/ ~PoolAllocator() {
     while (base_ != nullptr) {
       // Get pointer to previous block.
       const auto prev = *static_cast<void**>(base_);
@@ -89,7 +106,7 @@ public:
   }
 
   constexpr Val* allocate(size_t count = 1) {
-    auto size = sizeof(Val) * count;
+    auto size = align(sizeof(Val) * count, word_size_);
     size = (size + (word_size_ - 1)) & ~(word_size_ - 1);
     const auto lock = std::unique_lock{mutex_};
     if (size > remaining_) {

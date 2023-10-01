@@ -112,6 +112,7 @@ private:
       -> KDTreeNode_* {
     TIT_ASSERT(first < last, "Invalid subtree range.");
     // Allocate node.
+    // TODO: We are not correctly initializing `node`.
     const auto node = alloc_.allocate(1);
     const auto actual_bbox = subtree_bbox_</*Parallel=*/IsRoot>(first, last);
     if constexpr (IsRoot) bbox = actual_bbox;

@@ -7,6 +7,8 @@
 # Specify the list of sources.
 set(CXX_SOURCES
     atomic.hpp
+    #thread_omp.hpp
+    #thread_tbb.hpp
     thread.hpp)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

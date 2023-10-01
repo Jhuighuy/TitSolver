@@ -29,11 +29,11 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #ifndef TIT_ENABLE_TBB
-#define TIT_ENABLE_TBB 1
+#define TIT_ENABLE_TBB 0
 #endif
 
-#ifndef TIT_ENABLE_MPI
-#define TIT_ENABLE_MPI 0
+#ifndef TIT_ENABLE_OMP
+#define TIT_ENABLE_OMP 1
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

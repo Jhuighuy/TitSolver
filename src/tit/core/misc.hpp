@@ -18,6 +18,19 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+template<class Instance, template<class...> class Template>
+inline constexpr bool is_specialization_of_v = //
+    false;
+template<class... Args, template<class...> class Template>
+inline constexpr bool is_specialization_of_v<Template<Args...>, Template> =
+    true;
+
+/** Check if `Instance` is a specialization of the template class `Template`. */
+template<class Instance, template<class...> class Template>
+concept specialization_of = is_specialization_of_v<Instance, Template>;
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 template<class Func>
 class OnAssignment {
 private:

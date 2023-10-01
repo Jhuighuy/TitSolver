@@ -96,7 +96,7 @@ find_package(TBB QUIET)
 if(TBB_FOUND)
   set(TIT_HAS_TBB 1)
   message(STATUS "| TBB enabled.")
-  target_link_libraries(tit_iface INTERFACE TBB::tbb)
+  target_link_libraries(tit_iface INTERFACE TBB::tbb TBB::tbbmalloc)
 endif()
 
 # Find OpenMP.
