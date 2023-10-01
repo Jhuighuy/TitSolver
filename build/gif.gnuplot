@@ -4,11 +4,14 @@
 set terminal gif animate size 1920,1080 delay 0
 set output 'velocity.gif'
 
+#set yrange [-2.1:2.1]
+#set xrange [-0.1:6.1]
 set xrange [-0.1:3.6]
 set yrange [-0.1:2.6]
 #set xrange [-0.1:4.1]
 #set yrange [-0.1:3.1]
 set cbrange [-0.05:1.05]
+#set cbrange [-3000:3000]
 
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 # MATLAB jet color pallete

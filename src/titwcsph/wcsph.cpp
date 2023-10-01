@@ -9,12 +9,14 @@
 #define COMPRESSIBLE_SOD_PROBLEM 0
 #define HARD_DAM_BREAKING 0
 #define EASY_DAM_BREAKING 1
+#define WITH_GODUNOV 0
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fluid_equations.hpp"
+#include "tit/sph/godunov.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/time_integrator.hpp"
 
@@ -229,18 +231,37 @@ int sph_main() {
 
   // Setup the SPH equations:
   auto equations =
-      FluidEquations{// Weakly compressible equation of state.
-                     LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-                     // Continuity equation instead of density summation.
-                     ContinuityEquation{},
-                     // C2 Wendland's spline kernel.
-                     QuarticWendlandKernel{},
-                     // Use delta-SPH artificial viscosity formulation.
-                     DeltaSPHArtificialViscosity{cs_0, rho_0}};
+#if WITH_GODUNOV
+      GodunovFluidEquations{
+          // Weakly compressible equation of state.
+          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+          // Continuity equation instead of density summation.
+          ContinuityEquation{},
+          // C2 Wendland's spline kernel.
+          QuarticWendlandKernel{},
+          // Use delta-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
+      }
+#else
+      FluidEquations{
+          // Weakly compressible equation of state.
+          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+          // Continuity equation instead of density summation.
+          ContinuityEquation{},
+          // C2 Wendland's spline kernel.
+          QuarticWendlandKernel{},
+          // Use delta-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
+      }
+#endif
+  ;
 
   // Setup the time itegrator:
+#if WITH_GODUNOV
+  auto timeint = RungeKuttaIntegrator{std::move(equations)};
+#else
   auto timeint = EulerIntegrator{std::move(equations)};
-  // auto timeint = RungeKuttaIntegrator{std::move(equations)};
+#endif
 
   // Setup the particles array:
   ParticleArray particles{
