@@ -55,7 +55,7 @@ public:
   }
   /// @}
 
-  /// Value of the smoothing kernel for two particles.
+  /// Gradient of the smoothing kernel for two particles.
   /// @{
   template<particle_view<required_fields> PV>
   constexpr auto grad(this auto& self, PV a, PV b) noexcept {

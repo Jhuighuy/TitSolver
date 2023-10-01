@@ -240,7 +240,7 @@ public:
   /// Call a function for each element.
   template<class Func>
     requires (std::invocable<Func, Ts> && ...)
-  constexpr void for_each(Func func) const {
+  constexpr void for_each([[maybe_unused]] Func func) const {
     (std::invoke(func, Ts{}), ...);
   }
 

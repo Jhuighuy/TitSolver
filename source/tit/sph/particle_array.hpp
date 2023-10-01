@@ -17,6 +17,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/sph/field.hpp"
@@ -35,7 +36,7 @@ enum class ParticleType : uint8_t {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle view.
-template<class ParticleArray>
+template<class ParticleArray, field_set Overrides = TypeSet<>>
 class ParticleView final {
 public:
 
@@ -45,20 +46,36 @@ public:
   /// Particle space.
   static constexpr space auto space = Array::space;
 
+  /// Set of particle fields that are overridden.
+  static constexpr Overrides overrides{};
+
   /// Subset of particle fields that are array-wise constants.
   static constexpr field_set auto uniform_fields = Array::uniform_fields;
 
   /// Subset of particle fields that are individual for each particle.
-  static constexpr field_set auto varying_fields = Array::varying_fields;
+  static constexpr field_set auto varying_fields =
+      Array::varying_fields | overrides;
 
   /// Set of particle fields that are present.
-  static constexpr field_set auto fields = Array::fields;
+  static constexpr field_set auto fields = Array::fields | overrides;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct a particle view.
   constexpr ParticleView(ParticleArray& array, size_t index) noexcept
       : array_{&array}, index_{index} {}
+
+  /// Construct a particle view with additional overridden fields.
+  template<field_set InitOverrides, field_set MoreOverrides = TypeSet<>>
+    requires ((InitOverrides{} < Overrides{}) &&
+              ((InitOverrides{} | MoreOverrides{}) <= Overrides{}))
+  constexpr ParticleView(const ParticleView<ParticleArray, InitOverrides>& view,
+                         MoreOverrides /*overrides*/) noexcept
+      : array_{&view.array()}, index_{view.index()} {
+    InitOverrides{}.for_each([this, &view](auto field) { //
+      (*this)[field] = view[field];
+    });
+  }
 
   /// Associated particle array.
   constexpr auto array() const noexcept -> ParticleArray& {
@@ -87,10 +104,17 @@ public:
   }
 
   /// Particle field value.
-  template<field Field>
-  constexpr auto operator[](Field field) const noexcept -> decltype(auto) {
+  template<class Self, field Field>
+  constexpr auto operator[](this Self&& self, Field field) noexcept
+      -> decltype(auto) {
     static_assert(fields.contains(Field{}));
-    return array()[index(), field];
+    if constexpr (overrides.contains(Field{})) {
+      TIT_ASSUME_UNIVERSAL(Self, self);
+      return std::get<overrides.find(Field{})>(
+          std::forward_like<Self>(self.overrides_data_));
+    } else {
+      return self.array()[self.index(), field];
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -118,7 +142,18 @@ private:
   ParticleArray* array_;
   size_t index_;
 
+  [[no_unique_address]] decltype([]<class... Fields>(TypeSet<Fields...> /*f*/) {
+    return std::tuple<field_value_t<Fields, decltype(auto{space})>...>{};
+  }(overrides)) overrides_data_;
+
 }; // class ParticleView
+
+template<class ParticleArray,
+         field_set InitOverrides,
+         field_set MoreOverrides = TypeSet<>>
+ParticleView(const ParticleView<ParticleArray, InitOverrides>&, MoreOverrides)
+    -> ParticleView<ParticleArray,
+                    decltype(auto{InitOverrides{} | MoreOverrides{}})>;
 
 /// Particle view type.
 ///
@@ -278,11 +313,11 @@ private:
   std::array<size_t, std::to_underlying(ParticleType::count) + 1>
       particle_ranges_{0};
 
-  decltype([]<class... Fields>(TypeSet<Fields...> /*fields*/) {
+  [[no_unique_address]] decltype([]<class... Fields>(TypeSet<Fields...> /*f*/) {
     return std::tuple<field_value_t<Fields, Space>...>{};
   }(uniform_fields)) uniform_data_;
 
-  decltype([]<class... Fields>(TypeSet<Fields...> /*fields*/) {
+  [[no_unique_address]] decltype([]<class... Fields>(TypeSet<Fields...> /*f*/) {
     return std::tuple<std::vector<field_value_t<Fields, Space>>...>{};
   }(varying_fields)) varying_data_;
 
