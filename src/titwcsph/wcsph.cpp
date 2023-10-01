@@ -9,6 +9,7 @@
 #define COMPRESSIBLE_SOD_PROBLEM 0
 #define HARD_DAM_BREAKING 0
 #define EASY_DAM_BREAKING 1
+#define INITIALLY_SQUARE_PATCH 0
 #define WITH_GODUNOV 0
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
@@ -344,6 +345,143 @@ int sph_main() {
   }
 
   particles.print("particles-dam.csv");
+
+  const auto totaltime = exectime + printtime;
+  std::cout << "Total time: " << totaltime / 60.0
+            << "m, exec: " << exectime * 100 / totaltime
+            << "%, print: " << printtime * 100 / totaltime << "%" << std::endl;
+
+  return 0;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#elif INITIALLY_SQUARE_PATCH
+
+template<class Real>
+int sph_main() {
+  using namespace tit;
+  using namespace sph;
+
+  constexpr Real L = 1.0; // Square patch side length.
+
+  constexpr Real dt = 5.0e-5;
+  constexpr Real dr = L / 100.0;
+
+  constexpr auto M = int(round(L / dr));
+
+  constexpr Real omega = 1.0;
+  constexpr Real rho_0 = 1000.0;
+  constexpr Real cs_0 = 5.0 * sqrt(2.0) * omega * L;
+  constexpr Real h_0 = 2.0 * dr;
+  constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
+
+  // Setup the SPH equations:
+  auto equations =
+#if WITH_GODUNOV
+      GodunovFluidEquations{
+          // Weakly compressible equation of state.
+          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+          // Continuity equation instead of density summation.
+          ContinuityEquation{},
+          // C2 Wendland's spline kernel.
+          QuarticWendlandKernel{},
+          // Use delta-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
+      }
+#else
+      FluidEquations{
+          // Weakly compressible equation of state.
+          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
+          // Continuity equation instead of density summation.
+          ContinuityEquation{},
+          // C2 Wendland's spline kernel.
+          QuarticWendlandKernel{},
+          // Use delta-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
+      }
+#endif
+  ;
+
+  // Setup the time itegrator:
+#if WITH_GODUNOV
+  auto timeint = RungeKuttaIntegrator{std::move(equations)};
+#else
+  auto timeint = EulerIntegrator{std::move(equations)};
+#endif
+
+  // Setup the particles array:
+  ParticleArray particles{
+      // 2D space.
+      Space<Real, 2>{},
+      // Fields that are required by the equations.
+      timeint.required_fields,
+      // Set of whole system constants.
+      m, // Particle mass assumed constant.
+      h  // Particle width assumed constant.
+  };
+
+  // Generate individual particles.
+  for (auto i = -M / 2; i < M / 2; ++i) {
+    for (auto j = -M / 2; j < M / 2; ++j) {
+      auto a = particles.append();
+      r[a] = dr * Vec{i + 0.5, j + 0.5};
+      v[a] = Vec{omega * r[a][1], -omega * r[a][0]};
+    }
+  }
+
+  // Set global particle constants.
+  m[particles] = m_0;
+  h[particles] = h_0;
+
+  // Density hydrostatic initialization.
+  std::ranges::for_each(particles.views(), [&]<class PV>(PV a) {
+    // Compute pressure from Poisson problem.
+    const auto x = r[a][0] + L / 2, y = r[a][1] + L / 2;
+    p[a] = 0.0;
+    for (size_t m = 1; m < 11; ++m) {
+      for (size_t n = 1; n < 11; ++n) {
+        constexpr auto pi = std::numbers::pi_v<Real>;
+        p[a] = -32 * pow2(omega) / (m * n * pow2(pi)) /
+               (pow2(n * pi / L) + pow2(m * pi / L)) * //
+               sin(m * pi * x / L) * sin(n * pi * y / L);
+      }
+    }
+    p[a] *= rho_0;
+    // Recalculate density from EOS.
+    rho[a] = rho_0 + p[a] / pow2(cs_0);
+  });
+
+  // Setup the particle adjacency structure.
+  auto adjacent_particles = ParticleAdjacency{particles};
+
+  particles.print("output/test_output/particles-0.csv");
+  system("ln -sf output/test_output/particles-0.csv particles.csv");
+
+  Real time = 0.0, exectime = 0.0, printtime = 0.0;
+  for (size_t n = 0; time * omega <= 9.5; ++n, time += dt) {
+    std::cout << n << "\t\t" << time * omega << "\t\t" << exectime / n << "\t\t"
+              << printtime / (n / 200) << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    timeint.step(dt, particles, adjacent_particles);
+    auto delta = std::chrono::high_resolution_clock::now() - start;
+    exectime +=
+        1.0e-9 *
+        std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
+    if (n % 200 == 0 && n != 0) {
+      start = std::chrono::high_resolution_clock::now();
+      const auto path =
+          "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
+      particles.print(path);
+      system(("ln -sf ./" + path + " particles.csv").c_str());
+      auto delta = std::chrono::high_resolution_clock::now() - start;
+      printtime +=
+          1.0e-9 *
+          std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
+    }
+  }
+
+  particles.print("particles.csv");
 
   const auto totaltime = exectime + printtime;
   std::cout << "Total time: " << totaltime / 60.0
