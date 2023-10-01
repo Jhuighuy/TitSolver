@@ -14,11 +14,13 @@
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
+#include "tit/sph/fluid_equations_riemann.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
 #include "tit/sph/motion_equation.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
+#include "tit/sph/riemann_solver.hpp"
 #include "tit/sph/time_integrator.hpp"
 #include "tit/sph/viscosity.hpp"
 
@@ -29,7 +31,7 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-template<class Real>
+template<class Real, bool Riemann = true>
 auto sph_main(CmdArgs /*args*/) -> int {
   constexpr Real H = 0.6;   // Water column height.
   constexpr Real L = 2 * H; // Water column length.
@@ -51,8 +53,8 @@ auto sph_main(CmdArgs /*args*/) -> int {
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2);
 
-  constexpr Real R = 0.2;
-  constexpr Real Ma = 0.1;
+  [[maybe_unused]] constexpr Real R = 0.2;
+  [[maybe_unused]] constexpr Real Ma = 0.1;
   constexpr Real CFL = 0.8;
   constexpr Real dt = std::min(CFL * h_0 / cs_0, Real{0.25} * sqrt(h_0 / g));
 
@@ -61,30 +63,53 @@ auto sph_main(CmdArgs /*args*/) -> int {
   [[maybe_unused]] constexpr Real c_v = 4184.0;
 
   // Setup the SPH equations.
-  const FluidEquations equations{
-      // Standard motion equation.
-      MotionEquation{
-          // Enabled particle shifting technique.
-          ParticleShiftingTechnique{R, Ma, CFL},
-      },
-      // Continuity equation with no source terms.
-      ContinuityEquation{},
-      // Momentum equation with gravity source term.
-      MomentumEquation{
-          // Inviscid flow.
-          NoViscosity{},
-          // δ-SPH artificial viscosity formulation.
-          DeltaSPHArtificialViscosity{cs_0, rho_0},
-          // Gravity source term.
-          GravitySource{g},
-      },
-      // No energy equation.
-      NoEnergyEquation{},
-      // Weakly compressible equation of state.
-      LinearTaitEquationOfState{cs_0, rho_0},
-      // C2 Wendland's spline kernel.
-      QuarticWendlandKernel{},
-  };
+  const auto equations = [&] {
+    if constexpr (Riemann) {
+      return FluidEquationsRiemann{
+          // Continuity equation with no source terms.
+          ContinuityEquation{},
+          // Momentum equation with gravity source term.
+          MomentumEquation{
+              // Inviscid flow.
+              NoViscosity{},
+              NoArtificialViscosity{},
+              // Gravity source term.
+              GravitySource{g},
+          },
+          // Weakly compressible equation of state.
+          LinearTaitEquationOfState{cs_0, rho_0},
+          // Riemann solver for the fluid equations.
+          ZhangRiemannSolver{cs_0},
+          // C2 Wendland's spline kernel.
+          QuarticWendlandKernel{},
+      };
+    } else {
+      return FluidEquations{
+          // Standard motion equation.
+          MotionEquation{
+              // Enabled particle shifting technique.
+              ParticleShiftingTechnique{R, Ma, CFL},
+          },
+          // Continuity equation with no source terms.
+          ContinuityEquation{},
+          // Momentum equation with gravity source term.
+          MomentumEquation{
+              // Inviscid flow.
+              NoViscosity{},
+              // δ-SPH artificial viscosity formulation.
+              DeltaSPHArtificialViscosity{cs_0, rho_0},
+              // Gravity source term.
+              GravitySource{g},
+          },
+          // No energy equation.
+          NoEnergyEquation{},
+          // Weakly compressible equation of state.
+          LinearTaitEquationOfState{cs_0, rho_0},
+          // C2 Wendland's spline kernel.
+          QuarticWendlandKernel{},
+      };
+    }
+  }();
 
   // Setup the time integrator.
   RungeKuttaIntegrator time_integrator{equations};
