@@ -90,7 +90,7 @@ public:
 
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  auto index(ParticleMesh& mesh, ParticleArray& particles) const {
+  void index(ParticleMesh& mesh, ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
     mesh.update(particles, [this](PV a) { return kernel_.radius(a); });
   }
@@ -187,7 +187,7 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Compute velocity related fields.
+  /// Compute velocity-related fields.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void compute_forces(ParticleMesh& mesh, ParticleArray& particles) const {
@@ -281,8 +281,9 @@ public:
 
       // Skip the particles that are too far away.
       const auto r_ab = norm2(r[a, b]);
-      const auto dist_threshold = pow2(2 * h[a]);
-      if (r_ab > dist_threshold) return;
+      if (const auto dist_threshold = pow2(2 * h[a]); r_ab > dist_threshold) {
+        return;
+      }
 
       // Perform "visibility" test. The actual test is just an optimized
       // version of `acos(n_{a,b} / sqrt(r_ab)) <= fov`.
