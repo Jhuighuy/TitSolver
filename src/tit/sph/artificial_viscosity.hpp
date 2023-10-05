@@ -214,7 +214,7 @@ public:
   /** Construct artificial viscosity scheme.
    ** @param cs_0 Reference sound speed, as defined for equation of state.
    ** @param rho_0 Reference density, as defined for equation of state.
-   ** @param alpha Velocity viscosity coefficient. Typically 0.01~0.005.
+   ** @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
    ** @param xi Density diffusion coefficient. Typically 0.1. */
   constexpr MolteniColagrossiArtificialViscosity( //
       real_t cs_0, real_t rho_0, real_t alpha = 0.05, real_t xi = 0.1) noexcept
@@ -247,13 +247,13 @@ public:
     return Pi_ab;
   }
 
-}; // class DeltaSPHArtificialViscosity
+}; // class MolteniColagrossiArtificialViscosity
 
 /******************************************************************************\
  ** δ-SPH artificial viscosity (Marrone, 2011).
  ** Weakly-compressible SPH formulation is assumed.
 \******************************************************************************/
-class DeltaSPHArtificialViscosity : public NoArtificialViscosity {
+class DeltaSphArtificialViscosity : public NoArtificialViscosity {
 private:
 
   real_t rho_0_, cs_0_;
@@ -267,9 +267,9 @@ public:
   /** Construct artificial viscosity scheme.
    ** @param cs_0 Reference sound speed, as defined for equation of state.
    ** @param rho_0 Reference density, as defined for equation of state.
-   ** @param alpha Velocity viscosity coefficient. Typically 0.01~0.005.
+   ** @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
    ** @param delta Density diffusion coefficient. Typically 0.1. */
-  constexpr DeltaSPHArtificialViscosity( //
+  constexpr DeltaSphArtificialViscosity( //
       real_t cs_0, real_t rho_0,         //
       real_t alpha = 0.02, real_t delta = 0.1) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, delta_{delta} {
@@ -303,7 +303,7 @@ public:
     return Pi_ab;
   }
 
-}; // class DeltaSPHArtificialViscosity
+}; // class DeltaSphArtificialViscosity
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
