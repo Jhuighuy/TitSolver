@@ -241,7 +241,7 @@ int sph_main() {
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
           // Use delta-SPH artificial viscosity formulation.
-          DeltaSPHArtificialViscosity{cs_0, rho_0},
+          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #else
       FluidEquations{
@@ -252,7 +252,7 @@ int sph_main() {
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
           // Use delta-SPH artificial viscosity formulation.
-          DeltaSPHArtificialViscosity{cs_0, rho_0},
+          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #endif
   ;
@@ -387,7 +387,7 @@ int sph_main() {
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
           // Use delta-SPH artificial viscosity formulation.
-          DeltaSPHArtificialViscosity{cs_0, rho_0},
+          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #else
       FluidEquations{
@@ -398,7 +398,7 @@ int sph_main() {
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
           // Use delta-SPH artificial viscosity formulation.
-          DeltaSPHArtificialViscosity{cs_0, rho_0},
+          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #endif
   ;
