@@ -45,7 +45,7 @@ public:
   constexpr explicit Vec(Args... qi) noexcept : col_{qi...} {}
 
   /** Fill-initialize the vector. */
-  constexpr Vec(Num q = Num{}) noexcept {
+  constexpr explicit Vec(Num q = Num{}) noexcept {
     col_.fill(q);
   }
   /** Fill-assign the vector. */

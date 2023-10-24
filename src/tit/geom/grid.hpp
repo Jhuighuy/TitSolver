@@ -24,7 +24,7 @@ namespace tit::geom {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** K-dimensional grid.
+ ** Uniform multidimensional grid.
 \******************************************************************************/
 template<std::ranges::view Points>
   requires std::ranges::sized_range<Points> &&
@@ -52,9 +52,11 @@ private:
 
 public:
 
-  constexpr explicit Grid(Points points, Real spacing = 2 * 0.6 / 80.0)
+  /** Initialize and build the multidimensional grid.
+   ** @param spacing Grid cell size, typically 2x of the particle spacing. */
+  constexpr explicit Grid(Points points, Real spacing)
       : points_{std::move(points)} {
-    TIT_ASSERT(spacing > 0, "Spacing must be positive.");
+    TIT_ASSERT(spacing > 0.0, "Spacing must be positive.");
     if (std::ranges::empty(points_)) return;
     // Build the grid.
     _build_grid(spacing);
@@ -85,7 +87,8 @@ private:
     // Compute grid bounding box.
     grid_bbox_ = BBox{points_[0]};
     for (const auto& p : points_ | std::views::drop(1)) grid_bbox_.update(p);
-    grid_bbox_.low -= 0.5 * spacing, grid_bbox_.high += 0.5 * spacing;
+    grid_bbox_.low -= 0.5 * Point(spacing);
+    grid_bbox_.high += 0.5 * Point(spacing);
     // Compute number of cells and cell sizes.
     const auto extents = grid_bbox_.extents();
     const auto approx_num_cells = extents / spacing;
@@ -153,19 +156,26 @@ template<class... Args>
 concept can_grid_ = requires { Grid{std::declval<Args>()...}; };
 
 /******************************************************************************\
- ** K-dimensional tree factory.
+ ** Multidimensional grid factory.
 \******************************************************************************/
 class GridFactory final {
+private:
+
+  real_t spacing_;
+
 public:
 
-  /** Construct a K-dimensional tree factory. */
-  constexpr GridFactory() {}
+  /** Construct a multidimensional grid factory.
+   ** @param spacing Grid cell size, typically 2x of the particle spacing. */
+  constexpr explicit GridFactory(real_t spacing) : spacing_{spacing} {
+    TIT_ASSERT(spacing_ > 0.0, "Spacing must be positive.");
+  }
 
-  /** Produce a K-dimensional tree for the specified set op points. */
+  /** Produce a multidimensional grid for the specified set of points. */
   template<std::ranges::viewable_range Points>
-    requires can_grid_<Points>
+    requires can_grid_<Points, real_t>
   constexpr auto operator()(Points&& points) const noexcept {
-    return Grid{std::forward<Points>(points)};
+    return Grid{std::forward<Points>(points), spacing_};
   }
 
 }; // class GridFactory

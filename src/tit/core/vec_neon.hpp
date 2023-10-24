@@ -40,7 +40,7 @@ public:
     }
   }
 
-  constexpr Vec(float64_t q = 0.0) noexcept {
+  constexpr explicit Vec(float64_t q = 0.0) noexcept {
     if consteval {
       col_ = {q, q};
     } else {

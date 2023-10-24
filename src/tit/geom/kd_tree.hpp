@@ -258,10 +258,12 @@ public:
 
   /** Construct a K-dimensional tree factory.
    ** @param max_leaf_size Maximum amount of points in the leaf node. */
-  constexpr KDTreeFactory(size_t max_leaf_size = 1)
-      : max_leaf_size_{max_leaf_size} {}
+  constexpr explicit KDTreeFactory(size_t max_leaf_size = 1)
+      : max_leaf_size_{max_leaf_size} {
+    TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
+  }
 
-  /** Produce a K-dimensional tree for the specified set op points. */
+  /** Produce a K-dimensional tree for the specified set of points. */
   template<std::ranges::viewable_range Points>
     requires can_kd_tree_<Points, size_t>
   constexpr auto operator()(Points&& points) const noexcept {

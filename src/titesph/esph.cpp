@@ -81,7 +81,7 @@ int sph_main() {
   h[particles] = h_0;
 
   // Setup the particle adjacency structure.
-  auto adjacent_particles = ParticleAdjacency{particles};
+  auto adjacent_particles = ParticleAdjacency{particles, geom::KDTreeFactory{}};
 
   particles.print("output/test_output/particles-0.csv");
   system("ln -sf output/test_output/particles-0.csv particles.csv");
