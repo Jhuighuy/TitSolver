@@ -195,6 +195,8 @@ TIT_DEFINE_VECTOR_FIELD(v);
 TIT_DEFINE_VECTOR_FIELD(v_xsph);
 /** Particle acceleration. */
 TIT_DEFINE_VECTOR_FIELD(dv_dt);
+/** Particle velocity gradient. */
+TIT_DEFINE_MATRIX_FIELD(grad_v);
 /** Particle velocity divergence. */
 TIT_DEFINE_SCALAR_FIELD(div_v);
 /** Particle velocity curl (always 3D). */
