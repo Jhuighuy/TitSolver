@@ -75,7 +75,7 @@ private:
   // caller. On return it contains an exact bounding box of the subtree.
   constexpr void partition_(size_t* first, size_t* last,
                             PointBBox bbox) noexcept {
-    TIT_ASSERT(first < last, "Invalid point iterators.");
+    TIT_ASSERT(first <= last, "Invalid point iterators.");
     if (last - first <= 1) return;
     const auto center = bbox.center();
     if constexpr (Dim == 2) {

@@ -6,9 +6,9 @@
 #include <iostream>
 #include <vector>
 
-#define COMPRESSIBLE_SOD_PROBLEM 1
+#define COMPRESSIBLE_SOD_PROBLEM 0
 #define HARD_DAM_BREAKING 0
-#define EASY_DAM_BREAKING 0
+#define EASY_DAM_BREAKING 1
 #define INITIALLY_SQUARE_PATCH 0
 #define WITH_GODUNOV 0
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
@@ -319,7 +319,8 @@ int sph_main() {
   });
 
   // Setup the particle adjacency structure.
-  auto adjacent_particles = ParticleAdjacency{particles};
+  auto adjacent_particles =
+      ParticleAdjacency{particles, geom::GridFactory{h_0}};
 
   particles.print("output/test_output/particles-0.csv");
   system("ln -sf output/test_output/particles-0.csv particles.csv");

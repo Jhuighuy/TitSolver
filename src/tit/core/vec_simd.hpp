@@ -115,7 +115,7 @@ public:
         }(std::make_index_sequence<num_regs>{})} {}
 
   /** Fill-initialize the vector. */
-  constexpr Vec(Num q = Num{}) noexcept {
+  constexpr explicit Vec(Num q = Num{}) noexcept {
     regs_.fill(Reg(q));
   }
   /** Fill-assign the vector. */

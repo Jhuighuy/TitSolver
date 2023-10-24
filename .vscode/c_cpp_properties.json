@@ -25,10 +25,13 @@
     {
       "name": "Windows (MSYS2)",
       "includePath": [
+        "C:/msys64/mingw64/include/**",
         "${workspaceFolder}/src/**",
         "${workspaceFolder}/output/cmake_output/**"
       ],
       "defines": [
+        "__AVX__",
+        "__AVX512F__",
         "__INTELLISENSE__"
       ],
       "compilerPath": "C:/msys64/mingw64/bin/g++.exe",

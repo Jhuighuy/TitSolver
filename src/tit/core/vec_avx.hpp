@@ -35,11 +35,11 @@ public:
     if consteval {
       row_ = {qx, qy};
     } else {
-      reg_ = _mm_set_pd(qx, qy);
+      reg_ = _mm_setr_pd(qx, qy);
     }
   }
 
-  constexpr Vec(float64_t q = 0.0) noexcept {
+  constexpr explicit Vec(float64_t q = 0.0) noexcept {
     if consteval {
       row_ = {q, q};
     } else {
@@ -64,7 +64,7 @@ public:
     return row_[i];
   }
 
-}; // class Vec<float64_t, 4>
+}; // class Vec<float64_t, 2>
 
 TIT_VEC_SIMD_FUNC_VV(operator+, 2, float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
@@ -178,7 +178,7 @@ TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
   Vec<float64_t, 2> r;
   const auto mask = _cmp_to_mask(cmp);
   // Falsy value comes first.
-  r.reg_ = _mm_blend_pd(b.reg_, a.reg_, mask);
+  r.reg_ = _mm_blendv_pd(b.reg_, a.reg_, mask);
   return r;
 })
 // clang-format on
@@ -203,11 +203,11 @@ public:
     if consteval {
       row_ = {qx, qy, qz, qw};
     } else {
-      reg_ = _mm256_set_pd(qx, qy, qz, qw);
+      reg_ = _mm256_setr_pd(qx, qy, qz, qw);
     }
   }
 
-  constexpr Vec(float64_t q = 0.0) noexcept {
+  constexpr explicit Vec(float64_t q = 0.0) noexcept {
     if consteval {
       row_ = {q, q, q, q};
     } else {
@@ -342,7 +342,7 @@ TIT_VEC_SIMD_MERGE_2(4, Op, float64_t, float64_t, cmp,
   Vec<float64_t, 4> r;
   const auto mask = _cmp_to_mask(cmp);
   // Falsy value comes first.
-  r.reg_ = _mm256_blend_pd(b.reg_, a.reg_, mask);
+  r.reg_ = _mm256_blendv_pd(b.reg_, a.reg_, mask);
   return r;
 })
 // clang-format on
