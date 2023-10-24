@@ -6,9 +6,9 @@
 #include <iostream>
 #include <vector>
 
-#define COMPRESSIBLE_SOD_PROBLEM 0
+#define COMPRESSIBLE_SOD_PROBLEM 1
 #define HARD_DAM_BREAKING 0
-#define EASY_DAM_BREAKING 1
+#define EASY_DAM_BREAKING 0
 #define INITIALLY_SQUARE_PATCH 0
 #define WITH_GODUNOV 0
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
@@ -17,20 +17,23 @@
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fluid_equations.hpp"
+#include "tit/sph/gas_equations.hpp"
 #include "tit/sph/godunov.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/time_integrator.hpp"
 
+#if 0
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#if COMPRESSIBLE_SOD_PROBLEM
+#elif COMPRESSIBLE_SOD_PROBLEM
 
 template<class Real>
 int sph_main() {
   using namespace tit;
   using namespace tit::sph;
 
-  auto equations = FluidEquations{
+  auto equations = CompressibleFluidEquations{
       // Ideal gas equation of state.
       IdealGasEquationOfState{},
       // Use basic summation density.
@@ -54,7 +57,7 @@ int sph_main() {
     rho[a] = 1.0;
     h[a] = 0.015;
     r[a] = (i + 0.5) / 1600.0;
-    u[a] = 1.0 / 0.4;
+    u[a] = 1.0 / (5.0 / 3.0 - 1.0);
   }
   for (size_t i = 0; i < 200 + 10; ++i) {
     auto b = particles.append();
@@ -63,11 +66,11 @@ int sph_main() {
     m[b] = 1.0 / 1600;
     h[b] = 0.015;
     r[b] = 1.0 + (i + 0.5) / 200.0;
-    u[b] = 0.1 / (0.4 * 0.125);
+    u[b] = 0.1 / ((5.0 / 3.0 - 1.0) * 0.125);
   }
 
   // Setup the particle adjacency structure.
-  auto adjacent_particles = ParticleAdjacency{particles, KDTreeFactory{}};
+  auto adjacent_particles = ParticleAdjacency{particles, geom::KDTreeFactory{}};
 
   for (size_t n = 0; n < 3 * 2500; ++n) {
     std::cout << n << std::endl;

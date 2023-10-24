@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include <algorithm>
+#include <concepts>
+#include <tuple>
+
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
@@ -24,11 +28,11 @@ namespace tit::sph {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Fluid equations with fixed kernel width and continuity equation.
+ ** The particle estimator with density summation.
 \******************************************************************************/
 template<equation_of_state EquationOfState, density_equation DensityEquation,
          kernel Kernel, artificial_viscosity ArtificialViscosity>
-class FluidEquations {
+class CompressibleFluidEquations {
 private:
 
   EquationOfState eos_;
@@ -53,10 +57,9 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   /** Initialize fluid equations. */
-  constexpr FluidEquations(EquationOfState eos = {},
-                           DensityEquation density_equation = {},
-                           Kernel kernel = {},
-                           ArtificialViscosity artvisc = {}) noexcept
+  constexpr CompressibleFluidEquations(
+      EquationOfState eos = {}, DensityEquation density_equation = {},
+      Kernel kernel = {}, ArtificialViscosity artvisc = {}) noexcept
       : eos_{std::move(eos)}, density_equation_{std::move(density_equation)},
         kernel_{std::move(kernel)}, artvisc_{std::move(artvisc)} {}
 
@@ -69,6 +72,11 @@ public:
     par::static_for_each(particles.views(), [&](PV a) {
       // Initialize particle pressure (and sound speed).
       eos_.compute_pressure(a);
+      // Inititalize particle width and Omega.
+      if constexpr (std::same_as<DensityEquation, GradHSummationDensity>) {
+        h[a] = density_equation_.width(a);
+        Omega[a] = 1.0;
+      }
       // Initialize particle artificial viscosity switch value.
       if constexpr (has<PV>(alpha)) alpha[a] = 1.0;
     });
@@ -171,66 +179,65 @@ public:
                                  ParticleAdjacency& adjacent_particles) const {
     setup_boundary(particles, adjacent_particles);
     using PV = ParticleView<ParticleArray>;
-    // Clean density-related fields.
-    par::static_for_each(particles.views(), [&](PV a) {
-      /// Density fields.
-      if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
-      if constexpr (has<PV>(grad_rho)) grad_rho[a] = {};
-      /// Renormalization fields.
-      if constexpr (has<PV>(S)) S[a] = {};
-      if constexpr (has<PV>(L)) L[a] = {};
-    });
-    // Compute auxilary density fields.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
-      const auto [a, b] = ab;
-      [[maybe_unused]] const auto W_ab = kernel_(a, b);
-      [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
-      [[maybe_unused]] const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
-      /// Update density gradient.
-      if constexpr (has<PV>(grad_rho)) {
-        const auto grad_flux = rho[b, a] * grad_W_ab;
-        grad_rho[a] += V_b * grad_flux, grad_rho[b] += V_a * grad_flux;
-      }
-      /// Update kernel renormalization coefficient.
-      if constexpr (has<PV>(S)) {
-        const auto S_flux = W_ab;
-        S[a] += V_b * S_flux, S[b] += V_a * S_flux;
-      }
-      /// Update kernel gradient renormalization matrix.
-      if constexpr (has<PV>(L)) {
-        const auto L_flux = outer(r[b, a], grad_W_ab);
-        L[a] += V_b * L_flux, L[b] += V_a * L_flux;
-      }
-    });
-    // Renormalize fields.
-    par::static_for_each(particles.views(), [&](PV a) {
-      // Do not renormalize fixed particles.
-      if (fixed[a]) return;
-      /// Renormalize density (if possible).
-      if constexpr (has<PV>(S)) {
-        if (!is_zero(S[a])) rho[a] /= S[a];
-      }
-      /// Renormalize density gradient (if possible).
-      if constexpr (has<PV>(L)) {
-        const auto L_a_inv = MatInv{L[a]};
-        if (!is_zero(L_a_inv.det())) grad_rho[a] = L_a_inv(grad_rho[a]);
-      }
-    });
-    // Compute density time derivative. It is computed outside of the upper
-    // loop because some artificial viscosities (e.g. δ-SPH) require desinty
-    // gradients (or renormalized density gradients).
-    if constexpr (has<PV>(drho_dt)) {
-      par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
-        const auto [a, b] = ab;
-        const auto grad_W_ab = kernel_.grad(a, b);
-        const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
-        /// Compute artificial viscosity density term.
-        const auto Psi_ab = artvisc_.density_term(a, b);
-        /// Update density time derivative.
-        drho_dt[a] += dot(m[b] * v[a, b] + V_b * Psi_ab, grad_W_ab);
-        drho_dt[b] -= dot(m[a] * v[b, a] + V_a * Psi_ab, grad_W_ab);
+    // Calculate density.
+    if constexpr (std::same_as<DensityEquation, SummationDensity>) {
+      /// Classic density summation.
+      par::for_each(particles.views(), [&](PV a) {
+        if (fixed[a]) return;
+        rho[a] = {};
+        std::ranges::for_each(adjacent_particles[a], [&](PV b) {
+          const auto W_ab = kernel_(a, b);
+          rho[a] += m[b] * W_ab;
+        });
+      });
+    } else if constexpr (std::same_as<DensityEquation, GradHSummationDensity>) {
+      /// Grad-H density summation.
+      par::for_each(particles.views(), [&](PV a) {
+        if (fixed[a]) return;
+        /// Solve `zeta(h) = 0` for `h`, where: `zeta(h) = Rho(h) - rho(h)`,
+        /// `Rho(h)` - desired density, defined by the density equation.
+        newton_raphson(h[a], [&] {
+          rho[a] = {}, Omega[a] = {};
+          std::ranges::for_each(adjacent_particles[a], [&](PV b) {
+            const auto W_ab = kernel_(a, b, h[a]);
+            const auto dW_dh_ab = kernel_.width_deriv(a, b, h[a]);
+            rho[a] += m[b] * W_ab, Omega[a] += m[b] * dW_dh_ab;
+          });
+          const auto [Rho_a, dRho_dh_a] = density_equation_.density(a);
+          const auto zeta_a = Rho_a - rho[a];
+          const auto dzeta_dh_a = dRho_dh_a - Omega[a];
+          Omega[a] = 1.0 - Omega[a] / dRho_dh_a;
+          return std::tuple{zeta_a, dzeta_dh_a};
+        });
       });
     }
+    // Compute renormalization fields.
+    par::static_for_each(particles.views(), [&](PV a) {
+      /// Clean renormalization fields.
+      if constexpr (has<PV>(S)) S[a] = {};
+      if constexpr (has<PV>(L)) L[a] = {};
+      /// Compute renormalization fields.
+      std::ranges::for_each(adjacent_particles[a], [&](PV b) {
+        [[maybe_unused]] const auto W_ab = kernel_(a, b, h[a]);
+        [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b, h[a]);
+        [[maybe_unused]] const auto V_b = m[b] / rho[b];
+        /// Update kernel renormalization coefficient.
+        if constexpr (has<PV>(S)) S[a] += V_b * W_ab;
+        /// Update kernel gradient renormalization matrix.
+        if constexpr (has<PV>(L)) L[a] += V_b * outer(r[b, a], grad_W_ab);
+      });
+      /// Finalize kernel renormalization coefficient.
+      if constexpr (has<PV>(S)) {
+        if (is_zero(S[a])) S[a] = 1.0;
+        else S[a] = inverse(S[a]);
+      }
+      /// Finalize kernel gradient renormalization matrix.
+      if constexpr (has<PV>(L)) {
+        const auto invL_a = MatInv{L[a]};
+        if (is_zero(invL_a.det())) L[a] = 1.0;
+        else L[a] = invL_a();
+      }
+    });
   }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -241,97 +248,80 @@ public:
   constexpr void compute_forces(ParticleArray& particles,
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
-    // Prepare velocity-related fields.
+    // Compute velocity derivative fields.
     par::static_for_each(particles.views(), [&](PV a) {
       /// Compute pressure (and sound speed).
       eos_.compute_pressure(a);
-      /// Clean velocity-related fields.
+      /// Clean velocity derivative fields.
       dv_dt[a] = {};
-      if constexpr (has<PV>(div_v)) div_v[a] = {};
-      if constexpr (has<PV>(curl_v)) curl_v[a] = {};
-    });
-    // Compute auxilary velocity fields.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
-      const auto [a, b] = ab;
-      [[maybe_unused]] const auto W_ab = kernel_(a, b);
-      [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
-      [[maybe_unused]] const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
-      /// Update velocity divergence.
-      if constexpr (has<PV>(div_v)) {
-        const auto div_flux = dot(v[b, a], grad_W_ab);
-        div_v[a] += V_b * div_flux, div_v[b] += V_a * div_flux;
+      if constexpr (has<PV>(u, du_dt)) du_dt[a] = {};
+      if constexpr (has<PV>(grad_v)) {
+        grad_v[a] = {};
+      } else {
+        if constexpr (has<PV>(div_v)) div_v[a] = {};
+        if constexpr (has<PV>(curl_v)) curl_v[a] = {};
       }
-      /// Update velocity curl.
-      if constexpr (has<PV>(curl_v)) {
-        const auto curl_flux = -cross(v[b, a], grad_W_ab);
-        curl_v[a] += V_b * curl_flux, curl_v[b] += V_a * curl_flux;
-      }
+      /// Compute velocity derivative fields.
+      std::ranges::for_each(adjacent_particles[a], [&](PV b) {
+        [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b, h[a]);
+        [[maybe_unused]] const auto V_b = m[b] / rho[b];
+        if constexpr (has<PV>(grad_v)) {
+          /// Update velocity gradient.
+          grad_v[a] += outer(v[b, a], grad_W_ab);
+        } else {
+          /// Update velocity divergence.
+          if constexpr (has<PV>(div_v)) {
+            div_v[a] += V_b * dot(v[b, a], grad_W_ab);
+          }
+          /// Update velocity curl.
+          if constexpr (has<PV>(curl_v)) {
+            curl_v[a] += V_b * -cross(v[b, a], grad_W_ab);
+          }
+        }
+      });
+      /// Renormalize velocity gradient.
+      if constexpr (has<PV>(L, grad_v)) grad_v[a] = L[a] * grad_v[a];
+      /// Compute velocity divergence from gradient.
+      if constexpr (has<PV>(div_v, grad_v)) div_v[a] = tr(grad_v[a]);
+      /// Compute velocity curl from gradient.
+      if constexpr (has<PV>(curl_v, grad_v)) curl_v[a] = grad2curl(grad_v[a]);
     });
     // Compute velocity and internal energy time derivatives.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
-      const auto grad_W_ab = kernel_.grad(a, b);
-      const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
-      // Convective updates.
+      const auto grad_W_aba = kernel_.grad(a, b, h[a]);
+      const auto grad_W_abb = kernel_.grad(a, b, h[b]);
       /// Compute artificial viscosity term.
       const auto Pi_ab = artvisc_.velocity_term(a, b);
       /// Update velocity time derivative.
-      const auto v_flux = (-p[a] / pow2(rho[a]) + //
-                           -p[b] / pow2(rho[b]) + Pi_ab) *
-                          grad_W_ab;
+      // clang-format off
+      const auto v_flux_a = (-p[a] / (Omega.get(a, 1.0) * pow2(rho[a])) +
+                             0.5 * Pi_ab) * grad_W_aba;
+      const auto v_flux_b = (-p[b] / (Omega.get(b, 1.0) * pow2(rho[b])) +
+                             0.5 * Pi_ab) * grad_W_abb;
+      // clang-format on
+      const auto v_flux = v_flux_a + v_flux_b;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
-#if HARD_DAM_BREAKING
-      // TODO: Viscosity.
-      if constexpr (has<PV>(mu)) {
-        // Viscous updates.
-        const auto d = dim(r[a]);
-        const auto mu_ab = mu.avg(a, b);
-        if constexpr (true) {
-          /// Laplacian viscosity approach.
-          /// Update velocity time derivative.
-          // clang-format off
-          const auto visc_flux = mu_ab / (rho[a] * rho[b] * norm2(r[a, b])) *
-                                 (2 * (d + 2) * dot(v[a, b], r[a, b]) *
-                                  grad_W_ab);
-          // clang-format on
-          dv_dt[a] += m[b] * visc_flux;
-          dv_dt[b] -= m[a] * visc_flux;
-          if constexpr (has<PV>(u, du_dt)) {
-            /// Update internal enegry time derivative.
-            du_dt[a] += m[b] * dot(v[a, b], visc_flux);
-            du_dt[a] -= m[a] * dot(v[a, b], visc_flux);
-          }
-        } else {
-          // Full stress tensor approach.
-          /// Update velocity time derivative.
-          // clang-format off
-          const auto visc_flux = mu_ab / (rho[a] * rho[b] * norm2(r[a, b])) *
-                                 ((d + 2) * dot(v[a, b], r[a, b]) * grad_W_ab +
-                                  v[a, b] * dot(r[a, b], grad_W_ab));
-          // clang-format on
-          dv_dt[a] += m[b] * visc_flux;
-          dv_dt[b] -= m[a] * visc_flux;
-          if constexpr (has<PV>(u, du_dt)) {
-            /// Update internal enegry time derivative.
-            du_dt[a] += m[b] * dot(v[a, b], visc_flux);
-            du_dt[a] -= m[a] * dot(v[a, b], visc_flux);
-          }
-        }
+      if constexpr (has<PV>(u, du_dt)) {
+        /// Compute artificial conductivity term.
+        const auto alpha_u_ = 1.0;
+        const auto v_sig_ab = sqrt(abs(p[a, b]) / rho.avg(a, b));
+        const auto Lambda_ab = alpha_u_ * v_sig_ab * u[a, b] * r[a, b] /
+                               norm(r[a, b]) / rho.avg(a, b);
+        const auto Lambda_flux = dot(Lambda_ab, avg(grad_W_aba, grad_W_abb));
+        /// Update internal enegry time derivative.
+        du_dt[a] += m[b] * (dot(v_flux_a, v[b, a]) + Lambda_flux);
+        du_dt[b] += m[a] * (dot(v_flux_b, v[b, a]) - Lambda_flux);
       }
-#endif
     });
     par::static_for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
-#if WITH_GRAVITY
-      // TODO: Gravity.
-      dv_dt[a][1] -= 9.81;
-#endif
-      // Compute artificial viscosity switch.
+      /// Compute artificial viscosity switch time.
       if constexpr (has<PV>(dalpha_dt)) artvisc_.compute_switch_deriv(a);
     });
   }
 
-}; // class FluidEquations
+}; // class CompressibleFluidEquations
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
