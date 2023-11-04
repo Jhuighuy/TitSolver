@@ -1,0 +1,123 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Part of the Tit Solver project, under the MIT License
+# See /LICENSE.md for license information.
+# SPDX-License-Identifier: MIT
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+name: Build
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+jobs:
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+  build_ubuntu:
+    name: Ubuntu
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [g++-13]
+        configuration: [Debug, Release]
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.*'
+          cache: true
+      - name: Cache vcpkg installation
+        uses: actions/cache@v3
+        with:
+          path: output/cmake_output/vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+      - name: Build
+        run: |
+          build/build.py -cxx=${{ matrix.compiler }} \
+                         -cfg=${{ matrix.configuration }}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+  build_macos:
+    name: macOS
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        compiler: [g++-13]
+        configuration: [Debug, Release]
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.*'
+          cache: true
+      - name: Cache vcpkg installation
+        uses: actions/cache@v3
+        with:
+          path: output/cmake_output/vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+      - name: Build
+        run: |
+          build/build.py -cxx=${{ matrix.compiler }} \
+                         -cfg=${{ matrix.configuration }}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+  #build_windows:
+  #  name: Windows
+  #  runs-on: windows-latest
+  #  strategy:
+  #    matrix:
+  #      compiler: [g++]
+  #      configuration: [Debug, Release]
+  #    fail-fast: false
+  #  steps:
+  #    - name: Checkout
+  #      uses: actions/checkout@v3
+  #    - name: Setup MSYS2
+  #      uses: msys2/setup-msys2@v2
+  #      with:
+  #        msystem: MINGW64
+  #        update: true
+  #        install: >-
+  #          base-devel
+  #          mingw-w64-x86_64-toolchain
+  #          mingw-w64-x86_64-cmake
+  #        cache: true
+  #    - name: Install Qt
+  #      uses: jurplel/install-qt-action@v3
+  #      with:
+  #        version: '6.*'
+  #        arch: "win64_mingw"
+  #        cache: true
+  #    - name: Cache vcpkg installation
+  #      uses: actions/cache@v3
+  #      with:
+  #        path: output/cmake_output/vcpkg_installed
+  #        key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+  #        restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+  #    - name: Build
+  #      shell: msys2 {0}
+  #      run: |
+  #        build/build.py -cxx=${{ matrix.compiler }} \
+  #                       -cfg=${{ matrix.configuration }}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

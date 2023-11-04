@@ -1,0 +1,70 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Part of the Tit Solver project, under the MIT License
+# See /LICENSE.md for license information.
+# SPDX-License-Identifier: MIT
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+name: Analyze
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+jobs:
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+  analyze_code_cov:
+    name: Codecov
+    runs-on: ubuntu-latest
+    env:
+      # g++ and gcov executables.
+      GXX_EXE: g++-13
+      GCOV_EXE: gcov-13
+      # Coverage report file path (Sonar for the future).
+      SONAR_COVERAGE_REPORT_PATH: sonar_coverage.xml
+      CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install gcovr
+        run: |
+          pip install gcovr
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.*'
+          cache: true
+      - name: Cache vcpkg installation
+        uses: actions/cache@v3
+        with:
+          path: output/cmake_output/vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+      - name: Build
+        run: |
+          build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage
+      - name: Run gcovr
+        run: |
+          gcovr -e "output/*" \
+                --exclude-throw-branches \
+                --gcov-executable "gcov-13" \
+                --xml "{{ env.CODECOV_COVERAGE_REPORT_PATH }}" \
+                --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
+          # See why `--exclude-throw-branches` below:
+          # https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
