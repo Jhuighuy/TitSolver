@@ -26,7 +26,7 @@ function(check_includes TARGET_OR_ALIAS)
   set(IWYU_ARGS
       -Xiwyu --error
       -Xiwyu --no_fwd_decls
-      -Xiwyu --mapping_file=${CMAKE_SOURCE_DIR}/cmake/IWYU.imp
+      -Xiwyu --mapping_file=${ROOT_SOURCE_DIR}/cmake/IWYU.imp
       -std=c++2b # IWYU has no C++23.
       -stdlib=libc++ # Force use G++'s stdlib.
       -DTIT_IWYU=1)
