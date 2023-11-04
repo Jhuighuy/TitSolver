@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "tit",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "doctest",
+    "hdf5",
+    "fmt",
+    "nanobench",
+    "spdlog"
+  ]
+}

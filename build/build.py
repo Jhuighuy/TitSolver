@@ -7,7 +7,6 @@
 
 import argparse
 import os
-import shutil
 import subprocess
 import sys
 
@@ -15,7 +14,7 @@ import sys
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Build StormSPH.",
+        description="Build Tit.",
     )
     parser.add_argument(
         "-cfg",
@@ -68,7 +67,7 @@ if __name__ == "__main__":
     cmake_args = ["cmake"]
 
     # Setup the source and build directories.
-    source_dir = "src"
+    source_dir = "."
     cmake_output_dir = os.path.join("output", "cmake_output")
     cmake_args += ["-S", source_dir, "-B", cmake_output_dir]
 
@@ -105,7 +104,7 @@ if __name__ == "__main__":
         cmake_args += args.arguments
 
     # Run CMake!
-    exit_code = subprocess.check_call(cmake_args)
+    exit_code = subprocess.call(cmake_args)
     if exit_code != 0:
         sys.exit(exit_code)
 
@@ -126,7 +125,7 @@ if __name__ == "__main__":
         cmake_args += ["--", "-j", str(jobs)]
 
     # Run CMake!
-    exit_code = subprocess.check_call(cmake_args)
+    exit_code = subprocess.call(cmake_args)
     if exit_code != 0:
         sys.exit(exit_code)
 
