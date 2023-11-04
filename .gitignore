@@ -28,6 +28,9 @@
 !CMakeLists.txt
 !*.cmake
 
+# Pipelines.
+!/.github/workflows/*.yml
+
 # C++ files.
 !*.hpp
 !*.cpp

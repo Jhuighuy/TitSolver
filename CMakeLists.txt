@@ -71,9 +71,13 @@ list(APPEND CXX_COMPILE_OPTIONS
 list(APPEND CXX_COMPILE_OPTIONS
      -g -Ofast -march=native -finline-limit=10000000 -ffp-contract=fast)
 
-# Enable "classic" linker for macOS.
+# Enable "classic" linker for macOS (if possible).
 if(${APPLE})
-  list(APPEND CXX_LINK_OPTIONS -ld_classic)
+  include(CheckLinkerFlag)
+  check_linker_flag(CXX -ld_classic LD_CLASSIC_PRESENT)
+  if(LD_CLASSIC_PRESENT)
+    list(APPEND CXX_LINK_OPTIONS -ld_classic)
+  endif()
 endif()
 
 # Apply the options.
@@ -88,37 +92,28 @@ target_include_directories(tit_base INTERFACE ${ROOT_SOURCE_DIR})
 
 # Find {fmt}.
 find_package(fmt CONFIG REQUIRED QUIET)
-message(STATUS "| fmt enabled.")
 target_link_libraries(tit_base INTERFACE fmt::fmt-header-only)
 
 # Find spdlog.
 find_package(spdlog CONFIG REQUIRED QUIET)
-message(STATUS "| spdlog enabled.")
 target_link_libraries(tit_base INTERFACE spdlog::spdlog_header_only)
 
-# Find Thread Bulding Blocks.
-find_package(TBB QUIET)
-if(TBB_FOUND)
-  set(TIT_HAS_TBB 1)
-  message(STATUS "| TBB enabled.")
-  target_link_libraries(tit_base INTERFACE TBB::tbb TBB::tbbmalloc)
-endif()
+## Find Thread Bulding Blocks.
+#find_package(TBB CONFIG REQUIRED QUIET)
+#target_link_libraries(tit_base INTERFACE TBB::tbb TBB::tbbmalloc)
 
 # Find OpenMP.
-find_package(OpenMP QUIET)
-if(OpenMP_FOUND)
-  set(TIT_HAS_OPENMP 1)
-  message(STATUS "| OpenMP enabled.")
-  target_link_libraries(tit_base INTERFACE OpenMP::OpenMP_CXX)
-endif()
+find_package(OpenMP REQUIRED QUIET)
+target_link_libraries(tit_base INTERFACE OpenMP::OpenMP_CXX)
 
 # Find HDF5.
-find_package(HDF5 QUIET)
-if(HDF5_FOUND)
-  set(TIT_HAS_HDF5 1)
-  target_link_libraries(tit_base INTERFACE hdf5::hdf5)
-  message(STATUS "| HDF5 enabled.")
-endif()
+find_package(HDF5 CONFIG REQUIRED QUIET)
+target_link_libraries(tit_base INTERFACE hdf5::hdf5-static)
+
+# Find Qt.
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+qt_standard_project_setup()
+# Do not link Qt to the base library!
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

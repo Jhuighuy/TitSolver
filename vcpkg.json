@@ -7,6 +7,7 @@
     "hdf5",
     "fmt",
     "nanobench",
+    "tbb",
     "spdlog"
   ]
 }

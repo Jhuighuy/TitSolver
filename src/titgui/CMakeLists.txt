@@ -4,17 +4,6 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Find Qt.
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
-if(NOT Qt6_FOUND)
-  return()
-endif()
-
-# Setup Qt.
-qt_standard_project_setup()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Specify the list of sources.
 set(CXX_SOURCES
     main_window.cpp
