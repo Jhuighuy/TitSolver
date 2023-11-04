@@ -7,6 +7,9 @@
   "[cpp]": {
     "editor.defaultFormatter": "xaver.clang-format"
   },
+  "flake8.args": [
+    "max-line-length=80"
+  ],
   "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,
   "editor.tabSize": 2,

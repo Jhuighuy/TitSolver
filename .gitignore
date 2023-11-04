@@ -23,7 +23,7 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# CMake sources.
+# CMake files.
 !CMakeLists.txt
 !*.cmake
 
@@ -33,6 +33,9 @@
 
 # Qt files.
 !*.ui
+
+# Python files.
+!*.py
 
 # Scripts.
 !*.sh
