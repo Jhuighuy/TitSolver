@@ -77,7 +77,7 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class ParticleArray, class ParticleAdjacency>
-  constexpr auto index(ParticleArray& particles,
+  constexpr auto index([[maybe_unused]] ParticleArray& particles,
                        ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
@@ -88,10 +88,10 @@ public:
   /** Setup boundary particles. */
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void setup_boundary(ParticleArray& particles,
+  constexpr void setup_boundary([[maybe_unused]] ParticleArray& particles,
                                 ParticleAdjacency& adjacent_particles) const {
-    using PV = ParticleView<ParticleArray>;
 #if WITH_WALLS
+    using PV = ParticleView<ParticleArray>;
     par::for_each(adjacent_particles.__fixed(), [&](auto ia) {
       auto [i, a] = ia;
       const auto search_point = a[r];
@@ -271,7 +271,6 @@ public:
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
       const auto grad_W_ab = kernel_.grad(a, b);
-      const auto V_a = m[a] / rho[a], V_b = m[b] / rho[b];
       // Convective updates.
       /// Compute artificial viscosity term.
       const auto Pi_ab = artvisc_.velocity_term(a, b);

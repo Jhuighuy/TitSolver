@@ -115,7 +115,7 @@ public:
 
   template<class ParticleArray>
     requires (has<ParticleArray>(required_fields))
-  constexpr void init(ParticleArray& particles) const {}
+  constexpr void init([[maybe_unused]] ParticleArray& particles) const {}
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -156,10 +156,9 @@ public:
   /** Compute density-related fields. */
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void compute_density(ParticleArray& particles,
-                                 ParticleAdjacency& adjacent_particles) const {
-    using PV = ParticleView<ParticleArray>;
-  }
+  constexpr void compute_density(
+      [[maybe_unused]] ParticleArray& particles,
+      [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {}
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
