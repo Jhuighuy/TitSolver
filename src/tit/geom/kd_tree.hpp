@@ -110,14 +110,14 @@ private:
   template<bool IsRoot = false>
   constexpr auto build_subtree_(size_t* first, size_t* last, PointBBox& bbox)
       -> KDTreeNode_* {
-    TIT_ASSERT(first < last, "Invalid subtree range.");
+    TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // Allocate node.
     // TODO: We are not correctly initializing `node`.
     const auto node = alloc_.allocate(1);
     const auto actual_bbox = subtree_bbox_</*Parallel=*/IsRoot>(first, last);
     if constexpr (IsRoot) bbox = actual_bbox;
     // Is leaf node reached?
-    if (last - first <= max_leaf_size_) {
+    if (static_cast<size_t>(last - first) <= max_leaf_size_) {
       // Fill the leaf node and end partitioning.
       node->left_subtree = node->right_subtree = nullptr;
       node->leaf = {first, last};
@@ -154,7 +154,7 @@ private:
   constexpr auto partition_subtree_(size_t* first, size_t* last, //
                                     size_t cut_dim, Real cut_value) noexcept
       -> size_t* {
-    TIT_ASSERT(first < last, "Invalid subtree range.");
+    TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // Shift the points that are to the left of the splititng plane to the
     // front of the list.
     const auto to_the_left = [&](size_t index) {

@@ -24,10 +24,10 @@ int sph_main() {
   constexpr Real H = 0.01; // Bar height.
   constexpr Real L = 0.10; // Bar length.
 
-  constexpr Real E_s = 1.4e+6, nu_s = 0.4;
-  constexpr Real K_s = E_s / (3.0 * (1.0 - 2.0 * nu_s));
+  // constexpr Real E_s = 1.4e+6, nu_s = 0.4;
+  // constexpr Real K_s = E_s / (3.0 * (1.0 - 2.0 * nu_s));
   constexpr Real rho_0 = 1400.0;
-  constexpr Real cs_0 = sqrt(K_s / rho_0);
+  // constexpr Real cs_0 = sqrt(K_s / rho_0);
 
   constexpr Real dr = H / 10.0;
   constexpr Real h_0 = 1.3 * dr;

@@ -118,7 +118,6 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void step(real_t dt, ParticleArray& particles,
                       ParticleAdjacency& adjacent_particles) {
-    using PV = ParticleView<ParticleArray>;
     // Initialize and index particles.
     if (step_index_ == 0) {
       // Initialize particles.

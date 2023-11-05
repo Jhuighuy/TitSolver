@@ -14,7 +14,7 @@ project(Tit VERSION 0.1 LANGUAGES CXX)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Setup root output directory.
-set(ROOT_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/output)
+set(ROOT_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/output/TIT_ROOT)
 
 # Setup output directories.
 # (Set globally, since these properties are not inherited by targets.)
@@ -63,9 +63,7 @@ set(CXX_COMPILE_OPTIONS "")
 set(CXX_LINK_OPTIONS "")
 
 # Set the warnings and diagnostics options.
-list(APPEND CXX_COMPILE_OPTIONS
-     #-Werror -Wall -Wextra -Wpedantic -Wno-unused-function -Wno-psabi
-     )
+list(APPEND CXX_COMPILE_OPTIONS -Werror -Wall -Wextra) #-Wno-psabi
 
 # Set the optimization options.
 list(APPEND CXX_COMPILE_OPTIONS

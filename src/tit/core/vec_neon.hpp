@@ -35,8 +35,8 @@ public:
     if consteval {
       col_ = {qx, qy};
     } else {
-      reg_ = vsetq_lane_f64(qx, reg_, 0);
-      reg_ = vsetq_lane_f64(qy, reg_, 1);
+      const auto qs = std::array{qx, qy};
+      reg_ = vld1q_f64(qs.data());
     }
   }
 

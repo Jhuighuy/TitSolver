@@ -203,7 +203,7 @@ public:
 class MolteniColagrossiArtificialViscosity : public NoArtificialViscosity {
 private:
 
-  real_t rho_0_, cs_0_;
+  real_t cs_0_, rho_0_;
   real_t alpha_, xi_;
 
 public:
@@ -256,7 +256,7 @@ public:
 class DeltaSphArtificialViscosity : public NoArtificialViscosity {
 private:
 
-  real_t rho_0_, cs_0_;
+  real_t cs_0_, rho_0_;
   real_t alpha_, delta_;
 
 public:

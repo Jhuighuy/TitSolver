@@ -18,7 +18,7 @@ constexpr Val sync_fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept {
   if consteval {
     const auto tmp = val;
     val += delta;
-    return val;
+    return tmp;
   } else {
     // TODO: this is gcc/clang extension, not portable.
     return __sync_fetch_and_add(&val, delta);
