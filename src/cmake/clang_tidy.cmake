@@ -31,7 +31,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   # Fill the list of the common clang-tidy arguments.
   set(CLANG_TIDY_ARGS
       -Wall -Wextra -Wno-unknown-pragmas
-      -std=c++23 # Enable C++23.
+      -std=c++2b # Enable C++23.
       -DTIT_IWYU=1)
   # Append target's include directories and definitions.
   foreach(PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)

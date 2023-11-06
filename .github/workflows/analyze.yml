@@ -33,7 +33,11 @@ jobs:
       CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - name: Install LLVM
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "17.0"
       - name: Install gcovr
         run: |
           pip install gcovr
