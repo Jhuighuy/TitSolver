@@ -13,11 +13,12 @@
 
 # Configuration files.
 !.git*
-!vcpkg.json
 !/.clang-*
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
 !/src/cmake/iwyu.imp
+!CPPLINT.cfg
+!vcpkg.json
 
 # Output
 /output/
