@@ -64,7 +64,8 @@ set(CXX_COMPILE_OPTIONS "")
 set(CXX_LINK_OPTIONS "")
 
 # Set the warnings and diagnostics options.
-list(APPEND CXX_COMPILE_OPTIONS -Werror -Wall -Wextra) #-Wno-psabi
+list(APPEND CXX_COMPILE_OPTIONS -Werror -Wall -Wextra
+     -Wno-unused-result) #-Wno-psabi
 
 # Set the optimization options.
 list(APPEND CXX_COMPILE_OPTIONS
