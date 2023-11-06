@@ -16,6 +16,21 @@ namespace tit {
  ** macro. */
 #define TIT_PASS(...) __VA_ARGS__
 
+template<class T>
+constexpr void assume_unversal(
+    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+    [[maybe_unused]] T&& universal_reference) noexcept {}
+
+/** Use this function to assume forwarding references as universal references to
+ ** avoid false alarms from analysis tools. */
+#define TIT_ASSUME_UNIVERSAL(T, universal_reference)                           \
+  assume_unversal(std::forward<T>(universal_reference))
+
+template<class... Ts>
+constexpr void assume_used(
+    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+    [[maybe_unused]] Ts&&... args) noexcept {}
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template<class Instance, template<class...> class Template>
@@ -42,6 +57,7 @@ public:
   constexpr explicit OnAssignment(Func func) : func_{std::move(func)} {}
 
   template<class Arg>
+  // NOLINTNEXTLINE(cppcoreguidelines-c-copy-assignment-signature,misc-unconventional-assign-operator)
   constexpr void operator=(Arg&& arg) {
     func_(std::forward<Arg>(arg));
   }

@@ -29,7 +29,7 @@ class EulerIntegrator {
 private:
 
   FluidEquations equations_{};
-  size_t step_index_;
+  size_t step_index_{0};
   size_t adjacency_recalc_freq_;
 
 public:
@@ -39,9 +39,9 @@ public:
       meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
 
   /** Construct time integrator. */
-  constexpr EulerIntegrator(FluidEquations estimator = {},
-                            size_t adjacency_recalc_freq = 10) noexcept
-      : equations_{std::move(estimator)}, step_index_{0},
+  constexpr explicit EulerIntegrator(FluidEquations estimator = {},
+                                     size_t adjacency_recalc_freq = 10) noexcept
+      : equations_{std::move(estimator)},
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /** Make a step in time. */
@@ -98,7 +98,7 @@ class RungeKuttaIntegrator {
 private:
 
   FluidEquations equations_{};
-  size_t step_index_;
+  size_t step_index_{0};
   size_t adjacency_recalc_freq_;
 
 public:
@@ -108,9 +108,9 @@ public:
       meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
 
   /** Construct time integrator. */
-  constexpr RungeKuttaIntegrator(FluidEquations estimator = {},
-                                 size_t adjacency_recalc_freq = 10) noexcept
-      : equations_{std::move(estimator)}, step_index_{0},
+  constexpr explicit RungeKuttaIntegrator(
+      FluidEquations estimator = {}, size_t adjacency_recalc_freq = 10) noexcept
+      : equations_{std::move(estimator)},
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /** Make a step in time. */

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <type_traits>
+#include <utility>
 
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
@@ -32,15 +33,15 @@ concept has_constants_ =
 /** Check particle fields presense. */
 /** @{ */
 template<has_fields_ PV, meta::type... Fields>
-consteval bool has(meta::Set<Fields...> fields) {
+consteval auto has(meta::Set<Fields...> fields) -> bool {
   return std::remove_cvref_t<PV>::fields.includes(fields);
 }
 template<has_fields_ PV, meta::type... Fields>
-consteval bool has(Fields... fields) {
+consteval auto has(Fields... fields) -> bool {
   return has<PV>(meta::Set{fields...});
 }
 template<has_fields_ PV, meta::type... Fields>
-consteval bool has() {
+consteval auto has() -> bool {
   return has<PV>(Fields{}...);
 }
 /** @} */
@@ -48,7 +49,7 @@ consteval bool has() {
 /** Check particle constant presense. */
 /** @{ */
 template<has_fields_ PV, meta::type... Consts>
-consteval bool has_const(meta::Set<Consts...> consts) {
+consteval auto has_const(meta::Set<Consts...> consts) -> bool {
   if constexpr (!has_constants_<PV>) return false;
   else {
     return has<PV>(consts) &&
@@ -56,11 +57,11 @@ consteval bool has_const(meta::Set<Consts...> consts) {
   }
 }
 template<has_fields_ PV, meta::type... Consts>
-consteval bool has_const(Consts... consts) {
+consteval auto has_const(Consts... consts) -> bool {
   return has_const<PV>(meta::Set{consts...});
 }
 template<has_fields_ PV, meta::type... Consts>
-consteval bool has_const() {
+consteval auto has_const() -> bool {
   return has_const<PV>(Consts{}...);
 }
 /** @} */
@@ -76,13 +77,13 @@ public:
   template<has_fields_ PV>
     requires (has<PV, field_t>())
   constexpr auto operator[](PV&& a) const noexcept -> decltype(auto) {
-    return a[field_t{}];
+    return std::forward<PV>(a)[field_t{}];
   }
 
   /** Field value for the specified particle view or default value. */
   template<has_fields_ PV>
   constexpr auto get(PV&& a, auto default_) const noexcept {
-    if constexpr (has<PV, field_t>()) return a[field_t{}];
+    if constexpr (has<PV, field_t>()) return std::forward<PV>(a)[field_t{}];
     else return default_;
   }
 
@@ -90,7 +91,7 @@ public:
   template<has_fields_ PV>
     requires (has<PV, field_t>())
   constexpr auto operator[](PV&& a, PV&& b) const noexcept {
-    return a[field_t{}] - b[field_t{}];
+    return std::forward<PV>(a)[field_t{}] - std::forward<PV>(b)[field_t{}];
   }
 
   /** Average of the field values over the specified particle views. */
@@ -100,7 +101,7 @@ public:
     requires (... && has<PVs, field_t>())
   constexpr auto avg(PVs&&... ai) const noexcept {
     // Namespace prefix is a must here to avoid recursion.
-    return tit::avg(ai[field_t{}]...);
+    return tit::avg(std::forward<PVs>(ai)[field_t{}]...);
   }
 
   /** Weighted average of the field values over the specified particle views. */
@@ -108,7 +109,7 @@ public:
     requires (... && has<PVs, field_t>())
   constexpr auto wavg(PVs&&... ai) const noexcept {
     // Namespace prefix is a must here to avoid recursion.
-    return tit::avg(ai[field_t{}]...);
+    return tit::avg(std::forward<PVs>(ai)[field_t{}]...);
   }
 
   /** Harmonic average of the field values over the specified particle views. */
@@ -116,7 +117,7 @@ public:
     requires (... && has<PVs, field_t>())
   constexpr auto havg(PVs&&... ai) const noexcept {
     // Namespace prefix is a must here to avoid recursion.
-    return tit::havg(ai[field_t{}]...);
+    return tit::havg(std::forward<PVs>(ai)[field_t{}]...);
   }
 
 }; // class Field

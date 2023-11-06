@@ -42,6 +42,9 @@ inline constexpr bool all_unique_v<T, Ts...> =
     (!contains_v<T, Ts...>) && all_unique_v<Ts...>;
 // clang-format on
 
+// Disable named parameters. This check does not make any sense here.
+// NOLINTBEGIN(readability-named-parameter)
+
 template<meta_type... Ts>
   requires all_unique_v<Ts...>
 class Set {
@@ -49,14 +52,14 @@ public:
 
   /** Construct a meta-set. */
   consteval Set() = default;
-  consteval Set(Ts...)
+  consteval explicit Set(Ts...)
 #ifndef __INTELLISENSE__
     requires (sizeof...(Ts) != 0)
 #endif
   {
   }
 
-  static consteval size_t size() {
+  static consteval auto size() -> size_t {
     return sizeof...(Ts);
   }
 
@@ -84,15 +87,17 @@ public:
   }
 
   template<meta_type U>
-  static consteval bool contains(U) {
+  static consteval auto contains(U) -> bool {
     return contains_v<U, Ts...>;
   }
 
   template<meta_type... Us>
-  static consteval bool includes(Set<Us...>) {
+  static consteval auto includes(Set<Us...>) -> bool {
     return std::is_same_v<Set<Ts...>, decltype(Set<Ts...>{} | Set<Us...>{})>;
   }
 };
+
+// NOLINTEND(readability-named-parameter)
 
 template<class T>
 inline constexpr bool is_set_v = false;

@@ -15,6 +15,7 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/mdvector.hpp"
+#include "tit/core/misc.hpp"
 #include "tit/core/types.hpp"
 #include "tit/par/atomic.hpp"
 #include "tit/par/thread.hpp"
@@ -45,7 +46,7 @@ public:
   }
 
   /** Clear the multivector. */
-  constexpr void clear() noexcept {
+  constexpr void clear() noexcept { // NOLINT(bugprone-exception-escape)
     val_ranges_.clear(), val_ranges_.push_back(0);
     vals_.clear();
   }
@@ -69,6 +70,7 @@ public:
     requires std::indirectly_copyable<std::ranges::iterator_t<Vals>,
                                       std::ranges::iterator_t<std::vector<Val>>>
   constexpr void push_back(Vals&& vals) {
+    TIT_ASSUME_UNIVERSAL(Vals, vals);
     std::ranges::copy(vals, std::back_inserter(vals_));
     val_ranges_.push_back(vals_.size());
   }
@@ -102,6 +104,7 @@ public:
                            ValueOf, std::ranges::range_value_t<Handles>>>
   constexpr void assemble_tall(size_t count, Handles&& handles,
                                IndexOf index_of, ValueOf value_of = {}) {
+    TIT_ASSUME_UNIVERSAL(Handles, handles);
     // Compute value ranges.
     /// First compute how many values there are per each index.
     val_ranges_.clear(), val_ranges_.resize(count + 1);
@@ -151,6 +154,7 @@ public:
                            ValueOf, std::ranges::range_value_t<Handles>>>
   constexpr void assemble_wide(size_t count, Handles&& handles,
                                IndexOf index_of, ValueOf value_of = {}) {
+    TIT_ASSUME_UNIVERSAL(Handles, handles);
     // Compute value ranges.
     /// First compute how many values there are per each index per each thread.
     val_ranges_.clear(), val_ranges_.resize(count + 1);

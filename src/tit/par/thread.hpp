@@ -19,18 +19,19 @@
 #include "tit/core/types.hpp"
 
 namespace tit::par {
+// NOLINTBEGIN(cppcoreguidelines-missing-std-forward)
 
 struct impl_tag_t {};
-struct seg_tag_t : impl_tag_t {
-} seg_tag;
-struct par_tag_t : impl_tag_t {
-} par_tag;
+struct seg_tag_t : impl_tag_t {};
+struct par_tag_t : impl_tag_t {};
+inline constexpr seg_tag_t seg_tag{};
+inline constexpr par_tag_t par_tag{};
 
 struct sched_tag_t {};
-struct static_tag_t : sched_tag_t {
-} static_tag;
-struct dynamic_tag_t : sched_tag_t {
-} dynamic_tag;
+struct static_tag_t : sched_tag_t {};
+struct dynamic_tag_t : sched_tag_t {};
+inline constexpr static_tag_t static_tag{};
+inline constexpr dynamic_tag_t dynamic_tag{};
 
 template<class Tag>
 class Threading {
@@ -59,7 +60,7 @@ public:
   }
 
   template<class Range, class Func>
-  static void for_each_(dynamic_tag_t, Range&& range, Func&& func,
+  static void for_each_(dynamic_tag_t /**/, Range&& range, Func&& func,
                         [[maybe_unused]] size_t grain_size = 100) noexcept {
     const auto end = std::ranges::end(range);
 #pragma omp parallel for schedule(dynamic, grain_size)
@@ -68,8 +69,8 @@ public:
   }
 
   template<class Range, class Func>
-  constexpr static void for_each_(static_tag_t, Range&& range,
-                                  Func&& func) noexcept {
+  static void for_each_(static_tag_t /**/, Range&& range,
+                        Func&& func) noexcept {
     const auto end = std::ranges::end(range);
 #pragma omp parallel for schedule(static)
     for (auto iter = std::ranges::begin(range); iter != end; ++iter)
@@ -90,7 +91,7 @@ public:
 #define TIT_THREAD_FUNC_IMPL_(func, ...)                                       \
   if consteval {                                                               \
     return Threading<seg_tag_t>::func(__VA_ARGS__);                            \
-  } else {                                                                     \
+  } else { /* NOLINT(readability-else-after-return) */                         \
     return Threading<par_tag_t>::func(__VA_ARGS__);                            \
   }
 
@@ -197,8 +198,10 @@ template<block_input_range Range,
              std::ranges::iterator_t<std::ranges::range_value_t<Range>>>
              Func>
 constexpr void block_for_each(Range&& range, Func&& func) noexcept {
+#if TIT_IWYU
   // IWYU's clang has no `std::views::chunk`.
-#if !TIT_IWYU
+  assume_used(range, func);
+#else
   // Split the range in chuncks according to the number of threads and
   // walk though the chunks sequentially.
   const auto chuncked_range =
@@ -215,6 +218,7 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+// NOLINTEND(cppcoreguidelines-missing-std-forward)
 } // namespace tit::par
 
 // #include "tit/par/thread_omp.hpp"

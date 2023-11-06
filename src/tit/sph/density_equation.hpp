@@ -46,7 +46,8 @@ public:
 
   /** Construct Grad-H summation density.
    ** @param eta Coupling factor. Typically 1.0~1.2. */
-  constexpr GradHSummationDensity(real_t eta = 1.0) noexcept : eta_{eta} {}
+  constexpr explicit GradHSummationDensity(real_t eta = 1.0) noexcept
+      : eta_{eta} {}
 
   /** Particle width with respect to density. */
   template<class PV>

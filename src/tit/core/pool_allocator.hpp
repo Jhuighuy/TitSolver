@@ -15,9 +15,7 @@
 #include <oneapi/tbb/memory_pool.h>
 #else
 #include <algorithm>
-#include <cstdlib>
 #include <mutex>
-#include <new>
 #endif
 
 namespace tit {
@@ -73,7 +71,7 @@ private:
   // Individual allocations would be aligned to this value.
   static constexpr auto word_size_ = align(size_t{16}, sizeof(Val));
   // Amount of the block.
-  static constexpr auto block_size_ = align(size_t{64 * 1024}, word_size_);
+  static constexpr auto block_size_ = align(size_t{64} * 1024, word_size_);
 
   size_t remaining_ = 0; // Number of bytes left in current block of storage.
   void* base_ = nullptr; // Pointer to base of current block of storage.
@@ -99,13 +97,13 @@ public:
   /*constexpr*/ ~PoolAllocator() {
     while (base_ != nullptr) {
       // Get pointer to previous block.
-      const auto prev = *static_cast<void**>(base_);
-      std::free(base_);
+      auto* const prev = *static_cast<void**>(base_);
+      delete[] static_cast<char*>(base_);
       base_ = prev;
     }
   }
 
-  constexpr Val* allocate(size_t count = 1) {
+  constexpr auto allocate(size_t count = 1) -> Val* {
     auto size = align(sizeof(Val) * count, word_size_);
     size = (size + (word_size_ - 1)) & ~(word_size_ - 1);
     const auto lock = std::unique_lock{mutex_};
@@ -113,14 +111,13 @@ public:
       /* Allocate new storage. */
       const auto blocksize =
           std::max(size + sizeof(void*) + (word_size_ - 1), block_size_);
-      const auto m = std::malloc(blocksize);
-      if (m == nullptr) throw std::bad_alloc();
+      auto* const m = static_cast<void*>(new char[blocksize]);
       static_cast<void**>(m)[0] = base_;
       base_ = m;
       remaining_ = blocksize - sizeof(void*);
       loc_ = (static_cast<char*>(m) + sizeof(void*));
     }
-    auto rloc = loc_;
+    auto* rloc = loc_;
     loc_ = static_cast<char*>(loc_) + size;
     remaining_ -= size;
     return static_cast<Val*>(rloc);

@@ -26,20 +26,6 @@ using real_t = float64_t;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** A non-copyable (and non-copy-assignable type). */
-class NonCopyable {
-public:
-
-  NonCopyable() = default;
-  NonCopyable(NonCopyable&&) = default;
-  NonCopyable(const NonCopyable&) = default;
-  NonCopyable& operator=(NonCopyable&&) = default;
-  NonCopyable& operator=(const NonCopyable&) = default;
-
-}; // class NonCopyable
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 // TODO: this shall be removed once clang has a better C++23 support.
 template<class...>
 inline constexpr bool false_ = false;

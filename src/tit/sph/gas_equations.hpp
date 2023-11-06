@@ -57,7 +57,7 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   /** Initialize fluid equations. */
-  constexpr CompressibleFluidEquations(
+  constexpr explicit CompressibleFluidEquations(
       EquationOfState eos = {}, DensityEquation density_equation = {},
       Kernel kernel = {}, ArtificialViscosity artvisc = {}) noexcept
       : eos_{std::move(eos)}, density_equation_{std::move(density_equation)},
@@ -85,7 +85,7 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class ParticleArray, class ParticleAdjacency>
-  constexpr auto index(ParticleArray& particles,
+  constexpr auto index([[maybe_unused]] ParticleArray& particles,
                        ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
@@ -96,11 +96,12 @@ public:
   /** Setup boundary particles. */
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void setup_boundary(ParticleArray& particles,
-                                ParticleAdjacency& adjacent_particles) const {
-    using PV = ParticleView<ParticleArray>;
+  constexpr void setup_boundary( //
+      [[maybe_unused]] ParticleArray& particles,
+      [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
 #if WITH_WALLS
-    par::for_each(adjacent_particles.__fixed(), [&](auto ia) {
+    using PV = ParticleView<ParticleArray>;
+    par::for_each(adjacent_particles._fixed(), [&](auto ia) {
       auto [i, a] = ia;
       const auto search_point = a[r];
       const auto clipped_point = Domain.clamp(search_point);

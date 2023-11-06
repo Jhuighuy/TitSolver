@@ -83,7 +83,7 @@ public:
       : particles_{&particles}, particle_index_{particle_index} {}
 
   /** Associated particle array. */
-  constexpr ParticleArray& array() const noexcept {
+  constexpr auto array() const noexcept -> ParticleArray& {
     TIT_ASSERT(particles_ != nullptr, "Particle array was not set.");
     return *particles_;
   }
@@ -94,12 +94,14 @@ public:
 
   /** Compare particle views. */
   /** @{ */
-  constexpr auto operator==(ParticleView<ParticleArray> other) const noexcept {
+  constexpr auto operator==(ParticleView<ParticleArray> other) const noexcept
+      -> bool {
     TIT_ASSERT(&array() == &other.array(),
                "Particles must belong to the same array.");
     return index() == other.index();
   }
-  constexpr auto operator!=(ParticleView<ParticleArray> other) const noexcept {
+  constexpr auto operator!=(ParticleView<ParticleArray> other) const noexcept
+      -> bool {
     TIT_ASSERT(&array() == &other.array(),
                "Particles must belong to the same array.");
     return index() != other.index();
@@ -150,12 +152,12 @@ public:
 
   /** Construct a particle adjacency graph.
    ** @param engine_factory Nearest-neighbours search engine factory. */
-  constexpr ParticleAdjacency(ParticleArray& particles,
-                              EngineFactory engine_factory = {}) noexcept
+  constexpr explicit ParticleAdjacency(
+      ParticleArray& particles, EngineFactory engine_factory = {}) noexcept
       : particles_{&particles}, engine_factory_{std::move(engine_factory)} {}
 
   /** Associated particle array. */
-  constexpr ParticleArray& array() const noexcept {
+  constexpr auto array() const noexcept -> ParticleArray& {
     TIT_ASSERT(particles_ != nullptr, "Particle array was not set.");
     return *particles_;
   }
@@ -211,7 +213,7 @@ public:
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
     size_t nparts = par::num_threads();
-    size_t partsize = ceil_divide(parts.size(), nparts);
+    const size_t partsize = ceil_divide(parts.size(), nparts);
     // Compute partitioning.
     for (size_t i = 0; i < parts.size(); ++i) {
       parts[i] /= partsize;
@@ -228,12 +230,12 @@ public:
       for (size_t i = 0; i < block_adjacency_.size(); ++i) {
         std::cerr << block_adjacency_[i].size() << " ";
       }
-      std::cerr << std::endl;
+      std::cerr << std::endl; // NOLINT
     }
 #endif
   }
 
-  constexpr auto __fixed() const noexcept {
+  constexpr auto _fixed() const noexcept {
     return std::views::iota(size_t{0}, fixed_.size()) |
            std::views::transform([&](size_t i) {
              return std::tuple{i, array()[fixed_[i]]};
@@ -354,20 +356,20 @@ public:
   template<meta::type FieldSubset, meta::type ConstSubset>
     requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
              meta::is_set_v<ConstSubset> && (constants.includes(ConstSubset{}))
-  constexpr ParticleArray([[maybe_unused]] Space<Real, Dim> space,
-                          [[maybe_unused]] FieldSubset fields = {},
-                          [[maybe_unused]] ConstSubset consts = {}) {}
+  constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space,
+                                   [[maybe_unused]] FieldSubset fields = {},
+                                   [[maybe_unused]] ConstSubset consts = {}) {}
   // clang-format on
   template<meta::type FieldSubset, meta::type... ConstSubset>
     requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
              (constants.includes(meta::Set<ConstSubset...>{}))
-  constexpr ParticleArray([[maybe_unused]] Space<Real, Dim> space,
-                          [[maybe_unused]] FieldSubset fields = {},
-                          [[maybe_unused]] ConstSubset... consts) {}
+  constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space,
+                                   [[maybe_unused]] FieldSubset fields = {},
+                                   [[maybe_unused]] ConstSubset... consts) {}
   /** @} */
 
   /** Number of particles. */
-  constexpr size_t size() const noexcept {
+  constexpr auto size() const noexcept -> size_t {
     return particles_.size();
   }
 
@@ -471,17 +473,19 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class x>
-  static auto _make_name(std::string n, meta::Set<x>) {
+  static auto _make_name(const std::string& n, meta::Set<x> /**/) {
     return n;
   }
   template<class Realx, size_t Dimx>
-  static auto _make_name(std::string n, meta::Set<Vec<Realx, Dimx>>) {
+  static auto _make_name(const std::string& n,
+                         meta::Set<Vec<Realx, Dimx>> /**/) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2) return n + "_x " + n + "_y";
     if constexpr (Dimx == 3) return n + "_x " + n + "_y " + n + "_z";
   }
   template<class Realx, size_t Dimx>
-  static auto _make_name(std::string n, meta::Set<Mat<Realx, Dimx>>) {
+  static auto _make_name(const std::string& n,
+                         meta::Set<Mat<Realx, Dimx>> /**/) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2)
       return n + "_xx " + n + "_xy " + //
@@ -501,12 +505,12 @@ public:
     std::ofstream output{};
     output.open(path);
     ((output << _make_name(Fields{}) << " "), ...);
-    output << std::endl;
+    output << '\n';
     for (size_t i = 0; i < size(); ++i) {
       auto a = (*this)[i];
       // if (a[parinfo].part != par::proc_index()) continue;
       ((output << Fields{}[a] << " "), ...);
-      output << std::endl;
+      output << '\n';
     };
     output.flush();
   }

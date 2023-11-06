@@ -14,14 +14,15 @@ namespace tit::par {
 
 /** Atomically perform addition and return what was stored before. */
 template<class Val>
-constexpr Val sync_fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept {
+constexpr auto sync_fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept
+    -> Val {
   if consteval {
     const auto tmp = val;
     val += delta;
     return tmp;
-  } else {
+  } else { // NOLINT(readability-else-after-return)
     // TODO: this is gcc/clang extension, not portable.
-    return __sync_fetch_and_add(&val, delta);
+    return __sync_fetch_and_add(&val, delta); // NOLINT(*-vararg)
   }
 }
 

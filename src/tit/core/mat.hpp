@@ -45,7 +45,7 @@ public:
   constexpr explicit Mat(Args... ri) noexcept : rows_{ri...} {}
 
   /** Construct a scalar matrix. */
-  constexpr Mat(Num q = Num{}) noexcept {
+  constexpr explicit Mat(Num q = Num{}) noexcept {
     *this = q;
   }
   /** Assign scalar matrix. */
@@ -126,8 +126,8 @@ constexpr auto operator+(const Mat<NumA, Dim>& a,
 
 /** Matrix addition assignment. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator+=(Mat<NumA, Dim>& a,
-                           const Mat<NumB, Dim>& b) noexcept {
+constexpr auto operator+=(Mat<NumA, Dim>& a, const Mat<NumB, Dim>& b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] += b[i];
   return a;
 }
@@ -153,8 +153,8 @@ constexpr auto operator-(const Mat<NumA, Dim>& a,
 
 /** Matrix subtraction assignment. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator-=(Mat<NumA, Dim>& a,
-                           const Mat<NumB, Dim>& b) noexcept {
+constexpr auto operator-=(Mat<NumA, Dim>& a, const Mat<NumB, Dim>& b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] -= b[i];
   return a;
 }
@@ -179,7 +179,7 @@ constexpr auto operator*(const Mat<NumA, Dim>& a, NumB b) noexcept {
 
 /** Matrix-scalar multiplication assignment. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator*=(Mat<NumA, Dim>& a, NumB b) noexcept {
+constexpr auto operator*=(Mat<NumA, Dim>& a, NumB b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] *= b;
   return a;
 }
@@ -194,7 +194,7 @@ constexpr auto operator/(const Mat<NumA, Dim>& a, NumB b) noexcept {
 
 /** Matrix-scalar division assignment. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator/=(Mat<NumA, Dim>& a, NumB b) noexcept {
+constexpr auto operator/=(Mat<NumA, Dim>& a, NumB b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] /= b;
   return a;
 }
@@ -294,16 +294,12 @@ public:
   constexpr auto det() const noexcept {
     return _det;
   }
-  /** Is this matrix non-singular? */
-  constexpr operator bool() const noexcept {
-    return !is_zero(_det);
-  }
 
   /** Multiply by inverse matrix.
    ** @param x Vector or matrix of correct size. */
   template<class Obj>
   constexpr auto operator()(Obj x) const noexcept -> Obj {
-    TIT_ASSERT(*this, "Matrix must be non-singular.");
+    TIT_ASSERT(!is_zero(det()), "Matrix must be non-singular.");
     // "Divide" by L.
     for (size_t i = 0; i < x.num_rows; ++i) {
       for (size_t j = 0; j < i; ++j) x[i] -= _l[i, j] * x[j];
@@ -318,7 +314,7 @@ public:
   }
   /** Evaluate inverse matrix. */
   constexpr auto operator()() const noexcept -> Mat<Num, Dim> {
-    TIT_ASSERT(*this, "Matrix must be non-singular.");
+    TIT_ASSERT(!is_zero(det()), "Matrix must be non-singular.");
     return (*this)(Mat<Num, Dim>(1.0));
   }
 

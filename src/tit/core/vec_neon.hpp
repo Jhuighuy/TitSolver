@@ -26,10 +26,12 @@ public:
 
   static constexpr auto num_rows = size_t{2};
 
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
   union {
     std::array<float64_t, num_rows> col_;
     float64x2_t reg_;
   };
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 
   constexpr Vec(float64_t qx, float64_t qy) noexcept {
     if consteval {
@@ -155,12 +157,10 @@ TIT_VEC_SIMD_FUNC_V(sum, 2, float64_t, a, {
   return vaddvq_f64(a.reg_); //
 })
 
-namespace {
-  // vmvnq_u64 does not exist for some reason.
-  inline auto vmvnq_u64(uint64x2_t a_reg) noexcept -> uint64x2_t {
-    return vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(a_reg)));
-  }
-} // namespace
+// vmvnq_u64 does not exist for some reason.
+inline auto vmvnq_u64(uint64x2_t a_reg) noexcept -> uint64x2_t {
+  return vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(a_reg)));
+}
 
 // Helper to compare two NEON registers based on the compare functor.
 template<common_cmp_op Op>

@@ -21,5 +21,6 @@ target_link_libraries(titgui PRIVATE tit::core Qt6::Widgets)
 
 # Enable static analysis.
 # check_includes(tit::gui)
+# enable_clang_tidy(tit::gui)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

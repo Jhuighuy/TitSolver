@@ -93,7 +93,7 @@ inline constexpr auto vec_dim_v = Vec::num_rows;
 /** Vector size. */
 template<class Num, size_t Dim>
 constexpr auto dim([[maybe_unused]] Vec<Num, Dim> a) noexcept {
-  return int(Dim);
+  return static_cast<int>(Dim);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -131,7 +131,8 @@ constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 /** Vector addition assignment. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] += b[i];
   return a;
 }
@@ -156,7 +157,8 @@ constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 /** Vector subtraction assignment. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] -= b[i];
   return a;
 }
@@ -188,12 +190,13 @@ constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 /** Vector multiplication assignment. */
 /** @{ */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator*=(Vec<NumA, Dim>& a, NumB b) noexcept {
+constexpr auto operator*=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] *= b;
   return a;
 }
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] *= b[i];
   return a;
 }
@@ -220,12 +223,13 @@ constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 /** Vector division assignment. */
 /** @{ */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator/=(Vec<NumA, Dim>& a, NumB b) noexcept {
+constexpr auto operator/=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] /= b;
   return a;
 }
 template<class NumA, class NumB, size_t Dim>
-constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] /= b[i];
   return a;
 }
@@ -359,18 +363,17 @@ constexpr auto cross(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 /** Vector comparison. */
 template<std::copy_constructible Op, size_t Dim, class NumX, class NumY = NumX>
   requires std::invocable<Op, NumX, NumY>
-class VecCmp {
-public:
-
-  Op op;            /**< Comparison operation. */
-  Vec<NumX, Dim> x; /**< Left operand. */
-  Vec<NumY, Dim> y; /**< Right operand. */
-
-  /** Construct vector comparison. */
-  constexpr VecCmp(Op op, Vec<NumX, Dim> x, Vec<NumX, Dim> y) noexcept
-      : op{std::move(op)}, x{x}, y{y} {}
-
+struct VecCmp {
+  /** Comparison operation. */
+  Op op;
+  /** Left operand. */
+  Vec<NumX, Dim> x;
+  /** Right operand. */
+  Vec<NumY, Dim> y;
 }; // class VecCmp
+
+template<class Op, class NumX, class NumY, size_t Dim>
+VecCmp(Op, Vec<NumX, Dim>, Vec<NumY, Dim>) -> VecCmp<Op, Dim, NumX, NumY>;
 
 /** Standard comparison operator. */
 template<class Op>

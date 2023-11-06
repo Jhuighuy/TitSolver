@@ -17,7 +17,7 @@
 !/.clang-*
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
-!/src/cmake/IWYU.imp
+!/src/cmake/iwyu.imp
 
 # Output
 /output/
