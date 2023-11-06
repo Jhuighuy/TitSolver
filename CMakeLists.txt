@@ -32,7 +32,8 @@ set(ROOT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 list(APPEND CMAKE_MODULE_PATH ${ROOT_SOURCE_DIR}/cmake)
 
 # Include the functionality.
-include(IWYU)
+include(clang_tidy)
+include(iwyu)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -72,8 +73,8 @@ list(APPEND CXX_COMPILE_OPTIONS
 # Enable "classic" linker for macOS (if possible).
 if(${APPLE})
   include(CheckLinkerFlag)
-  check_linker_flag(CXX -ld_classic LD_CLASSIC_PRESENT)
-  if(LD_CLASSIC_PRESENT)
+  check_linker_flag(CXX -ld_classic HAVE_LD_CLASSIC)
+  if(HAVE_LD_CLASSIC)
     list(APPEND CXX_LINK_OPTIONS -ld_classic)
   endif()
 endif()

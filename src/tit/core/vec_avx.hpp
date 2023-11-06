@@ -26,10 +26,12 @@ public:
 
   static constexpr auto num_rows = size_t{2};
 
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
   union {
     std::array<float64_t, num_rows> row_;
     __m128d reg_;
   };
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 
   constexpr Vec(float64_t qx, float64_t qy) noexcept {
     if consteval {
@@ -193,10 +195,12 @@ public:
 
   static constexpr auto num_rows = size_t{4};
 
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
   union {
     std::array<float64_t, num_rows> row_;
     __m256d reg_;
   };
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 
   constexpr Vec(float64_t qx, float64_t qy, //
                 float64_t qz, float64_t qw) noexcept {

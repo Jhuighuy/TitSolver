@@ -22,5 +22,6 @@ target_link_libraries(tit_par INTERFACE tit::core)
 
 # Enable static analysis.
 check_includes(tit::par)
+enable_clang_tidy(tit::par)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

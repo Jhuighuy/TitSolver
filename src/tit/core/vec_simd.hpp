@@ -162,7 +162,8 @@ constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto& operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) += b.reg(i);
   return a;
 }
@@ -187,7 +188,8 @@ constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto& operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) -= b.reg(i);
   return a;
 }
@@ -220,14 +222,15 @@ constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto& operator*=(Vec<NumA, Dim>& a, NumB b) noexcept {
+constexpr auto operator*=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
   const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) *= b_reg;
   return a;
 }
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto& operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) *= b.reg(i);
   return a;
 }
@@ -252,14 +255,15 @@ constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto& operator/=(Vec<NumA, Dim>& a, NumB b) noexcept {
+constexpr auto operator/=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
   const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) /= b_reg;
   return a;
 }
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto& operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
+    -> auto& {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) /= b.reg(i);
   return a;
 }
@@ -355,17 +359,19 @@ namespace tit {
 constexpr auto _unwrap(auto value) noexcept {
   return value;
 }
-constexpr auto& _unwrap(auto* value) noexcept {
+constexpr auto _unwrap(auto* value) noexcept -> auto& {
   return *value;
 }
 } // namespace tit
 
 // Generate a constexpr-aware overload for a unary vector function.
 #define TIT_VEC_SIMD_FUNC_V(func, Dim, Num, a, ...)                            \
-  inline constexpr auto func(Vec<Num, Dim> a) noexcept {                       \
+  constexpr auto func(Vec<Num, Dim> a) noexcept {                              \
     if consteval {                                                             \
       return func<Num, Dim>(_unwrap(a));                                       \
-    } else __VA_ARGS__                                                         \
+    } else { /* NOLINT(readability-else-after-return) */                       \
+      __VA_ARGS__                                                              \
+    }                                                                          \
   }
 
 // Generate a constexpr-aware overload for a binary scalar-vector function.
@@ -374,7 +380,9 @@ constexpr auto& _unwrap(auto* value) noexcept {
   constexpr auto func(NumA a, Vec<NumB, Dim> b) noexcept {                     \
     if consteval {                                                             \
       return func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b));                    \
-    } else __VA_ARGS__                                                         \
+    } else { /* NOLINT(readability-else-after-return) */                       \
+      __VA_ARGS__                                                              \
+    }                                                                          \
   }
 
 // Generate a constexpr-aware overload for a binary vector-scalar function.
@@ -383,7 +391,9 @@ constexpr auto& _unwrap(auto* value) noexcept {
   constexpr auto func(Vec<NumA, Dim> a, NumB b) noexcept {                     \
     if consteval {                                                             \
       return func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b));                    \
-    } else __VA_ARGS__                                                         \
+    } else { /* NOLINT(readability-else-after-return) */                       \
+      __VA_ARGS__                                                              \
+    }                                                                          \
   }
 
 // Generate a constexpr-aware overload for a binary vector-vector function.
@@ -391,7 +401,9 @@ constexpr auto& _unwrap(auto* value) noexcept {
   constexpr auto func(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {           \
     if consteval {                                                             \
       return func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b));                    \
-    } else __VA_ARGS__                                                         \
+    } else { /* NOLINT(readability-else-after-return) */                       \
+      __VA_ARGS__                                                              \
+    }                                                                          \
   }
 
 // Generate a constexpr-aware overload for a vector merge function.
@@ -401,7 +413,9 @@ constexpr auto& _unwrap(auto* value) noexcept {
                        Vec<NumA, Dim> a) noexcept {                            \
     if consteval {                                                             \
       return merge<Op, NumX, NumY, NumA, Dim>(_unwrap(cmp), _unwrap(a));       \
-    } else __VA_ARGS__                                                         \
+    } else { /* NOLINT(readability-else-after-return) */                       \
+      __VA_ARGS__                                                              \
+    }                                                                          \
   }
 
 // Generate a constexpr-aware overload for a two vector merge function.
@@ -412,7 +426,9 @@ constexpr auto& _unwrap(auto* value) noexcept {
     if consteval {                                                             \
       return merge<Op, NumX, NumY, NumA, NumB, Dim>(_unwrap(cmp), _unwrap(a),  \
                                                     _unwrap(b));               \
-    } else __VA_ARGS__                                                         \
+    } else { /* NOLINT(readability-else-after-return) */                       \
+      __VA_ARGS__                                                              \
+    }                                                                          \
   }
 
 // IntelliSense goes crazy when it encounters intrinsics. Especially NEON.

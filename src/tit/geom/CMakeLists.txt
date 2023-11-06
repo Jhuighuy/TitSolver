@@ -23,5 +23,6 @@ target_link_libraries(tit_geom INTERFACE tit::core tit::par)
 
 # Enable static analysis.
 check_includes(tit::geom)
+enable_clang_tidy(tit::geom)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

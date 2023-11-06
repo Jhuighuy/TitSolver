@@ -116,7 +116,7 @@ public:
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
 #if WITH_WALLS
-    par::for_each(adjacent_particles.__fixed(), [&](auto ia) {
+    par::for_each(adjacent_particles._fixed(), [&](auto ia) {
       auto [i, a] = ia;
       const auto search_point = a[r];
       const auto clipped_point = Domain.clamp(search_point);

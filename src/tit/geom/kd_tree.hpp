@@ -39,14 +39,15 @@ public:
   /** Point type. */
   using Point = std::ranges::range_value_t<Points>;
   /** Bounding box type. */
-  using PointBBox = decltype(BBox(std::declval<Point>()));
+  using PointBBox = bbox_t<Point>;
+
   /** Numeric type used by the point type. */
   using Real = vec_num_t<Point>;
 
 private:
 
   union KDTreeNode_ {
-    std::ranges::subrange<const size_t*> leaf;
+    std::ranges::subrange<const size_t*> leaf{};
     struct {
       size_t cut_dim;
       Real cut_left, cut_right;
@@ -69,12 +70,15 @@ public:
   /** K-dimensional tree is non-copyable. */
   KDTree(const KDTree&) = delete;
   /** K-dimensional tree is non-copy-assignable. */
-  KDTree& operator=(const KDTree&) = delete;
+  auto operator=(const KDTree&) -> KDTree& = delete;
 
   /** Move-construct the K-dimensional tree. */
   KDTree(KDTree&&) = default;
   /** Move-assign the K-dimensional tree. */
-  KDTree& operator=(KDTree&&) = default;
+  auto operator=(KDTree&&) -> KDTree& = default;
+
+  /** Destroy the K-dimensional tree. */
+  ~KDTree() = default;
 
   /** Initialze and build the K-dimensional tree.
    ** @param max_leaf_size Maximum amount of points in the leaf node. */
@@ -130,17 +134,15 @@ private:
       node->cut_dim = cut_dim;
       auto build_left_subtree = [=, this] {
         // Build left subtree and update it's bounding box.
-        auto left_bbox = bbox;
-        left_bbox.high[cut_dim] = cut_value;
+        auto [left_bbox, _] = bbox.split(cut_dim, cut_value);
         node->left_subtree = build_subtree_(first, pivot, left_bbox);
-        node->cut_left = left_bbox.high[cut_dim];
+        node->cut_left = left_bbox.high()[cut_dim];
       };
       auto build_right_subtree = [=, this] {
         // Build right subtree and update it's bounding box.
-        auto right_bbox = bbox;
-        right_bbox.low[cut_dim] = cut_value;
+        auto [_, right_bbox] = bbox.split(cut_dim, cut_value);
         node->right_subtree = build_subtree_(pivot, last, right_bbox);
-        node->cut_right = right_bbox.low[cut_dim];
+        node->cut_right = right_bbox.low()[cut_dim];
       };
       // Execute tasks.
       par::invoke(std::move(build_left_subtree),
@@ -160,8 +162,8 @@ private:
     const auto to_the_left = [&](size_t index) {
       return points_[index][cut_dim] < cut_value;
     };
-    auto pivot = std::partition(first, last, to_the_left);
-    const auto middle = first + (last - first) / 2;
+    auto* pivot = std::partition(first, last, to_the_left);
+    auto* const middle = first + (last - first) / 2;
     if (pivot > middle) return pivot;
     // Now at the pivot are the points which are on the splitting plane
     // or to the right of it. Now shift to the pivot points that are on the
@@ -181,7 +183,7 @@ public:
   /** Find the points within the radius to the given point. */
   template<std::output_iterator<size_t> OutIter>
   constexpr auto search(Point search_point, Real search_radius,
-                        OutIter out) const noexcept -> OutIter {
+                        OutIter indices) const noexcept -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
     TIT_ASSERT(root_node_ != nullptr, "Tree was not built.");
     // Compute distance from the query point to the root bounding box
@@ -189,8 +191,8 @@ public:
     const auto dists = pow2(search_point - root_bbox_.clamp(search_point));
     const auto search_dist = pow2(search_radius);
     // Do the actual search.
-    search_subtree_(root_node_, dists, search_point, search_dist, out);
-    return out;
+    search_subtree_(root_node_, dists, search_point, search_dist, indices);
+    return indices;
   }
 
 private:
@@ -200,14 +202,14 @@ private:
   template<std::output_iterator<size_t> OutIter>
   constexpr void search_subtree_(const KDTreeNode_* node, Point dists,
                                  const Point& search_point, Real search_dist,
-                                 OutIter& out) const noexcept {
+                                 OutIter& indices) const noexcept {
     // Is leaf node reached?
     if (node->left_subtree == nullptr) {
       TIT_ASSERT(node->right_subtree == nullptr, "Invalid leaf node.");
       // Iterate through the points.
       for (size_t i : node->leaf) {
         const auto dist = norm2(search_point - points_[i]);
-        if (dist < search_dist) *out++ = i;
+        if (dist < search_dist) *indices++ = i;
       }
     } else {
       // Determine which branch should be taken first.
@@ -215,24 +217,22 @@ private:
       const auto [cut_dist, first_node, second_node] = [&] {
         const auto delta_left = search_point[cut_dim] - node->cut_left;
         const auto delta_right = node->cut_right - search_point[cut_dim];
-        if (delta_left < delta_right) {
-          // Point is on the left to the cut plane, so the corresponding
-          // subtree should be searched first.
-          return std::tuple{pow2(delta_right), //
-                            node->left_subtree, node->right_subtree};
-        } else {
-          // Point is on the right to the cut plane, so the corresponding
-          // subtree should be searched first.
-          return std::tuple{pow2(delta_left), //
-                            node->right_subtree, node->left_subtree};
-        }
+        return delta_left < delta_right ?
+                   // Point is on the left to the cut plane, so the
+                   // corresponding subtree should be searched first.
+                   std::tuple{pow2(delta_right), //
+                              node->left_subtree, node->right_subtree} :
+                   // Point is on the right to the cut plane, so the
+                   // corresponding subtree should be searched first.
+                   std::tuple{pow2(delta_left), //
+                              node->right_subtree, node->left_subtree};
       }();
       // Search in the first subtree.
-      search_subtree_(first_node, dists, search_point, search_dist, out);
+      search_subtree_(first_node, dists, search_point, search_dist, indices);
       // Search in the second subtree (if it not too far).
       dists[cut_dim] = cut_dist;
       if (const auto dist = sum(dists); dist < search_dist) {
-        search_subtree_(second_node, dists, search_point, search_dist, out);
+        search_subtree_(second_node, dists, search_point, search_dist, indices);
       }
     }
   }

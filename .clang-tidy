@@ -1,0 +1,50 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Part of the Tit Solver project, under the MIT License
+# See /LICENSE.md for license information.
+# SPDX-License-Identifier: MIT
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Enable as many checks, as possible.
+Checks: |
+  boost-*
+  bugprone-*
+  -bugprone-easily-swappable-parameters
+  cert-*
+  concurrency-*
+  cppcoreguidelines-*
+  -cppcoreguidelines-avoid-magic-numbers
+  -cppcoreguidelines-macro-usage
+  -cppcoreguidelines-misleading-capture-default-by-value
+  -cppcoreguidelines-pro-bounds-constant-array-index
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic
+  -cppcoreguidelines-pro-type-union-access
+  google-*
+  -google-readability-braces-around-statements
+  -google-readability-todo
+  hicpp-*
+  -hicpp-braces-around-statements
+  -hicpp-named-parameter
+  llvm-*
+  -llvm-else-after-return
+  -llvm-header-guard
+  misc-*
+  -misc-include-cleaner
+  -misc-header-include-cycle
+  modernize-*
+  -modernize-use-nodiscard
+  performance-*
+  readability-*
+  -readability-avoid-unconditional-preprocessor-if
+  -readability-braces-around-statements
+  -readability-function-cognitive-complexity
+  -readability-identifier-length
+  -readability-isolate-declaration
+  -readability-magic-numbers
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Treat all warning as errors.
+WarningsAsErrors: |
+  *
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

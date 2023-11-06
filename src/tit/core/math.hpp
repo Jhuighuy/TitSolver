@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <concepts>
 #include <cstdlib>
+#include <functional>
 #include <type_traits>
 #include <utility>
 
@@ -51,6 +52,7 @@ template<class Num>
 constexpr auto abs(Num a) noexcept -> Num {
   return std::abs(a);
 }
+
 /** Sign of the value. */
 template<class Num>
 constexpr auto sign(Num a) noexcept -> Num {
@@ -136,7 +138,7 @@ constexpr auto safe_divide(Num a, Real b) noexcept {
 /** Ceiling divide unsigned integer. */
 template<std::unsigned_integral UInt>
 constexpr auto ceil_divide(UInt a, UInt b) noexcept -> UInt {
-  return (a + b - 1u) / b;
+  return (a + b - UInt{1}) / b;
 }
 /** Align unsigned integer. */
 template<std::unsigned_integral UInt>
@@ -215,12 +217,11 @@ constexpr auto cbrt(Num a) noexcept {
 /** Hypot. */
 /** @{ */
 template<class Num>
-constexpr auto hypot(Num a, std::type_identity_t<Num> b) noexcept {
+constexpr auto hypot(Num a, Num b) noexcept -> Num {
   return std::hypot(a, b);
 }
 template<class Num>
-constexpr auto hypot(Num a, std::type_identity_t<Num> b,
-                     std::type_identity_t<Num> c) noexcept {
+constexpr auto hypot(Num a, Num b, Num c) noexcept -> Num {
   return std::hypot(a, b, c);
 }
 /** @} */
@@ -232,26 +233,45 @@ template<class Num>
 constexpr auto exp(Num a) noexcept -> Num {
   return std::exp(a);
 }
+
+/** Exponent base two. */
+template<class Num>
+constexpr auto exp2(Num a) noexcept -> Num {
+  return std::exp2(a);
+}
+/** Integer exponent base two. */
+template<std::unsigned_integral UInt>
+constexpr auto exp2(UInt a) noexcept -> UInt {
+  return UInt{1} << a;
+}
+
 /** Logarithm. */
 template<class Num>
 constexpr auto log(Num a) noexcept -> Num {
   return std::log(a);
 }
 
-/** Integer exponent base two. */
-template<std::unsigned_integral UInt>
-constexpr auto exp2(UInt a) noexcept -> UInt {
-  return 1u << a;
+/** Logarithm base two. */
+template<class Num>
+constexpr auto log2(Num a) noexcept -> Num {
+  return std::log2(a);
 }
 /** Integer logarithm base two. */
 template<std::unsigned_integral UInt>
 constexpr auto log2(UInt a) noexcept -> UInt {
-  return std::bit_width(a) - 1u;
+  return std::bit_width(a) - UInt{1};
 }
+
 /** Check if integer a is power of two. */
 template<std::unsigned_integral UInt>
 constexpr auto is_power_of_two(UInt a) noexcept -> bool {
-  return (a & (a - 1u)) == 0u;
+  return (a & (a - UInt{1})) == UInt{0};
+}
+/** Align-up integer to the nearest power of two. */
+template<std::unsigned_integral UInt>
+constexpr auto align_to_power_of_two(UInt a) noexcept -> UInt {
+  // TODO: maybe a branchless implemention?
+  return is_power_of_two(a) ? a : exp2(log2(a) + 1);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -290,12 +310,7 @@ constexpr auto newton_raphson(Real& x, const Func& f, //
                               Real epsilon = Real{1e-9}, size_t max_iter = 10)
     -> bool {
   for (size_t iter = 0; iter < max_iter; ++iter) {
-    const auto [y, df_dx] = f(/*x*/);
-#if 0
-    std::cout << "NR: i = " << iter             //
-              << ", x = " << x << ", y = " << y //
-              << ", df/dx = " << df_dx << std::endl;
-#endif
+    const auto [y, df_dx] = std::invoke(f /*, x*/);
     if (abs(y) < epsilon) return true;
     if (is_zero(df_dx)) break;
     x -= y / df_dx;
@@ -311,12 +326,12 @@ constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
                          Real epsilon = Real{1e-9}, size_t max_iter = 10)
     -> bool {
   TIT_ASSERT(min_x <= max_x, "Inverted search range!");
-  auto min_f = f(min_x);
+  auto min_f = std::invoke(f, min_x);
   if (abs(min_f) < epsilon) {
     max_x = min_x;
     return true;
   }
-  auto max_f = f(max_x);
+  auto max_f = std::invoke(f, max_x);
   if (abs(max_f) < epsilon) {
     min_x = max_x;
     return true;
@@ -327,7 +342,7 @@ constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
     // f(x) = min_f + (max_f - min_f)/(max_x - min_x) * (x - min_x),
     // so approximate root of f(x) == 0 is:
     const Real x = min_x - min_f * (max_x - min_x) / (max_f - min_f);
-    const auto y = f(x);
+    const auto y = std::invoke(f, x);
     if (abs(y) == epsilon) {
       min_x = max_x = x;
       return true;

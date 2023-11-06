@@ -19,5 +19,6 @@ target_link_libraries(titesph PRIVATE tit::core tit::geom tit::par tit::sph)
 
 # Enable static analysis.
 # check_includes(tit::esph)
+# enable_clang_tidy(tit::esph)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

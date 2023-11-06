@@ -60,7 +60,7 @@ public:
   }
 
   template<class PV>
-  constexpr auto sound_speed(PV&& a) const noexcept {
+  constexpr auto sound_speed(PV a) const noexcept {
     const auto K_s = E_s_ / (3.0 * (1.0 - 2.0 * nu_s_));
     const auto cs_0 = sqrt(K_s / rho[a]);
     return cs_0;
@@ -106,8 +106,9 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   /** Initialize structure equations. */
-  constexpr StructureEquations(EquationOfState eos = {}, Kernel kernel = {},
-                               ArtificialViscosity artvisc = {}) noexcept
+  constexpr explicit StructureEquations(
+      EquationOfState eos = {}, Kernel kernel = {},
+      ArtificialViscosity artvisc = {}) noexcept
       : eos_{std::move(eos)}, kernel_{std::move(kernel)},
         artvisc_{std::move(artvisc)} {}
 

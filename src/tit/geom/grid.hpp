@@ -36,7 +36,8 @@ public:
   /** Point type. */
   using Point = std::ranges::range_value_t<Points>;
   /** Bounding box type. */
-  using PointBBox = decltype(BBox(std::declval<Point>()));
+  using PointBBox = bbox_t<Point>;
+
   /** Numeric type used by the point type. */
   using Real = vec_num_t<Point>;
   /** Numeric type used by the point type. */
@@ -66,7 +67,7 @@ private:
 
   // Compute index of the point.
   constexpr auto _point_to_cell_index(Point point) const noexcept -> size_t {
-    point -= grid_bbox_.low, point /= cell_size_;
+    point -= grid_bbox_.low(), point /= cell_size_;
     auto index = static_cast<size_t>(std::floor(point[0]));
     for (size_t i = 1; i < Dim; ++i) {
       index *= num_cells_[i];
@@ -75,7 +76,7 @@ private:
     return index;
   }
   constexpr auto _point_to_cell_md_index(Point point) const noexcept {
-    point -= grid_bbox_.low, point /= cell_size_;
+    point -= grid_bbox_.low(), point /= cell_size_;
     Vec<size_t, Dim> md_index;
     for (size_t i = 0; i < Dim; ++i) {
       md_index[i] = static_cast<size_t>(std::floor(point[i]));
@@ -87,8 +88,7 @@ private:
     // Compute grid bounding box.
     grid_bbox_ = BBox{points_[0]};
     for (const auto& p : points_ | std::views::drop(1)) grid_bbox_.update(p);
-    grid_bbox_.low -= 0.5 * Point(spacing);
-    grid_bbox_.high += 0.5 * Point(spacing);
+    grid_bbox_.extend(0.5 * Point(spacing));
     // Compute number of cells and cell sizes.
     const auto extents = grid_bbox_.extents();
     const auto approx_num_cells = extents / spacing;
@@ -131,13 +131,13 @@ public:
         BBox{search_point - Point(search_radius) - 0.5 * cell_size_,
              search_point + Point(search_radius) + 0.5 * cell_size_};
     const auto low = _point_to_cell_md_index( //
-        grid_bbox_.clamp(search_bbox.low) + 0.5 * cell_size_);
+        grid_bbox_.clamp(search_bbox.low()) + 0.5 * cell_size_);
     const auto high = _point_to_cell_md_index(
-        grid_bbox_.clamp(search_bbox.high) - 0.5 * cell_size_);
+        grid_bbox_.clamp(search_bbox.high()) - 0.5 * cell_size_);
     for (size_t i = low[0]; i <= high[0]; ++i) {
       for (size_t j = low[1]; j <= high[1]; ++j) {
         const size_t cell_index = i * num_cells_[1] + j;
-        for (size_t k : cell_points_[cell_index]) {
+        for (const size_t k : cell_points_[cell_index]) {
           const auto dist = norm2(search_point - points_[k]);
           if (dist < search_dist) *out++ = k;
         }

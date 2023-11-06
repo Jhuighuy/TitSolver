@@ -33,5 +33,6 @@ target_link_libraries(tit_core INTERFACE tit::base)
 
 # Enable static analysis.
 check_includes(tit::core)
+enable_clang_tidy(tit::core)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

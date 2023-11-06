@@ -37,7 +37,7 @@ public:
 
   /** Construct an equation of state.
    ** @param gamma Adiabatic index. */
-  constexpr IdealGasEquationOfState(real_t gamma = 1.4) noexcept
+  constexpr explicit IdealGasEquationOfState(real_t gamma = 1.4) noexcept
       : gamma_{gamma} {
     TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1.");
   }
@@ -69,7 +69,7 @@ public:
   /** Construct an equation of state.
    ** @param kappa Thermal conductivity coefficient. (???)
    ** @param gamma Adiabatic index. */
-  constexpr AdiabaticIdealGasEquationOfState( //
+  constexpr explicit AdiabaticIdealGasEquationOfState( //
       real_t kappa = 1.0, real_t gamma = 1.4) noexcept
       : kappa_{kappa}, gamma_{gamma} {
     TIT_ASSERT(kappa_ > 0.0,

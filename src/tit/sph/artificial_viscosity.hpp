@@ -74,7 +74,7 @@ public:
    ** @param beta Quadratic viscosity coefficient. Typically two times greater
    **             than linear coefficient for compressible flows and
    **             zero for weakly-compressible or incompressble flows. */
-  constexpr AlphaBetaArtificialViscosity( //
+  constexpr explicit AlphaBetaArtificialViscosity( //
       real_t alpha = 1.0, real_t beta = 2.0) noexcept
       : alpha_{alpha}, beta_{beta} {
     TIT_ASSERT(alpha_ > 0.0, "Linear coefficient must be positive.");
@@ -112,7 +112,7 @@ public:
 
   /** Construct artificial viscosity.
    ** @param base Base artificial viscosity. */
-  constexpr BalsaraArtificialViscosity(
+  constexpr explicit BalsaraArtificialViscosity(
       BaseArtificialViscosity base = {}) noexcept
       : BaseArtificialViscosity{std::move(base)} {}
 
@@ -157,7 +157,7 @@ public:
    ** @param alpha_min Minimal value of the switch coefficient.
    ** @param alpha_max Maximal value of the switch coefficient.
    ** @param sigma Decay time inverse scale factor. */
-  constexpr RosswogArtificialViscosity(  //
+  constexpr explicit RosswogArtificialViscosity(
       BaseArtificialViscosity base = {}, //
       real_t alpha_min = 0.1, real_t alpha_max = 2.0,
       real_t sigma = 0.1) noexcept

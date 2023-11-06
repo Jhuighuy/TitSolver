@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+include_guard()
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Find include-what-you-use.
@@ -15,7 +17,7 @@ find_program(CHRONIC_PATH NAMES chronic chronic.sh
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Check `#includes` in the target with include-what-you-use.
+## Check `#includes` in the target with include-what-you-use.
 function(check_includes TARGET_OR_ALIAS)
   # Exit early in case IWYU was not found.
   if(NOT IWYU_PATH)
@@ -32,7 +34,6 @@ function(check_includes TARGET_OR_ALIAS)
       -Xiwyu --no_fwd_decls
       -Xiwyu --mapping_file=${ROOT_SOURCE_DIR}/cmake/IWYU.imp
       -std=c++2b # IWYU has no C++23.
-      -stdlib=libc++ # Force use g++'s stdlib.
       -DTIT_IWYU=1)
   # Append target's include directories and definitions.
   foreach(PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
@@ -55,10 +56,11 @@ function(check_includes TARGET_OR_ALIAS)
     if(NOT (${SOURCE_EXT} IN_LIST CXX_EXTS))
        continue()
     endif()
-    # Execute include-what-you-use
-    # (wrapped with chronic to avoid annoying messages of success).
+    # Create tag.
     set(TAG ${SOURCE}.iwuy_tag)
     list(APPEND ALL_TAGS ${TAG})
+    # Execute include-what-you-use
+    # (wrapped with chronic to avoid annoying messages of success).
     add_custom_command(
       OUTPUT ${TAG}
       COMMAND ${CHRONIC_PATH}
@@ -67,7 +69,7 @@ function(check_includes TARGET_OR_ALIAS)
       COMMAND_EXPAND_LISTS
       MAIN_DEPENDENCY ${SOURCE}
       IMPLICIT_DEPENDS CXX ${SOURCE}
-      COMMENT "Checking includes for ${TARGET_SOURCE_DIR}/${SOURCE}")
+      COMMENT "Checking includes in ${TARGET_SOURCE_DIR}/${SOURCE}")
   endforeach()
   # Create a custom target that should "build" once all checks succeed.
   add_custom_target("${TARGET}_iwyu" ALL DEPENDS ${TARGET} ${ALL_TAGS})

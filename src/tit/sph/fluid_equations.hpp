@@ -53,10 +53,10 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   /** Initialize fluid equations. */
-  constexpr FluidEquations(EquationOfState eos = {},
-                           DensityEquation density_equation = {},
-                           Kernel kernel = {},
-                           ArtificialViscosity artvisc = {}) noexcept
+  constexpr explicit FluidEquations(EquationOfState eos = {},
+                                    DensityEquation density_equation = {},
+                                    Kernel kernel = {},
+                                    ArtificialViscosity artvisc = {}) noexcept
       : eos_{std::move(eos)}, density_equation_{std::move(density_equation)},
         kernel_{std::move(kernel)}, artvisc_{std::move(artvisc)} {}
 
@@ -88,11 +88,12 @@ public:
   /** Setup boundary particles. */
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void setup_boundary([[maybe_unused]] ParticleArray& particles,
-                                ParticleAdjacency& adjacent_particles) const {
+  constexpr void setup_boundary( //
+      [[maybe_unused]] ParticleArray& particles,
+      [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
 #if WITH_WALLS
     using PV = ParticleView<ParticleArray>;
-    par::for_each(adjacent_particles.__fixed(), [&](auto ia) {
+    par::for_each(adjacent_particles._fixed(), [&](auto ia) {
       auto [i, a] = ia;
       const auto search_point = a[r];
       const auto clipped_point = Domain.clamp(search_point);
@@ -108,7 +109,7 @@ public:
         M += outer(B_ab, B_ab * W_ab * m[b] / rho[b]);
       });
       MatInv inv(M);
-      if (inv) {
+      if (!is_zero(inv.det())) {
         Vec<real_t, 3> e{1.0, 0.0, 0.0};
         auto E = inv(e);
         rho[a] = {};

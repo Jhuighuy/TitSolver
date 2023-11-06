@@ -86,19 +86,19 @@ private:
         return points_[index][0] < center[0];
       };
       // Split subtree vertically.
-      const auto [lower_bbox, upper_bbox] = bbox.split(center, 1);
-      const auto upper = first;
-      const auto lower = std::partition(first, last, in_upper_part);
+      const auto [lower_bbox, upper_bbox] = bbox.split(1, center);
+      auto* const upper = first;
+      auto* const lower = std::partition(first, last, in_upper_part);
       // Split upper part horizontally.
       const auto [upper_left_bbox, //
-                  upper_right_bbox] = upper_bbox.split(center, 0);
-      const auto upper_left = upper;
-      const auto upper_right = std::partition(upper, lower, to_the_left);
+                  upper_right_bbox] = upper_bbox.split(0, center);
+      auto* const upper_left = upper;
+      auto* const upper_right = std::partition(upper, lower, to_the_left);
       // Split lower part horizontally.
       const auto [lower_left_bbox, //
-                  lower_right_bbox] = lower_bbox.split(center, 0);
-      const auto lower_left = lower;
-      const auto lower_right = std::partition(lower, last, to_the_left);
+                  lower_right_bbox] = lower_bbox.split(0, center);
+      auto* const lower_left = lower;
+      auto* const lower_right = std::partition(lower, last, to_the_left);
       // Recursively build quadrants.
       par::invoke(
           [=, this] { partition_(upper_left, upper_right, upper_left_bbox); },
@@ -118,18 +118,26 @@ ZCurveOrdering(Points&&, Args...) -> ZCurveOrdering<std::views::all_t<Points>>;
 
 template<std::ranges::view Points>
 class HilbertOrdering {
+private:
+
+  Points points;
+
 public:
 
+  explicit HilbertOrdering(Points points) : points{points} {}
+
   struct HilbertCmp {
+    // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     int coord;
     bool dir;
     Points points;
     double mid;
+    // NOLINTEND(misc-non-private-member-variables-in-classes)
 
     HilbertCmp(int coord, bool dir, Points points, double mid)
         : coord(coord), dir(dir), points(points), mid(mid) {}
 
-    bool operator()(int i) const {
+    auto operator()(int i) const -> bool {
       return (points[i][coord] < mid) != dir;
     }
   };
@@ -263,10 +271,6 @@ public:
                     ymin, zmin, xmid, ymid);
     }
   }
-
-  Points points;
-
-  HilbertOrdering(Points points) : points{points} {}
 
   void GetHilbertElementOrdering(std::vector<size_t>& ordering) {
     /** Point type. */

@@ -9,6 +9,7 @@
 #include <ranges>
 #include <tuple>
 
+#include "tit/core/misc.hpp" // IWYU pragma: keep
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 
@@ -32,6 +33,7 @@ public:
 #if TIT_IWYU
     // Include-what-you-use's clang has no `std::views::join`.
     // Return something with matching type.
+    assume_used(this);
     return std::views::single(std::tuple<size_t, size_t>{});
 #else
     return std::views::iota(size_t{0}, num_nodes()) |
