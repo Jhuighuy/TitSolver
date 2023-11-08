@@ -184,73 +184,73 @@ constexpr auto operator<<(Stream& stream, ParInfo p) -> Stream& {
 
 /** Is particle fixed? For the fixed particles,
  ** no variables are updated during the simulation. */
-TIT_DEFINE_FIELD(bool, fixed);
-TIT_DEFINE_FIELD(ParInfo, parinfo);
+TIT_DEFINE_FIELD(bool, fixed)
+TIT_DEFINE_FIELD(ParInfo, parinfo)
 
 /** Particle position. */
-TIT_DEFINE_VECTOR_FIELD(r);
+TIT_DEFINE_VECTOR_FIELD(r)
 
 /** Particle velocity. */
-TIT_DEFINE_VECTOR_FIELD(v);
+TIT_DEFINE_VECTOR_FIELD(v)
 /** Particle velocity (XSPH model). */
-TIT_DEFINE_VECTOR_FIELD(v_xsph);
+TIT_DEFINE_VECTOR_FIELD(v_xsph)
 /** Particle acceleration. */
-TIT_DEFINE_VECTOR_FIELD(dv_dt);
+TIT_DEFINE_VECTOR_FIELD(dv_dt)
 /** Particle velocity gradient. */
-TIT_DEFINE_MATRIX_FIELD(grad_v);
+TIT_DEFINE_MATRIX_FIELD(grad_v)
 /** Particle velocity divergence. */
-TIT_DEFINE_SCALAR_FIELD(div_v);
+TIT_DEFINE_SCALAR_FIELD(div_v)
 /** Particle velocity curl (always 3D). */
-TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, 3>), curl_v);
+TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, 3>), curl_v)
 
 /** Particle mass. */
-TIT_DEFINE_SCALAR_FIELD(m);
+TIT_DEFINE_SCALAR_FIELD(m)
 /** Particle density. */
-TIT_DEFINE_SCALAR_FIELD(rho);
+TIT_DEFINE_SCALAR_FIELD(rho)
 /** Particle density gradient. */
-TIT_DEFINE_VECTOR_FIELD(grad_rho);
+TIT_DEFINE_VECTOR_FIELD(grad_rho)
 /** Particle density time derivative. */
-TIT_DEFINE_SCALAR_FIELD(drho_dt);
+TIT_DEFINE_SCALAR_FIELD(drho_dt)
 
 /** Particle width. */
-TIT_DEFINE_SCALAR_FIELD(h);
+TIT_DEFINE_SCALAR_FIELD(h)
 /** Particle "Omega" variable (Grad-H model) */
-TIT_DEFINE_SCALAR_FIELD(Omega);
+TIT_DEFINE_SCALAR_FIELD(Omega)
 
 /** Particle pressure. */
-TIT_DEFINE_SCALAR_FIELD(p);
+TIT_DEFINE_SCALAR_FIELD(p)
 /** Particle sound speed. */
-TIT_DEFINE_SCALAR_FIELD(cs);
+TIT_DEFINE_SCALAR_FIELD(cs)
 
 /** Particle thermal energy. */
-TIT_DEFINE_SCALAR_FIELD(u);
+TIT_DEFINE_SCALAR_FIELD(u)
 /** Particle thermal energy time derivative. */
-TIT_DEFINE_SCALAR_FIELD(du_dt);
+TIT_DEFINE_SCALAR_FIELD(du_dt)
 
 /** Particle molecular viscosity. */
-TIT_DEFINE_SCALAR_FIELD(mu);
+TIT_DEFINE_SCALAR_FIELD(mu)
 /** Particle molecular turbulent viscosity. */
-TIT_DEFINE_SCALAR_FIELD(mu_T);
+TIT_DEFINE_SCALAR_FIELD(mu_T)
 /** Particle second viscosity. */
-TIT_DEFINE_SCALAR_FIELD(lambda);
+TIT_DEFINE_SCALAR_FIELD(lambda)
 
 /** Particle artificial viscosity switch. */
-TIT_DEFINE_SCALAR_FIELD(alpha);
+TIT_DEFINE_SCALAR_FIELD(alpha)
 /** Particle artificial viscosity switch time derivative. */
-TIT_DEFINE_SCALAR_FIELD(dalpha_dt);
+TIT_DEFINE_SCALAR_FIELD(dalpha_dt)
 
 /** Kernel renormalization coefficient (Shepard filter) */
-TIT_DEFINE_SCALAR_FIELD(S);
+TIT_DEFINE_SCALAR_FIELD(S)
 /** Kernel gradient renormalization matrix. */
-TIT_DEFINE_MATRIX_FIELD(L);
+TIT_DEFINE_MATRIX_FIELD(L)
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 namespace sph::fsi {
   /** Reference particle position. */
-  TIT_DEFINE_VECTOR_FIELD(r_0);
+  TIT_DEFINE_VECTOR_FIELD(r_0)
   /** Piola-Kirchhoff stress tensor. */
-  TIT_DEFINE_MATRIX_FIELD(P);
+  TIT_DEFINE_MATRIX_FIELD(P)
 } // namespace sph::fsi
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

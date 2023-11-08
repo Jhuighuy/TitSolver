@@ -64,12 +64,28 @@ set(CXX_COMPILE_OPTIONS "")
 set(CXX_LINK_OPTIONS "")
 
 # Set the warnings and diagnostics options.
-list(APPEND CXX_COMPILE_OPTIONS -Werror -Wall -Wextra
-     -Wno-unused-result) #-Wno-psabi
+list(
+  APPEND
+  CXX_COMPILE_OPTIONS
+  -Werror -Wall -Wextra -Wpedantic
+  -Wdangling-else
+  -Wdisabled-optimization
+  -Wduplicated-cond
+  -Wcast-align
+  -Wcast-qual
+  -Wlogical-op
+  -Wrestrict
+  -Wshadow
+  -Wshift-negative-value
+  -Wshift-overflow
+  -Wno-unused-result) #-Wno-psabi
 
 # Set the optimization options.
-list(APPEND CXX_COMPILE_OPTIONS
-     -g -Ofast -march=native -finline-limit=10000000 -ffp-contract=fast)
+list(
+  APPEND
+  CXX_COMPILE_OPTIONS
+  -g
+  -Ofast -march=native -finline-limit=10000000 -ffp-contract=fast)
 
 # Enable "classic" linker for macOS (if possible).
 if(${APPLE})

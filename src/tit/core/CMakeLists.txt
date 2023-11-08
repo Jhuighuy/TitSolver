@@ -5,22 +5,23 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Specify the list of sources.
-set(CXX_SOURCES
-    assert.hpp
-    config.hpp
-    graph.hpp
-    mat.hpp
-    math.hpp
-    mdvector.hpp
-    meta.hpp
-    misc.hpp
-    multivector.hpp
-    pool_allocator.hpp
-    types.hpp
-    vec_avx.hpp
-    vec_neon.hpp
-    vec_simd.hpp
-    vec.hpp)
+set(
+  CXX_SOURCES
+  assert.hpp
+  config.hpp
+  graph.hpp
+  mat.hpp
+  math.hpp
+  mdvector.hpp
+  meta.hpp
+  misc.hpp
+  multivector.hpp
+  pool_allocator.hpp
+  types.hpp
+  vec_avx.hpp
+  vec_neon.hpp
+  vec_simd.hpp
+  vec.hpp)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
