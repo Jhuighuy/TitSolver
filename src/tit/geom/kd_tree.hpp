@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <numeric>
 #include <ranges>
 #include <tuple>
 #include <utility>
@@ -48,12 +49,15 @@ private:
 
   union KDTreeNode_ {
     std::ranges::subrange<const size_t*> leaf{};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
     struct {
       size_t cut_dim;
       Real cut_left, cut_right;
       KDTreeNode_* left_subtree;
       KDTreeNode_* right_subtree;
     };
+#pragma GCC diagnostic pop
   }; // union KDTreeNode_
 
   Points points_;
@@ -157,23 +161,48 @@ private:
                                     size_t cut_dim, Real cut_value) noexcept
       -> size_t* {
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
-    // Shift the points that are to the left of the splititng plane to the
-    // front of the list.
-    const auto to_the_left = [&](size_t index) {
+    // TODO: make a general `balanced_partition` algorithm from this.
+    // Partition the tree based on the spittling plane: separate those that
+    // are to the left ("<") from those that are to the right or exactly on
+    // the splitting plane (">=").
+    auto* pivot = std::partition(first, last, [&](size_t index) {
       return points_[index][cut_dim] < cut_value;
-    };
-    auto* pivot = std::partition(first, last, to_the_left);
-    auto* const middle = first + (last - first) / 2;
-    if (pivot > middle) return pivot;
-    // Now at the pivot are the points which are on the splitting plane
-    // or to the right of it. Now shift to the pivot points that are on the
-    // plane and find the optimal pivot value to maintain the tree balanced.
-    const auto on_the_plane = [&](size_t index) {
-      return points_[index][cut_dim] == cut_value;
-    };
-    pivot = std::partition(pivot, last, on_the_plane);
-    if (pivot < middle) return pivot;
-    return middle;
+    });
+    // Try to balance the partition by redistributing the points that are
+    // exactly ("==") on the splitting plane.
+    //
+    // Partition may be already balanced if the left part ("<") is too large,
+    // so moving points into it from the part after the pivot makes no sense:
+    //
+    //   first                      middle                     last
+    //   |--------------------------|--------------------------|
+    //   |------------- "<" --------------|------- ">=" -------|
+    //   first                            pivot                last
+    auto* const middle = std::midpoint(first, last);
+    if (middle <= pivot) return pivot;
+    // Now partition the right part (">=") on the middle part ("==") and the
+    // truely right part (">").
+    pivot = std::partition(pivot, last, [&](size_t index) {
+      // (Here we are not using "==" because of strict floating point
+      //  conversions. "<=" does exactly the same thing.)
+      return points_[index][cut_dim] <= cut_value;
+    });
+    // Two outcomes may be possible:
+    //
+    // - Either midpoint of our range is the best possible option:
+    //
+    //   first                      middle                     last
+    //   |--------------------------|--------------------------|
+    //   |--------- "<" ----------|- "==" -|------- ">" -------|
+    //   first                             pivot               last
+    //
+    // - Either it is optimal to attach the middle part to the left:
+    //
+    //   first                      middle                     last
+    //   |--------------------------|--------------------------|
+    //   |----- "<" ----|- "==" -|------------ ">" ------------|
+    //   first                   pivot                         last
+    return std::min(pivot, middle);
   }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

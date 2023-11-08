@@ -5,74 +5,93 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 include_guard()
+include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Find include-what-you-use.
-find_program(IWYU_PATH NAMES include-what-you-use iwyu)
+# Find include-what-you-use (at least 0.20 based on clang 16.0).
+find_program_with_version(
+  IWYU_EXE
+  NAMES include-what-you-use
+  MIN_VERSION 0.20)
 
-# Find chronic (either system one, either our simple implementation).
-find_program(CHRONIC_PATH NAMES chronic chronic.sh
-             PATHS ${CMAKE_SOURCE_DIR}/build)
+# Find include-what-you-use mapping file.
+if(IWYU_EXE)
+  find_file(
+    IWYU_MAPPING_PATH
+    NAMES iwyu.imp
+    PATHS ${ROOT_SOURCE_DIR}/cmake
+    REQUIRED)
+endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 ## Check `#includes` in the target with include-what-you-use.
 function(check_includes TARGET_OR_ALIAS)
-  # Exit early in case IWYU was not found.
-  if(NOT IWYU_PATH)
+  # Exit early in case sufficient IWYU was not found.
+  if(NOT IWYU_EXE)
     return()
   endif()
   # Get the original target name if it is an alias.
   get_target_property(TARGET ${TARGET_OR_ALIAS} ALIASED_TARGET)
   if(NOT TARGET ${TARGET})
-    set(TARGET ${TARGET})
+    set(TARGET ${TARGET_OR_ALIAS})
   endif()
-  # Fill the list of the common IWYU arguments.
-  set(IWYU_ARGS
-      -Xiwyu --error
-      -Xiwyu --no_fwd_decls
-      -Xiwyu --mapping_file=${ROOT_SOURCE_DIR}/cmake/IWYU.imp
-      -std=c++2b # IWYU has no C++23.
-      -DTIT_IWYU=1)
-  # Append target's include directories and definitions.
-  foreach(PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-    list(APPEND IWYU_ARGS
-         "$<LIST:TRANSFORM,$<TARGET_PROPERTY:${TARGET},${PROP}>,PREPEND,-I>")
-  endforeach()
-  foreach(PROP COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
-    list(APPEND IWYU_ARGS
-         "$<LIST:TRANSFORM,$<TARGET_PROPERTY:${TARGET},${PROP}>,PREPEND,-D>")
-  endforeach()
+  # Setup common arguments for IWYU call.
+  set(
+    IWYU_ARGS
+    # Disable forward declarations.
+    -Xiwyu --no_fwd_decls
+    # Treat warnings as errors.
+    -Xiwyu --error
+    # Provide our mapping file.
+    -Xiwyu --mapping_file=${IWYU_MAPPING_PATH})
+  # Setup "compilation" arguments for IWYU call.
+  ## Get basic compile options from target.
+  get_compile_options(${TARGET} IWYU_COMPILE_ARGS)
+  ## Append some extra options (no need to enable warning here).
+  list(
+    APPEND
+    IWYU_COMPILE_ARGS
+    # Enable C++23 (`c++2b` and not `c++23` for clang-16).
+    -std=c++2b
+    # Some C++23 features are not avaliable even in clang-17,
+    # so tell our codebase that.
+    -DTIT_IWYU=1)
   # Loop through the target sources and call IWYU.
+  set(ALL_STAMPS)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
-  set(ALL_TAGS)
   foreach(SOURCE ${TARGET_SOURCES})
     # Skip non-C/C++ files.
-    get_filename_component(SOURCE_EXT ${SOURCE} EXT)
-    string(TOLOWER ${SOURCE_EXT} SOURCE_EXT)
-    set(CXX_EXTS ".h" ".c" ".hpp" ".cpp")
-    if(NOT (${SOURCE_EXT} IN_LIST CXX_EXTS))
+    is_cxx_source(${SOURCE} SOURCE_IS_CXX)
+    if(NOT SOURCE_IS_CXX)
        continue()
     endif()
-    # Create tag.
-    set(TAG ${SOURCE}.iwuy_tag)
-    list(APPEND ALL_TAGS ${TAG})
-    # Execute include-what-you-use
+    # Create stamp.
+    set(STAMP ${SOURCE}.iwuy_stamp)
+    list(APPEND ALL_STAMPS ${STAMP})
+    # Execute include-what-you-use and update a stamp file on success
     # (wrapped with chronic to avoid annoying messages of success).
+    set(SOURCE_PATH "${TARGET_SOURCE_DIR}/${SOURCE}")
     add_custom_command(
-      OUTPUT ${TAG}
-      COMMAND ${CHRONIC_PATH}
-              ${IWYU_PATH} ${IWYU_ARGS} ${TARGET_SOURCE_DIR}/${SOURCE}
-      COMMAND touch ${TAG}
-      COMMAND_EXPAND_LISTS
-      MAIN_DEPENDENCY ${SOURCE}
-      IMPLICIT_DEPENDS CXX ${SOURCE}
-      COMMENT "Checking includes in ${TARGET_SOURCE_DIR}/${SOURCE}")
-  endforeach()
+      OUTPUT ${STAMP}
+      ## Execute IWYU.
+      COMMAND
+        "${CHRONIC_EXE}"
+        "${IWYU_EXE}" "${SOURCE_PATH}" ${IWYU_ARGS} ${IWYU_COMPILE_ARGS}
+      ## Update stamp.
+      COMMAND
+        ${CMAKE_COMMAND} -E touch ${STAMP}
+      MAIN_DEPENDENCY "${SOURCE_PATH}"
+      ## Also check all the dependant files.
+      IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
+      COMMENT "Checking includes in ${SOURCE_PATH}"
+      ## This is needed for generator expressions to work.
+      COMMAND_EXPAND_LISTS VERBATIM)
+    endforeach()
   # Create a custom target that should "build" once all checks succeed.
-  add_custom_target("${TARGET}_iwyu" ALL DEPENDS ${TARGET} ${ALL_TAGS})
+  add_custom_target("${TARGET}_iwyu" ALL DEPENDS ${TARGET} ${ALL_STAMPS})
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

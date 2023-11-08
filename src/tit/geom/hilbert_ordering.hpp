@@ -124,7 +124,7 @@ private:
 
 public:
 
-  explicit HilbertOrdering(Points points) : points{points} {}
+  explicit HilbertOrdering(Points _points) : points{_points} {}
 
   struct HilbertCmp {
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
@@ -134,8 +134,8 @@ public:
     double mid;
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 
-    HilbertCmp(int coord, bool dir, Points points, double mid)
-        : coord(coord), dir(dir), points(points), mid(mid) {}
+    HilbertCmp(int _coord, bool _dir, Points _points, double _mid)
+        : coord(_coord), dir(_dir), points(_points), mid(_mid) {}
 
     auto operator()(int i) const -> bool {
       return (points[i][coord] < mid) != dir;

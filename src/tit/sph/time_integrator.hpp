@@ -129,12 +129,12 @@ public:
     }
 #if 1
     // Do an explicit Euler substep.
-    const auto substep = [&](auto& particles) {
+    const auto substep = [&](auto& _particles) {
       // Calculate right hand sides for the given particle array.
-      equations_.compute_density(particles, adjacent_particles);
-      equations_.compute_forces(particles, adjacent_particles);
+      equations_.compute_density(_particles, adjacent_particles);
+      equations_.compute_forces(_particles, adjacent_particles);
       // Integrate.
-      par::for_each(particles.views(), [&]<class PV>(PV a) {
+      par::for_each(_particles.views(), [&]<class PV>(PV a) {
         if (fixed[a]) return;
         if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
         if constexpr (has<PV>(v_xsph)) {

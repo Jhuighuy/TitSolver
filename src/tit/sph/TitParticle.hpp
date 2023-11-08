@@ -356,16 +356,16 @@ public:
   template<meta::type FieldSubset, meta::type ConstSubset>
     requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
              meta::is_set_v<ConstSubset> && (constants.includes(ConstSubset{}))
-  constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space,
-                                   [[maybe_unused]] FieldSubset fields = {},
-                                   [[maybe_unused]] ConstSubset consts = {}) {}
+  constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space_,
+                                   [[maybe_unused]] FieldSubset fields_ = {},
+                                   [[maybe_unused]] ConstSubset consts_ = {}) {}
   // clang-format on
   template<meta::type FieldSubset, meta::type... ConstSubset>
     requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
              (constants.includes(meta::Set<ConstSubset...>{}))
-  constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space,
-                                   [[maybe_unused]] FieldSubset fields = {},
-                                   [[maybe_unused]] ConstSubset... consts) {}
+  constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space_,
+                                   [[maybe_unused]] FieldSubset fields_ = {},
+                                   [[maybe_unused]] ConstSubset... consts_) {}
   /** @} */
 
   /** Number of particles. */
@@ -496,9 +496,9 @@ public:
              n + "_zx " + n + "_zy " + n + "_zz";
   }
 
-  static auto _make_name(auto v) {
-    return _make_name(field_name_v<decltype(v)>,
-                      meta::Set<field_value_type_t<decltype(v), Real, Dim>>{});
+  static auto _make_name(auto V) {
+    return _make_name(field_name_v<decltype(V)>,
+                      meta::Set<field_value_type_t<decltype(V), Real, Dim>>{});
   }
 
   void print(const std::string& path) {

@@ -186,7 +186,7 @@ int sph_main() {
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
       system(("ln -sf " + path + " output/test_output/particles.csv").c_str());
-      auto delta = std::chrono::high_resolution_clock::now() - start;
+      delta = std::chrono::high_resolution_clock::now() - start;
       printtime +=
           1.0e-9 *
           std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
@@ -343,7 +343,7 @@ int sph_main() {
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
       system(("ln -sf ./" + path + " particles.csv").c_str());
-      auto delta = std::chrono::high_resolution_clock::now() - start;
+      delta = std::chrono::high_resolution_clock::now() - start;
       printtime +=
           1.0e-9 *
           std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
@@ -480,7 +480,7 @@ int sph_main() {
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
       system(("ln -sf ./" + path + " particles.csv").c_str());
-      auto delta = std::chrono::high_resolution_clock::now() - start;
+      delta = std::chrono::high_resolution_clock::now() - start;
       printtime +=
           1.0e-9 *
           std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();

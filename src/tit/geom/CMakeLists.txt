@@ -5,12 +5,13 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Specify the list of sources.
-set(CXX_SOURCES
-    bbox.hpp
-    grid.hpp
-    hilbert_ordering.hpp
-    kd_tree.hpp
-    search_engine.hpp)
+set(
+  CXX_SOURCES
+  bbox.hpp
+  grid.hpp
+  hilbert_ordering.hpp
+  kd_tree.hpp
+  search_engine.hpp)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
