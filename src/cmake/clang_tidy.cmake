@@ -36,8 +36,8 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     # Enable colors during piping through chronic.
     --use-color)
   # Setup "compilation" arguments for clang-tidy call.
-  ## Get basic compile options from target.
-  get_compile_options(${TARGET} CLANG_TIDY_COMPILE_ARGS)
+  ## Get generated compile options from target.
+  get_generated_compile_options(${TARGET} CLANG_TIDY_COMPILE_ARGS)
   ## Append some extra options.
   list(
     APPEND
@@ -95,7 +95,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
         ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_ARGS}
       ## Update stamp.
       COMMAND
-        ${CMAKE_COMMAND} -E touch ${STAMP}
+        "${CMAKE_COMMAND}" -E touch "${STAMP}"
       MAIN_DEPENDENCY "${SOURCE_PATH}"
       ## Also check all the dependant files.
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"

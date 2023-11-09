@@ -100,7 +100,7 @@ function(find_program_with_version PROG_EXE_VAR)
   if(PROG_NO_CACHE)
     set(${PROG_EXE_VAR} ${PROG_EXE} PARENT_SCOPE)
   else()
-    set(${PROG_EXE_VAR} ${PROG_EXE} CACHE PATH "Path to ${PROG_EXE_VAR}")
+    set(${PROG_EXE_VAR} ${PROG_EXE} CACHE INTERNAL "Path to ${PROG_EXE_VAR}")
   endif()
 endfunction()
 
@@ -130,7 +130,7 @@ endfunction()
 ## compile definitions). Since most of those are not known at compile time,
 ## the output list may contain generator expressions. This makes it unusable
 ## for debugging, but fully suitable for `add_custom_command` for example.
-function(get_compile_options TARGET OPTIONS_VAR)
+function(get_generated_compile_options TARGET OPTIONS_VAR)
   # Append include directories.
   foreach(PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     list(
@@ -147,6 +147,18 @@ function(get_compile_options TARGET OPTIONS_VAR)
   endforeach()
   # Propagate the list variable to parent scope.
   set(${OPTIONS_VAR} ${OPTIONS} PARENT_SCOPE)
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+## Read value from the variable by it's name, if it is defined. If it is
+## undefined and default values are provided, those are set.
+function(try_set VAR VAR_NAME)
+  if(DEFINED ${VAR_NAME})
+    set(${VAR} ${${VAR_NAME}} PARENT_SCOPE)
+  elseif(ARGN)
+    set(${VAR} ${ARGN} PARENT_SCOPE)
+  endif()
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
