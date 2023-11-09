@@ -55,7 +55,7 @@ public:
     // Initialize identity points permutation.
     const auto size = std::ranges::size(points_);
     point_perm_.resize(size);
-    std::ranges::copy(std::views::iota(size_t{0}, size), point_perm_.begin());
+    std::ranges::copy(std::views::iota(0UZ, size), point_perm_.begin());
     // Compute bounding box.
     auto bbox = BBox{points_[0]};
     for (const auto& p : points_ | std::views::drop(1)) bbox.update(p);

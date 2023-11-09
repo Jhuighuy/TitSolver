@@ -69,9 +69,9 @@ class PoolAllocator final {
 private:
 
   // Individual allocations would be aligned to this value.
-  static constexpr auto word_size_ = align(size_t{16}, sizeof(Val));
+  static constexpr auto word_size_ = align(16UZ, sizeof(Val));
   // Amount of the block.
-  static constexpr auto block_size_ = align(size_t{64} * 1024, word_size_);
+  static constexpr auto block_size_ = align(64UZ * 1024UZ, word_size_);
 
   size_t remaining_ = 0; // Number of bytes left in current block of storage.
   void* base_ = nullptr; // Pointer to base of current block of storage.

@@ -24,7 +24,7 @@ template<>
 class alignas(16) Vec<float64_t, 2> final {
 public:
 
-  static constexpr auto num_rows = size_t{2};
+  static constexpr auto num_rows = 2UZ;
 
   // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
   union {

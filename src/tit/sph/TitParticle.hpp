@@ -236,7 +236,7 @@ public:
   }
 
   constexpr auto _fixed() const noexcept {
-    return std::views::iota(size_t{0}, fixed_.size()) |
+    return std::views::iota(0UZ, fixed_.size()) |
            std::views::transform([&](size_t i) {
              return std::tuple{i, array()[fixed_[i]]};
            });
@@ -271,7 +271,7 @@ public:
   }
 #if 1
   constexpr auto block_pairs() const noexcept {
-    return std::views::iota(size_t{0}, block_adjacency_.size()) |
+    return std::views::iota(0UZ, block_adjacency_.size()) |
            std::views::transform([&](size_t block_index) {
              return block_adjacency_[block_index] |
                     std::views::transform([this](auto ab_indices) {
@@ -282,7 +282,7 @@ public:
   }
 #else
   constexpr auto block_pairs() const noexcept {
-    return std::views::iota(size_t{0}, _color_ranges.size() - 1) |
+    return std::views::iota(0UZ, _color_ranges.size() - 1) |
            std::views::transform([&](size_t k) {
              return std::ranges::subrange(
                         _colored_edges.begin() + _color_ranges[k],
@@ -389,13 +389,13 @@ public:
   /** Range of particles. */
   /** @{ */
   constexpr auto views() noexcept {
-    return std::views::iota(size_t{0}, size()) |
+    return std::views::iota(0UZ, size()) |
            std::views::transform([this](size_t particle_index) {
              return ParticleView{*this, particle_index};
            });
   }
   constexpr auto views() const noexcept {
-    return std::views::iota(size_t{0}, size()) |
+    return std::views::iota(0UZ, size()) |
            std::views::transform([this](size_t particle_index) {
              return ParticleView{*this, particle_index};
            });

@@ -148,7 +148,7 @@ constexpr void static_for_each(Range&& range, Func&& func) noexcept {
     };
     static auto partitioner = tbb::static_partitioner{};
     tbb::parallel_for(
-        size_t{0}, num_threads(), size_t{1},
+        0UZ, num_threads(), 1UZ,
         [&](size_t thread) {
           _thread_index = thread;
           std::for_each(range.begin() + partition_first(thread),
