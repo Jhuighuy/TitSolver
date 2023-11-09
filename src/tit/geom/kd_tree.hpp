@@ -93,7 +93,7 @@ public:
     // Initialize identity points permutation.
     const auto size = std::ranges::size(points_);
     point_perm_.resize(size);
-    std::ranges::copy(std::views::iota(size_t{0}, size), point_perm_.begin());
+    std::ranges::copy(std::views::iota(0UZ, size), point_perm_.begin());
     // Compute the root tree node (and bounding box).
     root_node_ = build_subtree_</*IsRoot=*/true>(
         point_perm_.data(), point_perm_.data() + size, root_bbox_);

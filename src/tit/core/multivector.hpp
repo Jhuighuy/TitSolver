@@ -79,7 +79,7 @@ public:
   template<class Cmp = std::ranges::less, class Proj = std::identity>
     requires std::sortable<std::ranges::iterator_t<std::vector<Val>>, Cmp, Proj>
   constexpr void sort(Cmp cmp = {}, Proj proj = {}) noexcept {
-    par::for_each(std::views::iota(size_t{0}, size()), [=, this](size_t index) {
+    par::for_each(std::views::iota(0UZ, size()), [=, this](size_t index) {
       std::ranges::sort((*this)[index], cmp, proj);
     });
   }

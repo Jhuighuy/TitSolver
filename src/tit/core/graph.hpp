@@ -36,7 +36,7 @@ public:
     assume_used(this);
     return std::views::single(std::tuple<size_t, size_t>{});
 #else
-    return std::views::iota(size_t{0}, num_nodes()) |
+    return std::views::iota(0UZ, num_nodes()) |
            std::views::transform([this](size_t row_index) {
              return (*this)[row_index] |
                     // Take only lower part of the row.

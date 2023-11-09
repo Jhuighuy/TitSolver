@@ -93,7 +93,7 @@ private:
     const auto extents = grid_bbox_.extents();
     const auto approx_num_cells = extents / spacing;
     // TODO: refactor these by introducing functionality into `Vec`.
-    auto total_num_cells = size_t{1};
+    auto total_num_cells = 1UZ;
     for (size_t i = 0; i < Dim; ++i) {
       num_cells_[i] = static_cast<size_t>(std::ceil(approx_num_cells[i]));
       total_num_cells *= num_cells_[i];
@@ -104,7 +104,7 @@ private:
         total_num_cells,
 #if TIT_IWYU
         // IWYU's clang has no `std::views::enumerate`.
-        std::views::single(std::tuple{size_t{0}, points_[0]}),
+        std::views::single(std::tuple{0UZ, points_[0]}),
 #else
         std::views::enumerate(points_),
 #endif
