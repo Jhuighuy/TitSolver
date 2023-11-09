@@ -47,8 +47,8 @@ function(check_includes TARGET_OR_ALIAS)
     # Provide our mapping file.
     -Xiwyu --mapping_file=${IWYU_MAPPING_PATH})
   # Setup "compilation" arguments for IWYU call.
-  ## Get basic compile options from target.
-  get_compile_options(${TARGET} IWYU_COMPILE_ARGS)
+  ## Get generated compile options from target.
+  get_generated_compile_options(${TARGET} IWYU_COMPILE_ARGS)
   ## Append some extra options (no need to enable warning here).
   list(
     APPEND
@@ -82,7 +82,7 @@ function(check_includes TARGET_OR_ALIAS)
         "${IWYU_EXE}" "${SOURCE_PATH}" ${IWYU_ARGS} ${IWYU_COMPILE_ARGS}
       ## Update stamp.
       COMMAND
-        ${CMAKE_COMMAND} -E touch ${STAMP}
+        "${CMAKE_COMMAND}" -E touch "${STAMP}"
       MAIN_DEPENDENCY "${SOURCE_PATH}"
       ## Also check all the dependant files.
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
