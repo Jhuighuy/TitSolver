@@ -80,7 +80,9 @@ set(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Set optimization options (all configurations).
-set(GNU_OPTIMIZE_OPTIONS)
+set(GNU_OPTIMIZE_OPTIONS
+  # Optimize code for the host system's architecture.
+  -march=native)
 
 # Set optimization options (`Debug` configuration).
 set(

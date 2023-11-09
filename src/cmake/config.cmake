@@ -5,6 +5,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 include_guard()
+include(clang)
 include(gnu)
 include(utils)
 
@@ -44,14 +45,13 @@ else()
 endif()
 
 # Check if compiler is known..
-set(CXX_COMPILER_MIN_VERSION_VAR "${CXX_COMPILER}_MIN_VERSION")
-if(NOT DEFINED ${CXX_COMPILER_MIN_VERSION_VAR})
+try_set(CXX_COMPILER_MIN_VERSION "${CXX_COMPILER}_MIN_VERSION")
+if(NOT DEFINED CXX_COMPILER_MIN_VERSION)
   message(
     FATAL_ERROR
     "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported.")
 endif()
 # ..and it's version is sufficient.
-set(CXX_COMPILER_MIN_VERSION ${${CXX_COMPILER_MIN_VERSION_VAR}})
 if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CXX_COMPILER_MIN_VERSION})
   message(
     FATAL_ERROR

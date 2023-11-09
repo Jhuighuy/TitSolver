@@ -88,7 +88,8 @@ function(check_includes TARGET_OR_ALIAS)
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
       COMMENT "Checking includes in ${SOURCE_PATH}"
       ## This is needed for generator expressions to work.
-      COMMAND_EXPAND_LISTS VERBATIM)
+      COMMAND_EXPAND_LISTS
+      VERBATIM)
     endforeach()
   # Create a custom target that should "build" once all checks succeed.
   add_custom_target("${TARGET}_iwyu" ALL DEPENDS ${TARGET} ${ALL_STAMPS})

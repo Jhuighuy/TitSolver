@@ -5,6 +5,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 include_guard()
+include(clang)
 include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -42,29 +43,8 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   list(
     APPEND
     CLANG_TIDY_COMPILE_ARGS
-    # Enable many warnings.
-    # TODO: these may be moved to a global list once we have proper configurations.
-    -Wall -Wextra -Wextra-semi -Wpedantic
-    -Wredeclared-class-member
-    -Wredundant-decls
-    -Wredundant-move
-    -Wredundant-parens
-    -Wunused-comparison
-    -Wunused-const-variable
-    -Wunused-exception-parameter
-    -Wunused-function
-    -Wunused-label
-    -Wunused-lambda-capture
-    -Wunused-local-typedef
-    -Wunused-parameter
-    -Wunused-private-field
-    -Wunused-template
-    -Wunused-value
-    -Wunused-variable
-    -Wunused-volatile-lvalue
-    # And disable some.
-    -Wno-unknown-pragmas
-    -Wno-unknown-warning-option
+    # Enable the same set of warnings we would use for normal clang.
+    ${CLANG_WARNINGS}
     # Enable C++23 (`c++2b` and not `c++23` for clang-16).
     -std=c++2b
     # Some C++23 features are not avaliable even in clang-17,
@@ -101,7 +81,8 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
       COMMENT "Analyzing ${SOURCE_PATH}"
       ## This is needed for generator expressions to work.
-      COMMAND_EXPAND_LISTS VERBATIM)
+      COMMAND_EXPAND_LISTS
+      VERBATIM)
   endforeach()
   # Create a custom target that should "build" once all checks succeed.
   add_custom_target("${TARGET}_tidy" ALL DEPENDS ${TARGET} ${ALL_STAMPS})
