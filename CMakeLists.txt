@@ -13,11 +13,17 @@ project(Tit VERSION 0.1 LANGUAGES CXX)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Setup root output directory.
+# Setup root source and output directories.
+set(ROOT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(ROOT_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/output/TIT_ROOT)
 
-# Setup output directories.
-# (Set globally, since these properties are not inherited by targets.)
+# Setup path to CMake scripts and include them.
+list(APPEND CMAKE_MODULE_PATH ${ROOT_SOURCE_DIR}/cmake)
+include(clang_tidy)
+include(config)
+include(iwyu)
+
+# Setup output directories. This must be gone once we switch to installation.
 set(CMAKE_PDB_OUTPUT_DIRECTORY ${ROOT_OUTPUT_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ROOT_OUTPUT_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${ROOT_OUTPUT_DIR}/bin)
@@ -25,47 +31,43 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${ROOT_OUTPUT_DIR}/lib)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Set root source directory.
-set(ROOT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
-
-# Set path to CMake scripts.
-list(APPEND CMAKE_MODULE_PATH ${ROOT_SOURCE_DIR}/cmake)
-
-# Include the functionality.
-include(clang_tidy)
-include(config)
-include(iwyu)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# A container library that stores all the properties.
+# A container library that stores all the properties. Other libraries and
+# executables should link with this library.
 add_library(tit_base INTERFACE)
 add_library(tit::base ALIAS tit_base)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# Require C++23 and disable extensions.
-# (Set globally, since these properties are not inherited by targets.)
+# Setup C++: require C++23 and disable extensions.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS NO)
 
-# Apply the options.
-target_compile_options(tit_base INTERFACE ${CXX_COMPILE_OPTIONS_RELEASE})
-target_link_options(tit_base INTERFACE ${CXX_LINK_OPTIONS_RELEASE})
-
-# Set include directory.
+# Setup include directories.
 target_include_directories(tit_base INTERFACE ${ROOT_SOURCE_DIR})
+
+# Setup configurations.
+foreach(CONFIG ${ALL_CONFIGS})
+  string(TOUPPER ${CONFIG} CONFIG_UPPER)
+  # Apply compilation options.
+  target_compile_options(
+    tit_base
+    INTERFACE
+    $<$<CONFIG:${CONFIG}>:${CXX_COMPILE_OPTIONS_${CONFIG_UPPER}}>)
+  # Apply link options.
+  target_link_options(
+    tit_base
+    INTERFACE
+    $<$<CONFIG:${CONFIG}>:${CXX_LINK_OPTIONS_${CONFIG_UPPER}}>)
+endforeach()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Find {fmt}.
 find_package(fmt CONFIG REQUIRED QUIET)
-target_link_libraries(tit_base INTERFACE fmt::fmt-header-only)
+target_link_libraries(tit_base INTERFACE fmt::fmt)
 
 # Find spdlog.
 find_package(spdlog CONFIG REQUIRED QUIET)
-target_link_libraries(tit_base INTERFACE spdlog::spdlog_header_only)
+target_link_libraries(tit_base INTERFACE spdlog::spdlog)
 
 ## Find Thread Bulding Blocks.
 #find_package(TBB CONFIG REQUIRED QUIET)
