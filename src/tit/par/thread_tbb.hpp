@@ -117,8 +117,7 @@ constexpr void for_each(Range&& range, Func&& func,
   }
 #endif
 }
-// IWYU's clang has no `std::ranges::join_view`.
-#if !TIT_IWYU
+#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<class Range, class Func>
 constexpr void for_each(std::ranges::join_view<Range> range, Func&& func,
                         size_t grain_size = 1) noexcept {
@@ -159,8 +158,7 @@ constexpr void static_for_each(Range&& range, Func&& func) noexcept {
   }
 #endif
 }
-// IWYU's clang has no `std::ranges::join_view`.
-#if !TIT_IWYU
+#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<class Range, class Func>
 constexpr void static_for_each(std::ranges::join_view<Range> range,
                                Func&& func) noexcept {

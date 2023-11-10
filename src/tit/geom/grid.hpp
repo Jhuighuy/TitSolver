@@ -13,6 +13,7 @@
 #include <utility>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/config.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
@@ -102,8 +103,7 @@ private:
     // Pack the points into a multivector.
     cell_points_.assemble_tall(
         total_num_cells,
-#if TIT_IWYU
-        // IWYU's clang has no `std::views::enumerate`.
+#if TIT_LIBCPP // libc++ no `std::views::enumerate` yet.
         std::views::single(std::tuple{0UZ, points_[0]}),
 #else
         std::views::enumerate(points_),

@@ -8,7 +8,7 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <fstream> // IWYU pragma: keep
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <iterator>

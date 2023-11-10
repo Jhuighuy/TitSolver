@@ -9,14 +9,14 @@ include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Find include-what-you-use (at least 0.20 based on clang 16.0).
+# Find include-what-you-use (at least 0.21 based on clang 17.0).
 find_program_with_version(
   IWYU_EXE
   NAMES include-what-you-use
-  MIN_VERSION 0.20)
+  MIN_VERSION "0.21")
 
-# Find include-what-you-use mapping file.
 if(IWYU_EXE)
+  # Find include-what-you-use mapping file.
   find_file(
     IWYU_MAPPING_PATH
     NAMES iwyu.imp
@@ -55,8 +55,7 @@ function(check_includes TARGET_OR_ALIAS)
     IWYU_COMPILE_ARGS
     # Enable C++23 (`c++2b` and not `c++23` for clang-16).
     -std=c++2b
-    # Some C++23 features are not avaliable even in clang-17,
-    # so tell our codebase that.
+    # Tell our code that it is parsed with IWYU to workaround some bugs.
     -DTIT_IWYU=1)
   # Loop through the target sources and call IWYU.
   set(ALL_STAMPS)

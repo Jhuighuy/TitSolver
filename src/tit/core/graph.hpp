@@ -9,7 +9,8 @@
 #include <ranges>
 #include <tuple>
 
-#include "tit/core/misc.hpp" // IWYU pragma: keep
+#include "tit/core/config.hpp"
+#include "tit/core/misc.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 
@@ -30,8 +31,7 @@ public:
 
   /** Range of the unique graph edges. */
   constexpr auto edges() const noexcept {
-#if TIT_IWYU
-    // Include-what-you-use's clang has no `std::views::join`.
+#if TIT_LIBCPP // libc++ has no `std::views::join` yet.
     // Return something with matching type.
     assume_used(this);
     return std::views::single(std::tuple<size_t, size_t>{});

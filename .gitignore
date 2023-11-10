@@ -16,7 +16,6 @@
 !/.clang-*
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
-!/src/cmake/iwyu.imp
 !CPPLINT.cfg
 !vcpkg.json
 
@@ -28,6 +27,7 @@
 # CMake files.
 !CMakeLists.txt
 !*.cmake
+!/src/cmake/iwyu.imp
 
 # Pipelines.
 !/.github/workflows/*.yml

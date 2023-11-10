@@ -8,18 +8,17 @@
 
 #include <algorithm>
 #include <concepts>
-#include <ranges>      // IWYU pragma: keep
-#include <tuple>       // IWYU pragma: keep
-#include <type_traits> // IWYU pragma: keep
+#include <ranges>
+#include <tuple>
+#include <type_traits>
 
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/types.hpp" // IWYU pragma: keep
+#include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/par/thread.hpp"
-
-#include "TitParticle.hpp"
+#include "tit/sph/TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/density_equation.hpp"
 #include "tit/sph/equation_of_state.hpp"

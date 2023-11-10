@@ -7,10 +7,10 @@
 #pragma once
 #ifdef __SSE__
 
+#include <x86intrin.h>
+
 #include <array>
 #include <functional>
-
-#include <x86intrin.h>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/types.hpp"
