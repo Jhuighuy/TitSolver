@@ -49,19 +49,22 @@ using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 
 /** Absolute value. */
 template<class Num>
+  requires (!std::unsigned_integral<Num>)
 constexpr auto abs(Num a) noexcept -> Num {
   return std::abs(a);
 }
 
 /** Sign of the value. */
 template<class Num>
+  requires (!std::unsigned_integral<Num>)
 constexpr auto sign(Num a) noexcept -> Num {
   return Num{Num{0} < a} - Num{a < Num{0}};
 }
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 /** Small number, treated as zero. */
-template<class Real>
-  requires std::floating_point<Real>
+template<std::floating_point Real>
 constexpr auto small_number_v {
 #if TIT_LIBCPP // libc++'s `cbrt` is not constexpr yet.
   std::numeric_limits<Real>::epsilon()
@@ -71,12 +74,12 @@ constexpr auto small_number_v {
 };
 
 /** Check if number is approximately zero. */
-template<class Real>
+template<std::floating_point Real>
 constexpr auto is_zero(Real a) noexcept -> bool {
   return abs(a) < small_number_v<Real>;
 }
 /** Check if numbers are approximately equal. */
-template<class Real>
+template<std::floating_point Real>
 constexpr auto approx_equal(Real a, Real b) noexcept -> bool {
   return is_zero(a - b);
 }
@@ -95,19 +98,19 @@ constexpr auto minus(Num a) noexcept -> Num {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Compute the largest integer value not greater than number. */
-template<class Real>
+template<std::floating_point Real>
 constexpr auto floor(Real a) noexcept -> Real {
   return std::floor(a);
 }
 
 /** Computes the nearest integer value to number. */
-template<class Real>
+template<std::floating_point Real>
 constexpr auto round(Real a) noexcept -> Real {
   return std::round(a);
 }
 
 /** Compute the least integer value not less than number. */
-template<class Real>
+template<std::floating_point Real>
 constexpr auto ceil(Real a) noexcept -> Real {
   return std::ceil(a);
 }
@@ -115,21 +118,28 @@ constexpr auto ceil(Real a) noexcept -> Real {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Inverse number. */
-template<class Real>
+/** @{ */
+template<std::floating_point Real>
 constexpr auto inverse(Real a) noexcept -> Real {
   TIT_ASSERT(!is_zero(a), "Cannot invert zero!");
   return Real{1.0} / a;
 }
+template<std::integral Int>
+constexpr auto inverse(Int a) noexcept -> real_t {
+  TIT_ASSERT(a != 0, "Cannot invert zero!");
+  return 1.0 / a;
+}
+/** @} */
 
 /** Safe inverse number.
  ** @returns Inverse for non-zero input, zero for zero input. */
-template<class Real>
+template<std::floating_point Real>
 constexpr auto safe_inverse(Real a) noexcept -> Real {
   return is_zero(a) ? Real{0.0} : inverse(a);
 }
 /** Safe divide number by divisor.
  ** @returns Division result for non-zero divisor, zero for zero divisor. */
-template<class Num, class Real>
+template<class Num, std::floating_point Real>
 constexpr auto safe_divide(Num a, Real b) noexcept {
   return is_zero(b) ? div_result_t<Num, Real>{} : a / b;
 }
@@ -202,25 +212,25 @@ constexpr auto pow(Num a, std::type_identity_t<Num> power) noexcept -> Num {
 }
 
 /** Square root. */
-template<class Num>
-constexpr auto sqrt(Num a) noexcept {
+template<std::floating_point Real>
+constexpr auto sqrt(Real a) noexcept -> Real {
   return std::sqrt(a);
 }
 
 /** Cube root. */
-template<class Num>
-constexpr auto cbrt(Num a) noexcept {
+template<std::floating_point Real>
+constexpr auto cbrt(Real a) noexcept -> Real {
   return std::cbrt(a);
 }
 
 /** Hypot. */
 /** @{ */
-template<class Num>
-constexpr auto hypot(Num a, Num b) noexcept -> Num {
+template<std::floating_point Real>
+constexpr auto hypot(Real a, Real b) noexcept -> Real {
   return std::hypot(a, b);
 }
-template<class Num>
-constexpr auto hypot(Num a, Num b, Num c) noexcept -> Num {
+template<std::floating_point Real>
+constexpr auto hypot(Real a, Real b, Real c) noexcept -> Real {
   return std::hypot(a, b, c);
 }
 /** @} */
@@ -228,44 +238,46 @@ constexpr auto hypot(Num a, Num b, Num c) noexcept -> Num {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Exponent. */
-template<class Num>
-constexpr auto exp(Num a) noexcept -> Num {
+template<std::floating_point Real>
+constexpr auto exp(Real a) noexcept -> Real {
   return std::exp(a);
 }
-
 /** Exponent base two. */
-template<class Num>
-constexpr auto exp2(Num a) noexcept -> Num {
+/** @{ */
+template<std::floating_point Real>
+constexpr auto exp2(Real a) noexcept -> Real {
   return std::exp2(a);
 }
-/** Integer exponent base two. */
 template<std::unsigned_integral UInt>
 constexpr auto exp2(UInt a) noexcept -> UInt {
   return UInt{1} << a;
 }
+/** @} */
 
 /** Logarithm. */
-template<class Num>
-constexpr auto log(Num a) noexcept -> Num {
+template<std::floating_point Real>
+constexpr auto log(Real a) noexcept -> Real {
   return std::log(a);
 }
 
 /** Logarithm base two. */
-template<class Num>
-constexpr auto log2(Num a) noexcept -> Num {
+/** @{ */
+template<std::floating_point Real>
+constexpr auto log2(Real a) noexcept -> Real {
   return std::log2(a);
 }
-/** Integer logarithm base two. */
 template<std::unsigned_integral UInt>
 constexpr auto log2(UInt a) noexcept -> UInt {
   return std::bit_width(a) - UInt{1};
 }
+/** @} */
 
 /** Check if integer a is power of two. */
 template<std::unsigned_integral UInt>
 constexpr auto is_power_of_two(UInt a) noexcept -> bool {
   return (a & (a - UInt{1})) == UInt{0};
 }
+
 /** Align-up integer to the nearest power of two. */
 template<std::unsigned_integral UInt>
 constexpr auto align_to_power_of_two(UInt a) noexcept -> UInt {
@@ -285,6 +297,11 @@ template<class... Nums>
 constexpr auto havg(Nums... values) noexcept {
   return (sizeof...(Nums)) / (inverse(values) + ...);
 }
+/** Geometric average functions. */
+template<class... Nums>
+constexpr auto gavg(Nums... values) noexcept {
+  return pow((values * ...), inverse(sizeof...(Nums)));
+}
 
 /** Merge number with zero vector based on condition. */
 template<class Num>
@@ -303,8 +320,7 @@ constexpr auto merge(bool m, NumA a, NumB b) noexcept {
 
 /** Find function rool using Newton-Raphson method.
  ** @returns True on success. */
-template<class Real, class Func>
-  requires std::invocable<Func>
+template<std::floating_point Real, std::invocable Func>
 constexpr auto newton_raphson(Real& x, const Func& f, //
                               Real epsilon = Real{1e-9}, size_t max_iter = 10)
     -> bool {
@@ -319,8 +335,7 @@ constexpr auto newton_raphson(Real& x, const Func& f, //
 
 /** Find function rool using Bisection method.
  ** @returns True on success. */
-template<class Real, class Func>
-  requires std::invocable<Func, Real>
+template<std::floating_point Real, std::invocable<Real> Func>
 constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
                          Real epsilon = Real{1e-9}, size_t max_iter = 10)
     -> bool {

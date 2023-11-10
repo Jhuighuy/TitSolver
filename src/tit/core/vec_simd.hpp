@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <concepts>
 #include <utility>
@@ -14,59 +13,12 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/config.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/misc.hpp"
+#include "tit/core/simd.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp" // IWYU pragma: keep
 
 namespace tit {
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-// Set up the default register size.
-// Assuming 128-bit SIMD registers by default.
-#if defined(__AVX512F__)
-#define TIT_SIMD_REGISTER_SIZE (8 * sizeof(double))
-#elif defined(__AVX__)
-#define TIT_SIMD_REGISTER_SIZE (4 * sizeof(double))
-#elif defined(__SSE__) || defined(__ARM_NEON)
-#define TIT_SIMD_REGISTER_SIZE (2 * sizeof(double))
-#else
-// Assuming 128-bit SIMD registers by default.
-#define TIT_SIMD_REGISTER_SIZE (2 * sizeof(double))
-#endif
-
-namespace simd {
-
-  static_assert(is_power_of_two(TIT_SIMD_REGISTER_SIZE));
-
-  /** Maximum SIMD register size. */
-  template<class Num>
-  inline constexpr auto max_reg_size_v =
-      std::max<size_t>(1, TIT_SIMD_REGISTER_SIZE / sizeof(Num));
-
-  /** @brief Should SIMD registors be used for the amount scalars?
-   ** Registers are used if either number of dimensions is greater than register
-   ** size for the scalar type (e.g., 3*double on NEON CPU), or it is less than
-   ** register size for the scalar type (e.g. 3*double on AVX CPU) and number of
-   ** dimensions is not power of two (in this case fractions of registers are
-   ** used, e.g. 2*double on AVX CPU). */
-  template<class Num, size_t Dim>
-  concept use_regs = (Dim > max_reg_size_v<Num>) ||
-                     (Dim < max_reg_size_v<Num> && !is_power_of_two(Dim));
-
-  /** SIMD register size for the specified amount of scalars. */
-  template<class Num, size_t Dim>
-    requires use_regs<Num, Dim>
-  inline constexpr auto reg_size_v =
-      std::min(max_reg_size_v<Num>, //
-               (is_power_of_two(Dim) ? Dim : exp2(log2(Dim) + 1)));
-
-  /** Do SIMD registors match for the specified types? */
-  template<size_t Dim, class Num, class... RestNums>
-  concept regs_match =
-      use_regs<Num, Dim> && (use_regs<RestNums, Dim> && ...) &&
-      ((reg_size_v<Num, Dim> == reg_size_v<RestNums, Dim>) &&...);
-
-} // namespace simd
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -351,88 +303,91 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 
 } // namespace tit
 
-#if TIT_ENABLE_INTRISICS
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-namespace tit {
-constexpr auto _unwrap(auto value) noexcept {
-  return value;
-}
-constexpr auto _unwrap(auto* value) noexcept -> auto& {
-  return *value;
-}
-} // namespace tit
 
 // Generate a constexpr-aware overload for a unary vector function.
 #define TIT_VEC_SIMD_FUNC_V(func, Dim, Num, a, ...)                            \
+  /* NOLINTNEXTLINE(modernize-use-trailing-return-type) */                     \
   constexpr auto func(Vec<Num, Dim> a) noexcept {                              \
     if consteval {                                                             \
-      return func<Num, Dim>(_unwrap(a));                                       \
+      return _unwrap(func<Num, Dim>(_unwrap(a)));                              \
     } else { /* NOLINT(readability-else-after-return) */                       \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
 
 // Generate a constexpr-aware overload for a binary scalar-vector function.
+// clang-format off
 #define TIT_VEC_SIMD_FUNC_SV(func, Dim, NumA, a, NumB, b, ...)                 \
   template<std::convertible_to<NumB> NumA>                                     \
+  /* NOLINTNEXTLINE(modernize-use-trailing-return-type) */                     \
   constexpr auto func(NumA a, Vec<NumB, Dim> b) noexcept {                     \
     if consteval {                                                             \
-      return func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b));                    \
+      return _unwrap(func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b)));           \
     } else { /* NOLINT(readability-else-after-return) */                       \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
+// clang-format on
 
 // Generate a constexpr-aware overload for a binary vector-scalar function.
+// clang-format off
 #define TIT_VEC_SIMD_FUNC_VS(func, Dim, NumA, a, NumB, b, ...)                 \
   template<std::convertible_to<NumA> NumB>                                     \
+  /* NOLINTNEXTLINE(modernize-use-trailing-return-type) */                     \
   constexpr auto func(Vec<NumA, Dim> a, NumB b) noexcept {                     \
     if consteval {                                                             \
-      return func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b));                    \
+      return _unwrap(func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b)));           \
     } else { /* NOLINT(readability-else-after-return) */                       \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
+// clang-format on
 
 // Generate a constexpr-aware overload for a binary vector-vector function.
 #define TIT_VEC_SIMD_FUNC_VV(func, Dim, NumA, a, NumB, b, ...)                 \
+  /* NOLINTNEXTLINE(modernize-use-trailing-return-type) */                     \
   constexpr auto func(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {           \
     if consteval {                                                             \
-      return func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b));                    \
+      return _unwrap(func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b)));           \
     } else { /* NOLINT(readability-else-after-return) */                       \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
 
 // Generate a constexpr-aware overload for a vector merge function.
+// clang-format off
 #define TIT_VEC_SIMD_MERGE(Dim, Op, NumX, NumY, cmp, NumA, a, ...)             \
   template<common_cmp_op Op>                                                   \
   constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,                        \
                        Vec<NumA, Dim> a) noexcept {                            \
     if consteval {                                                             \
-      return merge<Op, NumX, NumY, NumA, Dim>(_unwrap(cmp), _unwrap(a));       \
+      return _unwrap(                                                          \
+          merge<Op, NumX, NumY, NumA, Dim>(_unwrap(cmp), _unwrap(a)));         \
     } else { /* NOLINT(readability-else-after-return) */                       \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
+// clang-format on
 
 // Generate a constexpr-aware overload for a two vector merge function.
+// clang-format off
 #define TIT_VEC_SIMD_MERGE_2(Dim, Op, NumX, NumY, cmp, NumA, a, NumB, b, ...)  \
   template<common_cmp_op Op>                                                   \
-  constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, Vec<NumA, Dim> a,      \
-                       Vec<NumB, Dim> b) noexcept {                            \
+  constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,                        \
+                       Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {          \
     if consteval {                                                             \
-      return merge<Op, NumX, NumY, NumA, NumB, Dim>(_unwrap(cmp), _unwrap(a),  \
-                                                    _unwrap(b));               \
+      return _unwrap(                                                          \
+          merge<Op, NumX, NumY, NumA, NumB, Dim>(                              \
+              _unwrap(cmp), _unwrap(a), _unwrap(b)));                          \
     } else { /* NOLINT(readability-else-after-return) */                       \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
+// clang-format on
 
-// IntelliSense goes crazy when it encounters intrinsics. Especially NEON.
-#ifndef __INTELLISENSE__
+#ifndef __INTELLISENSE__ // IntelliSense goes crazy when it encounters
+                         // intrinsics. Especially NEON.
 // IWYU pragma: begin_exports
 #if defined(__SSE__)
 #include "tit/core/vec_avx.hpp"
@@ -443,5 +398,3 @@ constexpr auto _unwrap(auto* value) noexcept -> auto& {
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#endif // TIT_ENABLE_INTRISICS

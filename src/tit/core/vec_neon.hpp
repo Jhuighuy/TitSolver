@@ -79,7 +79,7 @@ TIT_VEC_SIMD_FUNC_VV(operator+, 2, float64_t, a, float64_t, b, {
   r.reg_ = vaddq_f64(a.reg_, b.reg_);
   return r;
 })
-TIT_VEC_SIMD_FUNC_VV(operator+=, 2, float64_t, &a, float64_t, b, {
+TIT_VEC_SIMD_FUNC_VV(&operator+=, 2, float64_t, &a, float64_t, b, {
   a.reg_ = vaddq_f64(a.reg_, b.reg_);
   return a;
 })
@@ -94,7 +94,7 @@ TIT_VEC_SIMD_FUNC_VV(operator-, 2, float64_t, a, float64_t, b, {
   r.reg_ = vsubq_f64(a.reg_, b.reg_);
   return r;
 })
-TIT_VEC_SIMD_FUNC_VV(operator-=, 2, float64_t, &a, float64_t, b, {
+TIT_VEC_SIMD_FUNC_VV(&operator-=, 2, float64_t, &a, float64_t, b, {
   a.reg_ = vsubq_f64(a.reg_, b.reg_);
   return a;
 })
@@ -114,11 +114,11 @@ TIT_VEC_SIMD_FUNC_VV(operator*, 2, float64_t, a, float64_t, b, {
   r.reg_ = vmulq_f64(a.reg_, b.reg_);
   return r;
 })
-TIT_VEC_SIMD_FUNC_VS(operator*=, 2, float64_t, &a, Num, b, {
+TIT_VEC_SIMD_FUNC_VS(&operator*=, 2, float64_t, &a, Num, b, {
   a.reg_ = vmulq_f64(a.reg_, vdupq_n_f64(static_cast<float64_t>(b)));
   return a;
 })
-TIT_VEC_SIMD_FUNC_VV(operator*=, 2, float64_t, &a, float64_t, b, {
+TIT_VEC_SIMD_FUNC_VV(&operator*=, 2, float64_t, &a, float64_t, b, {
   a.reg_ = vmulq_f64(a.reg_, b.reg_);
   return a;
 })
@@ -133,11 +133,11 @@ TIT_VEC_SIMD_FUNC_VV(operator/, 2, float64_t, a, float64_t, b, {
   r.reg_ = vdivq_f64(a.reg_, b.reg_);
   return r;
 })
-TIT_VEC_SIMD_FUNC_VS(operator/=, 2, float64_t, &a, Num, b, {
+TIT_VEC_SIMD_FUNC_VS(&operator/=, 2, float64_t, &a, Num, b, {
   a.reg_ = vdivq_f64(a.reg_, vdupq_n_f64(static_cast<float64_t>(b)));
   return a;
 })
-TIT_VEC_SIMD_FUNC_VV(operator/=, 2, float64_t, &a, float64_t, b, {
+TIT_VEC_SIMD_FUNC_VV(&operator/=, 2, float64_t, &a, float64_t, b, {
   a.reg_ = vdivq_f64(a.reg_, b.reg_);
   return a;
 })
@@ -186,15 +186,14 @@ auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> uint64x2_t {
   }
 }
 
-// clang-format off
-TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp,
-                   float64_t, a, {
+TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp, float64_t, a, {
   Vec<float64_t, 2> r;
   const auto mask = _cmp_to_mask(cmp);
-  r.reg_ = vreinterpretq_f64_u64(
+  r.reg_ = vreinterpretq_f64_u64( //
       vandq_u64(vreinterpretq_u64_f64(a.reg_), mask));
   return r;
 })
+// clang-format off
 TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
                      float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;

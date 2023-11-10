@@ -73,7 +73,7 @@ TIT_VEC_SIMD_FUNC_VV(operator+, 2, float64_t, a, float64_t, b, {
   r.reg_ = _mm_add_pd(a.reg_, b.reg_);
   return r;
 })
-TIT_VEC_SIMD_FUNC_VV(operator+=, 2, float64_t, &a, float64_t, b, {
+TIT_VEC_SIMD_FUNC_VV(&operator+=, 2, float64_t, &a, float64_t, b, {
   a.reg_ = _mm_add_pd(a.reg_, b.reg_);
   return a;
 })
@@ -88,7 +88,7 @@ TIT_VEC_SIMD_FUNC_VV(operator-, 2, float64_t, a, float64_t, b, {
   r.reg_ = _mm_sub_pd(a.reg_, b.reg_);
   return r;
 })
-TIT_VEC_SIMD_FUNC_VV(operator-=, 2, float64_t, &a, float64_t, b, {
+TIT_VEC_SIMD_FUNC_VV(&operator-=, 2, float64_t, &a, float64_t, b, {
   a.reg_ = _mm_sub_pd(a.reg_, b.reg_);
   return a;
 })
@@ -108,11 +108,11 @@ TIT_VEC_SIMD_FUNC_VV(operator*, 2, float64_t, a, float64_t, b, {
   r.reg_ = _mm_mul_pd(a.reg_, b.reg_);
   return r;
 })
-TIT_VEC_SIMD_FUNC_VS(operator*=, 2, float64_t, &a, Num, b, {
+TIT_VEC_SIMD_FUNC_VS(&operator*=, 2, float64_t, &a, Num, b, {
   a.reg_ = _mm_mul_pd(a.reg_, _mm_set1_pd(static_cast<float64_t>(b)));
   return a;
 })
-TIT_VEC_SIMD_FUNC_VV(operator*=, 2, float64_t, &a, float64_t, b, {
+TIT_VEC_SIMD_FUNC_VV(&operator*=, 2, float64_t, &a, float64_t, b, {
   a.reg_ = _mm_mul_pd(a.reg_, b.reg_);
   return a;
 })
@@ -127,17 +127,30 @@ TIT_VEC_SIMD_FUNC_VV(operator/, 2, float64_t, a, float64_t, b, {
   r.reg_ = _mm_div_pd(a.reg_, b.reg_);
   return r;
 })
-TIT_VEC_SIMD_FUNC_VS(operator/=, 2, float64_t, &a, Num, b, {
+TIT_VEC_SIMD_FUNC_VS(&operator/=, 2, float64_t, &a, Num, b, {
   a.reg_ = _mm_div_pd(a.reg_, _mm_set1_pd(static_cast<float64_t>(b)));
   return a;
 })
-TIT_VEC_SIMD_FUNC_VV(operator/=, 2, float64_t, &a, float64_t, b, {
+TIT_VEC_SIMD_FUNC_VV(&operator/=, 2, float64_t, &a, float64_t, b, {
   a.reg_ = _mm_div_pd(a.reg_, b.reg_);
   return a;
 })
 
-// TODO: implement rounding. See
-// https://stackoverflow.com/questions/37091422/avx-sse-round-floats-down-and-return-vector-of-ints
+TIT_VEC_SIMD_FUNC_V(floor, 2, float64_t, a, {
+  Vec<float64_t, 2> r;
+  r.reg_ = _mm_round_pd(a.reg_, _MM_FROUND_TO_NEG_INF);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_V(round, 2, float64_t, a, {
+  Vec<float64_t, 2> r;
+  r.reg_ = _mm_round_pd(a.reg_, _MM_FROUND_TO_NEAREST_INT);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_V(ceil, 2, float64_t, a, {
+  Vec<float64_t, 2> r;
+  r.reg_ = _mm_round_pd(a.reg_, _MM_FROUND_TO_POS_INF);
+  return r;
+})
 
 TIT_VEC_SIMD_FUNC_V(sum, 2, float64_t, a, {
   const auto reverse = _mm_unpackhi_pd(a.reg_, a.reg_);
@@ -306,6 +319,22 @@ TIT_VEC_SIMD_FUNC_VV(operator/=, 4, float64_t, &a, float64_t, b, {
   return a;
 })
 
+TIT_VEC_SIMD_FUNC_V(floor, 4, float64_t, a, {
+  Vec<float64_t, 4> r;
+  r.reg_ = _mm256_round_pd(a.reg_, _MM_FROUND_TO_NEG_INF);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_V(round, 4, float64_t, a, {
+  Vec<float64_t, 4> r;
+  r.reg_ = _mm256_round_pd(a.reg_, _MM_FROUND_TO_NEAREST_INT);
+  return r;
+})
+TIT_VEC_SIMD_FUNC_V(ceil, 4, float64_t, a, {
+  Vec<float64_t, 4> r;
+  r.reg_ = _mm256_round_pd(a.reg_, _MM_FROUND_TO_POS_INF);
+  return r;
+})
+
 TIT_VEC_SIMD_FUNC_V(sum, 4, float64_t, a, {
   const auto a_low = _mm256_castpd256_pd128(a.reg_);
   const auto a_high = _mm256_extractf128_pd(a.reg_, 1);
@@ -313,6 +342,8 @@ TIT_VEC_SIMD_FUNC_V(sum, 4, float64_t, a, {
   const auto partial_reverse = _mm_unpackhi_pd(partial, partial);
   return _mm_cvtsd_f64(_mm_add_sd(partial, partial_reverse));
 })
+
+// Where is no overload for `dot` since `_mm256_dp_pd` does not exist.
 
 // Helper to compare two AVX registers based on the compare functor.
 template<common_cmp_op Op>
