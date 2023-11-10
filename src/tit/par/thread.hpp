@@ -14,8 +14,8 @@
 
 #include <omp.h>
 
-#include "tit/core/config.hpp" // IWYU pragma: keep
-#include "tit/core/misc.hpp"   // IWYU pragma: keep
+#include "tit/core/config.hpp"
+#include "tit/core/misc.hpp"
 #include "tit/core/types.hpp"
 
 namespace tit::par {
@@ -134,8 +134,7 @@ concept base_input_range =
 template<class Range>
 concept input_range =
     base_input_range<Range>
-// IWYU's clang has no `std::ranges::join_view`.
-#if !TIT_IWYU
+#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
     || (specialization_of<Range, std::ranges::join_view> &&
         base_input_range<decltype(std::declval<Range&&>().base())>)
 #endif
@@ -160,8 +159,7 @@ template<base_input_range Range, loop_body<Range> Func>
 constexpr void for_each(Range&& range, Func&& func) noexcept {
   TIT_THREAD_FUNC_IMPL_(for_each_, dynamic_tag, range, func);
 }
-// IWYU's clang has no `std::ranges::join_view`.
-#if !TIT_IWYU
+#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<base_input_range BaseRange, indirect_loop_body<BaseRange> Func>
 constexpr void for_each( //
     std::ranges::join_view<BaseRange> view, Func&& func) noexcept {
@@ -178,8 +176,7 @@ template<base_input_range Range, loop_body<Range> Func>
 constexpr void static_for_each(Range&& range, Func&& func) noexcept {
   TIT_THREAD_FUNC_IMPL_(for_each_, static_tag, range, func);
 }
-// IWYU's clang has no `std::ranges::join_view`.
-#if !TIT_IWYU
+#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<base_input_range BaseRange, indirect_loop_body<BaseRange> Func>
 constexpr void static_for_each( //
     std::ranges::join_view<BaseRange> view, Func&& func) noexcept {
@@ -198,8 +195,8 @@ template<block_input_range Range,
              std::ranges::iterator_t<std::ranges::range_value_t<Range>>>
              Func>
 constexpr void block_for_each(Range&& range, Func&& func) noexcept {
-#if TIT_IWYU
-  // IWYU's clang has no `std::views::chunk`.
+#if TIT_LIBCPP
+  // libc++ has no `std::views::chunk` yet.
   assume_used(range, func);
 #else
   // Split the range in chuncks according to the number of threads and

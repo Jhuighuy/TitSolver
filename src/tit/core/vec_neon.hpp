@@ -7,12 +7,13 @@
 #pragma once
 #if __ARM_NEON
 
+#include <arm_neon.h>
+
 #include <array>
 #include <functional>
 
-#include <arm_neon.h>
-
 #include "tit/core/assert.hpp"
+#include "tit/core/config.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp" // IWYU pragma: keep
 
@@ -27,10 +28,14 @@ public:
   static constexpr auto num_rows = 2UZ;
 
   // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+#if !TIT_IWYU // I have to do this since a bug in IWYU 0.21.
   union {
+#endif
     std::array<float64_t, num_rows> col_;
     float64x2_t reg_;
+#if !TIT_IWYU
   };
+#endif
   // NOLINTEND(misc-non-private-member-variables-in-classes)
 
   constexpr Vec(float64_t qx, float64_t qy) noexcept {

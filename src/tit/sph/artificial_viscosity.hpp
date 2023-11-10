@@ -137,8 +137,11 @@ public:
 /******************************************************************************\
  ** Artificial viscosity with Rosswog switch (Rosswog, 2000).
 \******************************************************************************/
-template<artificial_viscosity BaseArtificialViscosity =
-             BalsaraArtificialViscosity<>>
+template<artificial_viscosity BaseArtificialViscosity
+#if !TIT_IWYU // Have to do this since a bug in IWYU 0.21.
+         = BalsaraArtificialViscosity<>
+#endif
+         >
 class RosswogArtificialViscosity : public BaseArtificialViscosity {
 private:
 

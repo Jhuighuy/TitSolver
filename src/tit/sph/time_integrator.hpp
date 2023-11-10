@@ -6,15 +6,13 @@
 
 #pragma once
 
-#include <type_traits> // IWYU pragma: keep
+#include <type_traits> // IWYU pragma: keep -- IWYU does not recognize concepts.
 
 #include "tit/core/meta.hpp"
 #include "tit/core/types.hpp"
 #include "tit/par/thread.hpp"
-
-#include "TitParticle.hpp"
+#include "tit/sph/TitParticle.hpp"
 #include "tit/sph/field.hpp"
-#include "tit/sph/fluid_equations.hpp" // IWYU pragma: keep
 
 namespace tit::sph {
 

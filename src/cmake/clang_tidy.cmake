@@ -14,7 +14,7 @@ include(utils)
 find_program_with_version(
   CLANG_TIDY_EXE
   NAMES clang-tidy clang-tidy-16 clang-tidy-17
-  MIN_VERSION 16.0)
+  MIN_VERSION "16.0")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -46,10 +46,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     # Enable the same set of warnings we would use for normal clang.
     ${CLANG_WARNINGS}
     # Enable C++23 (`c++2b` and not `c++23` for clang-16).
-    -std=c++2b
-    # Some C++23 features are not avaliable even in clang-17,
-    # so tell our codebase that.
-    -DTIT_IWYU=1)
+    -std=c++2b)
   # Loop through the target sources and call clang-tidy.
   set(ALL_STAMPS)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
