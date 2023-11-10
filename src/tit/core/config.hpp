@@ -30,16 +30,6 @@
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#ifndef TIT_ENABLE_SIMD
-#define TIT_ENABLE_SIMD 1
-#endif
-
-#ifndef TIT_ENABLE_INTRISICS
-#define TIT_ENABLE_INTRISICS 1
-#endif
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 #ifndef TIT_ENABLE_TBB
 #define TIT_ENABLE_TBB 0
 #endif

@@ -66,4 +66,16 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+// Convinience function used inside of some macros.
+template<class T>
+constexpr auto _unwrap(T&& value) noexcept -> decltype(auto) {
+  return std::forward<T>(value);
+}
+template<class T>
+constexpr auto _unwrap(T* value) noexcept -> T& {
+  return *value;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 } // namespace tit
