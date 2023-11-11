@@ -55,19 +55,23 @@ jobs:
       - name: Build
         run: |
           build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage
+      - name: Run tests
+        run: |
+          ./output/TIT_ROOT/bin/tit_unit_tests
       - name: Run gcovr
         run: |
-          gcovr -e "output/*" \
+          gcovr -e "output/*" -e "tests/*" \
                 --exclude-throw-branches \
                 --gcov-executable "gcov-13" \
-                --xml "{{ env.CODECOV_COVERAGE_REPORT_PATH }}" \
+                --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}" \
                 --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
           # See why `--exclude-throw-branches` below:
           # https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

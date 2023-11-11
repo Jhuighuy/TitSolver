@@ -99,7 +99,7 @@ set(
 set(
   GNU_OPTIMIZE_OPTIONS_COVERAGE
   # Inherit all the `Debug` options.
-  ${GNU_OPTIMIZATION_DEBUG}
+  ${GNU_OPTIMIZE_OPTIONS_DEBUG}
   # Enable code coverage instrumentation during compilation.
   --coverage
   # Disable inlining of functions, preventing the compiler from optimizing

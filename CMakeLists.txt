@@ -89,6 +89,9 @@ qt_standard_project_setup()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Add source subdirectory.
-add_subdirectory(${ROOT_SOURCE_DIR})
+add_subdirectory("source")
+
+# Add tests subdirectory.
+add_subdirectory("tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
