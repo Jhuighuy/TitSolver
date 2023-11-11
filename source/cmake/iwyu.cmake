@@ -28,6 +28,10 @@ endif()
 
 ## Check `#includes` in the target with include-what-you-use.
 function(check_includes TARGET_OR_ALIAS)
+  # Should we skip analysis?
+  if(SKIP_ANALYSIS)
+    return()
+  endif()
   # Exit early in case sufficient IWYU was not found.
   if(NOT IWYU_EXE)
     return()
