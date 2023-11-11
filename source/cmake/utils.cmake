@@ -13,7 +13,7 @@ include_guard()
 find_program(
   CHRONIC_EXE
   NAMES chronic chronic.sh
-  PATHS ${CMAKE_SOURCE_DIR}/build
+  PATHS "${CMAKE_SOURCE_DIR}/build"
   REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

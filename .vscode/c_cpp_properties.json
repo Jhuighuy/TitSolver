@@ -10,7 +10,7 @@
       "name": "macOS",
       "includePath": [
         "/opt/homebrew/include",
-        "${workspaceFolder}/src/**",
+        "${workspaceFolder}/source/**",
         "${workspaceFolder}/output/cmake_output/**"
       ],
       "defines": [
@@ -26,7 +26,7 @@
       "name": "Windows (MSYS2)",
       "includePath": [
         "C:/msys64/mingw64/include/**",
-        "${workspaceFolder}/src/**",
+        "${workspaceFolder}/source/**",
         "${workspaceFolder}/output/cmake_output/**"
       ],
       "defines": [

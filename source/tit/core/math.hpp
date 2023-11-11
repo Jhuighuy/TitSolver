@@ -319,14 +319,20 @@ constexpr auto merge(bool m, NumA a, NumB b) noexcept {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Find function rool using Newton-Raphson method.
+ ** @param x Current estimate of the root.
+ ** @param f Function whose root we are looking for.
+ **          Should return a pair of it's value and derivative.
+ **          Should implicitly depend on @p x
+ ** @param eps Tolerance.
+ ** @param max_iter Maximum amount of iterations.
  ** @returns True on success. */
 template<std::floating_point Real, std::invocable Func>
 constexpr auto newton_raphson(Real& x, const Func& f, //
-                              Real epsilon = Real{1e-9}, size_t max_iter = 10)
+                              Real eps = Real{1.0e-9}, size_t max_iter = 10)
     -> bool {
   for (size_t iter = 0; iter < max_iter; ++iter) {
     const auto [y, df_dx] = std::invoke(f /*, x*/);
-    if (abs(y) < epsilon) return true;
+    if (abs(y) <= eps) return true;
     if (is_zero(df_dx)) break;
     x -= y / df_dx;
   }
@@ -334,19 +340,25 @@ constexpr auto newton_raphson(Real& x, const Func& f, //
 }
 
 /** Find function rool using Bisection method.
+ ** @param min_x Root's lower bound.
+ ** @param max_x Root's upper bound.
+ ** @param f Function whose root we are looking for.
+ ** @param eps Tolerance.
+ ** @param max_iter Maximum amount of iterations.
  ** @returns True on success. */
 template<std::floating_point Real, std::invocable<Real> Func>
 constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
-                         Real epsilon = Real{1e-9}, size_t max_iter = 10)
+                         Real eps = Real{1.0e-9}, size_t max_iter = 10)
     -> bool {
   TIT_ASSERT(min_x <= max_x, "Inverted search range!");
   auto min_f = std::invoke(f, min_x);
-  if (abs(min_f) < epsilon) {
+  // Check for the region bounds first.
+  if (abs(min_f) <= eps) {
     max_x = min_x;
     return true;
   }
   auto max_f = std::invoke(f, max_x);
-  if (abs(max_f) < epsilon) {
+  if (abs(max_f) <= eps) {
     min_x = max_x;
     return true;
   }
@@ -357,7 +369,7 @@ constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
     // so approximate root of f(x) == 0 is:
     const Real x = min_x - min_f * (max_x - min_x) / (max_f - min_f);
     const auto y = std::invoke(f, x);
-    if (abs(y) == epsilon) {
+    if (abs(y) <= eps) {
       min_x = max_x = x;
       return true;
     }

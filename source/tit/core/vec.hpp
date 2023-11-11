@@ -478,8 +478,8 @@ constexpr auto poly(NumQ q, Vec<NumC, Dim> ci) noexcept {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Enable SIMD.
-// IWYU pragma: begin_export
+// IWYU pragma: begin_exports
 #include "tit/core/vec_simd.hpp"
-// IWYU pragma: end_export
+// IWYU pragma: end_exports
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
