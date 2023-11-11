@@ -20,6 +20,10 @@ find_program_with_version(
 
 ## Analyze source code with clang-tidy.
 function(enable_clang_tidy TARGET_OR_ALIAS)
+  # Should we skip analysis?
+  if(SKIP_ANALYSIS)
+    return()
+  endif()
   # Exit early in case sufficient clang-tidy was not found.
   if(NOT CLANG_TIDY_EXE)
     return()

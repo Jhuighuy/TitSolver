@@ -26,6 +26,12 @@ if __name__ == "__main__":
         help="build configuration",
     )
     parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="disable all static analysis during the build (for experimenting)",
+    )
+    parser.add_argument(
         "-j",
         "--jobs",
         metavar="N",
@@ -81,6 +87,9 @@ if __name__ == "__main__":
     configuration = args.configuration
     print("Configuration:", configuration)
     cmake_args.append(f"-DCMAKE_BUILD_TYPE={configuration}")
+    if args.force:
+        print("'Force' build: static analysis is disabled.")
+        cmake_args.append("-DSKIP_ANALYSIS=YES")
 
     # Setup the vcpkg root.
     vcpkg_root = (
