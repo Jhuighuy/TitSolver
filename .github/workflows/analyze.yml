@@ -54,7 +54,7 @@ jobs:
           restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
       - name: Build
         run: |
-          build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage
+          build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage -f
       - name: Run tests
         run: |
           ./output/TIT_ROOT/bin/tit_unit_tests
