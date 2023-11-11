@@ -14,7 +14,7 @@ project(Tit VERSION 0.1 LANGUAGES CXX)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Setup root source and output directories.
-set(ROOT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
+set(ROOT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/source)
 set(ROOT_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/output/TIT_ROOT)
 
 # Setup path to CMake scripts and include them.
