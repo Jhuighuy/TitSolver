@@ -54,45 +54,52 @@ constexpr auto abs(Num a) noexcept -> Num {
   return std::abs(a);
 }
 
+/** Positive a or zero. */
+template<class Num>
+  requires (!std::unsigned_integral<Num>)
+constexpr auto plus(Num a) noexcept -> Num {
+  // DO NOT CHANGE ORDER OF THE ARGUMENTS!
+  // This order of the arguments ensures correct NaN propagation.
+  return std::max(a, Num{0});
+}
+/** Negative a or zero. */
+template<class Num>
+  requires (!std::unsigned_integral<Num>)
+constexpr auto minus(Num a) noexcept -> Num {
+  // DO NOT CHANGE ORDER OF THE ARGUMENTS!
+  // This order of the arguments ensures correct NaN propagation.
+  return std::min(a, Num{0});
+}
+
 /** Sign of the value. */
 template<class Num>
   requires (!std::unsigned_integral<Num>)
 constexpr auto sign(Num a) noexcept -> Num {
-  return Num{Num{0} < a} - Num{a < Num{0}};
+  const auto s = static_cast<Num>(Num{0} < a) - static_cast<Num>(a < Num{0});
+  if constexpr (std::integral<Num>) return s;
+  else {
+    // We need to do this extra division in order to propagate NaN correctly.
+    // Maybe there is a better way.
+    return s / (Num{1} - static_cast<Num>(std::isnan(a)));
+  }
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Small number, treated as zero. */
 template<std::floating_point Real>
-constexpr auto small_number_v {
+constexpr auto small_number_v =
 #if TIT_LIBCPP // libc++'s `cbrt` is not constexpr yet.
-  std::numeric_limits<Real>::epsilon()
+    std::numeric_limits<Real>::epsilon()
 #else
-  std::cbrt(std::numeric_limits<Real>::epsilon())
+    std::cbrt(std::numeric_limits<Real>::epsilon())
 #endif
-};
+    ;
 
 /** Check if number is approximately zero. */
 template<std::floating_point Real>
 constexpr auto is_zero(Real a) noexcept -> bool {
-  return abs(a) < small_number_v<Real>;
-}
-/** Check if numbers are approximately equal. */
-template<std::floating_point Real>
-constexpr auto approx_equal(Real a, Real b) noexcept -> bool {
-  return is_zero(a - b);
-}
-
-/** Positive a or zero. */
-template<class Num>
-constexpr auto plus(Num a) noexcept -> Num {
-  return std::max(Num{0}, a);
-}
-/** Negative a or zero. */
-template<class Num>
-constexpr auto minus(Num a) noexcept -> Num {
-  return std::min(Num{0}, a);
+  return abs(a) <= small_number_v<Real>;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -117,7 +124,8 @@ constexpr auto ceil(Real a) noexcept -> Real {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Inverse number. */
+/** Inverse number.
+ ** @returns Floating-point reciprocal. */
 /** @{ */
 template<std::floating_point Real>
 constexpr auto inverse(Real a) noexcept -> Real {
@@ -130,6 +138,20 @@ constexpr auto inverse(Int a) noexcept -> real_t {
   return 1.0 / a;
 }
 /** @} */
+/** Divide numbers.
+ ** @returns Floating-point division result. */
+/** @{ */
+template<class Num, std::floating_point Real>
+constexpr auto divide(Num a, Real b) noexcept -> Real {
+  TIT_ASSERT(!is_zero(b), "Cannot divide by zero!");
+  return a / b;
+}
+template<class Num, std::integral Int>
+constexpr auto divide(Num a, Int b) noexcept {
+  TIT_ASSERT(b != 0, "Cannot divide by zero!");
+  return a / static_cast<real_t>(b);
+}
+/** @} */
 
 /** Safe inverse number.
  ** @returns Inverse for non-zero input, zero for zero input. */
@@ -138,7 +160,7 @@ constexpr auto safe_inverse(Real a) noexcept -> Real {
   return is_zero(a) ? Real{0.0} : inverse(a);
 }
 /** Safe divide number by divisor.
- ** @returns Division result for non-zero divisor, zero for zero divisor. */
+ ** @returns Division result for non-zero divisor, zero if divisor is small. */
 template<class Num, std::floating_point Real>
 constexpr auto safe_divide(Num a, Real b) noexcept {
   return is_zero(b) ? div_result_t<Num, Real>{} : a / b;
@@ -268,6 +290,7 @@ constexpr auto log2(Real a) noexcept -> Real {
 }
 template<std::unsigned_integral UInt>
 constexpr auto log2(UInt a) noexcept -> UInt {
+  TIT_ASSERT(a != 0, "Cannot take base-2 logarithm of zero.");
   return std::bit_width(a) - UInt{1};
 }
 /** @} */
@@ -287,33 +310,55 @@ constexpr auto align_to_power_of_two(UInt a) noexcept -> UInt {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Average function. */
+/** Arithmetic average function.
+ ** @note Presense of infinities of different signs will generate NaN. */
 template<class... Nums>
+  requires (sizeof...(Nums) > 0)
 constexpr auto avg(Nums... values) noexcept {
-  return (values + ...) / (sizeof...(Nums));
+  return divide((values + ...), sizeof...(Nums));
 }
-/** Harmonic average function. */
-template<class... Nums>
-constexpr auto havg(Nums... values) noexcept {
-  return (sizeof...(Nums)) / (inverse(values) + ...);
+/** Harmonic average function.
+ ** @param values Input values. Must be positive. */
+template<std::floating_point... Reals>
+  requires (sizeof...(Reals) > 0)
+constexpr auto havg(Reals... values) noexcept {
+  TIT_ASSERT(((values >= 0) && ...),
+             "Harmonic average requires all non-negative input.");
+  return sizeof...(Reals) / (inverse(values) + ...);
 }
-/** Geometric average functions. */
-template<class... Nums>
-constexpr auto gavg(Nums... values) noexcept {
-  return pow((values * ...), inverse(sizeof...(Nums)));
+/** Geometric average functions.
+ ** @param values Input values. Must be positive. */
+template<std::floating_point... Reals>
+  requires (sizeof...(Reals) > 0)
+constexpr auto gavg(Reals... values) noexcept {
+  TIT_ASSERT(((values >= 0) && ...),
+             "Geometric average requires all non-negative input.");
+  return pow((values * ...), inverse(sizeof...(Reals)));
 }
 
-/** Merge number with zero vector based on condition. */
+/** @brief Merge number with zero vector based on condition.
+ ** Implementation of this function is supposed to be branchless.
+ **
+ ** @note This function does not propagate floating-point infinites or NaNs
+ **       from @p a condition is `false`. */
 template<class Num>
-constexpr auto merge(bool m, Num a) noexcept {
+  requires std::is_trivial_v<Num>
+constexpr auto merge(bool m, Num a) noexcept -> Num {
   // Supposed to be overriden by intrisics or optimized-out.
-  return m * a;
+  // TODO: implement with bit operations.
+  return m ? a : Num{0};
 }
-/** Merge two numbers with zero vector based on condition. */
-template<class NumA, class NumB>
-constexpr auto merge(bool m, NumA a, NumB b) noexcept {
+/** @brief Select one of two numbers vector based on condition.
+ ** Implementation of this function is supposed to be branchless.
+ **
+ ** @note This function does not propagate floating-point infinites or NaNs
+ **       from the argument which was not selected. */
+template<class Num>
+  requires std::is_trivial_v<Num>
+constexpr auto merge(bool m, Num a, Num b) noexcept -> Num {
   // Supposed to be overriden by intrisics or optimized-out.
-  return m * a + (!m) * b;
+  // TODO: implement with bit operations.
+  return m ? a : b;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
