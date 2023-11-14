@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <tit/core/assert.hpp>
+#include <tit/core/misc.hpp>
 #include <tit/core/types.hpp>
 
 namespace tit {
@@ -18,9 +19,12 @@ namespace tit {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Poor man's multidimensional non-owning container.
+ ** @brief Poor man's multidimensional non-owning container.
+ ** This class is very basic, since we do not need mutidimensional containers
+ ** that often.
 \******************************************************************************/
 template<class Val, size_t Rank>
+  requires (Rank >= 1)
 class Mdspan {
 private:
 
@@ -44,16 +48,6 @@ public:
     }(std::make_index_sequence<Rank>{});
   }
 
-  /** Span data. */
-  /** @{ */
-  constexpr auto data() noexcept -> Val* {
-    return vals_;
-  }
-  constexpr auto data() const noexcept -> const Val* {
-    return vals_;
-  }
-  /** @} */
-
   /** Iterator pointing to the first span element. */
   constexpr auto begin() const noexcept -> Val* {
     return vals_;
@@ -72,44 +66,40 @@ public:
     return vals_[size() - 1];
   }
 
-  /** Data offset at indices. */
-  template<class... Indices>
-    requires (sizeof...(Indices) <= Rank)
-  constexpr auto offset(Indices... indices) const noexcept -> size_t {
-    size_t offset = 0;
-    if constexpr (sizeof...(indices) != 0) {
-      // Pack all the indices into an array (and pad it with zeroes).
-      const auto mdindex =
-          std::array<size_t, Rank>{static_cast<size_t>(indices)...};
-      TIT_ASSERT(mdindex[0] < shape_[0], "Index is out of range.");
-      offset += mdindex[0];
-      for (size_t i = 1; i < Rank; ++i) {
-        TIT_ASSERT(mdindex[i] < shape_[i], "Index is out of range.");
-        offset = mdindex[i] + offset * shape_[i];
-      }
-    }
-    return offset;
-  }
-
   /** Reference to span element or sub-span. */
   template<class... Indices>
-    requires (sizeof...(Indices) <= Rank)
+    requires in_range_v<1UZ, sizeof...(Indices), Rank> &&
+             (std::convertible_to<Indices, size_t> && ...)
   constexpr auto operator[](Indices... indices) const noexcept
       -> decltype(auto) {
-    const auto delta = offset(indices...);
-    constexpr auto Size = sizeof...(Indices);
-    if constexpr (Size == Rank) return vals_[delta];
-    else return Mdspan<Val, Rank - Size>{vals_ + delta, shape_ + Size};
+    // Pack all the indices into an array and pad it with zeroes.
+    const auto index_array = pack<Rank, size_t>(indices...);
+    // Compute an offset to the data position.
+    auto offset = 0UZ;
+    for (auto i = 0UZ; i < Rank; ++i) {
+      TIT_ASSERT(index_array[i] < shape_[i], "Index is out of range.");
+      offset = index_array[i] + offset * shape_[i];
+    }
+    // Return with result.
+    constexpr auto SubspanRank = sizeof...(Indices);
+    if constexpr (SubspanRank == Rank) return vals_[offset];
+    else {
+      return Mdspan<Val, Rank - SubspanRank>{vals_ + offset,
+                                             shape_ + SubspanRank};
+    }
   }
 
-}; // class Mdspan
+}; // namespace tit
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Poor man's multidimensional owning container.
+ ** @brief Poor man's multidimensional owning container.
+ ** This class is very basic, since we do not need mutidimensional containers
+ ** that often.
 \******************************************************************************/
 template<class Val, size_t Rank>
+  requires (Rank >= 1)
 class Mdvector {
 private:
 
@@ -130,7 +120,8 @@ public:
 
   /** Construct multidimensional vector with specified size. */
   template<class... Sizes>
-    requires (sizeof...(Sizes) == Rank)
+    requires (sizeof...(Sizes) == Rank) &&
+             (std::convertible_to<Sizes, size_t> && ...)
   constexpr explicit Mdvector(Sizes... sizes) {
     assign(sizes...);
   }
@@ -139,16 +130,6 @@ public:
   constexpr auto size() const noexcept -> size_t {
     return vals_.size();
   }
-
-  /** Vector data. */
-  /** @{ */
-  constexpr auto data() noexcept -> Val* {
-    return vals_.data();
-  }
-  constexpr auto data() const noexcept -> const Val* {
-    return vals_.data();
-  }
-  /** @} */
 
   /** Iterator pointing to the first vector element. */
   /** @{ */
@@ -159,7 +140,6 @@ public:
     return vals_.begin();
   }
   /** @} */
-
   /** Iterator pointing to the element after the last vector element. */
   /** @{ */
   constexpr auto end() noexcept {
@@ -167,6 +147,25 @@ public:
   }
   constexpr auto end() const noexcept {
     return vals_.end();
+  }
+  /** @} */
+
+  /** Reference to the first span element. */
+  /** @{ */
+  constexpr auto front() noexcept -> Val& {
+    return vals_.front();
+  }
+  constexpr auto front() const noexcept -> const Val& {
+    return vals_.front();
+  }
+  /** @} */
+  /** Reference to the last span element. */
+  /** @{ */
+  constexpr auto back() noexcept -> Val& {
+    return vals_.back();
+  }
+  constexpr auto back() const noexcept -> const Val& {
+    return vals_.back();
   }
   /** @} */
 
@@ -178,16 +177,11 @@ public:
 
   /** Clear and reshape the vector. */
   template<class... Sizes>
-    requires (sizeof...(Sizes) == Rank)
+    requires (sizeof...(Sizes) == Rank) &&
+             (std::convertible_to<Sizes, size_t> && ...)
   constexpr void assign(Sizes... sizes) {
     vals_.clear(), vals_.resize((sizes * ...));
-    shape_ = {sizes...};
-  }
-
-  /** Data offset at indices. */
-  template<class... Indices>
-  constexpr auto offset(Indices... indices) const noexcept -> size_t {
-    return span_().offset(indices...);
+    shape_ = {static_cast<size_t>(sizes)...};
   }
 
   /** Reference to vector element or sub-vector span. */

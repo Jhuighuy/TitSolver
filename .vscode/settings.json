@@ -112,6 +112,7 @@
     "span": "cpp",
     "sstream": "cpp",
     "stack": "cpp",
+    "stacktrace": "cpp",
     "stdfloat": "cpp",
     "stdexcept": "cpp",
     "stop_token": "cpp",

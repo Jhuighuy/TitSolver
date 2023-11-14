@@ -16,15 +16,19 @@ namespace tit {
  ** macro. */
 #define TIT_PASS(...) __VA_ARGS__
 
-template<class T>
+template<class... T>
 constexpr void assume_unversal(
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
-    [[maybe_unused]] T&& universal_reference) noexcept {}
+    [[maybe_unused]] T&&... universal_references) noexcept {}
 
 /** Use this function to assume forwarding references as universal references to
  ** avoid false alarms from analysis tools. */
+/** @{ */
 #define TIT_ASSUME_UNIVERSAL(T, universal_reference)                           \
   assume_unversal(std::forward<T>(universal_reference))
+#define TIT_ASSUME_UNIVERSALS(Ts, universal_references)                        \
+  assume_unversal(std::forward<Ts>(universal_references)...)
+/** @} */
 
 template<class... Ts>
 constexpr void assume_used(
@@ -63,6 +67,31 @@ public:
   }
 
 }; // class OnAssignment
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Check that value @p x is in range [@p a, @p b].*/
+template<class T>
+constexpr auto in_range(const T& a, const T& x, const T& b) noexcept -> bool {
+  return a <= x && x <= b;
+}
+
+/** Check that value @p X is in range [@p A, @p B].*/
+template<auto A, auto X, auto B>
+  requires (std::same_as<decltype(X), decltype(A)> &&
+            std::same_as<decltype(X), decltype(B)>)
+inline constexpr bool in_range_v = in_range(A, X, B);
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Pack values into an a padded array of given size. */
+template<size_t Size, class T, class... Ts>
+  requires (std::convertible_to<Ts, T> && ...) &&
+           ((sizeof...(Ts) == Size) ||
+            ((sizeof...(Ts) <= Size) && std::default_initializable<T>) )
+constexpr auto pack(Ts&&... values) noexcept -> std::array<T, Size> {
+  return std::array<T, Size>{static_cast<T>(std::forward<Ts>(values))...};
+}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
