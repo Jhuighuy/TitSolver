@@ -13,7 +13,7 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/config.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/misc.hpp"
+#include "tit/core/misc.hpp" // IWYU pragma: keep
 #include "tit/core/simd.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp" // IWYU pragma: keep

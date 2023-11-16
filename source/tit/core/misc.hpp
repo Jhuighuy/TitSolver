@@ -6,7 +6,11 @@
 
 #pragma once
 
+#include <array>
+#include <concepts>
 #include <utility>
+
+#include "tit/core/types.hpp"
 
 namespace tit {
 

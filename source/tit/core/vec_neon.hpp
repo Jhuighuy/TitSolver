@@ -5,7 +5,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
-#if __ARM_NEON
+#if __ARM_NEON && (!TIT_IWYU)
 
 #include <arm_neon.h>
 
