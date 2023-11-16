@@ -7,7 +7,7 @@
 # Specify the list of sources.
 set(
   CXX_SOURCES
-  esph.cpp)
+  "esph.cpp")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

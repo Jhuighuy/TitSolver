@@ -12,14 +12,14 @@ include(utils)
 # Find include-what-you-use (at least 0.21 based on clang 17.0).
 find_program_with_version(
   IWYU_EXE
-  NAMES include-what-you-use
+  NAMES "include-what-you-use"
   MIN_VERSION "0.21")
 
 if(IWYU_EXE)
   # Find include-what-you-use mapping file.
   find_file(
     IWYU_MAPPING_PATH
-    NAMES iwyu.imp
+    NAMES "iwyu.imp"
     PATHS "${ROOT_SOURCE_DIR}/cmake"
     REQUIRED)
 endif()

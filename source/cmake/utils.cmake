@@ -12,7 +12,7 @@ include_guard()
 # by some analysis tools that does not provide (proper) quiet mode.
 find_program(
   CHRONIC_EXE
-  NAMES chronic chronic.sh
+  NAMES "chronic" "chronic.sh"
   PATHS "${CMAKE_SOURCE_DIR}/build"
   REQUIRED)
 
