@@ -13,7 +13,7 @@ include(utils)
 # Find clang-tidy (at least 16.0).
 find_program_with_version(
   CLANG_TIDY_EXE
-  NAMES clang-tidy clang-tidy-16 clang-tidy-17
+  NAMES "clang-tidy" "clang-tidy-16" "clang-tidy-17"
   MIN_VERSION "16.0")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

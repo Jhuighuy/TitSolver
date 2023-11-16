@@ -7,10 +7,10 @@
 # Specify the list of sources.
 set(
   CXX_SOURCES
-  main_window.cpp
-  main_window.hpp
-  main_window.ui
-  main.cpp)
+  "main_window.cpp"
+  "main_window.hpp"
+  "main_window.ui"
+  "main.cpp")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

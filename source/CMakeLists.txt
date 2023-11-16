@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-add_subdirectory(tit)
-add_subdirectory(titesph)
-add_subdirectory(titgui)
-add_subdirectory(titwcsph)
+add_subdirectory("tit")
+add_subdirectory("titesph")
+add_subdirectory("titgui")
+add_subdirectory("titwcsph")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
