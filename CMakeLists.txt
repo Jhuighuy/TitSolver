@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-cmake_minimum_required(VERSION 3.20..3.26)
+cmake_minimum_required(VERSION 3.20..3.27)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -19,7 +19,6 @@ set(ROOT_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/output/TIT_ROOT")
 
 # Setup path to CMake scripts and include them.
 list(APPEND CMAKE_MODULE_PATH "${ROOT_SOURCE_DIR}/cmake")
-include(doxygen)
 include(clang_tidy)
 include(config)
 include(iwyu)

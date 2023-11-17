@@ -62,7 +62,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
        continue()
     endif()
     # Create stamp.
-    set(STAMP ${SOURCE}.tidy_stamp)
+    set(STAMP "${SOURCE}.tidy_stamp")
     list(APPEND ALL_STAMPS ${STAMP})
     # Execute clang-tidy and update a stamp file on success.
     # (wrapped with chronic to avoid annoying `N warnings generated` messages).

@@ -43,10 +43,11 @@ jobs:
           path: output/cmake_output/vcpkg_installed
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-      - name: Build
+      - name: Build and test
         run: |
           build/build.py -cxx=${{ matrix.compiler }} \
-                         -cfg=${{ matrix.configuration }}
+                         -cfg=${{ matrix.configuration }} \
+                         -t
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -72,10 +73,11 @@ jobs:
           path: output/cmake_output/vcpkg_installed
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-      - name: Build
+      - name: Build and test
         run: |
           build/build.py -cxx=${{ matrix.compiler }} \
-                         -cfg=${{ matrix.configuration }}
+                         -cfg=${{ matrix.configuration }} \
+                         -t
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -116,7 +118,8 @@ jobs:
   #      shell: msys2 {0}
   #      run: |
   #        build/build.py -cxx=${{ matrix.compiler }} \
-  #                       -cfg=${{ matrix.configuration }}
+  #                       -cfg=${{ matrix.configuration }} \
+  #                       -t
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

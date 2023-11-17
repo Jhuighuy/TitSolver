@@ -19,7 +19,7 @@ using numeric_limits = std::numeric_limits<double>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::math::abs") {
+TEST_CASE("tit::core::abs") {
   // Check signed integers.
   CHECK(tit::abs(0) == 0);
   CHECK(tit::abs(+2) == 2);
@@ -67,7 +67,7 @@ TEST_CASE("tit::core::minus") {
   CHECK(std::isnan(tit::minus(numeric_limits::quiet_NaN())));
 }
 
-TEST_CASE("tit::core::math::sign") {
+TEST_CASE("tit::core::sign") {
   // Check signed integers.
   CHECK(tit::sign(0) == 0);
   CHECK(tit::sign(+2) == +1);
