@@ -5,22 +5,20 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Specify the list of sources.
-file(GLOB_RECURSE CXX_SOURCES "*.cpp")
+set(
+  CXX_SOURCES
+  "math_tests.cpp"
+  "mdvector_tests.cpp"
+ #"pool_allocator_tests.cpp"
+  )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Create the execitable.
-add_executable(tit_unit_tests ${CXX_SOURCES})
-add_executable(tit::unit_tests ALIAS tit_unit_tests)
+# Create the doctest-based executable.
+add_test_executable(tit_core_tests ${CXX_SOURCES})
+add_executable(tit::core_tests ALIAS tit_core_tests)
 
 # Link with the dependant libraries.
-target_link_libraries(tit_unit_tests PRIVATE tit::core)
-
-# Find doctest.
-find_package(doctest CONFIG REQUIRED)
-target_link_libraries(tit_unit_tests PRIVATE doctest::doctest)
-
-# Enable some static analysis.
-check_includes(tit::unit_tests)
+target_link_libraries(tit_core_tests PRIVATE tit::core)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

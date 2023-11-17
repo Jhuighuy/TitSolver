@@ -52,12 +52,9 @@ jobs:
           path: output/cmake_output/vcpkg_installed
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-      - name: Build
+      - name: Build and test
         run: |
-          build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage -f
-      - name: Run tests
-        run: |
-          ./output/TIT_ROOT/bin/tit_unit_tests
+          build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage -t -f
       - name: Run gcovr
         run: |
           gcovr -e "output/*" -e "tests/*" \

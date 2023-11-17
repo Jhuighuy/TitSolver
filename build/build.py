@@ -32,6 +32,12 @@ if __name__ == "__main__":
         help="disable all static analysis during the build (for experimenting)",
     )
     parser.add_argument(
+        "-t",
+        "--test",
+        action="store_true",
+        help="run tests after successfully building the project",
+    )
+    parser.add_argument(
         "-j",
         "--jobs",
         metavar="N",
@@ -68,6 +74,8 @@ if __name__ == "__main__":
         help="extra CMake arguments",
     )
     args = parser.parse_args()
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
     # Prepare the CMake arguments for configuring.
     cmake_args = ["cmake"]
@@ -113,9 +121,10 @@ if __name__ == "__main__":
         cmake_args += args.arguments
 
     # Run CMake!
-    exit_code = subprocess.call(cmake_args)
-    if exit_code != 0:
+    if (exit_code := subprocess.call(cmake_args)) != 0:
         sys.exit(exit_code)
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
     # Prepare the CMake arguments for building.
     cmake_args = ["cmake"]
@@ -134,8 +143,24 @@ if __name__ == "__main__":
         cmake_args += ["--", "-j", str(jobs)]
 
     # Run CMake!
-    exit_code = subprocess.call(cmake_args)
-    if exit_code != 0:
+    if (exit_code := subprocess.call(cmake_args)) != 0:
         sys.exit(exit_code)
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+    if args.test:
+        # Prepare CTest arguments.
+        ctest_args = ["ctest", "--output-on-failure"]
+
+        # Setup the number of threads.
+        if jobs:
+            ctest_args += ["-j", str(jobs)]
+
+        # Preperate CTest working directory.
+        ctest_cwd = os.path.join(cmake_output_dir, "tests")
+
+        # Run CTest!
+        if (exit_code := subprocess.call(ctest_args, cwd=ctest_cwd)) != 0:
+            sys.exit(exit_code)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

@@ -72,7 +72,7 @@ function(check_includes TARGET_OR_ALIAS)
        continue()
     endif()
     # Create stamp.
-    set(STAMP ${SOURCE}.iwuy_stamp)
+    set(STAMP "${SOURCE}.iwuy_stamp")
     list(APPEND ALL_STAMPS ${STAMP})
     # Execute include-what-you-use and update a stamp file on success
     # (wrapped with chronic to avoid annoying messages of success).
