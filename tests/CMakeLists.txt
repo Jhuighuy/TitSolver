@@ -49,5 +49,6 @@ endfunction()
 
 # Add the actual tests.
 add_subdirectory("core")
+add_subdirectory("par")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

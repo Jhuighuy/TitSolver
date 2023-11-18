@@ -7,23 +7,18 @@
 # Specify the list of sources.
 set(
   CXX_SOURCES
-  "atomic.hpp"
-  "memory_pool.hpp"
-  #"thread_omp.hpp"
-  #"thread_tbb.hpp"
-  "thread.hpp")
+  "memory_pool_tests.cpp")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Create the library.
-add_library(tit_par INTERFACE ${CXX_SOURCES})
-add_library(tit::par ALIAS tit_par)
+# Create the doctest-based executable.
+add_test_executable(tit_par_tests ${CXX_SOURCES})
+add_executable(tit::par_tests ALIAS tit_par_tests)
 
 # Link with the dependant libraries.
-target_link_libraries(tit_par INTERFACE tit::core)
+target_link_libraries(tit_par_tests PRIVATE tit::core tit::par)
 
-# Enable static analysis.
-check_includes(tit::par)
-enable_clang_tidy(tit::par)
+# # Enable static analysis.
+# check_includes(tit::par_tests)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

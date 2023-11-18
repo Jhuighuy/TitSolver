@@ -5,9 +5,10 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <cmath>
-#include <doctest/doctest.h>
 #include <limits>
 #include <numbers>
+
+#include <doctest/doctest.h>
 
 #include "tit/core/math.hpp"
 
