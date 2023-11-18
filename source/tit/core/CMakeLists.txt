@@ -16,7 +16,6 @@ set(
   "meta.hpp"
   "misc.hpp"
   "multivector.hpp"
-  "pool_allocator.hpp"
   "simd.hpp"
   "types.hpp"
   "vec_avx.hpp"

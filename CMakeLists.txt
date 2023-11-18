@@ -70,8 +70,8 @@ find_package(spdlog CONFIG REQUIRED QUIET)
 target_link_libraries(tit_base INTERFACE spdlog::spdlog)
 
 ## Find Thread Bulding Blocks.
-#find_package(TBB CONFIG REQUIRED QUIET)
-#target_link_libraries(tit_base INTERFACE TBB::tbb TBB::tbbmalloc)
+find_package(TBB CONFIG REQUIRED QUIET)
+target_link_libraries(tit_base INTERFACE TBB::tbb TBB::tbbmalloc)
 
 # Find OpenMP.
 find_package(OpenMP REQUIRED QUIET)

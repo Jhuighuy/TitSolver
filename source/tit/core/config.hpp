@@ -31,7 +31,7 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #ifndef TIT_ENABLE_TBB
-#define TIT_ENABLE_TBB 0
+#define TIT_ENABLE_TBB 1
 #endif
 
 #ifndef TIT_ENABLE_OMP
