@@ -32,7 +32,7 @@ TEST_CASE("tit::core::abs") {
   // Check infinity.
   CHECK(tit::abs(+numeric_limits::infinity()) == numeric_limits::infinity());
   CHECK(tit::abs(-numeric_limits::infinity()) == numeric_limits::infinity());
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::abs(numeric_limits::quiet_NaN())));
 }
 
@@ -48,7 +48,7 @@ TEST_CASE("tit::core::plus") {
   // Check infinity.
   CHECK(tit::plus(+numeric_limits::infinity()) == numeric_limits::infinity());
   CHECK(tit::plus(-numeric_limits::infinity()) == 0.0);
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::plus(numeric_limits::quiet_NaN())));
 }
 
@@ -64,7 +64,7 @@ TEST_CASE("tit::core::minus") {
   // Check infinity.
   CHECK(tit::minus(+numeric_limits::infinity()) == 0.0);
   CHECK(tit::minus(-numeric_limits::infinity()) == -numeric_limits::infinity());
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::minus(numeric_limits::quiet_NaN())));
 }
 
@@ -80,7 +80,7 @@ TEST_CASE("tit::core::sign") {
   // Check infinity.
   CHECK(tit::sign(+numeric_limits::infinity()) == 1.0);
   CHECK(tit::sign(-numeric_limits::infinity()) == -1.0);
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(numeric_limits::quiet_NaN()));
 }
 
@@ -129,7 +129,7 @@ TEST_CASE("tit::core::floor") {
   // Check infinity.
   CHECK(tit::floor(+numeric_limits::infinity()) == +numeric_limits::infinity());
   CHECK(tit::floor(-numeric_limits::infinity()) == -numeric_limits::infinity());
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::floor(numeric_limits::quiet_NaN())));
 }
 
@@ -146,7 +146,7 @@ TEST_CASE("tit::core::round") {
   // Check infinity.
   CHECK(tit::round(+numeric_limits::infinity()) == +numeric_limits::infinity());
   CHECK(tit::round(-numeric_limits::infinity()) == -numeric_limits::infinity());
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::round(numeric_limits::quiet_NaN())));
 }
 
@@ -163,7 +163,7 @@ TEST_CASE("tit::core::ceil") {
   // Check infinity.
   CHECK(tit::ceil(+numeric_limits::infinity()) == +numeric_limits::infinity());
   CHECK(tit::ceil(-numeric_limits::infinity()) == -numeric_limits::infinity());
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::ceil(numeric_limits::quiet_NaN())));
 }
 
@@ -176,7 +176,7 @@ TEST_CASE("tit::core::inverse") {
   CHECK(tit::inverse(10.0) == 0.1);
   // Check infinity.
   CHECK(tit::inverse(numeric_limits::infinity()) == 0.0);
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::inverse(numeric_limits::quiet_NaN())));
 }
 
@@ -189,7 +189,7 @@ TEST_CASE("tit::core::divide") {
   CHECK(tit::divide(1.0, numeric_limits::infinity()) == 0.0);
   CHECK(std::isnan(tit::divide(numeric_limits::infinity(), //
                                numeric_limits::infinity())));
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::divide(numeric_limits::quiet_NaN(), 1.0)));
   CHECK(std::isnan(tit::divide(1.0, numeric_limits::quiet_NaN())));
   CHECK(std::isnan(tit::divide(numeric_limits::quiet_NaN(), //
@@ -207,7 +207,7 @@ TEST_CASE("tit::core::safe_inverse") {
   CHECK(tit::safe_inverse(2.0 * tit::small_number_v<double>) != 0.0);
   // Check infinity.
   CHECK(tit::safe_inverse(numeric_limits::infinity()) == 0.0);
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::safe_inverse(numeric_limits::quiet_NaN())));
 }
 
@@ -224,7 +224,7 @@ TEST_CASE("tit::core::safe_divide") {
   CHECK(tit::safe_divide(1.0, numeric_limits::infinity()) == 0.0);
   CHECK(std::isnan(tit::safe_divide(numeric_limits::infinity(),
                                     numeric_limits::infinity())));
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::safe_divide(numeric_limits::quiet_NaN(), 1.0)));
   CHECK(std::isnan(tit::safe_divide(1.0, numeric_limits::quiet_NaN())));
   CHECK(std::isnan(tit::safe_divide(numeric_limits::quiet_NaN(),
@@ -283,7 +283,7 @@ TEST_CASE("tit::core::pow") {
   CHECK(tit::pow(numeric_limits::infinity(), 10) == numeric_limits::infinity());
   CHECK(tit::pow(numeric_limits::infinity(), 10.0) ==
         numeric_limits::infinity());
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::pow2(numeric_limits::quiet_NaN())));
   CHECK(std::isnan(tit::pow3(numeric_limits::quiet_NaN())));
   CHECK(std::isnan(tit::pow4(numeric_limits::quiet_NaN())));
@@ -374,7 +374,7 @@ TEST_CASE("tit::core::avg") {
         numeric_limits::infinity());
   CHECK(std::isnan(tit::avg(+numeric_limits::quiet_NaN(), //
                             -numeric_limits::quiet_NaN())));
-  // Ensure NaN proparation.
+  // Ensure NaN propagation.
   CHECK(std::isnan(tit::avg(1, numeric_limits::quiet_NaN(), 3)));
 }
 
@@ -385,7 +385,7 @@ TEST_CASE("tit::core::gavg") {
   CHECK(tit::havg(1.0, numeric_limits::infinity()) == 2.0);
   CHECK(tit::havg(numeric_limits::infinity(), //
                   numeric_limits::infinity(), 3.0) == 9.0);
-  // No NaN proparation -- input must be positive by contract.
+  // No NaN propagation -- input must be positive by contract.
 }
 
 TEST_CASE("tit::core::gavg") {
@@ -397,7 +397,7 @@ TEST_CASE("tit::core::gavg") {
   CHECK(tit::gavg(numeric_limits::infinity(), //
                   numeric_limits::infinity(),
                   3.0) == numeric_limits::infinity());
-  // No NaN proparation -- input must be positive by contract.
+  // No NaN propagation -- input must be positive by contract.
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

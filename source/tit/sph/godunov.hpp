@@ -35,7 +35,7 @@ namespace tit::sph {
 // TODO: I am not sure whether we should separate "symmetric" and
 // "non-symmetric" SPH equations. Basically, implementation of the cases
 // are both different and similar at the same time. The entire logic the same,
-// although there is a difference is a way we compute interations.
+// although there is a difference is a way we compute interactions.
 // In symmetric case the best option is to compute pair interactions,
 // since the very similar term is added to or subtracted from each particle
 // in pair. In non-symmetric case this is no more true, an the most terms are

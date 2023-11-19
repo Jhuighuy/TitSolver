@@ -23,7 +23,7 @@ add_library(tit::doctest ALIAS tit_doctest)
 target_link_libraries(tit_doctest PUBLIC doctest::doctest)
 
 ## Add a test executable target that uses doctest as the underlying framework.
-## All the actuals tests inside of the executable are detected automatically.
+## All the actual tests inside of the executable are detected automatically.
 ## Interface of this function is pretty identical to normal `add_executable`.
 function(add_test_executable TARGET)
   # Create the executable.

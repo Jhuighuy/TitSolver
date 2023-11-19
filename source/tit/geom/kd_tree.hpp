@@ -84,7 +84,7 @@ public:
   /** Destroy the K-dimensional tree. */
   ~KDTree() = default;
 
-  /** Initialze and build the K-dimensional tree.
+  /** Initialize and build the K-dimensional tree.
    ** @param max_leaf_size Maximum amount of points in the leaf node. */
   constexpr explicit KDTree(Points points, size_t max_leaf_size = 1)
       : points_{std::move(points)}, max_leaf_size_{max_leaf_size} {
@@ -162,7 +162,7 @@ private:
       -> size_t* {
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // TODO: make a general `balanced_partition` algorithm from this.
-    // Partition the tree based on the spittling plane: separate those that
+    // Partition the tree based on the cut plane: separate those that
     // are to the left ("<") from those that are to the right or exactly on
     // the splitting plane (">=").
     auto* pivot = std::partition(first, last, [&](size_t index) {
@@ -181,7 +181,7 @@ private:
     auto* const middle = std::midpoint(first, last);
     if (middle <= pivot) return pivot;
     // Now partition the right part (">=") on the middle part ("==") and the
-    // truely right part (">").
+    // truly right part (">").
     pivot = std::partition(pivot, last, [&](size_t index) {
       // (Here we are not using "==" because of strict floating point
       //  conversions. "<=" does exactly the same thing.)
@@ -216,7 +216,7 @@ public:
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
     TIT_ASSERT(root_node_ != nullptr, "Tree was not built.");
     // Compute distance from the query point to the root bounding box
-    // per each dimension. (By "dist" square distances are ment.)
+    // per each dimension. (By "dist" square distances are meant.)
     const auto dists = pow2(search_point - root_bbox_.clamp(search_point));
     const auto search_dist = pow2(search_radius);
     // Do the actual search.
@@ -226,7 +226,7 @@ public:
 
 private:
 
-  // Search for the point neighbours in the K-dimensional subtree.
+  // Search for the point neighbors in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
   template<std::output_iterator<size_t> OutIter>
   constexpr void search_subtree_(const KDTreeNode_* node, Point dists,

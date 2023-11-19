@@ -15,7 +15,7 @@ namespace tit::simd {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** @brief SIMD register size (in bytes) avaliable on the current hardware.
+/** @brief SIMD register size (in bytes) available on the current hardware.
  ** What is 16 bytes for SSE and NEON instruction set, 32 bytes for the AVX
  ** instruction set and 64 bytes for the AVX-512 instruction set.
  ** When no known instruction set is detected, some default value is set to
@@ -28,7 +28,7 @@ inline constexpr size_t max_reg_size_bytes_v =
 #elif defined(__SSE__) || defined(__ARM_NEON)
     16
 #else
-    16 // No known SIMD instruction set is avaliable. Use 16 bytes as default
+    16 // No known SIMD instruction set is available. Use 16 bytes as default
        // and hope for automatic vectorization.
 #endif
     ;
@@ -62,7 +62,7 @@ template<class Num, size_t Dim>
 inline constexpr auto reg_size_v =
     std::min(max_reg_size_v<Num>, align_to_power_of_two(Dim));
 
-/** Do SIMD registors match for the specified types? */
+/** Do SIMD registers match for the specified types? */
 template<size_t Dim, class Num, class... RestNums>
 concept regs_match =
     use_regs<Num, Dim> && (use_regs<RestNums, Dim> && ...) &&

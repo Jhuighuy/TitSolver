@@ -218,7 +218,7 @@ public:
       }
     });
     // Compute density time derivative. It is computed outside of the upper
-    // loop because some artificial viscosities (e.g. δ-SPH) require desinty
+    // loop because some artificial viscosities (e.g. δ-SPH) require density
     // gradients (or renormalized density gradients).
     if constexpr (has<PV>(drho_dt)) {
       par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {

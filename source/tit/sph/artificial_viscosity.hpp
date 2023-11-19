@@ -73,7 +73,7 @@ public:
    ** @param alpha Linear viscosity coefficient.
    ** @param beta Quadratic viscosity coefficient. Typically two times greater
    **             than linear coefficient for compressible flows and
-   **             zero for weakly-compressible or incompressble flows. */
+   **             zero for weakly-compressible or incompressable flows. */
   constexpr explicit AlphaBetaArtificialViscosity( //
       real_t alpha = 1.0, real_t beta = 2.0) noexcept
       : alpha_{alpha}, beta_{beta} {
@@ -168,7 +168,7 @@ public:
         alpha_min_{alpha_min}, alpha_max_{alpha_max}, sigma_{sigma} {
     TIT_ASSERT(alpha_min_ > 0.0, "Switch minimal value must be positive.");
     TIT_ASSERT(alpha_max_ > alpha_min_, "Switch maximal value must be "
-                                        "greater than miminal.");
+                                        "greater than minimal.");
     TIT_ASSERT(sigma_ > 0.0, "Switch decay time inverse scale factor "
                              "must be positive.");
   }

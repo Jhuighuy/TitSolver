@@ -221,7 +221,7 @@ constexpr auto pow8(Num a) noexcept -> Num {
   const auto a_pow4 = a_sqr * a_sqr;
   return a_pow4 * a_pow4;
 }
-/** Raise to the nineth power with 4 multiplications. */
+/** Raise to the ninth power with 4 multiplications. */
 template<class Num>
 constexpr auto pow9(Num a) noexcept -> Num {
   const auto a_cubed = a * a * a;
@@ -304,14 +304,14 @@ constexpr auto is_power_of_two(UInt a) noexcept -> bool {
 /** Align-up integer to the nearest power of two. */
 template<std::unsigned_integral UInt>
 constexpr auto align_to_power_of_two(UInt a) noexcept -> UInt {
-  // TODO: maybe a branchless implemention?
+  // TODO: maybe a branchless implementation?
   return is_power_of_two(a) ? a : exp2(log2(a) + 1);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Arithmetic average function.
- ** @note Presense of infinities of different signs will generate NaN. */
+ ** @note Presence of infinities of different signs will generate NaN. */
 template<class... Nums>
   requires (sizeof...(Nums) > 0)
 constexpr auto avg(Nums... values) noexcept {
@@ -344,7 +344,7 @@ constexpr auto gavg(Reals... values) noexcept {
 template<class Num>
   requires std::is_trivial_v<Num>
 constexpr auto merge(bool m, Num a) noexcept -> Num {
-  // Supposed to be overriden by intrisics or optimized-out.
+  // Supposed to be overriden by intrinsics or optimized-out.
   // TODO: implement with bit operations.
   return m ? a : Num{0};
 }
@@ -356,7 +356,7 @@ constexpr auto merge(bool m, Num a) noexcept -> Num {
 template<class Num>
   requires std::is_trivial_v<Num>
 constexpr auto merge(bool m, Num a, Num b) noexcept -> Num {
-  // Supposed to be overriden by intrisics or optimized-out.
+  // Supposed to be overriden by intrinsics or optimized-out.
   // TODO: implement with bit operations.
   return m ? a : b;
 }

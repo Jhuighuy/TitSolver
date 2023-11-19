@@ -198,14 +198,14 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
   // libc++ has no `std::views::chunk` yet.
   assume_used(range, func);
 #else
-  // Split the range in chuncks according to the number of threads and
+  // Split the range in chunks according to the number of threads and
   // walk though the chunks sequentially.
-  const auto chuncked_range =
+  const auto chucked_range =
       std::views::chunk(std::forward<Range>(range), num_threads());
-  for (auto&& chuck : chuncked_range) {
-    // Subranges inside each chunk are supposed to be indepenent thus
+  for (auto&& chuck : chucked_range) {
+    // Subranges inside each chunk are supposed to be independent thus
     // are processed in parallel.
-    static_for_each(chuck, [&](auto subrange) {
+    for_each(chuck, [&](auto subrange) {
       std::ranges::for_each(subrange, func); //
     });
   }

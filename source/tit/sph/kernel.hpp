@@ -61,7 +61,7 @@ public:
   }
   /** @} */
 
-  /** Directional derivative of the smooting kernel for two particles. */
+  /** Directional derivative of the smoothing kernel for two particles. */
   /** @{ */
   template<class PV>
     requires (has<PV>(required_fields) && has_const<PV>(h))
@@ -130,7 +130,7 @@ public:
     return w * derived().unit_value(q);
   }
 
-  /** Directional derivative of the smooting kernel at point. */
+  /** Directional derivative of the smoothing kernel at point. */
   template<class Real, size_t Dim>
   constexpr auto deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");

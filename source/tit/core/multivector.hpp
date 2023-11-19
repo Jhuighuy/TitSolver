@@ -92,7 +92,7 @@ public:
    ** @param count Amount of the value buckets to be added.
    ** @param handles Range of the value handles to be added.
    ** @param index_of Function that returns bucket index of the handle value.
-   ** @param value_of Funtion that turns value handle into a value. */
+   ** @param value_of Function that turns value handle into a value. */
   template<par::input_range Handles,
            std::regular_invocable<std::ranges::range_value_t<Handles>> IndexOf,
            std::regular_invocable<std::ranges::range_value_t<Handles>> ValueOf =
@@ -142,7 +142,7 @@ public:
    ** @param count Amount of the value buckets to be added.
    ** @param handles Range of the value handles to be added.
    ** @param index_of Function that returns bucket index of the handle value.
-   ** @param value_of Funtion that turns value handle into a value. */
+   ** @param value_of Function that turns value handle into a value. */
   template<par::input_range Handles,
            std::regular_invocable<std::ranges::range_value_t<Handles>> IndexOf,
            std::regular_invocable<std::ranges::range_value_t<Handles>> ValueOf =

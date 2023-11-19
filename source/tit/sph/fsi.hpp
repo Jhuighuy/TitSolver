@@ -132,7 +132,7 @@ public:
     par::static_for_each(particles.views(), [&](PV a) {
       /// Store initial particle positions.
       r_0[a] = r[a];
-      /// Clean the renomalization matrix.
+      /// Clean the renormalization matrix.
       L[a] = {};
     });
     // Compute kernel gradient renormalization matrix.
