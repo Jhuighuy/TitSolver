@@ -14,13 +14,18 @@ set(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+# Setup Qt.
+# I am doing it here in order to avoid running MOC and UIC for all targets.
+qt_standard_project_setup()
+
 # Create the executable.
 qt_add_executable(titgui ${CXX_SOURCES})
 add_executable(tit::gui ALIAS titgui)
 
+# Link with the dependant libraries.
 target_link_libraries(titgui PRIVATE tit::core Qt6::Widgets)
 
-# Enable static analysis.
+# # Enable static analysis.
 # check_includes(tit::gui)
 # enable_clang_tidy(tit::gui)
 
