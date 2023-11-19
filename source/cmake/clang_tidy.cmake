@@ -77,9 +77,10 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       ## Update stamp.
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
-      MAIN_DEPENDENCY "${SOURCE_PATH}"
-      ## Also check all the dependant files.
+      ## Depend on our source file and all it's dependencies.
+      DEPENDS "${SOURCE_PATH}"
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
+      ## Add message.
       COMMENT "Analyzing ${SOURCE_PATH}"
       ## This is needed for generator expressions to work.
       COMMAND_EXPAND_LISTS

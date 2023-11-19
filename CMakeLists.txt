@@ -69,7 +69,7 @@ target_link_libraries(tit_base INTERFACE fmt::fmt)
 find_package(spdlog CONFIG REQUIRED QUIET)
 target_link_libraries(tit_base INTERFACE spdlog::spdlog)
 
-## Find Thread Bulding Blocks.
+## Find Thread Building Blocks.
 find_package(TBB CONFIG REQUIRED QUIET)
 target_link_libraries(tit_base INTERFACE TBB::tbb TBB::tbbmalloc)
 
@@ -83,7 +83,6 @@ target_link_libraries(tit_base INTERFACE hdf5::hdf5-static)
 
 # Find Qt.
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
-qt_standard_project_setup()
 # Do not link Qt to the base library!
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
