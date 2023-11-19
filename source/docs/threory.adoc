@@ -1,0 +1,77 @@
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+// Part of the Tit Solver project, under the MIT License
+// See /LICENSE.md for license information.
+// SPDX-License-Identifier: MIT
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+:stem: math
+
+= Weakly-compressible smooth particle hydrodynamics
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+
+== Governing equations
+
+Weakly-compressible fluid equations in Lagrange coordinates are given by:
+[latexmath]
+++++
+\frac{d\rho}{dt} = -\nabla \cdot \vec{v}, \\
+\rho \frac{d\vec{v}}{dt} = -\nabla p + \mu \Delta \vec{v}, \\
+\frac{d\vec{r}}{dt} = \vec{v}.
+++++
+In the above equations latexmath:[\rho] is fluid density,
+latexmath:[\vec{r}] and  latexmath:[\vec{v}] are fluid position and velocity,
+latexmath:[p] is pressure and latexmath:[\mu] is molecular viscosity.
+
+Pressure and density are linked by a weakly-compressible equation of
+state (EOS):
+
+* linear _Cole_ equation:
+
+[latexmath]
+++++
+p = p_0 + c_0^2 (\rho - \rho_0),
+++++
+
+* _Cole_ equation:
+
+[latexmath]
+++++
+p = p_0 + \frac{\rho_0 c_0^2}{\gamma}
+  \left[ \left( \frac{\rho}{\rho_0} \right)^\gamma - 1 \right],
+++++
+
+where latexmath:[p_0] is a background pressure, latexmath:[\rho_0] and
+latexmath:[c_0] are reference density and sound speed, and
+latexmath:[\gamma] is some power factor (typically set to 7).
+Typically refererence sound speed latexmath:[c_0] is set such that is at least
+ten times larger than maximal velocity, so variations in density are 1%.
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+
+== latexmath:[\delta]-SPH model
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+
+== API reference
+
+=== `Storm::BiCgStabSolver` class reference
+
+```cpp
+template<legacy_vector_like Vector>
+class Storm::BiCgStabSolver<Vector>
+```
+
+The BiCGStab (Biconjugate Gradients Stabilized) linear operator equation solver.
+
+BiCGStab, like the other BiCG type solvers, requires two operator multiplications
+per iteration. BiCGStab typically converges much smoother, than CGS.
+
+Members:
+
+* `solve` public member function
+
+```cpp
+bool solve(InVector &x_vec, const InVector &b_vec, const Operator<InVector, InVector> &any_op)
+```
+
+  Solve the operator equation 𝓐(𝒙) = 𝒃.

@@ -47,8 +47,9 @@
 # Scripts.
 !*.sh
 
-# Markdown files.
+# Documentation files.
 !*.md
 !*.rst
+!*.adoc
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
