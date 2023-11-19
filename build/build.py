@@ -89,15 +89,15 @@ if __name__ == "__main__":
     cxx_compiler = args.cxx_compiler or os.environ.get("CXX")
     if args.cxx_compiler is not None:
         print("Using C++ compiler:", cxx_compiler)
-        cmake_args.append(f"-DCMAKE_CXX_COMPILER={cxx_compiler}")
+        cmake_args.append("-D" + f"CMAKE_CXX_COMPILER={cxx_compiler}")
 
     # Setup the build configuration.
     configuration = args.configuration
     print("Configuration:", configuration)
-    cmake_args.append(f"-DCMAKE_BUILD_TYPE={configuration}")
+    cmake_args.append("-D" + f"CMAKE_BUILD_TYPE={configuration}")
     if args.force:
         print("'Force' build: static analysis is disabled.")
-        cmake_args.append("-DSKIP_ANALYSIS=YES")
+        cmake_args.append("-D" + "SKIP_ANALYSIS=YES")
 
     # Setup the vcpkg root.
     vcpkg_root = (
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         vcpkg_toolchain_file = os.path.join(
             vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake"
         )
-        cmake_args.append(f"-DCMAKE_TOOLCHAIN_FILE={vcpkg_toolchain_file}")
+        cmake_args.append("-D" + f"CMAKE_TOOLCHAIN_FILE={vcpkg_toolchain_file}")
 
     # Append the extra arguments.
     if args.arguments:
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         if jobs:
             ctest_args += ["-j", str(jobs)]
 
-        # Preperate CTest working directory.
+        # Prepare CTest working directory.
         ctest_cwd = os.path.join(cmake_output_dir, "tests")
 
         # Run CTest!

@@ -92,7 +92,7 @@ function(find_program_with_version PROG_EXE_VAR)
     endif()
     message(
       ${MESSAGE_LEVEL}
-      "Insuffient version of ${PROG_EXE_VAR} was found. "
+      "Insufficient version of ${PROG_EXE_VAR} was found. "
       "Minimum required version is ${PROG_MIN_VERSION}.")
     return()
   endif()

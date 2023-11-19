@@ -23,7 +23,7 @@ namespace tit {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** Algebraic vector (blockified version).
+ ** Algebraic vector (blocked version).
 \******************************************************************************/
 template<class Num, size_t Dim>
   requires simd::use_regs<Num, Dim>

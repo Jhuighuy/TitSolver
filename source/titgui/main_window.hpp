@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QtCore/QProcess>
 #include <QtWidgets/QMainWindow>
@@ -32,5 +31,3 @@ private slots:
   void on_action_run_triggered();
   void on_action_stop_triggered();
 };
-
-#endif // MAINWINDOW_H

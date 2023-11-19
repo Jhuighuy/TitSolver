@@ -16,7 +16,7 @@ set(
   ALL_CONFIGS
   # Configuration with no optimizations enabled, suitable for debugging.
   "Debug"
-  # Configuration with agressive optimizations, suitable for production.
+  # Configuration with aggressive optimizations, suitable for production.
   "Release"
   # Same as `Debug`, but instrumented for test coverage analysis.
   "Coverage")
@@ -55,7 +55,7 @@ endif()
 if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CXX_COMPILER_MIN_VERSION})
   message(
     FATAL_ERROR
-    "Insuffient version of compiler ${CMAKE_CXX_COMPILER_ID} is used. "
+    "Insufficient version of compiler ${CMAKE_CXX_COMPILER_ID} is used. "
     "Minimum required version is ${CXX_COMPILER_MIN_VERSION}.")
 endif()
 

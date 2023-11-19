@@ -14,7 +14,7 @@ set cbrange [-0.05:1.05]
 #set cbrange [-3000:3000]
 
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
-# MATLAB jet color pallete
+# MATLAB jet color palette
 
 # line styles
 set style line 1 lt 1 lc rgb '#000080' #

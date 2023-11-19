@@ -85,7 +85,7 @@ TEST_CASE("tit::par::MemoryPool") {
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   SUBCASE("parallel linked list tests") {
-    // Pool allocators ared mostly used for building some tree-like structures
+    // Pool allocators are mostly used for building some tree-like structures
     // in parallel. This test is an attempt to recreate this use case: generate
     // a linked list in parallel storing the N consecutive numbers.
     struct ListNode {

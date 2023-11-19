@@ -120,11 +120,11 @@ int sph_main() {
       // No artificial viscosity is used.
       // NoArtificialViscosity{}
       // For now, we use alpha-beta viscosity. This is due to the fact that
-      // D. Violeau uses k-epsilon turbulense as some sort of stabilizer.
+      // D. Violeau uses k-epsilon turbulence as some sort of stabilizer.
       // and we do not have any turbulence at the moment.
       AlphaBetaArtificialViscosity{0.1, 0.0}};
 
-  // Setup the time itegrator:
+  // Setup the time integrator:
   auto timeint = EulerIntegrator{std::move(equations)};
   // auto timeint = RungeKuttaIntegrator{std::move(equations)};
 
@@ -260,7 +260,7 @@ int sph_main() {
 #endif
   ;
 
-  // Setup the time itegrator:
+  // Setup the time integrator:
 #if WITH_GODUNOV
   auto timeint = RungeKuttaIntegrator{std::move(equations)};
 #else

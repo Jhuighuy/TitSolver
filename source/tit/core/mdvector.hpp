@@ -21,7 +21,7 @@ namespace tit {
 
 /******************************************************************************\
  ** @brief Poor man's multidimensional non-owning container.
- ** This class is very basic, since we do not need mutidimensional containers
+ ** This class is very basic, since we do not need multidimensional containers
  ** that often.
 \******************************************************************************/
 template<class Val, size_t Rank>
@@ -96,7 +96,7 @@ public:
 
 /******************************************************************************\
  ** @brief Poor man's multidimensional owning container.
- ** This class is very basic, since we do not need mutidimensional containers
+ ** This class is very basic, since we do not need multidimensional containers
  ** that often.
 \******************************************************************************/
 template<class Val, size_t Rank>

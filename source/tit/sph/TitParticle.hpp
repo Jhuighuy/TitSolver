@@ -151,7 +151,7 @@ private:
 public:
 
   /** Construct a particle adjacency graph.
-   ** @param engine_factory Nearest-neighbours search engine factory. */
+   ** @param engine_factory Nearest-neighbors search engine factory. */
   constexpr explicit ParticleAdjacency(
       ParticleArray& particles, EngineFactory engine_factory = {}) noexcept
       : particles_{&particles}, engine_factory_{std::move(engine_factory)} {}
@@ -169,7 +169,7 @@ public:
   constexpr void build(const SearchRadiusFunc& radius_func) {
     using PV = ParticleView<ParticleArray>;
     // -------------------------------------------------------------------------
-    // STEP I: neighbours search.
+    // STEP I: neighbors search.
     auto positions = array().views() | //
                      std::views::transform([](PV a) { return a[r]; });
     const auto engine = engine_factory_(std::move(positions));

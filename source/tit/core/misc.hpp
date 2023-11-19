@@ -21,7 +21,7 @@ namespace tit {
 #define TIT_PASS(...) __VA_ARGS__
 
 template<class... T>
-constexpr void assume_unversal(
+constexpr void assume_universal(
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     [[maybe_unused]] T&&... universal_references) noexcept {}
 
@@ -29,9 +29,9 @@ constexpr void assume_unversal(
  ** avoid false alarms from analysis tools. */
 /** @{ */
 #define TIT_ASSUME_UNIVERSAL(T, universal_reference)                           \
-  assume_unversal(std::forward<T>(universal_reference))
+  assume_universal(std::forward<T>(universal_reference))
 #define TIT_ASSUME_UNIVERSALS(Ts, universal_references)                        \
-  assume_unversal(std::forward<Ts>(universal_references)...)
+  assume_universal(std::forward<Ts>(universal_references)...)
 /** @} */
 
 template<class... Ts>
@@ -99,7 +99,7 @@ constexpr auto pack(Ts&&... values) noexcept -> std::array<T, Size> {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Convinience function used inside of some macros.
+// Convenience function used inside of some macros.
 template<class T>
 constexpr auto _unwrap(T&& value) noexcept -> decltype(auto) {
   return std::forward<T>(value);

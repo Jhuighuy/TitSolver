@@ -30,7 +30,7 @@ concept has_constants_ =
     requires { std::remove_cvref_t<PV>::constants; } && //
     meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::constants))>;
 
-/** Check particle fields presense. */
+/** Check particle fields presence. */
 /** @{ */
 template<has_fields_ PV, meta::type... Fields>
 consteval auto has(meta::Set<Fields...> fields) -> bool {
@@ -46,7 +46,7 @@ consteval auto has() -> bool {
 }
 /** @} */
 
-/** Check particle constant presense. */
+/** Check particle constant presence. */
 /** @{ */
 template<has_fields_ PV, meta::type... Consts>
 consteval auto has_const(meta::Set<Consts...> consts) -> bool {
@@ -96,7 +96,7 @@ public:
 
   /** Average of the field values over the specified particle views. */
   // TODO: here we should check for all `PVs` types to be the same and avoid
-  // avergaing if the current field is const.
+  // averaging if the current field is const.
   template<has_fields_... PVs>
     requires (... && has<PVs, field_t>())
   constexpr auto avg(PVs&&... ai) const noexcept {
@@ -168,7 +168,7 @@ enum class ParState {
    ** processes during syncronization. */
   NEAR_HALO,
   /** Particle is on the subdomain boundary. Fields of such particles are
-   ** recieved from the corresponding processes during syncronization. */
+   ** received from the corresponding processes during syncronization. */
   HALO
 };
 struct ParInfo {
