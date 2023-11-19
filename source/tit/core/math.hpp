@@ -25,6 +25,9 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** @addtogroup tit-math-traits */
+/** @{ */
+
 /** Negation result type. */
 template<class Num>
 using negate_result_t = decltype(-std::declval<Num>());
@@ -45,7 +48,12 @@ using mul_result_t = decltype(std::declval<NumA>() * std::declval<NumB>());
 template<class NumA, class NumB = NumA>
 using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 
+/** @} */ // tit-math-traits
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-math-sign */
+/** @{ */
 
 /** Absolute value. */
 template<class Num>
@@ -84,7 +92,12 @@ constexpr auto sign(Num a) noexcept -> Num {
   }
 }
 
+/** @} */ // tit-math-sign
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-math-zero */
+/** @{ */
 
 /** Small number, treated as zero. */
 template<std::floating_point Real>
@@ -102,7 +115,12 @@ constexpr auto is_zero(Real a) noexcept -> bool {
   return abs(a) <= small_number_v<Real>;
 }
 
+/** @} */ // tit-math-zero
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-math-rounding */
+/** @{ */
 
 /** Compute the largest integer value not greater than number. */
 template<std::floating_point Real>
@@ -122,7 +140,12 @@ constexpr auto ceil(Real a) noexcept -> Real {
   return std::ceil(a);
 }
 
+/** @} */ // tit-math-rounding
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-math-division */
+/** @{ */
 
 /** Inverse number.
  ** @returns Floating-point reciprocal. */
@@ -177,7 +200,12 @@ constexpr auto align(UInt a, UInt alignment) noexcept -> UInt {
   return ceil_divide(a, alignment) * alignment;
 }
 
+/** @} */ // tit-math-division
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-math-power */
+/** @{ */
 
 /** Raise to the second power with 1 multiplication. */
 template<class Num>
@@ -245,7 +273,7 @@ constexpr auto cbrt(Real a) noexcept -> Real {
   return std::cbrt(a);
 }
 
-/** Hypot. */
+/** Hypothenyze. */
 /** @{ */
 template<std::floating_point Real>
 constexpr auto hypot(Real a, Real b) noexcept -> Real {
@@ -257,7 +285,12 @@ constexpr auto hypot(Real a, Real b, Real c) noexcept -> Real {
 }
 /** @} */
 
+/** @} */ // tit-math-power
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-math-exp */
+/** @{ */
 
 /** Exponent. */
 template<std::floating_point Real>
@@ -308,7 +341,12 @@ constexpr auto align_to_power_of_two(UInt a) noexcept -> UInt {
   return is_power_of_two(a) ? a : exp2(log2(a) + 1);
 }
 
+/** @} */ // tit-math-exp
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-math-average */
+/** @{ */
 
 /** Arithmetic average function.
  ** @note Presence of infinities of different signs will generate NaN. */
@@ -361,13 +399,18 @@ constexpr auto merge(bool m, Num a, Num b) noexcept -> Num {
   return m ? a : b;
 }
 
+/** @} */ // tit-math-average
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-math-root */
+/** @{ */
 
 /** Find function rool using Newton-Raphson method.
  ** @param x Current estimate of the root.
  ** @param f Function whose root we are looking for.
  **          Should return a pair of it's value and derivative.
- **          Should implicitly depend on @p x
+ **          Should implicitly depend on @p x.
  ** @param eps Tolerance.
  ** @param max_iter Maximum amount of iterations.
  ** @returns True on success. */
@@ -426,6 +469,8 @@ constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
   }
   return false;
 }
+
+/** @} */ // tit-math-root
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

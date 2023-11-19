@@ -22,6 +22,9 @@ add_library(tit::par ALIAS tit_par)
 # Link with the dependant libraries.
 target_link_libraries(tit_par INTERFACE tit::core)
 
+# Generate documentation.
+generate_documentation(tit::par)
+
 # Enable static analysis.
 check_includes(tit::par)
 enable_clang_tidy(tit::par)

@@ -28,7 +28,7 @@
 # CMake files.
 !CMakeLists.txt
 !*.cmake
-!/src/cmake/iwyu.imp
+!/source/cmake/Doxyfile.in
 !/source/cmake/iwyu.imp
 
 # Pipelines.
@@ -49,5 +49,6 @@
 
 # Markdown files.
 !*.md
+!*.rst
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

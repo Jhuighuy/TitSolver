@@ -4,12 +4,11 @@
 # SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-add_subdirectory("tit")
-add_subdirectory("titesph")
-add_subdirectory("titgui")
-add_subdirectory("titwcsph")
-
-# Keep it last.
-add_subdirectory("docs")
+include_guard()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Find sphinx-build.
+find_program(
+  SPHINX_BUILD_EXE
+  NAMES sphinx-build)

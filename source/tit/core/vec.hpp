@@ -115,12 +115,14 @@ constexpr auto operator<<(Stream& stream, Vec<Num, Dim> a) -> Stream& {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** @defgroup tit-vec-arithmetics */
+/** @{ */
+
 /** Vector unary plus. */
 template<class Num, size_t Dim>
 constexpr auto operator+(Vec<Num, Dim> a) noexcept {
   return a;
 }
-
 /** Vector addition. */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
@@ -128,7 +130,6 @@ constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] + b[i];
   return r;
 }
-
 /** Vector addition assignment. */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
@@ -137,8 +138,6 @@ constexpr auto operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
   return a;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 /** Vector negation. */
 template<class Num, size_t Dim>
 constexpr auto operator-(Vec<Num, Dim> a) noexcept {
@@ -146,7 +145,6 @@ constexpr auto operator-(Vec<Num, Dim> a) noexcept {
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = -a[i];
   return r;
 }
-
 /** Vector subtraction. */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
@@ -154,7 +152,6 @@ constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] - b[i];
   return r;
 }
-
 /** Vector subtraction assignment. */
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
@@ -162,8 +159,6 @@ constexpr auto operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
   for (size_t i = 0; i < a.num_rows; ++i) a[i] -= b[i];
   return a;
 }
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Vector multiplication. */
 /** @{ */
@@ -186,7 +181,6 @@ constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   return r;
 }
 /** @} */
-
 /** Vector multiplication assignment. */
 /** @{ */
 template<class NumA, class NumB, size_t Dim>
@@ -201,8 +195,6 @@ constexpr auto operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
   return a;
 }
 /** @} */
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Vector division. */
 /** @{ */
@@ -219,7 +211,6 @@ constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   return r;
 }
 /** @} */
-
 /** Vector division assignment. */
 /** @{ */
 template<class NumA, class NumB, size_t Dim>
@@ -234,6 +225,8 @@ constexpr auto operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
   return a;
 }
 /** @} */
+
+/** @} */ // tit-vec-arithmetics
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -272,6 +265,9 @@ constexpr auto ceil(Vec<Num, Dim> a) noexcept {
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-vec-reduction */
+/** @{ */
 
 /** Sum of the vector components. */
 template<class Num, size_t Dim>
@@ -315,7 +311,12 @@ constexpr auto argmax_value(Vec<Num, Dim> a) noexcept -> size_t {
   return ir;
 }
 
+/** @} */ // tit-vec-reduction
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** @addtogroup tit-vec-product */
+/** @{ */
 
 /** Vector dot product. */
 template<class NumA, class NumB, size_t Dim>
@@ -342,8 +343,6 @@ constexpr auto normalize(Vec<Num, Dim> a) noexcept {
   return safe_divide(a, norm(a));
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 /** Vector cross product.
  ** @returns 3D vector with a result of cross product. */
 template<class NumA, class NumB, size_t Dim>
@@ -356,9 +355,14 @@ constexpr auto cross(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   return r;
 }
 
+/** @} */ // tit-vec-product
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // A little bit of the 𝑒𝑥𝑝𝑟𝑒𝑠𝑠𝑖𝑜𝑛 𝑡𝑒𝑚𝑝𝑙𝑎𝑡𝑒𝑠 𝑚𝑎𝑔𝑖𝑐 happens here.
+
+/** @addtogroup tit-vec-comparison */
+/** @{ */
 
 /** Vector comparison. */
 template<std::copy_constructible Op, size_t Dim, class NumX, class NumY = NumX>
@@ -444,6 +448,8 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
   }
   return r;
 }
+
+/** @} */ // tit-vec-comparison
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

@@ -27,6 +27,9 @@ add_library(tit::sph ALIAS tit_sph)
 # Link with the dependant libraries.
 target_link_libraries(tit_sph INTERFACE tit::core tit::geom tit::par)
 
+# Generate documentation.
+generate_documentation(tit::sph)
+
 # Enable static analysis.
 check_includes(tit::sph)
 enable_clang_tidy(tit::sph)
