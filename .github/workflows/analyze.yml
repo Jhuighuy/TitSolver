@@ -21,8 +21,8 @@ jobs:
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-  analyze_code_cov:
-    name: Codecov
+  analyze_sonar:
+    name: Analyze
     runs-on: ubuntu-latest
     env:
       # g++ and gcov executables.
@@ -31,6 +31,8 @@ jobs:
       # Coverage report file path (Sonar for the future).
       SONAR_COVERAGE_REPORT_PATH: sonar_coverage.xml
       CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
+      # Directory where build-wrapper output will be placed.
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,6 +40,8 @@ jobs:
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: "17.0"
+      - name: Install sonar-scanner and build-wrap  per
+        uses: SonarSource/sonarcloud-github-c-cpp@v2
       - name: Install gcovr
         run: |
           pip install gcovr
@@ -54,7 +58,9 @@ jobs:
           restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
       - name: Build and test
         run: |
-          build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage -t -f
+          build-wrapper-linux-x86-64 \
+            --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} \
+            build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage -t -f
       - name: Run gcovr
         run: |
           gcovr -e "output/*" -e "tests/*" \
@@ -69,6 +75,14 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"
+      - name: Run sonar-scanner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner \
+            --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
+            --define sonar.coverageReportPaths="${{ env.SONAR_COVERAGE_REPORT_PATH }}"
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
