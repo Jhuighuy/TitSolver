@@ -24,10 +24,8 @@ include(config)
 include(iwyu)
 
 # Setup output directories. This must be gone once we switch to installation.
-set(CMAKE_PDB_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/lib")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -45,6 +43,7 @@ set(CMAKE_CXX_EXTENSIONS NO)
 target_include_directories(tit_base INTERFACE ${ROOT_SOURCE_DIR})
 
 # Setup configurations.
+target_compile_options(tit_base INTERFACE ${CXX_WARNINGS})
 foreach(CONFIG ${ALL_CONFIGS})
   string(TOUPPER ${CONFIG} CONFIG_UPPER)
   # Apply compilation options.
