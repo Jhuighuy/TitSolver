@@ -5,12 +5,14 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "main_window.hpp"
+#include "tit/app/wrap_main.hpp"
 #include <QApplication>
 
-int main(int argc, char* argv[]) {
-  QApplication a(argc, argv);
-  MainWindow w;
-  w.show();
-
-  return a.exec();
+int main(int argc, char** argv) {
+  return tit::app::wrap_main(argc, argv, [](int the_argc, char** the_argv) {
+    QApplication a(the_argc, the_argv);
+    MainWindow w;
+    w.show();
+    return a.exec();
+  });
 }

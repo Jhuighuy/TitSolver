@@ -16,7 +16,7 @@ add_executable(titwcsph ${CXX_SOURCES})
 add_executable(tit::wcsph ALIAS titwcsph)
 
 # Link with the dependant libraries.
-target_link_libraries(titwcsph PRIVATE tit::core tit::geom tit::par tit::sph)
+target_link_libraries(titwcsph PRIVATE tit::sph tit::app)
 
 # Enable static analysis.
 # check_includes(tit::wcsph)

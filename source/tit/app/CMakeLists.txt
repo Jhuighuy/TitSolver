@@ -7,26 +7,20 @@
 # Specify the list of sources.
 set(
   CXX_SOURCES
-  "main_window.cpp"
-  "main_window.hpp"
-  "main_window.ui"
-  "main.cpp")
+  "wrap_main.cpp"
+  "wrap_main.hpp")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Setup Qt.
-# I am doing it here in order to avoid running MOC and UIC for all targets.
-qt_standard_project_setup()
-
-# Create the executable.
-qt_add_executable(titgui ${CXX_SOURCES})
-add_executable(tit::gui ALIAS titgui)
+# Create the library.
+add_library(tit_app STATIC ${CXX_SOURCES})
+add_library(tit::app ALIAS tit_app)
 
 # Link with the dependant libraries.
-target_link_libraries(titgui PRIVATE tit::app Qt6::Widgets)
+target_link_libraries(tit_app PUBLIC tit::core tit::par)
 
-# # Enable static analysis.
-# check_includes(tit::gui)
-# enable_clang_tidy(tit::gui)
+# Enable static analysis.
+check_includes(tit::app)
+enable_clang_tidy(tit::app)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
