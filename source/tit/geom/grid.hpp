@@ -125,6 +125,7 @@ public:
   constexpr auto search(Point search_point, Real search_radius,
                         OutIter out) const noexcept -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
+    // TIT_ENSURE(search_radius < 0.0, "Search radius should be positive.");
     const auto search_dist = pow2(search_radius);
     // Convert point to bounding box.
     const auto search_bbox =

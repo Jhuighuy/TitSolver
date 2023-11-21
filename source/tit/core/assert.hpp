@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <cstdlib>
-#include <iostream>
 #include <source_location>
 #include <string_view>
 
@@ -40,24 +38,16 @@ namespace tit {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Abort the current process in non-`constexpr` context.
-[[noreturn]] inline void _ensure_failed( //
-    std::string_view expr_string, std::string_view message,
-    std::source_location location = std::source_location::current()) noexcept {
-  // TODO: print stack trace.
-  std::cerr << location.file_name() << ":" << location.line() << ":"
-            << location.column() << ": ";
-  std::cerr << "Internal consistency check failed: \"" << expr_string << "\". ";
-  std::cerr << message << "\n";
-  std::cerr.flush();
-  std::abort();
-}
+[[noreturn]] extern void _ensure_failed(std::string_view expression,
+                                        std::string_view message,
+                                        std::source_location location) noexcept;
 
 // Actual implementation of "Ensure" macro.
-constexpr void _ensure( //
-    bool expr_result, std::string_view expr_string, std::string_view message,
+constexpr void _ensure(
+    bool check_result, std::string_view expression, std::string_view message,
     std::source_location location = std::source_location::current()) noexcept {
-  if (expr_result) return; // Gracefully return if check passes.
-  _ensure_failed(expr_string, message, location); // Abort process otherwise.
+  if (check_result) return; // Gracefully return if check passes.
+  _ensure_failed(expression, message, location); // Abort process otherwise.
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

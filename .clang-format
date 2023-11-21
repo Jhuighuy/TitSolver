@@ -36,7 +36,7 @@ RequiresClausePosition: OwnLine
 IndentWidth: 2
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
-NamespaceIndentation: Inner
+NamespaceIndentation: None
 PointerAlignment: Left
 ReflowComments: true
 SpaceAfterCStyleCast: true
