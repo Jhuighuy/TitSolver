@@ -24,10 +24,8 @@ include(config)
 include(iwyu)
 
 # Setup output directories. This must be gone once we switch to installation.
-set(CMAKE_PDB_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/lib")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -45,6 +43,7 @@ set(CMAKE_CXX_EXTENSIONS NO)
 target_include_directories(tit_base INTERFACE ${ROOT_SOURCE_DIR})
 
 # Setup configurations.
+target_compile_options(tit_base INTERFACE ${CXX_WARNINGS})
 foreach(CONFIG ${ALL_CONFIGS})
   string(TOUPPER ${CONFIG} CONFIG_UPPER)
   # Apply compilation options.
@@ -62,23 +61,23 @@ endforeach()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Find {fmt}.
-find_package(fmt CONFIG REQUIRED QUIET)
+find_package(fmt CONFIG REQUIRED)
 target_link_libraries(tit_base INTERFACE fmt::fmt)
 
 # Find spdlog.
-find_package(spdlog CONFIG REQUIRED QUIET)
+find_package(spdlog CONFIG REQUIRED)
 target_link_libraries(tit_base INTERFACE spdlog::spdlog)
 
 ## Find Thread Building Blocks.
-find_package(TBB CONFIG REQUIRED QUIET)
+find_package(TBB CONFIG REQUIRED)
 target_link_libraries(tit_base INTERFACE TBB::tbb TBB::tbbmalloc)
 
 # Find OpenMP.
-find_package(OpenMP REQUIRED QUIET)
+find_package(OpenMP REQUIRED)
 target_link_libraries(tit_base INTERFACE OpenMP::OpenMP_CXX)
 
 # Find HDF5.
-find_package(HDF5 CONFIG REQUIRED QUIET)
+find_package(HDF5 CONFIG REQUIRED)
 target_link_libraries(tit_base INTERFACE hdf5::hdf5-static)
 
 # Find Qt.

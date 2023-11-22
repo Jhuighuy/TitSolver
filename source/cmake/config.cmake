@@ -44,14 +44,14 @@ else()
   string(TOUPPER ${CMAKE_CXX_COMPILER_ID} CXX_COMPILER)
 endif()
 
-# Check if compiler is known..
+# Check if compiler is known...
 try_set(CXX_COMPILER_MIN_VERSION "${CXX_COMPILER}_MIN_VERSION")
 if(NOT DEFINED CXX_COMPILER_MIN_VERSION)
   message(
     FATAL_ERROR
     "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported.")
 endif()
-# ..and it's version is sufficient.
+# ...and it's version is sufficient.
 if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CXX_COMPILER_MIN_VERSION})
   message(
     FATAL_ERROR
@@ -62,24 +62,14 @@ endif()
 # Setup warnings and diagnostics options.
 try_set(CXX_WARNINGS "${CXX_COMPILER}_WARNINGS")
 
-# Setup optimization options.
-try_set(CXX_OPTIMIZE_OPTIONS "${CXX_COMPILER}_OPTIMIZE_OPTIONS")
+# Setup compile options.
+try_set(CXX_COMPILE_OPTIONS "${CXX_COMPILER}_COMPILE_OPTIONS")
 foreach(CONFIG ${ALL_CONFIGS})
   string(TOUPPER ${CONFIG} CONFIG)
   try_set(
-    "CXX_OPTIMIZE_OPTIONS_${CONFIG}"
-    "${CXX_COMPILER}_OPTIMIZE_OPTIONS_${CONFIG}"
-    ${CXX_OPTIMIZE_OPTIONS})
-endforeach()
-
-# Setup compile options (warnings + optimization).
-set(CXX_COMPILE_OPTIONS ${CXX_WARNINGS} ${CXX_OPTIMIZE_OPTIONS})
-foreach(CONFIG ${ALL_CONFIGS})
-  string(TOUPPER ${CONFIG} CONFIG)
-  set(
     "CXX_COMPILE_OPTIONS_${CONFIG}"
-    ${CXX_WARNINGS}
-    ${CXX_OPTIMIZE_OPTIONS_${CONFIG}})
+    "${CXX_COMPILER}_COMPILE_OPTIONS_${CONFIG}"
+    ${CXX_COMPILE_OPTIONS})
 endforeach()
 
 # Setup link options.

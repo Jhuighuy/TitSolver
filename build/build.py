@@ -95,9 +95,12 @@ if __name__ == "__main__":
     configuration = args.configuration
     print("Configuration:", configuration)
     cmake_args.append("-D" + f"CMAKE_BUILD_TYPE={configuration}")
+
+    # Setup static analysis.
+    # (Should be always passed, since `-D...` options are cached).
     if args.force:
         print("'Force' build: static analysis is disabled.")
-        cmake_args.append("-D" + "SKIP_ANALYSIS=YES")
+    cmake_args.append("-D" + f"SKIP_ANALYSIS={'YES' if args.force else 'NO'}")
 
     # Setup the vcpkg root.
     vcpkg_root = (

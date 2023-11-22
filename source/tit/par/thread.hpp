@@ -205,7 +205,7 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
   for (auto&& chuck : chucked_range) {
     // Subranges inside each chunk are supposed to be independent thus
     // are processed in parallel.
-    for_each(chuck, [&](auto subrange) {
+    static_for_each(chuck, [&](auto subrange) {
       std::ranges::for_each(subrange, func); //
     });
   }

@@ -79,27 +79,28 @@ set(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Set optimization options (all configurations).
-set(GNU_OPTIMIZE_OPTIONS
+# Set common compile options.
+set(
+  GNU_COMPILE_OPTIONS
+  # Always store debug information.
+  -g
   # Optimize code for the host system's architecture.
   -march=native)
 
-# Set optimization options (`Debug` configuration).
+# Set compile options for "Debug" configuration.
 set(
-  GNU_OPTIMIZE_OPTIONS_DEBUG
+  GNU_COMPILE_OPTIONS_DEBUG
   # Inherit common options.
-  ${GNU_OPTIMIZE_OPTIONS}
-  # Generate debugging information.
-  -g
+  ${GNU_COMPILE_OPTIONS}
   # Disable optimization, resulting in the compilation of unoptimized code.
   # Useful for debugging and inspecting code in its original form.
   -O0)
 
-# Set optimization options (`Coverage` configuration).
+# Set compile options for "Coverage" configuration.
 set(
-  GNU_OPTIMIZE_OPTIONS_COVERAGE
+  GNU_COMPILE_OPTIONS_COVERAGE
   # Inherit all the `Debug` options.
-  ${GNU_OPTIMIZE_OPTIONS_DEBUG}
+  ${GNU_COMPILE_OPTIONS_DEBUG}
   # Enable code coverage instrumentation during compilation.
   --coverage
   # Disable inlining of functions, preventing the compiler from optimizing
@@ -111,11 +112,11 @@ set(
   # inspecting constructor calls.
   -fno-elide-constructors)
 
-# Set optimization options (`Release` configuration).
+# Set compile options for "Release" configuration.
 set(
-  GNU_OPTIMIZE_OPTIONS_RELEASE
+  GNU_COMPILE_OPTIONS_RELEASE
   # Inherit common options.
-  ${GNU_OPTIMIZE_OPTIONS}
+  ${GNU_COMPILE_OPTIONS}
   # Enable aggressive optimization levels to maximize performance.
   -Ofast
   # Optimize code for the host system's architecture.
@@ -127,9 +128,11 @@ set(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Set link options (all configurations).
+# Set common link options.
 set(GNU_LINK_OPTIONS)
 if(APPLE)
+  # Link with libc++, because some precompiled libraries need it.
+  list(APPEND GNU_LINK_OPTIONS -lc++)
   # Enable "classic" linker for macOS (if possible).
   include(CheckLinkerFlag)
   check_linker_flag(CXX -ld_classic HAVE_LD_CLASSIC)
@@ -138,7 +141,7 @@ if(APPLE)
   endif()
 endif()
 
-# Set the link options (`Coverage` configuration).
+# Set the link options for "Coverage" configuration.
 set(
   GNU_LINK_OPTIONS_COVERAGE
   # Inherit common options.
