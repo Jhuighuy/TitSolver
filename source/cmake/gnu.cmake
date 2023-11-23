@@ -84,7 +84,7 @@ set(
   GNU_COMPILE_OPTIONS
   # Always store debug information.
   -g
-  # Optimize code for the host system's architecture.
+  # Generate machine code for the host system's architecture.
   -march=native)
 
 # Set compile options for "Debug" configuration.
@@ -119,8 +119,6 @@ set(
   ${GNU_COMPILE_OPTIONS}
   # Enable aggressive optimization levels to maximize performance.
   -Ofast
-  # Optimize code for the host system's architecture.
-  -march=native
   # Enables aggressive floating-point expression contraction.
   -ffp-contract=fast
   # Set a high limit for inlining functions.
@@ -129,10 +127,11 @@ set(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Set common link options.
-set(GNU_LINK_OPTIONS)
+set(GNU_LINK_OPTIONS
+  # Passes all symbols from the object files to the linker, allowing them to be
+  # available at runtime.
+  -rdynamic)
 if(APPLE)
-  # Link with libc++, because some precompiled libraries need it.
-  list(APPEND GNU_LINK_OPTIONS -lc++)
   # Enable "classic" linker for macOS (if possible).
   include(CheckLinkerFlag)
   check_linker_flag(CXX -ld_classic HAVE_LD_CLASSIC)
