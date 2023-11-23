@@ -7,19 +7,20 @@
 # Specify the list of sources.
 set(
   CXX_SOURCES
-  "wcsph.cpp")
+  "wrap_main.cpp"
+  "wrap_main.hpp")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Create the library.
-add_executable(titwcsph ${CXX_SOURCES})
-add_executable(tit::wcsph ALIAS titwcsph)
+add_library(tit_app STATIC ${CXX_SOURCES})
+add_library(tit::app ALIAS tit_app)
 
 # Link with the dependant libraries.
-target_link_libraries(titwcsph PRIVATE tit::sph tit::app)
+target_link_libraries(tit_app PUBLIC tit::core tit::par)
 
 # Enable static analysis.
-# check_includes(tit::wcsph)
-# enable_clang_tidy(tit::wcsph)
+check_includes(tit::app)
+enable_clang_tidy(tit::app)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

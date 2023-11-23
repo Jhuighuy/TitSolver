@@ -16,7 +16,7 @@ add_executable(titesph ${CXX_SOURCES})
 add_executable(tit::esph ALIAS titesph)
 
 # Link with the dependant libraries.
-target_link_libraries(titesph PRIVATE tit::core tit::geom tit::par tit::sph)
+target_link_libraries(titesph PRIVATE tit::core tit::sph tit::app)
 
 # Enable static analysis.
 # check_includes(tit::esph)

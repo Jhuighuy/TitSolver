@@ -8,6 +8,7 @@
 
 #define WITH_GRAVITY 1
 
+#include "tit/app/wrap_main.hpp"
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fsi.hpp"
@@ -17,7 +18,7 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template<class Real>
-int sph_main() {
+int sph_main(int /*argc*/, char** /*argv*/) {
   using namespace tit;
   using namespace sph;
 
@@ -122,7 +123,7 @@ int sph_main() {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 int main(int argc, char** argv) {
-  return tit::par::main(argc, argv, [] { return sph_main<tit::real_t>(); });
+  return tit::app::wrap_main(argc, argv, &sph_main<tit::real_t>);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

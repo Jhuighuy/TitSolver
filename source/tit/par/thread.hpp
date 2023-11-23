@@ -36,12 +36,11 @@ template<class Tag>
 class Threading {
 public:
 
-  template<std::invocable Func>
+  template<std::invocable<int, char**> Func>
   static auto main_([[maybe_unused]] int argc, [[maybe_unused]] char** argv,
                     Func&& func) -> int {
     omp_set_num_threads(8);
-    return func();
-    // return func();
+    return func(argc, argv);
   }
 
   static constexpr auto num_threads_() noexcept -> size_t {
@@ -97,7 +96,7 @@ public:
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Wrapper for the `main` that sets up multithreading. */
-template<std::invocable Func>
+template<std::invocable<int, char**> Func>
 auto main(int argc, char** argv, Func&& func) -> int {
   TIT_THREAD_FUNC_IMPL_(main_, argc, argv, func);
 }

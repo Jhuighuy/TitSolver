@@ -14,6 +14,7 @@
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 
+#include "tit/app/wrap_main.hpp"
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fluid_equations.hpp"
@@ -29,7 +30,7 @@
 #elif COMPRESSIBLE_SOD_PROBLEM
 
 template<class Real>
-int sph_main() {
+int sph_main(int /*argc*/, char** /*argv*/) {
   using namespace tit;
   using namespace tit::sph;
 
@@ -89,7 +90,7 @@ int sph_main() {
 #elif HARD_DAM_BREAKING
 
 template<class Real>
-int sph_main() {
+int sph_main(int /*argc*/, char** /*argv*/) {
   using namespace tit;
   using namespace sph;
 
@@ -208,7 +209,7 @@ int sph_main() {
 #elif EASY_DAM_BREAKING
 
 template<class Real>
-int sph_main() {
+int sph_main(int /*argc*/, char** /*argv*/) {
   using namespace tit;
   using namespace sph;
 
@@ -365,7 +366,7 @@ int sph_main() {
 #elif INITIALLY_SQUARE_PATCH
 
 template<class Real>
-int sph_main() {
+int sph_main(int /*argc*/, char** /*argv*/) {
   using namespace tit;
   using namespace sph;
 
@@ -502,7 +503,7 @@ int sph_main() {
 #endif
 
 int main(int argc, char** argv) {
-  return tit::par::main(argc, argv, [] { return sph_main<tit::real_t>(); });
+  return tit::app::wrap_main(argc, argv, &sph_main<tit::real_t>);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

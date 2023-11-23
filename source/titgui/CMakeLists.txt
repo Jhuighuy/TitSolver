@@ -29,7 +29,7 @@ qt_add_executable(titgui ${CXX_SOURCES})
 add_executable(tit::gui ALIAS titgui)
 
 # Link with the dependant libraries.
-target_link_libraries(titgui PRIVATE tit::core Qt6::Widgets)
+target_link_libraries(titgui PRIVATE tit::app Qt6::Widgets)
 
 # # Enable static analysis.
 # check_includes(tit::gui)
