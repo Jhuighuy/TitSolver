@@ -30,96 +30,94 @@ jobs:
         configuration: [Debug, Release]
       fail-fast: false
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.*'
-          cache: true
-      - name: Cache vcpkg installation
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Install packages and tools
+        run: |
+          # Install packages and tools
+          ## Run installation script.
+          ./build/install_packages.sh
+          ## Update vcpkg packages.
+          cd $VCPKG_INSTALLATION_ROOT
+          git reset --hard
+          git checkout master
+          git pull > /dev/null
+          ./bootstrap-vcpkg.sh
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
       - name: Build and test
         run: |
-          build/build.py -cxx=${{ matrix.compiler }} \
-                         -cfg=${{ matrix.configuration }} \
-                         -t
+          # Build and test
+          build/build.py \
+            --compiler=${{ matrix.compiler }} \
+            --config=${{ matrix.configuration }} \
+            --test
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
   build_macos:
     name: macOS
-    runs-on: macos-latest
+    # TBB cannot compile on macos-latest, which is macos-12 at the moment.
+    runs-on: macos-13
     strategy:
       matrix:
         compiler: [g++-13]
         configuration: [Debug, Release]
       fail-fast: false
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.*'
-          cache: true
-      - name: Cache vcpkg installation
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Install packages and tools
+        continue-on-error: true # might fail for unknown reason.
+        run: |
+          # Install packages and tools
+          ## Do not upgrade packages even if it will lead to a breakage.
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          ## Run installation script.
+          ./build/install_packages.sh
+          ## Update vcpkg packages.
+          cd $VCPKG_INSTALLATION_ROOT
+          git reset --hard
+          git checkout master
+          git pull > /dev/null
+          ./bootstrap-vcpkg.sh
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
       - name: Build and test
         run: |
-          build/build.py -cxx=${{ matrix.compiler }} \
-                         -cfg=${{ matrix.configuration }} \
-                         -t
-
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-  #build_windows:
-  #  name: Windows
-  #  runs-on: windows-latest
-  #  strategy:
-  #    matrix:
-  #      compiler: [g++]
-  #      configuration: [Debug, Release]
-  #    fail-fast: false
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v4
-  #    - name: Setup MSYS2
-  #      uses: msys2/setup-msys2@v2
-  #      with:
-  #        msystem: MINGW64
-  #        update: true
-  #        install: >-
-  #          base-devel
-  #          mingw-w64-x86_64-toolchain
-  #          mingw-w64-x86_64-cmake
-  #        cache: true
-  #    - name: Install Qt
-  #      uses: jurplel/install-qt-action@v3
-  #      with:
-  #        version: '6.*'
-  #        arch: "win64_mingw"
-  #        cache: true
-  #    - name: Cache vcpkg installation
-  #      uses: actions/cache@v3
-  #      with:
-  #        path: output/cmake_output/vcpkg_installed
-  #        key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-  #        restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-  #    - name: Build
-  #      shell: msys2 {0}
-  #      run: |
-  #        build/build.py -cxx=${{ matrix.compiler }} \
-  #                       -cfg=${{ matrix.configuration }} \
-  #                       -t
+          # Build and test
+          build/build.py \
+            --compiler=${{ matrix.compiler }} \
+            --config=${{ matrix.configuration }} \
+            --test
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

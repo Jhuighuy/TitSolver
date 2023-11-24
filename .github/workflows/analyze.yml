@@ -34,47 +34,73 @@ jobs:
       # Directory where build-wrapper output will be placed.
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install LLVM
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: "17.0"
-      - name: Install sonar-scanner and build-wrap  per
-        uses: SonarSource/sonarcloud-github-c-cpp@v2
-      - name: Install gcovr
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Install packages and tools
+        continue-on-error: true # might fail for unknown reason.
         run: |
+          # Install packages and tools
+          ## Run installation script.
+          ./build/install_packages.sh
+          ## Install gcovr.
           pip install gcovr
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.*'
-          cache: true
-      - name: Cache vcpkg installation
+          ## Update vcpkg packages.
+          cd $VCPKG_INSTALLATION_ROOT
+          git reset --hard
+          git checkout master
+          git pull > /dev/null
+          ./bootstrap-vcpkg.sh
+
+      - name: Install sonar-scanner and build-wrapper
+        uses: SonarSource/sonarcloud-github-c-cpp@v2
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ env.GXX_EXE }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ env.GXX_EXE }}-${{ hashFiles('vcpkg.json') }}
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
       - name: Build and test
         run: |
           build-wrapper-linux-x86-64 \
             --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} \
-            build/build.py -cxx=${{ env.GXX_EXE }} -cfg=Coverage -t -f
-      - name: Run gcovr
+            build/build.py \
+              --compiler=${{ env.GXX_EXE }} \
+              --config=Coverage \
+              --test
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Collect coverage reports
         run: |
-          gcovr -e "output/*" -e "tests/*" \
-                --exclude-throw-branches \
-                --gcov-executable "gcov-13" \
-                --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}" \
-                --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
+          gcovr \
+            --gcov-executable "gcov-13" \
+            -e "output/*" -e "tests/*" \
+            --exclude-throw-branches \
+            --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}" \
+            --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
           # See why `--exclude-throw-branches` below:
           # https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"
+          files: ${{ env.CODECOV_COVERAGE_REPORT_PATH }}
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
       - name: Run sonar-scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

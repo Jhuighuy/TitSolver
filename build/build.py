@@ -7,6 +7,7 @@
 
 import argparse
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
@@ -132,10 +133,7 @@ def build():
         shutil.rmtree(OUTPUT_DIR, ignore_errors=True)
 
     # Create output directory.
-    try:
-        os.mkdir(OUTPUT_DIR)
-    except FileExistsError:
-        pass
+    pathlib.Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

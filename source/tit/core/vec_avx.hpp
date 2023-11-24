@@ -5,7 +5,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
-#ifdef __SSE__
+#if defined(__SSE__) && (!TIT_IWYU)
 
 #include <x86intrin.h>
 

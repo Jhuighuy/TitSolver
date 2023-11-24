@@ -16,7 +16,13 @@ set(
 
 # Setup Qt.
 # I am doing it here in order to avoid running MOC and UIC for all targets.
-qt_standard_project_setup()
+if(Qt6 VERSION_GREATER_EQUAL 3.3)
+  qt_standard_project_setup()
+else()
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_AUTORCC ON)
+  set(CMAKE_AUTOUIC ON)
+endif()
 
 # Create the executable.
 qt_add_executable(titgui ${CXX_SOURCES})
