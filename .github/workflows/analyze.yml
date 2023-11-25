@@ -82,14 +82,17 @@ jobs:
 
       - name: Collect coverage reports
         run: |
+          # Collect coverage reports
+          ## See reasons for using `--exclude-*` and `--decisions` below:
+          ## https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
           gcovr \
             --gcov-executable "gcov-13" \
             -e "output/*" -e "tests/*" \
+            --exclude-unreachable-branches \
             --exclude-throw-branches \
+            --decisions \
             --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}" \
             --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
-          # See why `--exclude-throw-branches` below:
-          # https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
