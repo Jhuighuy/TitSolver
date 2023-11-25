@@ -20,7 +20,7 @@ if(IWYU_EXE)
   find_file(
     IWYU_MAPPING_PATH
     NAMES "iwyu.imp"
-    PATHS "${ROOT_SOURCE_DIR}/cmake"
+    PATHS "${CMAKE_SOURCE_DIR}/cmake"
     REQUIRED)
 endif()
 

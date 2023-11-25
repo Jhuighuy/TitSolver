@@ -13,15 +13,17 @@ project(Tit VERSION 0.1 LANGUAGES CXX)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Setup root source and output directories.
-set(ROOT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/source")
-set(ROOT_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/output/TIT_ROOT")
-
 # Setup path to CMake scripts and include them.
-list(APPEND CMAKE_MODULE_PATH "${ROOT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang_tidy)
 include(config)
 include(iwyu)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Setup root source and output directories.
+set(ROOT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/source")
+set(ROOT_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/output/TIT_ROOT")
 
 # Setup output directories. This must be gone once we switch to installation.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")

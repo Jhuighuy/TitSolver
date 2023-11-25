@@ -28,8 +28,7 @@
 # CMake files.
 !CMakeLists.txt
 !*.cmake
-!/src/cmake/iwyu.imp
-!/source/cmake/iwyu.imp
+!/cmake/iwyu.imp
 
 # Pipelines.
 !/.github/workflows/*.yml
