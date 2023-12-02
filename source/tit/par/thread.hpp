@@ -123,7 +123,7 @@ constexpr void invoke(Funcs&&... funcs) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Range that could be precessed in parallel. */
+/** Range that could be processed in parallel. */
 /** @{ */
 template<class Range>
 concept base_input_range =

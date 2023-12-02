@@ -38,6 +38,18 @@ ensure() {
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+install_pip_packages() {
+  # Install gcovr.
+  ensure pip3 install --user --upgrade gcovr
+  # Install codespell.
+  ensure pip3 install --user --upgrade codespell
+}
+
+print_message "Installing Python packages..."
+install_pip_packages
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
 install_apt_packages() {
   # Fetch fresh packages.
   ensure sudo apt -qq update

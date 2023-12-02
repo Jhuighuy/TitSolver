@@ -24,7 +24,7 @@ set(
 add_library(tit_sph INTERFACE ${CXX_SOURCES})
 add_library(tit::sph ALIAS tit_sph)
 
-# Link with the dependant libraries.
+# Link with the dependent libraries.
 target_link_libraries(tit_sph INTERFACE tit::core tit::geom tit::par)
 
 # Enable static analysis.

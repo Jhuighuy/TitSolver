@@ -46,8 +46,6 @@ jobs:
           # Install packages and tools
           ## Run installation script.
           ./build/install_packages.sh
-          ## Install gcovr.
-          pip install gcovr
           ## Update vcpkg packages.
           cd $VCPKG_INSTALLATION_ROOT
           git reset --hard

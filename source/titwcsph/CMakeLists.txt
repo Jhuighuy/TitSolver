@@ -15,7 +15,7 @@ set(
 add_executable(titwcsph ${CXX_SOURCES})
 add_executable(tit::wcsph ALIAS titwcsph)
 
-# Link with the dependant libraries.
+# Link with the dependent libraries.
 target_link_libraries(titwcsph PRIVATE tit::sph tit::app)
 
 # Enable static analysis.

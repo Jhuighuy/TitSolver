@@ -165,10 +165,10 @@ enum class ParState {
   INNER,
   /** Particle is near subdomain boundary, and is in halo of some other
    ** subdomain. Fields of such particles are send to the corresponding
-   ** processes during syncronization. */
+   ** processes during synchronization. */
   NEAR_HALO,
   /** Particle is on the subdomain boundary. Fields of such particles are
-   ** received from the corresponding processes during syncronization. */
+   ** received from the corresponding processes during synchronization. */
   HALO
 };
 struct ParInfo {

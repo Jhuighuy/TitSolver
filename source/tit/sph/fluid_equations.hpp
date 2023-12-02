@@ -181,7 +181,7 @@ public:
       if constexpr (has<PV>(S)) S[a] = {};
       if constexpr (has<PV>(L)) L[a] = {};
     });
-    // Compute auxilary density fields.
+    // Compute auxiliary density fields.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
       [[maybe_unused]] const auto W_ab = kernel_(a, b);
@@ -251,7 +251,7 @@ public:
       if constexpr (has<PV>(div_v)) div_v[a] = {};
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
     });
-    // Compute auxilary velocity fields.
+    // Compute auxiliary velocity fields.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
       [[maybe_unused]] const auto W_ab = kernel_(a, b);

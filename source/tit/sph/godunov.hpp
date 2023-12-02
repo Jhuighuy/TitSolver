@@ -87,7 +87,7 @@ public:
     par::static_for_each(particles.views(), [&](PV a) {
       // Initialize particle pressure (and sound speed).
       eos_.compute_pressure(a);
-      // Inititalize particle width and Omega.
+      // Initialize particle width and Omega.
       if constexpr (std::same_as<DensityEquation, GradHSummationDensity>) {
         h[a] = density_equation_.width(a);
         Omega[a] = 1.0;

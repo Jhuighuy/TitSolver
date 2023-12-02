@@ -47,7 +47,7 @@ private:
 
 public:
 
-  /** Initialze and build the K-dimensional tree.
+  /** Initialize and build the K-dimensional tree.
    ** @param max_leaf_size Maximum amount of points in the leaf node. */
   constexpr explicit ZCurveOrdering(Points points)
       : points_{std::move(points)} {

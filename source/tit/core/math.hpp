@@ -344,7 +344,7 @@ constexpr auto gavg(Reals... values) noexcept {
 template<class Num>
   requires std::is_trivial_v<Num>
 constexpr auto merge(bool m, Num a) noexcept -> Num {
-  // Supposed to be overriden by intrinsics or optimized-out.
+  // Supposed to be overridden by intrinsics or optimized-out.
   // TODO: implement with bit operations.
   return m ? a : Num{0};
 }
@@ -356,7 +356,7 @@ constexpr auto merge(bool m, Num a) noexcept -> Num {
 template<class Num>
   requires std::is_trivial_v<Num>
 constexpr auto merge(bool m, Num a, Num b) noexcept -> Num {
-  // Supposed to be overriden by intrinsics or optimized-out.
+  // Supposed to be overridden by intrinsics or optimized-out.
   // TODO: implement with bit operations.
   return m ? a : b;
 }
