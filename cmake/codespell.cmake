@@ -25,6 +25,12 @@ endif()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 ## Check spelling in the specified directory.
+##
+## Unlike other static analysis tools, I do not want to run spellcheck pear each
+## target separately. There two issues: first, codespell is written in Python,
+## and it's startup and execution times can be better, so it will slow down our
+## build; second, I want spell checking in all indexed files, not just source
+## files.
 function(check_spelling TARGET DIR)
   # Should we skip analysis?
   if(SKIP_ANALYSIS)
@@ -39,7 +45,8 @@ function(check_spelling TARGET DIR)
     "${TARGET}_codespell"
     ## Run each time during the build process.
     ALL
-    ## Check git indexed files only.
+    ## Check git indexed files only. The best way to do this is to ask git
+    ## what files are indexed in the directory, and pass those to codespell.
     COMMAND
       git ls-files "${DIR}" | xargs
       "${CODESPELL_EXE}" --ignore-words="${CODESPELL_IGNORE_PATH}"
