@@ -28,7 +28,7 @@ endif()
 qt_add_executable(titgui ${CXX_SOURCES})
 add_executable(tit::gui ALIAS titgui)
 
-# Link with the dependant libraries.
+# Link with the dependent libraries.
 target_link_libraries(titgui PRIVATE tit::app Qt6::Widgets)
 
 # # Enable static analysis.

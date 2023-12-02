@@ -427,7 +427,7 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
   Vec<NumA, Dim> r;
   const auto& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_rows; ++i) {
-    // Supposed to be overriden by an intrinsic or optimized.
+    // Supposed to be overridden by an intrinsic or optimized.
     r[i] = merge(op(x[i], y[i]), a[i]);
   }
   return r;
@@ -439,7 +439,7 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
   Vec<sub_result_t<NumA, NumB>, Dim> r;
   const auto& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_rows; ++i) {
-    // Supposed to be overriden by an intrinsic or optimized.
+    // Supposed to be overridden by an intrinsic or optimized.
     r[i] = merge(op(x[i], y[i]), a[i], b[i]);
   }
   return r;
@@ -447,7 +447,7 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Component-wise minumum. */
+/** Component-wise minimum. */
 template<class Num, size_t Dim>
 constexpr auto minimum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
     -> Vec<Num, Dim> {

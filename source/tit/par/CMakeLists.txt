@@ -19,7 +19,7 @@ set(
 add_library(tit_par INTERFACE ${CXX_SOURCES})
 add_library(tit::par ALIAS tit_par)
 
-# Link with the dependant libraries.
+# Link with the dependent libraries.
 target_link_libraries(tit_par INTERFACE tit::core)
 
 # Enable static analysis.

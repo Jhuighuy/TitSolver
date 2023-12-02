@@ -15,7 +15,7 @@ set(
 add_test_executable(tit_par_tests ${CXX_SOURCES})
 add_executable(tit::par_tests ALIAS tit_par_tests)
 
-# Link with the dependant libraries.
+# Link with the dependent libraries.
 target_link_libraries(tit_par_tests PRIVATE tit::core tit::par)
 
 # # Enable static analysis.

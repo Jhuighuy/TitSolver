@@ -16,7 +16,7 @@ set(
 add_library(tit_app STATIC ${CXX_SOURCES})
 add_library(tit::app ALIAS tit_app)
 
-# Link with the dependant libraries.
+# Link with the dependent libraries.
 target_link_libraries(tit_app PUBLIC tit::core tit::par)
 
 # Enable static analysis.

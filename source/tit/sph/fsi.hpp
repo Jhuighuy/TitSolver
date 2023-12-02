@@ -192,7 +192,7 @@ public:
     });
     par::static_for_each(particles.views(), [&](PV a) {
       /// Finalize tensor of deformation gradient (stored in `P`)
-      /// and compute auxilary tensors from it.
+      /// and compute auxiliary tensors from it.
       const auto F_a = P[a] * L[a];
       const auto F_T_a = transpose(F_a);
       const auto F_T_inv_a = MatInv{F_T_a};
