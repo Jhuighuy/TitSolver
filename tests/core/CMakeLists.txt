@@ -9,6 +9,7 @@ set(
   CXX_SOURCES
   "math_tests.cpp"
   "mdvector_tests.cpp"
+  "string_utils_tests.cpp"
   "vec_tests.cpp")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -20,7 +21,7 @@ add_executable(tit::core_tests ALIAS tit_core_tests)
 # Link with the dependent libraries.
 target_link_libraries(tit_core_tests PRIVATE tit::core)
 
-# # Enable static analysis.
-# check_includes(tit::core_tests)
+# Enable static analysis.
+check_includes(tit::core_tests)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

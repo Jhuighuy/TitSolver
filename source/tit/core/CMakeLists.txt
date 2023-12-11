@@ -17,6 +17,7 @@ set(
   "misc.hpp"
   "multivector.hpp"
   "simd.hpp"
+  "string_utils.hpp"
   "types.hpp"
   "vec_avx.hpp"
   "vec_neon.hpp"
