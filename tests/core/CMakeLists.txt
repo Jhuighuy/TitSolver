@@ -9,6 +9,7 @@ set(
   CXX_SOURCES
   "math_tests.cpp"
   "mdvector_tests.cpp"
+  "posix_tests.cpp"
   "string_utils_tests.cpp"
   "vec_tests.cpp")
 
