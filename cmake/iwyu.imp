@@ -28,5 +28,8 @@
   { include: [ "@<__utility/.*>",        private, "<utility>",     public ] },
   { include: [ "@<__config>",            private, "<version>",     public ] },
 
+  # POSIX headers.
+  { include: [ "@<sys/signal.h>",        private, "<csignal>",     public ] },
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 ]

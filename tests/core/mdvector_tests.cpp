@@ -41,7 +41,7 @@ TEST_CASE("tit::core::Mdspan") {
   CHECK(mdspan[1][0] == 4);
   CHECK(mdspan[2][1] == 8);
   // Check data access using iterators.
-  const auto iter = std::ranges::find(mdspan, 7);
+  const auto* iter = std::ranges::find(mdspan, 7);
   CHECK(iter - mdspan.begin() == 6);
 }
 
