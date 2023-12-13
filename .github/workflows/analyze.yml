@@ -43,13 +43,26 @@ jobs:
         continue-on-error: true # might fail for unknown reason.
         run: |
           # Install packages and tools
-          ## Run installation script.
-          ./build/install_packages.sh
+          ## Fetch fresh packages.
+          sudo apt -qq update
+          ## Install the toolchain.
+          sudo apt -qq install cmake g++-13
+          ## Install Qt.
+          sudo apt -qq install libglx-dev libgl1-mesa-dev qt6-base-dev
+          ## Install LLVM and related tools.
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 17
+          sudo apt -qq install clang-17 clang-tidy-17 libomp-17-dev
+          sudo apt -qq install iwyu
+          ## Install Python tools.
+          pip3 install --user --upgrade gcovr
+          pip3 install --user --upgrade codespell
           ## Update vcpkg packages.
           cd $VCPKG_INSTALLATION_ROOT
           git reset --hard
           git checkout master
-          git pull > /dev/null
+          git pull
           ./bootstrap-vcpkg.sh
 
       - name: Install sonar-scanner and build-wrapper
@@ -68,11 +81,11 @@ jobs:
 
       - name: Build and test
         run: |
-          build-wrapper-linux-x86-64 \
-            --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} \
-            build/build.py \
-              --compiler=${{ env.GXX_EXE }} \
-              --config=Coverage \
+          build-wrapper-linux-x86-64                                           \
+            --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }}                         \
+            build/build.py                                                     \
+              --compiler=${{ env.GXX_EXE }}                                    \
+              --config=Coverage                                                \
               --test
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -82,13 +95,13 @@ jobs:
           # Collect coverage reports
           ## See reasons for using `--exclude-*` and `--decisions` below:
           ## https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
-          gcovr \
-            --gcov-executable "gcov-13" \
-            -e "output/*" -e "tests/*" \
-            --exclude-unreachable-branches \
-            --exclude-throw-branches \
-            --decisions \
-            --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}" \
+          gcovr                                                                \
+            --gcov-executable "gcov-13"                                        \
+            -e "output/*" -e "tests/*"                                         \
+            --exclude-unreachable-branches                                     \
+            --exclude-throw-branches                                           \
+            --decisions                                                        \
+            --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"                    \
             --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -106,7 +119,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          sonar-scanner \
+          sonar-scanner                                                                    \
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
             --define sonar.coverageReportPaths="${{ env.SONAR_COVERAGE_REPORT_PATH }}"
 
