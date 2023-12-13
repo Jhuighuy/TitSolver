@@ -77,15 +77,16 @@ jobs:
           git checkout master
           git pull
           ./bootstrap-vcpkg.sh
-          ## Stamp the last commit's hash.
+          ## Stamp the last vcpkg commit hash and the current compiler.
           git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
+          ${{ matrix.compiler }} --version > $WORK_DIR/vcpkg.compiler_id
 
       - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.*') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.*') }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
