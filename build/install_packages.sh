@@ -1,8 +1,7 @@
 #!/bin/sh
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Part of the Tit Solver project, under the MIT License
-# See /LICENSE.md for license information.
-# SPDX-License-Identifier: MIT
+# Part of the Tit Solver project, under the MIT License.
+# See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 BLUE_COLOR_CODE="\033[94m"

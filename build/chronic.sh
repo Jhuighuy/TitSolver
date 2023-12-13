@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Part of the Tit Solver project, under the MIT License
-# See /LICENSE.md for license information.
-# SPDX-License-Identifier: MIT
+# Part of the Tit Solver project, under the MIT License.
+# See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # This is a poor man's implementation of the moreutils's chronic.
