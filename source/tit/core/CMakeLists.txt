@@ -16,7 +16,10 @@ set(
   "meta.hpp"
   "misc.hpp"
   "multivector.hpp"
+  "posix.cpp"
+  "posix.hpp"
   "simd.hpp"
+  "string_utils.hpp"
   "types.hpp"
   "vec_avx.hpp"
   "vec_neon.hpp"
@@ -26,11 +29,11 @@ set(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Create the library.
-add_library(tit_core INTERFACE ${CXX_SOURCES})
+add_library(tit_core STATIC ${CXX_SOURCES})
 add_library(tit::core ALIAS tit_core)
 
 # Link with the dependent libraries.
-target_link_libraries(tit_core INTERFACE tit::base)
+target_link_libraries(tit_core PUBLIC tit::base)
 
 # Enable static analysis.
 check_includes(tit::core)

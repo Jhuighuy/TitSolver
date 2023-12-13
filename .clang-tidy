@@ -12,7 +12,9 @@ Checks: |
   cert-*
   concurrency-*
   cppcoreguidelines-*
+  -cppcoreguidelines-avoid-do-while
   -cppcoreguidelines-avoid-magic-numbers
+  -cppcoreguidelines-avoid-non-const-global-variables
   -cppcoreguidelines-macro-usage
   -cppcoreguidelines-misleading-capture-default-by-value
   -cppcoreguidelines-pro-bounds-constant-array-index
