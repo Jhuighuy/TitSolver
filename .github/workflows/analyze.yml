@@ -23,10 +23,12 @@ jobs:
   analyze_sonar:
     name: Analyze
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [g++-13]
+        coverage_tool: [gcov-13]
+        configuration: [Coverage]
     env:
-      # g++ and gcov executables.
-      GXX_EXE: g++-13
-      GCOV_EXE: gcov-13
       # Coverage report file path (Sonar for the future).
       SONAR_COVERAGE_REPORT_PATH: sonar_coverage.xml
       CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
@@ -58,24 +60,32 @@ jobs:
           ## Install Python tools.
           pip3 install --user --upgrade gcovr
           pip3 install --user --upgrade codespell
-          ## Update vcpkg packages.
-          cd $VCPKG_INSTALLATION_ROOT
-          git reset --hard
-          git checkout master
-          git pull
-          ./bootstrap-vcpkg.sh
 
       - name: Install sonar-scanner and build-wrapper
         uses: SonarSource/sonarcloud-github-c-cpp@v2
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+      - name: Update vcpkg packages
+        run: |
+          # Update vcpkg packages
+          ## Save the current directory.
+          WORK_DIR=$(pwd)
+          ## Update vcpkg packages.
+          cd $VCPKG_INSTALLATION_ROOT
+          git reset --hard
+          git checkout master
+          git pull
+          ./bootstrap-vcpkg.sh
+          ## Stamp the last commit's hash.
+          git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
+
       - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ env.GXX_EXE }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ env.GXX_EXE }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.*') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.*') }}
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -84,8 +94,8 @@ jobs:
           build-wrapper-linux-x86-64                                           \
             --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }}                         \
             build/build.py                                                     \
-              --compiler=${{ env.GXX_EXE }}                                    \
-              --config=Coverage                                                \
+              --compiler=${{ matrix.compiler }}                                \
+              --config=${{ matrix.configuration }}                             \
               --test
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -96,8 +106,9 @@ jobs:
           ## See reasons for using `--exclude-*` and `--decisions` below:
           ## https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
           gcovr                                                                \
-            --gcov-executable "gcov-13"                                        \
-            -e "output/*" -e "tests/*"                                         \
+            -e "output/*"                                                      \
+            -e "tests/*"                                                       \
+            --gcov-executable ${{ matrix.coverage_tool }}                      \
             --exclude-unreachable-branches                                     \
             --exclude-throw-branches                                           \
             --decisions                                                        \

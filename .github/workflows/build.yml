@@ -52,21 +52,29 @@ jobs:
           sudo apt -qq install iwyu
           ## Install Python tools.
           pip3 install --user --upgrade codespell
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Update vcpkg packages
+        run: |
+          # Update vcpkg packages
+          ## Save the current directory.
+          WORK_DIR=$(pwd)
           ## Update vcpkg packages.
           cd $VCPKG_INSTALLATION_ROOT
           git reset --hard
           git checkout master
           git pull
           ./bootstrap-vcpkg.sh
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+          ## Stamp the last commit's hash.
+          git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
 
       - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.*') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.*') }}
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -115,21 +123,29 @@ jobs:
           brew install -q qt@6
           ## Install Python tools.
           pip3 install --user --upgrade codespell
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Update vcpkg packages
+        run: |
+          # Update vcpkg packages
+          ## Save the current directory.
+          WORK_DIR=$(pwd)
           ## Update vcpkg packages.
           cd $VCPKG_INSTALLATION_ROOT
           git reset --hard
           git checkout master
           git pull
           ./bootstrap-vcpkg.sh
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+          ## Stamp the last commit's hash.
+          git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
 
       - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.*') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.*') }}
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
