@@ -236,6 +236,7 @@ def main():
         compiler=args.compiler,
         no_vcpkg=args.no_vcpkg,
         vcpkg_root=args.vcpkg_root,
+        extra_args=args.extra_args,
     )
 
     # Build.
