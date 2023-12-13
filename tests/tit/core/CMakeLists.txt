@@ -1,17 +1,16 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Part of the Tit Solver project, under the MIT License
-# See /LICENSE.md for license information.
-# SPDX-License-Identifier: MIT
+# Part of the Tit Solver project, under the MIT License.
+# See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Specify the list of sources.
 set(
   CXX_SOURCES
-  "math_tests.cpp"
-  "mdvector_tests.cpp"
-  "posix_tests.cpp"
-  "string_utils_tests.cpp"
-  "vec_tests.cpp")
+  "math.cpp"
+  "mdvector.cpp"
+  "posix.cpp"
+  "string_utils.cpp"
+  "vec.cpp")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

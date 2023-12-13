@@ -1,7 +1,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Part of the Tit Solver project, under the MIT License
-# See /LICENSE.md for license information.
-# SPDX-License-Identifier: MIT
+# Part of the Tit Solver project, under the MIT License.
+# See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 name: Build
@@ -31,6 +30,8 @@ jobs:
       fail-fast: false
     steps:
 
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -39,33 +40,56 @@ jobs:
       - name: Install packages and tools
         run: |
           # Install packages and tools
-          ## Run installation script.
-          ./build/install_packages.sh
+          ## Fetch fresh packages.
+          sudo apt -qq update
+          ## Install the toolchain.
+          sudo apt -qq install cmake g++-13
+          ## Install Qt.
+          sudo apt -qq install libglx-dev libgl1-mesa-dev qt6-base-dev
+          ## Install LLVM and related tools.
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 17
+          sudo apt -qq install clang-17 clang-tidy-17 libomp-17-dev
+          sudo apt -qq install iwyu
+          ## Install Python tools.
+          pip3 install --user --upgrade codespell
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Update vcpkg packages
+        run: |
+          # Update vcpkg packages
+          ## Save the current directory.
+          WORK_DIR=$(pwd)
           ## Update vcpkg packages.
           cd $VCPKG_INSTALLATION_ROOT
           git reset --hard
           git checkout master
-          git pull > /dev/null
+          git pull
           ./bootstrap-vcpkg.sh
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+          ## Stamp the last vcpkg commit hash and the current compiler.
+          git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
+          ${{ matrix.compiler }} --version > $WORK_DIR/vcpkg.compiler_id
 
       - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
       - name: Build and test
         run: |
           # Build and test
-          build/build.py \
-            --compiler=${{ matrix.compiler }} \
-            --config=${{ matrix.configuration }} \
+          build/build.py                                                       \
+            --compiler=${{ matrix.compiler }}                                  \
+            --config=${{ matrix.configuration }}                               \
             --test
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -80,6 +104,8 @@ jobs:
       fail-fast: false
     steps:
 
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -89,35 +115,57 @@ jobs:
         continue-on-error: true # might fail for unknown reason.
         run: |
           # Install packages and tools
-          ## Do not upgrade packages even if it will lead to a breakage.
+          ## Fetch fresh packages, but do not upgrade them automatically.
+          ## Do not upgrade packages even if it will break other packages.
+          export HOMEBREW_NO_AUTO_UPDATE=1
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          ## Run installation script.
-          ./build/install_packages.sh
+          brew update -q
+          ## Install the toolchain.
+          brew install -q cmake gcc@13
+          # ## Install LLVM and related tools.
+          # brew install -q llvm@17
+          # brew install -q include-what-you-use
+          # export PATH="$(brew --prefix llvm@17)/bin:$PATH"
+          ## Install Qt.
+          brew install -q qt@6
+          ## Install Python tools.
+          pip3 install --user --upgrade codespell
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Update vcpkg packages
+        run: |
+          # Update vcpkg packages
+          ## Save the current directory.
+          WORK_DIR=$(pwd)
           ## Update vcpkg packages.
           cd $VCPKG_INSTALLATION_ROOT
           git reset --hard
           git checkout master
-          git pull > /dev/null
+          git pull
           ./bootstrap-vcpkg.sh
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+          ## Stamp the last vcpkg commit hash and the current compiler.
+          git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
+          ${{ matrix.compiler }} --version > $WORK_DIR/vcpkg.compiler_id
 
       - name: Cache vcpkg packages
         uses: actions/cache@v3
         with:
           path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
       - name: Build and test
         run: |
           # Build and test
-          build/build.py \
-            --compiler=${{ matrix.compiler }} \
-            --config=${{ matrix.configuration }} \
+          build/build.py                                                       \
+            --compiler=${{ matrix.compiler }}                                  \
+            --config=${{ matrix.configuration }}                               \
             --test
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
