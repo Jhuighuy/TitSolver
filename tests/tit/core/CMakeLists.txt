@@ -7,18 +7,22 @@
 # Specify the list of sources.
 set(
   CXX_SOURCES
-  "memory_pool_tests.cpp")
+  "math.cpp"
+  "mdvector.cpp"
+  "posix.cpp"
+  "string_utils.cpp"
+  "vec.cpp")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Create the doctest-based executable.
-add_test_executable(tit_par_tests ${CXX_SOURCES})
-add_executable(tit::par_tests ALIAS tit_par_tests)
+add_test_executable(tit_core_tests ${CXX_SOURCES})
+add_executable(tit::core_tests ALIAS tit_core_tests)
 
 # Link with the dependent libraries.
-target_link_libraries(tit_par_tests PRIVATE tit::core tit::par)
+target_link_libraries(tit_core_tests PRIVATE tit::core)
 
-# # Enable static analysis.
-# check_includes(tit::par_tests)
+# Enable static analysis.
+check_includes(tit::core_tests)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
