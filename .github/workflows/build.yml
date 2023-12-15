@@ -84,7 +84,7 @@ jobs:
       - name: Build and test
         run: |
           # Build and test
-          build/build.py                                                       \
+          ./build/build.sh                                                     \
             --compiler=${{ matrix.compiler }}                                  \
             --config=${{ matrix.configuration }}                               \
             --test
@@ -160,7 +160,7 @@ jobs:
       - name: Build and test
         run: |
           # Build and test
-          build/build.py                                                       \
+          ./build/build.sh                                                     \
             --compiler=${{ matrix.compiler }}                                  \
             --config=${{ matrix.configuration }}                               \
             --test
