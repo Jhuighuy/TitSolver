@@ -24,24 +24,25 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+# C++ files.
+!*.hpp
+!*.cpp
+
+# Qt files.
+!*.rc
+!*.ui
+
 # CMake files.
 !CMakeLists.txt
 !*.cmake
 !/cmake/codespell.txt
 !/cmake/iwyu.imp
 
-# Pipelines.
-!/.github/workflows/*.yml
-
-# C++ files.
-!*.hpp
-!*.cpp
-
-# Qt files.
-!*.ui
-
 # Scripts.
 !*.sh
+
+# Pipelines.
+!/.github/workflows/*.yml
 
 # Markdown files.
 !*.md
