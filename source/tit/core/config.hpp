@@ -19,6 +19,13 @@
 #define TIT_IWYU 0
 #endif
 
+#ifndef TIT_GCOV
+#define TIT_GCOV 0
+#endif
+
+#define TIT_NO_INLINE __attribute__((noinline))
+#define TIT_FORCE_INLINE __attribute__((always_inline))
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Detect libc++

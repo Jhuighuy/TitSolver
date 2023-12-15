@@ -102,6 +102,8 @@ set(
   ${GNU_COMPILE_OPTIONS_DEBUG}
   # Enable code coverage instrumentation during compilation.
   --coverage
+  # Pass a definition that we are compiling with gcov.
+  -DTIT_GCOV=1
   # Disable inlining of functions, preventing the compiler from optimizing
   # function calls by replacing them with the function's code.
   -fno-default-inline

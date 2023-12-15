@@ -10,6 +10,11 @@ cmake_minimum_required(VERSION 3.20..3.27)
 # Setup the project.
 project(tit VERSION 0.1 LANGUAGES CXX)
 
+# Setup C++ globally: require C++23 and disable extensions.
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS NO)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Setup path to CMake scripts and include them.
@@ -36,11 +41,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
 add_library(tit_base INTERFACE)
 add_library(tit::base ALIAS tit_base)
 
-# Setup C++: require C++23 and disable extensions.
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED YES)
-set(CMAKE_CXX_EXTENSIONS NO)
-
 # Setup include directories.
 target_include_directories(tit_base INTERFACE ${ROOT_SOURCE_DIR})
 
@@ -59,8 +59,6 @@ foreach(CONFIG ${ALL_CONFIGS})
     INTERFACE
     $<$<CONFIG:${CONFIG}>:${CXX_LINK_OPTIONS_${CONFIG_UPPER}}>)
 endforeach()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Find {fmt}.
 find_package(fmt CONFIG REQUIRED)

@@ -10,8 +10,8 @@ set(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Create the doctest-based executable.
-add_test_executable(tit_par_tests ${CXX_SOURCES})
+# Create the unit test executable.
+add_unit_test_executable(tit_par_tests ${CXX_SOURCES})
 add_executable(tit::par_tests ALIAS tit_par_tests)
 
 # Link with the dependent libraries.

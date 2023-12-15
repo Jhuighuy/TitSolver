@@ -47,4 +47,11 @@
 # Markdown files.
 !*.md
 
+# Test input and output files.
+!/tests/*/*stdin*
+!/tests/*/*stdout*
+!/tests/*/*stderr*
+!/tests/*/*input*
+!/tests/*/*output*
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

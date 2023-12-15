@@ -11,6 +11,12 @@
 #include <source_location>
 #include <string_view>
 
+#include "tit/core/config.hpp"
+
+#if TIT_GCOV
+extern "C" void __gcov_dump(); // NOLINT
+#endif
+
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -49,7 +55,11 @@ namespace tit {
   std::cerr << "Internal consistency check failed: \"" << expr_string << "\". ";
   std::cerr << message << "\n";
   std::cerr.flush();
-  std::abort();
+#if TIT_GCOV
+  // Dump coverage data.
+  __gcov_dump();
+#endif
+  std::_Exit(-1);
 }
 
 // Actual implementation of "Ensure" macro.
