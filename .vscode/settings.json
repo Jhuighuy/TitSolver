@@ -16,6 +16,12 @@
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
+  "files.exclude": {
+    "output": true
+  },
+  "files.watcherExclude": {
+    "**/output/**": true,
+  },
   "files.associations": {
     "*.f90pp": "FortranFreeForm",
     "*.ipp": "cpp",

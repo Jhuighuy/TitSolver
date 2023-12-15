@@ -3,30 +3,56 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 {
+  "env": {
+    "includePath": [
+      "${workspaceFolder}/source"
+    ],
+    "vcpkgPackagesPath": "${workspaceFolder}/output/cmake_output/vcpkg_installed",
+    "brewIncludePath": [
+      "/opt/homebrew/include",
+      "/opt/homebrew/Frameworks/*.framework/Headers"
+    ]
+  },
   "configurations": [
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     {
-      "name": "macOS",
+      "name": "macOS (arm64-gcc-13)",
       "includePath": [
-        "/opt/homebrew/include",
-        "${workspaceFolder}/source/**",
-        "${workspaceFolder}/output/cmake_output/**"
+        "${includePath}",
+        "${brewIncludePath}",
+        "${vcpkgPackagesPath}/arm64-osx/include"
       ],
       "defines": [
         "__INTELLISENSE__"
       ],
-      "compilerPath": "/opt/homebrew/bin/g++-13",
+      "compilerPath": "/opt/homebrew/bin/gcc-13",
       "cStandard": "c11",
       "cppStandard": "c++23",
       "intelliSenseMode": "macos-gcc-arm64"
     },
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     {
-      "name": "Windows (MSYS2)",
+      "name": "macOS (arm64-gcc-13)",
+      "includePath": [
+        "${includePath}",
+        "${brewIncludePath}",
+        "${vcpkgPackagesPath}/x64-osx/include"
+      ],
+      "defines": [
+        "__INTELLISENSE__"
+      ],
+      "compilerPath": "/opt/homebrew/bin/gcc-13",
+      "cStandard": "c11",
+      "cppStandard": "c++23",
+      "intelliSenseMode": "macos-gcc-x64"
+    },
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    {
+      "name": "Windows (mingw64-gcc)",
       "includePath": [
         "C:/msys64/mingw64/include/**",
         "${workspaceFolder}/source/**",
-        "${workspaceFolder}/output/cmake_output/**"
+        "${workspaceFolder}/output/cmake_output/vcpkg_installed/x64-osx/include"
       ],
       "defines": [
         "__AVX__",
