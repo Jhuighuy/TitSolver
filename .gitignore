@@ -40,9 +40,6 @@
 # Qt files.
 !*.ui
 
-# Python files.
-!*.py
-
 # Scripts.
 !*.sh
 

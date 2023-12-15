@@ -8,15 +8,12 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Is help requested?
 if [[ "$*" == *"-h"* || "$*" == *"--help"* ]]; then
-    echo "usage: $0 [path ...]"
-    echo ""
-    echo "  Count lines of code in the git indexed files."
-    exit 0
+    echo "Usage: $(basename "$0") [path ...]"
+    exit 1
 fi
 
 # Count the lines of code.
-git ls-files $@ | xargs cloc
+git ls-files "$@" | xargs cloc
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

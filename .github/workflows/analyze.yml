@@ -96,7 +96,7 @@ jobs:
         run: |
           build-wrapper-linux-x86-64                                           \
             --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }}                         \
-            build/build.py                                                     \
+            ./build/build.sh                                                   \
               --compiler=${{ matrix.compiler }}                                \
               --config=${{ matrix.configuration }}                             \
               --test
