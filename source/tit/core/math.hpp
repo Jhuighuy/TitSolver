@@ -102,6 +102,12 @@ constexpr auto is_zero(Real a) noexcept -> bool {
   return abs(a) <= small_number_v<Real>;
 }
 
+/** Check if two numbers are approximately equal. */
+template<std::floating_point Real>
+constexpr auto approx_eq(Real a, Real b) noexcept -> bool {
+  return is_zero(a - b);
+}
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Compute the largest integer value not greater than number. */
@@ -341,21 +347,19 @@ constexpr auto gavg(Reals... values) noexcept {
  **
  ** @note This function does not propagate floating-point infinites or NaNs
  **       from @p a condition is `false`. */
-template<class Num>
-  requires std::is_trivial_v<Num>
-constexpr auto merge(bool m, Num a) noexcept -> Num {
+template<std::floating_point Real>
+constexpr auto merge(bool m, Real a) noexcept -> Real {
   // Supposed to be overridden by intrinsics or optimized-out.
   // TODO: implement with bit operations.
-  return m ? a : Num{0};
+  return m ? a : Real{0.0};
 }
 /** @brief Select one of two numbers vector based on condition.
  ** Implementation of this function is supposed to be branchless.
  **
  ** @note This function does not propagate floating-point infinites or NaNs
  **       from the argument which was not selected. */
-template<class Num>
-  requires std::is_trivial_v<Num>
-constexpr auto merge(bool m, Num a, Num b) noexcept -> Num {
+template<std::floating_point Real>
+constexpr auto merge(bool m, Real a, Real b) noexcept -> Real {
   // Supposed to be overridden by intrinsics or optimized-out.
   // TODO: implement with bit operations.
   return m ? a : b;
