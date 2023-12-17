@@ -13,6 +13,8 @@
 #include <concepts> // IWYU pragma: keep
 #include <cstdlib>
 #include <functional>
+#include <initializer_list>
+#include <ranges>
 #include <type_traits>
 #include <utility>
 
@@ -72,14 +74,8 @@ constexpr auto minus(Num a) noexcept -> Num {
 /** Sign of the value. */
 template<class Num>
   requires (!std::unsigned_integral<Num>)
-constexpr auto sign(Num a) noexcept -> Num {
-  const auto s = static_cast<Num>(Num{0} < a) - static_cast<Num>(a < Num{0});
-  if constexpr (std::integral<Num>) return s;
-  else {
-    // We need to do this extra division in order to propagate NaN correctly.
-    // Maybe there is a better way.
-    return s / (Num{1} - static_cast<Num>(std::isnan(a)));
-  }
+constexpr auto sign(Num a) noexcept -> int {
+  return int{Num{0} < a} - int{a < Num{0}};
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -235,6 +231,14 @@ constexpr auto pow9(Num a) noexcept -> Num {
 template<class Num>
 constexpr auto pow(Num a, std::type_identity_t<Num> power) noexcept -> Num {
   return std::pow(a, power);
+}
+
+/** Evaluate polynomial @f$ \sum c_k x^k @f$ value. */
+template<class Num, class Coeff>
+constexpr auto horner(Num x, std::initializer_list<Coeff> ci) noexcept {
+  add_result_t<mul_result_t<Num, Coeff>> r{0};
+  for (const auto c : ci | std::views::reverse) r = r * x + c;
+  return r;
 }
 
 /** Square root. */
