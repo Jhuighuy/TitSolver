@@ -462,16 +462,6 @@ constexpr auto maximum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Evaluate polynomial @f$ \sum c_k q^k @f$. */
-template<class NumQ, class NumC, size_t Dim>
-constexpr auto poly(NumQ q, Vec<NumC, Dim> ci) noexcept {
-  add_result_t<mul_result_t<NumQ, NumC>> r{ci[Dim - 1]};
-  for (ssize_t i = Dim - 2; i >= 0; --i) r = ci[i] + r * q;
-  return r;
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 } // namespace tit
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

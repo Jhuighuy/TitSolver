@@ -191,6 +191,13 @@ TEST_CASE_TEMPLATE("tit::core::pow", T, int, float, double) {
   CHECK(tit::pow(-T{2}, 10) == T{1024});
 }
 
+TEST_CASE_TEMPLATE("tit::core::horner", T, int, float, double) {
+  CHECK(tit::horner(T{1}, {T{1}}) == T{1});
+  CHECK(tit::horner(T{3}, {T{1}, -T{3}, T{2}}) == T{10});
+  CHECK(tit::horner(-T{2}, {T{4}, -T{1}, T{3}}) == T{18});
+  CHECK(tit::horner(T{3}, {T{6}, T{1}, -T{4}, T{1}}) == T{0});
+}
+
 TEST_CASE_TEMPLATE("tit::core::sqrt", T, float, double) {
   CHECK(tit::sqrt(T{0.0}) == T{0.0});
   CHECK(tit::sqrt(T{4.0}) == T{2.0});
