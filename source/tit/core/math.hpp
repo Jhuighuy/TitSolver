@@ -21,6 +21,7 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/config.hpp"
+#include "tit/core/misc.hpp"
 #include "tit/core/types.hpp"
 
 namespace tit {
@@ -371,26 +372,49 @@ constexpr auto merge(bool m, Real a, Real b) noexcept -> Real {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Newton-Raphson solver status. */
+enum class NewtonRaphsonStatus {
+  /** Success. */
+  success,
+  /** Failure: number of iterations exceeded. */
+  failure_max_iter,
+  /** Failure: computation reached a zero derivative. */
+  failure_zero_deriv,
+}; // enum class NewtonRaphsonStatus
+
 /** Find function rool using Newton-Raphson method.
  ** @param x Current estimate of the root.
  ** @param f Function whose root we are looking for.
  **          Should return a pair of it's value and derivative.
- **          Should implicitly depend on @p x
+ **          Should implicitly depend on @p x.
  ** @param eps Tolerance.
  ** @param max_iter Maximum amount of iterations.
  ** @returns True on success. */
-template<std::floating_point Real, std::invocable Func>
-constexpr auto newton_raphson(Real& x, const Func& f, //
-                              Real eps = Real{1.0e-9}, size_t max_iter = 10)
-    -> bool {
+template<std::floating_point Real, class Func>
+  requires std::invocable<Func&&>
+constexpr auto newton_raphson(Real& x, Func&& f,
+                              Real eps = small_number_v<Real>,
+                              size_t max_iter = 10) -> NewtonRaphsonStatus {
+  TIT_ASSUME_UNIVERSAL(Func, f);
+  using enum NewtonRaphsonStatus;
   for (size_t iter = 0; iter < max_iter; ++iter) {
     const auto [y, df_dx] = std::invoke(f /*, x*/);
-    if (abs(y) <= eps) return true;
-    if (is_zero(df_dx)) break;
+    if (abs(y) <= eps) return success;
+    if (is_zero(df_dx)) return failure_zero_deriv;
     x -= y / df_dx;
   }
-  return false;
+  return failure_max_iter;
 }
+
+/** Bisection solver status. */
+enum class BisectionStatus {
+  /** Success. */
+  success,
+  /** Failure: number of iterations exceeded. */
+  failure_max_iter,
+  /** Failure: function has same signs on the ends of the search range. */
+  failure_sign,
+}; // enum class BisectionStatus
 
 /** Find function rool using Bisection method.
  ** @param min_x Root's lower bound.
@@ -399,40 +423,42 @@ constexpr auto newton_raphson(Real& x, const Func& f, //
  ** @param eps Tolerance.
  ** @param max_iter Maximum amount of iterations.
  ** @returns True on success. */
-template<std::floating_point Real, std::invocable<Real> Func>
-constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
-                         Real eps = Real{1.0e-9}, size_t max_iter = 10)
-    -> bool {
+template<std::floating_point Real, class Func>
+  requires std::invocable<Func&&, Real> &&
+           std::assignable_from<Real&, std::invoke_result_t<Func&&, Real>>
+constexpr auto bisection(Real& min_x, Real& max_x, Func&& f,
+                         Real eps = small_number_v<Real>, //
+                         size_t max_iter = 10) -> BisectionStatus {
+  TIT_ASSUME_UNIVERSAL(Func, f);
   TIT_ASSERT(min_x <= max_x, "Inverted search range!");
-  auto min_f = std::invoke(f, min_x);
+  using enum BisectionStatus;
   // Check for the region bounds first.
+  auto min_f = std::invoke(f, min_x);
   if (abs(min_f) <= eps) {
     max_x = min_x;
-    return true;
+    return success;
   }
   auto max_f = std::invoke(f, max_x);
   if (abs(max_f) <= eps) {
     min_x = max_x;
-    return true;
+    return success;
   }
-  if (sign(max_f) == sign(min_f)) return false;
   for (size_t iter = 0; iter < max_iter; ++iter) {
+    if (sign(max_f) == sign(min_f)) return failure_sign;
     // Approximate f(x) with line equation:
     // f(x) = min_f + (max_f - min_f)/(max_x - min_x) * (x - min_x),
     // so approximate root of f(x) == 0 is:
-    const Real x = min_x - min_f * (max_x - min_x) / (max_f - min_f);
+    const auto x = min_x - min_f * (max_x - min_x) / (max_f - min_f);
     const auto y = std::invoke(f, x);
     if (abs(y) <= eps) {
       min_x = max_x = x;
-      return true;
+      return success;
     }
-    if (sign(min_f) == sign(y)) {
-      min_x = x, min_f = y;
-    } else if (sign(max_f) == sing(y)) {
-      max_x = x, max_f = y;
-    }
+    const auto sign_y = sign(y);
+    if (sign_y != sign(min_f)) max_x = x, max_f = y;
+    else if (sign_y != sign(max_f)) min_x = x, min_f = y;
   }
-  return false;
+  return failure_max_iter;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

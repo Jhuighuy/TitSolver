@@ -3,13 +3,19 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cmath> // IWYU pragma: keep
+#include <concepts>
+#include <functional>
 #include <limits>
 #include <numbers> // IWYU pragma: keep
+#include <tuple>
+#include <utility>
 
 #include <doctest/doctest.h>
 
 #include "tit/core/config.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/types.hpp"
 
 namespace {
 
@@ -283,9 +289,110 @@ TEST_CASE_TEMPLATE("tit::core::merge", T, float, double) {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// TODO: add those!
-TEST_CASE("tit::core::newton_raphson") {}
-TEST_CASE("tit::core::bisection") {}
+// A wrapper for a function with call count.
+template<class Func>
+class CountedFunc {
+public:
+
+  constexpr explicit CountedFunc(Func func) noexcept : func_(std::move(func)) {}
+
+  template<class... Args>
+    requires std::invocable<Func, Args&&...>
+  constexpr auto operator()(Args&&... args) {
+    count_ += 1;
+    return std::invoke(func_, std::forward<Args>(args)...);
+  }
+
+  constexpr auto count() const noexcept {
+    return count_;
+  }
+
+private:
+
+  Func func_;
+  tit::size_t count_ = 0;
+
+}; // class MyFunc
+
+TEST_CASE_TEMPLATE("tit::core::newton_raphson", T, float, double) {
+  using enum tit::NewtonRaphsonStatus;
+  SUBCASE("quadratic") {
+    SUBCASE("success") {
+      auto x = T{1.0};
+      const auto f = [&] {
+        return std::tuple{tit::pow2(x) - T{4.0}, T{2.0} * x};
+      };
+      CHECK(tit::newton_raphson(x, f) == success);
+      constexpr auto root = T{2.0};
+      CHECK(tit::is_zero(x - root));
+    }
+    SUBCASE("failure_max_iter") {
+      auto x = T{1.0};
+      const auto f = [&] {
+        return std::tuple{tit::pow2(x) + T{4.0}, T{2.0} * x};
+      };
+      CHECK(tit::newton_raphson(x, f) == failure_max_iter);
+    }
+    SUBCASE("failure_zero_derivative") {
+      auto x = T{2.0};
+      const auto f = [&] {
+        return std::tuple{tit::pow3(x) - T{12.0} * x + T{2.0},
+                          T{3.0} * tit::pow2(x) - T{12.0}};
+      };
+      CHECK(tit::newton_raphson(x, f) == failure_zero_deriv);
+    }
+  }
+}
+
+TEST_CASE_TEMPLATE("tit::core::bisection", T, float, double) {
+  using enum tit::BisectionStatus;
+  SUBCASE("quadratic") {
+    const auto f = [](T x) { return tit::pow2(x) - T{4.0}; };
+    constexpr auto root = T{2.0};
+    SUBCASE("success") {
+      auto min_x = T{1.5}, max_x = T{3.5};
+      CHECK(tit::bisection(min_x, max_x, f) == success);
+      CHECK(tit::is_zero(min_x - root));
+      CHECK(tit::is_zero(max_x - root));
+    }
+    SUBCASE("success_early_min") {
+      auto min_x = T{2.0}, max_x = T{4.0};
+      auto counted_f = CountedFunc{f};
+      CHECK(tit::bisection(min_x, max_x, counted_f) == success);
+      CHECK(counted_f.count() <= 1);
+      CHECK(tit::is_zero(min_x - root));
+      CHECK(tit::is_zero(max_x - root));
+    }
+    SUBCASE("success_early_max") {
+      auto min_x = T{0.0}, max_x = T{2.0};
+      auto counted_f = CountedFunc{f};
+      CHECK(tit::bisection(min_x, max_x, counted_f) == success);
+      CHECK(counted_f.count() <= 2);
+      CHECK(tit::is_zero(min_x - root));
+      CHECK(tit::is_zero(max_x - root));
+    }
+    SUBCASE("failure_sign") {
+      auto min_x = T{2.5}, max_x = T{5.5};
+      CHECK(tit::bisection(min_x, max_x, f) == failure_sign);
+    }
+  }
+  SUBCASE("sin") {
+    SUBCASE("success") {
+      const auto f = [](auto x) { return std::sin(x) + T{0.5}; };
+      const auto root = T{7.0} * std::numbers::pi_v<T> / T{6.0};
+      auto min_x = T{1.0}, max_x = T{4.0};
+      CHECK(tit::bisection(min_x, max_x, f) == success);
+      CHECK(tit::is_zero(min_x - root));
+      CHECK(tit::is_zero(max_x - root));
+    }
+    SUBCASE("failure_max_iter") {
+      const auto f = [](auto x) { return std::sin(x) - tit::inverse(x); };
+      auto min_x = T{0.1}, max_x = T{1.2};
+      // Requires 23 iterations for `float` and 72 for `double`.
+      CHECK(tit::bisection(min_x, max_x, f) == failure_max_iter);
+    }
+  }
+}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
