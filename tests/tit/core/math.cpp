@@ -3,423 +3,282 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <cmath>
 #include <limits>
-#include <numbers>
+#include <numbers> // IWYU pragma: keep
 
 #include <doctest/doctest.h>
 
+#include "tit/core/config.hpp"
 #include "tit/core/math.hpp"
 
 namespace {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-using numeric_limits = std::numeric_limits<double>;
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-TEST_CASE("tit::core::abs") {
-  // Check signed integers.
-  CHECK(tit::abs(0) == 0);
-  CHECK(tit::abs(+2) == 2);
-  CHECK(tit::abs(-2) == 2);
-  // Check ordinary floating-point numbers.
-  CHECK(tit::abs(0.0) == 0.0);
-  CHECK(tit::abs(+2.0) == 2.0);
-  CHECK(tit::abs(-2.0) == 2.0);
-  // Check infinity.
-  CHECK(tit::abs(+numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::abs(-numeric_limits::infinity()) == numeric_limits::infinity());
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::abs(numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::abs", T, int, float, double) {
+  CHECK(tit::abs(T{0}) == T{0});
+  CHECK(tit::abs(+T{2}) == T{2});
+  CHECK(tit::abs(-T{2}) == T{2});
 }
 
-TEST_CASE("tit::core::plus") {
-  // Check signed integers.
-  CHECK(tit::plus(0) == 0);
-  CHECK(tit::plus(+2) == 2);
-  CHECK(tit::plus(-2) == 0);
-  // Check ordinary floating-point numbers.
-  CHECK(tit::plus(0.0) == 0.0);
-  CHECK(tit::plus(+2.0) == 2.0);
-  CHECK(tit::plus(-2.0) == 0.0);
-  // Check infinity.
-  CHECK(tit::plus(+numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::plus(-numeric_limits::infinity()) == 0.0);
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::plus(numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::plus", T, int, float, double) {
+  CHECK(tit::plus(T{0}) == T{0});
+  CHECK(tit::plus(+T{2}) == T{2});
+  CHECK(tit::plus(-T{2}) == T{0});
 }
 
-TEST_CASE("tit::core::minus") {
-  // Check signed integers.
-  CHECK(tit::minus(0) == 0);
-  CHECK(tit::minus(+2) == 0);
-  CHECK(tit::minus(-2) == -2);
-  // Check ordinary floating-point numbers.
-  CHECK(tit::minus(0.0) == 0.0);
-  CHECK(tit::minus(+2.0) == 0.0);
-  CHECK(tit::minus(-2.0) == -2.0);
-  // Check infinity.
-  CHECK(tit::minus(+numeric_limits::infinity()) == 0.0);
-  CHECK(tit::minus(-numeric_limits::infinity()) == -numeric_limits::infinity());
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::minus(numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::minus", T, int, float, double) {
+  CHECK(tit::minus(T{0}) == T{0});
+  CHECK(tit::minus(+T{2}) == T{0});
+  CHECK(tit::minus(-T{2}) == -T{2});
 }
 
-TEST_CASE("tit::core::sign") {
-  // Check signed integers.
-  CHECK(tit::sign(0) == 0);
-  CHECK(tit::sign(+2) == +1);
-  CHECK(tit::sign(-2) == -1);
-  // Check ordinary floating-point numbers.
-  CHECK(tit::sign(0.0) == 0.0);
-  CHECK(tit::sign(+2.0) == +1.0);
-  CHECK(tit::sign(-2.0) == -1.0);
-  // Check infinity.
-  CHECK(tit::sign(+numeric_limits::infinity()) == 1.0);
-  CHECK(tit::sign(-numeric_limits::infinity()) == -1.0);
-  // Ensure NaN propagation.
-  CHECK(std::isnan(numeric_limits::quiet_NaN()));
+TEST_CASE_TEMPLATE("tit::core::sign", T, int, float, double) {
+  CHECK(tit::sign(T{0}) == T{0});
+  CHECK(tit::sign(+T{2}) == +T{1});
+  CHECK(tit::sign(-T{2}) == -T{1});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::small_number_v") {
+TEST_CASE_TEMPLATE("tit::core::small_number_v", T, float, double) {
   // Small number must be positive.
-  CHECK(tit::small_number_v<double> > 0.0);
+  CHECK(tit::small_number_v<T> > 0.0);
   // Small number should be larger than machine epsilon.
-  CHECK(tit::small_number_v<double> >= numeric_limits::epsilon());
+  CHECK(tit::small_number_v<T> >= std::numeric_limits<double>::epsilon());
 }
 
-TEST_CASE("tit::core::is_zero") {
-  // Check ordinary small floating-point numbers.
-  CHECK(tit::is_zero(+0.0));
-  CHECK(tit::is_zero(-0.0));
-  CHECK(!tit::is_zero(+1.0));
-  CHECK(!tit::is_zero(-1.0));
+TEST_CASE_TEMPLATE("tit::core::is_zero", T, float, double) {
+  // Check ordinary numbers.
+  CHECK(tit::is_zero(+T{0.0}));
+  CHECK(tit::is_zero(-T{0.0}));
+  CHECK(!tit::is_zero(+T{1.0}));
+  CHECK(!tit::is_zero(-T{1.0}));
   // Check if comparisons with `small_number_v` work as expected.
-  CHECK(tit::is_zero(+tit::small_number_v<double>));
-  CHECK(tit::is_zero(-tit::small_number_v<double>));
-  CHECK(tit::is_zero(+0.1 * tit::small_number_v<double>));
-  CHECK(tit::is_zero(-0.1 * tit::small_number_v<double>));
-  CHECK(!tit::is_zero(+2.0 * tit::small_number_v<double>));
-  CHECK(!tit::is_zero(-2.0 * tit::small_number_v<double>));
-  // Check infinity.
-  CHECK(!tit::is_zero(+numeric_limits::infinity()));
-  CHECK(!tit::is_zero(-numeric_limits::infinity()));
-  // Check epsilon.
-  CHECK(tit::is_zero(+numeric_limits::epsilon()));
-  CHECK(tit::is_zero(-numeric_limits::epsilon()));
+  CHECK(tit::is_zero(+tit::small_number_v<T>));
+  CHECK(tit::is_zero(-tit::small_number_v<T>));
+  CHECK(tit::is_zero(+T{0.1} * tit::small_number_v<T>));
+  CHECK(tit::is_zero(-T{0.1} * tit::small_number_v<T>));
+  CHECK(!tit::is_zero(+T{2.0} * tit::small_number_v<T>));
+  CHECK(!tit::is_zero(-T{2.0} * tit::small_number_v<T>));
+}
+
+TEST_CASE_TEMPLATE("tit::core::approx_eq", T, float, double) {
+  // Check ordinary numbers.
+  CHECK(tit::approx_eq(T{1.234}, T{1.234}));
+  CHECK(!tit::approx_eq(T{1.234}, T{5.5678}));
+  // Check if comparisons with `small_number_v` work as expected.
+  CHECK(tit::approx_eq(T{1.234}, T{1.234} + tit::small_number_v<T>));
+  CHECK(tit::approx_eq(T{1.234} - tit::small_number_v<T>, T{1.234}));
+  CHECK(tit::approx_eq(T{1.234}, T{1.234} + T{0.1} * tit::small_number_v<T>));
+  CHECK(tit::approx_eq(T{1.234} - T{0.1} * tit::small_number_v<T>, T{1.234}));
+  CHECK(!tit::approx_eq(T{1.234}, T{1.234} + T{2.0} * tit::small_number_v<T>));
+  CHECK(!tit::approx_eq(T{1.234} - T{2.0} * tit::small_number_v<T>, T{1.234}));
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::floor") {
-  // Check ordinary non-negative numbers.
-  CHECK(tit::floor(0.0) == 0.0);
-  CHECK(tit::floor(1.1) == 1.0);
-  CHECK(tit::floor(1.5) == 1.0);
-  CHECK(tit::floor(1.9) == 1.0);
-  // Check ordinary negative numbers.
-  CHECK(tit::floor(-1.1) == -2.0);
-  CHECK(tit::floor(-1.5) == -2.0);
-  CHECK(tit::floor(-1.9) == -2.0);
-  // Check infinity.
-  CHECK(tit::floor(+numeric_limits::infinity()) == +numeric_limits::infinity());
-  CHECK(tit::floor(-numeric_limits::infinity()) == -numeric_limits::infinity());
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::floor(numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::floor", T, float, double) {
+  // Check non-negative numbers.
+  CHECK(tit::floor(T{0.0}) == T{0.0});
+  CHECK(tit::floor(T{1.1}) == T{1.0});
+  CHECK(tit::floor(T{1.5}) == T{1.0});
+  CHECK(tit::floor(T{1.9}) == T{1.0});
+  // Check negative numbers.
+  CHECK(tit::floor(-T{1.1}) == -T{2.0});
+  CHECK(tit::floor(-T{1.5}) == -T{2.0});
+  CHECK(tit::floor(-T{1.9}) == -T{2.0});
 }
 
-TEST_CASE("tit::core::round") {
-  // Check ordinary non-negative numbers.
-  CHECK(tit::round(0.0) == 0.0);
-  CHECK(tit::round(1.1) == 1.0);
-  CHECK(tit::round(1.5) == 2.0);
-  CHECK(tit::round(1.9) == 2.0);
-  // Check ordinary negative numbers.
-  CHECK(tit::round(-1.1) == -1.0);
-  CHECK(tit::round(-1.5) == -2.0);
-  CHECK(tit::round(-1.9) == -2.0);
-  // Check infinity.
-  CHECK(tit::round(+numeric_limits::infinity()) == +numeric_limits::infinity());
-  CHECK(tit::round(-numeric_limits::infinity()) == -numeric_limits::infinity());
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::round(numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::round", T, float, double) {
+  // Check non-negative numbers.
+  CHECK(tit::round(T{0.0}) == T{0.0});
+  CHECK(tit::round(T{1.1}) == T{1.0});
+  CHECK(tit::round(T{1.5}) == T{2.0});
+  CHECK(tit::round(T{1.9}) == T{2.0});
+  // Check negative numbers.
+  CHECK(tit::round(-T{1.1}) == -T{1.0});
+  CHECK(tit::round(-T{1.5}) == -T{2.0});
+  CHECK(tit::round(-T{1.9}) == -T{2.0});
 }
 
-TEST_CASE("tit::core::ceil") {
-  // Check ordinary non-negative numbers.
-  CHECK(tit::ceil(0.0) == 0.0);
-  CHECK(tit::ceil(1.1) == 2.0);
-  CHECK(tit::ceil(1.5) == 2.0);
-  CHECK(tit::ceil(1.9) == 2.0);
-  // Check ordinary negative numbers.
-  CHECK(tit::ceil(-1.1) == -1.0);
-  CHECK(tit::ceil(-1.5) == -1.0);
-  CHECK(tit::ceil(-1.9) == -1.0);
-  // Check infinity.
-  CHECK(tit::ceil(+numeric_limits::infinity()) == +numeric_limits::infinity());
-  CHECK(tit::ceil(-numeric_limits::infinity()) == -numeric_limits::infinity());
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::ceil(numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::ceil", T, float, double) {
+  // Check non-negative numbers.
+  CHECK(tit::ceil(T{0.0}) == T{0.0});
+  CHECK(tit::ceil(T{1.1}) == T{2.0});
+  CHECK(tit::ceil(T{1.5}) == T{2.0});
+  CHECK(tit::ceil(T{1.9}) == T{2.0});
+  // Check negative numbers.
+  CHECK(tit::ceil(-T{1.1}) == -T{1.0});
+  CHECK(tit::ceil(-T{1.5}) == -T{1.0});
+  CHECK(tit::ceil(-T{1.9}) == -T{1.0});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::inverse") {
-  // Check ordinary numbers.
-  CHECK(tit::inverse(2) == 0.5);
-  CHECK(tit::inverse(10) == 0.1);
-  CHECK(tit::inverse(10.0) == 0.1);
-  // Check infinity.
-  CHECK(tit::inverse(numeric_limits::infinity()) == 0.0);
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::inverse(numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::inverse", T, int, float, double) {
+  CHECK(tit::inverse(T{2}) == 0.5);
+  CHECK(tit::inverse(T{8}) == 0.125);
 }
 
-TEST_CASE("tit::core::divide") {
-  // Check ordinary divisors.
-  CHECK(tit::divide(1, 2) == 0.5);
-  CHECK(tit::divide(1, 10) == 0.1);
-  CHECK(tit::divide(1, 10.0) == 0.1);
-  // Check infinity.
-  CHECK(tit::divide(1.0, numeric_limits::infinity()) == 0.0);
-  CHECK(std::isnan(tit::divide(numeric_limits::infinity(), //
-                               numeric_limits::infinity())));
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::divide(numeric_limits::quiet_NaN(), 1.0)));
-  CHECK(std::isnan(tit::divide(1.0, numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::divide(numeric_limits::quiet_NaN(), //
-                               numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::divide", T, int, float, double) {
+  // Note: the result is always floating-point.
+  CHECK(tit::divide(T{1}, 2) == 0.5);
+  CHECK(tit::divide(T{1}, 2.0f) == 0.5);
+  CHECK(tit::divide(T{1}, 2.0) == 0.5);
 }
 
-TEST_CASE("tit::core::safe_inverse") {
-  // Check ordinary non-"small" numbers.
-  CHECK(tit::safe_inverse(2.0) == 0.5);
-  CHECK(tit::safe_inverse(10.0) == 0.1);
-  // Check small numbers.
-  CHECK(tit::safe_inverse(0.0) == 0.0);
-  CHECK(tit::safe_inverse(tit::small_number_v<double>) == 0.0);
-  CHECK(tit::safe_inverse(0.1 * tit::small_number_v<double>) == 0.0);
-  CHECK(tit::safe_inverse(2.0 * tit::small_number_v<double>) != 0.0);
-  // Check infinity.
-  CHECK(tit::safe_inverse(numeric_limits::infinity()) == 0.0);
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::safe_inverse(numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::safe_inverse", T, float, double) {
+  // Check non-"small" numbers.
+  CHECK(tit::safe_inverse(T{2.0}) == T{0.5});
+  CHECK(tit::safe_inverse(T{10.0}) == T{0.1});
+  // Check "small" numbers.
+  CHECK(tit::safe_inverse(T{0.0}) == T{0.0});
+  CHECK(tit::safe_inverse(tit::small_number_v<T>) == 0.0);
+  CHECK(tit::safe_inverse(T{0.1} * tit::small_number_v<T>) == T{0.0});
+  CHECK(tit::safe_inverse(T{2.0} * tit::small_number_v<T>) != T{0.0});
 }
 
-TEST_CASE("tit::core::safe_divide") {
-  // Check ordinary non-"small" divisors.
-  CHECK(tit::safe_divide(1, 2.0) == 0.5);
-  CHECK(tit::safe_divide(1.0, 10.0) == 0.1);
-  // Check small divisors.
-  CHECK(tit::safe_divide(1.0, 0.0) == 0.0);
-  CHECK(tit::safe_divide(1.0, tit::small_number_v<double>) == 0.0);
-  CHECK(tit::safe_divide(1.0, 0.1 * tit::small_number_v<double>) == 0.0);
-  CHECK(tit::safe_divide(1.0, 2.0 * tit::small_number_v<double>) != 0.0);
-  // Check infinity.
-  CHECK(tit::safe_divide(1.0, numeric_limits::infinity()) == 0.0);
-  CHECK(std::isnan(tit::safe_divide(numeric_limits::infinity(),
-                                    numeric_limits::infinity())));
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::safe_divide(numeric_limits::quiet_NaN(), 1.0)));
-  CHECK(std::isnan(tit::safe_divide(1.0, numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::safe_divide(numeric_limits::quiet_NaN(),
-                                    numeric_limits::quiet_NaN())));
+TEST_CASE_TEMPLATE("tit::core::safe_divide", T, float, double) {
+  // Check non-"small" divisors.
+  CHECK(tit::safe_divide(1, T{2.0}) == T{0.5});
+  CHECK(tit::safe_divide(1, T{10.0}) == T{0.1});
+  // Check "small" divisors.
+  CHECK(tit::safe_divide(1, T{0.0}) == T{0.0});
+  CHECK(tit::safe_divide(1, tit::small_number_v<T>) == T{0.0});
+  CHECK(tit::safe_divide(1, T{0.1} * tit::small_number_v<T>) == T{0.0});
+  CHECK(tit::safe_divide(1, T{2.0} * tit::small_number_v<T>) != T{0.0});
 }
 
-TEST_CASE("tit::core::ceil_divide") {
-  CHECK(tit::ceil_divide(0U, 10U) == 0U);
-  CHECK(tit::ceil_divide(3U, 10U) == 1U);
-  CHECK(tit::ceil_divide(7U, 10U) == 1U);
-  CHECK(tit::ceil_divide(10U, 10U) == 1U);
-  CHECK(tit::ceil_divide(11U, 10U) == 2U);
-  CHECK(tit::ceil_divide(20U, 10U) == 2U);
+TEST_CASE_TEMPLATE("tit::core::ceil_divide", T, unsigned) {
+  CHECK(tit::ceil_divide(T{0}, T{10}) == T{0});
+  CHECK(tit::ceil_divide(T{3}, T{10}) == T{1});
+  CHECK(tit::ceil_divide(T{7}, T{10}) == T{1});
+  CHECK(tit::ceil_divide(T{10}, T{10}) == T{1});
+  CHECK(tit::ceil_divide(T{11}, T{10}) == T{2});
+  CHECK(tit::ceil_divide(T{20}, T{10}) == T{2});
 }
 
-TEST_CASE("tit::core::align") {
-  CHECK(tit::align(0U, 10U) == 0U);
-  CHECK(tit::align(3U, 10U) == 10U);
-  CHECK(tit::align(7U, 10U) == 10U);
-  CHECK(tit::align(10U, 10U) == 10U);
-  CHECK(tit::align(11U, 10U) == 20U);
-  CHECK(tit::align(20U, 10U) == 20U);
+TEST_CASE_TEMPLATE("tit::core::align", T, unsigned) {
+  CHECK(tit::align(T{0}, T{10}) == T{0});
+  CHECK(tit::align(T{3}, T{10}) == T{10});
+  CHECK(tit::align(T{7}, T{10}) == T{10});
+  CHECK(tit::align(T{10}, T{10}) == T{10});
+  CHECK(tit::align(T{11}, T{10}) == T{20});
+  CHECK(tit::align(T{20}, T{10}) == T{20});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::pow") {
-  // Check ordinary numbers.
-  CHECK(tit::pow2(+2.0) == +4.0);
-  CHECK(tit::pow2(-2.0) == +4.0);
-  CHECK(tit::pow3(+2.0) == +8.0);
-  CHECK(tit::pow3(-2.0) == -8.0);
-  CHECK(tit::pow4(+2.0) == +16.0);
-  CHECK(tit::pow4(-2.0) == +16.0);
-  CHECK(tit::pow5(+2.0) == +32.0);
-  CHECK(tit::pow5(-2.0) == -32.0);
-  CHECK(tit::pow6(+2.0) == +64.0);
-  CHECK(tit::pow6(-2.0) == +64.0);
-  CHECK(tit::pow7(+2.0) == +128.0);
-  CHECK(tit::pow7(-2.0) == -128.0);
-  CHECK(tit::pow8(+2.0) == +256.0);
-  CHECK(tit::pow8(-2.0) == +256.0);
-  CHECK(tit::pow9(+2.0) == +512.0);
-  CHECK(tit::pow9(-2.0) == -512.0);
-  CHECK(tit::pow(2.0, 10) == 1024.0);
-  CHECK(tit::pow(2.0, 10.0) == 1024.0);
-  // Check infinity.
-  CHECK(tit::pow2(numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::pow3(numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::pow4(numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::pow5(numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::pow6(numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::pow7(numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::pow8(numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::pow9(numeric_limits::infinity()) == numeric_limits::infinity());
-  CHECK(tit::pow(numeric_limits::infinity(), 10) == numeric_limits::infinity());
-  CHECK(tit::pow(numeric_limits::infinity(), 10.0) ==
-        numeric_limits::infinity());
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::pow2(numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::pow3(numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::pow4(numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::pow5(numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::pow6(numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::pow7(numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::pow8(numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::pow9(numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::pow(numeric_limits::quiet_NaN(), 10)));
-  CHECK(std::isnan(tit::pow(numeric_limits::quiet_NaN(), 10.0)));
+TEST_CASE_TEMPLATE("tit::core::pow", T, int, float, double) {
+  CHECK(tit::pow2(+T{2}) == +T{4});
+  CHECK(tit::pow2(-T{2}) == +T{4});
+  CHECK(tit::pow3(+T{2}) == +T{8});
+  CHECK(tit::pow3(-T{2}) == -T{8});
+  CHECK(tit::pow4(+T{2}) == +T{16});
+  CHECK(tit::pow4(-T{2}) == +T{16});
+  CHECK(tit::pow5(+T{2}) == +T{32});
+  CHECK(tit::pow5(-T{2}) == -T{32});
+  CHECK(tit::pow6(+T{2}) == +T{64});
+  CHECK(tit::pow6(-T{2}) == +T{64});
+  CHECK(tit::pow7(+T{2}) == +T{128});
+  CHECK(tit::pow7(-T{2}) == -T{128});
+  CHECK(tit::pow8(+T{2}) == +T{256});
+  CHECK(tit::pow8(-T{2}) == +T{256});
+  CHECK(tit::pow9(+T{2}) == +T{512});
+  CHECK(tit::pow9(-T{2}) == -T{512});
+  CHECK(tit::pow(+T{2}, 10) == T{1024});
+  CHECK(tit::pow(-T{2}, 10) == T{1024});
 }
 
-TEST_CASE("tit::core::sqrt") {
-  // `tit::sqrt` is just a wrapper for `std::sqrt`, no need to test it much.
-  CHECK(tit::sqrt(4.0) == 2.0);
+TEST_CASE_TEMPLATE("tit::core::sqrt", T, float, double) {
+  CHECK(tit::sqrt(T{0.0}) == T{0.0});
+  CHECK(tit::sqrt(T{4.0}) == T{2.0});
 }
 
-TEST_CASE("tit::core::cbrt") {
-  // `tit::cbrt` is just a wrapper for `std::cbrt`, no need to test it much.
-  CHECK(tit::cbrt(+8.0) == +2.0);
-  CHECK(tit::cbrt(-8.0) == -2.0);
+TEST_CASE_TEMPLATE("tit::core::cbrt", T, float, double) {
+  CHECK(tit::cbrt(T{0.0}) == T{0.0});
+  CHECK(tit::cbrt(+T{8.0}) == +T{2.0});
+  CHECK(tit::cbrt(-T{8.0}) == -T{2.0});
 }
 
-TEST_CASE("tit::core::hypot") {
-  // `tit::hypot` is just a wrapper for `std::hypot`, no need to test it much.
-  CHECK(tit::hypot(3.0, 4.0) == 5.0);
-  CHECK(tit::hypot(2.0, 6.0, 9.0) == 11.0);
+TEST_CASE_TEMPLATE("tit::core::hypot", T, float, double) {
+  CHECK(tit::hypot(T{3.0}, T{4.0}) == T{5.0});
+  CHECK(tit::hypot(T{2.0}, T{6.0}, T{9.0}) == T{11.0});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::exp") {
-  // `tit::exp` is just a wrapper for `std::exp`, no need to test it much.
-  CHECK(tit::exp(1.0) == std::numbers::e_v<double>);
+TEST_CASE_TEMPLATE("tit::core::exp", T, float, double) {
+  CHECK(tit::exp(T{0.0}) == T{1.0});
+  CHECK(tit::approx_eq(tit::exp(T{1.0}), std::numbers::e_v<T>));
 }
 
-TEST_CASE("tit::core::exp2") {
-  // `tit::exp2` with floating-point arguments is just a wrapper for
-  // `std::exp2`, no need to test it much.
-  CHECK(tit::exp2(1.0) == 2.0);
-  // Check unsigned integers.
-  CHECK(tit::exp2(0U) == 1U);
-  CHECK(tit::exp2(1U) == 2U);
-  CHECK(tit::exp2(9U) == 512U);
+TEST_CASE_TEMPLATE("tit::core::exp2", T, unsigned, float, double) {
+  CHECK(tit::exp2(T{0}) == T{1});
+  CHECK(tit::exp2(T{1}) == T{2});
+  CHECK(tit::exp2(T{9}) == T{512});
 }
 
-TEST_CASE("tit::core::log") {
-  // `tit::log` is just a wrapper for `std::log`, no need to test it much.
-  CHECK(tit::log(std::numbers::e_v<double>) == 1.0);
+TEST_CASE_TEMPLATE("tit::core::log", T, float, double) {
+  CHECK(tit::log(T{1.0}) == T{0.0});
+  CHECK(tit::approx_eq(tit::log(std::numbers::e_v<T>), T{1.0}));
 }
 
-TEST_CASE("tit::core::log2") {
-  // `tit::log2` with floating-point arguments is just a wrapper for
-  // `std::log2`, no need to test it much.
-  CHECK(tit::log2(2.0) == 1.0);
-  // Check unsigned integers.
-  CHECK(tit::log2(1U) == 0U);
-  CHECK(tit::log2(2U) == 1U);
-  CHECK(tit::log2(512U) == 9U);
+TEST_CASE_TEMPLATE("tit::core::log2", T, unsigned, float, double) {
+  CHECK(tit::log2(T{1}) == T{0});
+  CHECK(tit::log2(T{2}) == T{1});
+  CHECK(tit::log2(T{512}) == T{9});
 }
 
-TEST_CASE("tit::core::is_power_of_two") {
-  CHECK(tit::is_power_of_two(0U));
-  CHECK(tit::is_power_of_two(1U));
-  CHECK(tit::is_power_of_two(512U));
-  CHECK(!tit::is_power_of_two(255U));
-  CHECK(!tit::is_power_of_two(513U));
+TEST_CASE_TEMPLATE("tit::core::is_power_of_two", T, unsigned) {
+  CHECK(tit::is_power_of_two(T{0}));
+  CHECK(tit::is_power_of_two(T{1}));
+  CHECK(tit::is_power_of_two(T{512}));
+  CHECK(!tit::is_power_of_two(T{255}));
+  CHECK(!tit::is_power_of_two(T{513}));
 }
 
-TEST_CASE("tit::core::align_to_power_of_two") {
-  CHECK(tit::align_to_power_of_two(0U) == 0U);
-  CHECK(tit::align_to_power_of_two(1U) == 1U);
-  CHECK(tit::align_to_power_of_two(2U) == 2U);
-  CHECK(tit::align_to_power_of_two(3U) == 4U);
-  CHECK(tit::align_to_power_of_two(127U) == 128U);
-  CHECK(tit::align_to_power_of_two(128U) == 128U);
-  CHECK(tit::align_to_power_of_two(129U) == 256U);
+TEST_CASE_TEMPLATE("tit::core::align_to_power_of_two", T, unsigned) {
+  CHECK(tit::align_to_power_of_two(T{0}) == T{0});
+  CHECK(tit::align_to_power_of_two(T{1}) == T{1});
+  CHECK(tit::align_to_power_of_two(T{2}) == T{2});
+  CHECK(tit::align_to_power_of_two(T{3}) == T{4});
+  CHECK(tit::align_to_power_of_two(T{127}) == T{128});
+  CHECK(tit::align_to_power_of_two(T{128}) == T{128});
+  CHECK(tit::align_to_power_of_two(T{129}) == T{256});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::avg") {
-  // Check ordinary numbers.
-  CHECK(tit::avg(1, 2) == 1.5);
-  CHECK(tit::avg(1, 2, 3) == 2.0);
-  // Check infinity.
-  CHECK(tit::avg(1, numeric_limits::infinity(), 3) ==
-        numeric_limits::infinity());
-  CHECK(std::isnan(tit::avg(+numeric_limits::quiet_NaN(), //
-                            -numeric_limits::quiet_NaN())));
-  // Ensure NaN propagation.
-  CHECK(std::isnan(tit::avg(1, numeric_limits::quiet_NaN(), 3)));
+TEST_CASE_TEMPLATE("tit::core::avg", T, int, float, double) {
+  // Note: the result is always floating-point.
+  CHECK(tit::avg(T{1}, T{2}) == 1.5);
+  CHECK(tit::avg(T{1}, T{2}, T{3}) == 2.0);
 }
 
-TEST_CASE("tit::core::gavg") {
-  // Check ordinary numbers.
-  CHECK(tit::havg(1.0, 4.0) == 1.6);
-  // Check infinity.
-  CHECK(tit::havg(1.0, numeric_limits::infinity()) == 2.0);
-  CHECK(tit::havg(numeric_limits::infinity(), //
-                  numeric_limits::infinity(), 3.0) == 9.0);
-  // No NaN propagation -- input must be positive by contract.
+TEST_CASE_TEMPLATE("tit::core::gavg", T, float, double) {
+  CHECK(tit::havg(T{1.0}, T{4.0}) == T{1.6});
 }
 
-TEST_CASE("tit::core::gavg") {
-  // Check ordinary numbers.
-  CHECK(tit::gavg(1.0, 4.0) == 2.0);
-  // Check infinity.
-  CHECK(tit::gavg(1.0, numeric_limits::infinity(), 3.0) ==
-        numeric_limits::infinity());
-  CHECK(tit::gavg(numeric_limits::infinity(), //
-                  numeric_limits::infinity(),
-                  3.0) == numeric_limits::infinity());
-  // No NaN propagation -- input must be positive by contract.
+TEST_CASE_TEMPLATE("tit::core::gavg", T, float, double) {
+  CHECK(tit::gavg(T{1.0}, T{4.0}) == T{2.0});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::merge") {
-  // Check ordinary numbers.
-  CHECK(tit::merge(true, 2.0) == 2.0);
-  CHECK(tit::merge(true, 2.0, 3.0) == 2.0);
-  CHECK(tit::merge(false, 2.0) == 0.0);
-  CHECK(tit::merge(false, 2.0, 3.0) == 3.0);
-  // Check infinity.
-  CHECK(tit::merge(true, numeric_limits::infinity()) ==
-        numeric_limits::infinity());
-  CHECK(tit::merge(true, numeric_limits::infinity(), 3.0) ==
-        numeric_limits::infinity());
-  CHECK(tit::merge(false, numeric_limits::infinity()) == 0.0);
-  CHECK(tit::merge(false, numeric_limits::infinity(), 3.0) == 3.0);
-  // Check NaN.
-  CHECK(std::isnan(tit::merge(true, numeric_limits::quiet_NaN())));
-  CHECK(std::isnan(tit::merge(true, numeric_limits::quiet_NaN(), 3.0)));
-  CHECK(tit::merge(false, numeric_limits::quiet_NaN()) == 0.0);
-  CHECK(tit::merge(false, numeric_limits::quiet_NaN(), 3.0) == 3.0);
+TEST_CASE_TEMPLATE("tit::core::merge", T, float, double) {
+  CHECK(tit::merge(true, T{2.0}) == T{2.0});
+  CHECK(tit::merge(true, T{2.0}, T{3.0}) == T{2.0});
+  CHECK(tit::merge(false, T{2.0}) == T{0.0});
+  CHECK(tit::merge(false, T{2.0}, T{3.0}) == T{3.0});
 }
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+// TODO: add those!
+TEST_CASE("tit::core::newton_raphson") {}
+TEST_CASE("tit::core::bisection") {}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
