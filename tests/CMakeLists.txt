@@ -40,5 +40,6 @@ endmacro()
 # Add the actual tests.
 add_subdirectory("test_runner")
 add_subdirectory("tit")
+add_subdirectory("titwcsph")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
