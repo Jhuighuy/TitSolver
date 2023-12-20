@@ -105,6 +105,12 @@ endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+# A list of the C/C++ source file extensions.
+set(
+  CXX_SOURCE_EXTENSIONS
+  ".c" ".cpp" ".cxx" ".c++" ".cc"
+  ".h" ".hpp" ".hxx" ".h++" ".hh")
+
 ## Determine is source is a C/C++ file based on it's extension.
 function(is_cxx_source SOURCE_PATH RESULT_VAR)
   # Get source file extension.
@@ -112,11 +118,7 @@ function(is_cxx_source SOURCE_PATH RESULT_VAR)
   string(TOLOWER ${SOURCE_EXT} SOURCE_EXT)
   # Check if extension is in the list of C/C++ extensions and propagate the
   # result to outer scope.
-  set(
-    VALID_EXTENSIONS
-    ".c" ".cpp" ".cxx" ".c++" ".cc"
-    ".h" ".hpp" ".hxx" ".h++" ".hh")
-  if(SOURCE_EXT IN_LIST VALID_EXTENSIONS)
+  if(SOURCE_EXT IN_LIST CXX_SOURCE_EXTENSIONS)
     set(${RESULT_VAR} TRUE PARENT_SCOPE)
   else()
     set(${RESULT_VAR} FALSE PARENT_SCOPE)
@@ -129,35 +131,33 @@ endfunction()
 ## compile definitions). Since most of those are not known at compile time,
 ## the output list may contain generator expressions. This makes it unusable
 ## for debugging, but fully suitable for `add_custom_command` for example.
-function(get_generated_compile_options TARGET OPTIONS_VAR)
+macro(get_generated_compile_options TARGET OPTIONS_VAR)
   # Append include directories.
   foreach(PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     list(
       APPEND
-      OPTIONS
+      ${OPTIONS_VAR}
       "$<LIST:TRANSFORM,$<TARGET_PROPERTY:${TARGET},${PROP}>,PREPEND,-I>")
   endforeach()
   # Append compile definitions.
   foreach(PROP COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
     list(
       APPEND
-      OPTIONS
+      ${OPTIONS_VAR}
       "$<LIST:TRANSFORM,$<TARGET_PROPERTY:${TARGET},${PROP}>,PREPEND,-D>")
   endforeach()
-  # Propagate the list variable to parent scope.
-  set(${OPTIONS_VAR} ${OPTIONS} PARENT_SCOPE)
-endfunction()
+endmacro()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 ## Read value from the variable by it's name, if it is defined. If it is
 ## undefined and default values are provided, those are set.
-function(try_set VAR VAR_NAME)
+macro(try_set VAR VAR_NAME)
   if(DEFINED ${VAR_NAME})
-    set(${VAR} ${${VAR_NAME}} PARENT_SCOPE)
+    set(${VAR} ${${VAR_NAME}})
   elseif(ARGN)
-    set(${VAR} ${ARGN} PARENT_SCOPE)
+    set(${VAR} ${ARGN})
   endif()
-endfunction()
+endmacro()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

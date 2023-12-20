@@ -12,10 +12,8 @@ set(
   "string_utils.cpp"
   "vec.cpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Create the unit test executable.
-add_unit_test_executable(tit_core_tests ${CXX_SOURCES})
+add_doctest_executable(tit_core_tests ${CXX_SOURCES})
 add_executable(tit::core_tests ALIAS tit_core_tests)
 
 # Link with the dependent libraries.
@@ -27,18 +25,20 @@ check_includes(tit::core_tests)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Create the test executable.
-add_test_executable(
-  tit_core_assert_tests
-  NAME "tit::core::assert"
-  SOURCES "assert_tests.cpp"
-  MATCH_STDERR "assert_tests_stderr.txt"
-  EXIT_CODE "-1")
-add_executable(tit::core_assert_test ALIAS tit_core_assert_tests)
+add_executable(tit_core_assert_tests "assert_tests.cpp")
+add_executable(tit::core_assert_tests ALIAS tit_core_assert_tests)
 
 # Link with the dependent libraries.
 target_link_libraries(tit_core_assert_tests PRIVATE tit::core)
 
 # Enable static analysis.
-check_includes(tit::core_assert_test)
+check_includes(tit::core_assert_tests)
+
+# Add the test.
+add_test_from_target(
+  tit::core_assert_tests
+  NAME "tit::core::assert"
+  MATCH_STDERR "assert_tests_stderr.txt"
+  EXIT_CODE "-1")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
