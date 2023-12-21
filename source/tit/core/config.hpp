@@ -18,6 +18,10 @@
 #define TIT_IWYU 0
 #endif
 
+#ifndef TIT_GCOV
+#define TIT_GCOV 0
+#endif
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Detect libc++

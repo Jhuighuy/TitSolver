@@ -10,14 +10,14 @@ set(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Create the doctest-based executable.
-add_test_executable(tit_par_tests ${CXX_SOURCES})
+# Create the unit test executable.
+add_doctest_executable(tit_par_tests ${CXX_SOURCES})
 add_executable(tit::par_tests ALIAS tit_par_tests)
 
 # Link with the dependent libraries.
 target_link_libraries(tit_par_tests PRIVATE tit::core tit::par)
 
-# # Enable static analysis.
-# check_includes(tit::par_tests)
+# Enable static analysis.
+check_includes(tit::par_tests)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
