@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <array>
 #include <limits>
-#include <new>
 #include <thread>
+#include <utility>
 
 #include <doctest/doctest.h>
 

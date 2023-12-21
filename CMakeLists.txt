@@ -10,39 +10,42 @@ cmake_minimum_required(VERSION 3.20..3.27)
 # Setup the project.
 project(tit VERSION 0.1 LANGUAGES CXX)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Setup path to CMake scripts and include them.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang_tidy)
 include(codespell)
-include(config)
+include(compiler)
 include(iwyu)
 
+# Find the third-party libraries.
+find_package(doctest CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(HDF5 CONFIG REQUIRED)
+find_package(OpenMP REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(spdlog CONFIG REQUIRED)
+find_package(TBB CONFIG REQUIRED)
+
+# Setup output directories.
+# TODO: This must be gone once we switch to installation.
+set(_ROOT_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/output/TIT_ROOT")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${_ROOT_OUTPUT_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${_ROOT_OUTPUT_DIR}/bin")
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Setup root source and output directories.
-set(ROOT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/source")
-set(ROOT_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/output/TIT_ROOT")
-
-# Setup output directories. This must be gone once we switch to installation.
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${ROOT_OUTPUT_DIR}/bin")
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# A container library that stores all the properties. Other libraries and
-# executables should link with this library.
-add_library(tit_base INTERFACE)
-add_library(tit::base ALIAS tit_base)
-
-# Setup C++: require C++23 and disable extensions.
+# Setup C++ globally.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS NO)
 
+# A container library that stores all the properties.
+# Other libraries and executables should link with this library.
+add_library(tit_base INTERFACE)
+add_library(tit::base ALIAS tit_base)
+
 # Setup include directories.
-target_include_directories(tit_base INTERFACE ${ROOT_SOURCE_DIR})
+target_include_directories(tit_base INTERFACE "source")
 
 # Setup configurations.
 target_compile_options(tit_base INTERFACE ${CXX_WARNINGS})
@@ -50,48 +53,25 @@ foreach(CONFIG ${ALL_CONFIGS})
   string(TOUPPER ${CONFIG} CONFIG_UPPER)
   # Apply compilation options.
   target_compile_options(
-    tit_base
-    INTERFACE
+    tit_base INTERFACE
     $<$<CONFIG:${CONFIG}>:${CXX_COMPILE_OPTIONS_${CONFIG_UPPER}}>)
   # Apply link options.
   target_link_options(
-    tit_base
-    INTERFACE
+    tit_base INTERFACE
     $<$<CONFIG:${CONFIG}>:${CXX_LINK_OPTIONS_${CONFIG_UPPER}}>)
 endforeach()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Link with the dependent libraries.
+target_link_libraries(
+  tit_base INTERFACE
+  fmt::fmt
+  spdlog::spdlog
+  TBB::tbb TBB::tbbmalloc
+  OpenMP::OpenMP_CXX
+  hdf5::hdf5-static)
 
-# Find {fmt}.
-find_package(fmt CONFIG REQUIRED)
-target_link_libraries(tit_base INTERFACE fmt::fmt)
-
-# Find spdlog.
-find_package(spdlog CONFIG REQUIRED)
-target_link_libraries(tit_base INTERFACE spdlog::spdlog)
-
-## Find Thread Building Blocks.
-find_package(TBB CONFIG REQUIRED)
-target_link_libraries(tit_base INTERFACE TBB::tbb TBB::tbbmalloc)
-
-# Find OpenMP.
-find_package(OpenMP REQUIRED)
-target_link_libraries(tit_base INTERFACE OpenMP::OpenMP_CXX)
-
-# Find HDF5.
-find_package(HDF5 CONFIG REQUIRED)
-target_link_libraries(tit_base INTERFACE hdf5::hdf5-static)
-
-# Find Qt.
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
-# Do not link Qt to the base library!
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# Add source subdirectory.
+# Add the actual sources.
 add_subdirectory("source")
-
-# Add tests subdirectory.
 add_subdirectory("tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

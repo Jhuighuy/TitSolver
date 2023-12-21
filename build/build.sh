@@ -99,9 +99,6 @@ parse_args() {
 
 CMAKE_EXE="cmake"
 
-SOURCE_DIR=$(pwd)
-OUTPUT_DIR="$SOURCE_DIR/output/cmake_output"
-
 prepare_build_dir() {
   if [ "$DRY" = true ]; then
     echo "# Performing a dry build."
@@ -196,14 +193,12 @@ build() {
 
 CTEST_EXE="ctest"
 
-TEST_DIR="$OUTPUT_DIR/tests"
-
 run_tests() {
   # Run CTest.
   local CTEST_ARGS
   CTEST_ARGS=("$CTEST_EXE" "--output-on-failure")
   if [ "$JOBS" -gt 1 ]; then
-    echo "* Running tests with $JOBS threads."
+    echo "# Running tests with $JOBS threads."
     CTEST_ARGS+=("-j" "$JOBS")
   fi
   (cd "$TEST_DIR" && "${CTEST_ARGS[@]}") || exit $?
@@ -211,25 +206,8 @@ run_tests() {
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# TODO: there is a problem in Github Actions that we an error message is
-# printed:
-#
-# tput: No value for $TERM and no -T specified
-#
-# I cannot reproduce this on MacOS.
-COLUMNS=${COLUMNS:-$([ -n "$TERM" ] && tput cols || echo 80)}
-
-echo_banner() {
-  for _ in $(seq 1 "$COLUMNS"); do echo -n "~"; done
-  echo
-}
-
-echo_thick_banner() {
-  for _ in $(seq 1 "$COLUMNS"); do echo -n "="; done
-  echo
-}
-
 START_TIME=$(date +%s.%N)
+source "./build/build_utils.sh" || exit $?
 echo_thick_banner
 parse_args "$@"
 echo_banner
@@ -244,9 +222,9 @@ if [ "$RUN_TESTS" = true ]; then
   echo "# Running tests..."
   run_tests
 fi
-echo_thick_banner
 END_TIME=$(date +%s.%N)
 ELAPSED=$(echo "$END_TIME - $START_TIME" | bc -l)
-printf "Done. Elapsed: %ss.\n" "$ELAPSED"
+echo_thick_banner
+printf "# Done. Elapsed: %ss.\n" "$ELAPSED"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
