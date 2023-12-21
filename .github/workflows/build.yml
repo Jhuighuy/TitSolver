@@ -91,6 +91,15 @@ jobs:
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+      - name: Upload test output
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-output
+          path: output/test_output-${{ runner.os }}-${{ matrix.configuration }}
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
   build_macos:
@@ -128,6 +137,8 @@ jobs:
           # export PATH="$(brew --prefix llvm@17)/bin:$PATH"
           ## Install Qt.
           brew install -q qt@6
+          ## Install other tools.
+          brew install -q gnu-sed diffutils
           ## Install Python tools.
           pip3 install --user --upgrade codespell
 
@@ -164,6 +175,15 @@ jobs:
             --compiler=${{ matrix.compiler }}                                  \
             --config=${{ matrix.configuration }}                               \
             --test
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+      - name: Upload test output
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-output
+          path: output/test_output-${{ runner.os }}-${{ matrix.configuration }}
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
