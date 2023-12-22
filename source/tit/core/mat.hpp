@@ -240,7 +240,7 @@ constexpr auto transpose(Mat<Num, Dim> a) noexcept {
 /** Matrix trace. */
 template<class Num, size_t Dim>
 constexpr auto tr(Mat<Num, Dim> a) noexcept {
-  add_result_t<Num> r = a[0, 0];
+  auto r = a[0, 0];
   for (size_t i = 1; i < a.num_rows; ++i) r += a[i, i];
   return r;
 }

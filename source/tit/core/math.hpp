@@ -30,19 +30,19 @@ template<class Num>
 using negate_result_t = decltype(-std::declval<Num>());
 
 /** Addition result type. */
-template<class NumA, class NumB = NumA>
+template<class NumA, class NumB>
 using add_result_t = decltype(std::declval<NumA>() + std::declval<NumB>());
 
 /** Subtraction result type. */
-template<class NumA, class NumB = NumA>
+template<class NumA, class NumB>
 using sub_result_t = decltype(std::declval<NumA>() - std::declval<NumB>());
 
 /** Multiplication result type. */
-template<class NumA, class NumB = NumA>
+template<class NumA, class NumB>
 using mul_result_t = decltype(std::declval<NumA>() * std::declval<NumB>());
 
 /** Division result type. */
-template<class NumA, class NumB = NumA>
+template<class NumA, class NumB>
 using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -236,7 +236,7 @@ constexpr auto pow(Num a, std::type_identity_t<Num> power) noexcept -> Num {
 /** Evaluate polynomial @f$ \sum c_k x^k @f$ value. */
 template<class Num, class Coeff>
 constexpr auto horner(Num x, std::initializer_list<Coeff> ci) noexcept {
-  add_result_t<mul_result_t<Num, Coeff>> r{0};
+  mul_result_t<Num, Coeff> r{0};
   for (const auto c : ci | std::views::reverse) r = r * x + c;
   return r;
 }

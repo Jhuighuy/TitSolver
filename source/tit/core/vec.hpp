@@ -274,7 +274,7 @@ constexpr auto ceil(Vec<Num, Dim> a) noexcept {
 /** Sum of the vector components. */
 template<class Num, size_t Dim>
 constexpr auto sum(Vec<Num, Dim> a) noexcept {
-  add_result_t<Num> r{a[0]};
+  auto r = a[0];
   for (size_t i = 1; i < a.num_rows; ++i) r += a[i];
   return r;
 }
@@ -282,14 +282,14 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
 /** Minimal vector element. */
 template<class Num, size_t Dim>
 constexpr auto min_value(Vec<Num, Dim> a) noexcept -> Num {
-  Num r{a[0]};
+  auto r = a[0];
   for (size_t i = 1; i < a.num_rows; ++i) r = std::min(r, a[i]);
   return r;
 }
 /** Maximal vector element. */
 template<class Num, size_t Dim>
 constexpr auto max_value(Vec<Num, Dim> a) noexcept -> Num {
-  Num r{a[0]};
+  auto r = a[0];
   for (size_t i = 1; i < a.num_rows; ++i) r = std::max(r, a[i]);
   return r;
 }
@@ -347,7 +347,7 @@ constexpr auto normalize(Vec<Num, Dim> a) noexcept {
 template<class NumA, class NumB, size_t Dim>
 constexpr auto cross(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   static_assert(1 <= Dim && Dim <= 3);
-  Vec<sub_result_t<mul_result_t<NumA, NumB>>, 3> r{};
+  Vec<mul_result_t<NumA, NumB>, 3> r{};
   if constexpr (Dim == 3) r[0] = a[1] * b[2] - a[2] * b[1];
   if constexpr (Dim == 3) r[1] = a[2] * b[0] - a[0] * b[2];
   if constexpr (Dim >= 2) r[2] = a[0] * b[1] - a[1] * b[0];
