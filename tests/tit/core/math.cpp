@@ -3,290 +3,433 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cmath>
+#include <concepts> // IWYU pragma: keep
+#include <functional>
 #include <limits>
-#include <numbers> // IWYU pragma: keep
+#include <numbers>
+#include <tuple>
+#include <utility>
 
 #include <doctest/doctest.h>
 
-#include "tit/core/config.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/types.hpp"
 
+namespace tit {
 namespace {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE_TEMPLATE("tit::core::abs", T, int, float, double) {
-  CHECK(tit::abs(T{0}) == T{0});
-  CHECK(tit::abs(+T{2}) == T{2});
-  CHECK(tit::abs(-T{2}) == T{2});
+/** A wrapper for a function with call counter. */
+template<class Func>
+class CountedFunc {
+public:
+
+  /* Initialize a wrapper with a specified function. */
+  constexpr explicit CountedFunc(Func func) noexcept : func_(std::move(func)) {}
+
+  /** Call the function and increase the call counter. */
+  template<class... Args>
+    requires std::invocable<Func, Args&&...>
+  constexpr auto operator()(Args&&... args) {
+    count_ += 1;
+    return std::invoke(func_, std::forward<Args>(args)...);
+  }
+
+  /** Call count. */
+  constexpr auto count() const noexcept {
+    return count_;
+  }
+
+private:
+
+  Func func_;
+  size_t count_ = 0;
+
+}; // class CountedFunc
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+// Numerical (signed) types to test against.
+#define NUM_TYPES int, float, double
+
+// Floating-point types to test against.
+#define REAL_TYPES float, double
+
+// Unsigned integer types to test against.
+#define UINT_TYPES unsigned int, unsigned long
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+TEST_CASE_TEMPLATE("tit::abs", Num, NUM_TYPES) {
+  CHECK(abs(Num{0}) == Num{0});
+  CHECK(abs(+Num{2}) == Num{2});
+  CHECK(abs(-Num{2}) == Num{2});
 }
 
-TEST_CASE_TEMPLATE("tit::core::plus", T, int, float, double) {
-  CHECK(tit::plus(T{0}) == T{0});
-  CHECK(tit::plus(+T{2}) == T{2});
-  CHECK(tit::plus(-T{2}) == T{0});
+TEST_CASE_TEMPLATE("tit::plus", Num, NUM_TYPES) {
+  CHECK(plus(Num{0}) == Num{0});
+  CHECK(plus(+Num{2}) == Num{2});
+  CHECK(plus(-Num{2}) == Num{0});
 }
 
-TEST_CASE_TEMPLATE("tit::core::minus", T, int, float, double) {
-  CHECK(tit::minus(T{0}) == T{0});
-  CHECK(tit::minus(+T{2}) == T{0});
-  CHECK(tit::minus(-T{2}) == -T{2});
+TEST_CASE_TEMPLATE("tit::minus", Num, NUM_TYPES) {
+  CHECK(minus(Num{0}) == Num{0});
+  CHECK(minus(+Num{2}) == Num{0});
+  CHECK(minus(-Num{2}) == -Num{2});
 }
 
-TEST_CASE_TEMPLATE("tit::core::sign", T, int, float, double) {
-  CHECK(tit::sign(T{0}) == T{0});
-  CHECK(tit::sign(+T{2}) == +T{1});
-  CHECK(tit::sign(-T{2}) == -T{1});
+TEST_CASE_TEMPLATE("tit::sign", Num, NUM_TYPES) {
+  CHECK(sign(Num{0}) == Num{0});
+  CHECK(sign(+Num{2}) == +Num{1});
+  CHECK(sign(-Num{2}) == -Num{1});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE_TEMPLATE("tit::core::small_number_v", T, float, double) {
+TEST_CASE_TEMPLATE("tit::small_number_v", Real, REAL_TYPES) {
   // Small number must be positive.
-  CHECK(tit::small_number_v<T> > 0.0);
+  CHECK(small_number_v<Real> > 0.0);
   // Small number should be larger than machine epsilon.
-  CHECK(tit::small_number_v<T> >= std::numeric_limits<double>::epsilon());
+  CHECK(small_number_v<Real> >= std::numeric_limits<Real>::epsilon());
 }
 
-TEST_CASE_TEMPLATE("tit::core::is_zero", T, float, double) {
+TEST_CASE_TEMPLATE("tit::is_zero", Real, REAL_TYPES) {
   // Check ordinary numbers.
-  CHECK(tit::is_zero(+T{0.0}));
-  CHECK(tit::is_zero(-T{0.0}));
-  CHECK(!tit::is_zero(+T{1.0}));
-  CHECK(!tit::is_zero(-T{1.0}));
+  CHECK(is_zero(+Real{0.0}));
+  CHECK(is_zero(-Real{0.0}));
+  CHECK(!is_zero(+Real{1.0}));
+  CHECK(!is_zero(-Real{1.0}));
   // Check if comparisons with `small_number_v` work as expected.
-  CHECK(tit::is_zero(+tit::small_number_v<T>));
-  CHECK(tit::is_zero(-tit::small_number_v<T>));
-  CHECK(tit::is_zero(+T{0.1} * tit::small_number_v<T>));
-  CHECK(tit::is_zero(-T{0.1} * tit::small_number_v<T>));
-  CHECK(!tit::is_zero(+T{2.0} * tit::small_number_v<T>));
-  CHECK(!tit::is_zero(-T{2.0} * tit::small_number_v<T>));
+  CHECK(is_zero(+small_number_v<Real>));
+  CHECK(is_zero(-small_number_v<Real>));
+  CHECK(is_zero(+Real{0.1} * small_number_v<Real>));
+  CHECK(is_zero(-Real{0.1} * small_number_v<Real>));
+  CHECK(!is_zero(+Real{2.0} * small_number_v<Real>));
+  CHECK(!is_zero(-Real{2.0} * small_number_v<Real>));
 }
 
-TEST_CASE_TEMPLATE("tit::core::approx_eq", T, float, double) {
+TEST_CASE_TEMPLATE("tit::approx_eq", Real, REAL_TYPES) {
   // Check ordinary numbers.
-  CHECK(tit::approx_eq(T{1.234}, T{1.234}));
-  CHECK(!tit::approx_eq(T{1.234}, T{5.5678}));
+  CHECK(approx_eq(Real{1.23}, Real{1.23}));
+  CHECK(!approx_eq(Real{1.23}, Real{5.67}));
   // Check if comparisons with `small_number_v` work as expected.
-  CHECK(tit::approx_eq(T{1.234}, T{1.234} + tit::small_number_v<T>));
-  CHECK(tit::approx_eq(T{1.234} - tit::small_number_v<T>, T{1.234}));
-  CHECK(tit::approx_eq(T{1.234}, T{1.234} + T{0.1} * tit::small_number_v<T>));
-  CHECK(tit::approx_eq(T{1.234} - T{0.1} * tit::small_number_v<T>, T{1.234}));
-  CHECK(!tit::approx_eq(T{1.234}, T{1.234} + T{2.0} * tit::small_number_v<T>));
-  CHECK(!tit::approx_eq(T{1.234} - T{2.0} * tit::small_number_v<T>, T{1.234}));
+  CHECK(approx_eq(Real{1.23}, Real{1.23} + small_number_v<Real>));
+  CHECK(approx_eq(Real{1.23} - small_number_v<Real>, Real{1.23}));
+  CHECK(approx_eq(Real{1.23}, Real{1.23} + Real{0.1} * small_number_v<Real>));
+  CHECK(approx_eq(Real{1.23} - Real{0.1} * small_number_v<Real>, Real{1.23}));
+  CHECK(!approx_eq(Real{1.23}, Real{1.23} + Real{2.0} * small_number_v<Real>));
+  CHECK(!approx_eq(Real{1.23} - Real{2.0} * small_number_v<Real>, Real{1.23}));
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE_TEMPLATE("tit::core::floor", T, float, double) {
+TEST_CASE_TEMPLATE("tit::floor", Real, REAL_TYPES) {
   // Check non-negative numbers.
-  CHECK(tit::floor(T{0.0}) == T{0.0});
-  CHECK(tit::floor(T{1.1}) == T{1.0});
-  CHECK(tit::floor(T{1.5}) == T{1.0});
-  CHECK(tit::floor(T{1.9}) == T{1.0});
+  CHECK(floor(Real{0.0}) == Real{0.0});
+  CHECK(floor(Real{1.1}) == Real{1.0});
+  CHECK(floor(Real{1.5}) == Real{1.0});
+  CHECK(floor(Real{1.9}) == Real{1.0});
   // Check negative numbers.
-  CHECK(tit::floor(-T{1.1}) == -T{2.0});
-  CHECK(tit::floor(-T{1.5}) == -T{2.0});
-  CHECK(tit::floor(-T{1.9}) == -T{2.0});
+  CHECK(floor(-Real{1.1}) == -Real{2.0});
+  CHECK(floor(-Real{1.5}) == -Real{2.0});
+  CHECK(floor(-Real{1.9}) == -Real{2.0});
 }
 
-TEST_CASE_TEMPLATE("tit::core::round", T, float, double) {
+TEST_CASE_TEMPLATE("tit::round", Real, REAL_TYPES) {
   // Check non-negative numbers.
-  CHECK(tit::round(T{0.0}) == T{0.0});
-  CHECK(tit::round(T{1.1}) == T{1.0});
-  CHECK(tit::round(T{1.5}) == T{2.0});
-  CHECK(tit::round(T{1.9}) == T{2.0});
+  CHECK(round(Real{0.0}) == Real{0.0});
+  CHECK(round(Real{1.1}) == Real{1.0});
+  CHECK(round(Real{1.5}) == Real{2.0});
+  CHECK(round(Real{1.9}) == Real{2.0});
   // Check negative numbers.
-  CHECK(tit::round(-T{1.1}) == -T{1.0});
-  CHECK(tit::round(-T{1.5}) == -T{2.0});
-  CHECK(tit::round(-T{1.9}) == -T{2.0});
+  CHECK(round(-Real{1.1}) == -Real{1.0});
+  CHECK(round(-Real{1.5}) == -Real{2.0});
+  CHECK(round(-Real{1.9}) == -Real{2.0});
 }
 
-TEST_CASE_TEMPLATE("tit::core::ceil", T, float, double) {
+TEST_CASE_TEMPLATE("tit::ceil", Real, REAL_TYPES) {
   // Check non-negative numbers.
-  CHECK(tit::ceil(T{0.0}) == T{0.0});
-  CHECK(tit::ceil(T{1.1}) == T{2.0});
-  CHECK(tit::ceil(T{1.5}) == T{2.0});
-  CHECK(tit::ceil(T{1.9}) == T{2.0});
+  CHECK(ceil(Real{0.0}) == Real{0.0});
+  CHECK(ceil(Real{1.1}) == Real{2.0});
+  CHECK(ceil(Real{1.5}) == Real{2.0});
+  CHECK(ceil(Real{1.9}) == Real{2.0});
   // Check negative numbers.
-  CHECK(tit::ceil(-T{1.1}) == -T{1.0});
-  CHECK(tit::ceil(-T{1.5}) == -T{1.0});
-  CHECK(tit::ceil(-T{1.9}) == -T{1.0});
+  CHECK(ceil(-Real{1.1}) == -Real{1.0});
+  CHECK(ceil(-Real{1.5}) == -Real{1.0});
+  CHECK(ceil(-Real{1.9}) == -Real{1.0});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE_TEMPLATE("tit::core::inverse", T, int, float, double) {
-  CHECK(tit::inverse(T{2}) == 0.5);
-  CHECK(tit::inverse(T{8}) == 0.125);
+TEST_CASE_TEMPLATE("tit::inverse", Num, NUM_TYPES) {
+  CHECK(inverse(Num{2}) == 0.5);
+  CHECK(inverse(Num{8}) == 0.125);
 }
 
-TEST_CASE_TEMPLATE("tit::core::divide", T, int, float, double) {
+TEST_CASE_TEMPLATE("tit::divide", Num, NUM_TYPES) {
   // Note: the result is always floating-point.
-  CHECK(tit::divide(T{1}, 2) == 0.5);
-  CHECK(tit::divide(T{1}, 2.0f) == 0.5);
-  CHECK(tit::divide(T{1}, 2.0) == 0.5);
+  CHECK(divide(Num{1}, 2) == 0.5);
+  CHECK(divide(Num{1}, 2.0F) == 0.5);
+  CHECK(divide(Num{1}, 2.0) == 0.5);
 }
 
-TEST_CASE_TEMPLATE("tit::core::safe_inverse", T, float, double) {
+TEST_CASE_TEMPLATE("tit::safe_inverse", Real, REAL_TYPES) {
   // Check non-"small" numbers.
-  CHECK(tit::safe_inverse(T{2.0}) == T{0.5});
-  CHECK(tit::safe_inverse(T{10.0}) == T{0.1});
+  CHECK(safe_inverse(Real{2.0}) == Real{0.5});
+  CHECK(safe_inverse(Real{10.0}) == Real{0.1});
   // Check "small" numbers.
-  CHECK(tit::safe_inverse(T{0.0}) == T{0.0});
-  CHECK(tit::safe_inverse(tit::small_number_v<T>) == 0.0);
-  CHECK(tit::safe_inverse(T{0.1} * tit::small_number_v<T>) == T{0.0});
-  CHECK(tit::safe_inverse(T{2.0} * tit::small_number_v<T>) != T{0.0});
+  CHECK(safe_inverse(Real{0.0}) == Real{0.0});
+  CHECK(safe_inverse(small_number_v<Real>) == 0.0);
+  CHECK(safe_inverse(Real{0.1} * small_number_v<Real>) == Real{0.0});
+  CHECK(safe_inverse(Real{2.0} * small_number_v<Real>) != Real{0.0});
 }
 
-TEST_CASE_TEMPLATE("tit::core::safe_divide", T, float, double) {
+TEST_CASE_TEMPLATE("tit::safe_divide", Real, REAL_TYPES) {
   // Check non-"small" divisors.
-  CHECK(tit::safe_divide(1, T{2.0}) == T{0.5});
-  CHECK(tit::safe_divide(1, T{10.0}) == T{0.1});
+  CHECK(safe_divide(1, Real{2.0}) == Real{0.5});
+  CHECK(safe_divide(1, Real{10.0}) == Real{0.1});
   // Check "small" divisors.
-  CHECK(tit::safe_divide(1, T{0.0}) == T{0.0});
-  CHECK(tit::safe_divide(1, tit::small_number_v<T>) == T{0.0});
-  CHECK(tit::safe_divide(1, T{0.1} * tit::small_number_v<T>) == T{0.0});
-  CHECK(tit::safe_divide(1, T{2.0} * tit::small_number_v<T>) != T{0.0});
+  CHECK(safe_divide(1, Real{0.0}) == Real{0.0});
+  CHECK(safe_divide(1, small_number_v<Real>) == Real{0.0});
+  CHECK(safe_divide(1, Real{0.1} * small_number_v<Real>) == Real{0.0});
+  CHECK(safe_divide(1, Real{2.0} * small_number_v<Real>) != Real{0.0});
 }
 
-TEST_CASE_TEMPLATE("tit::core::ceil_divide", T, unsigned) {
-  CHECK(tit::ceil_divide(T{0}, T{10}) == T{0});
-  CHECK(tit::ceil_divide(T{3}, T{10}) == T{1});
-  CHECK(tit::ceil_divide(T{7}, T{10}) == T{1});
-  CHECK(tit::ceil_divide(T{10}, T{10}) == T{1});
-  CHECK(tit::ceil_divide(T{11}, T{10}) == T{2});
-  CHECK(tit::ceil_divide(T{20}, T{10}) == T{2});
+TEST_CASE_TEMPLATE("tit::ceil_divide", UInt, UINT_TYPES) {
+  CHECK(ceil_divide(UInt{0}, UInt{10}) == UInt{0});
+  CHECK(ceil_divide(UInt{3}, UInt{10}) == UInt{1});
+  CHECK(ceil_divide(UInt{7}, UInt{10}) == UInt{1});
+  CHECK(ceil_divide(UInt{10}, UInt{10}) == UInt{1});
+  CHECK(ceil_divide(UInt{11}, UInt{10}) == UInt{2});
+  CHECK(ceil_divide(UInt{20}, UInt{10}) == UInt{2});
 }
 
-TEST_CASE_TEMPLATE("tit::core::align", T, unsigned) {
-  CHECK(tit::align(T{0}, T{10}) == T{0});
-  CHECK(tit::align(T{3}, T{10}) == T{10});
-  CHECK(tit::align(T{7}, T{10}) == T{10});
-  CHECK(tit::align(T{10}, T{10}) == T{10});
-  CHECK(tit::align(T{11}, T{10}) == T{20});
-  CHECK(tit::align(T{20}, T{10}) == T{20});
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-TEST_CASE_TEMPLATE("tit::core::pow", T, int, float, double) {
-  CHECK(tit::pow2(+T{2}) == +T{4});
-  CHECK(tit::pow2(-T{2}) == +T{4});
-  CHECK(tit::pow3(+T{2}) == +T{8});
-  CHECK(tit::pow3(-T{2}) == -T{8});
-  CHECK(tit::pow4(+T{2}) == +T{16});
-  CHECK(tit::pow4(-T{2}) == +T{16});
-  CHECK(tit::pow5(+T{2}) == +T{32});
-  CHECK(tit::pow5(-T{2}) == -T{32});
-  CHECK(tit::pow6(+T{2}) == +T{64});
-  CHECK(tit::pow6(-T{2}) == +T{64});
-  CHECK(tit::pow7(+T{2}) == +T{128});
-  CHECK(tit::pow7(-T{2}) == -T{128});
-  CHECK(tit::pow8(+T{2}) == +T{256});
-  CHECK(tit::pow8(-T{2}) == +T{256});
-  CHECK(tit::pow9(+T{2}) == +T{512});
-  CHECK(tit::pow9(-T{2}) == -T{512});
-  CHECK(tit::pow(+T{2}, 10) == T{1024});
-  CHECK(tit::pow(-T{2}, 10) == T{1024});
-}
-
-TEST_CASE_TEMPLATE("tit::core::horner", T, int, float, double) {
-  CHECK(tit::horner(T{1}, {T{1}}) == T{1});
-  CHECK(tit::horner(T{3}, {T{1}, -T{3}, T{2}}) == T{10});
-  CHECK(tit::horner(-T{2}, {T{4}, -T{1}, T{3}}) == T{18});
-  CHECK(tit::horner(T{3}, {T{6}, T{1}, -T{4}, T{1}}) == T{0});
-}
-
-TEST_CASE_TEMPLATE("tit::core::sqrt", T, float, double) {
-  CHECK(tit::sqrt(T{0.0}) == T{0.0});
-  CHECK(tit::sqrt(T{4.0}) == T{2.0});
-}
-
-TEST_CASE_TEMPLATE("tit::core::cbrt", T, float, double) {
-  CHECK(tit::cbrt(T{0.0}) == T{0.0});
-  CHECK(tit::cbrt(+T{8.0}) == +T{2.0});
-  CHECK(tit::cbrt(-T{8.0}) == -T{2.0});
-}
-
-TEST_CASE_TEMPLATE("tit::core::hypot", T, float, double) {
-  CHECK(tit::hypot(T{3.0}, T{4.0}) == T{5.0});
-  CHECK(tit::hypot(T{2.0}, T{6.0}, T{9.0}) == T{11.0});
+TEST_CASE_TEMPLATE("tit::align", UInt, UINT_TYPES) {
+  CHECK(align(UInt{0}, UInt{10}) == UInt{0});
+  CHECK(align(UInt{3}, UInt{10}) == UInt{10});
+  CHECK(align(UInt{7}, UInt{10}) == UInt{10});
+  CHECK(align(UInt{10}, UInt{10}) == UInt{10});
+  CHECK(align(UInt{11}, UInt{10}) == UInt{20});
+  CHECK(align(UInt{20}, UInt{10}) == UInt{20});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE_TEMPLATE("tit::core::exp", T, float, double) {
-  CHECK(tit::exp(T{0.0}) == T{1.0});
-  CHECK(tit::approx_eq(tit::exp(T{1.0}), std::numbers::e_v<T>));
+TEST_CASE_TEMPLATE("tit::pow", Num, NUM_TYPES) {
+  CHECK(pow2(+Num{2}) == +Num{4});
+  CHECK(pow2(-Num{2}) == +Num{4});
+  CHECK(pow3(+Num{2}) == +Num{8});
+  CHECK(pow3(-Num{2}) == -Num{8});
+  CHECK(pow4(+Num{2}) == +Num{16});
+  CHECK(pow4(-Num{2}) == +Num{16});
+  CHECK(pow5(+Num{2}) == +Num{32});
+  CHECK(pow5(-Num{2}) == -Num{32});
+  CHECK(pow6(+Num{2}) == +Num{64});
+  CHECK(pow6(-Num{2}) == +Num{64});
+  CHECK(pow7(+Num{2}) == +Num{128});
+  CHECK(pow7(-Num{2}) == -Num{128});
+  CHECK(pow8(+Num{2}) == +Num{256});
+  CHECK(pow8(-Num{2}) == +Num{256});
+  CHECK(pow9(+Num{2}) == +Num{512});
+  CHECK(pow9(-Num{2}) == -Num{512});
+  CHECK(pow(+Num{2}, 10) == Num{1024});
+  CHECK(pow(-Num{2}, 10) == Num{1024});
 }
 
-TEST_CASE_TEMPLATE("tit::core::exp2", T, unsigned, float, double) {
-  CHECK(tit::exp2(T{0}) == T{1});
-  CHECK(tit::exp2(T{1}) == T{2});
-  CHECK(tit::exp2(T{9}) == T{512});
+TEST_CASE_TEMPLATE("tit::horner", Num, NUM_TYPES) {
+  CHECK(horner(Num{1}, {Num{1}}) == Num{1});
+  CHECK(horner(Num{3}, {Num{1}, -Num{3}, Num{2}}) == Num{10});
+  CHECK(horner(-Num{2}, {Num{4}, -Num{1}, Num{3}}) == Num{18});
+  CHECK(horner(Num{3}, {Num{6}, Num{1}, -Num{4}, Num{1}}) == Num{0});
 }
 
-TEST_CASE_TEMPLATE("tit::core::log", T, float, double) {
-  CHECK(tit::log(T{1.0}) == T{0.0});
-  CHECK(tit::approx_eq(tit::log(std::numbers::e_v<T>), T{1.0}));
+TEST_CASE_TEMPLATE("tit::sqrt", Real, REAL_TYPES) {
+  CHECK(sqrt(Real{0.0}) == Real{0.0});
+  CHECK(sqrt(Real{4.0}) == Real{2.0});
 }
 
-TEST_CASE_TEMPLATE("tit::core::log2", T, unsigned, float, double) {
-  CHECK(tit::log2(T{1}) == T{0});
-  CHECK(tit::log2(T{2}) == T{1});
-  CHECK(tit::log2(T{512}) == T{9});
+TEST_CASE_TEMPLATE("tit::cbrt", Real, REAL_TYPES) {
+  CHECK(cbrt(Real{0.0}) == Real{0.0});
+  CHECK(cbrt(+Real{8.0}) == +Real{2.0});
+  CHECK(cbrt(-Real{8.0}) == -Real{2.0});
 }
 
-TEST_CASE_TEMPLATE("tit::core::is_power_of_two", T, unsigned) {
-  CHECK(tit::is_power_of_two(T{0}));
-  CHECK(tit::is_power_of_two(T{1}));
-  CHECK(tit::is_power_of_two(T{512}));
-  CHECK(!tit::is_power_of_two(T{255}));
-  CHECK(!tit::is_power_of_two(T{513}));
-}
-
-TEST_CASE_TEMPLATE("tit::core::align_to_power_of_two", T, unsigned) {
-  CHECK(tit::align_to_power_of_two(T{0}) == T{0});
-  CHECK(tit::align_to_power_of_two(T{1}) == T{1});
-  CHECK(tit::align_to_power_of_two(T{2}) == T{2});
-  CHECK(tit::align_to_power_of_two(T{3}) == T{4});
-  CHECK(tit::align_to_power_of_two(T{127}) == T{128});
-  CHECK(tit::align_to_power_of_two(T{128}) == T{128});
-  CHECK(tit::align_to_power_of_two(T{129}) == T{256});
+TEST_CASE_TEMPLATE("tit::hypot", Real, REAL_TYPES) {
+  CHECK(hypot(Real{3.0}, Real{4.0}) == Real{5.0});
+  CHECK(hypot(Real{2.0}, Real{6.0}, Real{9.0}) == Real{11.0});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE_TEMPLATE("tit::core::avg", T, int, float, double) {
+TEST_CASE_TEMPLATE("tit::exp", Real, REAL_TYPES) {
+  CHECK(exp(Real{0.0}) == Real{1.0});
+  CHECK(approx_eq(exp(Real{1.0}), std::numbers::e_v<Real>));
+}
+
+TEST_CASE_TEMPLATE("tit::exp2", Type, UINT_TYPES, REAL_TYPES) {
+  CHECK(exp2(Type{0}) == Type{1});
+  CHECK(exp2(Type{1}) == Type{2});
+  CHECK(exp2(Type{9}) == Type{512});
+}
+
+TEST_CASE_TEMPLATE("tit::log", Real, REAL_TYPES) {
+  CHECK(log(Real{1.0}) == Real{0.0});
+  CHECK(approx_eq(log(std::numbers::e_v<Real>), Real{1.0}));
+}
+
+TEST_CASE_TEMPLATE("tit::log2", Type, UINT_TYPES, REAL_TYPES) {
+  CHECK(log2(Type{1}) == Type{0});
+  CHECK(log2(Type{2}) == Type{1});
+  CHECK(log2(Type{512}) == Type{9});
+}
+
+TEST_CASE_TEMPLATE("tit::is_power_of_two", UInt, UINT_TYPES) {
+  CHECK(is_power_of_two(UInt{0}));
+  CHECK(is_power_of_two(UInt{1}));
+  CHECK(is_power_of_two(UInt{512}));
+  CHECK(!is_power_of_two(UInt{255}));
+  CHECK(!is_power_of_two(UInt{513}));
+}
+
+TEST_CASE_TEMPLATE("tit::align_to_power_of_two", UInt, UINT_TYPES) {
+  CHECK(align_to_power_of_two(UInt{0}) == UInt{0});
+  CHECK(align_to_power_of_two(UInt{1}) == UInt{1});
+  CHECK(align_to_power_of_two(UInt{2}) == UInt{2});
+  CHECK(align_to_power_of_two(UInt{3}) == UInt{4});
+  CHECK(align_to_power_of_two(UInt{5}) == UInt{8});
+  CHECK(align_to_power_of_two(UInt{127}) == UInt{128});
+  CHECK(align_to_power_of_two(UInt{128}) == UInt{128});
+  CHECK(align_to_power_of_two(UInt{129}) == UInt{256});
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+TEST_CASE_TEMPLATE("tit::avg", Num, NUM_TYPES) {
   // Note: the result is always floating-point.
-  CHECK(tit::avg(T{1}, T{2}) == 1.5);
-  CHECK(tit::avg(T{1}, T{2}, T{3}) == 2.0);
+  CHECK(avg(Num{1}, Num{2}) == 1.5);
+  CHECK(avg(Num{1}, Num{2}, Num{3}) == 2.0);
 }
 
-TEST_CASE_TEMPLATE("tit::core::gavg", T, float, double) {
-  CHECK(tit::havg(T{1.0}, T{4.0}) == T{1.6});
+TEST_CASE_TEMPLATE("tit::gavg", Real, REAL_TYPES) {
+  CHECK(havg(Real{1.0}, Real{4.0}) == Real{1.6});
 }
 
-TEST_CASE_TEMPLATE("tit::core::gavg", T, float, double) {
-  CHECK(tit::gavg(T{1.0}, T{4.0}) == T{2.0});
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-TEST_CASE_TEMPLATE("tit::core::merge", T, float, double) {
-  CHECK(tit::merge(true, T{2.0}) == T{2.0});
-  CHECK(tit::merge(true, T{2.0}, T{3.0}) == T{2.0});
-  CHECK(tit::merge(false, T{2.0}) == T{0.0});
-  CHECK(tit::merge(false, T{2.0}, T{3.0}) == T{3.0});
+TEST_CASE_TEMPLATE("tit::gavg", Real, REAL_TYPES) {
+  CHECK(gavg(Real{1.0}, Real{4.0}) == Real{2.0});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// TODO: add those!
-TEST_CASE("tit::core::newton_raphson") {}
-TEST_CASE("tit::core::bisection") {}
+TEST_CASE_TEMPLATE("tit::merge", Real, REAL_TYPES) {
+  CHECK(merge(true, Real{2.0}) == Real{2.0});
+  CHECK(merge(true, Real{2.0}, Real{3.0}) == Real{2.0});
+  CHECK(merge(false, Real{2.0}) == Real{0.0});
+  CHECK(merge(false, Real{2.0}, Real{3.0}) == Real{3.0});
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+TEST_CASE_TEMPLATE("tit::newton_raphson", Real, REAL_TYPES) {
+  using enum NewtonRaphsonStatus;
+  SUBCASE("quadratic") {
+    SUBCASE("success") {
+      // Ensure the solver works for basic functions.
+      auto x = Real{1.0};
+      const auto f = [&x] {
+        return std::tuple{pow2(x) - Real{4.0}, Real{2.0} * x};
+      };
+      constexpr auto root = Real{2.0};
+      CHECK(newton_raphson(x, f) == success);
+      CHECK(approx_eq(x, root));
+    }
+    SUBCASE("failure_max_iter") {
+      // Ensure the solver fails after the iteration limit is exceeded
+      // if no actual root can be found.
+      auto x = Real{1.0};
+      const auto f = [&x] {
+        return std::tuple{pow2(x) + Real{4.0}, Real{2.0} * x};
+      };
+      CHECK(newton_raphson(x, f) == failure_max_iter);
+    }
+  }
+  SUBCASE("cubic") {
+    SUBCASE("failure_zero_derivative") {
+      // Ensure the solver fails if the zero derivative was reached during
+      // the computations.
+      auto x = Real{2.0};
+      const auto f = [&x] {
+        return std::tuple{pow3(x) - Real{12.0} * x + Real{2.0},
+                          Real{3.0} * pow2(x) - Real{12.0}};
+      };
+      CHECK(newton_raphson(x, f) == failure_zero_deriv);
+    }
+  }
+}
+
+TEST_CASE_TEMPLATE("tit::bisection", Real, REAL_TYPES) {
+  using enum BisectionStatus;
+  SUBCASE("quadratic") {
+    constexpr auto root = Real{2.0};
+    const auto f = [](Real x) { return pow2(x) - pow2(root); };
+    SUBCASE("success") {
+      // Ensure the solver works for basic functions.
+      auto min_x = Real{1.5}, max_x = Real{3.5};
+      CHECK(bisection(min_x, max_x, f) == success);
+      CHECK(approx_eq(min_x, root));
+      CHECK(approx_eq(max_x, root));
+    }
+    SUBCASE("success_early_min") {
+      // Ensure the solver completes with a single function evaluation if the
+      // root is already located on the left side of the search interval.
+      auto min_x = Real{2.0}, max_x = Real{4.0};
+      auto counted_f = CountedFunc{f};
+      CHECK(bisection(min_x, max_x, counted_f) == success);
+      CHECK(approx_eq(min_x, root));
+      CHECK(approx_eq(max_x, root));
+      CHECK(counted_f.count() == 1);
+    }
+    SUBCASE("success_early_max") {
+      // Ensure the solver completes with two function evaluations if the root
+      // is already located on the right side of the search interval.
+      auto min_x = Real{0.0}, max_x = Real{2.0};
+      auto counted_f = CountedFunc{f};
+      CHECK(bisection(min_x, max_x, counted_f) == success);
+      CHECK(approx_eq(min_x, root));
+      CHECK(approx_eq(max_x, root));
+      CHECK(counted_f.count() == 2);
+    }
+    SUBCASE("failure_sign") {
+      // Ensure the solver terminates if function values on the ends of the
+      // search interval have same signs.
+      auto min_x = Real{2.5}, max_x = Real{5.5};
+      CHECK(bisection(min_x, max_x, f) == failure_sign);
+    }
+  }
+  SUBCASE("sin") {
+    SUBCASE("success") {
+      // Ensure the solver works for a bit more complex functions.
+      const auto f = [](Real x) { return std::sin(x) + Real{0.5}; };
+      const auto root = Real{7.0} * std::numbers::pi_v<Real> / Real{6.0};
+      auto min_x = Real{1.0}, max_x = Real{4.0};
+      CHECK(bisection(min_x, max_x, f) == success);
+      CHECK(approx_eq(min_x, root));
+      CHECK(approx_eq(max_x, root));
+    }
+    SUBCASE("failure_max_iter") {
+      // Ensure the solver fails after the iteration limit is exceeded
+      // if no actual root can be found. This case requires 23 iterations for
+      // `float` and 72 for `double` to complete, while the default iteration
+      // limit is 10.
+      const auto f = [](Real x) { return std::sin(x) - inverse(x); };
+      auto min_x = Real{0.1}, max_x = Real{1.2};
+      CHECK(bisection(min_x, max_x, f) == failure_max_iter);
+    }
+  }
+}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace
+} // namespace tit
