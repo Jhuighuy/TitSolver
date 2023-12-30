@@ -35,7 +35,6 @@ add_library(tit::core ALIAS tit_core)
 target_link_libraries(tit_core PUBLIC tit::base)
 
 # Enable static analysis.
-check_includes(tit::core)
-enable_clang_tidy(tit::core)
+enable_static_analysis(tit::core)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

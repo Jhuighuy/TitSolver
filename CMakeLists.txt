@@ -12,10 +12,8 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 
 # Setup path to CMake scripts and include them.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(clang_tidy)
-include(codespell)
 include(compiler)
-include(iwyu)
+include(static_analysis)
 
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)
@@ -77,6 +75,6 @@ add_subdirectory("tests")
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Enable global static analysis.
-check_spelling(${CMAKE_PROJECT_NAME} "${CMAKE_SOURCE_DIR}")
+enable_global_static_analysis()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

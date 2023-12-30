@@ -18,7 +18,6 @@ add_executable(tit::wcsph ALIAS titwcsph)
 target_link_libraries(titwcsph PRIVATE tit::sph tit::app)
 
 # Enable static analysis.
-# check_includes(tit::wcsph)
-# enable_clang_tidy(tit::wcsph)
+# enable_static_analysis(tit::wcsph)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

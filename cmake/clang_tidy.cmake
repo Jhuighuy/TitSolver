@@ -32,7 +32,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   if(NOT TARGET ${TARGET})
     set(TARGET ${TARGET_OR_ALIAS})
   endif()
-  # Setup common arguments for IWYU call.
+  # Setup common arguments for clang-tidy call.
   set(
     CLANG_TIDY_ARGS
     # No annoying output.
@@ -80,7 +80,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       DEPENDS "${SOURCE_PATH}"
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
       ## Add message.
-      COMMENT "Analyzing ${SOURCE_PATH}"
+      COMMENT "Tidying ${SOURCE_PATH}"
       ## This is needed for generator expressions to work.
       COMMAND_EXPAND_LISTS
       VERBATIM)

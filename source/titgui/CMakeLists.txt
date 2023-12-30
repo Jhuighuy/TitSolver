@@ -31,7 +31,6 @@ add_executable(tit::gui ALIAS titgui)
 target_link_libraries(titgui PRIVATE tit::app Qt6::Widgets)
 
 # # Enable static analysis.
-# check_includes(tit::gui)
-# enable_clang_tidy(tit::gui)
+# enable_static_analysis(tit::gui)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
