@@ -46,7 +46,7 @@ public:
   }
 
   /** Clear the multivector. */
-  constexpr void clear() noexcept { // NOLINT(bugprone-exception-escape)
+  constexpr void clear() noexcept { // NOLINT(*-exception-escape)
     val_ranges_.clear(), val_ranges_.push_back(0);
     vals_.clear();
   }

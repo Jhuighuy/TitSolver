@@ -23,6 +23,7 @@
     "**/output/**": true,
   },
   "files.associations": {
+    ".clang-tidy": "yaml",
     "*.f90pp": "FortranFreeForm",
     "*.ipp": "cpp",
     "*.tcc": "cpp",

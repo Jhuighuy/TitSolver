@@ -3,9 +3,55 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Enable as many checks, as possible.
+# Enable almost all non-vendor-specific checks.
+#
+# Rational on disabled checks:
+#
+# * bugprone-easily-swappable-parameters:
+#   There are many easily-swappable parameters in the solver code, we cannot
+#   avoid that without introducing structures almost for any function.
+#
+# * cppcoreguidelines-avoid-do-while:
+#   Doctest uses do-while loops in it's assert macros. Apart from that, the
+#   check is definitely useful.
+#
+# * cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers:
+#   We have a few, I would like to re-enable this check in the future.
+#
+# * cppcoreguidelines-macro-usage:
+#   Macros are part of the language, I am feeling bad about using them.
+#
+# * cppcoreguidelines-misleading-capture-default-by-value:
+#   Maybe reconsider this one.
+#
+# * cppcoreguidelines-pro-bounds-constant-array-index:
+#   This check does not works correctly with our asserts.
+#
+# * cppcoreguidelines-pro-type-union-access:
+#   We should not use unions, but we do, especially with SIMD implementations.
+#
+# * modernize-use-nodiscard:
+#   I do not want to put `[[nodiscard]]` everywhere, especially on functions
+#   like `size()`. I want to use `[[nodiscard]]` only when it is really needed,
+#   like memory allocation functions or system calls.
+#
+# * readability-avoid-unconditional-preprocessor-if:
+#   In my opinion, using `#if 0/#endif` is more readable and convenient than
+#   using `/*` and `*/`.
+#
+# * readability-braces-around-statements:
+#   I do not like braces around short single-line statements.
+#
+# * readability-function-cognitive-complexity:
+#   This check does not works correctly with doctest macros.
+#
+# * readability-identifier-length:
+#   We have a lot of short identifiers, since we are doing a lot of math.
+#
+# * readability-isolate-declaration:
+#   I think declaring similar identifiers together is more readable, especially
+#   in math-heavy code.
 Checks: |
-  boost-*
   bugprone-*
   -bugprone-easily-swappable-parameters
   cert-*
@@ -13,21 +59,9 @@ Checks: |
   cppcoreguidelines-*
   -cppcoreguidelines-avoid-do-while
   -cppcoreguidelines-avoid-magic-numbers
-  -cppcoreguidelines-avoid-non-const-global-variables
   -cppcoreguidelines-macro-usage
   -cppcoreguidelines-misleading-capture-default-by-value
   -cppcoreguidelines-pro-bounds-constant-array-index
-  -cppcoreguidelines-pro-bounds-pointer-arithmetic
-  -cppcoreguidelines-pro-type-union-access
-  google-*
-  -google-readability-braces-around-statements
-  -google-readability-todo
-  hicpp-*
-  -hicpp-braces-around-statements
-  -hicpp-named-parameter
-  llvm-*
-  -llvm-else-after-return
-  -llvm-header-guard
   misc-*
   -misc-include-cleaner
   -misc-header-include-cycle

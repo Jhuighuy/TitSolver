@@ -80,7 +80,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       DEPENDS "${SOURCE_PATH}"
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
       ## Add message.
-      COMMENT "Tidying ${SOURCE_PATH}"
+      COMMENT "Analyzing ${SOURCE_PATH}"
       ## This is needed for generator expressions to work.
       COMMAND_EXPAND_LISTS
       VERBATIM)

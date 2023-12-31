@@ -234,7 +234,7 @@ public:
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) { // NOLINT(hicpp-multiway-paths-covered)
+    switch (Dim) {
       case 1: return Real{2.0 / 3.0};
       case 2: return Real{10.0 / 7.0 * std::numbers::inv_pi};
       case 3: return std::numbers::inv_pi_v<Real>;
@@ -336,7 +336,7 @@ public:
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) { // NOLINT(hicpp-multiway-paths-covered)
+    switch (Dim) {
       case 1: return Real{1.0 / 24.0};
       case 2: return Real{96.0 / 1199.0 * std::numbers::inv_pi};
       case 3: return Real{1.0 / 20.0 * std::numbers::inv_pi};
@@ -407,7 +407,7 @@ public:
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept {
     static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) { // NOLINT(hicpp-multiway-paths-covered)
+    switch (Dim) {
       case 1: return Real{1.0 / 120.0};
       case 2: return Real{7.0 / 478.0 * std::numbers::inv_pi};
       case 3: return Real{1.0 / 120.0 * std::numbers::inv_pi}; // or 3/359?
@@ -521,7 +521,7 @@ public:
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) { // NOLINT(hicpp-multiway-paths-covered)
+    switch (Dim) {
       case 1: return Real{3.0 / 4.0};
       case 2: return Real{7.0 / 4.0 * std::numbers::inv_pi};
       case 3: return Real{21.0 / 16.0 * std::numbers::inv_pi};
@@ -555,7 +555,7 @@ public:
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) { // NOLINT(hicpp-multiway-paths-covered)
+    switch (Dim) {
       case 1: return Real{27.0 / 16.0};
       case 2: return Real{9.0 / 4.0 * std::numbers::inv_pi};
       case 3: return Real{495.0 / 256.0 * std::numbers::inv_pi};
@@ -589,7 +589,7 @@ public:
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) { // NOLINT(hicpp-multiway-paths-covered)
+    switch (Dim) {
       case 1: return Real{15.0 / 8.0};
       case 2: return Real{39.0 / 14.0 * std::numbers::inv_pi};
       case 3: return Real{339.0 / 128.0 * std::numbers::inv_pi};

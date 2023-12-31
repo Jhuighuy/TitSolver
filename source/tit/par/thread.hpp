@@ -17,7 +17,8 @@
 #include "tit/core/types.hpp"
 
 namespace tit::par {
-// NOLINTBEGIN(cppcoreguidelines-missing-std-forward)
+
+// NOLINTBEGIN(*-missing-std-forward)
 
 struct impl_tag_t {};
 struct seg_tag_t : impl_tag_t {};
@@ -212,7 +213,8 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// NOLINTEND(cppcoreguidelines-missing-std-forward)
+// NOLINTEND(*-missing-std-forward)
+
 } // namespace tit::par
 
 // #include "tit/par/thread_omp.hpp"
