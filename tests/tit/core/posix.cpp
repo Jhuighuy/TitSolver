@@ -36,9 +36,9 @@ private:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// NOLINTBEGIN(cert-err33-c)
-
 TEST_CASE("tit::core::posix::SignalHandler") {
+  // TODO: check `raise` exit code.
+  // NOLINTBEGIN(cert-err33-c,*-include-cleaner)
   int handled_1 = 0, handled_2 = 0;
   const auto reset = [&] { handled_1 = handled_2 = 0; };
   { // Create the first handler for two signals.
@@ -70,9 +70,8 @@ TEST_CASE("tit::core::posix::SignalHandler") {
     CHECK(handled_1 == 0);
     CHECK(handled_2 == 0);
   }
+  // NOLINTEND(cert-err33-c,*-include-cleaner)
 }
-
-// NOLINTEND(cert-err33-c)
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

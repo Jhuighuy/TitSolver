@@ -6,9 +6,8 @@
 #pragma once
 
 #include <cmath>
-#include <iterator>
+#include <iterator> // IWYU pragma: keep
 #include <ranges>
-#include <tuple>
 #include <utility>
 
 #include "tit/core/assert.hpp"
@@ -103,7 +102,7 @@ private:
     cell_points_.assemble_tall(
         total_num_cells,
 #if TIT_LIBCPP // libc++ no `std::views::enumerate` yet.
-        std::views::single(std::tuple{0UZ, points_[0]}),
+        std::views::single(std::pair{0UZ, points_[0]}),
 #else
         std::views::enumerate(points_),
 #endif

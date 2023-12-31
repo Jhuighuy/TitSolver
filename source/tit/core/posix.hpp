@@ -24,11 +24,7 @@ class SignalHandler {
 public:
 
   /** Initialize signal handling for the common signals. */
-  SignalHandler()
-#if TIT_IWYU
-      = default
-#endif
-      ;
+  SignalHandler();
   /** Initialize signal handling for the specified signals. */
   SignalHandler(std::initializer_list<int> signal_numbers);
 
@@ -62,7 +58,7 @@ protected:
 private:
 
 #if TIT_HAVE_SIGACTION
-  using sigaction_t = struct sigaction;
+  using sigaction_t = struct sigaction; // NOLINT(*-include-cleaner)
   std::vector<std::tuple<int, sigaction_t>> prev_actions_;
 #else
   using sighandler_t = void (*)(int);

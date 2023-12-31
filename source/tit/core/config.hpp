@@ -3,10 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// IWYU pragma: always_keep
 #pragma once
 
-#include <version>
+#include <version> // IWYU pragma: keep
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -14,12 +13,12 @@
 #define TIT_DOXYGEN 0
 #endif
 
-#ifndef TIT_IWYU
-#define TIT_IWYU 0
-#endif
-
 #ifndef TIT_GCOV
 #define TIT_GCOV 0
+#endif
+
+#if defined(__clang_major__) && (__clang_major__ > 17)
+#error "It is time for a huge clean-up!"
 #endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

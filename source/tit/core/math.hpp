@@ -10,14 +10,13 @@
 #include <limits>
 
 #include <algorithm>
-#include <concepts>
+#include <concepts> // IWYU pragma: keep
 #include <cstdlib>
 #include <functional>
 #include <type_traits>
 #include <utility>
 
 #include "tit/core/assert.hpp"
-#include "tit/core/config.hpp"
 #include "tit/core/types.hpp"
 
 namespace tit {
@@ -88,7 +87,7 @@ constexpr auto sign(Num a) noexcept -> Num {
 /** Small number, treated as zero. */
 template<std::floating_point Real>
 constexpr auto small_number_v =
-#if TIT_LIBCPP // libc++'s `cbrt` is not constexpr yet.
+#ifdef __clang__ // clang's `cbrt` is not constexpr yet.
     std::numeric_limits<Real>::epsilon()
 #else
     std::cbrt(std::numeric_limits<Real>::epsilon())

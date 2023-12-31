@@ -6,7 +6,7 @@
 #pragma once
 
 #include <array>
-#include <concepts>
+#include <concepts> // IWYU pragma: keep
 #include <utility>
 
 #include "tit/core/types.hpp"

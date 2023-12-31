@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <concepts>
+#include <concepts> // IWYU pragma: keep
 #include <limits>
 #include <numbers>
 

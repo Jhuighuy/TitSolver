@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <type_traits> // IWYU pragma: keep -- IWYU does not recognize concepts.
+#include <type_traits>
 
 #include "tit/core/meta.hpp"
 #include "tit/core/types.hpp"
