@@ -6,19 +6,14 @@
 include_guard()
 include(clang_tidy)
 include(codespell)
-include(iwyu)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 ## Enable static analysis.
 function(enable_static_analysis TARGET_OR_ALIAS)
   # Parse and check arguments.
-  set(OPTIONS SKIP_IWYU SKIP_CLANG_TIDY)
+  set(OPTIONS SKIP_CLANG_TIDY)
   cmake_parse_arguments(SA "${OPTIONS}" "" "" ${ARGN})
-  # Enable IWYU.
-  if(NOT SKIP_IWYU)
-    check_includes(${TARGET_OR_ALIAS})
-  endif()
   # Enable clang-tidy.
   if(NOT SKIP_CLANG_TIDY)
     enable_clang_tidy(${TARGET_OR_ALIAS})
