@@ -1,7 +1,7 @@
 The MIT License (MIT)
 =====================
 
-Copyright © 2023 Oleg Butakov
+Copyright © 2020 - 2024 Oleg Butakov
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
