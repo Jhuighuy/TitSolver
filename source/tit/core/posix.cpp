@@ -5,8 +5,8 @@
 
 #include <algorithm>
 #include <csignal>
-#include <functional>
-#include <tuple>
+#include <initializer_list>
+#include <ranges>
 #include <vector>
 
 #include "tit/core/assert.hpp"
@@ -20,16 +20,15 @@ namespace tit::posix {
 // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
 std::vector<const SignalHandler*> SignalHandler::handlers_{};
 
-#if !TIT_IWYU
 SignalHandler::SignalHandler()
     : SignalHandler({SIGINT, SIGTERM, SIGABRT, SIGSEGV, SIGILL, SIGFPE}) {}
-#endif
 
 SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
   // Register the current handler object.
   handlers_.push_back(this);
   // Register the new signal actions (or handlers).
 #if TIT_HAVE_SIGACTION
+  // NOLINTBEGIN(*-include-cleaner)
   prev_actions_.reserve(signal_numbers.size());
   for (const auto signal_number : signal_numbers) {
     // Prepare the new action.
@@ -44,6 +43,7 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
     TIT_ENSURE(status == 0, "Unable to set the signal action!");
     prev_actions_.emplace_back(signal_number, prev_signal_action);
   }
+  // NOLINTEND(*-include-cleaner)
 #else
   prev_handlers_.reserve(signal_numbers.size());
   for (const auto signal_number : signal_numbers) {
@@ -60,6 +60,7 @@ SignalHandler::~SignalHandler() noexcept {
   // Restore the old signal handlers or actions.
 #if TIT_HAVE_SIGACTION
   for (auto& [signal_number, prev_signal_action] : prev_actions_) {
+    // NOLINTNEXTLINE(*-include-cleaner)
     const auto status = sigaction(signal_number, &prev_signal_action, nullptr);
     TIT_ENSURE(status == 0, "Unable to reset the signal action!");
   }

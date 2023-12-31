@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <concepts>
+#include <concepts> // IWYU pragma: keep
 #include <memory>
-#include <type_traits> // IWYU pragma: keep
+#include <type_traits>
 
 #define TBB_PREVIEW_MEMORY_POOL 1
 #include <oneapi/tbb/memory_pool.h>

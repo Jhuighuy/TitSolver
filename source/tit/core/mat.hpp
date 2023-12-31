@@ -7,7 +7,7 @@
 
 #include <algorithm>
 #include <array>
-#include <concepts>
+#include <concepts> // IWYU pragma: keep
 
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"

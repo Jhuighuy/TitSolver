@@ -6,7 +6,7 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
+#include <concepts> // IWYU pragma: keep
 #include <tuple>
 
 #include "tit/core/mat.hpp"
@@ -15,11 +15,11 @@
 #include "tit/core/vec.hpp"
 #include "tit/par/thread.hpp"
 #include "tit/sph/TitParticle.hpp"
-#include "tit/sph/artificial_viscosity.hpp"
+#include "tit/sph/artificial_viscosity.hpp" // IWYU pragma: keep
 #include "tit/sph/density_equation.hpp"
-#include "tit/sph/equation_of_state.hpp"
+#include "tit/sph/equation_of_state.hpp" // IWYU pragma: keep
 #include "tit/sph/field.hpp"
-#include "tit/sph/kernel.hpp"
+#include "tit/sph/kernel.hpp" // IWYU pragma: keep
 
 namespace tit::sph {
 
