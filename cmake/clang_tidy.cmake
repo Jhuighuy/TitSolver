@@ -50,6 +50,39 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     ${CLANG_WARNINGS}
     # Enable C++23 (`c++2b` and not `c++23` for clang-16).
     -std=c++2b)
+  ## Setup libstdc++ include paths when compiled with GCC.
+  ## TODO: Looks like currently it only happens on macOS. This simple check
+  ## should work for now.
+  if(APPLE)
+    list(
+      APPEND
+      CLANG_TIDY_COMPILE_ARGS
+      # Use libstdc++ instead of libc++ as the standard library.
+      -stdlib=libstdc++
+      # The option above sometimes emits a warning, so we disable it.
+      -Wno-unused-command-line-argument)
+    ## Find path to libstdc++. Something like ".../gcc/13.2.0/include/c++/13".
+    set(STDLIB_DIR)
+    set(STDLIB_PLATFORM_DIR)
+    set(STBLIB_DIR_REGEX "gcc/([0-9]+(\\.[0-9]+)+)/include/c\\+\\+/([0-9]+)")
+    set(STBLIB_PLATFORM_DIR_REGEX "${STBLIB_DIR_REGEX}/(.*-apple-.*)")
+    foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+      if(DIR MATCHES "${STBLIB_DIR_REGEX}$")
+        #message(STATUS "Found GCC include path: ${DIR}")
+        set(STDLIB_DIR ${DIR})
+      elseif(DIR MATCHES "${STBLIB_PLATFORM_DIR_REGEX}$")
+        #message(STATUS "Found GCC platform include path: ${DIR}")
+        set(STDLIB_PLATFORM_DIR ${DIR})
+      endif()
+    endforeach()
+    ## Add libstdc++ include paths.
+    if(STDLIB_DIR)
+      list(APPEND CLANG_TIDY_COMPILE_ARGS -stdlib++-isystem "${STDLIB_DIR}")
+    endif()
+    if(STDLIB_PLATFORM_DIR)
+      list(APPEND CLANG_TIDY_COMPILE_ARGS -cxx-isystem "${STDLIB_PLATFORM_DIR}")
+    endif()
+  endif()
   # Loop through the target sources and call clang-tidy.
   set(ALL_STAMPS)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
