@@ -10,7 +10,7 @@
 
 #include "tit/core/misc.hpp"
 
-namespace tit::string_utils {
+namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -32,7 +32,8 @@ concept input_string_range =
 
 /** Join the string with delimiter. */
 template<input_string_range Strings>
-constexpr auto join(std::string_view with, Strings&& strings) -> std::string {
+constexpr auto join_strings(std::string_view with, Strings&& strings)
+    -> std::string {
   TIT_ASSUME_UNIVERSAL(Strings, strings);
   if (std::ranges::empty(strings)) return "";
   std::string result(*strings.begin());
@@ -45,4 +46,4 @@ constexpr auto join(std::string_view with, Strings&& strings) -> std::string {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit::string_utils
+} // namespace tit
