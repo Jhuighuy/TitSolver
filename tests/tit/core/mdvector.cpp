@@ -11,17 +11,16 @@
 
 #include "tit/core/mdvector.hpp"
 
+namespace tit {
 namespace {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::Mdspan") {
+TEST_CASE("tit::Mdspan") {
   // Construct `Mdspan`.
-  const auto values = std::array{1, 2, 3, //
-                                 4, 5, 6, //
-                                 7, 8, 9};
-  const auto shape = std::array{3UZ, 3UZ};
-  const auto mdspan = tit::Mdspan<const int, 2>{values.data(), shape.data()};
+  const auto shape = std::array{3ZU, 3ZU};
+  const auto vals = std::array{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  const auto mdspan = Mdspan<const int, 2>{shape, vals};
   // Check data access.
   CHECK(mdspan.size() == 9);
   CHECK(mdspan.front() == 1);
@@ -39,16 +38,16 @@ TEST_CASE("tit::core::Mdspan") {
   CHECK(mdspan[1][0] == 4);
   CHECK(mdspan[2][1] == 8);
   // Check data access using iterators.
-  const auto* iter = std::ranges::find(mdspan, 7);
+  const auto iter = std::ranges::find(mdspan, 7);
   CHECK(iter - mdspan.begin() == 6);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::core::Mdvector") {
+TEST_CASE("tit::Mdvector") {
   SUBCASE("shape") {
     // Construct `Mdvector` and check it's size.
-    auto mdvector = tit::Mdvector<int, 2>(3, 3);
+    Mdvector<int, 2> mdvector(3, 3);
     CHECK(mdvector.size() == 9);
     // Assign different shape to it and check it's size.
     mdvector.assign(2, 4);
@@ -57,14 +56,11 @@ TEST_CASE("tit::core::Mdvector") {
     mdvector.clear();
     CHECK(mdvector.size() == 0);
   }
-
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
   SUBCASE("access") {
     const auto make_mdvector = []() {
       // Construct Mdvector.
-      auto mdvector = tit::Mdvector<int, 2>(3UZ, 3UZ);
-      // Populate it with values using the different accessors.
+      Mdvector<int, 2> mdvector(3, 3);
+      // Populate it with vals using the different accessors.
       mdvector.front() = 1, mdvector[0, 1] = 2, mdvector[0][2] = 2;
       mdvector[1, 0] = 4, mdvector[1][1] = 5, mdvector[1, 2] = 6;
       mdvector[2][0] = 9, mdvector[2, 1] = 8, mdvector.back() = 9;
@@ -89,16 +85,11 @@ TEST_CASE("tit::core::Mdvector") {
     CHECK(mdvector[1][0] == 4);
     CHECK(mdvector[2][1] == 8);
   }
-
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
   SUBCASE("iterators") {
     const auto make_mdvector = []() {
-      // Construct and empty `Mdvector`.
-      auto mdvector = tit::Mdvector<int, 3>{};
-      // Assign shape to it.
+      // Construct and populate `Mdvector` using iterators.
+      Mdvector<int, 3> mdvector{};
       mdvector.assign(4, 4, 4);
-      // Populate it using iterators.
       std::ranges::copy(std::views::iota(1, 65), mdvector.begin());
       return mdvector;
     };
@@ -113,3 +104,4 @@ TEST_CASE("tit::core::Mdvector") {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace
+} // namespace tit
