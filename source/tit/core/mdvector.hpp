@@ -12,6 +12,7 @@
 
 #include <tit/core/assert.hpp>
 #include <tit/core/misc.hpp>
+#include <tit/core/trait_utils.hpp>
 #include <tit/core/types.hpp>
 
 namespace tit {
@@ -71,7 +72,7 @@ public:
 
   /** Reference to span element or sub-span. */
   template<class... Indices>
-    requires in_range_v<1UZ, sizeof...(Indices), Rank> &&
+    requires in_range_v<sizeof...(Indices), 1, Rank> &&
              (std::convertible_to<Indices, size_t> && ...)
   constexpr auto operator[](Indices... indices) const noexcept
       -> decltype(auto) {

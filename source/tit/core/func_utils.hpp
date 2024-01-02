@@ -5,28 +5,30 @@
 
 #pragma once
 
-#include <cstddef>
+#include <utility>
 
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Unsigned sized type. */
-using size_t = std::size_t;
+// TODO: this definitely needs some rework.
+template<class Func>
+class OnAssignment {
+private:
 
-/** Signed sized type. */
-using ssize_t = std::ptrdiff_t;
+  Func func_;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+public:
 
-/** 32-bit floating point type. */
-using float32_t = float;
+  constexpr explicit OnAssignment(Func func) : func_{std::move(func)} {}
 
-/** 64-bit floating point type. */
-using float64_t = double;
+  template<class Arg>
+  // NOLINTNEXTLINE(*-copy-assignment-signature,*-unconventional-assign-operator)
+  constexpr void operator=(Arg&& arg) {
+    func_(std::forward<Arg>(arg));
+  }
 
-/** Default floating-point type type. */
-using real_t = float64_t;
+}; // class OnAssignment
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

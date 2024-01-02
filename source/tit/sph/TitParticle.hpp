@@ -17,18 +17,21 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/func_utils.hpp"
 #include "tit/core/graph.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/misc.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
+
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
+
 #include "tit/par/thread.hpp"
+
 #include "tit/sph/field.hpp"
 
 namespace tit {
