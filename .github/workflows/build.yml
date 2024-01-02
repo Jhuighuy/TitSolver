@@ -67,8 +67,10 @@ jobs:
           git pull
           ./bootstrap-vcpkg.sh
           ## Stamp the last vcpkg commit hash and the current compiler.
-          git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
-          ${{ matrix.compiler }} --version > $WORK_DIR/vcpkg.compiler_id
+          VCPKG_HASH_FILE="$WORK_DIR/vcpkg.commit_hash"
+          echo "# vcpkg cache info." > "$VCPKG_HASH_FILE"
+          git rev-parse HEAD >> "$VCPKG_HASH_FILE"
+          ${{ matrix.compiler }} --version >> "$VCPKG_HASH_FILE"
 
       - name: Cache vcpkg packages
         uses: actions/cache@v3
@@ -82,7 +84,7 @@ jobs:
       - name: Build and test
         run: |
           # Build and test
-          ./build/build.sh                                                     \
+          ./build/build.sh -j 4                                                \
             --compiler=${{ matrix.compiler }}                                  \
             --config=${{ matrix.configuration }}                               \
             --test
@@ -129,10 +131,10 @@ jobs:
           brew update -q
           ## Install the toolchain.
           brew install -q cmake gcc@13
-          # ## Install LLVM and related tools.
-          # brew install -q llvm@17
-          # brew install -q include-what-you-use
-          # export PATH="$(brew --prefix llvm@17)/bin:$PATH"
+          ## Install LLVM and related tools.
+          brew install -q llvm@17
+          brew install -q include-what-you-use
+          export PATH="$(brew --prefix llvm@17)/bin:$PATH"
           ## Install other tools.
           brew install -q gnu-sed diffutils
           ## Install Python tools.
@@ -152,8 +154,10 @@ jobs:
           git pull
           ./bootstrap-vcpkg.sh
           ## Stamp the last vcpkg commit hash and the current compiler.
-          git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
-          ${{ matrix.compiler }} --version > $WORK_DIR/vcpkg.compiler_id
+          VCPKG_HASH_FILE="$WORK_DIR/vcpkg.commit_hash"
+          echo "# vcpkg cache info." > "$VCPKG_HASH_FILE"
+          git rev-parse HEAD >> "$VCPKG_HASH_FILE"
+          ${{ matrix.compiler }} --version >> "$VCPKG_HASH_FILE"
 
       - name: Cache vcpkg packages
         uses: actions/cache@v3
@@ -167,7 +171,7 @@ jobs:
       - name: Build and test
         run: |
           # Build and test
-          ./build/build.sh                                                     \
+          ./build/build.sh -j 4                                                \
             --compiler=${{ matrix.compiler }}                                  \
             --config=${{ matrix.configuration }}                               \
             --test
