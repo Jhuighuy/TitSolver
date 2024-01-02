@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <bit>
 #include <cmath>
 #include <limits>
 
@@ -167,17 +166,6 @@ constexpr auto safe_divide(Num a, Real b) noexcept {
   return is_zero(b) ? div_result_t<Num, Real>{} : a / b;
 }
 
-/** Ceiling divide unsigned integer. */
-template<std::unsigned_integral UInt>
-constexpr auto ceil_divide(UInt a, UInt b) noexcept -> UInt {
-  return (a + b - UInt{1}) / b;
-}
-/** Align unsigned integer. */
-template<std::unsigned_integral UInt>
-constexpr auto align(UInt a, UInt alignment) noexcept -> UInt {
-  return ceil_divide(a, alignment) * alignment;
-}
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Raise to the second power with 1 multiplication. */
@@ -265,57 +253,6 @@ constexpr auto hypot(Real a, Real b, Real c) noexcept -> Real {
   return std::hypot(a, b, c);
 }
 /** @} */
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** Exponent. */
-template<std::floating_point Real>
-constexpr auto exp(Real a) noexcept -> Real {
-  return std::exp(a);
-}
-/** Exponent base two. */
-/** @{ */
-template<std::floating_point Real>
-constexpr auto exp2(Real a) noexcept -> Real {
-  return std::exp2(a);
-}
-template<std::unsigned_integral UInt>
-constexpr auto exp2(UInt a) noexcept -> UInt {
-  return UInt{1} << a;
-}
-/** @} */
-
-/** Logarithm. */
-template<std::floating_point Real>
-constexpr auto log(Real a) noexcept -> Real {
-  return std::log(a);
-}
-
-/** Logarithm base two. */
-/** @{ */
-template<std::floating_point Real>
-constexpr auto log2(Real a) noexcept -> Real {
-  return std::log2(a);
-}
-template<std::unsigned_integral UInt>
-constexpr auto log2(UInt a) noexcept -> UInt {
-  TIT_ASSERT(a != 0, "Cannot take base-2 logarithm of zero.");
-  return std::bit_width(a) - UInt{1};
-}
-/** @} */
-
-/** Check if integer a is power of two. */
-template<std::unsigned_integral UInt>
-constexpr auto is_power_of_two(UInt a) noexcept -> bool {
-  return (a & (a - UInt{1})) == UInt{0};
-}
-
-/** Align-up integer to the nearest power of two. */
-template<std::unsigned_integral UInt>
-constexpr auto align_to_power_of_two(UInt a) noexcept -> UInt {
-  // TODO: maybe a branchless implementation?
-  return is_power_of_two(a) ? a : exp2(log2(a) + 1);
-}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

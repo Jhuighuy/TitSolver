@@ -7,8 +7,8 @@
 
 #include <algorithm>
 
-#include "tit/core/math.hpp"
 #include "tit/core/types.hpp"
+#include "tit/core/uint_utils.hpp"
 
 namespace tit::simd {
 
@@ -59,7 +59,7 @@ concept use_regs = (Dim > max_reg_size_v<Num>) ||
 template<class Num, size_t Dim>
   requires use_regs<Num, Dim>
 inline constexpr auto reg_size_v =
-    std::min(max_reg_size_v<Num>, align_to_power_of_two(Dim));
+    std::min(max_reg_size_v<Num>, align_up_to_power_of_two(Dim));
 
 /** Do SIMD registers match for the specified types? */
 template<size_t Dim, class Num, class... RestNums>

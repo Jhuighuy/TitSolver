@@ -20,10 +20,10 @@
 #include "tit/core/func_utils.hpp"
 #include "tit/core/graph.hpp"
 #include "tit/core/mat.hpp"
-#include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
+#include "tit/core/uint_utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -214,7 +214,7 @@ public:
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
     size_t nparts = par::num_threads();
-    const size_t partsize = ceil_divide(parts.size(), nparts);
+    const size_t partsize = divide_up(parts.size(), nparts);
     // Compute partitioning.
     for (size_t i = 0; i < parts.size(); ++i) {
       parts[i] /= partsize;

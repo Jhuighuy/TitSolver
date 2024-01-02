@@ -13,7 +13,7 @@
 
 #include <doctest/doctest.h>
 
-#include "tit/core/math.hpp"
+#include "tit/core/math_utils.hpp"
 #include "tit/core/types.hpp"
 
 namespace tit {
@@ -56,9 +56,6 @@ private:
 
 // Floating-point types to test against.
 #define REAL_TYPES float, double
-
-// Unsigned integer types to test against.
-#define UINT_TYPES unsigned int, unsigned long
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -197,24 +194,6 @@ TEST_CASE_TEMPLATE("tit::safe_divide", Real, REAL_TYPES) {
   CHECK(safe_divide(1, Real{2.0} * small_number_v<Real>) != Real{0.0});
 }
 
-TEST_CASE_TEMPLATE("tit::ceil_divide", UInt, UINT_TYPES) {
-  CHECK(ceil_divide(UInt{0}, UInt{10}) == UInt{0});
-  CHECK(ceil_divide(UInt{3}, UInt{10}) == UInt{1});
-  CHECK(ceil_divide(UInt{7}, UInt{10}) == UInt{1});
-  CHECK(ceil_divide(UInt{10}, UInt{10}) == UInt{1});
-  CHECK(ceil_divide(UInt{11}, UInt{10}) == UInt{2});
-  CHECK(ceil_divide(UInt{20}, UInt{10}) == UInt{2});
-}
-
-TEST_CASE_TEMPLATE("tit::align", UInt, UINT_TYPES) {
-  CHECK(align(UInt{0}, UInt{10}) == UInt{0});
-  CHECK(align(UInt{3}, UInt{10}) == UInt{10});
-  CHECK(align(UInt{7}, UInt{10}) == UInt{10});
-  CHECK(align(UInt{10}, UInt{10}) == UInt{10});
-  CHECK(align(UInt{11}, UInt{10}) == UInt{20});
-  CHECK(align(UInt{20}, UInt{10}) == UInt{20});
-}
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 TEST_CASE_TEMPLATE("tit::pow", Num, NUM_TYPES) {
@@ -259,49 +238,6 @@ TEST_CASE_TEMPLATE("tit::cbrt", Real, REAL_TYPES) {
 TEST_CASE_TEMPLATE("tit::hypot", Real, REAL_TYPES) {
   CHECK(hypot(Real{3.0}, Real{4.0}) == Real{5.0});
   CHECK(hypot(Real{2.0}, Real{6.0}, Real{9.0}) == Real{11.0});
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-TEST_CASE_TEMPLATE("tit::exp", Real, REAL_TYPES) {
-  CHECK(exp(Real{0.0}) == Real{1.0});
-  CHECK(approx_eq(exp(Real{1.0}), std::numbers::e_v<Real>));
-}
-
-TEST_CASE_TEMPLATE("tit::exp2", Type, UINT_TYPES, REAL_TYPES) {
-  CHECK(exp2(Type{0}) == Type{1});
-  CHECK(exp2(Type{1}) == Type{2});
-  CHECK(exp2(Type{9}) == Type{512});
-}
-
-TEST_CASE_TEMPLATE("tit::log", Real, REAL_TYPES) {
-  CHECK(log(Real{1.0}) == Real{0.0});
-  CHECK(approx_eq(log(std::numbers::e_v<Real>), Real{1.0}));
-}
-
-TEST_CASE_TEMPLATE("tit::log2", Type, UINT_TYPES, REAL_TYPES) {
-  CHECK(log2(Type{1}) == Type{0});
-  CHECK(log2(Type{2}) == Type{1});
-  CHECK(log2(Type{512}) == Type{9});
-}
-
-TEST_CASE_TEMPLATE("tit::is_power_of_two", UInt, UINT_TYPES) {
-  CHECK(is_power_of_two(UInt{0}));
-  CHECK(is_power_of_two(UInt{1}));
-  CHECK(is_power_of_two(UInt{512}));
-  CHECK(!is_power_of_two(UInt{255}));
-  CHECK(!is_power_of_two(UInt{513}));
-}
-
-TEST_CASE_TEMPLATE("tit::align_to_power_of_two", UInt, UINT_TYPES) {
-  CHECK(align_to_power_of_two(UInt{0}) == UInt{0});
-  CHECK(align_to_power_of_two(UInt{1}) == UInt{1});
-  CHECK(align_to_power_of_two(UInt{2}) == UInt{2});
-  CHECK(align_to_power_of_two(UInt{3}) == UInt{4});
-  CHECK(align_to_power_of_two(UInt{5}) == UInt{8});
-  CHECK(align_to_power_of_two(UInt{127}) == UInt{128});
-  CHECK(align_to_power_of_two(UInt{128}) == UInt{128});
-  CHECK(align_to_power_of_two(UInt{129}) == UInt{256});
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

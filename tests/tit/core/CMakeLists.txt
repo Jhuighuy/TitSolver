@@ -7,11 +7,12 @@
 set(
   CXX_SOURCES
   "exception.cpp"
-  "math.cpp"
+  "math_utils.cpp"
   "mdvector.cpp"
   "meta.cpp"
   "signals.cpp"
   "string_utils.cpp"
+  "uint_utils.cpp"
   "vec.cpp")
 
 # Create the unit test executable.

@@ -10,10 +10,11 @@
 #include <utility>
 
 #include "tit/core/assert.hpp"
-#include "tit/core/math.hpp"
+#include "tit/core/math_utils.hpp"
 #include "tit/core/misc.hpp" // IWYU pragma: keep
 #include "tit/core/simd.hpp"
 #include "tit/core/types.hpp"
+#include "tit/core/uint_utils.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit {
@@ -35,7 +36,7 @@ public:
   static constexpr auto reg_size = simd::reg_size_v<Num, Dim>;
 
   /** Number of SIMD register. */
-  static constexpr auto num_regs = ceil_divide(num_rows, reg_size);
+  static constexpr auto num_regs = divide_up(num_rows, reg_size);
 
   /** Padding. */
   static constexpr auto padding = reg_size * num_regs - num_rows;

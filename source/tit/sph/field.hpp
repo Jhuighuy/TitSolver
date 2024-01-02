@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "tit/core/mat.hpp"
-#include "tit/core/math.hpp"
+#include "tit/core/math_utils.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/misc.hpp"
 #include "tit/core/types.hpp"
@@ -246,10 +246,10 @@ TIT_DEFINE_MATRIX_FIELD(L)
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 namespace sph::fsi {
-  /** Reference particle position. */
-  TIT_DEFINE_VECTOR_FIELD(r_0)
-  /** Piola-Kirchhoff stress tensor. */
-  TIT_DEFINE_MATRIX_FIELD(P)
+/** Reference particle position. */
+TIT_DEFINE_VECTOR_FIELD(r_0)
+/** Piola-Kirchhoff stress tensor. */
+TIT_DEFINE_MATRIX_FIELD(P)
 } // namespace sph::fsi
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
