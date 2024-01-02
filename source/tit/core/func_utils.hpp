@@ -5,9 +5,23 @@
 
 #pragma once
 
+#include <tuple> // IWYU pragma: keep
 #include <utility>
 
+#include "tit/core/types.hpp"
+
 namespace tit {
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Functor that gets tuple element at index. */
+template<size_t Index>
+struct GetFn {
+  template<class Tuple>
+  constexpr auto operator()(Tuple&& tuple) const noexcept -> decltype(auto) {
+    return std::get<Index>(std::forward<Tuple>(tuple));
+  }
+}; // struct GetFn
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

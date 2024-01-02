@@ -9,6 +9,8 @@ EmptyLineAfterAccessModifier: Always
 EmptyLineBeforeAccessModifier: LogicalBlock
 AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: None
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
 AlignOperands: Align
 AllowAllArgumentsOnNextLine: false
 AllowAllConstructorInitializersOnNextLine: false

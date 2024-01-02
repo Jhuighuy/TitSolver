@@ -9,7 +9,7 @@ set(
   "math.cpp"
   "mdvector.cpp"
   "meta.cpp"
-  "posix.cpp"
+  "signals.cpp"
   "string_utils.cpp"
   "vec.cpp")
 

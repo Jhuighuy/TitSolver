@@ -115,6 +115,7 @@
     "random": "cpp",
     "ranges": "cpp",
     "ratio": "cpp",
+    "regex": "cpp",
     "semaphore": "cpp",
     "set": "cpp",
     "shared_mutex": "cpp",
