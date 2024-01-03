@@ -12,8 +12,6 @@ set(
   "kd_tree.hpp"
   "search_engine.hpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Create the library.
 add_library(tit_geom INTERFACE ${CXX_SOURCES})
 add_library(tit::geom ALIAS tit_geom)

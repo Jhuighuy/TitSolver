@@ -9,8 +9,6 @@ set(
   "wrap_main.cpp"
   "wrap_main.hpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Create the library.
 add_library(tit_app STATIC ${CXX_SOURCES})
 add_library(tit::app ALIAS tit_app)

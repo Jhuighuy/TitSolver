@@ -8,9 +8,7 @@ set(
   CXX_SOURCES
   "esph.cpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# Create the library.
+# Create the executable.
 add_executable(titesph ${CXX_SOURCES})
 add_executable(tit::esph ALIAS titesph)
 

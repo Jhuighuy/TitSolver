@@ -8,8 +8,6 @@ set(
   CXX_SOURCES
   "memory_pool.cpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Create the unit test executable.
 add_doctest_executable(tit_par_tests ${CXX_SOURCES})
 add_executable(tit::par_tests ALIAS tit_par_tests)
