@@ -5,7 +5,8 @@
 {
   "env": {
     "includePath": [
-      "${workspaceFolder}/source"
+      "${workspaceFolder}/source",
+      "${workspaceFolder}/tests"
     ],
     "vcpkgPackagesPath": "${workspaceFolder}/output/cmake_output/vcpkg_installed",
     "brewIncludePath": [
