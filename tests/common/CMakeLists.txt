@@ -7,8 +7,6 @@
 set(
   CXX_SOURCES)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Create the library.
 add_library(tit_tests_common INTERFACE ${CXX_SOURCES})
 add_library(tit::tests_common ALIAS tit_tests_common)

@@ -17,8 +17,6 @@ set(
   "time_integrator.hpp"
   "TitParticle.hpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Create the library.
 add_library(tit_sph INTERFACE ${CXX_SOURCES})
 add_library(tit::sph ALIAS tit_sph)

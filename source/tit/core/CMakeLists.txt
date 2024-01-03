@@ -25,8 +25,6 @@ set(
   "vec_simd.hpp"
   "vec.hpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Create the library.
 add_library(tit_core STATIC ${CXX_SOURCES})
 add_library(tit::core ALIAS tit_core)

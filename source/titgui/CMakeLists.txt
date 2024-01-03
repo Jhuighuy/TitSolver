@@ -11,10 +11,7 @@ set(
   "main_window.ui"
   "main.cpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# Setup Qt.
-# I am doing it here in order to avoid running MOC and UIC for all targets.
+# Setup Qt. Doing it here in order to avoid running MOC and UIC for all targets.
 if(Qt6 VERSION_GREATER_EQUAL 3.3)
   qt_standard_project_setup()
 else()
@@ -30,7 +27,7 @@ add_executable(tit::gui ALIAS titgui)
 # Link with the dependent libraries.
 target_link_libraries(titgui PRIVATE tit::app Qt6::Widgets)
 
-# # Enable static analysis.
+# Enable static analysis.
 # enable_static_analysis(tit::gui)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
