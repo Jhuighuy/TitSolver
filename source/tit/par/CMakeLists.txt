@@ -12,8 +12,6 @@ set(
   #"thread_tbb.hpp"
   "thread.hpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 # Create the library.
 add_library(tit_par INTERFACE ${CXX_SOURCES})
 add_library(tit::par ALIAS tit_par)

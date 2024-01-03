@@ -8,9 +8,7 @@ set(
   CXX_SOURCES
   "wcsph.cpp")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-# Create the library.
+# Create the executable.
 add_executable(titwcsph ${CXX_SOURCES})
 add_executable(tit::wcsph ALIAS titwcsph)
 
