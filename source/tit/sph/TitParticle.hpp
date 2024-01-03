@@ -474,19 +474,19 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class x>
-  static auto _make_name(const std::string& n, meta::Set<x> /**/) {
+  static auto _make_name(const std::string& n, std::tuple<x> /**/) {
     return n;
   }
   template<class Realx, size_t Dimx>
   static auto _make_name(const std::string& n,
-                         meta::Set<Vec<Realx, Dimx>> /**/) {
+                         std::tuple<Vec<Realx, Dimx>> /**/) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2) return n + "_x " + n + "_y";
     if constexpr (Dimx == 3) return n + "_x " + n + "_y " + n + "_z";
   }
   template<class Realx, size_t Dimx>
   static auto _make_name(const std::string& n,
-                         meta::Set<Mat<Realx, Dimx>> /**/) {
+                         std::tuple<Mat<Realx, Dimx>> /**/) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2)
       return n + "_xx " + n + "_xy " + //
@@ -499,7 +499,7 @@ public:
 
   static auto _make_name(auto V) {
     return _make_name(field_name_v<decltype(V)>,
-                      meta::Set<field_value_type_t<decltype(V), Real, Dim>>{});
+                      std::tuple<field_value_type_t<decltype(V), Real, Dim>>{});
   }
 
   void print(const std::string& path) {
