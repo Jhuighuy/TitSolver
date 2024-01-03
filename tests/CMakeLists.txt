@@ -7,13 +7,6 @@ include(testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Create a base library for the doctest-based test executable.
-add_library(tit_doctest OBJECT "doctest_main.cpp")
-add_library(tit::doctest ALIAS tit_doctest)
-
-# Link with doctest.
-target_link_libraries(tit_doctest PUBLIC doctest::doctest)
-
 # Include doctest support module.
 include(doctest)
 
@@ -36,7 +29,9 @@ endmacro()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Add the actual tests.
+# Add the actual test code.
+add_subdirectory("common")
+add_subdirectory("doctest")
 add_subdirectory("test_runner")
 add_subdirectory("tit")
 add_subdirectory("titwcsph")
