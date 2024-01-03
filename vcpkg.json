@@ -3,6 +3,7 @@
   "name": "tit",
   "version-string": "0.1.0",
   "dependencies": [
+    "boost-stacktrace",
     "doctest",
     "hdf5",
     "fmt",

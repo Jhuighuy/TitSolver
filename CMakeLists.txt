@@ -16,6 +16,7 @@ include(compiler)
 include(static_analysis)
 
 # Find the third-party libraries.
+find_package(Boost REQUIRED COMPONENTS stacktrace_basic stacktrace_addr2line)
 find_package(doctest CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
@@ -62,6 +63,7 @@ endforeach()
 # Link with the dependent libraries.
 target_link_libraries(
   tit_base INTERFACE
+  Boost::boost Boost::stacktrace_basic Boost::stacktrace_addr2line
   fmt::fmt
   spdlog::spdlog
   TBB::tbb TBB::tbbmalloc

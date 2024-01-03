@@ -19,6 +19,7 @@ set(
   "signals.cpp"
   "signals.hpp"
   "simd.hpp"
+  "stacktrace.hpp"
   "string_utils.hpp"
   "trait_utils.hpp"
   "types.hpp"
