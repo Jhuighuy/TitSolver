@@ -8,6 +8,7 @@ set(
   CXX_SOURCES
   "assert.hpp"
   "config.hpp"
+  "exception.hpp"
   "func_utils.hpp"
   "graph.hpp"
   "mat.hpp"
