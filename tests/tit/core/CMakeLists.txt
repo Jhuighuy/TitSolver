@@ -15,13 +15,16 @@ set(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Create the unit test executable.
-add_doctest_executable(tit_core_tests ${CXX_SOURCES})
+add_executable(tit_core_tests ${CXX_SOURCES})
 add_executable(tit::core_tests ALIAS tit_core_tests)
 
 # Link with the dependent libraries.
-target_link_libraries(tit_core_tests PRIVATE tit::core)
+target_link_libraries(tit_core_tests PRIVATE tit::core tit::doctest)
 
 # Enable static analysis.
 enable_static_analysis(tit::core_tests)
+
+# Register the test.
+add_test_from_target(tit::core_tests NAME "tit/core/unit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

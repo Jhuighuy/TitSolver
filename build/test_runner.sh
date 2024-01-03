@@ -113,12 +113,7 @@ parse_args() {
 
 setup_work_dir() {
   echo "# Setting up the test directory..."
-  # Transform the test name into a directory name: replace '::' with '/' and
-  # remove the tag name. E.g. 'foo::bar[abc]' -> 'foo/bar'.
-  WORK_DIR="$TEST_NAME"
-  WORK_DIR="${WORK_DIR//:://}"
-  WORK_DIR="${WORK_DIR%%\[*}"
-  WORK_DIR="$TEST_OUTPUT_DIR/$WORK_DIR"
+  WORK_DIR="$TEST_OUTPUT_DIR/${TEST_NAME%%\[*}"
   mkdir -p "$WORK_DIR"
 }
 
