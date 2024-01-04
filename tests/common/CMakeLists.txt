@@ -5,7 +5,8 @@
 
 # Specify the list of sources.
 set(
-  CXX_SOURCES)
+  CXX_SOURCES
+  "func_extra.hpp")
 
 # Create the library.
 add_library(tit_tests_common INTERFACE ${CXX_SOURCES})
