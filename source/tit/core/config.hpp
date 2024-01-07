@@ -21,9 +21,6 @@
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Detect libc++
-#define TIT_LIBCPP 0 // NOLINT
-
 #ifdef _WIN32
 #define TIT_HAVE_SIGACTION 0
 #else
