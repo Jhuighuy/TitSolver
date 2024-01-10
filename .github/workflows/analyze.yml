@@ -122,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: test-output
+          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-Coverage
           path: output/test_output
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
