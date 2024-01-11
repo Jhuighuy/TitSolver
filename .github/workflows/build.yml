@@ -44,8 +44,6 @@ jobs:
           sudo apt -qq update
           ## Install the toolchain.
           sudo apt -qq install cmake g++-13
-          ## Install Qt.
-          sudo apt -qq install libglx-dev libgl1-mesa-dev qt6-base-dev
           ## Install LLVM and related tools.
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
@@ -135,8 +133,6 @@ jobs:
           # brew install -q llvm@17
           # brew install -q include-what-you-use
           # export PATH="$(brew --prefix llvm@17)/bin:$PATH"
-          ## Install Qt.
-          brew install -q qt@6
           ## Install other tools.
           brew install -q gnu-sed diffutils
           ## Install Python tools.

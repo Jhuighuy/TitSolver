@@ -28,10 +28,6 @@
 !*.hpp
 !*.cpp
 
-# Qt files.
-!*.rc
-!*.ui
-
 # CMake files.
 !CMakeLists.txt
 !*.cmake
