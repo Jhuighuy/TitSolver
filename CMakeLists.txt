@@ -22,7 +22,6 @@ find_package(doctest CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 find_package(spdlog CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
