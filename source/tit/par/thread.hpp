@@ -12,8 +12,7 @@
 
 #include <omp.h>
 
-#include "tit/core/config.hpp"
-#include "tit/core/misc.hpp"
+#include "tit/core/misc.hpp" // IWYU pragma: keep
 #include "tit/core/types.hpp"
 
 namespace tit::par {
@@ -131,12 +130,9 @@ concept base_input_range =
     std::ranges::random_access_range<Range> && std::ranges::sized_range<Range>;
 template<class Range>
 concept input_range =
-    base_input_range<Range>
-#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
-    || (specialization_of<Range, std::ranges::join_view> &&
-        base_input_range<decltype(std::declval<Range&&>().base())>)
-#endif
-    ;
+    base_input_range<Range> ||
+    (specialization_of<Range, std::ranges::join_view> &&
+     base_input_range<decltype(std::declval<Range&&>().base())>);
 /** @} */
 
 template<class Func, class Range>
@@ -157,7 +153,6 @@ template<base_input_range Range, loop_body<Range> Func>
 constexpr void for_each(Range&& range, Func&& func) noexcept {
   TIT_THREAD_FUNC_IMPL_(for_each_, dynamic_tag, range, func);
 }
-#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<base_input_range BaseRange, indirect_loop_body<BaseRange> Func>
 constexpr void for_each( //
     std::ranges::join_view<BaseRange> view, Func&& func) noexcept {
@@ -165,7 +160,6 @@ constexpr void for_each( //
     std::ranges::for_each(subrange, func); //
   });
 }
-#endif
 /** @} */
 
 /** Iterate through the range in parallel (static partitioning). */
@@ -174,7 +168,6 @@ template<base_input_range Range, loop_body<Range> Func>
 constexpr void static_for_each(Range&& range, Func&& func) noexcept {
   TIT_THREAD_FUNC_IMPL_(for_each_, static_tag, range, func);
 }
-#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<base_input_range BaseRange, indirect_loop_body<BaseRange> Func>
 constexpr void static_for_each( //
     std::ranges::join_view<BaseRange> view, Func&& func) noexcept {
@@ -182,7 +175,6 @@ constexpr void static_for_each( //
     std::ranges::for_each(subrange, func);
   });
 }
-#endif
 /** @} */
 
 template<class Range>
@@ -193,9 +185,6 @@ template<block_input_range Range,
              std::ranges::iterator_t<std::ranges::range_value_t<Range>>>
              Func>
 constexpr void block_for_each(Range&& range, Func&& func) noexcept {
-  TIT_ASSUME_UNIVERSAL(Range, range);
-  TIT_ASSUME_UNIVERSAL(Func, func);
-#if !TIT_LIBCPP // libc++ has no `std::views::chunk` yet.
   // Split the range in chunks according to the number of threads and
   // walk though the chunks sequentially.
   const auto chucked_range =
@@ -207,7 +196,6 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
       std::ranges::for_each(subrange, func); //
     });
   }
-#endif
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

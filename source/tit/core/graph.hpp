@@ -8,7 +8,6 @@
 #include <ranges>
 #include <tuple>
 
-#include "tit/core/config.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 
@@ -29,10 +28,6 @@ public:
 
   /** Range of the unique graph edges. */
   constexpr auto edges() const noexcept {
-#if TIT_LIBCPP // libc++ has no `std::views::join` yet.
-    // Return something with matching type.
-    return std::views::single(std::tuple{0UZ, num_nodes()});
-#else
     return std::views::iota(0UZ, num_nodes()) |
            std::views::transform([this](size_t row_index) {
              return (*this)[row_index] |
@@ -46,7 +41,6 @@ public:
                     });
            }) |
            std::views::join;
-#endif
   }
 
 }; // class Graph

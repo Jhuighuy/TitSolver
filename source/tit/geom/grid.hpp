@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "tit/core/assert.hpp"
-#include "tit/core/config.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
@@ -100,12 +99,7 @@ private:
     cell_size_ = extents / num_cells_;
     // Pack the points into a multivector.
     cell_points_.assemble_tall(
-        total_num_cells,
-#if TIT_LIBCPP // libc++ no `std::views::enumerate` yet.
-        std::views::single(std::pair{0UZ, points_[0]}),
-#else
-        std::views::enumerate(points_),
-#endif
+        total_num_cells, std::views::enumerate(points_),
         [this](auto index_and_point) {
           const auto& [_, point] = index_and_point;
           return _point_to_cell_index(point);

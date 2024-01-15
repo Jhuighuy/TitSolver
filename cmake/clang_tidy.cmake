@@ -32,7 +32,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   if(NOT TARGET ${TARGET})
     set(TARGET ${TARGET_OR_ALIAS})
   endif()
-  # Setup common arguments for IWYU call.
+  # Setup common arguments for clang-tidy call.
   set(
     CLANG_TIDY_ARGS
     # No annoying output.
@@ -50,10 +50,17 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     ${CLANG_WARNINGS}
     # Enable C++23 (`c++2b` and not `c++23` for clang-16).
     -std=c++2b)
+  if(APPLE)
+    ## Force use libstdc++ since libc++ misses some stuff.
+    clang_force_use_libstdcpp(CLANG_TIDY_COMPILE_ARGS)
+  endif()
   # Loop through the target sources and call clang-tidy.
   set(ALL_STAMPS)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
+  if(NOT TARGET_SOURCES)
+    return()
+  endif()
   foreach(SOURCE ${TARGET_SOURCES})
     # Skip non-C/C++ files.
     is_cxx_source(${SOURCE} SOURCE_IS_CXX)
