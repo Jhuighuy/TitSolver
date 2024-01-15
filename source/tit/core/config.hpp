@@ -21,13 +21,6 @@
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Detect libc++
-#ifdef _LIBCPP_VERSION
-#define TIT_LIBCPP 1
-#else
-#define TIT_LIBCPP 0
-#endif
-
 #ifdef _WIN32
 #define TIT_HAVE_SIGACTION 0
 #else

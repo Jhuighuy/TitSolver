@@ -116,7 +116,6 @@ constexpr void for_each(Range&& range, Func&& func,
   }
 #endif
 }
-#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<class Range, class Func>
 constexpr void for_each(std::ranges::join_view<Range> range, Func&& func,
                         size_t grain_size = 1) noexcept {
@@ -125,7 +124,6 @@ constexpr void for_each(std::ranges::join_view<Range> range, Func&& func,
       [&](auto subrange) { std::ranges::for_each(subrange, func); },
       grain_size);
 }
-#endif
 /** @} */
 
 /** Iterate through the range in parallel (static partitioning). */
@@ -157,7 +155,6 @@ constexpr void static_for_each(Range&& range, Func&& func) noexcept {
   }
 #endif
 }
-#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<class Range, class Func>
 constexpr void static_for_each(std::ranges::join_view<Range> range,
                                Func&& func) noexcept {
@@ -165,7 +162,6 @@ constexpr void static_for_each(std::ranges::join_view<Range> range,
     std::ranges::for_each(subrange, func);
   });
 }
-#endif
 /** @} */
 
 template<

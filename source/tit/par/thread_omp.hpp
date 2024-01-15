@@ -84,7 +84,6 @@ void for_each(Range&& range, Func&& func,
 #pragma omp parallel for schedule(dynamic, grain_size)
   for (auto iter = std::ranges::begin(range); iter != end; ++iter) func(*iter);
 }
-#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<class Range, class Func>
 constexpr void for_each(std::ranges::join_view<Range> range, Func&& func,
                         size_t grain_size = 100) noexcept {
@@ -93,7 +92,6 @@ constexpr void for_each(std::ranges::join_view<Range> range, Func&& func,
       [&](auto subrange) { std::ranges::for_each(subrange, func); },
       grain_size);
 }
-#endif
 
 template<class Range, class Func>
 constexpr void static_for_each(Range&& range, Func&& func) noexcept {
@@ -101,7 +99,6 @@ constexpr void static_for_each(Range&& range, Func&& func) noexcept {
 #pragma omp parallel for schedule(static)
   for (auto iter = std::ranges::begin(range); iter != end; ++iter) func(*iter);
 }
-#if !TIT_LIBCPP // libc++ has no `std::ranges::join_view` yet.
 template<class Range, class Func>
 constexpr void static_for_each(std::ranges::join_view<Range> range,
                                Func&& func) noexcept {
@@ -109,7 +106,6 @@ constexpr void static_for_each(std::ranges::join_view<Range> range,
     std::ranges::for_each(subrange, func);
   });
 }
-#endif
 
 template<
     std::ranges::input_range Range,
