@@ -20,6 +20,6 @@ target_include_directories(tit_tests_common INTERFACE "..")
 target_link_libraries(tit_tests_common INTERFACE tit::core)
 
 # Enable static analysis.
-enable_static_analysis(tit::tests_common)
+enable_clang_tidy(tit::tests_common)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
