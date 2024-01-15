@@ -246,10 +246,10 @@ TIT_DEFINE_MATRIX_FIELD(L)
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 namespace sph::fsi {
-  /** Reference particle position. */
-  TIT_DEFINE_VECTOR_FIELD(r_0)
-  /** Piola-Kirchhoff stress tensor. */
-  TIT_DEFINE_MATRIX_FIELD(P)
+/** Reference particle position. */
+TIT_DEFINE_VECTOR_FIELD(r_0)
+/** Piola-Kirchhoff stress tensor. */
+TIT_DEFINE_MATRIX_FIELD(P)
 } // namespace sph::fsi
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
