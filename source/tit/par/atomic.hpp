@@ -19,7 +19,7 @@ constexpr auto sync_fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept
     const auto tmp = val;
     val += delta;
     return tmp;
-  } else { // NOLINT(readability-else-after-return)
+  } else { // NOLINT(*-else-after-return)
     // TODO: this is gcc/clang extension, not portable.
     return __sync_fetch_and_add(&val, delta); // NOLINT(*-vararg)
   }

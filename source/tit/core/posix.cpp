@@ -17,6 +17,7 @@ namespace tit::posix {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+// NOLINTNEXTLINE(*-avoid-non-const-global-variables)
 std::vector<const SignalHandler*> SignalHandler::handlers_{};
 
 #if !TIT_IWYU

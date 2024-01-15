@@ -21,7 +21,7 @@ namespace tit {
 
 template<class... T>
 constexpr void assume_universal(
-    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+    // NOLINTNEXTLINE(*-missing-std-forward)
     [[maybe_unused]] T&&... universal_references) noexcept {}
 
 /** Use this function to assume forwarding references as universal references to
@@ -35,7 +35,7 @@ constexpr void assume_universal(
 
 template<class... Ts>
 constexpr void assume_used(
-    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+    // NOLINTNEXTLINE(*-missing-std-forward)
     [[maybe_unused]] Ts&&... args) noexcept {}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -64,7 +64,7 @@ public:
   constexpr explicit OnAssignment(Func func) : func_{std::move(func)} {}
 
   template<class Arg>
-  // NOLINTNEXTLINE(cppcoreguidelines-c-copy-assignment-signature,misc-unconventional-assign-operator)
+  // NOLINTNEXTLINE(*-copy-assignment-signature,*-unconventional-assign-operator)
   constexpr void operator=(Arg&& arg) {
     func_(std::forward<Arg>(arg));
   }

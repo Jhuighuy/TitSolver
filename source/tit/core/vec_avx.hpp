@@ -17,6 +17,8 @@
 
 namespace tit {
 
+// NOLINTBEGIN(*-type-union-access)
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template<>
@@ -25,12 +27,12 @@ public:
 
   static constexpr auto num_rows = 2UZ;
 
-  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // NOLINTBEGIN(*-non-private-member-variables-in-classes)
   union {
     std::array<float64_t, num_rows> row_;
     __m128d reg_;
   };
-  // NOLINTEND(misc-non-private-member-variables-in-classes)
+  // NOLINTEND(*-non-private-member-variables-in-classes)
 
   constexpr Vec(float64_t qx, float64_t qy) noexcept {
     if consteval {
@@ -207,12 +209,12 @@ public:
 
   static constexpr auto num_rows = 4UZ;
 
-  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // NOLINTBEGIN(*-non-private-member-variables-in-classes)
   union {
     std::array<float64_t, num_rows> row_;
     __m256d reg_;
   };
-  // NOLINTEND(misc-non-private-member-variables-in-classes)
+  // NOLINTEND(*-non-private-member-variables-in-classes)
 
   constexpr Vec(float64_t qx, float64_t qy, //
                 float64_t qz, float64_t qw) noexcept {
@@ -399,6 +401,8 @@ public:
 #endif // __AVX512F__
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+// NOLINTEND(*-type-union-access)
 
 } // namespace tit
 
