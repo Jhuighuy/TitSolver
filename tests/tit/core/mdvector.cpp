@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <array>
-#include <functional> // for what reason, IWYU?
 #include <ranges>
 
 #include <doctest/doctest.h>

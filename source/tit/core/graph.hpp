@@ -9,7 +9,6 @@
 #include <tuple>
 
 #include "tit/core/config.hpp"
-#include "tit/core/misc.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 
@@ -32,8 +31,7 @@ public:
   constexpr auto edges() const noexcept {
 #if TIT_LIBCPP // libc++ has no `std::views::join` yet.
     // Return something with matching type.
-    assume_used(this);
-    return std::views::single(std::tuple<size_t, size_t>{});
+    return std::views::single(std::tuple{0UZ, num_nodes()});
 #else
     return std::views::iota(0UZ, num_nodes()) |
            std::views::transform([this](size_t row_index) {

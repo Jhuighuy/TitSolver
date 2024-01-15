@@ -4,20 +4,21 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
-#if defined(__SSE__) && (!TIT_IWYU)
+#if defined(__SSE__)
 
-#include <x86intrin.h>
+// TODO: we need to replace this header with something like `<zmmintrin.h>`
+#include <x86intrin.h> // IWYU pragma: keep
 
 #include <array>
 #include <functional>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/types.hpp"
-#include "tit/core/vec.hpp" // IWYU pragma: keep
+#include "tit/core/vec.hpp"
 
 namespace tit {
 
-// NOLINTBEGIN(*-type-union-access)
+// NOLINTBEGIN(*-type-union-access,*-include-cleaner)
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -402,7 +403,7 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// NOLINTEND(*-type-union-access)
+// NOLINTEND(*-type-union-access,*-include-cleaner)
 
 } // namespace tit
 

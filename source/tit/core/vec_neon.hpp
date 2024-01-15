@@ -4,7 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
-#if defined(__ARM_NEON) && (!TIT_IWYU)
+#if defined(__ARM_NEON)
 
 #include <arm_neon.h>
 
@@ -12,9 +12,8 @@
 #include <functional>
 
 #include "tit/core/assert.hpp"
-#include "tit/core/config.hpp"
 #include "tit/core/types.hpp"
-#include "tit/core/vec.hpp" // IWYU pragma: keep
+#include "tit/core/vec.hpp"
 
 namespace tit {
 

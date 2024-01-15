@@ -16,7 +16,6 @@ add_executable(tit::esph ALIAS titesph)
 target_link_libraries(titesph PRIVATE tit::core tit::sph tit::app)
 
 # Enable static analysis.
-# check_includes(tit::esph)
 # enable_clang_tidy(tit::esph)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

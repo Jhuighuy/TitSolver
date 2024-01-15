@@ -31,7 +31,6 @@
 !CMakeLists.txt
 !*.cmake
 !/cmake/codespell.txt
-!/cmake/iwyu.imp
 
 # Scripts.
 !*.sh
