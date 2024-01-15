@@ -306,11 +306,11 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 
 // Generate a constexpr-aware overload for a unary vector function.
 #define TIT_VEC_SIMD_FUNC_V(func, Dim, Num, a, ...)                            \
-  /* NOLINTNEXTLINE(modernize-use-trailing-return-type) */                     \
+  /* NOLINTNEXTLINE(*-use-trailing-return-type) */                             \
   constexpr auto func(Vec<Num, Dim> a) noexcept {                              \
     if consteval {                                                             \
       return _unwrap(func<Num, Dim>(_unwrap(a)));                              \
-    } else { /* NOLINT(readability-else-after-return) */                       \
+    } else { /* NOLINT(*-else-after-return) */                                 \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
@@ -319,11 +319,11 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 // clang-format off
 #define TIT_VEC_SIMD_FUNC_SV(func, Dim, NumA, a, NumB, b, ...)                 \
   template<std::convertible_to<NumB> NumA>                                     \
-  /* NOLINTNEXTLINE(modernize-use-trailing-return-type) */                     \
+  /* NOLINTNEXTLINE(*-use-trailing-return-type) */                             \
   constexpr auto func(NumA a, Vec<NumB, Dim> b) noexcept {                     \
     if consteval {                                                             \
       return _unwrap(func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b)));           \
-    } else { /* NOLINT(readability-else-after-return) */                       \
+    } else { /* NOLINT(*-else-after-return) */                                 \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
@@ -333,11 +333,11 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 // clang-format off
 #define TIT_VEC_SIMD_FUNC_VS(func, Dim, NumA, a, NumB, b, ...)                 \
   template<std::convertible_to<NumA> NumB>                                     \
-  /* NOLINTNEXTLINE(modernize-use-trailing-return-type) */                     \
+  /* NOLINTNEXTLINE(*-use-trailing-return-type) */                             \
   constexpr auto func(Vec<NumA, Dim> a, NumB b) noexcept {                     \
     if consteval {                                                             \
       return _unwrap(func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b)));           \
-    } else { /* NOLINT(readability-else-after-return) */                       \
+    } else { /* NOLINT(*-else-after-return) */                                 \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
@@ -345,11 +345,11 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 
 // Generate a constexpr-aware overload for a binary vector-vector function.
 #define TIT_VEC_SIMD_FUNC_VV(func, Dim, NumA, a, NumB, b, ...)                 \
-  /* NOLINTNEXTLINE(modernize-use-trailing-return-type) */                     \
+  /* NOLINTNEXTLINE(*-use-trailing-return-type) */                             \
   constexpr auto func(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {           \
     if consteval {                                                             \
       return _unwrap(func<NumA, NumB, Dim>(_unwrap(a), _unwrap(b)));           \
-    } else { /* NOLINT(readability-else-after-return) */                       \
+    } else { /* NOLINT(*-else-after-return) */                                 \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
@@ -363,7 +363,7 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
     if consteval {                                                             \
       return _unwrap(                                                          \
           merge<Op, NumX, NumY, NumA, Dim>(_unwrap(cmp), _unwrap(a)));         \
-    } else { /* NOLINT(readability-else-after-return) */                       \
+    } else { /* NOLINT(*-else-after-return) */                                 \
       __VA_ARGS__                                                              \
     }                                                                          \
   }
@@ -379,7 +379,7 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
       return _unwrap(                                                          \
           merge<Op, NumX, NumY, NumA, NumB, Dim>(                              \
               _unwrap(cmp), _unwrap(a), _unwrap(b)));                          \
-    } else { /* NOLINT(readability-else-after-return) */                       \
+    } else { /* NOLINT(*-else-after-return) */                                 \
       __VA_ARGS__                                                              \
     }                                                                          \
   }

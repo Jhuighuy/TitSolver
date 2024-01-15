@@ -59,8 +59,11 @@ public:
     auto bbox = BBox{points_[0]};
     for (const auto& p : points_ | std::views::drop(1)) bbox.update(p);
     // Compute the root bounding box and build ordering.
+    // TODO: refactor with `std::span`.
+    // NOLINTBEGIN(*-bounds-pointer-arithmetic)
     partition_(point_perm_.data(), //
                point_perm_.data() + point_perm_.size(), bbox);
+    // NOLINTEND(*-bounds-pointer-arithmetic)
   }
 
   void GetHilbertElementOrdering(std::vector<size_t>& ordering) {
@@ -126,12 +129,12 @@ public:
   explicit HilbertOrdering(Points _points) : points{_points} {}
 
   struct HilbertCmp {
-    // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+    // NOLINTBEGIN(*-non-private-member-variables-in-classes)
     int coord;
     bool dir;
     Points points;
     double mid;
-    // NOLINTEND(misc-non-private-member-variables-in-classes)
+    // NOLINTEND(*-non-private-member-variables-in-classes)
 
     HilbertCmp(int _coord, bool _dir, Points _points, double _mid)
         : coord(_coord), dir(_dir), points(_points), mid(_mid) {}

@@ -18,6 +18,8 @@
 
 namespace tit {
 
+// NOLINTBEGIN(*-type-union-access)
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template<>
@@ -26,12 +28,12 @@ public:
 
   static constexpr auto num_rows = 2UZ;
 
-  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // NOLINTBEGIN(*-non-private-member-variables-in-classes)
   union {
     std::array<float64_t, num_rows> col_;
     float64x2_t reg_;
   };
-  // NOLINTEND(misc-non-private-member-variables-in-classes)
+  // NOLINTEND(*-non-private-member-variables-in-classes)
 
   constexpr Vec(float64_t qx, float64_t qy) noexcept {
     if consteval {
@@ -201,6 +203,8 @@ TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
 // clang-format on
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+// NOLINTEND(*-type-union-access)
 
 } // namespace tit
 

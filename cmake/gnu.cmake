@@ -37,8 +37,6 @@ set(
   -Wdisabled-optimization
   # Warn about duplicated or redundant conditions in code.
   -Wduplicated-cond
-  # Warn about floating-point equality comparisons.
-  -Wfloat-equal
   # Check calls to `printf`-like functions for format string-related issues.
   -Wformat=2
   # Warn about self-initialization.

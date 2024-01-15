@@ -23,6 +23,7 @@
     "**/output/**": true,
   },
   "files.associations": {
+    ".clang-tidy": "yaml",
     "*.f90pp": "FortranFreeForm",
     "*.ipp": "cpp",
     "*.tcc": "cpp",
@@ -114,6 +115,7 @@
     "random": "cpp",
     "ranges": "cpp",
     "ratio": "cpp",
+    "regex": "cpp",
     "semaphore": "cpp",
     "set": "cpp",
     "shared_mutex": "cpp",

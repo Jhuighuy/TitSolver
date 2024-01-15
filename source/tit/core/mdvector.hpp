@@ -18,6 +18,9 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+// TODO: refactor with `std::span`.
+// NOLINTBEGIN(*-bounds-pointer-arithmetic)
+
 /******************************************************************************\
  ** @brief Poor man's multidimensional non-owning container.
  ** This class is very basic, since we do not need multidimensional containers
@@ -90,6 +93,8 @@ public:
   }
 
 }; // namespace tit
+
+// NOLINTEND(*-bounds-pointer-arithmetic)
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

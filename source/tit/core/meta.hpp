@@ -42,7 +42,7 @@ inline constexpr bool all_unique_v<T, Ts...> =
 // clang-format on
 
 // Disable named parameters. This check does not make any sense here.
-// NOLINTBEGIN(readability-named-parameter)
+// NOLINTBEGIN(*-named-parameter)
 
 template<meta_type... Ts>
   requires all_unique_v<Ts...>
@@ -96,7 +96,7 @@ public:
   }
 };
 
-// NOLINTEND(readability-named-parameter)
+// NOLINTEND(*-named-parameter)
 
 template<class T>
 inline constexpr bool is_set_v = false;

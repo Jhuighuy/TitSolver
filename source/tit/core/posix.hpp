@@ -69,6 +69,7 @@ private:
   std::vector<std::tuple<int, sighandler_t>> prev_handlers_;
 #endif
 
+  // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
   static std::vector<const SignalHandler*> handlers_;
   static void handle_signal_(int signal_number) noexcept;
 
