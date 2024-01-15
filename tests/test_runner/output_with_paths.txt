@@ -1,0 +1,2 @@
+Ensure /this/absolute/path/should/be/filtered/out/but/filename/should.stay
+Ensure relative/paths/are.untouched

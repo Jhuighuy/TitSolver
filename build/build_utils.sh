@@ -9,6 +9,7 @@ SOURCE_DIR=$(pwd)
 export SOURCE_DIR
 export OUTPUT_DIR="$SOURCE_DIR/output/cmake_output"
 export TEST_DIR="$OUTPUT_DIR/tests"
+export TEST_OUTPUT_DIR="$SOURCE_DIR/output/test_output"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -30,6 +31,11 @@ echo_banner() {
 # Print thick banner.
 echo_thick_banner() {
   echo_banner "="
+}
+
+# Print thin banner.
+echo_thin_banner() {
+  echo_banner "-"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

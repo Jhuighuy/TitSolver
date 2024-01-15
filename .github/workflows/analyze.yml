@@ -120,6 +120,15 @@ jobs:
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+      - name: Upload test output
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-output
+          path: output/test_output
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:

@@ -194,12 +194,19 @@ build() {
 CTEST_EXE="ctest"
 
 run_tests() {
+  # Setup the the test output directory.
+  rm -rf "$TEST_OUTPUT_DIR"
+  mkdir -p "$TEST_OUTPUT_DIR"
   # Run CTest.
   local CTEST_ARGS
   CTEST_ARGS=("$CTEST_EXE" "--output-on-failure")
   if [ "$JOBS" -gt 1 ]; then
     echo "# Running tests with $JOBS threads."
     CTEST_ARGS+=("-j" "$JOBS")
+  fi
+  if [ ! "$TIT_LONG_TESTS" ]; then
+    # Exclude long tests.
+    CTEST_ARGS+=("--exclude-regex" "\[long\]")
   fi
   (cd "$TEST_DIR" && "${CTEST_ARGS[@]}") || exit $?
 }
