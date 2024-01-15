@@ -26,7 +26,6 @@ jobs:
     strategy:
       matrix:
         compiler: [g++-13]
-        coverage_tool: [gcov-13]
         configuration: [Coverage]
     env:
       # Coverage report file path (Sonar for the future).
@@ -40,6 +39,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -78,8 +79,10 @@ jobs:
           git pull
           ./bootstrap-vcpkg.sh
           ## Stamp the last vcpkg commit hash and the current compiler.
-          git rev-parse HEAD > $WORK_DIR/vcpkg.commit_hash
-          ${{ matrix.compiler }} --version > $WORK_DIR/vcpkg.compiler_id
+          VCPKG_HASH_FILE="$WORK_DIR/vcpkg.commit_hash"
+          echo "# vcpkg cache info." > "$VCPKG_HASH_FILE"
+          git rev-parse HEAD >> "$VCPKG_HASH_FILE"
+          ${{ matrix.compiler }} --version >> "$VCPKG_HASH_FILE"
 
       - name: Cache vcpkg packages
         uses: actions/cache@v3
@@ -93,8 +96,8 @@ jobs:
       - name: Build and test
         run: |
           build-wrapper-linux-x86-64                                           \
-            --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }}                         \
-            ./build/build.sh                                                   \
+            --out-dir "${{ env.BUILD_WRAPPER_OUT_DIR }}"                       \
+            ./build/build.sh -j 4                                              \
               --compiler=${{ matrix.compiler }}                                \
               --config=${{ matrix.configuration }}                             \
               --test
@@ -104,12 +107,15 @@ jobs:
       - name: Collect coverage reports
         run: |
           # Collect coverage reports
+          ## Setup the actual `gcov` executable path.
+          GCOV_EXE="${{ matrix.compiler }}"
+          GCOV_EXE="${GCOV_EXE/g++/gcov}"
           ## See reasons for using `--exclude-*` and `--decisions` below:
           ## https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
           gcovr                                                                \
             -e "output/*"                                                      \
             -e "tests/*"                                                       \
-            --gcov-executable ${{ matrix.coverage_tool }}                      \
+            --gcov-executable "$GCOV_EXE"                                      \
             --exclude-unreachable-branches                                     \
             --exclude-throw-branches                                           \
             --decisions                                                        \
@@ -122,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: test-output
+          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-Coverage
           path: output/test_output
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

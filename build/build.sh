@@ -183,7 +183,7 @@ build() {
   CMAKE_ARGS+=("--build" "$OUTPUT_DIR")
   CMAKE_ARGS+=("--config" "$CONFIG")
   if [ "$JOBS" -gt 1 ]; then
-    echo "* Building with $JOBS threads."
+    echo "# Building with $JOBS threads."
     CMAKE_ARGS+=("-j" "$JOBS")
   fi
   "${CMAKE_ARGS[@]}" || exit $?

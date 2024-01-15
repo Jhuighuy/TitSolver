@@ -15,7 +15,6 @@
 !/.clang-*
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
-!/CPPLINT.cfg
 !/sonar-project.properties
 !/vcpkg.json
 
