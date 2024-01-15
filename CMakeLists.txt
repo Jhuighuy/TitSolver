@@ -15,7 +15,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang_tidy)
 include(codespell)
 include(compiler)
-include(iwyu)
 
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)

@@ -16,6 +16,6 @@ add_executable(tit::par_tests ALIAS tit_par_tests)
 target_link_libraries(tit_par_tests PRIVATE tit::core tit::par)
 
 # Enable static analysis.
-check_includes(tit::par_tests)
+# enable_clang_tidy(tit::core_tests)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
