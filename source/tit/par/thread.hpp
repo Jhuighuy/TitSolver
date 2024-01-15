@@ -6,8 +6,8 @@
 #pragma once
 
 #include <algorithm> // IWYU pragma: keep
-#include <concepts>
-#include <iterator>
+#include <concepts>  // IWYU pragma: keep
+#include <iterator>  // IWYU pragma: keep
 #include <ranges>
 
 #include <omp.h>
@@ -89,7 +89,7 @@ public:
 #define TIT_THREAD_FUNC_IMPL_(func, ...)                                       \
   if consteval {                                                               \
     return Threading<seg_tag_t>::func(__VA_ARGS__);                            \
-  } else { /* NOLINT(readability-else-after-return) */                         \
+  } else { /* NOLINT(*-else-after-return) */                                   \
     return Threading<par_tag_t>::func(__VA_ARGS__);                            \
   }
 
@@ -193,10 +193,9 @@ template<block_input_range Range,
              std::ranges::iterator_t<std::ranges::range_value_t<Range>>>
              Func>
 constexpr void block_for_each(Range&& range, Func&& func) noexcept {
-#if TIT_LIBCPP
-  // libc++ has no `std::views::chunk` yet.
-  assume_used(range, func);
-#else
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  TIT_ASSUME_UNIVERSAL(Func, func);
+#if !TIT_LIBCPP // libc++ has no `std::views::chunk` yet.
   // Split the range in chunks according to the number of threads and
   // walk though the chunks sequentially.
   const auto chucked_range =

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <algorithm>
-#include <iterator>
+#include <iterator> // IWYU pragma: keep
 #include <numeric>
 #include <ranges>
 #include <tuple>

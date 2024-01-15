@@ -57,7 +57,6 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 17
           sudo apt -qq install clang-17 clang-tidy-17 libomp-17-dev
-          sudo apt -qq install iwyu
           ## Install Python tools.
           pip3 install --user --upgrade gcovr
           pip3 install --user --upgrade codespell

@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <fstream>
-#include <functional>
 #include <iostream>
 #include <iterator>
 #include <ranges>
