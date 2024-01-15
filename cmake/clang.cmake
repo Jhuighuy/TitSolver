@@ -64,3 +64,49 @@ set(
   -Wno-unknown-warning-option)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+## Add compilation options that switch clang from libc++ to libstdcpp++ when
+## compiling with GCC.
+function(clang_force_use_libstdcpp OPTIONS_VAR)
+  list(
+    APPEND
+    ${OPTIONS_VAR}
+    # Use libstdc++ instead of libc++ as the standard library.
+    -stdlib=libstdc++
+    # The option above sometimes emits a warning, so we disable it.
+    -Wno-unused-command-line-argument)
+  ## Find path to libstdc++ include directories. It should be something like
+  ## ".../gcc/13.2.0/include/c++/13" & ".../gcc/13.2.0/include/c++/13/platform".
+  set(LIBSTDCPP_INCLUDE_DIR)
+  set(LIBSTDCPP_PLATFORM_INCLUDE_DIR)
+  set(
+    LIBSTDCPP_INCLUDE_DIR_REGEX
+    "gcc/([0-9]+(\\.[0-9]+)+)/include/c\\+\\+/([0-9]+)")
+  set(
+    LIBSTDCPP_PLATFORM_INCLUDE_DIR_REGEX
+    "${LIBSTDCPP_INCLUDE_DIR_REGEX}/(.*-apple-.*)")
+  foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+    if(DIR MATCHES "${LIBSTDCPP_INCLUDE_DIR_REGEX}$")
+      set(LIBSTDCPP_INCLUDE_DIR ${DIR})
+    elseif(DIR MATCHES "${LIBSTDCPP_PLATFORM_INCLUDE_DIR_REGEX}$")
+      set(LIBSTDCPP_PLATFORM_INCLUDE_DIR ${DIR})
+    endif()
+  endforeach()
+  ## Add found libstdc++ include paths.
+  if(LIBSTDCPP_INCLUDE_DIR)
+    list(
+      APPEND
+      ${OPTIONS_VAR}
+      -stdlib++-isystem "${LIBSTDCPP_INCLUDE_DIR}")
+  endif()
+  if(LIBSTDCPP_PLATFORM_INCLUDE_DIR)
+    list(
+      APPEND
+      ${OPTIONS_VAR}
+      -cxx-isystem "${LIBSTDCPP_PLATFORM_INCLUDE_DIR}")
+  endif()
+  ## Propagate the options to the parent scope.
+  set(${OPTIONS_VAR} ${${OPTIONS_VAR}} PARENT_SCOPE)
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

@@ -22,11 +22,7 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Detect libc++
-#ifdef _LIBCPP_VERSION
-#define TIT_LIBCPP 1
-#else
-#define TIT_LIBCPP 0
-#endif
+#define TIT_LIBCPP 0 // NOLINT
 
 #ifdef _WIN32
 #define TIT_HAVE_SIGACTION 0
