@@ -24,3 +24,45 @@ target_link_libraries(tit_core_tests PRIVATE tit::core)
 enable_clang_tidy(tit::core_tests)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Create the test executable.
+add_executable(tit_core_catch_ctrl_c_test "catch_ctrl_c.cpp")
+add_executable(tit::core_catch_ctrl_c_test ALIAS tit_core_catch_ctrl_c_test)
+
+# Link with the dependent libraries.
+target_link_libraries(tit_core_catch_ctrl_c_test PRIVATE tit::core)
+
+# Enable static analysis.
+enable_clang_tidy(tit::core_catch_ctrl_c_test)
+
+# Register the test.
+add_test_from_target(
+  tit::core_catch_ctrl_c_test
+  NAME "tit/core/fatal_signal"
+  EXIT_CODE 0
+  MATCH_STDERR "catch_ctrl_c_stderr.txt")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Create the test executable.
+add_executable(tit_core_catch_fatal_signal_test "catch_fatal_signal.cpp")
+add_executable(
+  tit::core_catch_fatal_signal_test ALIAS
+  tit_core_catch_fatal_signal_test)
+
+# Link with the dependent libraries.
+target_link_libraries(tit_core_catch_fatal_signal_test PRIVATE tit::core)
+
+# Enable static analysis.
+enable_clang_tidy(tit::core_catch_fatal_signal_test)
+
+# Register the test.
+add_test_from_target(
+  tit::core_catch_fatal_signal_test
+  NAME "tit/core/catch_fatal_signal"
+  EXIT_CODE 1
+  MATCH_STDERR "catch_fatal_signal_stderr.txt"
+  # Remove everything related to the stack trace.
+  FILTERS "/0x*/d")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

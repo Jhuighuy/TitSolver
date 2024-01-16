@@ -4,19 +4,44 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <array>
+#include <cstdlib>
 #include <initializer_list>
 #include <ranges>
+#include <string_view>
 #include <vector>
 
+#include <execinfo.h>
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #ifdef __APPLE__
 #include <sys/signal.h>
 #endif
+#include <unistd.h>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/config.hpp"
 #include "tit/core/posix_utils.hpp"
 
+#if TIT_GCOV
+extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
+#endif
+
 namespace tit {
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Exit from the current process. */
+[[noreturn]] void exit(int exit_code) noexcept {
+  std::exit(exit_code); // NOLINT(concurrency-mt-unsafe)
+}
+
+/** Fast-exit from the current process. */
+[[noreturn]] void fast_exit(int exit_code) noexcept {
+#if TIT_GCOV
+  __gcov_dump();
+#endif
+  std::_Exit(exit_code);
+}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -66,6 +91,58 @@ void SignalHandler::handle_signal_(int signal_number) noexcept {
     }
   }
   TIT_ASSERT(false, "Interpected a signal that has no handler!");
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+namespace {
+
+// Dump a message in the "async-signal-safe" way.
+void dump(std::string_view message) noexcept {
+  write(STDERR_FILENO, message.data(), message.size());
+}
+
+// Dump backtrace in the "async-signal-safe" way.
+void dump_backtrace() noexcept {
+  constexpr int max_stack_depth = 100;
+  std::array<void*, max_stack_depth> stack_trace{};
+  const auto stack_depth = backtrace(stack_trace.data(), max_stack_depth);
+  backtrace_symbols_fd(stack_trace.data(), stack_depth, STDERR_FILENO);
+}
+
+} // namespace
+
+FatalSignalHandler::FatalSignalHandler()
+    : SignalHandler{SIGINT, SIGHUP,  SIGQUIT, SIGILL,  SIGTRAP, SIGABRT, SIGFPE,
+                    SIGBUS, SIGSEGV, SIGSYS,  SIGPIPE, SIGALRM, SIGTERM} {}
+
+void FatalSignalHandler::on_signal(int signal_number) noexcept {
+  if (signal_number == SIGINT) {
+    // Exit normally.
+    dump("\n\nInterrupted by Ctrl+C.\n");
+    exit(0);
+  } else {
+    // Dump backtrace and exit fast with an error.
+    dump("\n\nTerminated by signal ");
+    switch (signal_number) {
+      case SIGHUP:  dump("SIGHUP (hangup)"); break;
+      case SIGQUIT: dump("SIGQUIT (quit)"); break;
+      case SIGILL:  dump("SIGILL (illegal instruction)"); break;
+      case SIGTRAP: dump("SIGTRAP (trace trap)"); break;
+      case SIGABRT: dump("SIGABRT (aborted)"); break;
+      case SIGFPE:  dump("SIGFPE (floating-point exception)"); break;
+      case SIGBUS:  dump("SIGBUS (bus error)"); break;
+      case SIGSEGV: dump("SIGSEGV (segmentation fault)"); break;
+      case SIGSYS:  dump("SIGSYS (bad system call)"); break;
+      case SIGPIPE: dump("SIGPIPE (broken pipe)"); break;
+      case SIGALRM: dump("SIGALRM (alarm clock)"); break;
+      case SIGTERM: dump("SIGTERM"); break;
+      default:      TIT_ASSERT(false, "Must not be reached.");
+    }
+    dump(".\n");
+    dump_backtrace();
+    fast_exit(1);
+  }
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
