@@ -13,7 +13,7 @@ add_executable(titesph ${CXX_SOURCES})
 add_executable(tit::esph ALIAS titesph)
 
 # Link with the dependent libraries.
-target_link_libraries(titesph PRIVATE tit::core tit::sph tit::app)
+target_link_libraries(titesph PRIVATE tit::core tit::sph)
 
 # Enable static analysis.
 # enable_clang_tidy(tit::esph)

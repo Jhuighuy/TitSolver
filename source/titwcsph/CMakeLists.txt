@@ -13,7 +13,7 @@ add_executable(titwcsph ${CXX_SOURCES})
 add_executable(tit::wcsph ALIAS titwcsph)
 
 # Link with the dependent libraries.
-target_link_libraries(titwcsph PRIVATE tit::sph tit::app)
+target_link_libraries(titwcsph PRIVATE tit::sph)
 
 # Enable static analysis.
 # enable_clang_tidy(tit::wcsph)

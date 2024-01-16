@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace tit::app {
+namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -13,18 +13,9 @@ namespace tit::app {
 using main_like_t = int (*)(int, char**);
 
 /** Wrapper for the main function that should run sets up the
- ** environment: initialized threading, error handlers, etc.
- **
- ** Example:
- ** @code
- ** int main(int argc, char** argv) {
- **   return tit::wrap_main(argc, argv, [](int the_argc, char** the_argv) {
- **     ...
- **   });
- ** }
- ** @endcode */
-auto wrap_main(int argc, char** argv, main_like_t main_func) noexcept -> int;
+ ** environment: initialized threading, error handlers, etc. */
+auto run_main(int argc, char** argv, main_like_t main_func) noexcept -> int;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit::app
+} // namespace tit
