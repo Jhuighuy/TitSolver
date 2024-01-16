@@ -7,9 +7,10 @@
 
 #define WITH_GRAVITY 1
 
-#include "tit/app/wrap_main.hpp"
 #include "tit/core/compat.hpp"
+#include "tit/core/main_func.hpp"
 #include "tit/core/time_utils.hpp"
+
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fsi.hpp"
@@ -114,7 +115,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 int main(int argc, char** argv) {
-  return tit::app::wrap_main(argc, argv, &sph_main<tit::real_t>);
+  return tit::run_main(argc, argv, &sph_main<tit::real_t>);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

@@ -31,6 +31,7 @@ BreakInheritanceList: AfterColon
 ColumnLimit: 80
 CompactNamespaces: false
 ContinuationIndentWidth: 4
+IncludeIsMainRegex: "_never_matches_"
 IndentCaseLabels: true
 IndentRequiresClause: true
 RequiresClausePosition: OwnLine

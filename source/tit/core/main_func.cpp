@@ -5,27 +5,30 @@
 
 #include <cstdlib>
 
-#include "tit/app/wrap_main.hpp"
+#include "tit/core/assert.hpp"
+#include "tit/core/main_func.hpp"
 #include "tit/core/posix_utils.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/par/thread.hpp"
 
-namespace tit::app {
+namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-auto wrap_main(int argc, char** argv, main_like_t main_func) noexcept -> int {
-  // A simple implementation for now.
+auto run_main(int argc, char** argv, main_like_t main_func) noexcept -> int {
+  TIT_ENSURE(main_func != nullptr, "Main function must be specified!");
+  // Setup signal handler.
   const FatalSignalHandler handler{};
   // Enable profiling.
   if (std::getenv("TIT_ENABLE_PROFILER") != nullptr) { // NOLINT(*-mt-unsafe)
     Profiler::enable();
   }
-  return par::main(argc, argv, [main_func](int the_argc, char** the_argv) {
-    return main_func(the_argc, the_argv);
+  // Setup parallelism and run the main function.
+  return par::main(argc, argv, [main_func](int argc_, char** argv_) {
+    return main_func(argc_, argv_);
   });
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit::app
+} // namespace tit
