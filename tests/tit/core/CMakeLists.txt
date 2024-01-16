@@ -67,3 +67,22 @@ add_test_from_target(
   FILTERS "/0x*/d")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Create the test executable.
+add_executable(tit_core_profiler_tests "profiler.cpp")
+add_executable(tit::core_profiler_tests ALIAS tit_core_profiler_tests)
+
+# Link with the dependent libraries.
+target_link_libraries(tit_core_profiler_tests PRIVATE tit::core)
+
+# Enable static analysis.
+enable_clang_tidy(tit::core_profiler_tests)
+
+# Register the test.
+add_test_from_target(
+  tit::core_profiler_tests
+  NAME "tit/core/profiler"
+  MATCH_STDOUT "profiler_stdout.txt"
+  FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

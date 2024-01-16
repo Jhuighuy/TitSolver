@@ -8,6 +8,7 @@
 #include <type_traits>
 
 #include "tit/core/meta.hpp"
+#include "tit/core/profiler.hpp"
 #include "tit/core/types.hpp"
 #include "tit/par/thread.hpp"
 #include "tit/sph/TitParticle.hpp"
@@ -46,6 +47,7 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void step(real_t dt, ParticleArray& particles,
                       ParticleAdjacency& adjacent_particles) {
+    TIT_PROFILE_SECTION("tit::EulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
     // Initialize and index particles.
     if (step_index_ == 0) {

@@ -23,6 +23,7 @@
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/multivector.hpp"
+#include "tit/core/profiler.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 
@@ -168,6 +169,7 @@ public:
    **                    specified particle view. */
   template<class SearchRadiusFunc>
   constexpr void build(const SearchRadiusFunc& radius_func) {
+    TIT_PROFILE_SECTION("tit::ParticleAdjacency::build()");
     using PV = ParticleView<ParticleArray>;
     // -------------------------------------------------------------------------
     // STEP I: neighbors search.

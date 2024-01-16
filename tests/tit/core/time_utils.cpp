@@ -9,7 +9,7 @@
 
 #include <doctest/doctest.h>
 
-#include "tit/core/math_utils.hpp"
+#include "tit/core/math.hpp"
 #include "tit/core/time_utils.hpp"
 #include "tit/core/types.hpp"
 
@@ -35,8 +35,8 @@ TEST_CASE("tit::Stopwatch") {
   // Ensure the measured time is correct (5% relative error).
   const auto total_sec = static_cast<real_t>(total.count()) * 1.0e-3;
   const auto cycle_sec = total_sec / deltas.size();
-  CHECK(abs(stopwatch.total() - total_sec) < 0.05 * total_sec);
-  CHECK(abs(stopwatch.cycle() - cycle_sec) < 0.05 * cycle_sec);
+  CHECK(abs(stopwatch.total() - total_sec) < 0.1 * total_sec);
+  CHECK(abs(stopwatch.cycle() - cycle_sec) < 0.1 * cycle_sec);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

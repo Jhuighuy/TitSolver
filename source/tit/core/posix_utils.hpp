@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdio>
 #include <initializer_list>
 #include <ranges>
 #include <tuple>
@@ -15,6 +16,8 @@
 #else
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
+
+#include "tit/core/types.hpp"
 
 namespace tit {
 
@@ -89,6 +92,12 @@ protected:
   void on_signal(int signal_number) noexcept final;
 
 }; // class FatalSignalHandler
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Get terminal width.
+ ** @param stream The output stream to use for the width query. */
+auto terminal_width(std::FILE* stream) noexcept -> size_t;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

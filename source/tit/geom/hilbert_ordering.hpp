@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/profiler.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
@@ -50,6 +51,7 @@ public:
    ** @param max_leaf_size Maximum amount of points in the leaf node. */
   constexpr explicit ZCurveOrdering(Points points)
       : points_{std::move(points)} {
+    TIT_PROFILE_SECTION("tit::ZCurveOrdering::ZCurveOrdering()");
     if (std::ranges::empty(points_)) return;
     // Initialize identity points permutation.
     const auto size = std::ranges::size(points_);

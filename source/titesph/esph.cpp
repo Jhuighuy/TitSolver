@@ -108,12 +108,6 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 
   particles.print("particles-dam.csv");
 
-  const auto totaltime_sec = exectime.total() + printtime.total();
-  std::cout << "Total time: " << totaltime_sec / 60.0
-            << "m, exec: " << exectime.total() * 100 / totaltime_sec
-            << "%, print: " << printtime.total() * 100 / totaltime_sec << "%"
-            << std::endl;
-
   return 0;
 }
 
