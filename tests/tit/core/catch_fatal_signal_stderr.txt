@@ -1,0 +1,15 @@
+func_1
+func_2
+func_3
+Doing something bad...
+
+
+Terminated by signal SIGSEGV (segmentation fault).
+0   tit_core_fatal_signal_tests         0x00000001048e18c0 _ZN3tit12_GLOBAL__N_114dump_backtraceEv + 48
+1   tit_core_fatal_signal_tests         0x00000001048f0f88 _ZN3tit18FatalSignalHandler9on_signalEi + 136
+2   libsystem_platform.dylib            0x00000001840fba24 _sigtramp + 56
+3   tit_core_fatal_signal_tests         0x00000001048e173c _ZN3tit12_GLOBAL__N_16func_3Ev + 60
+4   tit_core_fatal_signal_tests         0x00000001048e1774 _ZN3tit12_GLOBAL__N_16func_1Ev + 0
+5   tit_core_fatal_signal_tests         0x00000001048e1798 _ZN3tit12_GLOBAL__N_16func_1Ev + 36
+6   tit_core_fatal_signal_tests         0x00000001048f144c main + 28
+7   dyld                                0x0000000183d510e0 start + 2360

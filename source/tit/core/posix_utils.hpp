@@ -20,6 +20,15 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Exit from the current process. */
+[[noreturn]] void exit(int exit_code) noexcept;
+
+/** Fast-exit from the current process.
+ ** @note No at-exit functions are called, except for coverage report. */
+[[noreturn]] void fast_exit(int exit_code) noexcept;
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 /******************************************************************************\
  ** POSIX signal handler.
 \******************************************************************************/
@@ -63,6 +72,23 @@ private:
   static void handle_signal_(int signal_number) noexcept;
 
 }; // class SignalHandler
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/******************************************************************************\
+ ** Signal handler that catches fatal signals and exits the process.
+\******************************************************************************/
+class FatalSignalHandler final : public SignalHandler {
+public:
+
+  /** Initialize handling for the fatal signals. */
+  FatalSignalHandler();
+
+protected:
+
+  void on_signal(int signal_number) noexcept final;
+
+}; // class FatalSignalHandler
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
