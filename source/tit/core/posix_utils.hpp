@@ -66,4 +66,21 @@ private:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/******************************************************************************\
+ ** Signal handler that catches fatal signals and exits the process.
+\******************************************************************************/
+class FatalSignalHandler final : public SignalHandler {
+public:
+
+  /** Initialize handling for the fatal signals. */
+  FatalSignalHandler();
+
+protected:
+
+  void on_signal(int signal_number) noexcept final;
+
+}; // class FatalSignalHandler
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 } // namespace tit

@@ -7,9 +7,15 @@
 
 #include <array>
 #include <concepts> // IWYU pragma: keep
+#include <cstdlib>
 #include <utility>
 
+#include "tit/core/config.hpp"
 #include "tit/core/types.hpp"
+
+#if TIT_GCOV
+extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier,cert-*)
+#endif
 
 namespace tit {
 
@@ -48,6 +54,21 @@ constexpr auto _unwrap(T&& value) noexcept -> decltype(auto) {
 template<class T>
 constexpr auto _unwrap(T* value) noexcept -> T& {
   return *value;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Exit from the current process. */
+[[noreturn]] inline void exit(int exit_code) noexcept {
+  std::exit(exit_code); // NOLINT(concurrency-mt-unsafe)
+}
+
+/** Fast-exit from the current process. */
+[[noreturn]] inline void fast_exit(int exit_code) noexcept {
+#if TIT_GCOV
+  __gcov_dump();
+#endif
+  std::_Exit(exit_code);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
