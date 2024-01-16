@@ -21,14 +21,6 @@
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#ifdef _WIN32
-#define TIT_HAVE_SIGACTION 0
-#else
-#define TIT_HAVE_SIGACTION 1
-#endif
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 #ifndef TIT_ENABLE_TBB
 #define TIT_ENABLE_TBB 1
 #endif

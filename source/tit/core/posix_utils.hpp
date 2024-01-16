@@ -5,15 +5,18 @@
 
 #pragma once
 
-#include <csignal> // IWYU pragma: keep
 #include <initializer_list>
 #include <ranges>
 #include <tuple>
 #include <vector>
 
-#include "tit/core/config.hpp"
+#ifdef __APPLE__
+#include <sys/signal.h>
+#else
+#include <signal.h> // NOLINT(*-deprecated-headers)
+#endif
 
-namespace tit::posix {
+namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -23,9 +26,7 @@ namespace tit::posix {
 class SignalHandler {
 public:
 
-  /** Initialize signal handling for the common signals. */
-  SignalHandler();
-  /** Initialize signal handling for the specified signals. */
+  /** Initialize handling for the specified signals. */
   SignalHandler(std::initializer_list<int> signal_numbers);
 
   /** Signal handler is not move-constructible. */
@@ -42,35 +43,27 @@ public:
   virtual ~SignalHandler() noexcept;
 
   /** A range of handled signals. */
-  auto signals() const noexcept {
-#if TIT_HAVE_SIGACTION
+  constexpr auto signals() const noexcept {
     return prev_actions_ | std::views::keys;
-#else
-    return prev_handlers_ | std::views::keys;
-#endif
   }
 
 protected:
 
-  /** Signal interception callback. */
-  virtual void on_signal(int signal_number) const = 0;
+  /** Signal interception callback.
+   ** @note The implementation must be "async-signal-safe". */
+  virtual void on_signal(int signal_number) noexcept = 0;
 
 private:
 
-#if TIT_HAVE_SIGACTION
-  using sigaction_t = struct sigaction; // NOLINT(*-include-cleaner)
+  using sigaction_t = struct sigaction;
   std::vector<std::tuple<int, sigaction_t>> prev_actions_;
-#else
-  using sighandler_t = void (*)(int);
-  std::vector<std::tuple<int, sighandler_t>> prev_handlers_;
-#endif
 
   // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
-  static std::vector<const SignalHandler*> handlers_;
+  static std::vector<SignalHandler*> handlers_;
   static void handle_signal_(int signal_number) noexcept;
 
 }; // class SignalHandler
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit::posix
+} // namespace tit

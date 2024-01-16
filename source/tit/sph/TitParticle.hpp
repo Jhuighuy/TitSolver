@@ -17,18 +17,21 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/func_utils.hpp"
 #include "tit/core/graph.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/misc.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
+
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
+
 #include "tit/par/thread.hpp"
+
 #include "tit/sph/field.hpp"
 
 namespace tit {
@@ -471,19 +474,19 @@ public:
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
   template<class x>
-  static auto _make_name(const std::string& n, meta::Set<x> /**/) {
+  static auto _make_name(const std::string& n, std::tuple<x> /**/) {
     return n;
   }
   template<class Realx, size_t Dimx>
   static auto _make_name(const std::string& n,
-                         meta::Set<Vec<Realx, Dimx>> /**/) {
+                         std::tuple<Vec<Realx, Dimx>> /**/) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2) return n + "_x " + n + "_y";
     if constexpr (Dimx == 3) return n + "_x " + n + "_y " + n + "_z";
   }
   template<class Realx, size_t Dimx>
   static auto _make_name(const std::string& n,
-                         meta::Set<Mat<Realx, Dimx>> /**/) {
+                         std::tuple<Mat<Realx, Dimx>> /**/) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2)
       return n + "_xx " + n + "_xy " + //
@@ -496,7 +499,7 @@ public:
 
   static auto _make_name(auto V) {
     return _make_name(field_name_v<decltype(V)>,
-                      meta::Set<field_value_type_t<decltype(V), Real, Dim>>{});
+                      std::tuple<field_value_type_t<decltype(V), Real, Dim>>{});
   }
 
   void print(const std::string& path) {

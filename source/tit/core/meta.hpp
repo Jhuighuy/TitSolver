@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <concepts> // IWYU pragma: keep
 #include <type_traits>
 
 #include "tit/core/types.hpp"
@@ -14,89 +13,72 @@ namespace tit::meta {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** An empty object. */
+/** An empty and trivial object. */
 template<class T>
-concept meta_type = true;
-template<class T>
-concept type = std::is_object_v<T> && std::is_empty_v<T>;
+concept type =
+    std::is_object_v<T> && std::is_empty_v<T> && std::is_trivial_v<T>;
 
-/** Check that T is in Us. */
-template<meta_type T, meta_type... Us>
-inline constexpr bool contains_v = (... || std::same_as<T, Us>);
+/** Check that type `T` is in the list `Us...`. */
+template<type T, type... Us>
+inline constexpr bool contains_v = (... || std::is_same_v<T, Us>);
 
-/** Index of T in list U, Us. */
-template<meta_type T, meta_type U, meta_type... Us>
-  requires contains_v<T, U, Us...>
-inline constexpr size_t index_of_v = [] {
-  if constexpr (std::same_as<T, U>) return 0;
-  else return (index_of_v<T, Us...> + 1);
-}();
+namespace impl {
 
-/** Check that all Ts are unique. */
+template<class T, class U, class... Us>
+inline constexpr size_t index_of_v = 1 + index_of_v<T, Us...>;
+template<class T, class... Us>
+inline constexpr size_t index_of_v<T, T, Us...> = 0;
+
 template<class... Ts>
 inline constexpr bool all_unique_v = true;
-// clang-format off
 template<class T, class... Ts>
 inline constexpr bool all_unique_v<T, Ts...> =
-    (!contains_v<T, Ts...>) && all_unique_v<Ts...>;
-// clang-format on
+    (!contains_v<T, Ts...> && all_unique_v<Ts...>);
 
-// Disable named parameters. This check does not make any sense here.
-// NOLINTBEGIN(*-named-parameter)
+} // namespace impl
 
-template<meta_type... Ts>
+/** Index of type `T` in list `Us...`. */
+template<type T, type... Us>
+  requires contains_v<T, Us...>
+inline constexpr auto index_of_v = impl::index_of_v<T, Us...>;
+
+/** Check that all elements in the list `Ts...` are unique. */
+template<class... Ts>
+inline constexpr bool all_unique_v = impl::all_unique_v<Ts...>;
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/******************************************************************************\
+ ** Set of empty types, with no duplicates.
+\******************************************************************************/
+template<type... Ts>
   requires all_unique_v<Ts...>
 class Set {
 public:
 
-  /** Construct a meta-set. */
+  /** Construct a set. */
+  /** @{ */
   consteval Set() = default;
-  consteval explicit Set(Ts...)
-#ifndef __INTELLISENSE__
+  consteval explicit Set(Ts... /*elements*/)
+#ifndef __INTELLISENSE__ // This freaks out VSCode's IntelliSense.
     requires (sizeof...(Ts) != 0)
 #endif
   {
   }
+  /** @} */
 
-  static consteval auto size() -> size_t {
-    return sizeof...(Ts);
-  }
-
-  /** Set union operation. */
-  consteval auto operator|(Set<>) const {
-    return Set<Ts...>{};
-  }
-  template<meta_type U, meta_type... Us>
-  consteval auto operator|(Set<U, Us...>) const {
-    if constexpr (contains_v<U, Ts...>) return Set<Ts...>{} | Set<Us...>{};
-    else return Set<Ts..., U>{} | Set<Us...>{};
-  }
-
-  /** Set minus operation. */
-  consteval auto operator-(Set<>) const {
-    return Set<Ts...>{};
-  }
-  template<meta_type U, meta_type... Us>
-  consteval auto operator-(Set<U, Us...>) const {
-    if constexpr (contains_v<U, Ts...>) {
-      return []<class X, class... Xs>(Set<X, Xs...>) {
-        return Set<Xs...>{} - Set<Us...>{};
-      }(Set<U>{} | Set<Ts...>{});
-    } else return Set<Ts...>{} - Set<Us...>{};
-  }
-
-  template<meta_type U>
-  static consteval auto contains(U) -> bool {
+  /** Check if the set contains a type `U`. */
+  template<type U>
+  constexpr auto contains(U /*obj*/) const noexcept -> bool {
     return contains_v<U, Ts...>;
   }
-
-  template<meta_type... Us>
-  static consteval auto includes(Set<Us...>) -> bool {
-    return std::is_same_v<Set<Ts...>, decltype(Set<Ts...>{} | Set<Us...>{})>;
+  /** Check if the set contains all types in the set `Us...`. */
+  template<type... Us>
+  constexpr auto includes(Set<Us...> /*set*/) const noexcept -> bool {
+    return (contains_v<Us, Ts...> && ...);
   }
-};
 
-// NOLINTEND(*-named-parameter)
+}; // class Set
 
 template<class T>
 inline constexpr bool is_set_v = false;
@@ -105,13 +87,111 @@ inline constexpr bool is_set_v<Set<Ts...>> = true;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Check that @p lhs and @p rhs contain same elements. */
+template<type... Ts, type... Us>
+constexpr auto operator==(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
+  return rhs.includes(lhs) && lhs.includes(rhs);
+}
+/** Check that @p lhs is a @b strict subset of RHS. */
+template<type... Ts, type... Us>
+constexpr auto operator<(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
+  return rhs.includes(lhs) && (sizeof...(Ts) < sizeof...(Us));
+}
+/** Check that @p lhs is a subset of @p rhs. */
+template<type... Ts, type... Us>
+constexpr auto operator<=(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
+  return rhs.includes(lhs);
+}
+/** Check that @p lhs is a @b strict superset of @p rhs. */
+template<type... Ts, type... Us>
+constexpr auto operator>(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
+  return rhs < lhs;
+}
+/** Check that @p lhs is a superset of @p rhs. */
+template<type... Ts, type... Us>
+constexpr auto operator>=(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
+  return rhs <= lhs;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+namespace impl {
+
+template<class... Ts>
+constexpr auto set_or(Set<Ts...> lhs, Set<> /*rhs*/) noexcept {
+  return lhs;
+}
+template<class... Ts, class U, class... Us>
+constexpr auto set_or(Set<Ts...> lhs, Set<U, Us...> /*rhs*/) noexcept {
+  if constexpr (contains_v<U, Ts...>) return set_or(lhs, Set<Us...>{});
+  else return set_or(Set<Ts..., U>{}, Set<Us...>{});
+}
+
+template<class... Us>
+constexpr auto set_and(Set<> lhs, Set<Us...> /*rhs*/) noexcept {
+  return lhs;
+}
+template<class T, class... Ts, class... Us>
+constexpr auto set_and(Set<T, Ts...> /*lhs*/, Set<Us...> rhs) noexcept {
+  const auto remaining = set_and(Set<Ts...>{}, rhs);
+  if constexpr (contains_v<T, Us...>) return set_or(Set<T>{}, remaining);
+  else return remaining;
+}
+
+template<class... Us>
+constexpr auto set_diff(Set<> lhs, Set<Us...> /*rhs*/) noexcept {
+  return lhs;
+}
+template<class T, class... Ts, class... Us>
+constexpr auto set_diff(Set<T, Ts...> /*lhs*/, Set<Us...> rhs) noexcept {
+  const auto remaining = set_diff(Set<Ts...>{}, rhs);
+  if constexpr (contains_v<T, Us...>) return remaining;
+  else return set_or(Set<T>{}, remaining);
+}
+
+} // namespace impl
+
+/** @brief Set union.
+ ** @returns A set that contains all the elements of @p lhs followed by the
+ **          elements of @p rhs that are not already present in @p lhs. The
+ **          relative order of the elements in both sets is preserved. */
+template<type... Ts, type... Us>
+constexpr auto operator|(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
+  return impl::set_or(lhs, rhs);
+}
+
+/** @brief Set intersection.
+ ** @returns A set that contains the elements of @p lhs that are also present in
+ **          @p rhs. The relative order of the elements in LHS is preserved. */
+template<type... Ts, type... Us>
+constexpr auto operator&(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
+  return impl::set_and(lhs, rhs);
+}
+
+/** @brief Set difference.
+ ** @returns A set that contains all the elements of @p lhs excluding elements
+ **          that are contained in @p rhs. The relative order of the elements
+ **          in LHS is preserved. */
+template<type... Ts, type... Us>
+constexpr auto operator-(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
+  return impl::set_diff(lhs, rhs);
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+namespace impl {
+
 template<class T>
-static consteval auto _type_name_impl() {
+consteval auto type_name() {
+  // This thing is incomplete. It is a stub for the future set sorting.
   return __PRETTY_FUNCTION__;
 }
 
+} // namespace impl
+
+/** Get the name of a type in compile-time. */
 template<class T>
-inline constexpr auto type_name = _type_name_impl<T>();
+inline constexpr auto type_name_v = impl::type_name<T>();
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

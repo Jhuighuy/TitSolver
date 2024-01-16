@@ -8,7 +8,8 @@ set(
   CXX_SOURCES
   "math.cpp"
   "mdvector.cpp"
-  "posix.cpp"
+  "meta.cpp"
+  "posix_utils.cpp"
   "string_utils.cpp"
   "vec.cpp")
 
@@ -20,6 +21,6 @@ add_executable(tit::core_tests ALIAS tit_core_tests)
 target_link_libraries(tit_core_tests PRIVATE tit::core)
 
 # Enable static analysis.
-# enable_clang_tidy(tit::core_tests)
+enable_clang_tidy(tit::core_tests)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

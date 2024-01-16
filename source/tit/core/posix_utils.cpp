@@ -4,73 +4,51 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
-#include <csignal>
 #include <initializer_list>
 #include <ranges>
 #include <vector>
 
-#include "tit/core/assert.hpp"
-#include "tit/core/config.hpp"
-#include "tit/core/posix.hpp"
+#include <signal.h> // NOLINT(*-deprecated-headers)
+#ifdef __APPLE__
+#include <sys/signal.h>
+#endif
 
-namespace tit::posix {
+#include "tit/core/assert.hpp"
+#include "tit/core/posix_utils.hpp"
+
+namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
-std::vector<const SignalHandler*> SignalHandler::handlers_{};
-
-SignalHandler::SignalHandler()
-    : SignalHandler({SIGINT, SIGTERM, SIGABRT, SIGSEGV, SIGILL, SIGFPE}) {}
+std::vector<SignalHandler*> SignalHandler::handlers_{};
 
 SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
   // Register the current handler object.
   handlers_.push_back(this);
   // Register the new signal actions (or handlers).
-#if TIT_HAVE_SIGACTION
-  // NOLINTBEGIN(*-include-cleaner)
   prev_actions_.reserve(signal_numbers.size());
   for (const auto signal_number : signal_numbers) {
+    TIT_ENSURE(signal_number < NSIG, "Signal number is out of range!");
     // Prepare the new action.
-    sigaction_t signal_action{};
-    signal_action.sa_flags = 0;
-    signal_action.sa_handler = &handle_signal_;
-    sigemptyset(&signal_action.sa_mask);
+    sigaction_t action{};
+    action.sa_flags = 0;
+    action.sa_handler = &handle_signal_;
+    sigemptyset(&action.sa_mask);
     // Register the new action and store the previous one.
-    sigaction_t prev_signal_action{};
-    const auto status =
-        sigaction(signal_number, &signal_action, &prev_signal_action);
+    sigaction_t prev_action{};
+    const auto status = sigaction(signal_number, &action, &prev_action);
     TIT_ENSURE(status == 0, "Unable to set the signal action!");
-    prev_actions_.emplace_back(signal_number, prev_signal_action);
+    prev_actions_.emplace_back(signal_number, prev_action);
   }
-  // NOLINTEND(*-include-cleaner)
-#else
-  prev_handlers_.reserve(signal_numbers.size());
-  for (const auto signal_number : signal_numbers) {
-    // Register the new handler and store the previous one.
-    const auto prev_signal_handler = signal(signal_number, &handle_signal_);
-    TIT_ENSURE(prev_signal_handler != SIG_ERR,
-               "Unable to set the signal handler!");
-    prev_handlers_.emplace_back(signal_number, prev_signal_handler);
-  }
-#endif
 }
 
 SignalHandler::~SignalHandler() noexcept {
   // Restore the old signal handlers or actions.
-#if TIT_HAVE_SIGACTION
-  for (auto& [signal_number, prev_signal_action] : prev_actions_) {
-    // NOLINTNEXTLINE(*-include-cleaner)
-    const auto status = sigaction(signal_number, &prev_signal_action, nullptr);
+  for (const auto& [signal_number, prev_action] : prev_actions_) {
+    const auto status = sigaction(signal_number, &prev_action, nullptr);
     TIT_ENSURE(status == 0, "Unable to reset the signal action!");
   }
-#else
-  for (const auto& [signal_number, prev_signal_handler] : prev_handlers_) {
-    const auto signal_handler = signal(signal_number, prev_signal_handler);
-    TIT_ENSURE(signal_handler != SIG_ERR,
-               "Unable to reset the signal handler!");
-  }
-#endif
   // Unregister the current signal handler.
   TIT_ASSERT(handlers_.back() == this, "Signal handler was not registered!");
   handlers_.pop_back();
@@ -78,8 +56,8 @@ SignalHandler::~SignalHandler() noexcept {
 
 void SignalHandler::handle_signal_(int signal_number) noexcept {
   // Traverse the registered handler and find the one that handles the signal
-  // that we've intercepted.
-  for (const auto* handler : handlers_ | std::views::reverse) {
+  // that we've just got.
+  for (auto* const handler : handlers_ | std::views::reverse) {
     TIT_ASSERT(handler != nullptr, "Invalid handler was registered.");
     const auto iter = std::ranges::find(handler->signals(), signal_number);
     if (iter != handler->signals().end()) {
@@ -92,4 +70,4 @@ void SignalHandler::handle_signal_(int signal_number) noexcept {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit::posix
+} // namespace tit
