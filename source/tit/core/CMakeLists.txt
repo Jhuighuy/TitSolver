@@ -8,6 +8,7 @@ set(
   CXX_SOURCES
   "assert.hpp"
   "config.hpp"
+  "exception.hpp"
   "func_utils.hpp"
   "graph.hpp"
   "mat.hpp"
@@ -19,6 +20,7 @@ set(
   "posix_utils.cpp"
   "posix_utils.hpp"
   "simd.hpp"
+  "stacktrace.hpp"
   "string_utils.hpp"
   "trait_utils.hpp"
   "types.hpp"

@@ -6,6 +6,7 @@
 # Specify the list of sources.
 set(
   CXX_SOURCES
+  "exception.cpp"
   "math.cpp"
   "mdvector.cpp"
   "meta.cpp"
