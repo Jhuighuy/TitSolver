@@ -39,7 +39,7 @@ enable_clang_tidy(tit::core_catch_ctrl_c_test)
 # Register the test.
 add_test_from_target(
   tit::core_catch_ctrl_c_test
-  NAME "tit/core/fatal_signal"
+  NAME "tit/core/catch_ctrl_c"
   EXIT_CODE 0
   MATCH_STDERR "catch_ctrl_c_stderr.txt")
 
@@ -83,6 +83,7 @@ add_test_from_target(
   tit::core_profiler_tests
   NAME "tit/core/profiler"
   MATCH_STDOUT "profiler_stdout.txt"
-  FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g")
+  FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
+  PROPERTIES ENVIRONMENT "TIT_ENABLE_PROFILER=1")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

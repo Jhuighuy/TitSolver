@@ -3,9 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <iostream>
+#include <stdio.h> // NOLINT(*-deprecated-headers)
 
-#include "tit/core/posix_utils.hpp"
+#include "tit/core/compat.hpp"
+#include "tit/core/main_func.hpp"
 
 namespace tit {
 namespace {
@@ -13,24 +14,28 @@ namespace {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 [[gnu::noinline]] void func_3() {
-  std::cerr << "func_3\n";
-  std::cerr << "Doing something bad...\n";
+  Std::println(stderr, "func_3");
+  Std::println(stderr, "Doing something bad...");
   int* const null_pointer = nullptr;
   *null_pointer = 0; // NOLINT
 }
 
 [[gnu::noinline]] void func_2() {
-  std::cerr << "func_2\n";
+  Std::println(stderr, "func_2");
   func_3();
 }
 
 [[gnu::noinline]] void func_1() {
-  std::cerr << "func_1\n";
+  Std::println(stderr, "func_1");
   func_2();
 }
 
-void run_test() {
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+auto run_test(int /*argc*/, char** /*argv*/) -> int {
   func_1();
+  Std::println(stderr, "This line should not be executed.");
+  return 0;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -38,10 +43,7 @@ void run_test() {
 } // namespace
 } // namespace tit
 
-auto main() -> int {
+auto main(int argc, char** argv) -> int {
   using namespace tit;
-  const FatalSignalHandler handler{};
-  run_test();
-  std::cerr << "This line should not be executed.\n";
-  return 0;
+  run_main(argc, argv, &run_test);
 }

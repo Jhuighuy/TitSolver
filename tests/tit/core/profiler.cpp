@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "tit/core/compat.hpp"
+#include "tit/core/main_func.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/types.hpp"
 
@@ -39,12 +40,18 @@ using namespace std::chrono_literals;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+auto run_test(int /*argc*/, char** /*argv*/) -> int {
+  func_1();
+  return 0;
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 } // namespace
 } // namespace tit
 
-auto main() -> int {
+auto main(int argc, char** argv) -> int {
   using namespace tit;
-  Profiler::enable();
-  func_1();
+  run_main(argc, argv, &run_test);
   return 0;
 }

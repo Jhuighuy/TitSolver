@@ -5,11 +5,14 @@ Doing something bad...
 
 
 Terminated by signal SIGSEGV (segmentation fault).
-0   tit_core_fatal_signal_tests         0x00000001048e18c0 _ZN3tit12_GLOBAL__N_114dump_backtraceEv + 48
-1   tit_core_fatal_signal_tests         0x00000001048f0f88 _ZN3tit18FatalSignalHandler9on_signalEi + 136
-2   libsystem_platform.dylib            0x00000001840fba24 _sigtramp + 56
-3   tit_core_fatal_signal_tests         0x00000001048e173c _ZN3tit12_GLOBAL__N_16func_3Ev + 60
-4   tit_core_fatal_signal_tests         0x00000001048e1774 _ZN3tit12_GLOBAL__N_16func_1Ev + 0
-5   tit_core_fatal_signal_tests         0x00000001048e1798 _ZN3tit12_GLOBAL__N_16func_1Ev + 36
-6   tit_core_fatal_signal_tests         0x00000001048f144c main + 28
-7   dyld                                0x0000000183d510e0 start + 2360
+
+Stacktrace:
+0   tit_core_catch_fatal_signal_test    0x0000000102a9e1b0 _ZN3tit18FatalSignalHandler9on_signalEi + 160
+1   libsystem_platform.dylib            0x00000001840fba24 _sigtramp + 56
+2   tit_core_catch_fatal_signal_test    0x0000000102a9de04 _ZN3tit12_GLOBAL__N_16func_3Ev + 192
+3   tit_core_catch_fatal_signal_test    0x0000000102a9dea0 _ZN3tit12_GLOBAL__N_16func_2Ev + 112
+4   tit_core_catch_fatal_signal_test    0x0000000102a9df24 _ZN3tit12_GLOBAL__N_16func_1Ev + 112
+5   tit_core_catch_fatal_signal_test    0x0000000102a9df4c _ZN3tit12_GLOBAL__N_18run_testEiPPc + 12
+6   tit_core_catch_fatal_signal_test    0x0000000102a9dfa4 _ZN3tit8run_mainEiPPcPFiiS1_E + 84
+7   tit_core_catch_fatal_signal_test    0x0000000102aa8524 main + 20
+8   dyld                                0x0000000183d510e0 start + 2360
