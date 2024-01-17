@@ -9,6 +9,7 @@ set(
   "assert.hpp"
   "compat.hpp"
   "config.hpp"
+  "exception.hpp"
   "func_utils.hpp"
   "graph.hpp"
   "main_func.cpp"
