@@ -11,6 +11,9 @@
 
 #include <stdio.h> // NOLINT(*-deprecated-headers)
 
+#define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+#include <boost/stacktrace/stacktrace.hpp>
+
 namespace tit::Std {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -44,6 +47,19 @@ void println(std::FILE* stream, std::format_string<Args...> fmt,
 /** @} */
 
 // NOLINTEND(cert-err33-c)
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Temporary basic implementation of `std::stacktrace`. */
+class stacktrace : public boost::stacktrace::stacktrace {
+public:
+
+  /** Get the current stack trace. */
+  [[gnu::always_inline]] static auto current() -> stacktrace {
+    return {};
+  }
+
+}; // struct stacktrace
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
