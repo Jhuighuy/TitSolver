@@ -18,6 +18,13 @@ namespace tit {
 /** Wrap a macro argument with commas to pass it to another macro. */
 #define TIT_PASS(...) __VA_ARGS__
 
+/** Concatenate macro arguments. */
+#define TIT_CAT(a, b) TIT_CAT_IMPL(a, b)
+#define TIT_CAT_IMPL(a, b) a##b
+
+/** Generate a unique identifier */
+#define TIT_NAME(prefix) TIT_CAT(prefix##_, __LINE__)
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /** Use this function to assume forwarding references as universal references

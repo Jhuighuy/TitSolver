@@ -19,6 +19,8 @@ set(
   "multivector.hpp"
   "posix_utils.cpp"
   "posix_utils.hpp"
+  "profiler.cpp"
+  "profiler.hpp"
   "simd.hpp"
   "string_utils.hpp"
   "time_utils.hpp"

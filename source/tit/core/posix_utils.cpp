@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <cstdlib>
 #include <initializer_list>
 #include <ranges>
@@ -13,14 +14,18 @@
 
 #include <execinfo.h>
 #include <signal.h> // NOLINT(*-deprecated-headers)
+#include <stdio.h>  // NOLINT(*-deprecated-headers)
+#include <sys/ioctl.h>
 #ifdef __APPLE__
 #include <sys/signal.h>
+#include <sys/ttycom.h>
 #endif
 #include <unistd.h>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/config.hpp"
 #include "tit/core/posix_utils.hpp"
+#include "tit/core/types.hpp"
 
 #if TIT_GCOV
 extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
@@ -45,7 +50,6 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// NOLINTNEXTLINE(*-avoid-non-const-global-variables)
 std::vector<SignalHandler*> SignalHandler::handlers_{};
 
 SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
@@ -143,6 +147,18 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
     dump_backtrace();
     fast_exit(1);
   }
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+auto tty_width(std::FILE* stream) noexcept -> size_t {
+  const auto stream_fileno = fileno(stream);
+  if (isatty(stream_fileno) == 0) return 80; // Redirected.
+  struct winsize window_size = {};
+  // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
+  const auto status = ioctl(stream_fileno, TIOCGWINSZ, &window_size);
+  TIT_ENSURE(status == 0, "Unable to query terminal window size!");
+  return window_size.ws_col;
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

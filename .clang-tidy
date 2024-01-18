@@ -22,8 +22,13 @@
 # * cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers:
 #   We have a few, I would like to re-enable this check in the future.
 #
+# * cppcoreguidelines-avoid-non-const-global-variables
+#   We have a few of those, and I do not want to wrap them into `//NOLINT`
+#   everytime. Also this check does not recognize `thread_local` variables,
+#   that are also considered global.
+#
 # * cppcoreguidelines-macro-usage:
-#   Macros are part of the language, I am feeling bad about using them.
+#   Macros are part of the language, I am not feeling bad about using them.
 #
 # * cppcoreguidelines-misleading-capture-default-by-value:
 #   Maybe reconsider this one.
@@ -68,6 +73,7 @@ Checks: |
   cppcoreguidelines-*
   -cppcoreguidelines-avoid-do-while
   -cppcoreguidelines-avoid-magic-numbers
+  -cppcoreguidelines-avoid-non-const-global-variables
   -cppcoreguidelines-macro-usage
   -cppcoreguidelines-misleading-capture-default-by-value
   -cppcoreguidelines-pro-bounds-constant-array-index
