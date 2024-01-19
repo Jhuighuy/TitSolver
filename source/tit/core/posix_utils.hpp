@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdio>
 #include <initializer_list>
 #include <ranges>
 #include <tuple>
@@ -15,6 +16,8 @@
 #else
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
+
+#include "tit/core/types.hpp"
 
 namespace tit {
 
@@ -67,7 +70,6 @@ private:
   using sigaction_t = struct sigaction;
   std::vector<std::tuple<int, sigaction_t>> prev_actions_;
 
-  // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
   static std::vector<SignalHandler*> handlers_;
   static void handle_signal_(int signal_number) noexcept;
 
@@ -89,6 +91,12 @@ protected:
   void on_signal(int signal_number) noexcept final;
 
 }; // class FatalSignalHandler
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/** Get terminal width.
+ ** @param stream The output stream to use for the width query. */
+auto tty_width(std::FILE* stream) noexcept -> size_t;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

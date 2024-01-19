@@ -7,6 +7,7 @@
 set(
   CXX_SOURCES
   "assert.hpp"
+  "compat.hpp"
   "config.hpp"
   "func_utils.hpp"
   "graph.hpp"
@@ -18,8 +19,11 @@ set(
   "multivector.hpp"
   "posix_utils.cpp"
   "posix_utils.hpp"
+  "profiler.cpp"
+  "profiler.hpp"
   "simd.hpp"
   "string_utils.hpp"
+  "time_utils.hpp"
   "trait_utils.hpp"
   "types.hpp"
   "vec_avx.hpp"
