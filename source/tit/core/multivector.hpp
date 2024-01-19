@@ -14,10 +14,10 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/atomic.hpp"
 #include "tit/core/mdvector.hpp"
 #include "tit/core/misc.hpp"
 #include "tit/core/types.hpp"
-#include "tit/par/atomic.hpp"
 #include "tit/par/thread.hpp"
 
 namespace tit {
@@ -111,7 +111,7 @@ public:
     par::for_each(handles, [&](auto handle) {
       const size_t index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      par::sync_fetch_and_add(val_ranges_[index + 1], 1);
+      sync_fetch_and_add(val_ranges_[index + 1], 1);
     });
     /// Perform a partial sum of the computed values to form ranges.
     for (size_t index = 2; index < val_ranges_.size(); ++index) {
@@ -125,7 +125,7 @@ public:
     par::for_each(handles, [&](auto handle) {
       const auto index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      const auto addr = par::sync_fetch_and_add(val_ranges_[index], 1);
+      const auto addr = sync_fetch_and_add(val_ranges_[index], 1);
       vals_[addr] = value_of(handle);
     });
     /// Fix value ranges, since after incrementing the entire array is shifted

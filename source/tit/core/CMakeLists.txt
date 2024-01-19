@@ -7,6 +7,7 @@
 set(
   CXX_SOURCES
   "assert.hpp"
+  "atomic.hpp"
   "compat.hpp"
   "config.hpp"
   "func_utils.hpp"
