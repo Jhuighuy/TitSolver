@@ -17,7 +17,7 @@ add_library(tit_geom INTERFACE ${CXX_SOURCES})
 add_library(tit::geom ALIAS tit_geom)
 
 # Link with the dependent libraries.
-target_link_libraries(tit_geom INTERFACE tit::core tit::par)
+target_link_libraries(tit_geom INTERFACE tit::core)
 
 # Enable static analysis.
 enable_clang_tidy(tit::geom)

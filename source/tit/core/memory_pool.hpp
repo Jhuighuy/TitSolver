@@ -13,34 +13,21 @@
 #include <oneapi/tbb/memory_pool.h>
 
 #include "tit/core/assert.hpp"
-#include "tit/core/types.hpp"
 
-namespace tit::par {
+namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /******************************************************************************\
- ** @brief Thread-safe and scalable memory pool (arena).
+ ** Thread-safe and scalable memory pool (arena).
 \******************************************************************************/
 template<class Val>
-  requires std::is_object_v<Val>
+  requires std::is_object_v<Val> && std::is_trivially_destructible_v<Val>
 class MemoryPool final {
-private:
-
-  // Unfortunately, `tbb::memory_pool` is not "movable" nor "move_constructible"
-  // due to it's implementation details. It is not even "relocatable": it's
-  // implementation relies on it's own address. In order to make our class
-  // movable, I'll play safe and wrap it into the unique pointer.
-  using TbbMemoryPool_ = tbb::memory_pool<std::allocator<Val>>;
-  std::unique_ptr<TbbMemoryPool_> pool_{};
-  static_assert(
-      !std::movable<TbbMemoryPool_>,
-      "A reminder to update implementation once memory pool becomes movable.");
-
 public:
 
   /** Construct the memory pool with specified allocator. */
-  MemoryPool() : pool_{new TbbMemoryPool_{}} {}
+  MemoryPool() : pool_{new TbbMemoryPool()} {}
 
   /** Move-construct the memory pool. */
   MemoryPool(MemoryPool&&) = default;
@@ -55,24 +42,36 @@ public:
   /** Destroy memory pool and free all memory. */
   ~MemoryPool() = default;
 
-  /** Allocate the specified amount of values.
-   ** @note Values are not initialized: no constructors are called!
+  /** Allocate and initialize the new value from @p args.
    ** @returns Pointer to the allocated memory or `nullptr`. */
-  [[nodiscard]] auto allocate(size_t count = 1) -> Val* {
+  template<class... Args>
+    requires std::constructible_from<Val, Args&&...>
+  [[nodiscard]] auto create(Args&&... args) -> Val* {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
-    const auto num_bytes = count * sizeof(Val);
-    return static_cast<Val*>(pool_->malloc(num_bytes));
+    auto* const ptr = static_cast<Val*>(pool_->malloc(sizeof(Val)));
+    if (ptr != nullptr) std::construct_at(ptr, std::forward<Args>(args)...);
+    return ptr;
   }
 
   /** Free memory that was previously allocated inside of the current pool.
    ** @note Values are not deinitialized: no destructors are called! */
-  void deallocate(Val* pointer) {
+  void destroy(Val* pointer) {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
     pool_->free(pointer);
   }
+
+private:
+
+  using TbbMemoryPool = tbb::memory_pool<std::allocator<Val>>;
+
+  // Unfortunately, `tbb::memory_pool` is not "movable" nor
+  // "move_constructible": it's implementation relies on it's own address.
+  // In order to make our class `movable`, I'll play safe and wrap it into the
+  // unique pointer.
+  std::unique_ptr<TbbMemoryPool> pool_{};
 
 }; // class MemoryPool
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // namespace tit::par
+} // namespace tit

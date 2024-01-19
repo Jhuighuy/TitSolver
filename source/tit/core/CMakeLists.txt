@@ -17,6 +17,7 @@ set(
   "mat.hpp"
   "math.hpp"
   "mdvector.hpp"
+  "memory_pool.hpp"
   "meta.hpp"
   "misc.hpp"
   "multivector.hpp"

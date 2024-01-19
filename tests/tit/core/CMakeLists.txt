@@ -8,6 +8,7 @@ set(
   CXX_SOURCES
   "math.cpp"
   "mdvector.cpp"
+  "memory_pool.cpp"
   "meta.cpp"
   "posix_utils.cpp"
   "string_utils.cpp"

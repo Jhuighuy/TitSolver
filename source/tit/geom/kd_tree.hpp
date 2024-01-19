@@ -15,10 +15,10 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/memory_pool.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
-#include "tit/par/memory_pool.hpp"
 #include "tit/par/thread.hpp"
 
 namespace tit::geom {
@@ -61,7 +61,7 @@ private:
 
   Points points_;
   size_t max_leaf_size_;
-  par::MemoryPool<KDTreeNode_> pool_;
+  MemoryPool<KDTreeNode_> pool_;
   std::vector<size_t> point_perm_;
   const KDTreeNode_* root_node_ = nullptr;
   PointBBox root_bbox_;
@@ -122,7 +122,7 @@ private:
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // Allocate node.
     // TODO: We are not correctly initializing `node`.
-    const auto node = pool_.allocate(1);
+    const auto node = pool_.create();
     const auto actual_bbox = subtree_bbox_</*Parallel=*/IsRoot>(first, last);
     if constexpr (IsRoot) bbox = actual_bbox;
     // Is leaf node reached?
