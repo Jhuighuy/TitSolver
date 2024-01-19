@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -9,6 +8,8 @@
 #define WITH_GRAVITY 1
 
 #include "tit/app/wrap_main.hpp"
+#include "tit/core/compat.hpp"
+#include "tit/core/time_utils.hpp"
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fsi.hpp"
@@ -73,8 +74,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       r[a] = dr * Vec{i + 0.5, j + 0.5};
     }
   }
-  std::cout << "Num. fixed particles: " << num_fixed_particles << std::endl;
-  std::cout << "Num. struct. particles: " << num_struct_particles << std::endl;
+  Std::println("Num. fixed particles: {}", num_fixed_particles);
+  Std::println("Num. struct. particles: {}", num_struct_particles);
 
   // Set global particle constants.
   rho[particles] = rho_0;
@@ -87,35 +88,31 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   particles.print("output/test_output/particles-0.csv");
   system("ln -sf output/test_output/particles-0.csv particles.csv");
 
-  Real time = 0.0, exectime = 0.0, printtime = 0.0;
+  Real time{};
+  Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time * sqrt(g / H) <= 6.90e+6; ++n, time += dt) {
-    std::cout << n << "\t\t" << time * sqrt(g / H) << "\t\t" << exectime / n
-              << "\t\t" << printtime / (n / 200) << std::endl;
-    auto start = std::chrono::high_resolution_clock::now();
-    timeint.step(dt, particles, adjacent_particles);
-    auto delta = std::chrono::high_resolution_clock::now() - start;
-    exectime +=
-        1.0e-9 *
-        std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
+    Std::println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
+                 n, time * sqrt(g / H), exectime.cycle(), printtime.cycle());
+    {
+      const StopwatchCycle cycle{exectime};
+      timeint.step(dt, particles, adjacent_particles);
+    }
     if (n % 200 == 0 && n != 0) {
-      start = std::chrono::high_resolution_clock::now();
+      const StopwatchCycle cycle{printtime};
       const auto path =
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
       system(("ln -sf ./" + path + " particles.csv").c_str());
-      delta = std::chrono::high_resolution_clock::now() - start;
-      printtime +=
-          1.0e-9 *
-          std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count();
     }
   }
 
   particles.print("particles-dam.csv");
 
-  const auto totaltime = exectime + printtime;
-  std::cout << "Total time: " << totaltime / 60.0
-            << "m, exec: " << exectime * 100 / totaltime
-            << "%, print: " << printtime * 100 / totaltime << "%" << std::endl;
+  const auto totaltime_sec = exectime.total() + printtime.total();
+  std::cout << "Total time: " << totaltime_sec / 60.0
+            << "m, exec: " << exectime.total() * 100 / totaltime_sec
+            << "%, print: " << printtime.total() * 100 / totaltime_sec << "%"
+            << std::endl;
 
   return 0;
 }

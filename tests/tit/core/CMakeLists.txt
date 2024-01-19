@@ -11,6 +11,7 @@ set(
   "meta.cpp"
   "posix_utils.cpp"
   "string_utils.cpp"
+  "time_utils.cpp"
   "vec.cpp")
 
 # Create the unit test executable.
