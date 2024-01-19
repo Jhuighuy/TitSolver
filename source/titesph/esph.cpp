@@ -2,7 +2,6 @@
 #include <cassert>
 #include <cmath>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
 #define WITH_GRAVITY 1

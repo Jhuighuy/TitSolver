@@ -4,7 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <concepts> // IWYU pragma: keep
-#include <iostream>
+#include <cstdlib>  // IWYU pragma: keep
 
 #include <doctest/doctest.h>
 
@@ -40,7 +40,7 @@ static_assert(!meta::type<g_t>);
 // This is not a "meta type", since it is not trivial.
 struct h_t {
   h_t() {
-    std::cout << "Hello, world!\n";
+    CHECK(false);
   }
 };
 static_assert(!meta::type<h_t>);

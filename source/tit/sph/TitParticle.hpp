@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <fstream>
-#include <iostream>
 #include <iterator>
 #include <ranges>
 #include <string>
@@ -17,6 +16,7 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/compat.hpp"
 #include "tit/core/func_utils.hpp"
 #include "tit/core/graph.hpp"
 #include "tit/core/mat.hpp"
@@ -229,11 +229,11 @@ public:
     });
     {
       // Finalize color ranges.
-      std::cerr << "NCOL: ";
+      Std::print("NCOL: ");
       for (size_t i = 0; i < block_adjacency_.size(); ++i) {
-        std::cerr << block_adjacency_[i].size() << " ";
+        Std::print("{} ", block_adjacency_[i].size());
       }
-      std::cerr << std::endl; // NOLINT
+      Std::print("\n");
     }
 #endif
   }

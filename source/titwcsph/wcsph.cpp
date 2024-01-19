@@ -2,7 +2,6 @@
 #include <cassert>
 #include <cmath>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
 #define COMPRESSIBLE_SOD_PROBLEM 0
