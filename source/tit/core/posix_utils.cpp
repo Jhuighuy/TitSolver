@@ -107,7 +107,7 @@ void dump(std::string_view message) noexcept {
 }
 
 // Dump backtrace in the "async-signal-safe" way.
-void dump_backtrace() noexcept {
+[[gnu::always_inline]] inline void dump_backtrace() noexcept {
   constexpr int max_stack_depth = 100;
   std::array<void*, max_stack_depth> stack_trace{};
   const auto stack_depth = backtrace(stack_trace.data(), max_stack_depth);
@@ -144,6 +144,7 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
       default:      TIT_ASSERT(false, "Must not be reached.");
     }
     dump(".\n");
+    dump("\nStacktrace:\n");
     dump_backtrace();
     fast_exit(1);
   }

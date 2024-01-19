@@ -13,9 +13,10 @@
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 
-#include "tit/app/wrap_main.hpp"
 #include "tit/core/compat.hpp"
+#include "tit/core/main_func.hpp"
 #include "tit/core/time_utils.hpp"
+
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fluid_equations.hpp"
@@ -474,7 +475,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 #endif
 
 int main(int argc, char** argv) {
-  return tit::app::wrap_main(argc, argv, &sph_main<tit::real_t>);
+  return tit::run_main(argc, argv, &sph_main<tit::real_t>);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

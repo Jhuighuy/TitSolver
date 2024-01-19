@@ -11,6 +11,8 @@ set(
   "config.hpp"
   "func_utils.hpp"
   "graph.hpp"
+  "main_func.cpp"
+  "main_func.hpp"
   "mat.hpp"
   "math.hpp"
   "mdvector.hpp"
