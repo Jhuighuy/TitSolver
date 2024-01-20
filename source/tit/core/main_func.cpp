@@ -7,9 +7,9 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/main_func.hpp"
+#include "tit/core/parallel.hpp"
 #include "tit/core/posix_utils.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/par/thread.hpp"
 
 namespace tit {
 

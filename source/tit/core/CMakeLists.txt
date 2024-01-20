@@ -21,6 +21,8 @@ set(
   "meta.hpp"
   "misc.hpp"
   "multivector.hpp"
+  "parallel.cpp"
+  "parallel.hpp"
   "posix_utils.cpp"
   "posix_utils.hpp"
   "profiler.cpp"

@@ -11,8 +11,9 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
+#include "tit/core/parallel.hpp"
 #include "tit/core/types.hpp"
-#include "tit/par/thread.hpp"
+
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/field.hpp"

@@ -31,7 +31,7 @@
 #include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
 
-#include "tit/par/thread.hpp"
+#include "tit/core/parallel.hpp"
 
 #include "tit/sph/field.hpp"
 

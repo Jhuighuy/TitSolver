@@ -8,9 +8,10 @@
 #include <type_traits>
 
 #include "tit/core/meta.hpp"
+#include "tit/core/parallel.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/types.hpp"
-#include "tit/par/thread.hpp"
+
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/field.hpp"
 

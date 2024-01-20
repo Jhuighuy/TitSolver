@@ -17,8 +17,8 @@
 #include "tit/core/atomic.hpp"
 #include "tit/core/mdvector.hpp"
 #include "tit/core/misc.hpp"
+#include "tit/core/parallel.hpp"
 #include "tit/core/types.hpp"
-#include "tit/par/thread.hpp"
 
 namespace tit {
 

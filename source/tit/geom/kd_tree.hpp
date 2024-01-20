@@ -16,10 +16,10 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/memory_pool.hpp"
+#include "tit/core/parallel.hpp"
 #include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
-#include "tit/par/thread.hpp"
 
 namespace tit::geom {
 
