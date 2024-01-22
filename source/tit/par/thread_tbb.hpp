@@ -4,8 +4,6 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
-#include "thread_omp.hpp"
-#if 0
 
 #include <algorithm>
 #include <concepts>
@@ -187,4 +185,3 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace tit::par
-#endif

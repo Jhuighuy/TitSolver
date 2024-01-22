@@ -52,11 +52,6 @@ public:
     // return 0;
   }
 
-  template<std::invocable... Funcs>
-  static constexpr void invoke_(Funcs&&... funcs) noexcept {
-    (funcs(), ...);
-  }
-
   template<class Range, class Func>
   static void for_each_(dynamic_tag_t /**/, Range&& range, Func&& func,
                         [[maybe_unused]] size_t grain_size = 100) noexcept {
@@ -103,6 +98,7 @@ auto main(int argc, char** argv, Func&& func) -> int {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+#if 0
 /** Number of threads. */
 constexpr auto num_threads() noexcept -> size_t {
   TIT_THREAD_FUNC_IMPL_(num_threads_);
@@ -112,14 +108,7 @@ constexpr auto num_threads() noexcept -> size_t {
 constexpr auto thread_index() noexcept -> size_t {
   TIT_THREAD_FUNC_IMPL_(thread_index_);
 }
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** Invoke functions in parallel. */
-template<std::invocable... Funcs>
-constexpr void invoke(Funcs&&... funcs) noexcept {
-  TIT_THREAD_FUNC_IMPL_(invoke_, funcs...);
-}
+#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -148,21 +137,7 @@ concept indirect_loop_body =
     std::indirectly_regular_unary_invocable<
         Func, std::ranges::iterator_t<std::ranges::range_value_t<BaseRange>>>;
 
-/** Iterate through the range in parallel (dynamic partitioning). */
-/** @{ */
-template<base_input_range Range, loop_body<Range> Func>
-constexpr void for_each(Range&& range, Func&& func) noexcept {
-  TIT_THREAD_FUNC_IMPL_(for_each_, dynamic_tag, range, func);
-}
-template<base_input_range BaseRange, indirect_loop_body<BaseRange> Func>
-constexpr void for_each( //
-    std::ranges::join_view<BaseRange> view, Func&& func) noexcept {
-  for_each(std::move(view).base(), [&](auto subrange) {
-    std::ranges::for_each(subrange, func); //
-  });
-}
-/** @} */
-
+#if 0
 /** Iterate through the range in parallel (static partitioning). */
 /** @{ */
 template<base_input_range Range, loop_body<Range> Func>
@@ -177,6 +152,7 @@ constexpr void static_for_each( //
   });
 }
 /** @} */
+#endif
 
 template<class Range>
 concept block_input_range = std::ranges::input_range<Range>;
@@ -185,7 +161,7 @@ template<block_input_range Range,
          std::indirectly_regular_unary_invocable<
              std::ranges::iterator_t<std::ranges::range_value_t<Range>>>
              Func>
-constexpr void block_for_each(Range&& range, Func&& func) noexcept {
+constexpr void block_for_each(Range&& range, Func func) noexcept {
   // Split the range in chunks according to the number of threads and
   // walk though the chunks sequentially.
   const auto chucked_range =
@@ -193,8 +169,8 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
   for (auto&& chuck : chucked_range) {
     // Subranges inside each chunk are supposed to be independent thus
     // are processed in parallel.
-    static_for_each(chuck, [&](auto subrange) {
-      std::ranges::for_each(subrange, func); //
+    for_each(chuck, [&](auto subrange) { //
+      std::ranges::for_each(subrange, func);
     });
   }
 }

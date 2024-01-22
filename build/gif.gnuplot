@@ -59,7 +59,7 @@ H = 0.6
 #H = 2.0
 
 do for [i=0:100000000] {
-	plot 'output/test_output/particles-'.i.'.csv' \
+	plot 'output/test_output/titwcsph/dam_breaking/output/test_output/particles-'.i.'.csv' \
        u 'r_x':'r_y':(clamp(column('p')/(1000*9.81*H), -0.1, 1.5)) \
        w p pt 7 palette notitle
 }

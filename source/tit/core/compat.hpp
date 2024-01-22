@@ -7,11 +7,25 @@
 
 #include <cstdio>
 #include <format>
+#include <functional>
 #include <utility>
 
 #include <stdio.h> // NOLINT(*-deprecated-headers)
 
 namespace tit::Std {
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+// NOLINTBEGIN(*-std-forward)
+
+template<class Func, class... Args>
+constexpr auto bind_back(Func&& func, Args&&... args) {
+  return [&]<class... RestArgs>(RestArgs&&... rest_args) {
+    return std::invoke(func, rest_args..., args...);
+  };
+}
+
+// NOLINTEND(*-std-forward)
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

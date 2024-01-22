@@ -68,7 +68,7 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void init(ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       // Initialize particle pressure (and sound speed).
       eos_.compute_pressure(a);
       // Initialize particle width and Omega.
@@ -212,7 +212,7 @@ public:
       });
     }
     // Compute renormalization fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Clean renormalization fields.
       if constexpr (has<PV>(S)) S[a] = {};
       if constexpr (has<PV>(L)) L[a] = {};
@@ -249,7 +249,7 @@ public:
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     // Compute velocity derivative fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Compute pressure (and sound speed).
       eos_.compute_pressure(a);
       /// Clean velocity derivative fields.
@@ -314,7 +314,7 @@ public:
         du_dt[b] += m[a] * (dot(v_flux_b, v[b, a]) - Lambda_flux);
       }
     });
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       /// Compute artificial viscosity switch time.
       if constexpr (has<PV>(dalpha_dt)) artvisc_.compute_switch_deriv(a);

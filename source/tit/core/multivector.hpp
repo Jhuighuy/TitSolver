@@ -160,10 +160,10 @@ public:
     val_ranges_.clear(), val_ranges_.resize(count + 1);
     static Mdvector<size_t, 2> val_ranges_per_thread{};
     val_ranges_per_thread.assign(count + 1, par::num_threads());
-    par::static_for_each(handles, [&](auto handle) {
+    par::static_for_each(handles, [&](size_t thread_index, auto handle) {
       const size_t index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      val_ranges_per_thread[index, par::thread_index()]++;
+      val_ranges_per_thread[index, thread_index]++;
     });
     /// Perform a partial sum of the computed values to form ranges.
     for (size_t index = 1; index < val_ranges_.size(); ++index) {
@@ -184,10 +184,10 @@ public:
     /// then increment the position.
     const auto num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
-    par::static_for_each(handles, [&](auto handle) {
+    par::static_for_each(handles, [&](size_t thread_index, auto handle) {
       const auto index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      const auto addr = val_ranges_per_thread[index, par::thread_index()]++;
+      const auto addr = val_ranges_per_thread[index, thread_index]++;
       vals_[addr] = value_of(handle);
     });
   }

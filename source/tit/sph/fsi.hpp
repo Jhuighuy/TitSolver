@@ -129,7 +129,7 @@ public:
     using PV = ParticleView<ParticleArray>;
     adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
     // Store the reference state.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Store initial particle positions.
       r_0[a] = r[a];
       /// Clean the renormalization matrix.
@@ -144,7 +144,7 @@ public:
       const auto L_flux = outer(r_0[b, a], grad0_W_ab);
       L[a] += V0_b * L_flux, L[b] += V0_a * L_flux;
     });
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Finalize kernel gradient renormalization matrix.
       const auto L_a_inv = MatInv{L[a]};
       if (!is_zero(L_a_inv.det())) L[a] = transpose(L_a_inv());
@@ -170,7 +170,7 @@ public:
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Clean velocity-related fields.
       dv_dt[a] = {};
       P[a] = {};
@@ -190,7 +190,7 @@ public:
       const auto v_flux = Pi_ab * grad0_W_ab;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
     });
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Finalize tensor of deformation gradient (stored in `P`)
       /// and compute auxiliary tensors from it.
       const auto F_a = P[a] * L[a];
@@ -219,7 +219,7 @@ public:
       const auto v_flux = (P[a] + P[b]) * grad0_W_ab;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
     });
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
 #if WITH_GRAVITY
       // TODO: Gravity.
