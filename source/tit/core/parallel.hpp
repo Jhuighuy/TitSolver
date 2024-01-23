@@ -30,6 +30,24 @@ constexpr auto num_threads() noexcept -> size_t {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Invoke functions in parallel and wait for all of them to complete. */
+class Invoke {
+public:
+
+  template<class... Funcs>
+    requires (std::invocable<Funcs> && ...) &&
+             (std::same_as<std::invoke_result_t<Funcs>, void> && ...)
+  void operator()(Funcs... funcs) const noexcept {
+    tbb::parallel_invoke(std::move(funcs)...);
+  }
+
+}; // class Invoke
+
+/** @copydoc Invoke */
+inline constexpr Invoke invoke{};
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 /** Underlying range type. */
 template<std::ranges::view View>
 using view_base_t = decltype(std::declval<View>().base());
@@ -85,15 +103,16 @@ public:
   void operator()(Range&& range, Func func) const noexcept {
     auto view = std::views::all(std::forward<Range>(range));
     const auto size = std::ranges::size(view);
-    const auto quotient = (size / num_threads()),
-               remainder = (size % num_threads());
-    const auto lower_bound = [=](size_t index) {
-      return index * quotient + std::min(index, remainder);
+    auto begin_block = [quotient = size / num_threads(),
+                        remainder = size % num_threads(),
+                        view = std::move(view)](size_t index) {
+      const auto offset = index * quotient + std::min(index, remainder);
+      return view.begin() + offset;
     };
-    (*this)([&](size_t thread_index) {
-      std::ranges::for_each(view.begin() + lower_bound(thread_index),
-                            view.begin() + lower_bound(thread_index + 1),
-                            std::bind_front(std::move(func), thread_index));
+    (*this)([begin_block = std::move(begin_block),
+             func = std::move(func)](size_t thread_index) {
+      std::for_each(begin_block(thread_index), begin_block(thread_index + 1),
+                    std::bind_front(std::move(func), thread_index));
     });
   }
   template<simple_range Range, class Func>
@@ -112,24 +131,6 @@ public:
 
 /** @copydoc StaticForEach */
 inline constexpr StaticForEach static_for_each{};
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/** Invoke functions in parallel and wait for all of them to complete. */
-class Invoke {
-public:
-
-  template<class... Funcs>
-    requires (std::invocable<Funcs> && ...) &&
-             (std::same_as<std::invoke_result_t<Funcs>, void> && ...)
-  void operator()(Funcs... funcs) const noexcept {
-    tbb::parallel_invoke(std::move(funcs)...);
-  }
-
-}; // class Invoke
-
-/** @copydoc Invoke */
-inline constexpr Invoke invoke{};
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

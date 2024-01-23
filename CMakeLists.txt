@@ -20,7 +20,6 @@ include(compiler)
 find_package(doctest CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
-find_package(OpenMP REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
@@ -65,7 +64,6 @@ target_link_libraries(
   fmt::fmt
   spdlog::spdlog
   TBB::tbb TBB::tbbmalloc
-  OpenMP::OpenMP_CXX
   hdf5::hdf5-static)
 
 # Add the actual sources.

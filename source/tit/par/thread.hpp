@@ -10,7 +10,7 @@
 #include <iterator>  // IWYU pragma: keep
 #include <ranges>
 
-#include <omp.h>
+#include <oneapi/tbb/global_control.h>
 
 // #include "tit/core/misc.hpp"        // IWYU pragma: keep
 #include "tit/core/trait_utils.hpp" // IWYU pragma: keep
@@ -32,68 +32,11 @@ struct dynamic_tag_t : sched_tag_t {};
 inline constexpr static_tag_t static_tag{};
 inline constexpr dynamic_tag_t dynamic_tag{};
 
-template<class Tag>
-class Threading {
-public:
-
-  template<std::invocable<int, char**> Func>
-  static auto main_([[maybe_unused]] int argc, [[maybe_unused]] char** argv,
-                    Func&& func) -> int {
-    omp_set_num_threads(8);
-    return func(argc, argv);
-  }
-
-  static constexpr auto num_threads_() noexcept -> size_t {
-    return 8;
-    // return 1;
-  }
-  static constexpr auto thread_index_() noexcept -> size_t {
-    return static_cast<size_t>(omp_get_thread_num());
-    // return 0;
-  }
-
-  template<class Range, class Func>
-  static void for_each_(dynamic_tag_t /**/, Range&& range, Func&& func,
-                        [[maybe_unused]] size_t grain_size = 100) noexcept {
-    const auto end = std::ranges::end(range);
-#pragma omp parallel for schedule(dynamic, grain_size)
-    for (auto iter = std::ranges::begin(range); iter != end; ++iter)
-      func(*iter);
-  }
-
-  template<class Range, class Func>
-  static void for_each_(static_tag_t /**/, Range&& range,
-                        Func&& func) noexcept {
-    const auto end = std::ranges::end(range);
-#pragma omp parallel for schedule(static)
-    for (auto iter = std::ranges::begin(range); iter != end; ++iter)
-      func(*iter);
-  }
-
-  // template<std::ranges::input_range Range,
-  //          std::indirectly_unary_invocable<std::ranges::iterator_t<Range>>
-  //          Func>
-  // static constexpr void for_each_([[maybe_unused]] sched_tag_t shed_tag, //
-  //                                 Range&& range, Func&& func) noexcept {
-  //   std::ranges::for_each(range, func);
-  // }
-
-}; // class Threading
-
-// Generate a constexpr-aware overload for a threading function.
-#define TIT_THREAD_FUNC_IMPL_(func, ...)                                       \
-  if consteval {                                                               \
-    return Threading<seg_tag_t>::func(__VA_ARGS__);                            \
-  } else { /* NOLINT(*-else-after-return) */                                   \
-    return Threading<par_tag_t>::func(__VA_ARGS__);                            \
-  }
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 /** Wrapper for the `main` that sets up multithreading. */
 template<std::invocable<int, char**> Func>
 auto main(int argc, char** argv, Func&& func) -> int {
-  TIT_THREAD_FUNC_IMPL_(main_, argc, argv, func);
+  tbb::global_control gc{tbb::global_control::max_allowed_parallelism, 8};
+  return func(argc, argv);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
