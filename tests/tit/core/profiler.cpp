@@ -6,10 +6,10 @@
 #include <chrono>
 #include <thread>
 
-#include "tit/core/compat.hpp"
+#include "tit/core/basic_types.hpp"
+#include "tit/core/io_utils.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/types.hpp"
 
 namespace tit {
 namespace {
@@ -18,20 +18,20 @@ namespace {
 
 [[gnu::noinline]] void func_3() {
   TIT_PROFILE_SECTION("func_3");
-  Std::println("func_3");
+  println("func_3");
   std::this_thread::sleep_for(std::chrono::microseconds(10));
 }
 
 [[gnu::noinline]] void func_2() {
   TIT_PROFILE_SECTION("func_2");
-  Std::println("func_2");
+  println("func_2");
   for (size_t i = 0; i < 3; ++i) func_3();
   std::this_thread::sleep_for(std::chrono::microseconds(20));
 }
 
 [[gnu::noinline]] void func_1() {
   TIT_PROFILE_SECTION("func_1");
-  Std::println("func_1");
+  println("func_1");
   for (size_t i = 0; i < 3; ++i) func_2();
   std::this_thread::sleep_for(std::chrono::microseconds(40));
 }

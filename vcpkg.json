@@ -5,9 +5,7 @@
   "dependencies": [
     "doctest",
     "hdf5",
-    "fmt",
     "nanobench",
-    "tbb",
-    "spdlog"
+    "tbb"
   ]
 }

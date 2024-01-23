@@ -6,15 +6,15 @@
 #include <initializer_list>
 #include <utility>
 
-#include <signal.h> // NOLINT(*-deprecated-headers)
 #ifdef __APPLE__
 #include <sys/signal.h>
+#else
+#include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
 
 #include <doctest/doctest.h>
 
-#include "tit/core/assert.hpp"
-#include "tit/core/posix_utils.hpp"
+#include "tit/core/system_utils.hpp"
 
 namespace tit {
 namespace {
@@ -46,12 +46,6 @@ private:
   int last_signal_number_ = 0;
 
 }; // class SignalTracker
-
-// Safety wrapper.
-void safe_raise(int signal_number) noexcept {
-  const auto status = raise(signal_number);
-  TIT_ENSURE(status == 0, "Failed to raise a signal.");
-}
 
 TEST_CASE("tit::SignalHandler") {
   SignalTracker handler_1{SIGUSR1, SIGUSR2};

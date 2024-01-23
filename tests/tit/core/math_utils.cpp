@@ -9,7 +9,7 @@
 
 #include <doctest/doctest.h>
 
-#include "tit/core/math.hpp"
+#include "tit/core/math_utils.hpp"
 
 namespace {
 

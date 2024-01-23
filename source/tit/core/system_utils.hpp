@@ -17,23 +17,39 @@
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
 
-#include "tit/core/types.hpp"
+#include "tit/core/basic_types.hpp"
 
 namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** At-exit callback function. */
+using atexit_callback_t = void (*)();
+
+/** Register a function to be called at exit. */
+void safe_atexit(atexit_callback_t callback) noexcept;
+
 /** Exit from the current process. */
 [[noreturn]] void exit(int exit_code) noexcept;
 
 /** Fast-exit from the current process.
- ** @note No at-exit functions are called, except for coverage report. */
+ ** @note No at-exit callbacks are triggered, except for coverage report. */
 [[noreturn]] void fast_exit(int exit_code) noexcept;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/** Signal action entry. */
+using sigaction_t = struct sigaction;
+
+/** Set signal action. */
+void safe_sigaction(int signal_number, const sigaction_t* action,
+                    sigaction_t* prev_action = nullptr) noexcept;
+
+/** Raise a signal. */
+void safe_raise(int signal_number) noexcept;
+
 /******************************************************************************\
- ** POSIX signal handler.
+ ** Scoped signal handler.
 \******************************************************************************/
 class SignalHandler {
 public:
@@ -67,7 +83,6 @@ protected:
 
 private:
 
-  using sigaction_t = struct sigaction;
   std::vector<std::tuple<int, sigaction_t>> prev_actions_;
 
   static std::vector<SignalHandler*> handlers_;

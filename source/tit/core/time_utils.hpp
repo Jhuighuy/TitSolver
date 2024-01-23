@@ -8,8 +8,8 @@
 #include <chrono>
 #include <utility>
 
-#include "tit/core/assert.hpp"
-#include "tit/core/types.hpp"
+#include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 
 namespace tit {
 

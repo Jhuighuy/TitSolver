@@ -8,10 +8,10 @@
 #include <concepts> // IWYU pragma: keep
 #include <tuple>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/mat.hpp"
-#include "tit/core/math.hpp"
+#include "tit/core/math_utils.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/types.hpp"
 #include "tit/par/thread.hpp"
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"

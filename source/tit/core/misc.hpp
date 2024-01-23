@@ -9,7 +9,7 @@
 #include <concepts> // IWYU pragma: keep
 #include <utility>
 
-#include "tit/core/types.hpp"
+#include "tit/core/basic_types.hpp"
 
 namespace tit {
 

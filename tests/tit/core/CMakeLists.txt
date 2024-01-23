@@ -6,11 +6,10 @@
 # Specify the list of sources.
 set(
   CXX_SOURCES
-  "math.cpp"
+  "math_utils.cpp"
   "mdvector.cpp"
   "meta.cpp"
-  "posix_utils.cpp"
-  "string_utils.cpp"
+  "system_utils.cpp"
   "time_utils.cpp"
   "vec.cpp")
 

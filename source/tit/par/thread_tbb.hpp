@@ -16,6 +16,10 @@
 #include "tit/core/config.hpp"
 #include "tit/core/types.hpp"
 
+#ifndef TIT_ENABLE_TBB
+#define TIT_ENABLE_TBB 1
+#endif
+
 #if TIT_ENABLE_TBB
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/global_control.h>

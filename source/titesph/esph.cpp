@@ -2,12 +2,11 @@
 #include <cassert>
 #include <cmath>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
 #define WITH_GRAVITY 1
 
-#include "tit/core/compat.hpp"
+#include "tit/core/io_utils.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/time_utils.hpp"
 
@@ -75,8 +74,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       r[a] = dr * Vec{i + 0.5, j + 0.5};
     }
   }
-  Std::println("Num. fixed particles: {}", num_fixed_particles);
-  Std::println("Num. struct. particles: {}", num_struct_particles);
+  println("Num. fixed particles: {}", num_fixed_particles);
+  println("Num. struct. particles: {}", num_struct_particles);
 
   // Set global particle constants.
   rho[particles] = rho_0;
@@ -92,8 +91,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   Real time{};
   Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time * sqrt(g / H) <= 6.90e+6; ++n, time += dt) {
-    Std::println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
-                 n, time * sqrt(g / H), exectime.cycle(), printtime.cycle());
+    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
+            n, time * sqrt(g / H), exectime.cycle(), printtime.cycle());
     {
       const StopwatchCycle cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);

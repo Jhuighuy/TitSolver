@@ -22,12 +22,15 @@
 #endif
 #include <unistd.h>
 
-#include "tit/core/assert.hpp"
-#include "tit/core/config.hpp"
-#include "tit/core/posix_utils.hpp"
-#include "tit/core/types.hpp"
+#include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
+#include "tit/core/system_utils.hpp"
 
-#if TIT_GCOV
+#ifndef TIT_HAVE_GCOV
+#define TIT_HAVE_GCOV 0
+#endif
+
+#if TIT_HAVE_GCOV
 extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
 #endif
 
@@ -35,20 +38,38 @@ namespace tit {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/** Exit from the current process. */
+void safe_atexit(atexit_callback_t callback) noexcept {
+  TIT_ASSERT(callback != nullptr, "At-exit callback is invalid!");
+  const auto status = std::atexit(callback);
+  TIT_ENSURE(status == 0, "Unable to register at-exit callback!");
+}
+
 [[noreturn]] void exit(int exit_code) noexcept {
   std::exit(exit_code); // NOLINT(concurrency-mt-unsafe)
 }
 
-/** Fast-exit from the current process. */
 [[noreturn]] void fast_exit(int exit_code) noexcept {
-#if TIT_GCOV
+#if TIT_HAVE_GCOV
   __gcov_dump();
 #endif
   std::_Exit(exit_code);
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+void safe_sigaction(int signal_number, const sigaction_t* action,
+                    sigaction_t* prev_action) noexcept {
+  TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
+  TIT_ASSERT(action != nullptr, "Signal actions is invalid!");
+  const auto status = sigaction(signal_number, action, prev_action);
+  TIT_ENSURE(status == 0, "Unable to set the signal action!");
+}
+
+void safe_raise(int signal_number) noexcept {
+  TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
+  const auto status = raise(signal_number);
+  TIT_ENSURE(status == 0, "Failed to raise a signal.");
+}
 
 std::vector<SignalHandler*> SignalHandler::handlers_{};
 
@@ -58,7 +79,7 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
   // Register the new signal actions (or handlers).
   prev_actions_.reserve(signal_numbers.size());
   for (const auto signal_number : signal_numbers) {
-    TIT_ENSURE(signal_number < NSIG, "Signal number is out of range!");
+    TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
     // Prepare the new action.
     sigaction_t action{};
     action.sa_flags = 0;
@@ -66,8 +87,7 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
     sigemptyset(&action.sa_mask);
     // Register the new action and store the previous one.
     sigaction_t prev_action{};
-    const auto status = sigaction(signal_number, &action, &prev_action);
-    TIT_ENSURE(status == 0, "Unable to set the signal action!");
+    safe_sigaction(signal_number, &action, &prev_action);
     prev_actions_.emplace_back(signal_number, prev_action);
   }
 }
@@ -75,8 +95,7 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
 SignalHandler::~SignalHandler() noexcept {
   // Restore the old signal handlers or actions.
   for (const auto& [signal_number, prev_action] : prev_actions_) {
-    const auto status = sigaction(signal_number, &prev_action, nullptr);
-    TIT_ENSURE(status == 0, "Unable to reset the signal action!");
+    safe_sigaction(signal_number, &prev_action);
   }
   // Unregister the current signal handler.
   TIT_ASSERT(handlers_.back() == this, "Signal handler was not registered!");

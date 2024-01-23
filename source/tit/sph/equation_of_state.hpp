@@ -7,10 +7,10 @@
 
 #include <concepts> // IWYU pragma: keep
 
-#include "tit/core/assert.hpp"
-#include "tit/core/math.hpp"
+#include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
+#include "tit/core/math_utils.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/types.hpp"
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {

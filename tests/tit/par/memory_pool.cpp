@@ -11,7 +11,7 @@
 
 #include <doctest/doctest.h>
 
-#include "tit/core/types.hpp"
+#include "tit/core/basic_types.hpp"
 #include "tit/par/memory_pool.hpp"
 
 namespace {

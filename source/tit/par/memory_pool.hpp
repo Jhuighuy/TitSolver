@@ -12,8 +12,8 @@
 #define TBB_PREVIEW_MEMORY_POOL 1
 #include <oneapi/tbb/memory_pool.h>
 
-#include "tit/core/assert.hpp"
-#include "tit/core/types.hpp"
+#include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 
 namespace tit::par {
 

@@ -7,9 +7,9 @@
 
 #include <type_traits>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/types.hpp"
 #include "tit/par/thread.hpp"
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/field.hpp"

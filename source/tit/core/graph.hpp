@@ -8,8 +8,8 @@
 #include <ranges>
 #include <tuple>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/multivector.hpp"
-#include "tit/core/types.hpp"
 
 namespace tit {
 

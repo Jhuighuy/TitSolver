@@ -18,10 +18,8 @@ include(compiler)
 
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)
-find_package(fmt CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
 # Setup output directories.
@@ -62,8 +60,6 @@ endforeach()
 # Link with the dependent libraries.
 target_link_libraries(
   tit_base INTERFACE
-  fmt::fmt
-  spdlog::spdlog
   TBB::tbb TBB::tbbmalloc
   OpenMP::OpenMP_CXX
   hdf5::hdf5-static)

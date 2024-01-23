@@ -2,7 +2,6 @@
 #include <cassert>
 #include <cmath>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
 #define COMPRESSIBLE_SOD_PROBLEM 0
@@ -13,7 +12,7 @@
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 
-#include "tit/core/compat.hpp"
+#include "tit/core/io_utils.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/time_utils.hpp"
 
@@ -76,7 +75,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   auto adjacent_particles = ParticleAdjacency{particles, geom::KDTreeFactory{}};
 
   for (size_t n = 0; n < 3 * 2500; ++n) {
-    Std::println("{:>15}", n);
+    println("{:>15}", n);
     constexpr double dt = 0.00005;
     timeint.step(dt, particles, adjacent_particles);
   }
@@ -157,8 +156,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       r[a] = spacing * Vec{i + 0.5, j + 0.5};
     }
   }
-  Std::println("Num. fixed particles: {}", num_fixed_particles);
-  Std::println("Num. fluid particles: {}", num_fluid_particles);
+  println("Num. fixed particles: {}", num_fixed_particles);
+  println("Num. fluid particles: {}", num_fluid_particles);
 
   // Set global particle constants.
   m[particles] = m_0;
@@ -176,8 +175,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   Real time{};
   Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time <= 2.7; ++n, time += timestep) {
-    Std::println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
-                 n, time, exectime.cycle(), printtime.cycle());
+    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
+            n, time, exectime.cycle(), printtime.cycle());
     {
       const StopwatchCycle cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
@@ -285,8 +284,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       r[a] = dr * Vec{i + 0.5, j + 0.5};
     }
   }
-  Std::println("Num. fixed particles: {}", num_fixed_particles);
-  Std::println("Num. fluid particles: {}", num_fluid_particles);
+  println("Num. fixed particles: {}", num_fixed_particles);
+  println("Num. fluid particles: {}", num_fluid_particles);
 
   // Set global particle constants.
   m[particles] = m_0;
@@ -323,8 +322,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   Real time{};
   Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time * sqrt(g / H) <= 6.90; ++n, time += dt) {
-    Std::println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
-                 n, time * sqrt(g / H), exectime.cycle(), printtime.cycle());
+    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
+            n, time * sqrt(g / H), exectime.cycle(), printtime.cycle());
     {
       const StopwatchCycle cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
@@ -450,8 +449,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   Real time{};
   Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time * omega <= 9.5; ++n, time += dt) {
-    Std::println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
-                 n, time * omega, exectime.cycle(), printtime.cycle());
+    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
+            n, time * omega, exectime.cycle(), printtime.cycle());
     {
       const StopwatchCycle cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);

@@ -8,8 +8,8 @@
 
 #include <doctest/doctest.h>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/time_utils.hpp"
-#include "tit/core/types.hpp"
 
 namespace tit {
 namespace {

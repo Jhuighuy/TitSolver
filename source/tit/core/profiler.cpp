@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <cstdlib>
 #include <format>
 #include <functional>
 #include <mutex>
@@ -14,10 +13,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "tit/core/assert.hpp"
-#include "tit/core/compat.hpp"
-#include "tit/core/posix_utils.hpp"
+#include "tit/core/checks.hpp"
+#include "tit/core/io_utils.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/system_utils.hpp"
 #include "tit/core/time_utils.hpp"
 
 namespace tit {
@@ -37,7 +36,7 @@ void Profiler::enable() noexcept {
   // Start profiling.
   constexpr const auto* root_section_name = "main";
   sections_[root_section_name].start();
-  const auto status = std::atexit([] {
+  safe_atexit([] {
     // Stop profiling.
     sections_[root_section_name].stop();
     // Print the report.
@@ -55,24 +54,23 @@ void Profiler::enable() noexcept {
     constexpr std::string_view rel_time_row = "rel. time [%]";
     constexpr std::string_view calls_row = "calls [#]";
     constexpr std::string_view section_row = "section name";
-    Std::print("\nProfiling report:\n\n");
-    Std::println("{:->{}}", "", width);
-    Std::println("{}    {}    {}    {}", //
-                 abs_time_row, rel_time_row, calls_row, section_row);
-    Std::println("{:->{}}", "", width);
+    print("\nProfiling report:\n\n");
+    println("{:->{}}", "", width);
+    println("{}    {}    {}    {}", //
+            abs_time_row, rel_time_row, calls_row, section_row);
+    println("{:->{}}", "", width);
     const auto root_absolute_time = sorted_sections.front()->second.total();
     for (const SectionPtr section : sorted_sections) {
       const auto& [section_name, stopwatch] = *section;
       const auto abs_time = stopwatch.total();
       const auto rel_time = 100.0 * abs_time / root_absolute_time;
       const auto calls = stopwatch.cycles();
-      Std::println("{:>{}.5f}    {:>{}.5f}    {:>{}}    {}", //
-                   abs_time, abs_time_row.size(), rel_time, rel_time_row.size(),
-                   calls, calls_row.size(), section_name);
+      println("{:>{}.5f}    {:>{}.5f}    {:>{}}    {}", //
+              abs_time, abs_time_row.size(), rel_time, rel_time_row.size(),
+              calls, calls_row.size(), section_name);
     }
-    Std::print("{:->{}}\n\n", "", width);
+    print("{:->{}}\n\n", "", width);
   });
-  TIT_ENSURE(status == 0, "Unable register the profiler reporter!");
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

@@ -10,9 +10,9 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/assert.hpp"
+#include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
 #include "tit/par/thread.hpp"

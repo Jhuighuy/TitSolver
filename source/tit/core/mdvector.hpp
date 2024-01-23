@@ -14,10 +14,10 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/assert.hpp"
+#include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 #include "tit/core/misc.hpp"
 #include "tit/core/trait_utils.hpp"
-#include "tit/core/types.hpp"
 
 namespace tit {
 

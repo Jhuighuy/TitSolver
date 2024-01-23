@@ -3,14 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <cstdlib>
-
 #include <signal.h> // NOLINT(*-deprecated-headers)
-#include <stdio.h>  // NOLINT(*-deprecated-headers)
 
-#include "tit/core/assert.hpp"
-#include "tit/core/compat.hpp"
+#include "tit/core/io_utils.hpp"
 #include "tit/core/main_func.hpp"
+#include "tit/core/system_utils.hpp"
 
 namespace tit {
 namespace {
@@ -18,29 +15,27 @@ namespace {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 [[gnu::noinline]] void func_3() {
-  Std::println(stderr, "func_3");
-  Std::println(stderr, "Simulating Ctrl+C...");
-  const auto status = raise(SIGINT);
-  TIT_ENSURE(status == 0, "Failed to raise an interrupt.");
+  eprintln("func_3");
+  eprintln("Simulating Ctrl+C...");
+  safe_raise(SIGINT);
 }
 
 [[gnu::noinline]] void func_2() {
-  Std::println(stderr, "func_2");
+  eprintln("func_2");
   func_3();
 }
 
 [[gnu::noinline]] void func_1() {
-  Std::println(stderr, "func_1");
+  eprintln("func_1");
   func_2();
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 auto run_test(int /*argc*/, char** /*argv*/) -> int {
-  const auto status = std::atexit([] { Std::println(stderr, "At exit..."); });
-  TIT_ENSURE(status == 0, "Failed to register an exit function.");
+  safe_atexit([] { eprintln("At exit..."); });
   func_1();
-  Std::println(stderr, "This line should not be executed.");
+  eprintln("This line should not be executed.");
   return 0;
 }
 
