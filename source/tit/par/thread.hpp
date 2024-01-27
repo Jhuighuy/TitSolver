@@ -60,7 +60,7 @@ public:
   template<class Range, class Func>
   static void for_each_(dynamic_tag_t /**/, Range&& range, Func&& func,
                         [[maybe_unused]] size_t grain_size = 100) noexcept {
-    const auto end = std::ranges::end(range);
+    auto const end = std::ranges::end(range);
 #pragma omp parallel for schedule(dynamic, grain_size)
     for (auto iter = std::ranges::begin(range); iter != end; ++iter)
       func(*iter);
@@ -69,7 +69,7 @@ public:
   template<class Range, class Func>
   static void for_each_(static_tag_t /**/, Range&& range,
                         Func&& func) noexcept {
-    const auto end = std::ranges::end(range);
+    auto const end = std::ranges::end(range);
 #pragma omp parallel for schedule(static)
     for (auto iter = std::ranges::begin(range); iter != end; ++iter)
       func(*iter);
@@ -188,7 +188,7 @@ template<block_input_range Range,
 constexpr void block_for_each(Range&& range, Func&& func) noexcept {
   // Split the range in chunks according to the number of threads and
   // walk though the chunks sequentially.
-  const auto chucked_range =
+  auto const chucked_range =
       std::views::chunk(std::forward<Range>(range), num_threads());
   for (auto&& chuck : chucked_range) {
     // Subranges inside each chunk are supposed to be independent thus

@@ -109,7 +109,7 @@ public:
     /// First compute how many values there are per each index.
     val_ranges_.clear(), val_ranges_.resize(count + 1);
     par::for_each(handles, [&](auto handle) {
-      const size_t index = index_of(handle);
+      size_t const index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
       par::sync_fetch_and_add(val_ranges_[index + 1], 1);
     });
@@ -120,12 +120,12 @@ public:
     // Place values according to the ranges.
     /// Place each value into position of the first element of it's index range,
     /// then increment the position.
-    const auto num_vals = val_ranges_.back();
+    auto const num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
     par::for_each(handles, [&](auto handle) {
-      const auto index = index_of(handle);
+      auto const index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      const auto addr = par::sync_fetch_and_add(val_ranges_[index], 1);
+      auto const addr = par::sync_fetch_and_add(val_ranges_[index], 1);
       vals_[addr] = value_of(handle);
     });
     /// Fix value ranges, since after incrementing the entire array is shifted
@@ -161,7 +161,7 @@ public:
     static Mdvector<size_t, 2> val_ranges_per_thread{};
     val_ranges_per_thread.assign(count + 1, par::num_threads());
     par::static_for_each(handles, [&](auto handle) {
-      const size_t index = index_of(handle);
+      size_t const index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
       val_ranges_per_thread[index, par::thread_index()]++;
     });
@@ -182,12 +182,12 @@ public:
     // Place values according to the ranges.
     /// Place each value into position of the first element of it's index range,
     /// then increment the position.
-    const auto num_vals = val_ranges_.back();
+    auto const num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
     par::static_for_each(handles, [&](auto handle) {
-      const auto index = index_of(handle);
+      auto const index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      const auto addr = val_ranges_per_thread[index, par::thread_index()]++;
+      auto const addr = val_ranges_per_thread[index, par::thread_index()]++;
       vals_[addr] = value_of(handle);
     });
   }

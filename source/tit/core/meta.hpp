@@ -133,7 +133,7 @@ constexpr auto set_and(Set<> lhs, Set<Us...> /*rhs*/) noexcept {
 }
 template<class T, class... Ts, class... Us>
 constexpr auto set_and(Set<T, Ts...> /*lhs*/, Set<Us...> rhs) noexcept {
-  const auto remaining = set_and(Set<Ts...>{}, rhs);
+  auto const remaining = set_and(Set<Ts...>{}, rhs);
   if constexpr (contains_v<T, Us...>) return set_or(Set<T>{}, remaining);
   else return remaining;
 }
@@ -144,7 +144,7 @@ constexpr auto set_diff(Set<> lhs, Set<Us...> /*rhs*/) noexcept {
 }
 template<class T, class... Ts, class... Us>
 constexpr auto set_diff(Set<T, Ts...> /*lhs*/, Set<Us...> rhs) noexcept {
-  const auto remaining = set_diff(Set<Ts...>{}, rhs);
+  auto const remaining = set_diff(Set<Ts...>{}, rhs);
   if constexpr (contains_v<T, Us...>) return remaining;
   else return set_or(Set<T>{}, remaining);
 }

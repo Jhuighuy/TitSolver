@@ -73,7 +73,7 @@ constexpr auto minus(Num a) noexcept -> Num {
 template<class Num>
   requires (!std::unsigned_integral<Num>)
 constexpr auto sign(Num a) noexcept -> Num {
-  const auto s = static_cast<Num>(Num{0} < a) - static_cast<Num>(a < Num{0});
+  auto const s = static_cast<Num>(Num{0} < a) - static_cast<Num>(a < Num{0});
   if constexpr (std::integral<Num>) return s;
   else {
     // We need to do this extra division in order to propagate NaN correctly.
@@ -190,39 +190,39 @@ constexpr auto pow3(Num a) noexcept -> Num {
 /** Raise to the fourth power with 2 multiplications. */
 template<class Num>
 constexpr auto pow4(Num a) noexcept -> Num {
-  const auto a_sqr = a * a;
+  auto const a_sqr = a * a;
   return a_sqr * a_sqr;
 }
 /** Raise to the fifth power with 3 multiplications. */
 template<class Num>
 constexpr auto pow5(Num a) noexcept -> Num {
-  const auto a_sqr = a * a;
+  auto const a_sqr = a * a;
   return a_sqr * a_sqr * a;
 }
 /** Raise to the sixth power with 3 multiplications. */
 template<class Num>
 constexpr auto pow6(Num a) noexcept -> Num {
-  const auto a_cubed = a * a * a;
+  auto const a_cubed = a * a * a;
   return a_cubed * a_cubed;
 }
 /** Raise to the seventh power with 4 multiplications. */
 template<class Num>
 constexpr auto pow7(Num a) noexcept -> Num {
   // TODO: can `pow7` be implemented with 3 multiplications?
-  const auto a_cubed = a * a * a;
+  auto const a_cubed = a * a * a;
   return a_cubed * a_cubed * a;
 }
 /** Raise to the eighth power with 3 multiplications. */
 template<class Num>
 constexpr auto pow8(Num a) noexcept -> Num {
-  const auto a_sqr = a * a;
-  const auto a_pow4 = a_sqr * a_sqr;
+  auto const a_sqr = a * a;
+  auto const a_pow4 = a_sqr * a_sqr;
   return a_pow4 * a_pow4;
 }
 /** Raise to the ninth power with 4 multiplications. */
 template<class Num>
 constexpr auto pow9(Num a) noexcept -> Num {
-  const auto a_cubed = a * a * a;
+  auto const a_cubed = a * a * a;
   return a_cubed * a_cubed * a_cubed;
 }
 /** Raise to the power. */
@@ -370,11 +370,11 @@ constexpr auto merge(bool m, Num a, Num b) noexcept -> Num {
  ** @param max_iter Maximum amount of iterations.
  ** @returns True on success. */
 template<std::floating_point Real, std::invocable Func>
-constexpr auto newton_raphson(Real& x, const Func& f, //
+constexpr auto newton_raphson(Real& x, Func const& f, //
                               Real eps = Real{1.0e-9}, size_t max_iter = 10)
     -> bool {
   for (size_t iter = 0; iter < max_iter; ++iter) {
-    const auto [y, df_dx] = std::invoke(f /*, x*/);
+    auto const [y, df_dx] = std::invoke(f /*, x*/);
     if (abs(y) <= eps) return true;
     if (is_zero(df_dx)) break;
     x -= y / df_dx;
@@ -390,7 +390,7 @@ constexpr auto newton_raphson(Real& x, const Func& f, //
  ** @param max_iter Maximum amount of iterations.
  ** @returns True on success. */
 template<std::floating_point Real, std::invocable<Real> Func>
-constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
+constexpr auto bisection(Real& min_x, Real& max_x, Func const& f,
                          Real eps = Real{1.0e-9}, size_t max_iter = 10)
     -> bool {
   TIT_ASSERT(min_x <= max_x, "Inverted search range!");
@@ -410,8 +410,8 @@ constexpr auto bisection(Real& min_x, Real& max_x, const Func& f,
     // Approximate f(x) with line equation:
     // f(x) = min_f + (max_f - min_f)/(max_x - min_x) * (x - min_x),
     // so approximate root of f(x) == 0 is:
-    const Real x = min_x - min_f * (max_x - min_x) / (max_f - min_f);
-    const auto y = std::invoke(f, x);
+    Real const x = min_x - min_f * (max_x - min_x) / (max_f - min_f);
+    auto const y = std::invoke(f, x);
     if (abs(y) <= eps) {
       min_x = max_x = x;
       return true;

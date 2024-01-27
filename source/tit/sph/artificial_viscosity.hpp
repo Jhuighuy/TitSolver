@@ -86,11 +86,11 @@ public:
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     if (dot(v[a, b], r[a, b]) >= 0.0) return 0.0;
-    const auto h_ab = h.avg(a, b);
-    const auto rho_ab = rho.avg(a, b);
-    const auto cs_ab = cs.avg(a, b);
-    const auto mu_ab = h_ab * dot(v[a, b], r[a, b]) / norm2(r[a, b]);
-    const auto Pi_ab = (alpha_ * cs_ab - beta_ * mu_ab) * mu_ab / rho_ab;
+    auto const h_ab = h.avg(a, b);
+    auto const rho_ab = rho.avg(a, b);
+    auto const cs_ab = cs.avg(a, b);
+    auto const mu_ab = h_ab * dot(v[a, b], r[a, b]) / norm2(r[a, b]);
+    auto const Pi_ab = (alpha_ * cs_ab - beta_ * mu_ab) * mu_ab / rho_ab;
     return Pi_ab;
   }
 
@@ -122,11 +122,11 @@ public:
     TIT_ASSERT(a != b, "Particles must be different.");
     auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
-    const auto f = [](PV c) {
+    auto const f = [](PV c) {
       return abs(div_v[c]) /
              (abs(div_v[c]) + norm(curl_v[c]) + 0.0001 * cs[c] / h[c]);
     };
-    const auto f_ab = avg(f(a), f(b));
+    auto const f_ab = avg(f(a), f(b));
     Pi_ab *= f_ab;
     return Pi_ab;
   }
@@ -176,7 +176,7 @@ public:
     TIT_ASSERT(a != b, "Particles must be different.");
     auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
     if (is_zero(Pi_ab)) return Pi_ab;
-    const auto alpha_ab = alpha.avg(a, b);
+    auto const alpha_ab = alpha.avg(a, b);
     Pi_ab *= alpha_ab;
     return Pi_ab;
   }
@@ -185,8 +185,8 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_switch_deriv(PV a) const {
-    const auto S_a = plus(-div_v[a]);
-    const auto tau_a = h[a] / (sigma_ * cs[a]);
+    auto const S_a = plus(-div_v[a]);
+    auto const tau_a = h[a] / (sigma_ * cs[a]);
     dalpha_dt[a] = (alpha_max_ - alpha[a]) * S_a - //
                    (alpha[a] - alpha_min_) / tau_a;
   }
@@ -229,9 +229,9 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    const auto h_ab = h.avg(a, b);
-    const auto D_ab = 2 * rho[a, b];
-    const auto Psi_ab = xi_ * h_ab * cs_0_ * D_ab * r[a, b] / norm2(r[a, b]);
+    auto const h_ab = h.avg(a, b);
+    auto const D_ab = 2 * rho[a, b];
+    auto const Psi_ab = xi_ * h_ab * cs_0_ * D_ab * r[a, b] / norm2(r[a, b]);
     return Psi_ab;
   }
 
@@ -240,8 +240,8 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    const auto h_ab = h.avg(a, b);
-    const auto Pi_ab = alpha_ * h_ab * cs_0_ * rho_0_ / (rho[a] * rho[b]) *
+    auto const h_ab = h.avg(a, b);
+    auto const Pi_ab = alpha_ * h_ab * cs_0_ * rho_0_ / (rho[a] * rho[b]) *
                        dot(r[a, b], v[a, b]) / norm2(r[a, b]);
     return Pi_ab;
   }
@@ -283,11 +283,11 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    const auto h_ab = h.avg(a, b);
+    auto const h_ab = h.avg(a, b);
     // Here we assume that density gradients are renormalized because
     // kernel gradient renormalization filter (`L`) was requested.
-    const auto D_ab = 2 * rho[a, b] - dot(grad_rho[a] + grad_rho[b], r[a, b]);
-    const auto Psi_ab = delta_ * h_ab * cs_0_ * D_ab * r[a, b] / norm2(r[a, b]);
+    auto const D_ab = 2 * rho[a, b] - dot(grad_rho[a] + grad_rho[b], r[a, b]);
+    auto const Psi_ab = delta_ * h_ab * cs_0_ * D_ab * r[a, b] / norm2(r[a, b]);
     return Psi_ab;
   }
 
@@ -296,8 +296,8 @@ public:
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    const auto h_ab = h.avg(a, b);
-    const auto Pi_ab = alpha_ * h_ab * cs_0_ * rho_0_ / (rho[a] * rho[b]) *
+    auto const h_ab = h.avg(a, b);
+    auto const Pi_ab = alpha_ * h_ab * cs_0_ * rho_0_ / (rho[a] * rho[b]) *
                        dot(r[a, b], v[a, b]) / norm2(r[a, b]);
     return Pi_ab;
   }

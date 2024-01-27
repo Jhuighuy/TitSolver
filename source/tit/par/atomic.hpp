@@ -16,7 +16,7 @@ template<class Val>
 constexpr auto sync_fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept
     -> Val {
   if consteval {
-    const auto tmp = val;
+    auto const tmp = val;
     val += delta;
     return tmp;
   } else { // NOLINT(*-else-after-return)

@@ -55,8 +55,8 @@ public:
              (std::constructible_from<Num, Args> && ...)
   constexpr explicit Vec(Args... qi) noexcept
       : regs_{[&]<size_t... rs>(std::index_sequence<rs...>) {
-          const auto qi_padded = std::array<Num, num_rows + padding>{qi...};
-          const auto pack_reg = [&]<size_t ri>(std::index_sequence<ri>) {
+          auto const qi_padded = std::array<Num, num_rows + padding>{qi...};
+          auto const pack_reg = [&]<size_t ri>(std::index_sequence<ri>) {
             return [&]<size_t... ss>(std::index_sequence<ss...>) {
               return Reg{qi_padded[ri * reg_size + ss]...};
             }(std::make_index_sequence<reg_size>{});
@@ -150,7 +150,7 @@ template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator*(NumA a, Vec<NumB, Dim> b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
-  const auto a_reg = typename Vec<NumA, Dim>::Reg(a);
+  auto const a_reg = typename Vec<NumA, Dim>::Reg(a);
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = a_reg * b.reg(i);
   return r;
 }
@@ -158,7 +158,7 @@ template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator*(Vec<NumA, Dim> a, NumB b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
-  const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
+  auto const b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = a.reg(i) * b_reg;
   return r;
 }
@@ -173,7 +173,7 @@ constexpr auto operator*(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator*=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
-  const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
+  auto const b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) *= b_reg;
   return a;
 }
@@ -191,7 +191,7 @@ template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator/(Vec<NumA, Dim> a, NumB b) noexcept {
   Vec<div_result_t<NumA, NumB>, Dim> r;
-  const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
+  auto const b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < r.num_regs; ++i) r.reg(i) = a.reg(i) / b_reg;
   return r;
 }
@@ -206,7 +206,7 @@ constexpr auto operator/(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
 constexpr auto operator/=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
-  const auto b_reg = typename Vec<NumB, Dim>::Reg(b);
+  auto const b_reg = typename Vec<NumB, Dim>::Reg(b);
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) /= b_reg;
   return a;
 }
@@ -279,7 +279,7 @@ template<class Op, class NumX, class NumY, class NumA, size_t Dim>
 constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
                      Vec<NumA, Dim> a) noexcept {
   Vec<NumA, Dim> r;
-  const auto& [op, x, y] = cmp;
+  auto const& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_regs; ++i) {
     r.reg(i) = merge(VecCmp{op, x.reg(i), y.reg(i)}, a.reg(i));
   }
@@ -290,7 +290,7 @@ template<class Op, class NumX, class NumY, class NumA, class NumB, size_t Dim>
 constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
                      Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<sub_result_t<NumA, NumB>, Dim> r;
-  const auto& [op, x, y] = cmp;
+  auto const& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_regs; ++i) {
     r.reg(i) = merge(VecCmp{op, x.reg(i), y.reg(i)}, a.reg(i), b.reg(i));
   }

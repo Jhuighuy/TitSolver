@@ -47,7 +47,7 @@ public:
   using ValSpan = std::span<Val>;
 
   /** Shape span type. */
-  using ShapeSpan = std::span<const size_t, Rank>;
+  using ShapeSpan = std::span<size_t const, Rank>;
 
   /** Initialize the multidimensional span. */
   /** @{ */
@@ -96,7 +96,7 @@ public:
       -> decltype(auto) {
     // Compute an offset to the data position.
     size_t offset = 0;
-    const auto index_pack = pack<Rank, size_t>(indices...);
+    auto const index_pack = pack<Rank, size_t>(indices...);
 #ifdef __clang__
     // TODO: clang doesn't like `std::views::zip`. Looks like it is already
     // fixed in clang 18. So, remove this workaround when clang 18 is released.
@@ -105,7 +105,7 @@ public:
       offset = index_pack[i] + offset * shape_[i];
     }
 #else
-    for (const auto [extent, index] : std::views::zip(shape_, index_pack)) {
+    for (auto const [extent, index] : std::views::zip(shape_, index_pack)) {
       TIT_ASSERT(index < extent, "Index is out of range!");
       offset = index + offset * extent;
     }
@@ -186,7 +186,7 @@ public:
   constexpr auto front() noexcept -> Val& {
     return vals_.front();
   }
-  constexpr auto front() const noexcept -> const Val& {
+  constexpr auto front() const noexcept -> Val const& {
     return vals_.front();
   }
   /** @} */
@@ -195,7 +195,7 @@ public:
   constexpr auto back() noexcept -> Val& {
     return vals_.back();
   }
-  constexpr auto back() const noexcept -> const Val& {
+  constexpr auto back() const noexcept -> Val const& {
     return vals_.back();
   }
   /** @} */
@@ -226,7 +226,7 @@ public:
     requires mdindex<Rank, Indices...>
   constexpr auto operator[](Indices... indices) const noexcept
       -> decltype(auto) {
-    return Mdspan<const Val, Rank>{shape_, vals_}[indices...];
+    return Mdspan<Val const, Rank>{shape_, vals_}[indices...];
   }
   /** @} */
 

@@ -110,14 +110,14 @@ constexpr auto operator<<(Stream& stream, Mat<Num, Dim> a) -> Stream& {
 
 /** Matrix unary plus. */
 template<class Num, size_t Dim>
-constexpr auto operator+(const Mat<Num, Dim>& a) noexcept {
+constexpr auto operator+(Mat<Num, Dim> const& a) noexcept {
   return a;
 }
 
 /** Matrix addition. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator+(const Mat<NumA, Dim>& a,
-                         const Mat<NumB, Dim>& b) noexcept {
+constexpr auto operator+(Mat<NumA, Dim> const& a,
+                         Mat<NumB, Dim> const& b) noexcept {
   Mat<add_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] + b[i];
   return r;
@@ -125,7 +125,7 @@ constexpr auto operator+(const Mat<NumA, Dim>& a,
 
 /** Matrix addition assignment. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator+=(Mat<NumA, Dim>& a, const Mat<NumB, Dim>& b) noexcept
+constexpr auto operator+=(Mat<NumA, Dim>& a, Mat<NumB, Dim> const& b) noexcept
     -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] += b[i];
   return a;
@@ -135,7 +135,7 @@ constexpr auto operator+=(Mat<NumA, Dim>& a, const Mat<NumB, Dim>& b) noexcept
 
 /** Matrix negation. */
 template<class Num, size_t Dim>
-constexpr auto operator-(const Mat<Num, Dim>& a) noexcept {
+constexpr auto operator-(Mat<Num, Dim> const& a) noexcept {
   Mat<negate_result_t<Num>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = -a[i];
   return r;
@@ -143,8 +143,8 @@ constexpr auto operator-(const Mat<Num, Dim>& a) noexcept {
 
 /** Matrix subtraction. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator-(const Mat<NumA, Dim>& a,
-                         const Mat<NumB, Dim>& b) noexcept {
+constexpr auto operator-(Mat<NumA, Dim> const& a,
+                         Mat<NumB, Dim> const& b) noexcept {
   Mat<sub_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] - b[i];
   return r;
@@ -152,7 +152,7 @@ constexpr auto operator-(const Mat<NumA, Dim>& a,
 
 /** Matrix subtraction assignment. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator-=(Mat<NumA, Dim>& a, const Mat<NumB, Dim>& b) noexcept
+constexpr auto operator-=(Mat<NumA, Dim>& a, Mat<NumB, Dim> const& b) noexcept
     -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] -= b[i];
   return a;
@@ -163,13 +163,13 @@ constexpr auto operator-=(Mat<NumA, Dim>& a, const Mat<NumB, Dim>& b) noexcept
 /** Matrix-scalar multiplication. */
 /** @{ */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator*(NumA a, const Mat<NumB, Dim>& b) noexcept {
+constexpr auto operator*(NumA a, Mat<NumB, Dim> const& b) noexcept {
   Mat<mul_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a * b[i];
   return r;
 }
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator*(const Mat<NumA, Dim>& a, NumB b) noexcept {
+constexpr auto operator*(Mat<NumA, Dim> const& a, NumB b) noexcept {
   Mat<mul_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] * b;
   return r;
@@ -185,7 +185,7 @@ constexpr auto operator*=(Mat<NumA, Dim>& a, NumB b) noexcept -> auto& {
 
 /** Matrix-scalar division. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator/(const Mat<NumA, Dim>& a, NumB b) noexcept {
+constexpr auto operator/(Mat<NumA, Dim> const& a, NumB b) noexcept {
   Mat<div_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] / b;
   return r;
@@ -202,15 +202,15 @@ constexpr auto operator/=(Mat<NumA, Dim>& a, NumB b) noexcept -> auto& {
 
 /** Matrix-vector multiplication. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator*(const Mat<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept {
+constexpr auto operator*(Mat<NumA, Dim> const& a, Vec<NumB, Dim> b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = dot(a[i], b);
   return r;
 }
 /** Matrix-matrix multiplication. */
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator*(const Mat<NumA, Dim>& a,
-                         const Mat<NumB, Dim>& b) noexcept {
+constexpr auto operator*(Mat<NumA, Dim> const& a,
+                         Mat<NumB, Dim> const& b) noexcept {
   Mat<mul_result_t<NumA, NumB>, Dim> r(0.0);
   for (size_t i = 0; i < r.num_rows; ++i) {
     for (size_t j = 0; j < r.num_rows; ++j) {
@@ -260,7 +260,7 @@ private:
 public:
 
   /** Construct matrix inversion. */
-  constexpr explicit MatInv(const Mat<Num, Dim>& a) noexcept
+  constexpr explicit MatInv(Mat<Num, Dim> const& a) noexcept
       : _l(Num{1.0}), _u(Num{0.0}) {
     // Compute factors.
     for (size_t i = 0; i < a.num_rows; ++i) {

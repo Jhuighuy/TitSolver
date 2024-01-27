@@ -40,6 +40,7 @@ KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
 PointerAlignment: Left
+QualifierAlignment: Right
 ReflowComments: true
 SpaceAfterCStyleCast: true
 SpaceAfterLogicalNot: false

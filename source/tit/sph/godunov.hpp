@@ -116,16 +116,16 @@ public:
 #if WITH_WALLS
     par::for_each(adjacent_particles._fixed(), [&](auto ia) {
       auto [i, a] = ia;
-      const auto search_point = a[r];
-      const auto clipped_point = Domain.clamp(search_point);
-      const auto r_a = 2 * clipped_point - search_point;
+      auto const search_point = a[r];
+      auto const clipped_point = Domain.clamp(search_point);
+      auto const r_a = 2 * clipped_point - search_point;
       real_t S = {};
       Mat<real_t, 3> M{};
       constexpr auto SCALE = 3;
       std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
-        const auto r_ab = r_a - r[b];
-        const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
-        const auto W_ab = kernel_(r_ab, SCALE * h[a]);
+        auto const r_ab = r_a - r[b];
+        auto const B_ab = Vec{1.0, r_ab[0], r_ab[1]};
+        auto const W_ab = kernel_(r_ab, SCALE * h[a]);
         S += W_ab * m[b] / rho[b];
         M += outer(B_ab, B_ab * W_ab * m[b] / rho[b]);
       });
@@ -136,8 +136,8 @@ public:
         rho[a] = {};
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
-          const auto r_ab = r_a - r[b];
-          const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
+          auto const r_ab = r_a - r[b];
+          auto const B_ab = Vec{1.0, r_ab[0], r_ab[1]};
           auto W_ab = dot(E, B_ab) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
@@ -146,7 +146,7 @@ public:
         rho[a] = {};
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
-          const auto r_ab = r_a - r[b];
+          auto const r_ab = r_a - r[b];
           auto W_ab = (1 / S) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
@@ -155,8 +155,8 @@ public:
         goto fail;
       }
       {
-        const auto N = normalize(search_point - clipped_point);
-        const auto D = norm(r_a - r[a]);
+        auto const N = normalize(search_point - clipped_point);
+        auto const D = norm(r_a - r[a]);
         // drho/dn = rho_0/(cs_0^2)*dot(g,n).
 #if EASY_DAM_BREAKING
         constexpr auto rho_0 = 1000.0, cs_0 = 20 * sqrt(9.81 * 0.6);
@@ -219,25 +219,25 @@ public:
     });
     // Compute velocity and internal energy time derivatives.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
-      const auto [a, b] = ab;
-      const auto grad_W_ab = kernel_.grad(a, b);
+      auto const [a, b] = ab;
+      auto const grad_W_ab = kernel_.grad(a, b);
       /// Solve Riemann problem.
-      const auto e_ab = -normalize(r[a, b]);
-      const auto U_a = dot(v[a], e_ab), U_b = dot(v[a], e_ab);
-      const auto U_ab = (rho[a] * U_a + rho[b] * U_b) / (rho[a] + rho[b]);
-      const auto p_ab = (rho[a] * p[a] + rho[b] * p[b]) / (rho[a] + rho[b]);
-      const auto v_ab = (rho[a] * v[a] + rho[b] * v[b]) / (rho[a] + rho[b]);
-      const auto rho_ab = avg(rho[a], rho[b]);
-      const auto U_ast = U_ab + 0.5 * (p[a] - p[b]) / (rho_ab * cs[a]);
-      const auto v_ast = U_ast * e_ab + (v_ab - U_ab * e_ab);
-      const auto beta = std::min(cs[a], 3 * std::max(U_a - U_b, 0.0));
-      const auto p_ast =
+      auto const e_ab = -normalize(r[a, b]);
+      auto const U_a = dot(v[a], e_ab), U_b = dot(v[a], e_ab);
+      auto const U_ab = (rho[a] * U_a + rho[b] * U_b) / (rho[a] + rho[b]);
+      auto const p_ab = (rho[a] * p[a] + rho[b] * p[b]) / (rho[a] + rho[b]);
+      auto const v_ab = (rho[a] * v[a] + rho[b] * v[b]) / (rho[a] + rho[b]);
+      auto const rho_ab = avg(rho[a], rho[b]);
+      auto const U_ast = U_ab + 0.5 * (p[a] - p[b]) / (rho_ab * cs[a]);
+      auto const v_ast = U_ast * e_ab + (v_ab - U_ab * e_ab);
+      auto const beta = std::min(cs[a], 3 * std::max(U_a - U_b, 0.0));
+      auto const p_ast =
           p_ab + 0.5 * rho[a] * rho[b] / rho_ab * cs[a] * beta * (U_a - U_b);
       /// Update density time derivative.
       drho_dt[a] += 2.0 * rho[a] * m[b] / rho[b] * dot(v[a] - v_ast, grad_W_ab);
       drho_dt[b] -= 2.0 * rho[b] * m[a] / rho[a] * dot(v[b] - v_ast, grad_W_ab);
       /// Update velocity time derivative.
-      const auto v_flux = -2.0 * p_ast / (rho[a] * rho[b]) * grad_W_ab;
+      auto const v_flux = -2.0 * p_ast / (rho[a] * rho[b]) * grad_W_ab;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
     });
     par::static_for_each(particles.views(), [&](PV a) {

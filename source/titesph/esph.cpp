@@ -66,7 +66,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   auto num_fixed_particles = 0, num_struct_particles = 0;
   for (auto i = -N_fixed; i < BAR_M; ++i) {
     for (auto j = 0; j < BAR_N; ++j) {
-      const bool is_fixed = i < 0;
+      bool const is_fixed = i < 0;
       if (is_fixed) ++num_fixed_particles;
       else ++num_struct_particles;
       auto a = particles.append();
@@ -94,12 +94,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
     println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
             n, time * sqrt(g / H), exectime.cycle(), printtime.cycle());
     {
-      const StopwatchCycle cycle{exectime};
+      StopwatchCycle const cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
     }
     if (n % 200 == 0 && n != 0) {
-      const StopwatchCycle cycle{printtime};
-      const auto path =
+      StopwatchCycle const cycle{printtime};
+      auto const path =
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
       system(("ln -sf ./" + path + " particles.csv").c_str());

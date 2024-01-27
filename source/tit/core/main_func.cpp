@@ -18,7 +18,7 @@ namespace tit {
 auto run_main(int argc, char** argv, main_like_t main_func) noexcept -> int {
   TIT_ENSURE(main_func != nullptr, "Main function must be specified!");
   // Setup signal handler.
-  const FatalSignalHandler handler{};
+  FatalSignalHandler const handler{};
   // Enable profiling.
   if (std::getenv("TIT_ENABLE_PROFILER") != nullptr) { // NOLINT(*-mt-unsafe)
     Profiler::enable();

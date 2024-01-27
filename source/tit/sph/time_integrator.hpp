@@ -128,7 +128,7 @@ public:
     }
 #if 1
     // Do an explicit Euler substep.
-    const auto substep = [&](auto& _particles) {
+    auto const substep = [&](auto& _particles) {
       // Calculate right hand sides for the given particle array.
       equations_.compute_density(_particles, adjacent_particles);
       equations_.compute_forces(_particles, adjacent_particles);
@@ -148,7 +148,7 @@ public:
       });
     };
     // Linear combination.
-    const auto lincomb = [](real_t wa, const auto& in_particles, //
+    auto const lincomb = [](real_t wa, auto const& in_particles, //
                             real_t wb, auto& out_particles) {
       par::for_each(in_particles.views(), [&]<class PV>(PV a) {
         if (fixed[a]) return;

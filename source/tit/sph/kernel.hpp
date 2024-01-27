@@ -32,9 +32,9 @@ class Kernel {
 protected:
 
   /** Derived class reference. */
-  constexpr auto derived() const noexcept -> const Derived& {
+  constexpr auto derived() const noexcept -> Derived const& {
     static_assert(std::derived_from<Derived, Kernel<Derived>>);
-    return static_cast<const Derived&>(*this);
+    return static_cast<Derived const&>(*this);
   }
 
 public:
@@ -118,7 +118,7 @@ public:
   template<class Real>
   constexpr auto radius(Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
-    const auto radius = derived().template unit_radius<Real>();
+    auto const radius = derived().template unit_radius<Real>();
     return radius * h;
   }
 
@@ -126,9 +126,9 @@ public:
   template<class Real, size_t Dim>
   constexpr auto operator()(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
-    const auto h_inverse = inverse(h);
-    const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
-    const auto q = h_inverse * norm(x);
+    auto const h_inverse = inverse(h);
+    auto const w = weight<Real, Dim>() * pow(h_inverse, Dim);
+    auto const q = h_inverse * norm(x);
     return w * derived().unit_value(q);
   }
 
@@ -136,9 +136,9 @@ public:
   template<class Real, size_t Dim>
   constexpr auto deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
-    const auto h_inverse = inverse(h);
-    const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
-    const auto q = h_inverse * norm(x);
+    auto const h_inverse = inverse(h);
+    auto const w = weight<Real, Dim>() * pow(h_inverse, Dim);
+    auto const q = h_inverse * norm(x);
     return w * derived().unit_deriv(q) * h_inverse;
   }
 
@@ -147,10 +147,10 @@ public:
   constexpr auto grad(Vec<Real, Dim> x, Real h) const noexcept
       -> Vec<Real, Dim> {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
-    const auto h_inverse = inverse(h);
-    const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
-    const auto q = h_inverse * norm(x);
-    const auto grad_q = normalize(x) * h_inverse;
+    auto const h_inverse = inverse(h);
+    auto const w = weight<Real, Dim>() * pow(h_inverse, Dim);
+    auto const q = h_inverse * norm(x);
+    auto const grad_q = normalize(x) * h_inverse;
     return w * derived().unit_deriv(q) * grad_q;
   }
 
@@ -158,11 +158,11 @@ public:
   template<class Real, size_t Dim>
   constexpr auto width_deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
-    const auto h_inverse = inverse(h);
-    const auto w = weight<Real, Dim>() * pow(h_inverse, Dim);
-    const auto dw_dh = -int{Dim} * w * h_inverse;
-    const auto q = h_inverse * norm(x);
-    const auto dq_dh = -q * h_inverse;
+    auto const h_inverse = inverse(h);
+    auto const w = weight<Real, Dim>() * pow(h_inverse, Dim);
+    auto const dw_dh = -int{Dim} * w * h_inverse;
+    auto const q = h_inverse * norm(x);
+    auto const dq_dh = -q * h_inverse;
     return dw_dh * derived().unit_value(q) +
            w * derived().unit_deriv(q) * dq_dh;
   }
@@ -256,7 +256,7 @@ public:
     constexpr auto qi = Vec{Real{2.0}, Real{1.0}};
     constexpr auto wi = Vec{Real{0.25}, Real{-1.0}};
 #if TIT_BRANCHLESS_KERNELS
-    const auto qv = Vec<Real, 2>(q);
+    auto const qv = Vec<Real, 2>(q);
     return sum(merge(qv < qi, wi * pow3(qi - qv)));
 #else
     auto W = Real{0.0};
@@ -276,7 +276,7 @@ public:
     constexpr auto qi = Vec{Real{2.0}, Real{1.0}};
     constexpr auto wi = Vec{Real{0.25}, Real{-1.0}};
 #if TIT_BRANCHLESS_KERNELS
-    const auto qv = Vec<Real, 2>(q);
+    auto const qv = Vec<Real, 2>(q);
     return sum(merge(qv < qi, wi * Real{-3.0} * pow2(qi - qv)));
 #else
     auto dW_dq = Real{0.0};
@@ -358,7 +358,7 @@ public:
     constexpr auto qi = Vec{Real{2.5}, Real{1.5}, Real{0.5}};
     constexpr auto wi = Vec{Real{1.0}, Real{-5.0}, Real{10.0}};
 #if TIT_BRANCHLESS_KERNELS
-    const auto qv = Vec<Real, 3>(q);
+    auto const qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * pow4(qi - qv)));
 #else
     auto W = Real{0.0};
@@ -381,7 +381,7 @@ public:
     constexpr auto qi = Vec{Real{2.5}, Real{1.5}, Real{0.5}};
     constexpr auto wi = Vec{Real{1.0}, Real{-5.0}, Real{10.0}};
 #if TIT_BRANCHLESS_KERNELS
-    const auto qv = Vec<Real, 3>(q);
+    auto const qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * Real{-4.0} * pow3(qi - qv)));
 #else
     auto dW_dq = Real{0.0};
@@ -429,7 +429,7 @@ public:
     constexpr auto qi = Vec{Real{3.0}, Real{2.0}, Real{1.0}};
     constexpr auto wi = Vec{Real{1.0}, Real{-6.0}, Real{15.0}};
 #if TIT_BRANCHLESS_KERNELS
-    const auto qv = Vec<Real, 3>(q);
+    auto const qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * pow5(qi - qv)));
 #else
     auto W = Real{0.0};
@@ -452,7 +452,7 @@ public:
     constexpr auto qi = Vec{Real{3.0}, Real{2.0}, Real{1.0}};
     constexpr auto wi = Vec{Real{1.0}, Real{-6.0}, Real{15.0}};
 #if TIT_BRANCHLESS_KERNELS
-    const auto qv = Vec<Real, 3>(q);
+    auto const qv = Vec<Real, 3>(q);
     return sum(merge(qv < qi, wi * Real{-5.0} * pow4(qi - qv)));
 #else
     auto dW_dq = Real{0.0};

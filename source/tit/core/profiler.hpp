@@ -42,7 +42,7 @@ private:
 /** Profile the current scope. */
 #define TIT_PROFILE_SECTION(section_name)                                      \
   static auto& TIT_NAME(prof_section) = tit::Profiler::section(section_name);  \
-  const tit::StopwatchCycle TIT_NAME(prof_cycle){TIT_NAME(prof_section)};
+  tit::StopwatchCycle const TIT_NAME(prof_cycle){TIT_NAME(prof_section)};
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

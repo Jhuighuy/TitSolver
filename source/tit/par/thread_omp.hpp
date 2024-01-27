@@ -79,7 +79,7 @@ void invoke(Funcs&&... funcs) noexcept {
 template<class Range, class Func>
 void for_each(Range&& range, Func&& func,
               [[maybe_unused]] size_t grain_size = 100) noexcept {
-  const auto end = std::ranges::end(range);
+  auto const end = std::ranges::end(range);
 #pragma omp parallel for schedule(dynamic, grain_size)
   for (auto iter = std::ranges::begin(range); iter != end; ++iter) func(*iter);
 }
@@ -94,7 +94,7 @@ constexpr void for_each(std::ranges::join_view<Range> range, Func&& func,
 
 template<class Range, class Func>
 constexpr void static_for_each(Range&& range, Func&& func) noexcept {
-  const auto end = std::ranges::end(range);
+  auto const end = std::ranges::end(range);
 #pragma omp parallel for schedule(static)
   for (auto iter = std::ranges::begin(range); iter != end; ++iter) func(*iter);
 }

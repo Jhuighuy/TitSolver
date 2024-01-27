@@ -155,7 +155,7 @@ TIT_VEC_SIMD_FUNC_V(ceil, 2, float64_t, a, {
 })
 
 TIT_VEC_SIMD_FUNC_V(sum, 2, float64_t, a, {
-  const auto reverse = _mm_unpackhi_pd(a.reg_, a.reg_);
+  auto const reverse = _mm_unpackhi_pd(a.reg_, a.reg_);
   return _mm_cvtsd_f64(_mm_add_sd(a.reg_, reverse));
 })
 
@@ -166,7 +166,7 @@ TIT_VEC_SIMD_FUNC_VV(dot, 2, float64_t, a, float64_t, b, {
 // Helper to compare two SSE registers based on the compare functor.
 template<common_cmp_op Op>
 auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> __m128d {
-  const auto& [_, x, y] = cmp;
+  auto const& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
     return _mm_cmp_pd(x.reg_, y.reg_, _CMP_EQ_OQ);
   } else if constexpr (std::is_same_v<Op, std::not_equal_to<>>) {
@@ -186,14 +186,14 @@ auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> __m128d {
 TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp,
                    float64_t, a, {
   Vec<float64_t, 2> r;
-  const auto mask = _cmp_to_mask(cmp);
+  auto const mask = _cmp_to_mask(cmp);
   r.reg_ = _mm_and_pd(mask, a.reg_);
   return r;
 })
 TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
                      float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  const auto mask = _cmp_to_mask(cmp);
+  auto const mask = _cmp_to_mask(cmp);
   // Falsy value comes first.
   r.reg_ = _mm_blendv_pd(b.reg_, a.reg_, mask);
   return r;
@@ -338,10 +338,10 @@ TIT_VEC_SIMD_FUNC_V(ceil, 4, float64_t, a, {
 })
 
 TIT_VEC_SIMD_FUNC_V(sum, 4, float64_t, a, {
-  const auto a_low = _mm256_castpd256_pd128(a.reg_);
-  const auto a_high = _mm256_extractf128_pd(a.reg_, 1);
-  const auto partial = _mm_add_pd(a_low, a_high);
-  const auto partial_reverse = _mm_unpackhi_pd(partial, partial);
+  auto const a_low = _mm256_castpd256_pd128(a.reg_);
+  auto const a_high = _mm256_extractf128_pd(a.reg_, 1);
+  auto const partial = _mm_add_pd(a_low, a_high);
+  auto const partial_reverse = _mm_unpackhi_pd(partial, partial);
   return _mm_cvtsd_f64(_mm_add_sd(partial, partial_reverse));
 })
 
@@ -350,7 +350,7 @@ TIT_VEC_SIMD_FUNC_V(sum, 4, float64_t, a, {
 // Helper to compare two AVX registers based on the compare functor.
 template<common_cmp_op Op>
 auto _cmp_to_mask(VecCmp<Op, 4, float64_t> cmp) noexcept -> __m256d {
-  const auto& [_, x, y] = cmp;
+  auto const& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
     return _mm256_cmp_pd(x.reg_, y.reg_, _CMP_EQ_OQ);
   } else if constexpr (std::is_same_v<Op, std::not_equal_to<>>) {
@@ -370,14 +370,14 @@ auto _cmp_to_mask(VecCmp<Op, 4, float64_t> cmp) noexcept -> __m256d {
 TIT_VEC_SIMD_MERGE(4, Op, float64_t, float64_t, cmp,
                    float64_t, a, {
   Vec<float64_t, 4> r;
-  const auto mask = _cmp_to_mask(cmp);
+  auto const mask = _cmp_to_mask(cmp);
   r.reg_ = _mm256_and_pd(mask, a.reg_);
   return r;
 })
 TIT_VEC_SIMD_MERGE_2(4, Op, float64_t, float64_t, cmp,
                      float64_t, a, float64_t, b, {
   Vec<float64_t, 4> r;
-  const auto mask = _cmp_to_mask(cmp);
+  auto const mask = _cmp_to_mask(cmp);
   // Falsy value comes first.
   r.reg_ = _mm256_blendv_pd(b.reg_, a.reg_, mask);
   return r;

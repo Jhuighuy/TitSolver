@@ -413,7 +413,7 @@ constexpr auto operator>=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
 template<class Op, class NumX, class NumY, size_t Dim>
 constexpr auto eval(VecCmp<Op, Dim, NumX, NumY> cmp) noexcept {
   Vec<bool, Dim> r;
-  const auto& [op, x, y] = cmp;
+  auto const& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = op(x[i], y[i]);
   return r;
 }
@@ -423,7 +423,7 @@ template<class Op, class NumX, class NumY, class NumA, size_t Dim>
 constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
                      Vec<NumA, Dim> a) noexcept {
   Vec<NumA, Dim> r;
-  const auto& [op, x, y] = cmp;
+  auto const& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_rows; ++i) {
     // Supposed to be overridden by an intrinsic or optimized.
     r[i] = merge(op(x[i], y[i]), a[i]);
@@ -435,7 +435,7 @@ template<class Op, class NumX, class NumY, class NumA, class NumB, size_t Dim>
 constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
                      Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Vec<sub_result_t<NumA, NumB>, Dim> r;
-  const auto& [op, x, y] = cmp;
+  auto const& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_rows; ++i) {
     // Supposed to be overridden by an intrinsic or optimized.
     r[i] = merge(op(x[i], y[i]), a[i], b[i]);

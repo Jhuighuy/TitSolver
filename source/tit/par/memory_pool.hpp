@@ -48,9 +48,9 @@ public:
   auto operator=(MemoryPool&&) -> MemoryPool& = default;
 
   /** Memory pool is not copy-constructible. */
-  MemoryPool(const MemoryPool&) = delete;
+  MemoryPool(MemoryPool const&) = delete;
   /** Memory pool is not copyable. */
-  auto operator=(const MemoryPool&) -> MemoryPool& = delete;
+  auto operator=(MemoryPool const&) -> MemoryPool& = delete;
 
   /** Destroy memory pool and free all memory. */
   ~MemoryPool() = default;
@@ -60,7 +60,7 @@ public:
    ** @returns Pointer to the allocated memory or `nullptr`. */
   [[nodiscard]] auto allocate(size_t count = 1) -> Val* {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
-    const auto num_bytes = count * sizeof(Val);
+    auto const num_bytes = count * sizeof(Val);
     return static_cast<Val*>(pool_->malloc(num_bytes));
   }
 

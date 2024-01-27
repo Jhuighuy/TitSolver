@@ -87,11 +87,11 @@ private:
   constexpr void _build_grid(Real spacing) {
     // Compute grid bounding box.
     grid_bbox_ = BBox{points_[0]};
-    for (const auto& p : points_ | std::views::drop(1)) grid_bbox_.update(p);
+    for (auto const& p : points_ | std::views::drop(1)) grid_bbox_.update(p);
     grid_bbox_.extend(0.5 * Point(spacing));
     // Compute number of cells and cell sizes.
-    const auto extents = grid_bbox_.extents();
-    const auto approx_num_cells = extents / spacing;
+    auto const extents = grid_bbox_.extents();
+    auto const approx_num_cells = extents / spacing;
     // TODO: refactor these by introducing functionality into `Vec`.
     auto total_num_cells = 1UZ;
     for (size_t i = 0; i < Dim; ++i) {
@@ -103,11 +103,11 @@ private:
     cell_points_.assemble_tall(
         total_num_cells, std::views::enumerate(points_),
         [this](auto index_and_point) {
-          const auto& [_, point] = index_and_point;
+          auto const& [_, point] = index_and_point;
           return _point_to_cell_index(point);
         },
         [](auto index_and_point) {
-          const auto& [point_index, _] = index_and_point;
+          auto const& [point_index, _] = index_and_point;
           return point_index;
         });
   }
@@ -119,20 +119,20 @@ public:
   constexpr auto search(Point search_point, Real search_radius,
                         OutIter out) const noexcept -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
-    const auto search_dist = pow2(search_radius);
+    auto const search_dist = pow2(search_radius);
     // Convert point to bounding box.
-    const auto search_bbox =
+    auto const search_bbox =
         BBox{search_point - Point(search_radius) - 0.5 * cell_size_,
              search_point + Point(search_radius) + 0.5 * cell_size_};
-    const auto low = _point_to_cell_md_index( //
+    auto const low = _point_to_cell_md_index( //
         grid_bbox_.clamp(search_bbox.low()) + 0.5 * cell_size_);
-    const auto high = _point_to_cell_md_index(
+    auto const high = _point_to_cell_md_index(
         grid_bbox_.clamp(search_bbox.high()) - 0.5 * cell_size_);
     for (size_t i = low[0]; i <= high[0]; ++i) {
       for (size_t j = low[1]; j <= high[1]; ++j) {
-        const size_t cell_index = i * num_cells_[1] + j;
-        for (const size_t k : cell_points_[cell_index]) {
-          const auto dist = norm2(search_point - points_[k]);
+        size_t const cell_index = i * num_cells_[1] + j;
+        for (size_t const k : cell_points_[cell_index]) {
+          auto const dist = norm2(search_point - points_[k]);
           if (dist < search_dist) *out++ = k;
         }
       }

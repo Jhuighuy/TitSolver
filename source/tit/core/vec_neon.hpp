@@ -38,7 +38,7 @@ public:
     if consteval {
       col_ = {qx, qy};
     } else {
-      const auto qs = std::array{qx, qy};
+      auto const qs = std::array{qx, qy};
       reg_ = vld1q_f64(qs.data());
     }
   }
@@ -166,7 +166,7 @@ inline auto vmvnq_u64(uint64x2_t a_reg) noexcept -> uint64x2_t {
 // Helper to compare two NEON registers based on the compare functor.
 template<common_cmp_op Op>
 auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> uint64x2_t {
-  const auto& [_, x, y] = cmp;
+  auto const& [_, x, y] = cmp;
   if constexpr (std::is_same_v<Op, std::equal_to<>>) {
     return vceqq_f64(x.reg_, y.reg_);
   } else if constexpr (std::is_same_v<Op, std::not_equal_to<>>) {
@@ -184,7 +184,7 @@ auto _cmp_to_mask(VecCmp<Op, 2, float64_t> cmp) noexcept -> uint64x2_t {
 
 TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp, float64_t, a, {
   Vec<float64_t, 2> r;
-  const auto mask = _cmp_to_mask(cmp);
+  auto const mask = _cmp_to_mask(cmp);
   r.reg_ = vreinterpretq_f64_u64( //
       vandq_u64(vreinterpretq_u64_f64(a.reg_), mask));
   return r;
@@ -193,7 +193,7 @@ TIT_VEC_SIMD_MERGE(2, Op, float64_t, float64_t, cmp, float64_t, a, {
 TIT_VEC_SIMD_MERGE_2(2, Op, float64_t, float64_t, cmp,
                      float64_t, a, float64_t, b, {
   Vec<float64_t, 2> r;
-  const auto mask = _cmp_to_mask(cmp);
+  auto const mask = _cmp_to_mask(cmp);
   r.reg_ = vreinterpretq_f64_u64(
         vorrq_u64(vandq_u64(vreinterpretq_u64_f64(a.reg_), mask),
                   vandq_u64(vreinterpretq_u64_f64(b.reg_), vmvnq_u64(mask))));

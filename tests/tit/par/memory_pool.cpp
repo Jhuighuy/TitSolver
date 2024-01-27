@@ -101,11 +101,11 @@ TEST_CASE("tit::par::MemoryPool") {
     tit::par::MemoryPool<ListNode> pool{};
     std::array<ListNode*, num_threads> all_lists{};
     std::array<std::thread, num_threads> threads{};
-    const auto main_thread_id = std::this_thread::get_id();
+    auto const main_thread_id = std::this_thread::get_id();
     for (auto thread_index = 0UZ; thread_index < num_threads; ++thread_index) {
       threads[thread_index] = std::thread([&, thread_index] {
         // Check that we are actually inside of the separate thread.
-        const auto current_thread_id = std::this_thread::get_id();
+        auto const current_thread_id = std::this_thread::get_id();
         CHECK(main_thread_id != current_thread_id);
         // Generate nodes that store our portion of the consecutive numbers.
         ListNode* list = nullptr;

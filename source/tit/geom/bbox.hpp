@@ -86,7 +86,7 @@ public:
   constexpr auto proj(Vec<Num, Dim> point) const noexcept {
     // TODO there should be much better implementation for this.
     point = clamp(point);
-    const auto delta = point - center();
+    auto const delta = point - center();
     size_t i = argmax_value(pow2(delta));
     point[i] = delta[i] >= 0 ? high_[i] : low_[i];
     return point;

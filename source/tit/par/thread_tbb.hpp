@@ -112,7 +112,7 @@ constexpr void for_each(Range&& range, Func&& func,
     std::ranges::for_each(range, func);
 #if TIT_ENABLE_TBB
   } else {
-    const auto blocked_range =
+    auto const blocked_range =
         tbb::blocked_range{range.begin(), range.end(), grain_size};
     tbb::parallel_for(blocked_range, [&](auto subrange) {
       std::ranges::for_each(subrange, func);
@@ -141,9 +141,9 @@ constexpr void static_for_each(Range&& range, Func&& func) noexcept {
     std::ranges::for_each(range, func);
 #if TIT_ENABLE_TBB
   } else {
-    const auto partition_size = range.size() / num_threads();
-    const auto partition_rem = range.size() % num_threads();
-    const auto partition_first = [&](size_t thread) {
+    auto const partition_size = range.size() / num_threads();
+    auto const partition_rem = range.size() % num_threads();
+    auto const partition_first = [&](size_t thread) {
       return thread * partition_size + std::min(thread, partition_rem);
     };
     static auto partitioner = tbb::static_partitioner{};
