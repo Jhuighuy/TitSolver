@@ -47,8 +47,8 @@ function(check_spelling TARGET DIR)
     ## Check git indexed files only. The best way to do this is to ask git
     ## what files are indexed in the directory, and pass those to codespell.
     COMMAND
-      git ls-files "${DIR}" | xargs
-      "${CODESPELL_EXE}"
+      git ls-files "${DIR}" |
+      xargs "${CODESPELL_EXE}"
         --ignore-words="${CODESPELL_IGNORE_PATH}"
         --check-filenames
     ## Run from the specified directory, since codespell prints relative paths.

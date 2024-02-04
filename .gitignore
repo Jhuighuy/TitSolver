@@ -12,14 +12,17 @@
 
 # Configuration files.
 !.git*
-!/.clang-*
+!/.clang*
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
 !/sonar-project.properties
 !/vcpkg.json
 
-# Output
+# Output.
 /output/
+
+# clangd cache.
+.cache/
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 

@@ -13,6 +13,7 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 # Setup path to CMake scripts and include them.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang_tidy)
+include(clangd)
 include(codespell)
 include(compiler)
 
@@ -63,6 +64,9 @@ target_link_libraries(
   TBB::tbb TBB::tbbmalloc
   OpenMP::OpenMP_CXX
   hdf5::hdf5-static)
+
+# Write "compile_flags.txt" based on the container library.
+write_compile_flags(tit::base)
 
 # Add the actual sources.
 add_subdirectory("source")

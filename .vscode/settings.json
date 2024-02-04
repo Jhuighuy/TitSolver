@@ -17,13 +17,18 @@
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
   "files.exclude": {
-    "output": true
+    ".cache": true,
+    "output": true,
+    "compile_flags.txt": true
   },
   "files.watcherExclude": {
+    "**/.cache/**": true,
     "**/output/**": true,
+    "**/compile_flags.txt": true
   },
   "files.associations": {
     ".clang-tidy": "yaml",
+    ".clangd": "yaml",
     "*.f90pp": "FortranFreeForm",
     "*.ipp": "cpp",
     "*.tcc": "cpp",
