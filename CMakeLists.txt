@@ -21,6 +21,7 @@ include(testing)
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
+find_package(Microsoft.GSL CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
 # Setup output directories.
@@ -61,8 +62,9 @@ endforeach()
 # Link with the dependent libraries.
 target_link_libraries(
   tit_base INTERFACE
-  TBB::tbb TBB::tbbmalloc
-  hdf5::hdf5-static)
+  Microsoft.GSL::GSL
+  hdf5::hdf5-static
+  TBB::tbb TBB::tbbmalloc)
 
 # Write "compile_flags.txt" based on the container library.
 write_compile_flags(tit::base)

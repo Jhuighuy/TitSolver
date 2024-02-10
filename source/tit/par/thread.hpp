@@ -11,13 +11,14 @@
 #include <iterator> // IWYU pragma: keep
 #include <ranges>
 
-#include "tit/core/basic_types.hpp"
-
 #include <oneapi/tbb/blocked_range.h>
-#include <oneapi/tbb/global_control.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_invoke.h>
 #include <oneapi/tbb/partitioner.h>
+
+#include "tit/core/basic_types.hpp"
+
+#include "tit/par/control.hpp"
 
 namespace tit::par {
 
@@ -25,32 +26,15 @@ namespace tit::par {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Number of threads.
-extern size_t _num_threads;
-
 // Index of the current thread.
 extern thread_local size_t _thread_index;
-
-/// Number of threads.
-inline auto num_threads() noexcept -> size_t {
-  return _num_threads;
-}
 
 /// Current thread index.
 inline auto thread_index() noexcept -> size_t {
   return _thread_index;
 }
 
-/// Wrapper for the `main` that sets up parallelism.
-template<class Func>
-auto main(int argc, char** argv, Func&& func) noexcept -> int {
-  // TODO: correctly set maximum amount of cores.
-  tbb::global_control const gc{tbb::global_control::max_allowed_parallelism,
-                               _num_threads};
-  return func(argc, argv);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /// Invoke functions in parallel (inside the current process).
 template<std::invocable... Funcs>

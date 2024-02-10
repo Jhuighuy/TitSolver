@@ -8,6 +8,8 @@ tit_add_library(
     par
   SOURCES
     atomic.hpp
+    control.cpp
+    control.hpp
     memory_pool.hpp
     thread.cpp
     thread.hpp
@@ -20,6 +22,7 @@ tit_add_executable(
   NAME
     par_tests
   SOURCES
+    control.test.cpp
     memory_pool.test.cpp
   DEPENDS
     par testing)

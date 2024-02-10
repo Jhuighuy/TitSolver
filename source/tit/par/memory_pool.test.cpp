@@ -10,14 +10,14 @@
 
 #include "tit/par/memory_pool.hpp"
 
-#include "tit/testing//test.hpp"
+#include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("tit::MemoryPool") {
+TEST_CASE("par::MemoryPool") {
   // Pool allocators are mostly used for building some tree-like structures
   // in parallel. This test is an attempt to recreate this use case: generate
   // a linked list in parallel storing the N consecutive numbers.

@@ -5,6 +5,7 @@
   "dependencies": [
     "doctest",
     "hdf5",
+    "ms-gsl",
     "nanobench",
     "tbb"
   ]

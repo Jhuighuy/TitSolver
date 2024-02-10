@@ -19,6 +19,8 @@
 #include "tit/core/utils.hpp"
 
 #include "tit/par/atomic.hpp"
+
+#include "tit/par/control.hpp"
 #include "tit/par/thread.hpp"
 
 namespace tit {

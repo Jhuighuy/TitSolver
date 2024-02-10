@@ -3,18 +3,19 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <cstdint>
+#pragma once
 
 #include "tit/core/basic_types.hpp"
-
-#include "tit/par/thread.hpp"
 
 namespace tit::par {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Index of the current thread.
-thread_local size_t _thread_index = SIZE_MAX;
+/** Get number of the worker threads. */
+auto num_threads() noexcept -> size_t;
+
+/** Set number of the worker threads. */
+void set_num_threads(size_t new_num_threads);
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
