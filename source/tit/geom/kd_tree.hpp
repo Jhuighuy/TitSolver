@@ -16,10 +16,13 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
-#include "tit/geom/bbox.hpp"
+
 #include "tit/par/memory_pool.hpp"
-#include "tit/par/thread.hpp"
+#include "tit/par/task_group.hpp"
+
+#include "tit/geom/bbox.hpp"
 
 namespace tit::geom {
 
@@ -85,6 +88,7 @@ public:
   /// @param max_leaf_size Maximum amount of points in the leaf node.
   constexpr explicit KDTree(Points points, size_t max_leaf_size = 1)
       : points_{std::move(points)}, max_leaf_size_{max_leaf_size} {
+    TIT_PROFILE_SECTION("KDTree::ctor()");
     TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
     if (std::ranges::empty(points_)) return;
     // Initialize identity points permutation.
@@ -92,8 +96,9 @@ public:
     point_perm_.resize(size);
     std::ranges::copy(std::views::iota(0UZ, size), point_perm_.begin());
     // Compute the root tree node (and bounding box).
+    par::TaskGroup tasks{};
     root_node_ = build_subtree_</*IsRoot=*/true>(
-        point_perm_.data(), point_perm_.data() + size, root_bbox_);
+        tasks, root_bbox_, point_perm_.data(), point_perm_.data() + size);
   }
 
 private:
@@ -115,7 +120,8 @@ private:
   // On the input `bbox` contains a rough estimate that was guessed by the
   // caller. On return it contains an exact bounding box of the subtree.
   template<bool IsRoot = false>
-  constexpr auto build_subtree_(size_t* first, size_t* last, PointBBox& bbox)
+  constexpr auto build_subtree_(par::TaskGroup& tasks, //
+                                PointBBox& bbox, size_t* first, size_t* last)
       -> KDTreeNode_* {
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // Allocate node.
@@ -135,21 +141,21 @@ private:
       auto const pivot = partition_subtree_(first, last, cut_dim, cut_value);
       TIT_ASSERT(first <= pivot && pivot <= last, "Invalid pivot.");
       node->cut_dim = cut_dim;
-      auto build_left_subtree = [=, this] {
+      // Recursively build left and right subtree.
+      auto const left_range = std::span(first, pivot);
+      tasks.run(is_async_(left_range), [=, &tasks, this] {
         // Build left subtree and update it's bounding box.
         auto [left_bbox, _] = bbox.split(cut_dim, cut_value);
-        node->left_subtree = build_subtree_(first, pivot, left_bbox);
+        node->left_subtree = build_subtree_(tasks, left_bbox, first, pivot);
         node->cut_left = left_bbox.high()[cut_dim];
-      };
-      auto build_right_subtree = [=, this] {
+      });
+      auto const right_range = std::span(pivot, last);
+      tasks.run(is_async_(right_range), [=, &tasks, this] {
         // Build right subtree and update it's bounding box.
         auto [_, right_bbox] = bbox.split(cut_dim, cut_value);
-        node->right_subtree = build_subtree_(pivot, last, right_bbox);
+        node->right_subtree = build_subtree_(tasks, right_bbox, pivot, last);
         node->cut_right = right_bbox.low()[cut_dim];
-      };
-      // Execute tasks.
-      par::invoke(std::move(build_left_subtree),
-                  std::move(build_right_subtree));
+      });
     }
     bbox = actual_bbox;
     return node;
@@ -202,6 +208,12 @@ private:
     //   |----- "<" ----|- "==" -|------------ ">" ------------|
     //   first                   pivot                         last
     return std::min(pivot, middle);
+  }
+
+  // Should the ordering be done in parallel?
+  static constexpr auto is_async_(std::span<size_t> range) noexcept -> bool {
+    static constexpr size_t TooSmall = 50;
+    return range.size() >= TooSmall;
   }
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

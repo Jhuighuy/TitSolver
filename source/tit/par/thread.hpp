@@ -36,12 +36,6 @@ inline auto thread_index() noexcept -> size_t {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/// Invoke functions in parallel (inside the current process).
-template<std::invocable... Funcs>
-void invoke(Funcs&&... funcs) noexcept {
-  tbb::parallel_invoke(funcs...);
-}
-
 template<class Range>
 concept input_range = std::ranges::input_range<Range>;
 
@@ -54,21 +48,16 @@ concept _can_par =
 /** @{ */
 template<class Range, class Func>
   requires _can_par<Range, Func>
-void for_each(Range&& range, Func&& func,
-              [[maybe_unused]] size_t grain_size = 1) noexcept {
-  auto const blocked_range =
-      tbb::blocked_range{range.begin(), range.end(), grain_size};
+void for_each(Range&& range, Func&& func) noexcept {
+  auto const blocked_range = tbb::blocked_range{range.begin(), range.end()};
   tbb::parallel_for(blocked_range, [&](auto subrange) {
     std::ranges::for_each(subrange, func);
   });
 }
 template<class Range, class Func>
-void for_each(std::ranges::join_view<Range> range, Func&& func,
-              size_t grain_size = 1) noexcept {
-  for_each(
-      std::move(range).base(),
-      [&](auto subrange) { std::ranges::for_each(subrange, func); },
-      grain_size);
+void for_each(std::ranges::join_view<Range> range, Func&& func) noexcept {
+  for_each(std::move(range).base(),
+           [&](auto subrange) { std::ranges::for_each(subrange, func); });
 }
 /** @} */
 
@@ -107,14 +96,15 @@ template<
     class /*std::indirectly_unary_invocable<std::ranges::iterator_t<Range>>*/
     Func>
 void block_for_each(Range&& range, Func&& func) noexcept {
-  invoke([&] { std::ranges::for_each(range[0], func); },
-         [&] { std::ranges::for_each(range[1], func); },
-         [&] { std::ranges::for_each(range[2], func); },
-         [&] { std::ranges::for_each(range[3], func); },
-         [&] { std::ranges::for_each(range[4], func); },
-         [&] { std::ranges::for_each(range[5], func); },
-         [&] { std::ranges::for_each(range[6], func); },
-         [&] { std::ranges::for_each(range[7], func); });
+  tbb::parallel_invoke( //
+      [&] { std::ranges::for_each(range[0], func); },
+      [&] { std::ranges::for_each(range[1], func); },
+      [&] { std::ranges::for_each(range[2], func); },
+      [&] { std::ranges::for_each(range[3], func); },
+      [&] { std::ranges::for_each(range[4], func); },
+      [&] { std::ranges::for_each(range[5], func); },
+      [&] { std::ranges::for_each(range[6], func); },
+      [&] { std::ranges::for_each(range[7], func); });
   std::ranges::for_each(range[8], func);
 }
 

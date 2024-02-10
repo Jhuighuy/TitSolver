@@ -201,7 +201,7 @@ public:
 #if 1
     // -------------------------------------------------------------------------
     // STEP I: reordering.
-    auto ordering = geom::ZCurveOrdering{positions};
+    auto ordering = geom::MortonCurveOrdering{positions};
     std::vector<size_t> perm;
     ordering.GetHilbertElementOrdering(perm);
     std::vector<size_t> parts(perm.size());
