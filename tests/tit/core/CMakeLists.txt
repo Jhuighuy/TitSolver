@@ -12,7 +12,7 @@ add_test_from_target(
 tit_add_executable(
   NAME catch_ctrl_c_test
   SOURCES "catch_ctrl_c.cpp"
-  DEPENDS core)
+  DEPENDS core par)
 
 add_test_from_target(
   tit::catch_ctrl_c_test
@@ -25,7 +25,7 @@ add_test_from_target(
 tit_add_executable(
   NAME catch_fatal_signal_test
   SOURCES catch_fatal_signal.cpp
-  DEPENDS core)
+  DEPENDS core par)
 
 add_test_from_target(
   tit::catch_fatal_signal_test
@@ -39,7 +39,7 @@ add_test_from_target(
 tit_add_executable(
   NAME profiler_test
   SOURCES profiler.cpp
-  DEPENDS core)
+  DEPENDS core par)
 
 add_test_from_target(
   tit::profiler_test

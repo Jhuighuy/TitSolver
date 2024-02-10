@@ -21,7 +21,6 @@ include(testing)
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
-find_package(OpenMP REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
 # Setup output directories.
@@ -63,7 +62,6 @@ endforeach()
 target_link_libraries(
   tit_base INTERFACE
   TBB::tbb TBB::tbbmalloc
-  OpenMP::OpenMP_CXX
   hdf5::hdf5-static)
 
 # Write "compile_flags.txt" based on the container library.

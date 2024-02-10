@@ -9,8 +9,7 @@ tit_add_library(
   SOURCES
     atomic.hpp
     memory_pool.hpp
-    #thread_omp.hpp
-    #thread_tbb.hpp
+    thread.cpp
     thread.hpp
   DEPENDS
     core)
