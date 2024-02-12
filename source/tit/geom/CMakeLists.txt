@@ -8,8 +8,8 @@ tit_add_library(
     geom
   SOURCES
     bbox.hpp
+    coord_bisection.hpp
     grid.hpp
-    hilbert_ordering.hpp
     kd_tree.hpp
     search_engine.hpp
   DEPENDS

@@ -28,7 +28,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
-#include "tit/geom/hilbert_ordering.hpp"
+#include "tit/geom/coord_bisection.hpp"
 #include "tit/geom/search_engine.hpp"
 
 #include "tit/par/control.hpp"
@@ -222,21 +222,16 @@ public:
       interp_adjacency_.sort();
     }
     // -------------------------------------------------------------------------
-    // STEP I: reordering.
-    auto ordering = geom::MortonCurveOrdering{positions};
-    std::vector<size_t> perm;
-    ordering.GetHilbertElementOrdering(perm);
-    std::vector<size_t> parts(perm.size());
-    for (size_t i = 0; i < parts.size(); ++i) parts[perm[i]] = i;
-    // -------------------------------------------------------------------------
     // STEP II: partitioning.
     size_t nparts = par::num_threads();
-    size_t const partsize = divide_up(parts.size(), nparts);
-    // Compute partitioning.
+    auto rcb = geom::SimpleCoordinateBisection(positions, nparts);
+    std::vector<size_t> parts;
+    rcb.GetPartitioning(parts);
     for (size_t i = 0; i < parts.size(); ++i) {
-      parts[i] /= partsize;
       parinfo[array()[i]].part = parts[i];
     }
+    // -------------------------------------------------------------------------
+    // STEP III: assembly.
     nparts += 1; // since we have the leftover
     block_adjacency_.assemble_wide(nparts, adjacency_.edges(), [&](auto ij) {
       auto [i, j] = ij;
