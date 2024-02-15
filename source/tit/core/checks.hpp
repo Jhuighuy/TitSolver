@@ -12,31 +12,31 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** "Assume" macro: assume that given expression always holds. Use this macro
- ** to tell the compiler some not-obvious facts to better optimize the code. */
+/// "Assume" macro: assume that given expression always holds. Use this macro
+/// to tell the compiler some not-obvious facts to better optimize the code.
 #define TIT_ASSUME(expr) [[assume(expr)]]
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** "Ensure" macro: ALWAYS (even in non-debug builds) check that given
- ** expression holds. Do not use this macro for user input, but just to check
- ** the internal logic. If the expression does not hold, the entire process
- ** is aborted (in `constexpr` context an exception is thrown), so it this macro
- ** is intended to be used inside of `noexcept` functions. */
+/// "Ensure" macro: ALWAYS (even in non-debug builds) check that given
+/// expression holds. Do not use this macro for user input, but just to check
+/// the internal logic. If the expression does not hold, the entire process
+/// is aborted (in `constexpr` context an exception is thrown), so it this macro
+/// is intended to be used inside of `noexcept` functions.
 #define TIT_ENSURE(expr, message) (tit::_ensure((expr), #expr, (message)))
 
-/** "Assert" macro: ensure that given expression holds in debug builds,
- ** and assume it always holds in non-debug build (which leads to better
- ** optimizations). */
+/// "Assert" macro: ensure that given expression holds in debug builds,
+/// and assume it always holds in non-debug build (which leads to better
+/// optimizations).
 #ifdef NDEBUG
 #define TIT_ASSERT(expr, message, ...) TIT_ASSUME((expr))
 #else
 #define TIT_ASSERT(expr, message, ...) TIT_ENSURE((expr), (message))
 #endif
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Abort the current process in non-`constexpr` context.
 [[noreturn]] inline void _ensure_failed( //
@@ -59,6 +59,6 @@ constexpr void _ensure( //
   _ensure_failed(expr_string, message, location); // Abort process otherwise.
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

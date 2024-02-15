@@ -1,11 +1,11 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Part of the Tit Solver project, under the MIT License.
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find chronic, either system one, either our simple implementation. It is used
 # by some analysis tools that does not provide (proper) quiet mode.
@@ -15,7 +15,7 @@ find_program(
   PATHS "${CMAKE_SOURCE_DIR}/build"
   REQUIRED)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Get program version.
 ## Program version is determined by executing the program with `--version`
@@ -43,7 +43,7 @@ function(get_program_version PROG_EXE PROG_VERSION_VAR)
   set(${PROG_VERSION_VAR} ${PROG_VERSION} PARENT_SCOPE)
 endfunction()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Find a program and check whether it's version is sufficient.
 ## This mostly function replicates interface of the original `find_program`,
@@ -101,7 +101,7 @@ function(find_program_with_version PROG_EXE_VAR)
   endif()
 endfunction()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # A list of the C/C++ source file extensions.
 set(CPP_HEADER_EXTENSIONS ".h" ".hpp" ".hxx" ".h++" ".hh")
@@ -140,7 +140,7 @@ function(is_cpp_file SOURCE_PATH RESULT_VAR)
   endif()
 endfunction()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Get a selected subset of the target's compile options (include directories,
 ## compile definitions). Since most of those are not known at compile time,
@@ -163,7 +163,7 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
   endforeach()
 endmacro()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Read value from the variable by it's name, if it is defined. If it is
 ## undefined and default values are provided, those are set.
@@ -175,4 +175,4 @@ macro(try_set VAR VAR_NAME)
   endif()
 endmacro()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

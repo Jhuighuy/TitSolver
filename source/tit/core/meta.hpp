@@ -11,14 +11,14 @@
 
 namespace tit::meta {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** An empty and trivial object. */
+/// An empty and trivial object.
 template<class T>
 concept type =
     std::is_object_v<T> && std::is_empty_v<T> && std::is_trivial_v<T>;
 
-/** Check that type `T` is in the list `Us...`. */
+/// Check that type `T` is in the list `Us...`.
 template<type T, type... Us>
 inline constexpr bool contains_v = (... || std::is_same_v<T, Us>);
 
@@ -37,40 +37,38 @@ inline constexpr bool all_unique_v<T, Ts...> =
 
 } // namespace impl
 
-/** Index of type `T` in list `Us...`. */
+/// Index of type `T` in list `Us...`.
 template<type T, type... Us>
   requires contains_v<T, Us...>
 inline constexpr auto index_of_v = impl::index_of_v<T, Us...>;
 
-/** Check that all elements in the list `Ts...` are unique. */
+/// Check that all elements in the list `Ts...` are unique.
 template<class... Ts>
 inline constexpr bool all_unique_v = impl::all_unique_v<Ts...>;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Set of empty types, with no duplicates.
-\******************************************************************************/
+/// Set of empty types, with no duplicates.
 template<type... Ts>
   requires all_unique_v<Ts...>
 class Set {
 public:
 
-  /** Construct a set. */
-  /** @{ */
+  /// Construct a set.
+  /// @{
   consteval Set() = default;
   consteval explicit Set(Ts... /*elements*/)
     requires (sizeof...(Ts) != 0)
   {}
-  /** @} */
+  /// @}
 
-  /** Check if the set contains a type `U`. */
+  /// Check if the set contains a type `U`.
   template<type U>
   constexpr auto contains(U /*elem*/) const noexcept -> bool {
     return contains_v<U, Ts...>;
   }
 
-  /** Check if the set contains all types in the set `Us...`. */
+  /// Check if the set contains all types in the set `Us...`.
   template<type... Us>
   constexpr auto includes(Set<Us...> /*set*/) const noexcept -> bool {
     return (contains_v<Us, Ts...> && ...);
@@ -83,39 +81,39 @@ inline constexpr bool is_set_v = false;
 template<class... Ts>
 inline constexpr bool is_set_v<Set<Ts...>> = true;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Check that @p lhs and @p rhs contain same elements. */
+/// Check that @p lhs and @p rhs contain same elements.
 template<type... Ts, type... Us>
 constexpr auto operator==(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs.includes(lhs) && lhs.includes(rhs);
 }
 
-/** Check that @p lhs is a @b strict subset of RHS. */
+/// Check that @p lhs is a @b strict subset of RHS.
 template<type... Ts, type... Us>
 constexpr auto operator<(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs.includes(lhs) && (sizeof...(Ts) < sizeof...(Us));
 }
 
-/** Check that @p lhs is a subset of @p rhs. */
+/// Check that @p lhs is a subset of @p rhs.
 template<type... Ts, type... Us>
 constexpr auto operator<=(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs.includes(lhs);
 }
 
-/** Check that @p lhs is a @b strict superset of @p rhs. */
+/// Check that @p lhs is a @b strict superset of @p rhs.
 template<type... Ts, type... Us>
 constexpr auto operator>(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs < lhs;
 }
 
-/** Check that @p lhs is a superset of @p rhs. */
+/// Check that @p lhs is a superset of @p rhs.
 template<type... Ts, type... Us>
 constexpr auto operator>=(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs <= lhs;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace impl {
 
@@ -153,33 +151,33 @@ constexpr auto set_diff(Set<T, Ts...> /*lhs*/, Set<Us...> rhs) noexcept {
 
 } // namespace impl
 
-/** @brief Set union.
- ** @returns A set that contains all the elements of @p lhs followed by the
- **          elements of @p rhs that are not already present in @p lhs. The
- **          relative order of the elements in both sets is preserved. */
+/// @brief Set union.
+/// @returns A set that contains all the elements of @p lhs followed by the
+///          elements of @p rhs that are not already present in @p lhs. The
+///          relative order of the elements in both sets is preserved.
 template<type... Ts, type... Us>
 constexpr auto operator|(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
   return impl::set_or(lhs, rhs);
 }
 
-/** @brief Set intersection.
- ** @returns A set that contains the elements of @p lhs that are also present in
- **          @p rhs. The relative order of the elements in LHS is preserved. */
+/// @brief Set intersection.
+/// @returns A set that contains the elements of @p lhs that are also present
+///          in @p rhs. The relative order of the elements in LHS is preserved.
 template<type... Ts, type... Us>
 constexpr auto operator&(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
   return impl::set_and(lhs, rhs);
 }
 
-/** @brief Set difference.
- ** @returns A set that contains all the elements of @p lhs excluding elements
- **          that are contained in @p rhs. The relative order of the elements
- **          in LHS is preserved. */
+/// @brief Set difference.
+/// @returns A set that contains all the elements of @p lhs excluding elements
+///          that are contained in @p rhs. The relative order of the elements
+///          in LHS is preserved.
 template<type... Ts, type... Us>
 constexpr auto operator-(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
   return impl::set_diff(lhs, rhs);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace impl {
 
@@ -191,10 +189,10 @@ consteval auto type_name() {
 
 } // namespace impl
 
-/** Get the name of a type in compile-time. */
+/// Get the name of a type in compile-time.
 template<class T>
 inline constexpr auto type_name_v = impl::type_name<T>();
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::meta

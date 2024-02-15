@@ -18,29 +18,27 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Algebraic vector (blocked version).
-\******************************************************************************/
+/// Algebraic vector (blocked version).
 template<class Num, size_t Dim>
   requires simd::use_regs<Num, Dim>
 class Vec<Num, Dim> final {
 public:
 
-  /** Number of rows. */
+  /// Number of rows.
   static constexpr auto num_rows = Dim;
 
-  /** SIMD register size. */
+  /// SIMD register size.
   static constexpr auto reg_size = simd::reg_size_v<Num, Dim>;
 
-  /** Number of SIMD register. */
+  /// Number of SIMD register.
   static constexpr auto num_regs = ceil_divide(num_rows, reg_size);
 
-  /** Padding. */
+  /// Padding.
   static constexpr auto padding = reg_size * num_regs - num_rows;
 
-  /** SIMD register type. */
+  /// SIMD register type.
   using Reg = Vec<Num, simd::reg_size_v<Num, Dim>>;
 
 private:
@@ -49,7 +47,7 @@ private:
 
 public:
 
-  /** Construct a vector with elements. */
+  /// Construct a vector with elements.
   template<class... Args>
     requires (sizeof...(Args) == Dim) &&
              (std::constructible_from<Num, Args> && ...)
@@ -64,18 +62,18 @@ public:
           return std::array{pack_reg(std::index_sequence<rs>{})...};
         }(std::make_index_sequence<num_regs>{})} {}
 
-  /** Fill-initialize the vector. */
+  /// Fill-initialize the vector.
   constexpr explicit Vec(Num q = Num{}) noexcept {
     regs_.fill(Reg(q));
   }
-  /** Fill-assign the vector. */
+  /// Fill-assign the vector.
   constexpr auto operator=(Num q) noexcept -> Vec& {
     regs_.fill(Reg(q));
     return *this;
   }
 
-  /** Vector register at index. */
-  /** @{ */
+  /// Vector register at index.
+  /// @{
   constexpr auto reg(size_t i) noexcept -> Reg& {
     TIT_ASSERT(i < num_regs, "Register index is out of range.");
     return regs_[i];
@@ -84,10 +82,10 @@ public:
     TIT_ASSERT(i < num_regs, "Register index is out of range.");
     return regs_[i];
   }
-  /** @} */
+  /// @}
 
-  /** Vector component at index. */
-  /** @{ */
+  /// Vector component at index.
+  /// @{
   constexpr auto operator[](size_t i) noexcept -> Num& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     return regs_[i / reg_size][i % reg_size];
@@ -96,11 +94,11 @@ public:
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     return regs_[i / reg_size][i % reg_size];
   }
-  /** @} */
+  /// @}
 
 }; // class Vec<Num, Dim>
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
@@ -118,7 +116,7 @@ constexpr auto operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
   return a;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Num, size_t Dim>
   requires simd::use_regs<Num, Dim>
@@ -144,7 +142,7 @@ constexpr auto operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
   return a;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
@@ -185,7 +183,7 @@ constexpr auto operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
   return a;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
@@ -218,7 +216,7 @@ constexpr auto operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
   return a;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class To, class From, size_t Dim>
   requires simd::regs_match<Dim, From, To>
@@ -230,7 +228,7 @@ constexpr auto static_vec_cast(Vec<From, Dim> a) noexcept {
   return r;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // TODO: implement with SIMD intrinsics (where possible).
 template<class Num, size_t Dim>
@@ -259,7 +257,7 @@ constexpr auto ceil(Vec<Num, Dim> a) noexcept {
   return r;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // TODO: implement sum with non-zero padding.
 template<class Num, size_t Dim>
@@ -272,7 +270,7 @@ constexpr auto sum(Vec<Num, Dim> a) noexcept {
 
 // TODO: implement dot product for SIMD.
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Op, class NumX, class NumY, class NumA, size_t Dim>
   requires simd::regs_match<Dim, NumX, NumY, NumA>
@@ -297,11 +295,11 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
   return r;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Generate a constexpr-aware overload for a unary vector function.
 #define TIT_VEC_SIMD_FUNC_V(func, Dim, Num, a, ...)                            \
@@ -395,4 +393,4 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 // IWYU pragma: end_exports
 #endif
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

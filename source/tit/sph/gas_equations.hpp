@@ -23,11 +23,9 @@
 
 namespace tit::sph {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** The particle estimator with density summation.
-\******************************************************************************/
+/// The particle estimator with density summation.
 template<equation_of_state EquationOfState, density_equation DensityEquation,
          kernel Kernel, artificial_viscosity ArtificialViscosity>
 class CompressibleFluidEquations {
@@ -42,7 +40,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields =
       meta::Set{fixed, parinfo} | // TODO: fixed should not be here.
 #if HARD_DAM_BREAKING
@@ -54,7 +52,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Initialize fluid equations. */
+  /// Initialize fluid equations.
   constexpr explicit CompressibleFluidEquations(
       EquationOfState eos = {}, DensityEquation density_equation = {},
       Kernel kernel = {}, ArtificialViscosity artvisc = {}) noexcept
@@ -91,7 +89,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Setup boundary particles. */
+  /// Setup boundary particles.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void setup_boundary( //
@@ -171,7 +169,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Compute density-related fields. */
+  /// Compute density-related fields.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_density(ParticleArray& particles,
@@ -241,7 +239,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Compute velocity related fields. */
+  /// Compute velocity related fields.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_forces(ParticleArray& particles,
@@ -322,6 +320,6 @@ public:
 
 }; // class CompressibleFluidEquations
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::sph

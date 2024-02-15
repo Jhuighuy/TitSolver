@@ -16,19 +16,17 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Algebraic square matrix.
-\******************************************************************************/
+/// Algebraic square matrix.
 template<class Num, size_t Dim>
 class Mat final {
 public:
 
-  /** Number of rows. */
+  /// Number of rows.
   static constexpr auto num_rows = Dim;
 
-  /** Matrix row type. */
+  /// Matrix row type.
   using Row = Vec<Num, Dim>;
 
 private:
@@ -37,17 +35,17 @@ private:
 
 public:
 
-  /** Construct a matrix with rows. */
+  /// Construct a matrix with rows.
   template<class... Args>
     requires (sizeof...(Args) == Dim) &&
              (std::constructible_from<Row, Args> && ...)
   constexpr explicit Mat(Args... ri) noexcept : rows_{ri...} {}
 
-  /** Construct a scalar matrix. */
+  /// Construct a scalar matrix.
   constexpr explicit Mat(Num q = Num{}) noexcept {
     *this = q;
   }
-  /** Assign scalar matrix. */
+  /// Assign scalar matrix.
   constexpr auto operator=(Num q) noexcept -> Mat& {
     for (size_t i = 0; i < num_rows; ++i) {
       for (size_t j = 0; j < num_rows; ++j) {
@@ -57,8 +55,8 @@ public:
     return *this;
   }
 
-  /** Matrix row at index. */
-  /** @{ */
+  /// Matrix row at index.
+  /// @{
   constexpr auto operator[](size_t i) noexcept -> Row& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     return rows_[i];
@@ -67,10 +65,10 @@ public:
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     return rows_[i];
   }
-  /** @} */
+  /// @}
 
-  /** Matrix element at index. */
-  /** @{ */
+  /// Matrix element at index.
+  /// @{
   constexpr auto operator[](size_t i, size_t j) noexcept -> Num& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     TIT_ASSERT(j < num_rows, "Column index is out of range.");
@@ -81,7 +79,7 @@ public:
     TIT_ASSERT(j < num_rows, "Column index is out of range.");
     return rows_[i][j];
   }
-  /** @} */
+  /// @}
 
 }; // class Mat
 
@@ -89,16 +87,16 @@ public:
 template<class Row, class... RestRows>
 Mat(Row, RestRows...) -> Mat<vec_num_t<Row>, 1 + sizeof...(RestRows)>;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Matrix input operator. */
+/// Matrix input operator.
 template<class Stream, class Num, size_t Dim>
 constexpr auto operator>>(Stream& stream, Mat<Num, Dim>& a) -> Stream& {
   for (size_t i = 0; i < a.num_rows; ++i) stream >> a[i];
   return stream;
 }
 
-/** Vector output operator. */
+/// Vector output operator.
 template<class Stream, class Num, size_t Dim>
 constexpr auto operator<<(Stream& stream, Mat<Num, Dim> a) -> Stream& {
   stream << a[0];
@@ -106,15 +104,15 @@ constexpr auto operator<<(Stream& stream, Mat<Num, Dim> a) -> Stream& {
   return stream;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Matrix unary plus. */
+/// Matrix unary plus.
 template<class Num, size_t Dim>
 constexpr auto operator+(Mat<Num, Dim> const& a) noexcept {
   return a;
 }
 
-/** Matrix addition. */
+/// Matrix addition.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator+(Mat<NumA, Dim> const& a,
                          Mat<NumB, Dim> const& b) noexcept {
@@ -123,7 +121,7 @@ constexpr auto operator+(Mat<NumA, Dim> const& a,
   return r;
 }
 
-/** Matrix addition assignment. */
+/// Matrix addition assignment.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator+=(Mat<NumA, Dim>& a, Mat<NumB, Dim> const& b) noexcept
     -> auto& {
@@ -131,9 +129,9 @@ constexpr auto operator+=(Mat<NumA, Dim>& a, Mat<NumB, Dim> const& b) noexcept
   return a;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Matrix negation. */
+/// Matrix negation.
 template<class Num, size_t Dim>
 constexpr auto operator-(Mat<Num, Dim> const& a) noexcept {
   Mat<negate_result_t<Num>, Dim> r;
@@ -141,7 +139,7 @@ constexpr auto operator-(Mat<Num, Dim> const& a) noexcept {
   return r;
 }
 
-/** Matrix subtraction. */
+/// Matrix subtraction.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator-(Mat<NumA, Dim> const& a,
                          Mat<NumB, Dim> const& b) noexcept {
@@ -150,7 +148,7 @@ constexpr auto operator-(Mat<NumA, Dim> const& a,
   return r;
 }
 
-/** Matrix subtraction assignment. */
+/// Matrix subtraction assignment.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator-=(Mat<NumA, Dim>& a, Mat<NumB, Dim> const& b) noexcept
     -> auto& {
@@ -158,10 +156,10 @@ constexpr auto operator-=(Mat<NumA, Dim>& a, Mat<NumB, Dim> const& b) noexcept
   return a;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Matrix-scalar multiplication. */
-/** @{ */
+/// Matrix-scalar multiplication.
+/// @{
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(NumA a, Mat<NumB, Dim> const& b) noexcept {
   Mat<mul_result_t<NumA, NumB>, Dim> r;
@@ -174,16 +172,16 @@ constexpr auto operator*(Mat<NumA, Dim> const& a, NumB b) noexcept {
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = a[i] * b;
   return r;
 }
-/** @} */
+/// @}
 
-/** Matrix-scalar multiplication assignment. */
+/// Matrix-scalar multiplication assignment.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*=(Mat<NumA, Dim>& a, NumB b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] *= b;
   return a;
 }
 
-/** Matrix-scalar division. */
+/// Matrix-scalar division.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator/(Mat<NumA, Dim> const& a, NumB b) noexcept {
   Mat<div_result_t<NumA, NumB>, Dim> r;
@@ -191,23 +189,23 @@ constexpr auto operator/(Mat<NumA, Dim> const& a, NumB b) noexcept {
   return r;
 }
 
-/** Matrix-scalar division assignment. */
+/// Matrix-scalar division assignment.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator/=(Mat<NumA, Dim>& a, NumB b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] /= b;
   return a;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Matrix-vector multiplication. */
+/// Matrix-vector multiplication.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(Mat<NumA, Dim> const& a, Vec<NumB, Dim> b) noexcept {
   Vec<mul_result_t<NumA, NumB>, Dim> r;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = dot(a[i], b);
   return r;
 }
-/** Matrix-matrix multiplication. */
+/// Matrix-matrix multiplication.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto operator*(Mat<NumA, Dim> const& a,
                          Mat<NumB, Dim> const& b) noexcept {
@@ -220,7 +218,7 @@ constexpr auto operator*(Mat<NumA, Dim> const& a,
   return r;
 }
 
-/** Vector outer product. */
+/// Vector outer product.
 template<class NumA, class NumB, size_t Dim>
 constexpr auto outer(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   Mat<mul_result_t<NumA, NumB>, Dim> r;
@@ -228,7 +226,7 @@ constexpr auto outer(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
   return r;
 }
 
-/** Matrix transpose. */
+/// Matrix transpose.
 template<class Num, size_t Dim>
 constexpr auto transpose(Mat<Num, Dim> a) noexcept {
   for (size_t i = 0; i < a.num_rows; ++i) {
@@ -237,7 +235,7 @@ constexpr auto transpose(Mat<Num, Dim> a) noexcept {
   return a;
 }
 
-/** Matrix trace. */
+/// Matrix trace.
 template<class Num, size_t Dim>
 constexpr auto tr(Mat<Num, Dim> a) noexcept {
   add_result_t<Num> r = a[0, 0];
@@ -245,11 +243,9 @@ constexpr auto tr(Mat<Num, Dim> a) noexcept {
   return r;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Matrix inversion.
-\******************************************************************************/
+/// Matrix inversion.
 template<class Num, size_t Dim>
 class MatInv final {
 private:
@@ -259,7 +255,7 @@ private:
 
 public:
 
-  /** Construct matrix inversion. */
+  /// Construct matrix inversion.
   constexpr explicit MatInv(Mat<Num, Dim> const& a) noexcept
       : _l(Num{1.0}), _u(Num{0.0}) {
     // Compute factors.
@@ -289,13 +285,13 @@ public:
     return det;
   }
 
-  /** Determinant of the matrix. */
+  /// Determinant of the matrix.
   constexpr auto det() const noexcept {
     return _det;
   }
 
-  /** Multiply by inverse matrix.
-   ** @param x Vector or matrix of correct size. */
+  /// Multiply by inverse matrix.
+  /// @param x Vector or matrix of correct size.
   template<class Obj>
   constexpr auto operator()(Obj x) const noexcept -> Obj {
     TIT_ASSERT(!is_zero(det()), "Matrix must be non-singular.");
@@ -311,7 +307,7 @@ public:
     }
     return x;
   }
-  /** Evaluate inverse matrix. */
+  /// Evaluate inverse matrix.
   constexpr auto operator()() const noexcept -> Mat<Num, Dim> {
     TIT_ASSERT(!is_zero(det()), "Matrix must be non-singular.");
     return (*this)(Mat<Num, Dim>(1.0));
@@ -319,6 +315,6 @@ public:
 
 }; // class MatInv
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
