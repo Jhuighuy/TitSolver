@@ -142,7 +142,7 @@ public:
     par::static_for_each(particles.views(), [&](PV a) {
       /// Finalize kernel gradient renormalization matrix.
       auto const L_a_inv = MatInv{L[a]};
-      if (!is_zero(L_a_inv.det())) L[a] = transpose(L_a_inv());
+      if (!is_small(L_a_inv.det())) L[a] = transpose(L_a_inv());
       else L[a] = 1.0;
     });
   }

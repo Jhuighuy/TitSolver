@@ -110,7 +110,7 @@ public:
         M += outer(B_ab, B_ab * W_ab * m[b] / rho[b]);
       });
       MatInv inv(M);
-      if (!is_zero(inv.det())) {
+      if (!is_small(inv.det())) {
         Vec<real_t, 3> e{1.0, 0.0, 0.0};
         auto E = inv(e);
         rho[a] = {};
@@ -122,7 +122,7 @@ public:
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
         });
-      } else if (!is_zero(S)) {
+      } else if (!is_small(S)) {
         rho[a] = {};
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
@@ -211,12 +211,12 @@ public:
       if (fixed[a]) return;
       /// Renormalize density (if possible).
       if constexpr (has<PV>(S)) {
-        if (!is_zero(S[a])) rho[a] /= S[a];
+        if (!is_small(S[a])) rho[a] /= S[a];
       }
       /// Renormalize density gradient (if possible).
       if constexpr (has<PV>(L)) {
         auto const L_a_inv = MatInv{L[a]};
-        if (!is_zero(L_a_inv.det())) grad_rho[a] = L_a_inv(grad_rho[a]);
+        if (!is_small(L_a_inv.det())) grad_rho[a] = L_a_inv(grad_rho[a]);
       }
     });
     // Compute density time derivative. It is computed outside of the upper

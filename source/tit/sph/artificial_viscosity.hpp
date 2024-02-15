@@ -116,7 +116,7 @@ public:
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
-    if (is_zero(Pi_ab)) return Pi_ab;
+    if (is_small(Pi_ab)) return Pi_ab;
     auto const f = [](PV c) {
       return abs(div_v[c]) /
              (abs(div_v[c]) + norm(curl_v[c]) + 0.0001 * cs[c] / h[c]);
@@ -168,7 +168,7 @@ public:
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
-    if (is_zero(Pi_ab)) return Pi_ab;
+    if (is_small(Pi_ab)) return Pi_ab;
     auto const alpha_ab = alpha.avg(a, b);
     Pi_ab *= alpha_ab;
     return Pi_ab;
