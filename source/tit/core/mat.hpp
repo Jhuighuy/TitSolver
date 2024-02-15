@@ -238,7 +238,7 @@ constexpr auto transpose(Mat<Num, Dim> a) noexcept {
 /// Matrix trace.
 template<class Num, size_t Dim>
 constexpr auto tr(Mat<Num, Dim> a) noexcept {
-  add_result_t<Num> r = a[0, 0];
+  auto r = a[0, 0];
   for (size_t i = 1; i < a.num_rows; ++i) r += a[i, i];
   return r;
 }
@@ -294,7 +294,7 @@ public:
   /// @param x Vector or matrix of correct size.
   template<class Obj>
   constexpr auto operator()(Obj x) const noexcept -> Obj {
-    TIT_ASSERT(!is_zero(det()), "Matrix must be non-singular.");
+    TIT_ASSERT(!is_small(det()), "Matrix must be non-singular.");
     // "Divide" by L.
     for (size_t i = 0; i < x.num_rows; ++i) {
       for (size_t j = 0; j < i; ++j) x[i] -= _l[i, j] * x[j];
@@ -309,7 +309,7 @@ public:
   }
   /// Evaluate inverse matrix.
   constexpr auto operator()() const noexcept -> Mat<Num, Dim> {
-    TIT_ASSERT(!is_zero(det()), "Matrix must be non-singular.");
+    TIT_ASSERT(!is_small(det()), "Matrix must be non-singular.");
     return (*this)(Mat<Num, Dim>(1.0));
   }
 
