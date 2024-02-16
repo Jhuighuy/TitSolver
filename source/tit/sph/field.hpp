@@ -12,7 +12,7 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/misc.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit {
