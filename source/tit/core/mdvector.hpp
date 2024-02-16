@@ -16,8 +16,8 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/misc.hpp"
 #include "tit/core/type_traits.hpp"
+#include "tit/core/utils.hpp"
 
 namespace tit {
 

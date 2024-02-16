@@ -17,7 +17,6 @@ tit_add_library(
     math.hpp
     mdvector.hpp
     meta.hpp
-    misc.hpp
     multivector.hpp
     profiler.cpp
     profiler.hpp
@@ -26,6 +25,7 @@ tit_add_library(
     system.hpp
     time.hpp
     type_traits.hpp
+    utils.hpp
     vec.hpp
     vec_avx.hpp
     vec_neon.hpp
