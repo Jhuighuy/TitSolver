@@ -41,8 +41,8 @@ template<size_t Size, class T, class... Ts>
   requires (std::convertible_to<Ts, T> && ...) &&
            ((sizeof...(Ts) == Size) ||
             ((sizeof...(Ts) <= Size) && std::default_initializable<T>) )
-constexpr auto pack(Ts&&... values) noexcept -> std::array<T, Size> {
-  return {static_cast<T>(std::forward<Ts>(values))...};
+constexpr auto pack(Ts&&... vals) -> std::array<T, Size> {
+  return {static_cast<T>(std::forward<Ts>(vals))...};
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

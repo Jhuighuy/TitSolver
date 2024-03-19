@@ -3,23 +3,25 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Specify the list of sources.
-set(
-  CXX_SOURCES
-  "bbox.hpp"
-  "grid.hpp"
-  "hilbert_ordering.hpp"
-  "kd_tree.hpp"
-  "search_engine.hpp")
+tit_add_library(
+  NAME
+    geom
+  SOURCES
+    bbox.hpp
+    grid.hpp
+    hilbert_ordering.hpp
+    kd_tree.hpp
+    search_engine.hpp
+  DEPENDS
+    core par)
 
-# Create the library.
-add_library(tit_geom INTERFACE ${CXX_SOURCES})
-add_library(tit::geom ALIAS tit_geom)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Link with the dependent libraries.
-target_link_libraries(tit_geom INTERFACE tit::core tit::par)
-
-# Enable static analysis.
-enable_clang_tidy(tit::geom)
+tit_add_executable(
+  NAME
+    geom_tests
+  SOURCES
+  DEPENDS
+    geom testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

@@ -13,10 +13,13 @@
 # Configuration files.
 !.git*
 !/.clang*
-!/.vscode/c_cpp_properties.json
-!/.vscode/settings.json
 !/sonar-project.properties
 !/vcpkg.json
+
+# Editor configuration.
+!/.vscode/c_cpp_properties.json
+!/.vscode/settings.json
+!/.zed/settings.json
 
 # Output.
 /output/

@@ -50,14 +50,11 @@ endfunction()
 ## adding the additional mandatory `MIN_VERSION` keyword-prefixed argument.
 function(find_program_with_version PROG_EXE_VAR)
   # Parse and check arguments.
-  set(OPTIONS REQUIRED NO_CACHE)
-  set(ONE_VALUE_ARGS MIN_VERSION)
-  set(MULTI_VALUE_ARGS NAMES HINTS PATHS)
   cmake_parse_arguments(
     PROG
-    "${OPTIONS}"
-    "${ONE_VALUE_ARGS}"
-    "${MULTI_VALUE_ARGS}"
+    "REQUIRED;NO_CACHE"
+    "MIN_VERSION"
+    "NAMES;HINTS;PATHS"
     ${ARGN})
   if(NOT PROG_NAMES)
     message(FATAL_ERROR "Program names must be specified.")
@@ -107,19 +104,36 @@ endfunction()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # A list of the C/C++ source file extensions.
-set(
-  CXX_SOURCE_EXTENSIONS
-  ".c" ".cpp" ".cxx" ".c++" ".cc"
-  ".h" ".hpp" ".hxx" ".h++" ".hh")
+set(CPP_HEADER_EXTENSIONS ".h" ".hpp" ".hxx" ".h++" ".hh")
+set(CPP_SOURCE_EXTENSIONS ".c" ".cpp" ".cxx" ".c++" ".cc")
 
-## Determine is source is a C/C++ file based on it's extension.
-function(is_cxx_source SOURCE_PATH RESULT_VAR)
-  # Get source file extension.
-  get_filename_component(SOURCE_EXT ${SOURCE_PATH} EXT)
-  string(TOLOWER ${SOURCE_EXT} SOURCE_EXT)
-  # Check if extension is in the list of C/C++ extensions and propagate the
-  # result to outer scope.
-  if(SOURCE_EXT IN_LIST CXX_SOURCE_EXTENSIONS)
+## Determine if file is a C/C++ header file based on it's extension.
+function(is_cpp_header SOURCE_PATH RESULT_VAR)
+  get_filename_component(SOURCE_EXTENSION ${SOURCE_PATH} LAST_EXT)
+  string(TOLOWER ${SOURCE_EXTENSION} SOURCE_EXTENSION)
+  if(SOURCE_EXTENSION IN_LIST CPP_HEADER_EXTENSIONS)
+    set(${RESULT_VAR} TRUE PARENT_SCOPE)
+  else()
+    set(${RESULT_VAR} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
+
+## Determine if file is a C/C++ source file based on it's extension.
+function(is_cpp_source SOURCE_PATH RESULT_VAR)
+  get_filename_component(SOURCE_EXTENSION ${SOURCE_PATH} LAST_EXT)
+  string(TOLOWER ${SOURCE_EXTENSION} SOURCE_EXTENSION)
+  if(SOURCE_EXTENSION IN_LIST CPP_SOURCE_EXTENSIONS)
+    set(${RESULT_VAR} TRUE PARENT_SCOPE)
+  else()
+    set(${RESULT_VAR} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
+
+## Determine if file is a C/C++ file based on it's extension.
+function(is_cpp_file SOURCE_PATH RESULT_VAR)
+  is_cpp_header(${SOURCE_PATH} IS_HEADER)
+  is_cpp_source(${SOURCE_PATH} IS_SOURCE)
+  if(IS_HEADER OR IS_SOURCE)
     set(${RESULT_VAR} TRUE PARENT_SCOPE)
   else()
     set(${RESULT_VAR} FALSE PARENT_SCOPE)

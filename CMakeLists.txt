@@ -12,10 +12,11 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 
 # Setup path to CMake scripts and include them.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(clang_tidy)
 include(clangd)
 include(codespell)
 include(compiler)
+include(target)
+include(testing)
 
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)

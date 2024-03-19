@@ -6,17 +6,17 @@
 #include <chrono>
 #include <thread>
 
-#include <doctest/doctest.h>
-
 #include "tit/core/basic_types.hpp"
-#include "tit/core/time_utils.hpp"
+#include "tit/core/time.hpp"
+
+#include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::Stopwatch") {
+TEST_CASE("Stopwatch") {
   // Run the stopwatch to measure some time.
   Stopwatch stopwatch{};
   auto const delta = std::chrono::milliseconds(500);

@@ -12,9 +12,9 @@
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
 
-#include <doctest/doctest.h>
+#include "tit/core/system.hpp"
 
-#include "tit/core/system_utils.hpp"
+#include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
@@ -47,7 +47,7 @@ private:
 
 }; // class SignalTracker
 
-TEST_CASE("tit::SignalHandler") {
+TEST_CASE("SignalHandler") {
   SignalTracker handler_1{SIGUSR1, SIGUSR2};
   {
     SignalTracker handler_2{SIGUSR2};

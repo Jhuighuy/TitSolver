@@ -3,26 +3,20 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-tit_add_library(
-  NAME
-    par
+set(
   SOURCES
-    atomic.hpp
-    memory_pool.hpp
-    #thread_omp.hpp
-    #thread_tbb.hpp
-    thread.hpp
-  DEPENDS
-    core)
+  test.hpp
+  test_main.cpp)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Create a library. It must be an object library in order to make the test
+# registration work properly.
+add_library(tit_testing OBJECT ${SOURCES})
+add_library(tit::testing ALIAS tit_testing)
 
-tit_add_executable(
-  NAME
-    par_tests
-  SOURCES
-    memory_pool.test.cpp
-  DEPENDS
-    par testing)
+# Link with doctest.
+target_link_libraries(tit_testing PUBLIC tit::base doctest::doctest)
+
+# Enable static analysis.
+enable_clang_tidy(tit::testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

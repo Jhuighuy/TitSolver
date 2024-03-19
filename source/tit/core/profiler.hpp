@@ -11,7 +11,7 @@
 #include <unordered_map>
 
 #include "tit/core/misc.hpp"
-#include "tit/core/time_utils.hpp"
+#include "tit/core/time.hpp"
 
 namespace tit {
 

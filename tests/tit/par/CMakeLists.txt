@@ -3,19 +3,8 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Specify the list of sources.
-set(
-  CXX_SOURCES
-  "memory_pool.cpp")
-
-# Create the unit test executable.
-add_doctest_executable(tit_par_tests ${CXX_SOURCES})
-add_executable(tit::par_tests ALIAS tit_par_tests)
-
-# Link with the dependent libraries.
-target_link_libraries(tit_par_tests PRIVATE tit::core tit::par)
-
-# Enable static analysis.
-# enable_clang_tidy(tit::core_tests)
+add_test_from_target(
+  tit::par_tests
+  NAME "tit/par/unit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

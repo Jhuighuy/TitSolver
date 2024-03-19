@@ -6,9 +6,9 @@
 
 #define WITH_GRAVITY 1
 
-#include "tit/core/io_utils.hpp"
+#include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/time_utils.hpp"
+#include "tit/core/time.hpp"
 
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"

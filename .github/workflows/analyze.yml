@@ -112,8 +112,7 @@ jobs:
           ## See reasons for using `--exclude-*` and `--decisions` below:
           ## https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
           gcovr                                                                \
-            -e "output/*"                                                      \
-            -e "tests/*"                                                       \
+            --exclude "output/.*" --exclude "tests/.*" --exclude ".*\.test.*"  \
             --gcov-executable "$GCOV_EXE"                                      \
             --exclude-unreachable-branches                                     \
             --exclude-throw-branches                                           \
