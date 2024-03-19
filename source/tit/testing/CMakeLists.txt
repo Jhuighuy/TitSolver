@@ -5,6 +5,7 @@
 
 set(
   SOURCES
+  func_utils.hpp
   test.hpp
   test_main.cpp)
 
