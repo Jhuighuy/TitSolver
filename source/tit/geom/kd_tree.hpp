@@ -9,6 +9,7 @@
 #include <iterator> // IWYU pragma: keep
 #include <numeric>
 #include <ranges>
+#include <span>
 #include <tuple>
 #include <utility>
 #include <vector>

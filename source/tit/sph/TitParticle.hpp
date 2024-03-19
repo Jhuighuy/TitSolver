@@ -25,13 +25,13 @@
 #include "tit/core/meta.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/uint_utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
 
+#include "tit/par/control.hpp"
 #include "tit/par/thread.hpp"
 
 #include "tit/sph/field.hpp"
@@ -125,11 +125,20 @@ ParticleView(ParticleArray&) -> ParticleView<ParticleArray>;
 #if COMPRESSIBLE_SOD_PROBLEM
 inline constexpr auto Domain = geom::BBox{Vec{0.0}, Vec{2.0}};
 #elif HARD_DAM_BREAKING
-inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{4.0, 3.0}};
+inline constexpr auto Domain = geom::BBox{
+    Vec{0.0, 0.0},
+    Vec{4.0, 3.0}
+};
 #elif EASY_DAM_BREAKING
-inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
+inline constexpr auto Domain = geom::BBox{
+    Vec{   0.0, 0.0},
+    Vec{3.2196, 1.5}
+};
 #else
-inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
+inline constexpr auto Domain = geom::BBox{
+    Vec{0.0, 0.0},
+    Vec{0.0, 0.0}
+};
 #endif
 
 /// Particle adjacency graph.
