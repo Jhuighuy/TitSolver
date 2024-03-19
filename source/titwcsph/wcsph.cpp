@@ -12,9 +12,9 @@
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 
-#include "tit/core/io_utils.hpp"
+#include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/time_utils.hpp"
+#include "tit/core/time.hpp"
 
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
@@ -26,7 +26,7 @@
 
 #if 0
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #elif COMPRESSIBLE_SOD_PROBLEM
 
@@ -86,7 +86,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   return 0;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #elif HARD_DAM_BREAKING
 
@@ -195,7 +195,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   return 0;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #elif EASY_DAM_BREAKING
 
@@ -342,7 +342,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   return 0;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #elif INITIALLY_SQUARE_PATCH
 
@@ -469,7 +469,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   return 0;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #endif
 
@@ -477,4 +477,4 @@ int main(int argc, char** argv) {
   return tit::run_main(argc, argv, &sph_main<tit::real_t>);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

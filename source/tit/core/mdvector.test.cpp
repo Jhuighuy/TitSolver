@@ -7,16 +7,16 @@
 #include <array>
 #include <ranges>
 
-#include <doctest/doctest.h>
-
 #include "tit/core/mdvector.hpp"
+
+#include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("tit::Mdspan") {
+TEST_CASE("Mdspan") {
   // Construct `Mdspan`.
   auto const shape = std::array{3ZU, 3ZU};
   auto const vals = std::array{1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -42,9 +42,9 @@ TEST_CASE("tit::Mdspan") {
   CHECK(iter - mdspan.begin() == 6);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("tit::Mdvector") {
+TEST_CASE("Mdvector") {
   SUBCASE("shape") {
     // Construct `Mdvector` and check it's size.
     Mdvector<int, 2> mdvector(3, 3);
@@ -101,7 +101,7 @@ TEST_CASE("tit::Mdvector") {
   }
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace
 } // namespace tit

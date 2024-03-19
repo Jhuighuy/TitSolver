@@ -5,14 +5,14 @@
 
 #include <signal.h> // NOLINT(*-deprecated-headers)
 
-#include "tit/core/io_utils.hpp"
+#include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/system_utils.hpp"
+#include "tit/core/system.hpp"
 
 namespace tit {
 namespace {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [[gnu::noinline]] void func_3() {
   eprintln("func_3");
@@ -30,7 +30,7 @@ namespace {
   func_2();
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto run_test(int /*argc*/, char** /*argv*/) -> int {
   safe_atexit([] { eprintln("At exit..."); });
@@ -39,7 +39,7 @@ auto run_test(int /*argc*/, char** /*argv*/) -> int {
   return 0;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace
 } // namespace tit

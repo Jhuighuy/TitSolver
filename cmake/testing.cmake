@@ -1,11 +1,11 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Part of the Tit Solver project, under the MIT License.
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Enable CTest.
 enable_testing()
@@ -17,24 +17,21 @@ find_program(
   PATHS "${CMAKE_SOURCE_DIR}/build"
   REQUIRED)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Register the test command.
 function(add_test_command)
   # Parse and check arguments.
-  set(OPTIONS)
-  set(ONE_VALUE_ARGS NAME EXIT_CODE STDIN MATCH_STDOUT MATCH_STDERR)
-  set(MULTI_VALUE_ARGS COMMAND INPUT_FILES MATCH_FILES FILTERS PROPERTIES)
   cmake_parse_arguments(
     TEST
-    "${OPTIONS}"
-    "${ONE_VALUE_ARGS}"
-    "${MULTI_VALUE_ARGS}"
+    ""
+    "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
+    "COMMAND;INPUT_FILES;MATCH_FILES;FILTERS;PROPERTIES"
     ${ARGN})
-  if (NOT TEST_NAME)
+  if(NOT TEST_NAME)
     message(FATAL_ERROR "Test name must be specified.")
   endif()
-  if (NOT TEST_COMMAND)
+  if(NOT TEST_COMMAND)
     message(FATAL_ERROR "Command line must not be empty.")
   endif()
   # Prepare the list of arguments for the test driver.
@@ -83,14 +80,11 @@ function(add_test_from_target TARGET)
   if(NOT TARGET)
     message(FATAL_ERROR "Target must be specified.")
   endif()
-  set(OPTIONS)
-  set(ONE_VALUE_ARGS NAME EXIT_CODE STDIN MATCH_STDOUT MATCH_STDERR)
-  set(MULTI_VALUE_ARGS EXTRA_ARGS MATCH_FILES FILTERS PROPERTIES)
   cmake_parse_arguments(
     TEST
-    "${OPTIONS}"
-    "${ONE_VALUE_ARGS}"
-    "${MULTI_VALUE_ARGS}"
+    ""
+    "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
+    "EXTRA_ARGS;MATCH_FILES;FILTERS;PROPERTIES"
     ${ARGN})
   # Add the test command for this executable.
   add_test_command(
@@ -105,4 +99,4 @@ function(add_test_from_target TARGET)
     PROPERTIES ${TEST_PROPERTIES})
 endfunction()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

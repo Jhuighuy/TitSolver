@@ -6,9 +6,9 @@
 
 #define WITH_GRAVITY 1
 
-#include "tit/core/io_utils.hpp"
+#include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/time_utils.hpp"
+#include "tit/core/time.hpp"
 
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
@@ -16,7 +16,7 @@
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/time_integrator.hpp"
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Real>
 int sph_main(int /*argc*/, char** /*argv*/) {
@@ -111,10 +111,10 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   return 0;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 int main(int argc, char** argv) {
   return tit::run_main(argc, argv, &sph_main<tit::real_t>);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

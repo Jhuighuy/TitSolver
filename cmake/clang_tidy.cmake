@@ -1,13 +1,13 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Part of the Tit Solver project, under the MIT License.
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
 include(clang)
 include(utils)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find clang-tidy (at least 16.0). Prefer version-suffixed executables.
 find_program_with_version(
@@ -15,7 +15,7 @@ find_program_with_version(
   NAMES "clang-tidy-17" "clang-tidy-16" "clang-tidy"
   MIN_VERSION "16.0")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Analyze source code with clang-tidy.
 function(enable_clang_tidy TARGET_OR_ALIAS)
@@ -59,17 +59,19 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
   if(NOT TARGET_SOURCES)
+    message(WARNING "clang-tidy: no sources found for target ${TARGET}!")
     return()
   endif()
   foreach(SOURCE ${TARGET_SOURCES})
     # Skip non-C/C++ files.
-    is_cxx_source(${SOURCE} SOURCE_IS_CXX)
-    if(NOT SOURCE_IS_CXX)
-       continue()
+    is_cpp_file("${SOURCE}" SOURCE_IS_CPP)
+    if(NOT SOURCE_IS_CPP)
+      message(WARNING "clang-tidy: skipping non-C/C++ file: ${SOURCE}.")
+      continue()
     endif()
     # Create stamp.
     set(STAMP "${SOURCE}.tidy_stamp")
-    list(APPEND ALL_STAMPS ${STAMP})
+    list(APPEND ALL_STAMPS "${STAMP}")
     # Execute clang-tidy and update a stamp file on success.
     # (wrapped with chronic to avoid annoying `N warnings generated` messages).
     set(SOURCE_PATH "${TARGET_SOURCE_DIR}/${SOURCE}")
@@ -96,4 +98,4 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   add_custom_target("${TARGET}_tidy" ALL DEPENDS ${TARGET} ${ALL_STAMPS})
 endfunction()
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

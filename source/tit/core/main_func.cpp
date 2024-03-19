@@ -8,12 +8,12 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/system_utils.hpp"
+#include "tit/core/system.hpp"
 #include "tit/par/thread.hpp"
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto run_main(int argc, char** argv, main_like_t main_func) noexcept -> int {
   TIT_ENSURE(main_func != nullptr, "Main function must be specified!");
@@ -29,6 +29,6 @@ auto run_main(int argc, char** argv, main_like_t main_func) noexcept -> int {
   });
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

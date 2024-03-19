@@ -3,13 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#pragma once
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// IWYU pragma: begin_exports
-#include "tit/geom/grid.hpp"
-#include "tit/geom/kd_tree.hpp"
-// IWYU pragma: end_exports
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "tit/testing/test.hpp" // IWYU pragma: keep
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

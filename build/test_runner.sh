@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Part of the Tit Solver project, under the MIT License.
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Test Runner Script.
 #
 # The script orchestrates test execution. Though the Bash implementation might
 # seem complex, it's significantly faster compared to the Python version.
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_NAME=""
 TEST_COMMAND=()
@@ -109,16 +109,11 @@ parse_args() {
   done
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 setup_work_dir() {
   echo "# Setting up the test directory..."
-  # Transform the test name into a directory name: replace '::' with '/' and
-  # remove the tag name. E.g. 'foo::bar[abc]' -> 'foo/bar'.
-  WORK_DIR="$TEST_NAME"
-  WORK_DIR="${WORK_DIR//:://}"
-  WORK_DIR="${WORK_DIR%%\[*}"
-  WORK_DIR="$TEST_OUTPUT_DIR/$WORK_DIR"
+  WORK_DIR="$TEST_OUTPUT_DIR/${TEST_NAME%%\[*}"
   mkdir -p "$WORK_DIR"
 }
 
@@ -168,7 +163,7 @@ setup_output() {
   done
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 run_test() {
   echo "# Running test..."
@@ -176,7 +171,7 @@ run_test() {
   "${TEST_COMMAND[@]}" <"stdin.txt" >"stdout.txt" 2>"stderr.txt"
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 match_exit_code() {
   local ACTUAL_EXIT_CODE="$1"
@@ -292,7 +287,7 @@ match() {
   fi
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 source "./build/build_utils.sh" || exit $?
 echo_thin_banner
@@ -306,4 +301,4 @@ STATUS=$?
 echo_thin_banner
 exit $STATUS
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

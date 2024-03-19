@@ -7,14 +7,14 @@
 #include <thread>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/io_utils.hpp"
+#include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/profiler.hpp"
 
 namespace tit {
 namespace {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [[gnu::noinline]] void func_3() {
   TIT_PROFILE_SECTION("func_3");
@@ -36,14 +36,14 @@ namespace {
   std::this_thread::sleep_for(std::chrono::microseconds(40));
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto run_test(int /*argc*/, char** /*argv*/) -> int {
   func_1();
   return 0;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace
 } // namespace tit
