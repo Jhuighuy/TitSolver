@@ -59,17 +59,19 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
   if(NOT TARGET_SOURCES)
+    message(WARNING "clang-tidy: no sources found for target ${TARGET}!")
     return()
   endif()
   foreach(SOURCE ${TARGET_SOURCES})
     # Skip non-C/C++ files.
-    is_cxx_source(${SOURCE} SOURCE_IS_CXX)
-    if(NOT SOURCE_IS_CXX)
-       continue()
+    is_cpp_file("${SOURCE}" SOURCE_IS_CPP)
+    if(NOT SOURCE_IS_CPP)
+      message(WARNING "clang-tidy: skipping non-C/C++ file: ${SOURCE}.")
+      continue()
     endif()
     # Create stamp.
     set(STAMP "${SOURCE}.tidy_stamp")
-    list(APPEND ALL_STAMPS ${STAMP})
+    list(APPEND ALL_STAMPS "${STAMP}")
     # Execute clang-tidy and update a stamp file on success.
     # (wrapped with chronic to avoid annoying `N warnings generated` messages).
     set(SOURCE_PATH "${TARGET_SOURCE_DIR}/${SOURCE}")

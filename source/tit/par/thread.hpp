@@ -14,7 +14,7 @@
 
 // #include "tit/core/misc.hpp"        // IWYU pragma: keep
 #include "tit/core/basic_types.hpp"
-#include "tit/core/trait_utils.hpp" // IWYU pragma: keep
+#include "tit/core/type_traits.hpp" // IWYU pragma: keep
 
 namespace tit::par {
 

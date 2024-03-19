@@ -14,10 +14,10 @@
 #include <vector>
 
 #include "tit/core/checks.hpp"
-#include "tit/core/io_utils.hpp"
+#include "tit/core/io.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/system_utils.hpp"
-#include "tit/core/time_utils.hpp"
+#include "tit/core/system.hpp"
+#include "tit/core/time.hpp"
 
 namespace tit {
 

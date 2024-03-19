@@ -9,21 +9,23 @@
 #include <thread>
 #include <utility>
 
-#include <doctest/doctest.h>
-
 #include "tit/core/basic_types.hpp"
+
 #include "tit/par/memory_pool.hpp"
 
+#include "tit/testing/test.hpp"
+
+namespace tit {
 namespace {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::par::MemoryPool") {
+TEST_CASE("par::MemoryPool") {
   SUBCASE("basic") {
     // Create memory pool.
-    tit::par::MemoryPool<int> pool{};
+    par::MemoryPool<int> pool{};
     // Check that basic allocations work.
-    constexpr auto count = 1024uz;
+    constexpr size_t count = 1024;
     auto* data = pool.allocate(count);
     CHECK(data != nullptr);
     // Check that the memory is accessible.
@@ -37,13 +39,7 @@ TEST_CASE("tit::par::MemoryPool") {
   SUBCASE("no construction") {
     // A class that triggers failure inside of it's constructors or destructor.
     struct NonConstructible {
-      int payload;
-      NonConstructible() {
-        CHECK(!"Cannot construct!");
-      }
-      ~NonConstructible() {
-        CHECK(!"Cannot destruct!");
-      }
+      NonConstructible() = delete;
     };
     // Create memory pool.
     tit::par::MemoryPool<NonConstructible> pool{};
@@ -149,3 +145,4 @@ TEST_CASE("tit::par::MemoryPool") {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace
+} // namespace tit

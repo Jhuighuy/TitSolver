@@ -3,10 +3,8 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-add_subdirectory(core)
-add_subdirectory(geom)
-add_subdirectory(par)
-add_subdirectory(sph)
-add_subdirectory(testing)
+add_test_from_target(
+  tit::geom_tests
+  NAME "tit/geom/unit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

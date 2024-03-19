@@ -5,9 +5,9 @@
 
 #include <signal.h> // NOLINT(*-deprecated-headers)
 
-#include "tit/core/io_utils.hpp"
+#include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/system_utils.hpp"
+#include "tit/core/system.hpp"
 
 namespace tit {
 namespace {
