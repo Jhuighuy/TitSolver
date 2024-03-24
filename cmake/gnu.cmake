@@ -58,7 +58,7 @@ set(
   # Warn about implicit conversions changing the sign of an integer.
   -Wsign-promo
   # Warn if a local variable or type declaration shadows another local variable.
-  -Wshadow
+ #-Wshadow
   # Warn about left-shifting negative values.
   -Wshift-negative-value
   # Warn about potential arithmetic overflows during shifts.

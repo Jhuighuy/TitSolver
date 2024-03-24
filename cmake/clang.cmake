@@ -61,7 +61,10 @@ set(
   # Disable warnings for unknown pragmas.
   -Wno-unknown-pragmas
   # Disable warnings for unknown warning options.
-  -Wno-unknown-warning-option)
+  -Wno-unknown-warning-option
+  # Temporary fix for `std::expected` and GCC.
+  -Wno-builtin-macro-redefined
+  -D__cpp_concepts=202002L)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
