@@ -21,6 +21,9 @@ tit_add_library(
     profiler.cpp
     profiler.hpp
     simd.hpp
+    simd/fwd.hpp
+    simd/reg.arm.hpp
+    simd/reg.x86.hpp
     system.cpp
     system.hpp
     time.hpp
@@ -28,9 +31,8 @@ tit_add_library(
     uint_utils.hpp
     utils.hpp
     vec.hpp
-    vec_avx.hpp
-    vec_neon.hpp
-    vec_simd.hpp
+    vec/vec.hpp
+    vec/vec_mask.hpp
   DEPENDS
     base)
 
@@ -46,7 +48,11 @@ tit_add_executable(
     system.test.cpp
     time.test.cpp
     uint_utils.test.cpp
-    vec.test.cpp
+    vec/vec.test.cpp
+    vec/vec.test.simd.cpp
+    vec/vec.testing.hpp
+    vec/vec_mask.test.cpp
+    vec/vec_mask.test.simd.cpp
   DEPENDS
     core testing)
 

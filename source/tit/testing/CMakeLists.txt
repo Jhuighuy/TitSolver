@@ -6,6 +6,9 @@
 set(
   SOURCES
   func_utils.hpp
+  random.cpp
+  random.hpp
+  strict.hpp
   test.hpp
   test_main.cpp)
 
