@@ -6,8 +6,7 @@
 #pragma once
 #if defined(__SSE__)
 
-// TODO: we need to replace this header with something like `<zmmintrin.h>`
-#include <x86intrin.h> // IWYU pragma: keep
+#include <x86intrin.h>
 
 #include <array>
 #include <functional>

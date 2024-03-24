@@ -9,7 +9,7 @@ include_guard()
 
 # Set minimal compiler version.
 # Disabled, since we do not officially support clang yet.
-# set(CLANG_MIN_VERSION "17.0")
+# set(CLANG_MIN_VERSION "18.1.1")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

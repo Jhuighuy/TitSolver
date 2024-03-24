@@ -7,7 +7,7 @@
 
 #include <algorithm>
 #include <array>
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <functional>
 #include <type_traits>
 #include <utility>

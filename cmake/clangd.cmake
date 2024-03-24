@@ -25,8 +25,8 @@ function(write_compile_flags TARGET_OR_ALIAS)
     CLANG_COMPILE_ARGS
     # Enable the same set of warnings we would use for normal clang.
     ${CLANG_WARNINGS}
-    # Enable C++23 (`c++2b` and not `c++23` for clang-16).
-    -std=c++2b)
+    # Enable C++23.
+    -std=c++23)
   if(APPLE)
     ## Force use libstdc++ since libc++ misses some stuff.
     clang_force_use_libstdcpp(CLANG_COMPILE_ARGS)
