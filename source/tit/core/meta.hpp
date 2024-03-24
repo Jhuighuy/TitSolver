@@ -57,7 +57,7 @@ public:
   /// Construct a set.
   /// @{
   consteval Set() = default;
-  consteval explicit Set(Ts... /*elements*/)
+  consteval explicit Set(Ts... /*elems*/)
     requires (sizeof...(Ts) != 0)
   {}
   /// @}

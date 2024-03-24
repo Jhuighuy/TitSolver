@@ -6,67 +6,168 @@
 #pragma once
 
 #include <algorithm>
+#include <concepts> // IWYU pragma: keep
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/uint_utils.hpp"
+#include "tit/core/utils.hpp"
+
+// IWYU pragma: begin_exports
+#include "tit/core/simd/fwd.hpp"
+#ifdef __ARM_NEON
+#include "tit/core/simd/reg.arm.hpp"
+#elifdef __SSE__
+#include "tit/core/simd/reg.x86.hpp"
+#endif
+// IWYU pragma: end_exports
 
 namespace tit::simd {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// @brief SIMD register size (in bytes) available on the current hardware.
-/// What is 16 bytes for SSE and NEON instruction set, 32 bytes for the AVX
-/// instruction set and 64 bytes for the AVX-512 instruction set.
-/// When no known instruction set is detected, some default value is set to
-/// emphasize automatic vectorization for the compiler.
-inline constexpr size_t max_reg_size_bytes_v =
-#if defined(__AVX512F__)
-    64
-#elif defined(__AVX__)
-    32
-#elif defined(__SSE__) || defined(__ARM_NEON)
+/// Minimal size of the SIMD register (in bytes) that is available on the
+/// current hardware. That is 16 bytes for all supported instruction sets.
+inline constexpr size_t min_reg_size_bytes_v{
+#ifdef __ARM_NEON
+    16
+#elifdef __SSE__
     16
 #else
-    16 // No known SIMD instruction set is available. Use 16 bytes as default
-       // and hope for automatic vectorization.
+    1
 #endif
-    ;
+};
 
-static_assert(is_power_of_two(max_reg_size_bytes_v));
+static_assert(is_power_of_two(min_reg_size_bytes_v));
+
+/// Maximal size of the SIMD register (in bytes) that is available on the
+/// current hardware. That is 16 bytes for NEON and SSE instruction set,
+/// 32 and 64 bytes for AVX and AVX-512 respectively.
+inline constexpr size_t max_reg_size_bytes_v{
+#ifdef __ARM_NEON
+    16
+#elifdef __AVX512F__
+    64
+#elifdef __AVX__
+    32
+#elifdef __SSE__
+    16
+#else
+    1
+#endif
+};
+
+static_assert(is_power_of_two(max_reg_size_bytes_v) &&
+              max_reg_size_bytes_v >= min_reg_size_bytes_v);
+
+/// Minimal SIMD register size (in elements) for the specified type.
+template<class Num>
+inline constexpr auto min_reg_size_v = min_reg_size_bytes_v / sizeof(Num);
 
 /// Maximal SIMD register size (in elements) for the specified type.
 template<class Num>
-  requires (is_power_of_two(sizeof(Num)))
-inline constexpr auto max_reg_size_v =
-    std::max<size_t>(1, max_reg_size_bytes_v / sizeof(Num));
+inline constexpr auto max_reg_size_v = max_reg_size_bytes_v / sizeof(Num);
 
-// TODO: description for this concept is incorrect. This concept is used
-// to determine if we need to make an explicit specialization for `Vec` for
-// generic vectorized case.
-/// @brief Does this amount of scalars form exactly a single SIMD register?
-/// Registers are used if:
-/// - either number of dimensions is greater than register
-///   size for the scalar type (e.g., 3 * `double` with NEON instruction set),
-/// - either it is less than register size for the scalar type
-///   (e.g. 3 * `double` on AVX instruction set) and number of dimensions is
-///   not power of two. In the latter case fractions of registers are used
-///   (e.g., for 2 * `double` with AVX instruction set SSE registers are be
-///   used.
+/// Size of "the most suitable register" to operate the given amount of scalars.
+/// @see simd::available_for
 template<class Num, size_t Dim>
-concept use_regs = (Dim > max_reg_size_v<Num>) ||
-                   (Dim < max_reg_size_v<Num> && !is_power_of_two(Dim));
+inline constexpr auto reg_size_for_v = std::clamp(
+    align_up_to_power_of_two(Dim), min_reg_size_v<Num>, max_reg_size_v<Num>);
 
-/// SIMD register size for the specified amount of scalars.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// @brief Is "the most suitable SIMD register" type to operate the given amount
+///        of scalars specialized?
+///
+/// "The most suitable SIMD register" is the smallest available SIMD register
+/// that can operate the given amount of scalars with the least amount of
+/// instructions. For example:
+/// - For 1 or 2 `double`s on an SSE/NEON-capable machine it is the 128-bit
+///   register, since there is no need to use wider registers even if they are
+///   available.
+/// - For 3 or 4 `double`s on an at least AVX-capable machine it is the 256-bit
+///   register, since there is no need to use wider registers even if they are
+///   available. If the machine is only SSE/NEON-capable, then it is the
+///   128-bit register, since those are the only available on the hardware.
 template<class Num, size_t Dim>
-  requires use_regs<Num, Dim>
-inline constexpr auto reg_size_v =
-    std::min(max_reg_size_v<Num>, align_up_to_power_of_two(Dim));
+concept available_for = available<Num, reg_size_for_v<Num, Dim>>;
 
-/// Do SIMD registers match for the specified types?
-template<size_t Dim, class Num, class... RestNums>
-concept regs_match =
-    use_regs<Num, Dim> && (use_regs<RestNums, Dim> && ...) &&
-    ((reg_size_v<Num, Dim> == reg_size_v<RestNums, Dim>) &&...);
+/// Syntax sugar for conditional compilation based on the availability of the
+/// most suitable SIMD register for the given amount of scalars.
+#define TIT_IF_SIMD_AVALIABLE(Num, Dim)                                        \
+  if constexpr (simd::available_for<Num, Dim>)                                 \
+    if !consteval
+
+/// Amount of "the most suitable SIMD registers" required to store the given
+/// amount of scalars.
+/// @see simd::available_for */
+template<class Num, size_t Dim>
+inline constexpr auto reg_count_for_v =
+    divide_up(Dim, reg_size_for_v<Num, Dim>);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Below are generic implementations of some SIMD operations that are not
+// available on some instruction sets.
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto operator+=(Reg<Num, Size>& a, Reg<Num, Size> b) noexcept
+    -> Reg<Num, Size>& {
+  return a = a + b;
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto operator-=(Reg<Num, Size>& a, Reg<Num, Size> b) noexcept
+    -> Reg<Num, Size>& {
+  return a = a - b;
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto operator*=(Reg<Num, Size>& a, Reg<Num, Size> b) noexcept
+    -> Reg<Num, Size>& {
+  return a = a * b;
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto operator/=(Reg<Num, Size>& a, Reg<Num, Size> b) noexcept
+    -> Reg<Num, Size>& {
+  return a = a / b;
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto fma(Reg<Num, Size> a, Reg<Num, Size> b,
+                          Reg<Num, Size> c) noexcept -> Reg<Num, Size> {
+  return c + a * b;
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto fnma(Reg<Num, Size> a, Reg<Num, Size> b,
+                           Reg<Num, Size> c) noexcept -> Reg<Num, Size> {
+  return c - a * b;
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto abs_delta(Reg<Num, Size> a, Reg<Num, Size> b) noexcept
+    -> Reg<Num, Size> {
+  return abs(a - b);
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto sum(Reg<Num, Size> a) noexcept -> Num {
+  auto const [a_hi, a_lo] = split(a);
+  return sum(a_hi + a_lo);
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto min_value(Reg<Num, Size> a) noexcept -> Num {
+  auto const [a_hi, a_lo] = split(a);
+  return min_value(min(a_hi, a_lo));
+}
+
+template<class Num, size_t Size>
+TIT_FORCE_INLINE auto max_value(Reg<Num, Size> a) noexcept -> Num {
+  auto const [a_hi, a_lo] = split(a);
+  return max_value(max(a_hi, a_lo));
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

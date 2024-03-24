@@ -94,7 +94,7 @@ public:
       -> decltype(auto) {
     // Compute an offset to the data position.
     size_t offset = 0;
-    auto const index_pack = pack<Rank, size_t>(indices...);
+    auto const index_pack = make_array<Rank, size_t>(indices...);
 #ifdef __clang__
     // TODO: clang doesn't like `std::views::zip`. Looks like it is already
     // fixed in clang 18. So, remove this workaround when clang 18 is released.
