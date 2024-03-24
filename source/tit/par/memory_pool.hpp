@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <memory>
 #include <type_traits>
 

@@ -10,7 +10,7 @@
 #include <limits>
 
 #include <algorithm>
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <cstdlib>
 #include <functional>
 #include <type_traits>
