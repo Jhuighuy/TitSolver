@@ -8,6 +8,7 @@
 #include <bit>
 #include <concepts> // IWYU pragma: keep
 #include <type_traits>
+#include <utility>
 
 #include "tit/core/basic_types.hpp"
 
@@ -73,6 +74,32 @@ constexpr auto to_bits(T a) noexcept {
 template<class T>
   requires std::integral<T> || std::floating_point<T>
 using make_bits_t = decltype(to_bits(std::declval<T>()));
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Is the type a flag enum?
+template<class Enum>
+  requires (std::is_enum_v<Enum> &&
+            std::unsigned_integral<std::underlying_type_t<Enum>>)
+constexpr bool is_flags_enum_v = false;
+
+/// Is the type a flags enum?
+template<class Enum>
+concept flags_enum = std::is_enum_v<Enum> &&
+                     std::unsigned_integral<std::underlying_type_t<Enum>> &&
+                     is_flags_enum_v<Enum>;
+
+/// Merge two flags enums.
+template<flags_enum Enum>
+constexpr auto operator|(Enum f, Enum g) noexcept -> Enum {
+  return static_cast<Enum>(std::to_underlying(f) | std::to_underlying(g));
+}
+
+/// Intersect two flags enum.
+template<flags_enum Enum>
+constexpr auto operator&(Enum f, Enum g) noexcept -> bool {
+  return (std::to_underlying(f) & std::to_underlying(g)) != 0;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
