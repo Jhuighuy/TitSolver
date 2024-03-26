@@ -28,7 +28,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
-#include "tit/geom/coord_bisection.hpp"
+#include "tit/geom/inertial_bisection.hpp"
 #include "tit/geom/search_engine.hpp"
 
 #include "tit/par/control.hpp"
@@ -224,9 +224,9 @@ public:
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
     size_t nparts = par::num_threads();
-    auto rcb = geom::SimpleCoordinateBisection(positions, nparts);
+    auto partitioner = geom::InertialBisection(positions, nparts);
     std::vector<size_t> parts;
-    rcb.GetPartitioning(parts);
+    partitioner.GetPartitioning(parts);
     for (size_t i = 0; i < parts.size(); ++i) {
       parinfo[array()[i]].part = parts[i];
     }
