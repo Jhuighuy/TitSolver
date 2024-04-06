@@ -36,7 +36,7 @@ extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void safe_atexit(atexit_callback_t callback) noexcept {
   TIT_ASSERT(callback != nullptr, "At-exit callback is invalid!");
@@ -55,7 +55,7 @@ void safe_atexit(atexit_callback_t callback) noexcept {
   std::_Exit(exit_code);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void safe_sigaction(int signal_number, sigaction_t const* action,
                     sigaction_t* prev_action) noexcept {
@@ -116,7 +116,7 @@ void SignalHandler::handle_signal_(int signal_number) noexcept {
   TIT_ASSERT(false, "Interpected a signal that has no handler!");
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace {
 
@@ -169,7 +169,7 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
   }
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto tty_width(std::FILE* stream) noexcept -> size_t {
   auto const stream_fileno = fileno(stream);
@@ -181,6 +181,6 @@ auto tty_width(std::FILE* stream) noexcept -> size_t {
   return window_size.ws_col;
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

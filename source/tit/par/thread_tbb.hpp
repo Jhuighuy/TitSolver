@@ -30,7 +30,7 @@
 
 namespace tit::par {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #if TIT_ENABLE_TBB
 // Number of threads.
@@ -39,7 +39,7 @@ size_t _num_threads = 1;
 thread_local size_t _thread_index = SIZE_MAX;
 #endif
 
-/** Number of threads. */
+/// Number of threads.
 constexpr auto num_threads() noexcept -> size_t {
 #if TIT_ENABLE_TBB
   if consteval {
@@ -52,7 +52,7 @@ constexpr auto num_threads() noexcept -> size_t {
 #endif
 }
 
-/** Current thread index. */
+/// Current thread index.
 constexpr auto thread_index() noexcept -> size_t {
 #if TIT_ENABLE_TBB
   if consteval {
@@ -65,7 +65,7 @@ constexpr auto thread_index() noexcept -> size_t {
 #endif
 }
 
-/** Wrapper for the `main` that sets up parallelism. */
+/// Wrapper for the `main` that sets up parallelism.
 template<std::invocable Func>
 auto main(int argc, char** argv, Func&& func) noexcept -> int {
 #if TIT_ENABLE_TBB
@@ -76,9 +76,9 @@ auto main(int argc, char** argv, Func&& func) noexcept -> int {
   return func();
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Invoke functions in parallel (inside the current process). */
+/// Invoke functions in parallel (inside the current process).
 template<std::invocable... Funcs>
 constexpr void invoke(Funcs&&... funcs) noexcept {
 #if TIT_ENABLE_TBB
@@ -100,8 +100,8 @@ concept _can_par =
     std::ranges::input_range<Range> && std::ranges::sized_range<Range> &&
     std::indirectly_unary_invocable<Func, std::ranges::iterator_t<Range>>;
 
-/** Iterate through the range in parallel (dynamic partitioning). */
-/** @{ */
+/// Iterate through the range in parallel (dynamic partitioning).
+/// @{
 template<class Range, class Func>
   requires _can_par<Range, Func>
 constexpr void for_each(Range&& range, Func&& func,
@@ -128,10 +128,10 @@ constexpr void for_each(std::ranges::join_view<Range> range, Func&& func,
       [&](auto subrange) { std::ranges::for_each(subrange, func); },
       grain_size);
 }
-/** @} */
+/// @}
 
-/** Iterate through the range in parallel (static partitioning). */
-/** @{ */
+/// Iterate through the range in parallel (static partitioning).
+/// @{
 template<class Range, class Func>
   requires _can_par<Range, Func>
 constexpr void static_for_each(Range&& range, Func&& func) noexcept {
@@ -166,7 +166,7 @@ constexpr void static_for_each(std::ranges::join_view<Range> range,
     std::ranges::for_each(subrange, func);
   });
 }
-/** @} */
+/// @}
 
 template<
     std::ranges::input_range Range,
@@ -188,7 +188,7 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
 #endif
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::par
 #endif

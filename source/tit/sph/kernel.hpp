@@ -14,6 +14,7 @@
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/vec.hpp"
+
 #include "tit/sph/field.hpp"
 
 #ifndef TIT_BRANCHLESS_KERNELS
@@ -22,16 +23,14 @@
 
 namespace tit::sph {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Abstract smoothing kernel.
-\******************************************************************************/
+/// Abstract smoothing kernel.
 template<class Derived>
 class Kernel {
 protected:
 
-  /** Derived class reference. */
+  /// Derived class reference.
   constexpr auto derived() const noexcept -> Derived const& {
     static_assert(std::derived_from<Derived, Kernel<Derived>>);
     return static_cast<Derived const&>(*this);
@@ -39,18 +38,18 @@ protected:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{r, h};
 
-  /** Support radius for particle. */
+  /// Support radius for particle.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto radius(PV a) const noexcept {
     return radius(h[a]);
   }
 
-  /** Value of the smoothing kernel for two particles. */
-  /** @{ */
+  /// Value of the smoothing kernel for two particles.
+  /// @{
   template<class PV>
     requires (has<PV>(required_fields) && has_const<PV>(h))
   constexpr auto operator()(PV a, PV b) const noexcept {
@@ -61,10 +60,10 @@ public:
   constexpr auto operator()(PV a, PV b, Real h) const noexcept {
     return (*this)(r[a, b], h);
   }
-  /** @} */
+  /// @}
 
-  /** Directional derivative of the smoothing kernel for two particles. */
-  /** @{ */
+  /// Directional derivative of the smoothing kernel for two particles.
+  /// @{
   template<class PV>
     requires (has<PV>(required_fields) && has_const<PV>(h))
   constexpr auto deriv(PV a, PV b) const noexcept {
@@ -75,10 +74,10 @@ public:
   constexpr auto deriv(PV a, PV b, Real h) const noexcept {
     return deriv(r[a, b], h);
   }
-  /** @} */
+  /// @}
 
-  /** Value of the smoothing kernel for two particles. */
-  /** @{ */
+  /// Value of the smoothing kernel for two particles.
+  /// @{
   template<class PV>
     requires (has<PV>(required_fields) && has_const<PV>(h))
   constexpr auto grad(PV a, PV b) const noexcept {
@@ -89,10 +88,10 @@ public:
   constexpr auto grad(PV a, PV b, Real h) const noexcept {
     return grad(r[a, b], h);
   }
-  /** @} */
+  /// @}
 
-  /** Width derivative of the smoothing kernel for two points. */
-  /** @{ */
+  /// Width derivative of the smoothing kernel for two points.
+  /// @{
   template<class PV>
   // requires (has<PV>(required_fields) && has_const<PV>(h))
   constexpr auto width_deriv(PV a, PV b) const noexcept {
@@ -103,18 +102,18 @@ public:
   constexpr auto width_deriv(PV a, PV b, Real h) const noexcept {
     return width_deriv(r[a, b], h);
   }
-  /** @} */
+  /// @}
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   constexpr auto weight() const noexcept -> Real {
     // A shortcut in order not to write `.template weight<...>` all the time.
     return derived().template weight<Real, Dim>();
   }
 
-  /** Support radius. */
+  /// Support radius.
   template<class Real>
   constexpr auto radius(Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
@@ -122,7 +121,7 @@ public:
     return radius * h;
   }
 
-  /** Value of the smoothing kernel at point. */
+  /// Value of the smoothing kernel at point.
   template<class Real, size_t Dim>
   constexpr auto operator()(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
@@ -132,7 +131,7 @@ public:
     return w * derived().unit_value(q);
   }
 
-  /** Directional derivative of the smoothing kernel at point. */
+  /// Directional derivative of the smoothing kernel at point.
   template<class Real, size_t Dim>
   constexpr auto deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
@@ -142,7 +141,7 @@ public:
     return w * derived().unit_deriv(q) * h_inverse;
   }
 
-  /** Spatial gradient of the smoothing kernel at point. */
+  /// Spatial gradient of the smoothing kernel at point.
   template<class Real, size_t Dim>
   constexpr auto grad(Vec<Real, Dim> x, Real h) const noexcept
       -> Vec<Real, Dim> {
@@ -154,7 +153,7 @@ public:
     return w * derived().unit_deriv(q) * grad_q;
   }
 
-  /** Width derivative of the smoothing kernel at point. */
+  /// Width derivative of the smoothing kernel at point.
   template<class Real, size_t Dim>
   constexpr auto width_deriv(Vec<Real, Dim> x, Real h) const noexcept -> Real {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
@@ -169,33 +168,29 @@ public:
 
 }; // class Kernel
 
-/** Smoothing kernel type. */
+/// Smoothing kernel type.
 template<class DerivedKernel>
 concept kernel = std::movable<DerivedKernel> &&
                  std::derived_from<DerivedKernel, Kernel<DerivedKernel>>;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Bell-shaped smoothing kernel.
-\******************************************************************************/
+/// Bell-shaped smoothing kernel.
 // TODO: Implement me! What am I?
 class BellShapedKernel {};
 
-/******************************************************************************\
- ** Gaussian smoothing kernel (Monaghan, 1992).
-\******************************************************************************/
+/// Gaussian smoothing kernel (Monaghan, 1992).
 class GaussianKernel final : public Kernel<GaussianKernel> {
 public:
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim);
     return pow(std::numbers::inv_sqrtpi_v<Real>, Dim);
   }
 
-  /** Unit support radius. */
+  /// Unit support radius.
   template<class Real>
   static constexpr auto unit_radius() noexcept -> Real {
     // We truncate gaussian at the point, where it reaches minimal non-zero
@@ -205,13 +200,13 @@ public:
     return sqrt(-log(std::numeric_limits<Real>::min()));
   }
 
-  /** Value of the unit smoothing kernel at a point. */
+  /// Value of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_value(Real q) noexcept -> Real {
     return exp(-pow2(q));
   }
 
-  /** Derivative of the unit smoothing kernel at a point. */
+  /// Derivative of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_deriv(Real q) noexcept -> Real {
     return -Real{2.0} * q * exp(-pow2(q));
@@ -219,21 +214,17 @@ public:
 
 }; // class GaussianKernel
 
-/******************************************************************************\
- ** Super-gaussian smoothing kernel (Monaghan, 1992).
-\******************************************************************************/
+/// Super-gaussian smoothing kernel (Monaghan, 1992).
 // TODO: implement me!
 class SuperGaussianKernel {};
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Cubic B-spline (M4) smoothing kernel.
-\******************************************************************************/
+/// Cubic B-spline (M4) smoothing kernel.
 class CubicSplineKernel final : public Kernel<CubicSplineKernel> {
 public:
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
@@ -244,13 +235,13 @@ public:
     }
   }
 
-  /** Unit support radius. */
+  /// Unit support radius.
   template<class Real>
   static constexpr auto unit_radius() noexcept -> Real {
     return Real{2.0};
   }
 
-  /** Value of the unit smoothing kernel at a point. */
+  /// Value of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_value(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{2.0}, Real{1.0}};
@@ -270,7 +261,7 @@ public:
 #endif
   }
 
-  /** Derivative of the unit smoothing kernel at a point. */
+  /// Derivative of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_deriv(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{2.0}, Real{1.0}};
@@ -292,32 +283,30 @@ public:
 
 }; // class CubicSplineKernel
 
-/******************************************************************************\
- ** Cubic B-spline (M4) smoothing kernel
- ** with modified derivative (Thomas, Couchman, 1992).
-\******************************************************************************/
+/// Cubic B-spline (M4) smoothing kernel
+/// with modified derivative (Thomas, Couchman, 1992).
 class ThomasCouchmanKernel final : public Kernel<ThomasCouchmanKernel> {
 public:
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   static consteval auto weight() noexcept -> Real {
     return CubicSplineKernel::weight<Real, Dim>();
   }
 
-  /** Unit support radius. */
+  /// Unit support radius.
   template<class Real>
   static consteval auto unit_radius() noexcept -> Real {
     return CubicSplineKernel::unit_radius<Real>();
   }
 
-  /** Value of the unit smoothing kernel at a point. */
+  /// Value of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_value(Real q) noexcept -> Real {
     return CubicSplineKernel::unit_value(q);
   }
 
-  /** Derivative of the unit smoothing kernel at a point. */
+  /// Derivative of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_deriv(Real q) noexcept -> Real {
     // TODO: provide a branchless implementation.
@@ -329,13 +318,11 @@ public:
 
 }; // class ThomasCouchmanKernel
 
-/******************************************************************************\
- ** The quartic B-spline (M5) smoothing kernel.
-\******************************************************************************/
+/// The quartic B-spline (M5) smoothing kernel.
 class QuarticSplineKernel final : public Kernel<QuarticSplineKernel> {
 public:
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
@@ -346,13 +333,13 @@ public:
     }
   }
 
-  /** Unit support radius. */
+  /// Unit support radius.
   template<class Real>
   static constexpr auto unit_radius() noexcept -> Real {
     return Real{2.5};
   }
 
-  /** Value of the unit smoothing kernel at a point. */
+  /// Value of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_value(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{2.5}, Real{1.5}, Real{0.5}};
@@ -375,7 +362,7 @@ public:
 #endif
   }
 
-  /** Derivative value of the unit smoothing kernel at a point. */
+  /// Derivative value of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_deriv(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{2.5}, Real{1.5}, Real{0.5}};
@@ -400,13 +387,11 @@ public:
 
 }; // class QuarticSplineKernel
 
-/******************************************************************************\
- ** Quintic B-spline (M6) smoothing kernel.
-\******************************************************************************/
+/// Quintic B-spline (M6) smoothing kernel.
 class QuinticSplineKernel final : public Kernel<QuinticSplineKernel> {
 public:
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept {
     static_assert(1 <= Dim && Dim <= 3);
@@ -417,13 +402,13 @@ public:
     }
   }
 
-  /** Unit support radius. */
+  /// Unit support radius.
   template<class Real>
   static constexpr auto unit_radius() noexcept -> Real {
     return Real{3.0};
   }
 
-  /** Value of the unit smoothing kernel at a point. */
+  /// Value of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_value(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{3.0}, Real{2.0}, Real{1.0}};
@@ -446,7 +431,7 @@ public:
 #endif
   }
 
-  /** Derivative of the unit smoothing kernel at a point. */
+  /// Derivative of the unit smoothing kernel at a point.
   template<class Real>
   static constexpr auto unit_deriv(Real q) noexcept -> Real {
     constexpr auto qi = Vec{Real{3.0}, Real{2.0}, Real{1.0}};
@@ -471,11 +456,9 @@ public:
 
 }; // class QuinticSplineKernel
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Abstract Wendland's smoothing kernel.
-\******************************************************************************/
+/// Abstract Wendland's smoothing kernel.
 template<class Derived>
 class WendlandKernel : public Kernel<Derived> {
 protected:
@@ -484,14 +467,14 @@ protected:
 
 public:
 
-  /** Unit support radius. */
+  /// Unit support radius.
   template<class Real>
   static constexpr auto unit_radius() noexcept -> Real {
     // Wendland's kernels always have a support radius of 2.
     return Real{2.0};
   }
 
-  /** Value of the unit smoothing kernel at a point. */
+  /// Value of the unit smoothing kernel at a point.
   template<class Real>
   constexpr auto unit_value(Real q) const noexcept -> Real {
 #if TIT_BRANCHLESS_KERNELS
@@ -501,7 +484,7 @@ public:
 #endif
   }
 
-  /** Derivative of the unit smoothing kernel at a point. */
+  /// Derivative of the unit smoothing kernel at a point.
   template<class Real>
   constexpr auto unit_deriv(Real q) const noexcept -> Real {
 #if TIT_BRANCHLESS_KERNELS
@@ -513,14 +496,12 @@ public:
 
 }; // class WendlandKernel
 
-/******************************************************************************\
- ** Wendland's quartic (C2) smoothing kernel (Wendland, 1995).
-\******************************************************************************/
+/// Wendland's quartic (C2) smoothing kernel (Wendland, 1995).
 class QuarticWendlandKernel final :
     public WendlandKernel<QuarticWendlandKernel> {
 public:
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
@@ -531,13 +512,13 @@ public:
     }
   }
 
-  /** Value of the unit smoothing kernel at a point (not truncated). */
+  /// Value of the unit smoothing kernel at a point (not truncated).
   template<class Real>
   static constexpr auto unit_value_notrunc(Real q) noexcept -> Real {
     return (Real{1.0} + Real{2.0} * q) * pow4(Real{1.0} - Real{0.5} * q);
   }
 
-  /** Derivative of the unit smoothing kernel at a point (not truncated). */
+  /// Derivative of the unit smoothing kernel at a point (not truncated).
   template<class Real>
   static constexpr auto unit_deriv_notrunc(Real q) noexcept -> Real {
     // Well known formula is dW/dq = -5 * q * (1 - q/2)^3, but it requires 5
@@ -547,14 +528,12 @@ public:
 
 }; // class QuarticWendlandKernel
 
-/******************************************************************************\
- ** Wendland's 6-th order (C4) smoothing kernel (Wendland, 1995).
-\******************************************************************************/
+/// Wendland's 6-th order (C4) smoothing kernel (Wendland, 1995).
 class SixthOrderWendlandKernel final :
     public WendlandKernel<SixthOrderWendlandKernel> {
 public:
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
@@ -565,14 +544,14 @@ public:
     }
   }
 
-  /** Value of the unit smoothing kernel at a point (not truncated). */
+  /// Value of the unit smoothing kernel at a point (not truncated).
   template<class Real>
   static constexpr auto unit_value_notrunc(Real q) noexcept -> Real {
     return poly(q, Vec{Real{1.0}, Real{3.0}, Real{35.0 / 12.0}}) *
            pow6(Real{1.0} - Real{0.5} * q);
   }
 
-  /** Derivative of the unit smoothing kernel at a point (not truncated). */
+  /// Derivative of the unit smoothing kernel at a point (not truncated).
   template<class Real>
   static constexpr auto unit_deriv_notrunc(Real q) noexcept -> Real {
     return poly(q, Real{7.0 / 96.0} * Vec{Real{2.0}, Real{5.0}}) * q *
@@ -581,14 +560,12 @@ public:
 
 }; // class SixthOrderWendlandKernel
 
-/******************************************************************************\
- ** Wendland's 8-th order (C6) smoothing kernel (Wendland, 1995).
-\******************************************************************************/
+/// Wendland's 8-th order (C6) smoothing kernel (Wendland, 1995).
 class EighthOrderWendlandKernel final :
     public WendlandKernel<EighthOrderWendlandKernel> {
 public:
 
-  /** Kernel weight. */
+  /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
     static_assert(1 <= Dim && Dim <= 3);
@@ -599,14 +576,14 @@ public:
     }
   }
 
-  /** Value of the unit smoothing kernel at a point (not truncated). */
+  /// Value of the unit smoothing kernel at a point (not truncated).
   template<class Real>
   static constexpr auto unit_value_notrunc(Real q) noexcept -> Real {
     return poly(q, Vec{Real{1.0}, Real{4.0}, Real{25.0 / 4.0}, Real{4.0}}) *
            pow8(Real{1.0} - Real{0.5} * q);
   }
 
-  /** Derivative of the unit smoothing kernel at a point (not truncated). */
+  /// Derivative of the unit smoothing kernel at a point (not truncated).
   template<class Real>
   static constexpr auto unit_deriv_notrunc(Real q) noexcept -> Real {
     return poly(q, Real{11.0 / 512.0} * Vec{Real{2.0}, Real{7.0}, Real{8.0}}) *
@@ -615,6 +592,6 @@ public:
 
 }; // class SixthOrderWendlandKernel
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::sph

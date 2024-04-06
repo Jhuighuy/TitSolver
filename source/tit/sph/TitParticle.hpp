@@ -24,8 +24,8 @@
 #include "tit/core/meta.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/vec.hpp"
 
+#include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
@@ -36,29 +36,25 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Space specification.
-\******************************************************************************/
+/// Space specification.
 template<class Real_, size_t Dim>
   requires (1 <= Dim && Dim <= 3)
 class Space {
 public:
 
-  /** Real number type, used in this space. */
+  /// Real number type, used in this space.
   using Real = Real_;
 
-  /** Number of spatial dimensions. */
+  /// Number of spatial dimensions.
   static constexpr size_t dim = Dim;
 
 }; // class Space
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Particle view.
-\******************************************************************************/
+/// Particle view.
 template<class ParticleArray>
   requires std::is_object_v<ParticleArray>
 class ParticleView final {
@@ -69,32 +65,32 @@ private:
 
 public:
 
-  /** Set of particle fields that are present. */
+  /// Set of particle fields that are present.
   static constexpr auto fields = std::remove_const_t<ParticleArray>::fields;
-  /** Subset of particle fields that are array-wise constants. */
+  /// Subset of particle fields that are array-wise constants.
   static constexpr auto constants =
       std::remove_const_t<ParticleArray>::constants;
-  /** Subset of particle fields that are individual for each particle. */
+  /// Subset of particle fields that are individual for each particle.
   static constexpr auto variables =
       std::remove_const_t<ParticleArray>::variables;
 
-  /** Construct a particle view. */
+  /// Construct a particle view.
   constexpr ParticleView(ParticleArray& particles,
                          size_t particle_index) noexcept
       : particles_{&particles}, particle_index_{particle_index} {}
 
-  /** Associated particle array. */
+  /// Associated particle array.
   constexpr auto array() const noexcept -> ParticleArray& {
     TIT_ASSERT(particles_ != nullptr, "Particle array was not set.");
     return *particles_;
   }
-  /** Associated particle index. */
+  /// Associated particle index.
   constexpr auto index() const noexcept -> size_t {
     return particle_index_;
   }
 
-  /** Compare particle views. */
-  /** @{ */
+  /// Compare particle views.
+  /// @{
   constexpr auto operator==(ParticleView<ParticleArray> other) const noexcept
       -> bool {
     TIT_ASSERT(&array() == &other.array(),
@@ -107,9 +103,9 @@ public:
                "Particles must belong to the same array.");
     return index() != other.index();
   }
-  /** @} */
+  /// @}
 
-  /** Particle field value. */
+  /// Particle field value.
   template<meta::type Field>
     requires (has<ParticleView, Field>())
   constexpr auto operator[](Field field) const noexcept -> decltype(auto) {
@@ -121,7 +117,7 @@ public:
 template<class ParticleArray>
 ParticleView(ParticleArray&) -> ParticleView<ParticleArray>;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // TODO: move it to an appropriate place!
 #if COMPRESSIBLE_SOD_PROBLEM
@@ -134,9 +130,7 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
 inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 #endif
 
-/******************************************************************************\
- ** Particle adjacency graph.
-\******************************************************************************/
+/// Particle adjacency graph.
 template<class ParticleArray, class EngineFactory = geom::GridFactory>
   requires std::is_object_v<ParticleArray> && std::is_object_v<EngineFactory>
 class ParticleAdjacency final {
@@ -151,21 +145,21 @@ private:
 
 public:
 
-  /** Construct a particle adjacency graph.
-   ** @param engine_factory Nearest-neighbors search engine factory. */
+  /// Construct a particle adjacency graph.
+  /// @param engine_factory Nearest-neighbors search engine factory.
   constexpr explicit ParticleAdjacency(
       ParticleArray& particles, EngineFactory engine_factory = {}) noexcept
       : particles_{&particles}, engine_factory_{std::move(engine_factory)} {}
 
-  /** Associated particle array. */
+  /// Associated particle array.
   constexpr auto array() const noexcept -> ParticleArray& {
     TIT_ASSERT(particles_ != nullptr, "Particle array was not set.");
     return *particles_;
   }
 
-  /** Build an adjacency graph.
-   ** @param radius_func Function that returns search radius for the
-   **                    specified particle view. */
+  /// Build an adjacency graph.
+  /// @param radius_func Function that returns search radius for the
+  ///                    specified particle view.
   template<class SearchRadiusFunc>
   constexpr void build(SearchRadiusFunc const& radius_func) {
     TIT_PROFILE_SECTION("tit::ParticleAdjacency::build()");
@@ -244,7 +238,7 @@ public:
            });
   }
 
-  /** Adjacent particles. */
+  /// Adjacent particles.
   constexpr auto operator[](ParticleView<ParticleArray> a) const noexcept {
     TIT_ASSERT(&a.array() != &array(),
                "Particle belongs to a different array.");
@@ -253,17 +247,17 @@ public:
            std::views::transform(
                [this](size_t b_index) { return array()[b_index]; });
   }
-  /** Adjacent particles. */
+  /// Adjacent particles.
   constexpr auto operator[](std::nullptr_t, size_t a) const noexcept {
     return std::views::all(interp_adjacency_[a]) |
            std::views::transform(
                [this](size_t b_index) { return array()[b_index]; });
   }
 
-  /** All pairs of the adjacent particles. */
+  /// All pairs of the adjacent particles.
   constexpr auto all_pairs() const noexcept {}
 
-  /** Unique pairs of the adjacent particles. */
+  /// Unique pairs of the adjacent particles.
   constexpr auto pairs() const noexcept {
     return std::views::all(adjacency_.edges()) |
            std::views::transform([this](auto ab_indices) {
@@ -306,7 +300,7 @@ public:
 template<class ParticleArray>
 ParticleAdjacency(ParticleArray&) -> ParticleAdjacency<ParticleArray>;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<meta::type Space, meta::type Fields, meta::type Consts = meta::Set<>>
 class ParticleArray;
@@ -323,19 +317,17 @@ ParticleArray(Space, Fields, Consts...)
     -> ParticleArray<Space, decltype(Fields{} | meta::Set<Consts...>{}),
                      meta::Set<Consts...>>;
 
-/******************************************************************************\
- ** Particle array.
-\******************************************************************************/
+/// Particle array.
 template<class Real, size_t Dim, meta::type... Fields, meta::type... Consts>
 class ParticleArray<Space<Real, Dim>, //
                     meta::Set<Fields...>, meta::Set<Consts...>> {
 public:
 
-  /** Set of particle fields that are present. */
+  /// Set of particle fields that are present.
   static constexpr auto fields = meta::Set<Fields...>{};
-  /** Subset of particle fields that are array-wise constants. */
+  /// Subset of particle fields that are array-wise constants.
   static constexpr auto constants = meta::Set<Consts...>{};
-  /** Subset of particle fields that are individual for each particle. */
+  /// Subset of particle fields that are individual for each particle.
   static constexpr auto variables = fields - constants;
 
 private:
@@ -371,8 +363,8 @@ public:
 
   }; // class OnAssignment
 
-  /** Construct a particle array. */
-  /** @{ */
+  /// Construct a particle array.
+  /// @{
   // clang-format off
   template<meta::type FieldSubset, meta::type ConstSubset>
     requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
@@ -387,19 +379,19 @@ public:
   constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space_,
                                    [[maybe_unused]] FieldSubset fields_ = {},
                                    [[maybe_unused]] ConstSubset... consts_) {}
-  /** @} */
+  /// @}
 
-  /** Number of particles. */
+  /// Number of particles.
   constexpr auto size() const noexcept -> size_t {
     return particles_.size();
   }
 
-  /** Reserve amount of particles. */
+  /// Reserve amount of particles.
   constexpr void reserve(size_t capacity) {
     particles_.reserve(capacity);
   }
 
-  /** Appends a new particle. */
+  /// Appends a new particle.
   constexpr auto append() {
     particles_.emplace_back();
     return (*this)[size() - 1];
@@ -407,8 +399,8 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Range of particles. */
-  /** @{ */
+  /// Range of particles.
+  /// @{
   constexpr auto views() noexcept {
     return std::views::iota(0UZ, size()) |
            std::views::transform([this](size_t particle_index) {
@@ -421,10 +413,10 @@ public:
              return ParticleView{*this, particle_index};
            });
   }
-  /** @} */
+  /// @}
 
-  /** Particle view at index. */
-  /** @{ */
+  /// Particle view at index.
+  /// @{
   constexpr auto operator[](size_t particle_index) noexcept {
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
     return ParticleView{*this, particle_index};
@@ -433,10 +425,10 @@ public:
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
     return ParticleView{*this, particle_index};
   }
-  /** @} */
+  /// @}
 
-  /** Particle field at index. */
-  /** @{ */
+  /// Particle field at index.
+  /// @{
   template<meta::type Field>
     requires meta::contains_v<Field, Fields...>
   constexpr auto operator[]([[maybe_unused]] size_t particle_index,
@@ -466,10 +458,10 @@ public:
       }(variables);
     }
   }
-  /** @} */
+  /// @}
 
-  /** Get array-wise constant at index or assign value to all particles. */
-  /** @{ */
+  /// Get array-wise constant at index or assign value to all particles.
+  /// @{
   template<meta::type Field>
     requires meta::contains_v<Field, Fields...>
   constexpr auto operator[]([[maybe_unused]] Field field) noexcept
@@ -489,7 +481,7 @@ public:
   constexpr auto operator[]([[maybe_unused]] Field field) const noexcept {
     return std::get<meta::index_of_v<Field, Consts...>>(constants_);
   }
-  /** @} */
+  /// @}
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -535,9 +527,8 @@ public:
     };
     output.flush();
   }
-
 }; // class ParticleArray
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

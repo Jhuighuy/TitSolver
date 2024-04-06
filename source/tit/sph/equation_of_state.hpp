@@ -11,6 +11,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
+
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {
@@ -19,11 +20,9 @@ namespace tit::sph {
 template<class EquationOfState>
 concept equation_of_state = std::movable<EquationOfState>;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Ideal gas equation of state.
-\******************************************************************************/
+/// Ideal gas equation of state.
 class IdealGasEquationOfState {
 private:
 
@@ -31,17 +30,17 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{rho, p, cs, u, du_dt};
 
-  /** Construct an equation of state.
-   ** @param gamma Adiabatic index. */
+  /// Construct an equation of state.
+  /// @param gamma Adiabatic index.
   constexpr explicit IdealGasEquationOfState(real_t gamma = 1.4) noexcept
       : gamma_{gamma} {
     TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1.");
   }
 
-  /** Compute particle pressure (and sound speed). */
+  /// Compute particle pressure (and sound speed).
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
@@ -52,9 +51,7 @@ public:
 
 }; // class IdealGasEquationOfState
 
-/******************************************************************************\
- ** Adiabatic ideal gas equation of state.
-\******************************************************************************/
+/// Adiabatic ideal gas equation of state.
 class AdiabaticIdealGasEquationOfState {
 private:
 
@@ -62,12 +59,12 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{rho, p, cs};
 
-  /** Construct an equation of state.
-   ** @param kappa Thermal conductivity coefficient. (???)
-   ** @param gamma Adiabatic index. */
+  /// Construct an equation of state.
+  /// @param kappa Thermal conductivity coefficient. (???)
+  /// @param gamma Adiabatic index.
   constexpr explicit AdiabaticIdealGasEquationOfState( //
       real_t kappa = 1.0, real_t gamma = 1.4) noexcept
       : kappa_{kappa}, gamma_{gamma} {
@@ -76,7 +73,7 @@ public:
     TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1.");
   }
 
-  /** Compute particle pressure (and sound speed). */
+  /// Compute particle pressure (and sound speed).
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
@@ -86,11 +83,9 @@ public:
 
 }; // class GasEquationOfState
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Weakly-compressible fluid equation of state (Cole equation).
-\******************************************************************************/
+/// Weakly-compressible fluid equation of state (Cole equation).
 class WeaklyCompressibleFluidEquationOfState {
 private:
 
@@ -99,14 +94,14 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{rho, p};
 
-  /** Construct an equation of state.
-   ** @param cs_0 Reference sound speed, typically 10x of the expected velocity.
-   ** @param rho_0 Reference density.
-   ** @param p_0 Background pressure.
-   ** @param gamma Adiabatic index. */
+  /// Construct an equation of state.
+  /// @param cs_0 Reference sound speed, typically 10x of the expected velocity.
+  /// @param rho_0 Reference density.
+  /// @param p_0 Background pressure.
+  /// @param gamma Adiabatic index.
   constexpr WeaklyCompressibleFluidEquationOfState( //
       real_t cs_0, real_t rho_0, real_t p_0 = 0.0, real_t gamma = 7.0) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, p_0_{p_0}, gamma_{gamma} {
@@ -115,7 +110,7 @@ public:
     TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1.");
   }
 
-  /** Compute particle pressure (and sound speed). */
+  /// Compute particle pressure (and sound speed).
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
@@ -128,9 +123,7 @@ public:
 
 }; // class WeaklyCompressibleFluidEquationOfState
 
-/******************************************************************************\
- ** Weakly-compressible fluid equation of state (linear Cole equation).
-\******************************************************************************/
+/// Weakly-compressible fluid equation of state (linear Cole equation).
 class LinearWeaklyCompressibleFluidEquationOfState {
 private:
 
@@ -138,13 +131,13 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{rho, p};
 
-  /** Construct an equation of state.
-   ** @param cs_0 Reference sound speed, typically 10x of the expected velocity.
-   ** @param rho_0 Reference density.
-   ** @param p_0 Background pressure. */
+  /// Construct an equation of state.
+  /// @param cs_0 Reference sound speed, typically 10x of the expected velocity.
+  /// @param rho_0 Reference density.
+  /// @param p_0 Background pressure.
   constexpr LinearWeaklyCompressibleFluidEquationOfState( //
       real_t cs_0, real_t rho_0, real_t p_0 = 0.0) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, p_0_{p_0} {
@@ -152,7 +145,7 @@ public:
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");
   }
 
-  /** Compute particle pressure (and sound speed). */
+  /// Compute particle pressure (and sound speed).
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
@@ -165,6 +158,6 @@ public:
 
 }; // class LinearWeaklyCompressibleFluidEquationOfState
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::sph
