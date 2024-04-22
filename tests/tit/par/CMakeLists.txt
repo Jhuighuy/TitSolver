@@ -13,6 +13,6 @@ add_tit_executable(
 
 add_tit_test_from_target(
   tit::par_tests
-  NAME "tit::par::unit")
+  NAME "tit/par/unit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

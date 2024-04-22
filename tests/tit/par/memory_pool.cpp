@@ -9,19 +9,21 @@
 #include <thread>
 #include <utility>
 
-#include <doctest/doctest.h>
-
 #include "tit/core/basic_types.hpp"
+
 #include "tit/par/memory_pool.hpp"
 
+#include "tit/testing/test.hpp"
+
+namespace tit {
 namespace {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEST_CASE("tit::par::MemoryPool") {
+TEST_CASE("par::MemoryPool") {
   SUBCASE("basic") {
     // Create memory pool.
-    tit::par::MemoryPool<int> pool{};
+    par::MemoryPool<int> pool{};
     // Check that basic allocations work.
     constexpr size_t count = 1024;
     auto* data = pool.allocate(count);
@@ -40,7 +42,7 @@ TEST_CASE("tit::par::MemoryPool") {
       NonConstructible() = delete;
     };
     // Create memory pool.
-    tit::par::MemoryPool<NonConstructible> pool{};
+    par::MemoryPool<NonConstructible> pool{};
     // Allocate the data.
     auto* data = pool.allocate(1);
     // Deallocate the data.
@@ -51,7 +53,7 @@ TEST_CASE("tit::par::MemoryPool") {
 
   SUBCASE("allocate too much") {
     // Create memory pool.
-    tit::par::MemoryPool<int> pool{};
+    par::MemoryPool<int> pool{};
     // Try to allocate too much memory and expect `nullptr` to be returned.
     constexpr auto too_much = std::numeric_limits<tit::size_t>::max();
     CHECK(pool.allocate(too_much) == nullptr);
@@ -61,7 +63,7 @@ TEST_CASE("tit::par::MemoryPool") {
 
   SUBCASE("move") {
     // Create memory pool.
-    tit::par::MemoryPool<int> pool{};
+    par::MemoryPool<int> pool{};
     // Allocate a single value and assign the value to it.
     constexpr auto val = 1234;
     auto* data = pool.allocate(1);
@@ -92,7 +94,7 @@ TEST_CASE("tit::par::MemoryPool") {
     constexpr auto magic = 15241094284759029579UZ;
     constexpr auto num_threads = 4UZ;
     constexpr auto num_nodes = 1024UZ;
-    tit::par::MemoryPool<ListNode> pool{};
+    par::MemoryPool<ListNode> pool{};
     std::array<ListNode*, num_threads> all_lists{};
     std::array<std::thread, num_threads> threads{};
     auto const main_thread_id = std::this_thread::get_id();
@@ -143,3 +145,4 @@ TEST_CASE("tit::par::MemoryPool") {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 } // namespace
+} // namespace tit
