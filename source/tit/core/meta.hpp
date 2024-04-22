@@ -66,9 +66,10 @@ public:
 
   /** Check if the set contains a type `U`. */
   template<type U>
-  constexpr auto contains(U /*obj*/) const noexcept -> bool {
+  constexpr auto contains(U /*elem*/) const noexcept -> bool {
     return contains_v<U, Ts...>;
   }
+
   /** Check if the set contains all types in the set `Us...`. */
   template<type... Us>
   constexpr auto includes(Set<Us...> /*set*/) const noexcept -> bool {
@@ -89,21 +90,25 @@ template<type... Ts, type... Us>
 constexpr auto operator==(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs.includes(lhs) && lhs.includes(rhs);
 }
+
 /** Check that @p lhs is a @b strict subset of RHS. */
 template<type... Ts, type... Us>
 constexpr auto operator<(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs.includes(lhs) && (sizeof...(Ts) < sizeof...(Us));
 }
+
 /** Check that @p lhs is a subset of @p rhs. */
 template<type... Ts, type... Us>
 constexpr auto operator<=(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs.includes(lhs);
 }
+
 /** Check that @p lhs is a @b strict superset of @p rhs. */
 template<type... Ts, type... Us>
 constexpr auto operator>(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
   return rhs < lhs;
 }
+
 /** Check that @p lhs is a superset of @p rhs. */
 template<type... Ts, type... Us>
 constexpr auto operator>=(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {

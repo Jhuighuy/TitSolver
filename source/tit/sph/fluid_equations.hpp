@@ -173,8 +173,8 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_density(ParticleArray& particles,
                                  ParticleAdjacency& adjacent_particles) const {
-    TIT_PROFILE_SECTION("tit::FluidEquations::compute_density()");
     setup_boundary(particles, adjacent_particles);
+    TIT_PROFILE_SECTION("tit::FluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
     // Clean density-related fields.
     par::static_for_each(particles.views(), [&](PV a) {
