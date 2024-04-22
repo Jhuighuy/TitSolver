@@ -14,7 +14,7 @@
 
 #include <doctest/doctest.h>
 
-#include "tit/core/system_utils.hpp"
+#include "tit/core/system.hpp"
 
 namespace tit {
 namespace {

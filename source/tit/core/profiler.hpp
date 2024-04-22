@@ -10,8 +10,8 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "tit/core/misc.hpp"
-#include "tit/core/time_utils.hpp"
+#include "tit/core/time.hpp"
+#include "tit/core/utils.hpp"
 
 namespace tit {
 

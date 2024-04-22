@@ -24,7 +24,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/system_utils.hpp"
+#include "tit/core/system.hpp"
 
 #ifndef TIT_HAVE_GCOV
 #define TIT_HAVE_GCOV 0

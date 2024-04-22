@@ -11,9 +11,9 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/math_utils.hpp"
-#include "tit/core/misc.hpp" // IWYU pragma: keep
+#include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
+#include "tit/core/utils.hpp" // IWYU pragma: keep
 #include "tit/core/vec.hpp"
 
 namespace tit {

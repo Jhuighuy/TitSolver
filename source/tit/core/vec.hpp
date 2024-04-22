@@ -14,7 +14,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/math_utils.hpp"
+#include "tit/core/math.hpp"
 
 namespace tit {
 

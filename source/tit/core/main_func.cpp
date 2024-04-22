@@ -8,7 +8,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/system_utils.hpp"
+#include "tit/core/system.hpp"
 #include "tit/par/thread.hpp"
 
 namespace tit {
