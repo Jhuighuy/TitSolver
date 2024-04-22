@@ -60,11 +60,8 @@ public:
   /** @{ */
   consteval Set() = default;
   consteval explicit Set(Ts... /*elements*/)
-#ifndef __INTELLISENSE__ // This freaks out VSCode's IntelliSense.
     requires (sizeof...(Ts) != 0)
-#endif
-  {
-  }
+  {}
   /** @} */
 
   /** Check if the set contains a type `U`. */

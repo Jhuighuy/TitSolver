@@ -4,7 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 {
   "[cpp]": {
-    "editor.defaultFormatter": "xaver.clang-format"
+    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
   },
   "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,
@@ -13,18 +13,24 @@
   "editor.rulers": [
     80
   ],
+  "explorer.sortOrderLexicographicOptions": "unicode",
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
   "files.exclude": {
-    "output": true
+    ".cache": true,
+    "output": true,
+    "compile_flags.txt": true
   },
   "files.watcherExclude": {
+    "**/.cache/**": true,
     "**/output/**": true,
+    "**/compile_flags.txt": true
   },
   "files.associations": {
+    ".vscode/c_cpp_properties.json": "jsonc",
     ".clang-tidy": "yaml",
-    "*.f90pp": "FortranFreeForm",
+    ".clangd": "yaml",
     "*.ipp": "cpp",
     "*.tcc": "cpp",
     "__availability": "cpp",
