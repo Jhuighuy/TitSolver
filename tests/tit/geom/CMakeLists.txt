@@ -3,20 +3,15 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-include(testing)
+add_tit_executable(
+  NAME
+    geom_tests
+  SOURCES
+  DEPENDS
+    tit::geom tit::doctest)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-add_tit_library(
-  NAME doctest
-  TYPE OBJECT
-  SOURCES "doctest_main.cpp"
-  DEPENDS doctest::doctest)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-add_subdirectory("test_runner")
-add_subdirectory("tit")
-add_subdirectory("titwcsph")
+add_test_from_target(
+  tit::geom_tests
+  NAME "tit::geom::unit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

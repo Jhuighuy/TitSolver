@@ -23,7 +23,7 @@ TEST_CASE("tit::par::MemoryPool") {
     // Create memory pool.
     tit::par::MemoryPool<int> pool{};
     // Check that basic allocations work.
-    constexpr auto count = 1024uz;
+    constexpr size_t count = 1024;
     auto* data = pool.allocate(count);
     CHECK(data != nullptr);
     // Check that the memory is accessible.
@@ -37,13 +37,7 @@ TEST_CASE("tit::par::MemoryPool") {
   SUBCASE("no construction") {
     // A class that triggers failure inside of it's constructors or destructor.
     struct NonConstructible {
-      int payload;
-      NonConstructible() {
-        CHECK(!"Cannot construct!");
-      }
-      ~NonConstructible() {
-        CHECK(!"Cannot destruct!");
-      }
+      NonConstructible() = delete;
     };
     // Create memory pool.
     tit::par::MemoryPool<NonConstructible> pool{};
