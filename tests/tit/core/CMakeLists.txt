@@ -14,7 +14,7 @@ add_tit_executable(
     "time_utils.cpp"
     "vec.cpp"
   DEPENDS
-    tit::core tit::doctest)
+    tit::core tit::testing)
 
 add_tit_test_from_target(
   tit::core_tests

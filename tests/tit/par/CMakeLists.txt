@@ -9,7 +9,7 @@ add_tit_executable(
   SOURCES
     "memory_pool.cpp"
   DEPENDS
-    tit::par tit::doctest)
+    tit::par tit::testing)
 
 add_tit_test_from_target(
   tit::par_tests
