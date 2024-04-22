@@ -16,7 +16,7 @@ add_tit_executable(
   DEPENDS
     tit::core tit::doctest)
 
-add_test_from_target(
+add_tit_test_from_target(
   tit::core_tests
   NAME "tit::core::unit"
   EXIT_CODE 0)
@@ -28,7 +28,7 @@ add_tit_executable(
   SOURCES "catch_ctrl_c.cpp"
   DEPENDS tit::core)
 
-add_test_from_target(
+add_tit_test_from_target(
   tit::core_catch_ctrl_c_test
   NAME "tit::core::catch_ctrl_c"
   EXIT_CODE 0
@@ -41,7 +41,7 @@ add_tit_executable(
   SOURCES "catch_fatal_signal.cpp"
   DEPENDS tit::core)
 
-add_test_from_target(
+add_tit_test_from_target(
   tit::core_catch_fatal_signal_test
   NAME "tit::core::catch_fatal_signal"
   EXIT_CODE 1
@@ -55,11 +55,11 @@ add_tit_executable(
   SOURCES "profiler.cpp"
   DEPENDS tit::core)
 
-add_test_from_target(
+add_tit_test_from_target(
   tit::core_profiler_tests
   NAME "tit::core::profiler"
   MATCH_STDOUT "profiler_stdout.txt"
   FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
-  PROPERTIES ENVIRONMENT "TIT_ENABLE_PROFILER=1")
+  ENVIRONMENT "TIT_ENABLE_PROFILER=1")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

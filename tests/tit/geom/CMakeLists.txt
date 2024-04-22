@@ -10,7 +10,7 @@ add_tit_executable(
   DEPENDS
     tit::geom tit::doctest)
 
-add_test_from_target(
+add_tit_test_from_target(
   tit::geom_tests
   NAME "tit::geom::unit")
 

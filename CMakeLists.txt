@@ -17,6 +17,7 @@ include(clangd)
 include(codespell)
 include(compiler)
 include(tit_target)
+include(tit_testing)
 
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)
