@@ -3,19 +3,6 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-add_tit_executable(
-  NAME
-    core_tests
-  SOURCES
-    "math_utils.cpp"
-    "mdvector.cpp"
-    "meta.cpp"
-    "system_utils.cpp"
-    "time_utils.cpp"
-    "vec.cpp"
-  DEPENDS
-    tit::core tit::testing)
-
 add_tit_test_from_target(
   tit::core_tests
   NAME "tit/core/unit"
