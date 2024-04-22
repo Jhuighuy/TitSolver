@@ -34,3 +34,18 @@ add_tit_library(
     tit::base)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+add_tit_executable(
+  NAME
+    core_tests
+  SOURCES
+    "math.test.cpp"
+    "meta.test.cpp"
+    "mdvector.test.cpp"
+    "system.test.cpp"
+    "time.test.cpp"
+    "vec.test.cpp"
+  DEPENDS
+    tit::core tit::testing)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

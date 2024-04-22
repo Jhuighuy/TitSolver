@@ -16,3 +16,13 @@ add_tit_library(
     tit::core)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+add_tit_executable(
+  NAME
+    par_tests
+  SOURCES
+    "memory_pool.test.cpp"
+  DEPENDS
+    tit::par tit::testing)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

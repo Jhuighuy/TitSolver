@@ -16,3 +16,12 @@ add_tit_library(
     tit::core tit::par)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+add_tit_executable(
+  NAME
+    geom_tests
+  SOURCES
+  DEPENDS
+    tit::geom tit::testing)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

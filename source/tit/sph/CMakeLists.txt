@@ -21,3 +21,12 @@ add_tit_library(
     tit::core tit::par tit::geom)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+add_tit_executable(
+  NAME
+    sph_tests
+  SOURCES
+  DEPENDS
+    tit::sph tit::testing)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
