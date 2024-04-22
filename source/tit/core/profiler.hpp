@@ -15,21 +15,19 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Profiler interface.
-\******************************************************************************/
+/// Profiler interface.
 class Profiler final {
 public:
 
-  /** Profiler is a static object. */
+  /// Profiler is a static object.
   Profiler() = delete;
 
-  /** Stopwatch that is associated with a section. */
+  /// Stopwatch that is associated with a section.
   static auto section(std::string_view section_name) -> Stopwatch&;
 
-  /** Enable profiling. Report will be printed at exit. */
+  /// Enable profiling. Report will be printed at exit.
   static void enable() noexcept;
 
 private:
@@ -39,11 +37,11 @@ private:
 
 }; // class Profiler
 
-/** Profile the current scope. */
+/// Profile the current scope.
 #define TIT_PROFILE_SECTION(section_name)                                      \
   static auto& TIT_NAME(prof_section) = tit::Profiler::section(section_name);  \
   tit::StopwatchCycle const TIT_NAME(prof_cycle){TIT_NAME(prof_section)};
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

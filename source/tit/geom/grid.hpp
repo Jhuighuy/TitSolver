@@ -16,15 +16,14 @@
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
+
 #include "tit/geom/bbox.hpp"
 
 namespace tit::geom {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Uniform multidimensional grid.
-\******************************************************************************/
+/// Uniform multidimensional grid.
 template<std::ranges::view Points>
   requires std::ranges::sized_range<Points> &&
            std::ranges::random_access_range<Points> &&
@@ -32,14 +31,14 @@ template<std::ranges::view Points>
 class Grid final {
 public:
 
-  /** Point type. */
+  /// Point type.
   using Point = std::ranges::range_value_t<Points>;
-  /** Bounding box type. */
+  /// Bounding box type.
   using PointBBox = bbox_t<Point>;
 
-  /** Numeric type used by the point type. */
+  /// Numeric type used by the point type.
   using Real = vec_num_t<Point>;
-  /** Numeric type used by the point type. */
+  /// Numeric type used by the point type.
   static constexpr auto Dim = vec_dim_v<Point>;
 
 private:
@@ -52,8 +51,8 @@ private:
 
 public:
 
-  /** Initialize and build the multidimensional grid.
-   ** @param spacing Grid cell size, typically 2x of the particle spacing. */
+  /// Initialize and build the multidimensional grid.
+  /// @param spacing Grid cell size, typically 2x of the particle spacing.
   constexpr explicit Grid(Points points, Real spacing)
       : points_{std::move(points)} {
     TIT_PROFILE_SECTION("tit::Grid::Grid()");
@@ -114,7 +113,7 @@ private:
 
 public:
 
-  /** Find the points within the radius to the given point. */
+  /// Find the points within the radius to the given point.
   template<std::output_iterator<size_t> OutIter>
   constexpr auto search(Point search_point, Real search_radius,
                         OutIter out) const noexcept -> OutIter {
@@ -149,9 +148,7 @@ Grid(Points&&, Args...) -> Grid<std::views::all_t<Points>>;
 template<class... Args>
 concept can_grid_ = requires { Grid{std::declval<Args>()...}; };
 
-/******************************************************************************\
- ** Multidimensional grid factory.
-\******************************************************************************/
+/// Multidimensional grid factory.
 class GridFactory final {
 private:
 
@@ -159,13 +156,13 @@ private:
 
 public:
 
-  /** Construct a multidimensional grid factory.
-   ** @param spacing Grid cell size, typically 2x of the particle spacing. */
+  /// Construct a multidimensional grid factory.
+  /// @param spacing Grid cell size, typically 2x of the particle spacing.
   constexpr explicit GridFactory(real_t spacing) : spacing_{spacing} {
     TIT_ASSERT(spacing_ > 0.0, "Spacing must be positive.");
   }
 
-  /** Produce a multidimensional grid for the specified set of points. */
+  /// Produce a multidimensional grid for the specified set of points.
   template<std::ranges::viewable_range Points>
     requires can_grid_<Points, real_t>
   constexpr auto operator()(Points&& points) const noexcept {
@@ -174,6 +171,6 @@ public:
 
 }; // class GridFactory
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::geom

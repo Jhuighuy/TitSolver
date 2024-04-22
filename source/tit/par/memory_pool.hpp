@@ -17,11 +17,9 @@
 
 namespace tit::par {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** @brief Thread-safe and scalable memory pool (arena).
-\******************************************************************************/
+/// Thread-safe and scalable memory pool (arena).
 template<class Val>
   requires std::is_object_v<Val>
 class MemoryPool final {
@@ -39,33 +37,33 @@ private:
 
 public:
 
-  /** Construct the memory pool with specified allocator. */
+  /// Construct the memory pool with specified allocator.
   MemoryPool() : pool_{new TbbMemoryPool_{}} {}
 
-  /** Move-construct the memory pool. */
+  /// Move-construct the memory pool.
   MemoryPool(MemoryPool&&) = default;
-  /** Move-assign the pool allocator. */
+  /// Move-assign the pool allocator.
   auto operator=(MemoryPool&&) -> MemoryPool& = default;
 
-  /** Memory pool is not copy-constructible. */
+  /// Memory pool is not copy-constructible.
   MemoryPool(MemoryPool const&) = delete;
-  /** Memory pool is not copyable. */
+  /// Memory pool is not copyable.
   auto operator=(MemoryPool const&) -> MemoryPool& = delete;
 
-  /** Destroy memory pool and free all memory. */
+  /// Destroy memory pool and free all memory.
   ~MemoryPool() = default;
 
-  /** Allocate the specified amount of values.
-   ** @note Values are not initialized: no constructors are called!
-   ** @returns Pointer to the allocated memory or `nullptr`. */
+  /// Allocate the specified amount of values.
+  /// @note Values are not initialized: no constructors are called!
+  /// @returns Pointer to the allocated memory or `nullptr`.
   [[nodiscard]] auto allocate(size_t count = 1) -> Val* {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
     auto const num_bytes = count * sizeof(Val);
     return static_cast<Val*>(pool_->malloc(num_bytes));
   }
 
-  /** Free memory that was previously allocated inside of the current pool.
-   ** @note Values are not deinitialized: no destructors are called! */
+  /// Free memory that was previously allocated inside of the current pool.
+  /// @note Values are not deinitialized: no destructors are called!
   void deallocate(Val* pointer) {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
     pool_->free(pointer);
@@ -73,6 +71,6 @@ public:
 
 }; // class MemoryPool
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::par

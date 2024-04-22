@@ -10,17 +10,17 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/profiler.hpp"
+
 #include "tit/par/thread.hpp"
+
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Semi-implicit Euler time integrator.
-\******************************************************************************/
+/// Semi-implicit Euler time integrator.
 template<class FluidEquations>
   requires std::is_object_v<FluidEquations>
 class EulerIntegrator {
@@ -32,17 +32,17 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields =
       meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
 
-  /** Construct time integrator. */
+  /// Construct time integrator.
   constexpr explicit EulerIntegrator(FluidEquations estimator = {},
                                      size_t adjacency_recalc_freq = 10) noexcept
       : equations_{std::move(estimator)},
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
-  /** Make a step in time. */
+  /// Make a step in time.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void step(real_t dt, ParticleArray& particles,
@@ -86,11 +86,9 @@ public:
 
 }; // class EulerIntegrator
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Runge-Kutta time integrator.
-\******************************************************************************/
+/// Runge-Kutta time integrator.
 template<class FluidEquations>
   requires std::is_object_v<FluidEquations>
 class RungeKuttaIntegrator {
@@ -102,17 +100,17 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields =
       meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
 
-  /** Construct time integrator. */
+  /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(
       FluidEquations estimator = {}, size_t adjacency_recalc_freq = 10) noexcept
       : equations_{std::move(estimator)},
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
-  /** Make a step in time. */
+  /// Make a step in time.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void step(real_t dt, ParticleArray& particles,
@@ -190,6 +188,6 @@ public:
 
 }; // class RungeKuttaIntegrator
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::sph

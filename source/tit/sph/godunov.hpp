@@ -17,6 +17,7 @@
 #include "tit/core/meta.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/par/thread.hpp"
+
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/density_equation.hpp"
@@ -26,11 +27,9 @@
 
 namespace tit::sph {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** The particle estimator with a fixed kernel width.
-\******************************************************************************/
+/// The particle estimator with a fixed kernel width.
 // TODO: I am not sure whether we should separate "symmetric" and
 // "non-symmetric" SPH equations. Basically, implementation of the cases
 // are both different and similar at the same time. The entire logic the same,
@@ -57,7 +56,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields =
       meta::Set{fixed, parinfo} | // TODO: fixed should not be here.
 #if HARD_DAM_BREAKING
@@ -69,7 +68,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Initialize fluid equations. */
+  /// Initialize fluid equations.
   constexpr GodunovFluidEquations(EquationOfState eos = {},
                                   DensityEquation density_equation = {},
                                   Kernel kernel = {},
@@ -107,7 +106,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Setup boundary particles. */
+  /// Setup boundary particles.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void setup_boundary(ParticleArray& particles,
@@ -186,7 +185,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Compute density-related fields. */
+  /// Compute density-related fields.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_density(ParticleArray& particles,
@@ -202,7 +201,7 @@ public:
 
   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-  /** Compute velocity related fields. */
+  /// Compute velocity related fields.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_forces(ParticleArray& particles,
@@ -251,6 +250,6 @@ public:
 
 }; // class FluidEquations
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::sph

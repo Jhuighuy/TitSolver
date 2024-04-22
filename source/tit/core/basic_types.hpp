@@ -10,38 +10,38 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** 8-bit unsigned integer type. */
+/// 8-bit unsigned integer type.
 using uint8_t = std::uint8_t;
 
-/** 16-bit unsigned integer type. */
+/// 16-bit unsigned integer type.
 using uint16_t = std::uint16_t;
 
-/** 32-bit unsigned integer type. */
+/// 32-bit unsigned integer type.
 using uint32_t = std::uint32_t;
 
-/** 64-bit unsigned integer type. */
+/// 64-bit unsigned integer type.
 using uint64_t = std::uint64_t;
 
-/** Unsigned sized type. */
+/// Unsigned sized type.
 using size_t = std::size_t;
 
-/** Signed sized type. */
+/// Signed sized type.
 using ssize_t = std::ptrdiff_t;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** 32-bit floating point type. */
+/// 32-bit floating point type.
 using float32_t = float;
 
-/** 64-bit floating point type. */
+/// 64-bit floating point type.
 using float64_t = double;
 
-/** Default floating-point type type. */
+/// Default floating-point type type.
 using real_t = float64_t;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
 
