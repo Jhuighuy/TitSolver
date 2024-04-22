@@ -11,7 +11,7 @@ add_tit_executable(
   DEPENDS
     tit::par tit::doctest)
 
-add_test_from_target(
+add_tit_test_from_target(
   tit::par_tests
   NAME "tit::par::unit")
 

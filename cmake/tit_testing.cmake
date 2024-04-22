@@ -19,22 +19,21 @@ find_program(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+##
 ## Register the test command.
-function(add_test_command)
+##
+function(add_tit_test)
   # Parse and check arguments.
-  set(OPTIONS)
-  set(ONE_VALUE_ARGS NAME EXIT_CODE STDIN MATCH_STDOUT MATCH_STDERR)
-  set(MULTI_VALUE_ARGS COMMAND INPUT_FILES MATCH_FILES FILTERS PROPERTIES)
   cmake_parse_arguments(
     TEST
-    "${OPTIONS}"
-    "${ONE_VALUE_ARGS}"
-    "${MULTI_VALUE_ARGS}"
+    ""
+    "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
+    "COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
     ${ARGN})
-  if (NOT TEST_NAME)
+  if(NOT TEST_NAME)
     message(FATAL_ERROR "Test name must be specified.")
   endif()
-  if (NOT TEST_COMMAND)
+  if(NOT TEST_COMMAND)
     message(FATAL_ERROR "Command line must not be empty.")
   endif()
   # Prepare the list of arguments for the test driver.
@@ -71,38 +70,42 @@ function(add_test_command)
     NAME "${TEST_NAME}"
     COMMAND "${TEST_RUNNER_EXE}" ${TEST_DRIVER_ARGS}
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-  # Set test properties.
-  if(TEST_PROPERTIES)
-    set_tests_properties("${TEST_NAME}" PROPERTIES ${TEST_PROPERTIES})
+  # Set test environment.
+  if(TEST_ENVIRONMENT)
+    set_tests_properties(
+      "${TEST_NAME}"
+      PROPERTIES ENVIRONMENT ${TEST_ENVIRONMENT})
   endif()
 endfunction()
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+##
 ## Register the test target.
-function(add_test_from_target TARGET)
+##
+function(add_tit_test_from_target TARGET)
   # Parse and check arguments.
   if(NOT TARGET)
     message(FATAL_ERROR "Target must be specified.")
   endif()
-  set(OPTIONS)
-  set(ONE_VALUE_ARGS NAME EXIT_CODE STDIN MATCH_STDOUT MATCH_STDERR)
-  set(MULTI_VALUE_ARGS EXTRA_ARGS MATCH_FILES FILTERS PROPERTIES)
   cmake_parse_arguments(
     TEST
-    "${OPTIONS}"
-    "${ONE_VALUE_ARGS}"
-    "${MULTI_VALUE_ARGS}"
+    ""
+    "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
+    "EXTRA_ARGS;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
     ${ARGN})
-  # Add the test command for this executable.
-  add_test_command(
+  # Add the test for this executable.
+  add_tit_test(
     NAME ${TEST_NAME}
     COMMAND "$<TARGET_FILE:${TARGET}>" ${TEST_EXTRA_ARGS}
     EXIT_CODE ${TEST_EXIT_CODE}
     STDIN ${TEST_STDIN}
+    ENVIRONMENT ${TEST_ENVIRONMENT}
+    INPUT_FILES ${TEST_INPUT_FILES}
     MATCH_STDOUT ${TEST_MATCH_STDOUT}
     MATCH_STDERR ${TEST_MATCH_STDERR}
     MATCH_FILES ${TEST_MATCH_FILES}
-    FILTERS ${TEST_FILTERS}
-    PROPERTIES ${TEST_PROPERTIES})
+    FILTERS ${TEST_FILTERS})
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
