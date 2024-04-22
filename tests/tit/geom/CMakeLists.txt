@@ -8,7 +8,7 @@ add_tit_executable(
     geom_tests
   SOURCES
   DEPENDS
-    tit::geom tit::doctest)
+    tit::geom tit::testing)
 
 add_tit_test_from_target(
   tit::geom_tests

@@ -3,14 +3,6 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-add_tit_library(
-  NAME doctest
-  TYPE OBJECT
-  SOURCES "doctest_main.cpp"
-  DEPENDS doctest::doctest)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 add_subdirectory("test_runner")
 add_subdirectory("tit")
 add_subdirectory("titwcsph")
