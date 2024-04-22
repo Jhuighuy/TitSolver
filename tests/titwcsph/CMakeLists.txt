@@ -9,7 +9,7 @@
 # library core.
 add_tit_test_from_target(
   tit::wcsph
-  NAME "titwcsph::dam_breaking[long]"
+  NAME "titwcsph/dam_breaking[long]"
   MATCH_FILES "particles.csv.checksum")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

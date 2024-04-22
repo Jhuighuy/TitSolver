@@ -12,6 +12,6 @@ add_tit_executable(
 
 add_tit_test_from_target(
   tit::geom_tests
-  NAME "tit::geom::unit")
+  NAME "tit/geom/unit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

@@ -18,7 +18,7 @@ add_tit_executable(
 
 add_tit_test_from_target(
   tit::core_tests
-  NAME "tit::core::unit"
+  NAME "tit/core/unit"
   EXIT_CODE 0)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -30,7 +30,7 @@ add_tit_executable(
 
 add_tit_test_from_target(
   tit::core_catch_ctrl_c_test
-  NAME "tit::core::catch_ctrl_c"
+  NAME "tit/core/catch_ctrl_c"
   EXIT_CODE 0
   MATCH_STDERR "catch_ctrl_c_stderr.txt")
 
@@ -43,7 +43,7 @@ add_tit_executable(
 
 add_tit_test_from_target(
   tit::core_catch_fatal_signal_test
-  NAME "tit::core::catch_fatal_signal"
+  NAME "tit/core/catch_fatal_signal"
   EXIT_CODE 1
   MATCH_STDERR "catch_fatal_signal_stderr.txt"
   FILTERS "/0x*/d") # Remove everything related to the stack trace.
@@ -57,7 +57,7 @@ add_tit_executable(
 
 add_tit_test_from_target(
   tit::core_profiler_tests
-  NAME "tit::core::profiler"
+  NAME "tit/core/profiler"
   MATCH_STDOUT "profiler_stdout.txt"
   FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
   ENVIRONMENT "TIT_ENABLE_PROFILER=1")
