@@ -43,6 +43,7 @@ public:
       meta::Set{h, m, r, rho, Omega} | SummationDensity::required_fields;
 
   /// Construct Grad-H summation density.
+  ///
   /// @param eta Coupling factor. Typically 1.0~1.2.
   constexpr explicit GradHSummationDensity(real_t eta = 1.0) noexcept
       : eta_{eta} {}

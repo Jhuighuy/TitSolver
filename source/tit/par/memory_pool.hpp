@@ -56,6 +56,7 @@ public:
   ~MemoryPool() = default;
 
   /// Allocate the specified amount of values.
+  ///
   /// @note Values are not initialized: no constructors are called!
   /// @returns Pointer to the allocated memory or `nullptr`.
   [[nodiscard]] auto allocate(size_t count = 1) -> Val* {
@@ -65,6 +66,7 @@ public:
   }
 
   /// Free memory that was previously allocated inside of the current pool.
+  ///
   /// @note Values are not deinitialized: no destructors are called!
   void deallocate(Val* pointer) {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");

@@ -54,6 +54,7 @@ private:
 public:
 
   /// Initialize and build the multidimensional grid.
+  ///
   /// @param spacing Grid cell size, typically 2x of the particle spacing.
   constexpr explicit Grid(Points points, Real spacing)
       : points_{std::move(points)} {
@@ -159,6 +160,7 @@ private:
 public:
 
   /// Construct a multidimensional grid factory.
+  ///
   /// @param spacing Grid cell size, typically 2x of the particle spacing.
   constexpr explicit GridFactory(real_t spacing) : spacing_{spacing} {
     TIT_ASSERT(spacing_ > 0.0, "Spacing must be positive.");

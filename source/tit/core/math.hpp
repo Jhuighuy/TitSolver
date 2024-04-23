@@ -320,6 +320,7 @@ constexpr auto align_to_power_of_two(UInt a) noexcept -> UInt {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Arithmetic average function.
+///
 /// @note Presence of infinities of different signs will generate NaN.
 template<class... Nums>
   requires (sizeof...(Nums) > 0)
@@ -328,6 +329,7 @@ constexpr auto avg(Nums... values) noexcept {
 }
 
 /// Harmonic average function.
+///
 /// @param values Input values. Must be positive.
 template<std::floating_point... Reals>
   requires (sizeof...(Reals) > 0)
@@ -347,7 +349,8 @@ constexpr auto gavg(Reals... values) noexcept {
   return pow((values * ...), inverse(sizeof...(Reals)));
 }
 
-/// @brief Merge number with zero vector based on condition.
+/// Merge number with zero vector based on condition.
+///
 /// Implementation of this function is supposed to be branchless.
 ///
 /// @note This function does not propagate floating-point infinites or NaNs
@@ -360,7 +363,8 @@ constexpr auto merge(bool m, Num a) noexcept -> Num {
   return m ? a : Num{0};
 }
 
-/// @brief Select one of two numbers vector based on condition.
+/// Select one of two numbers vector based on condition.
+///
 /// Implementation of this function is supposed to be branchless.
 ///
 /// @note This function does not propagate floating-point infinites or NaNs
@@ -376,6 +380,7 @@ constexpr auto merge(bool m, Num a, Num b) noexcept -> Num {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Find function rool using Newton-Raphson method.
+///
 /// @param x Current estimate of the root.
 /// @param f Function whose root we are looking for.
 ///          Should return a pair of it's value and derivative.
@@ -397,6 +402,7 @@ constexpr auto newton_raphson(Real& x, Func const& f, //
 }
 
 /// Find function rool using Bisection method.
+///
 /// @param min_x Root's lower bound.
 /// @param max_x Root's upper bound.
 /// @param f Function whose root we are looking for.

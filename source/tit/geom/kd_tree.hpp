@@ -87,6 +87,7 @@ public:
   ~KDTree() = default;
 
   /// Initialize and build the K-dimensional tree.
+  ///
   /// @param max_leaf_size Maximum amount of points in the leaf node.
   constexpr explicit KDTree(Points points, size_t max_leaf_size = 1)
       : points_{std::move(points)}, max_leaf_size_{max_leaf_size} {
@@ -290,6 +291,7 @@ private:
 public:
 
   /// Construct a K-dimensional tree factory.
+  ///
   /// @param max_leaf_size Maximum amount of points in the leaf node.
   constexpr explicit KDTreeFactory(size_t max_leaf_size = 1)
       : max_leaf_size_{max_leaf_size} {

@@ -33,6 +33,7 @@ void safe_atexit(atexit_callback_t callback) noexcept;
 [[noreturn]] void exit(int exit_code) noexcept;
 
 /// Fast-exit from the current process.
+///
 /// @note No at-exit callbacks are triggered, except for coverage report.
 [[noreturn]] void fast_exit(int exit_code) noexcept;
 
@@ -78,6 +79,7 @@ public:
 protected:
 
   /// Signal interception callback.
+  ///
   /// @note The implementation must be "async-signal-safe".
   virtual void on_signal(int signal_number) noexcept = 0;
 
@@ -108,6 +110,7 @@ protected:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Get terminal width.
+///
 /// @param stream The output stream to use for the width query.
 auto tty_width(std::FILE* stream) noexcept -> size_t;
 

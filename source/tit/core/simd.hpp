@@ -14,7 +14,8 @@ namespace tit::simd {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// @brief SIMD register size (in bytes) available on the current hardware.
+/// SIMD register size (in bytes) available on the current hardware.
+///
 /// What is 16 bytes for SSE and NEON instruction set, 32 bytes for the AVX
 /// instruction set and 64 bytes for the AVX-512 instruction set.
 /// When no known instruction set is detected, some default value is set to
@@ -43,7 +44,8 @@ inline constexpr auto max_reg_size_v =
 // TODO: description for this concept is incorrect. This concept is used
 // to determine if we need to make an explicit specialization for `Vec` for
 // generic vectorized case.
-/// @brief Does this amount of scalars form exactly a single SIMD register?
+/// Does this amount of scalars form exactly a single SIMD register?
+///
 /// Registers are used if:
 /// - either number of dimensions is greater than register
 ///   size for the scalar type (e.g., 3 * `double` with NEON instruction set),
@@ -66,7 +68,7 @@ inline constexpr auto reg_size_v =
 template<size_t Dim, class Num, class... RestNums>
 concept regs_match =
     use_regs<Num, Dim> && (use_regs<RestNums, Dim> && ...) &&
-    ((reg_size_v<Num, Dim> == reg_size_v<RestNums, Dim>) &&...);
+    ((reg_size_v<Num, Dim> == reg_size_v<RestNums, Dim>) && ...);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

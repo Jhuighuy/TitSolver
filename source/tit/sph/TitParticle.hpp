@@ -94,14 +94,14 @@ public:
 
   /// Compare particle views.
   /// @{
-  constexpr auto operator==(ParticleView<ParticleArray> other) const noexcept
-      -> bool {
+  constexpr auto
+  operator==(ParticleView<ParticleArray> other) const noexcept -> bool {
     TIT_ASSERT(&array() == &other.array(),
                "Particles must belong to the same array.");
     return index() == other.index();
   }
-  constexpr auto operator!=(ParticleView<ParticleArray> other) const noexcept
-      -> bool {
+  constexpr auto
+  operator!=(ParticleView<ParticleArray> other) const noexcept -> bool {
     TIT_ASSERT(&array() == &other.array(),
                "Particles must belong to the same array.");
     return index() != other.index();
@@ -149,6 +149,7 @@ private:
 public:
 
   /// Construct a particle adjacency graph.
+  ///
   /// @param engine_factory Nearest-neighbors search engine factory.
   constexpr explicit ParticleAdjacency(
       ParticleArray& particles, EngineFactory engine_factory = {}) noexcept
@@ -161,6 +162,7 @@ public:
   }
 
   /// Build an adjacency graph.
+  ///
   /// @param radius_func Function that returns search radius for the
   ///                    specified particle view.
   template<class SearchRadiusFunc>
@@ -236,9 +238,8 @@ public:
 
   constexpr auto _fixed() const noexcept {
     return std::views::iota(0UZ, fixed_.size()) |
-           std::views::transform([&](size_t i) {
-             return std::tuple{i, array()[fixed_[i]]};
-           });
+           std::views::transform(
+               [&](size_t i) { return std::tuple{i, array()[fixed_[i]]}; });
   }
 
   /// Adjacent particles.
@@ -437,9 +438,9 @@ public:
   /// @{
   template<meta::type Field>
     requires meta::contains_v<Field, Fields...>
-  constexpr auto operator[]([[maybe_unused]] size_t particle_index,
-                            [[maybe_unused]] Field field) noexcept
-      -> decltype(auto) {
+  constexpr auto
+  operator[]([[maybe_unused]] size_t particle_index,
+             [[maybe_unused]] Field field) noexcept -> decltype(auto) {
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
     if constexpr (meta::contains_v<Field, Consts...>) {
       return auto{(*this)[field]}; // Return a copy for constants.
@@ -470,8 +471,8 @@ public:
   /// @{
   template<meta::type Field>
     requires meta::contains_v<Field, Fields...>
-  constexpr auto operator[]([[maybe_unused]] Field field) noexcept
-      -> decltype(auto) {
+  constexpr auto
+  operator[]([[maybe_unused]] Field field) noexcept -> decltype(auto) {
     if constexpr (meta::contains_v<Field, Consts...>) {
       return std::get<meta::index_of_v<Field, Consts...>>(constants_);
     } else {

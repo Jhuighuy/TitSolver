@@ -151,7 +151,8 @@ constexpr auto set_diff(Set<T, Ts...> /*lhs*/, Set<Us...> rhs) noexcept {
 
 } // namespace impl
 
-/// @brief Set union.
+/// Set union.
+///
 /// @returns A set that contains all the elements of @p lhs followed by the
 ///          elements of @p rhs that are not already present in @p lhs. The
 ///          relative order of the elements in both sets is preserved.
@@ -160,7 +161,8 @@ constexpr auto operator|(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
   return impl::set_or(lhs, rhs);
 }
 
-/// @brief Set intersection.
+/// Set intersection.
+///
 /// @returns A set that contains the elements of @p lhs that are also present
 ///          in @p rhs. The relative order of the elements in LHS is preserved.
 template<type... Ts, type... Us>
@@ -168,7 +170,8 @@ constexpr auto operator&(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
   return impl::set_and(lhs, rhs);
 }
 
-/// @brief Set difference.
+/// Set difference.
+///
 /// @returns A set that contains all the elements of @p lhs excluding elements
 ///          that are contained in @p rhs. The relative order of the elements
 ///          in LHS is preserved.

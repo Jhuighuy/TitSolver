@@ -66,6 +66,7 @@ public:
   static constexpr auto required_fields = meta::Set{rho, h, r, v, cs};
 
   /// Construct artificial viscosity scheme.
+  ///
   /// @param alpha Linear viscosity coefficient.
   /// @param beta Quadratic viscosity coefficient. Typically two times greater
   ///             than linear coefficient for compressible flows and
@@ -105,6 +106,7 @@ public:
       BaseArtificialViscosity::required_fields;
 
   /// Construct artificial viscosity.
+  ///
   /// @param base Base artificial viscosity.
   constexpr explicit BalsaraArtificialViscosity(
       BaseArtificialViscosity base = {}) noexcept
@@ -145,6 +147,7 @@ public:
       BaseArtificialViscosity::required_fields;
 
   /// Construct artificial viscosity scheme.
+  ///
   /// @param base Base artificial viscosity.
   /// @param alpha_min Minimal value of the switch coefficient.
   /// @param alpha_max Maximal value of the switch coefficient.
@@ -202,6 +205,7 @@ public:
   static constexpr auto required_fields = meta::Set{rho, grad_rho, h, r, v};
 
   /// Construct artificial viscosity scheme.
+  ///
   /// @param cs_0 Reference sound speed, as defined for equation of state.
   /// @param rho_0 Reference density, as defined for equation of state.
   /// @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
@@ -253,6 +257,7 @@ public:
   static constexpr auto required_fields = meta::Set{rho, grad_rho, h, r, L, v};
 
   /// Construct artificial viscosity scheme.
+  ///
   /// @param cs_0 Reference sound speed, as defined for equation of state.
   /// @param rho_0 Reference density, as defined for equation of state.
   /// @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.

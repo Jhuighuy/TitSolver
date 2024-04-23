@@ -123,8 +123,8 @@ constexpr auto operator+(Mat<NumA, Dim> const& a,
 
 /// Matrix addition assignment.
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator+=(Mat<NumA, Dim>& a, Mat<NumB, Dim> const& b) noexcept
-    -> auto& {
+constexpr auto operator+=(Mat<NumA, Dim>& a,
+                          Mat<NumB, Dim> const& b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] += b[i];
   return a;
 }
@@ -150,8 +150,8 @@ constexpr auto operator-(Mat<NumA, Dim> const& a,
 
 /// Matrix subtraction assignment.
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator-=(Mat<NumA, Dim>& a, Mat<NumB, Dim> const& b) noexcept
-    -> auto& {
+constexpr auto operator-=(Mat<NumA, Dim>& a,
+                          Mat<NumB, Dim> const& b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] -= b[i];
   return a;
 }
@@ -291,6 +291,7 @@ public:
   }
 
   /// Multiply by inverse matrix.
+  ///
   /// @param x Vector or matrix of correct size.
   template<class Obj>
   constexpr auto operator()(Obj x) const noexcept -> Obj {

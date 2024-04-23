@@ -83,10 +83,12 @@ public:
     });
   }
 
-  /// @brief Assemble the multivector from elements using value to index
-  ///        mapping in parallel.
+  /// Assemble the multivector from elements using value to index mapping in
+  /// parallel.
+  ///
   /// This version of the function works best when array size is much larger
   /// than typical amount of values in bucket (multivector is "tall").
+  ///
   /// @param count Amount of the value buckets to be added.
   /// @param handles Range of the value handles to be added.
   /// @param index_of Function that returns bucket index of the handle value.
@@ -133,10 +135,12 @@ public:
     val_ranges_[0] = 0;
   }
 
-  /// @brief Assemble the multivector from elements using value to index
-  ///        mapping in parallel.
+  /// Assemble the multivector from elements using value to index mapping in
+  /// parallel.
+  ///
   /// This version of the function works best when array size is much less
   /// than typical amount of values in bucket (multivector is "wide").
+  ///
   /// @param count Amount of the value buckets to be added.
   /// @param handles Range of the value handles to be added.
   /// @param index_of Function that returns bucket index of the handle value.
