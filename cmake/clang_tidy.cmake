@@ -9,11 +9,11 @@ include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find clang-tidy (at least 16.0). Prefer version-suffixed executables.
+# Find clang-tidy (at least 18.1). Prefer version-suffixed executables.
 find_program_with_version(
   CLANG_TIDY_EXE
-  NAMES "clang-tidy-17" "clang-tidy-16" "clang-tidy"
-  MIN_VERSION "16.0")
+  NAMES "clang-tidy-18" "clang-tidy"
+  MIN_VERSION "18.1")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -48,8 +48,8 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     CLANG_TIDY_COMPILE_ARGS
     # Enable the same set of warnings we would use for normal clang.
     ${CLANG_WARNINGS}
-    # Enable C++23 (`c++2b` and not `c++23` for clang-16).
-    -std=c++2b)
+    # Enable C++23.
+    -std=c++23)
   if(APPLE)
     ## Force use libstdc++ since libc++ misses some stuff.
     clang_force_use_libstdcpp(CLANG_TIDY_COMPILE_ARGS)

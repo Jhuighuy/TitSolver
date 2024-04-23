@@ -6,7 +6,7 @@
 #pragma once
 
 #include <array>
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <iterator>
 #include <ranges>
 #include <span>
@@ -90,14 +90,13 @@ public:
   /// Reference to span element or sub-span.
   template<class... Indices>
     requires mdindex<Rank, Indices...>
-  constexpr auto operator[](Indices... indices) const noexcept
+  constexpr auto operator[](Indices... indices) const noexcept //
       -> decltype(auto) {
     // Compute an offset to the data position.
     size_t offset = 0;
     auto const index_pack = pack<Rank, size_t>(indices...);
 #ifdef __clang__
-    // TODO: clang doesn't like `std::views::zip`. Looks like it is already
-    // fixed in clang 18. So, remove this workaround when clang 18 is released.
+    // TODO: clang doesn't like `std::views::zip`.
     for (size_t i = 0; i < Rank; ++i) {
       TIT_ASSERT(index_pack[i] < shape_[i], "Index is out of range.");
       offset = index_pack[i] + offset * shape_[i];
@@ -222,7 +221,7 @@ public:
   }
   template<class... Indices>
     requires mdindex<Rank, Indices...>
-  constexpr auto operator[](Indices... indices) const noexcept
+  constexpr auto operator[](Indices... indices) const noexcept //
       -> decltype(auto) {
     return Mdspan<Val const, Rank>{shape_, vals_}[indices...];
   }

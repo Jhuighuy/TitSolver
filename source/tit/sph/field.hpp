@@ -159,7 +159,7 @@ using field_value_type_t =
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-enum class ParState {
+enum class ParState : uint8_t {
   /// Particle is far from subdomain boundary.
   INNER,
   /// Particle is near subdomain boundary, and is in halo of some other

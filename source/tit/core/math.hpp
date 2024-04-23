@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <bit>
 #include <cmath>
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <cstdlib>
 #include <functional>
 #include <limits>
@@ -385,8 +385,8 @@ constexpr auto merge(bool m, Num a, Num b) noexcept -> Num {
 /// @returns True on success.
 template<std::floating_point Real, std::invocable Func>
 constexpr auto newton_raphson(Real& x, Func const& f, //
-                              Real eps = Real{1.0e-9}, size_t max_iter = 10)
-    -> bool {
+                              Real eps = Real{1.0e-9},
+                              size_t max_iter = 10) -> bool {
   for (size_t iter = 0; iter < max_iter; ++iter) {
     auto const [y, df_dx] = std::invoke(f /*, x*/);
     if (abs(y) <= eps) return true;
@@ -405,8 +405,8 @@ constexpr auto newton_raphson(Real& x, Func const& f, //
 /// @returns True on success.
 template<std::floating_point Real, std::invocable<Real> Func>
 constexpr auto bisection(Real& min_x, Real& max_x, Func const& f,
-                         Real eps = Real{1.0e-9}, size_t max_iter = 10)
-    -> bool {
+                         Real eps = Real{1.0e-9},
+                         size_t max_iter = 10) -> bool {
   TIT_ASSERT(min_x <= max_x, "Inverted search range!");
   auto min_f = std::invoke(f, min_x);
   // Check for the region bounds first.

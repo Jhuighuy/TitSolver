@@ -5,16 +5,15 @@
 
 #pragma once
 
-#include <algorithm> // IWYU pragma: keep
-#include <concepts>  // IWYU pragma: keep
-#include <iterator>  // IWYU pragma: keep
+#include <algorithm>
+#include <concepts>
+#include <iterator>
 #include <ranges>
 
 #include <omp.h>
 
-// #include "tit/core/utils.hpp"        // IWYU pragma: keep
 #include "tit/core/basic_types.hpp"
-#include "tit/core/type_traits.hpp" // IWYU pragma: keep
+#include "tit/core/type_traits.hpp"
 
 namespace tit::par {
 

@@ -9,7 +9,7 @@ include_guard()
 
 # Set minimal compiler version.
 # Disabled, since we do not officially support clang yet.
-# set(CLANG_MIN_VERSION "17.0")
+# set(CLANG_MIN_VERSION "18.1")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -65,8 +65,14 @@ set(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+##
 ## Add compilation options that switch clang from libc++ to libstdcpp++ when
 ## compiling with GCC.
+##
+## * std::views::chunk is missing.
+## * std::views::enumerate is missing.
+## * std::format_string is not detected by include-cleaner.
+##
 function(clang_force_use_libstdcpp OPTIONS_VAR)
   list(
     APPEND

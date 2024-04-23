@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <limits>
 #include <numbers>
 
@@ -143,8 +143,8 @@ public:
 
   /// Spatial gradient of the smoothing kernel at point.
   template<class Real, size_t Dim>
-  constexpr auto grad(Vec<Real, Dim> x, Real h) const noexcept
-      -> Vec<Real, Dim> {
+  constexpr auto grad(Vec<Real, Dim> x,
+                      Real h) const noexcept -> Vec<Real, Dim> {
     TIT_ASSERT(h > Real{0.0}, "Kernel width must be positive!");
     auto const h_inverse = inverse(h);
     auto const w = weight<Real, Dim>() * pow(h_inverse, Dim);
