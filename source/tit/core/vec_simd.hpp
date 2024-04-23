@@ -6,14 +6,14 @@
 #pragma once
 
 #include <array>
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
-#include "tit/core/utils.hpp" // IWYU pragma: keep
+#include "tit/core/utils.hpp" // IWYU pragma: keep -- for macros below.
 #include "tit/core/vec.hpp"
 
 namespace tit {
@@ -111,8 +111,8 @@ constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
-    -> auto& {
+constexpr auto operator+=(Vec<NumA, Dim>& a,
+                          Vec<NumB, Dim> b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) += b.reg(i);
   return a;
 }
@@ -137,8 +137,8 @@ constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
-    -> auto& {
+constexpr auto operator-=(Vec<NumA, Dim>& a,
+                          Vec<NumB, Dim> b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) -= b.reg(i);
   return a;
 }
@@ -178,8 +178,8 @@ constexpr auto operator*=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
 }
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
-    -> auto& {
+constexpr auto operator*=(Vec<NumA, Dim>& a,
+                          Vec<NumB, Dim> b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) *= b.reg(i);
   return a;
 }
@@ -211,8 +211,8 @@ constexpr auto operator/=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
 }
 template<class NumA, class NumB, size_t Dim>
   requires simd::regs_match<Dim, NumA, NumB>
-constexpr auto operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
-    -> auto& {
+constexpr auto operator/=(Vec<NumA, Dim>& a,
+                          Vec<NumB, Dim> b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_regs; ++i) a.reg(i) /= b.reg(i);
   return a;
 }

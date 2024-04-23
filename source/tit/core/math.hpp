@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <bit>
 #include <cmath>
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <cstdlib>
 #include <functional>
 #include <limits>

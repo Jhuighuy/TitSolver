@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <concepts> // IWYU pragma: keep
+#include <concepts>
 #include <tuple>
 
 #include "tit/core/basic_types.hpp"
