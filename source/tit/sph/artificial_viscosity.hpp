@@ -12,22 +12,21 @@
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/vec.hpp"
+
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** No artificial viscosity (for the braves).
-\******************************************************************************/
+/// No artificial viscosity (for the braves).
 class NoArtificialViscosity {
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{};
 
-  /** Compute continuity equation diffusive term. */
+  /// Compute continuity equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto density_term(PV a, PV b) const noexcept {
@@ -36,7 +35,7 @@ public:
     return Psi_ab;
   }
 
-  /** Compute momentum equation diffusive term. */
+  /// Compute momentum equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
@@ -47,17 +46,15 @@ public:
 
 }; // class NoArtificialViscosity
 
-/** Artificial viscosity type. */
+/// Artificial viscosity type.
 template<class ArtificialViscosity>
 concept artificial_viscosity =
     std::movable<ArtificialViscosity> &&
     std::derived_from<ArtificialViscosity, NoArtificialViscosity>;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** α-β artificial viscosity (Monaghan, 1992).
-\******************************************************************************/
+/// α-β artificial viscosity (Monaghan, 1992).
 class AlphaBetaArtificialViscosity : public NoArtificialViscosity {
 private:
 
@@ -65,14 +62,14 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{rho, h, r, v, cs};
 
-  /** Construct artificial viscosity scheme.
-   ** @param alpha Linear viscosity coefficient.
-   ** @param beta Quadratic viscosity coefficient. Typically two times greater
-   **             than linear coefficient for compressible flows and
-   **             zero for weakly-compressible or incompressable flows. */
+  /// Construct artificial viscosity scheme.
+  /// @param alpha Linear viscosity coefficient.
+  /// @param beta Quadratic viscosity coefficient. Typically two times greater
+  ///             than linear coefficient for compressible flows and
+  ///             zero for weakly-compressible or incompressable flows.
   constexpr explicit AlphaBetaArtificialViscosity( //
       real_t alpha = 1.0, real_t beta = 2.0) noexcept
       : alpha_{alpha}, beta_{beta} {
@@ -80,7 +77,7 @@ public:
     TIT_ASSERT(beta_ >= 0.0, "Quadratic coefficient must be non-negative.");
   }
 
-  /** Compute momentum equation diffusive term. */
+  /// Compute momentum equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
@@ -96,26 +93,24 @@ public:
 
 }; // class AlphaBetaArtificialViscosity
 
-/******************************************************************************\
- ** Artificial viscosity with Balsara switch (Balsara, 1995).
-\******************************************************************************/
+/// Artificial viscosity with Balsara switch (Balsara, 1995).
 template<artificial_viscosity BaseArtificialViscosity =
              AlphaBetaArtificialViscosity>
 class BalsaraArtificialViscosity : public BaseArtificialViscosity {
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields =
       meta::Set{h, cs, div_v, curl_v} |
       BaseArtificialViscosity::required_fields;
 
-  /** Construct artificial viscosity.
-   ** @param base Base artificial viscosity. */
+  /// Construct artificial viscosity.
+  /// @param base Base artificial viscosity.
   constexpr explicit BalsaraArtificialViscosity(
       BaseArtificialViscosity base = {}) noexcept
       : BaseArtificialViscosity{std::move(base)} {}
 
-  /** Compute momentum equation diffusive term. */
+  /// Compute momentum equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
@@ -133,9 +128,7 @@ public:
 
 }; // class BalsaraArtificialViscosity
 
-/******************************************************************************\
- ** Artificial viscosity with Rosswog switch (Rosswog, 2000).
-\******************************************************************************/
+/// Artificial viscosity with Rosswog switch (Rosswog, 2000).
 template<artificial_viscosity BaseArtificialViscosity =
              BalsaraArtificialViscosity<>>
 class RosswogArtificialViscosity : public BaseArtificialViscosity {
@@ -146,16 +139,16 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields =
       meta::Set{h, cs, div_v, alpha, dalpha_dt} |
       BaseArtificialViscosity::required_fields;
 
-  /** Construct artificial viscosity scheme.
-   ** @param base Base artificial viscosity.
-   ** @param alpha_min Minimal value of the switch coefficient.
-   ** @param alpha_max Maximal value of the switch coefficient.
-   ** @param sigma Decay time inverse scale factor. */
+  /// Construct artificial viscosity scheme.
+  /// @param base Base artificial viscosity.
+  /// @param alpha_min Minimal value of the switch coefficient.
+  /// @param alpha_max Maximal value of the switch coefficient.
+  /// @param sigma Decay time inverse scale factor.
   constexpr explicit RosswogArtificialViscosity(
       BaseArtificialViscosity base = {}, //
       real_t alpha_min = 0.1, real_t alpha_max = 2.0,
@@ -169,7 +162,7 @@ public:
                              "must be positive.");
   }
 
-  /** Compute momentum equation diffusive term. */
+  /// Compute momentum equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
@@ -181,7 +174,7 @@ public:
     return Pi_ab;
   }
 
-  /** Compute switch temporal derivative. */
+  /// Compute switch temporal derivative.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_switch_deriv(PV a) const {
@@ -193,12 +186,10 @@ public:
 
 }; // class RosswogArtificialViscosity
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** ξ-SPH artificial viscosity (Molteni, Colagrossi, 2009).
- ** Weakly-compressible SPH formulation is assumed.
-\******************************************************************************/
+/// ξ-SPH artificial viscosity (Molteni, Colagrossi, 2009).
+/// Weakly-compressible SPH formulation is assumed.
 class MolteniColagrossiArtificialViscosity : public NoArtificialViscosity {
 private:
 
@@ -207,14 +198,14 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{rho, grad_rho, h, r, v};
 
-  /** Construct artificial viscosity scheme.
-   ** @param cs_0 Reference sound speed, as defined for equation of state.
-   ** @param rho_0 Reference density, as defined for equation of state.
-   ** @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
-   ** @param xi Density diffusion coefficient. Typically 0.1. */
+  /// Construct artificial viscosity scheme.
+  /// @param cs_0 Reference sound speed, as defined for equation of state.
+  /// @param rho_0 Reference density, as defined for equation of state.
+  /// @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
+  /// @param xi Density diffusion coefficient. Typically 0.1.
   constexpr MolteniColagrossiArtificialViscosity( //
       real_t cs_0, real_t rho_0, real_t alpha = 0.05, real_t xi = 0.1) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, xi_{xi} {
@@ -224,7 +215,7 @@ public:
     TIT_ASSERT(xi_ > 0.0, "Density coefficient must be positive.");
   }
 
-  /** Compute continuity equation diffusive term. */
+  /// Compute continuity equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto density_term(PV a, PV b) const noexcept {
@@ -235,7 +226,7 @@ public:
     return Psi_ab;
   }
 
-  /** Compute momentum equation diffusive term. */
+  /// Compute momentum equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
@@ -248,10 +239,8 @@ public:
 
 }; // class MolteniColagrossiArtificialViscosity
 
-/******************************************************************************\
- ** δ-SPH artificial viscosity (Marrone, 2011).
- ** Weakly-compressible SPH formulation is assumed.
-\******************************************************************************/
+/// δ-SPH artificial viscosity (Marrone, 2011).
+/// Weakly-compressible SPH formulation is assumed.
 class DeltaSphArtificialViscosity : public NoArtificialViscosity {
 private:
 
@@ -260,14 +249,14 @@ private:
 
 public:
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields = meta::Set{rho, grad_rho, h, r, L, v};
 
-  /** Construct artificial viscosity scheme.
-   ** @param cs_0 Reference sound speed, as defined for equation of state.
-   ** @param rho_0 Reference density, as defined for equation of state.
-   ** @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
-   ** @param delta Density diffusion coefficient. Typically 0.1. */
+  /// Construct artificial viscosity scheme.
+  /// @param cs_0 Reference sound speed, as defined for equation of state.
+  /// @param rho_0 Reference density, as defined for equation of state.
+  /// @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
+  /// @param delta Density diffusion coefficient. Typically 0.1.
   constexpr DeltaSphArtificialViscosity( //
       real_t cs_0, real_t rho_0,         //
       real_t alpha = 0.02, real_t delta = 0.1) noexcept
@@ -278,7 +267,7 @@ public:
     TIT_ASSERT(delta_ > 0.0, "Density coefficient must be positive.");
   }
 
-  /** Compute continuity equation diffusive term. */
+  /// Compute continuity equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto density_term(PV a, PV b) const noexcept {
@@ -291,7 +280,7 @@ public:
     return Psi_ab;
   }
 
-  /** Compute momentum equation diffusive term. */
+  /// Compute momentum equation diffusive term.
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto velocity_term(PV a, PV b) const noexcept {
@@ -304,6 +293,6 @@ public:
 
 }; // class DeltaSphArtificialViscosity
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::sph

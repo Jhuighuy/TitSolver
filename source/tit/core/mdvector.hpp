@@ -21,36 +21,34 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Compatible multidimensional shape. */
+/// Compatible multidimensional shape.
 template<size_t Rank, class... Extents>
 concept mdshape = (sizeof...(Extents) <= Rank) &&
                   (std::convertible_to<Extents, size_t> && ...);
 
-/** Compatible multidimensional index. */
+/// Compatible multidimensional index.
 template<size_t Rank, class... Indices>
 concept mdindex = in_range_v<sizeof...(Indices), 1, Rank> &&
                   (std::convertible_to<Indices, size_t> && ...);
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Basic multidimensional non-owning container.
-\******************************************************************************/
+/// Basic multidimensional non-owning container.
 template<class Val, size_t Rank>
   requires (Rank >= 1)
 class Mdspan {
 public:
 
-  /** Value span type. */
+  /// Value span type.
   using ValSpan = std::span<Val>;
 
-  /** Shape span type. */
+  /// Shape span type.
   using ShapeSpan = std::span<size_t const, Rank>;
 
-  /** Initialize the multidimensional span. */
-  /** @{ */
+  /// Initialize the multidimensional span.
+  /// @{
   template<std::contiguous_iterator ValIter>
     requires std::same_as<Val, std::remove_reference_t< //
                                    std::iter_reference_t<ValIter>>>
@@ -64,32 +62,32 @@ public:
       : shape_{shape}, vals_{std::forward<Vals>(vals)} {
     TIT_ASSERT(vals_.size() == size_from_shape_(), "Data size is invalid!");
   }
-  /** @} */
+  /// @}
 
-  /** Amount of elements. */
+  /// Amount of elements.
   constexpr auto size() const noexcept -> size_t {
     return vals_.size();
   }
 
-  /** Iterator pointing to the first span element. */
+  /// Iterator pointing to the first span element.
   constexpr auto begin() const noexcept {
     return vals_.begin();
   }
-  /** Iterator pointing to the element after the last span element. */
+  /// Iterator pointing to the element after the last span element.
   constexpr auto end() const noexcept {
     return vals_.end();
   }
 
-  /** Reference to the first span element. */
+  /// Reference to the first span element.
   constexpr auto front() const noexcept -> Val& {
     return vals_.front();
   }
-  /** Reference to the last span element. */
+  /// Reference to the last span element.
   constexpr auto back() const noexcept -> Val& {
     return vals_.back();
   }
 
-  /** Reference to span element or sub-span. */
+  /// Reference to span element or sub-span.
   template<class... Indices>
     requires mdindex<Rank, Indices...>
   constexpr auto operator[](Indices... indices) const noexcept
@@ -137,76 +135,76 @@ private:
 
 // TODO: maybe some deduction guide?
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Basic multidimensional owning container.
-\******************************************************************************/
+/// Basic multidimensional owning container.
 template<class Val, size_t Rank>
   requires (Rank >= 1)
 class Mdvector {
 public:
 
-  /** Construct multidimensional vector. */
+  /// Construct multidimensional vector.
   Mdvector() = default;
 
-  /** Construct multidimensional vector with specified size. */
+  /// Construct multidimensional vector with specified size.
   template<class... Extents>
     requires mdshape<Rank, Extents...>
   constexpr explicit Mdvector(Extents... extents) {
     assign(extents...);
   }
 
-  /** Vector size. */
+  /// Vector size.
   constexpr auto size() const noexcept -> size_t {
     return vals_.size();
   }
 
-  /** Iterator pointing to the first vector element. */
-  /** @{ */
+  /// Iterator pointing to the first vector element.
+  /// @{
   constexpr auto begin() noexcept {
     return vals_.begin();
   }
   constexpr auto begin() const noexcept {
     return vals_.begin();
   }
-  /** @} */
-  /** Iterator pointing to the element after the last vector element. */
-  /** @{ */
+  /// @}
+
+  /// Iterator pointing to the element after the last vector element.
+  /// @{
   constexpr auto end() noexcept {
     return vals_.end();
   }
   constexpr auto end() const noexcept {
     return vals_.end();
   }
-  /** @} */
+  /// @}
 
-  /** Reference to the first span element. */
-  /** @{ */
+  /// Reference to the first span element.
+  /// @{
   constexpr auto front() noexcept -> Val& {
     return vals_.front();
   }
   constexpr auto front() const noexcept -> Val const& {
     return vals_.front();
   }
-  /** @} */
-  /** Reference to the last span element. */
-  /** @{ */
+  /// @}
+
+  /// Reference to the last span element.
+  /// @{
   constexpr auto back() noexcept -> Val& {
     return vals_.back();
   }
   constexpr auto back() const noexcept -> Val const& {
     return vals_.back();
   }
-  /** @} */
+  /// @}
 
-  /** Clear the vector. */
+  /// Clear the vector.
   constexpr void clear() noexcept {
     shape_.fill(0);
     vals_.clear();
   }
 
-  /** Clear and reshape the vector. */
+  /// Clear and reshape the vector.
   template<class... Extents>
     requires mdshape<Rank, Extents...>
   constexpr void assign(Extents... extents) {
@@ -214,8 +212,8 @@ public:
     vals_.clear(), vals_.resize((extents * ...));
   }
 
-  /** Reference to vector element or sub-vector span. */
-  /** @{ */
+  /// Reference to vector element or sub-vector span.
+  /// @{
   template<class... Indices>
     requires mdindex<Rank, Indices...>
   constexpr auto operator[](Indices... indices) noexcept //
@@ -228,7 +226,7 @@ public:
       -> decltype(auto) {
     return Mdspan<Val const, Rank>{shape_, vals_}[indices...];
   }
-  /** @} */
+  /// @}
 
 private:
 
@@ -237,6 +235,6 @@ private:
 
 }; // class Mdvector
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

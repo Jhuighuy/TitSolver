@@ -22,11 +22,9 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Compressed vector that can handle multiple elements at a single position.
-\******************************************************************************/
+/// Compressed vector that can handle multiple elements at a single position.
 template<class Val>
 class Multivector {
 private:
@@ -36,23 +34,24 @@ private:
 
 public:
 
-  /** Multivector size. */
+  /// Multivector size.
   constexpr auto size() const noexcept -> size_t {
     return val_ranges_.size() - 1;
   }
-  /** Is multivector empty? */
+
+  /// Is multivector empty?
   constexpr auto empty() const noexcept -> bool {
     return val_ranges_.size() == 1;
   }
 
-  /** Clear the multivector. */
+  /// Clear the multivector.
   constexpr void clear() noexcept { // NOLINT(*-exception-escape)
     val_ranges_.clear(), val_ranges_.push_back(0);
     vals_.clear();
   }
 
-  /** Range of values at index. */
-  /** @{ */
+  /// Range of values at index.
+  /// @{
   constexpr auto operator[](size_t index) noexcept {
     TIT_ASSERT(index < size(), "Multivector index is out of range.");
     return std::ranges::subrange{vals_.begin() + val_ranges_[index],
@@ -63,9 +62,9 @@ public:
     return std::ranges::subrange{vals_.begin() + val_ranges_[index],
                                  vals_.begin() + val_ranges_[index + 1]};
   }
-  /** @} */
+  /// @}
 
-  /** Append values to the multivector. */
+  /// Append values to the multivector.
   template<std::ranges::input_range Vals>
     requires std::indirectly_copyable<std::ranges::iterator_t<Vals>,
                                       std::ranges::iterator_t<std::vector<Val>>>
@@ -75,7 +74,7 @@ public:
     val_ranges_.push_back(vals_.size());
   }
 
-  /** Sort values of each index. */
+  /// Sort values of each index.
   template<class Cmp = std::ranges::less, class Proj = std::identity>
     requires std::sortable<std::ranges::iterator_t<std::vector<Val>>, Cmp, Proj>
   constexpr void sort(Cmp cmp = {}, Proj proj = {}) noexcept {
@@ -84,14 +83,14 @@ public:
     });
   }
 
-  /** @brief Assemble the multivector from elements using value to index
-   **        mapping in parallel.
-   ** This version of the function works best when array size is much larger
-   ** than typical amount of values in bucket (multivector is "tall").
-   ** @param count Amount of the value buckets to be added.
-   ** @param handles Range of the value handles to be added.
-   ** @param index_of Function that returns bucket index of the handle value.
-   ** @param value_of Function that turns value handle into a value. */
+  /// @brief Assemble the multivector from elements using value to index
+  ///        mapping in parallel.
+  /// This version of the function works best when array size is much larger
+  /// than typical amount of values in bucket (multivector is "tall").
+  /// @param count Amount of the value buckets to be added.
+  /// @param handles Range of the value handles to be added.
+  /// @param index_of Function that returns bucket index of the handle value.
+  /// @param value_of Function that turns value handle into a value.
   template<par::input_range Handles,
            std::regular_invocable<std::ranges::range_value_t<Handles>> IndexOf,
            std::regular_invocable<std::ranges::range_value_t<Handles>> ValueOf =
@@ -134,14 +133,14 @@ public:
     val_ranges_[0] = 0;
   }
 
-  /** @brief Assemble the multivector from elements using value to index
-   **        mapping in parallel.
-   ** This version of the function works best when array size is much less
-   ** than typical amount of values in bucket (multivector is "wide").
-   ** @param count Amount of the value buckets to be added.
-   ** @param handles Range of the value handles to be added.
-   ** @param index_of Function that returns bucket index of the handle value.
-   ** @param value_of Function that turns value handle into a value. */
+  /// @brief Assemble the multivector from elements using value to index
+  ///        mapping in parallel.
+  /// This version of the function works best when array size is much less
+  /// than typical amount of values in bucket (multivector is "wide").
+  /// @param count Amount of the value buckets to be added.
+  /// @param handles Range of the value handles to be added.
+  /// @param index_of Function that returns bucket index of the handle value.
+  /// @param value_of Function that turns value handle into a value.
   template<par::input_range Handles,
            std::regular_invocable<std::ranges::range_value_t<Handles>> IndexOf,
            std::regular_invocable<std::ranges::range_value_t<Handles>> ValueOf =
@@ -194,6 +193,6 @@ public:
 
 }; // class Multivector
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

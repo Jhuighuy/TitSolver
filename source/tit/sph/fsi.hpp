@@ -12,7 +12,9 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
+
 #include "tit/par/thread.hpp"
+
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/field.hpp"
@@ -20,25 +22,21 @@
 
 namespace tit::sph::fsi {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Equation that links Euler strain tensor to the Cauchy stress tensor.
-\******************************************************************************/
+/// Equation that links Euler strain tensor to the Cauchy stress tensor.
 template<class Derived>
 class EquationOfState {
 public:
 }; // class EquationOfState
 
-/** Equation of state type. */
+/// Equation of state type.
 template<class DerivedEOS>
 concept equation_of_state =
     std::movable<DerivedEOS> &&
     std::derived_from<DerivedEOS, EquationOfState<DerivedEOS>>;
 
-/******************************************************************************\
- ** Hooke’s law equation of state.
-\******************************************************************************/
+/// Hooke’s law equation of state.
 class HookesLaw final : public EquationOfState<HookesLaw> {
 private:
 
@@ -46,7 +44,7 @@ private:
 
 public:
 
-  /** Compute Cauchy stress tensor from Euler strain tensor. */
+  /// Compute Cauchy stress tensor from Euler strain tensor.
   template<class Real, size_t Dim>
   constexpr auto stress_tensor(Mat<Real, Dim> const& eps) const noexcept {
     static_assert(Dim == 2);
@@ -67,21 +65,19 @@ public:
 
 }; // class HookesLaw
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // We reuse the same kernels as for fluid SPH.
 using tit::sph::kernel;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // We reuse the same artificial viscosity as for fluid SPH.
 using tit::sph::artificial_viscosity;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** The particle estimator with a fixed kernel width.
-\******************************************************************************/
+/// The particle estimator with a fixed kernel width.
 template<equation_of_state EquationOfState, kernel Kernel,
          artificial_viscosity ArtificialViscosity>
 class StructureEquations {
@@ -94,30 +90,30 @@ private:
 
 public:
 
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /** Set of particle fields that are required. */
+  /// Set of particle fields that are required.
   static constexpr auto required_fields =
       meta::Set{fixed, parinfo} | // TODO: fixed should not be here.
       meta::Set{h, m, rho, P, cs, r, r_0, v, dv_dt, L} |
       Kernel::required_fields | ArtificialViscosity::required_fields;
 
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /** Initialize structure equations. */
+  /// Initialize structure equations.
   constexpr explicit StructureEquations(
       EquationOfState eos = {}, Kernel kernel = {},
       ArtificialViscosity artvisc = {}) noexcept
       : eos_{std::move(eos)}, kernel_{std::move(kernel)},
         artvisc_{std::move(artvisc)} {}
 
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   template<class ParticleArray>
     requires (has<ParticleArray>(required_fields))
   constexpr void init([[maybe_unused]] ParticleArray& particles) const {}
 
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   template<class ParticleArray, class ParticleAdjacency>
   constexpr auto index(ParticleArray& particles,
@@ -151,18 +147,18 @@ public:
     });
   }
 
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /** Compute density-related fields. */
+  /// Compute density-related fields.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_density(
       [[maybe_unused]] ParticleArray& particles,
       [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {}
 
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /** Compute velocity related fields. */
+  /// Compute velocity related fields.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_forces(ParticleArray& particles,
@@ -229,6 +225,6 @@ public:
 
 }; // class StructureEquations
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::sph::fsi

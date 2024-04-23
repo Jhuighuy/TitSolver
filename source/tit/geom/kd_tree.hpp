@@ -17,18 +17,18 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
+
 #include "tit/geom/bbox.hpp"
+
 #include "tit/par/memory_pool.hpp"
 #include "tit/par/thread.hpp"
 
 namespace tit::geom {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** K-dimensional tree.
- ** Inspired by nanoflann: https://github.com/jlblancoc/nanoflann
-\******************************************************************************/
+/// K-dimensional tree.
+/// Inspired by nanoflann: https://github.com/jlblancoc/nanoflann
 template<std::ranges::view Points>
   requires std::ranges::sized_range<Points> &&
            std::ranges::random_access_range<Points> &&
@@ -36,12 +36,13 @@ template<std::ranges::view Points>
 class KDTree final {
 public:
 
-  /** Point type. */
+  /// Point type.
   using Point = std::ranges::range_value_t<Points>;
-  /** Bounding box type. */
+
+  /// Bounding box type.
   using PointBBox = bbox_t<Point>;
 
-  /** Numeric type used by the point type. */
+  /// Numeric type used by the point type.
   using Real = vec_num_t<Point>;
 
 private:
@@ -66,25 +67,27 @@ private:
   KDTreeNode_ const* root_node_ = nullptr;
   PointBBox root_bbox_;
 
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 public:
 
-  /** K-dimensional tree is non-copyable. */
+  /// K-dimensional tree is non-copyable.
   KDTree(KDTree const&) = delete;
-  /** K-dimensional tree is non-copy-assignable. */
+
+  /// K-dimensional tree is non-copy-assignable.
   auto operator=(KDTree const&) -> KDTree& = delete;
 
-  /** Move-construct the K-dimensional tree. */
+  /// Move-construct the K-dimensional tree.
   KDTree(KDTree&&) = default;
-  /** Move-assign the K-dimensional tree. */
+
+  /// Move-assign the K-dimensional tree.
   auto operator=(KDTree&&) -> KDTree& = default;
 
-  /** Destroy the K-dimensional tree. */
+  /// Destroy the K-dimensional tree.
   ~KDTree() = default;
 
-  /** Initialize and build the K-dimensional tree.
-   ** @param max_leaf_size Maximum amount of points in the leaf node. */
+  /// Initialize and build the K-dimensional tree.
+  /// @param max_leaf_size Maximum amount of points in the leaf node.
   constexpr explicit KDTree(Points points, size_t max_leaf_size = 1)
       : points_{std::move(points)}, max_leaf_size_{max_leaf_size} {
     TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
@@ -206,11 +209,11 @@ private:
     return std::min(pivot, middle);
   }
 
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 public:
 
-  /** Find the points within the radius to the given point. */
+  /// Find the points within the radius to the given point.
   template<std::output_iterator<size_t> OutIter>
   constexpr auto search(Point search_point, Real search_radius,
                         OutIter indices) const noexcept -> OutIter {
@@ -273,12 +276,12 @@ private:
 template<class Points, class... Args>
 KDTree(Points&&, Args...) -> KDTree<std::views::all_t<Points>>;
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 template<class... Args>
 concept can_kd_tree_ = requires { KDTree{std::declval<Args>()...}; };
 
-/******************************************************************************\
- ** K-dimensional tree factory.
-\******************************************************************************/
+/// K-dimensional tree factory.
 class KDTreeFactory final {
 private:
 
@@ -286,14 +289,14 @@ private:
 
 public:
 
-  /** Construct a K-dimensional tree factory.
-   ** @param max_leaf_size Maximum amount of points in the leaf node. */
+  /// Construct a K-dimensional tree factory.
+  /// @param max_leaf_size Maximum amount of points in the leaf node.
   constexpr explicit KDTreeFactory(size_t max_leaf_size = 1)
       : max_leaf_size_{max_leaf_size} {
     TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
   }
 
-  /** Produce a K-dimensional tree for the specified set of points. */
+  /// Produce a K-dimensional tree for the specified set of points.
   template<std::ranges::viewable_range Points>
     requires can_kd_tree_<Points, size_t>
   constexpr auto operator()(Points&& points) const noexcept {
@@ -302,6 +305,6 @@ public:
 
 }; // class KDTreeFactory
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::geom

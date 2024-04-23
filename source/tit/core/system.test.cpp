@@ -19,17 +19,17 @@
 namespace tit {
 namespace {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Simple signal handler that stores all the handled signals. */
+// Simple signal handler that stores all the handled signals.
 class SignalTracker final : public SignalHandler {
 public:
 
-  /** Setup the signal tracker. */
+  // Setup the signal tracker.
   SignalTracker(std::initializer_list<int> signal_numbers)
       : SignalHandler(signal_numbers) {}
 
-  /** Retrieve the last handled signal number. */
+  // Retrieve the last handled signal number.
   [[nodiscard]] auto last() noexcept -> int {
     return std::exchange(last_signal_number_, {});
   }
@@ -67,7 +67,7 @@ TEST_CASE("SignalHandler") {
   CHECK(handler_1.last() == SIGUSR2);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace
 } // namespace tit

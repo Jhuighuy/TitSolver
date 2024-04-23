@@ -13,20 +13,18 @@
 
 namespace tit {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Compressed sparse adjacency graph.
-\******************************************************************************/
+/// Compressed sparse adjacency graph.
 class Graph : public Multivector<size_t> {
 public:
 
-  /** Number of graph nodes. */
+  /// Number of graph nodes.
   constexpr auto num_nodes() const noexcept -> size_t {
     return size();
   }
 
-  /** Range of the unique graph edges. */
+  /// Range of the unique graph edges.
   constexpr auto edges() const noexcept {
     return std::views::iota(0UZ, num_nodes()) |
            std::views::transform([this](size_t row_index) {
@@ -45,6 +43,6 @@ public:
 
 }; // class Graph
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

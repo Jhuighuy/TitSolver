@@ -14,18 +14,18 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
+
 #include "tit/geom/bbox.hpp"
+
 #include "tit/par/thread.hpp"
 
 #include <oneapi/tbb/task_group.h>
 
 namespace tit::geom {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Z-curve spatial ordering.
-\******************************************************************************/
+/// Z-curve spatial ordering.
 template<std::ranges::view Points>
   requires std::ranges::sized_range<Points> &&
            std::ranges::random_access_range<Points> &&
@@ -33,11 +33,13 @@ template<std::ranges::view Points>
 class ZCurveOrdering {
 public:
 
-  /** Point type. */
+  /// Point type.
   using Point = std::ranges::range_value_t<Points>;
-  /** Bounding box type. */
+
+  /// Bounding box type.
   using PointBBox = decltype(BBox(std::declval<Point>()));
-  /** Numeric type used by the point type. */
+
+  /// Numeric type used by the point type.
   static constexpr auto Dim = vec_dim_v<Point>;
 
 private:
@@ -47,8 +49,8 @@ private:
 
 public:
 
-  /** Initialize and build the K-dimensional tree.
-   ** @param max_leaf_size Maximum amount of points in the leaf node. */
+  /// Initialize and build the K-dimensional tree.
+  /// @param max_leaf_size Maximum amount of points in the leaf node.
   constexpr explicit ZCurveOrdering(Points points)
       : points_{std::move(points)} {
     TIT_PROFILE_SECTION("tit::ZCurveOrdering::ZCurveOrdering()");
@@ -118,7 +120,7 @@ private:
 template<class Points, class... Args>
 ZCurveOrdering(Points&&, Args...) -> ZCurveOrdering<std::views::all_t<Points>>;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<std::ranges::view Points>
 class HilbertOrdering {
@@ -277,7 +279,7 @@ public:
   }
 
   void GetHilbertElementOrdering(std::vector<size_t>& ordering) {
-    /** Point type. */
+    // Point type.
     using Point = std::ranges::range_value_t<Points>;
     using PointBBox = decltype(BBox(std::declval<Point>()));
 

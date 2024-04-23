@@ -16,11 +16,9 @@
 
 namespace tit::geom {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/******************************************************************************\
- ** Bounding box.
-\******************************************************************************/
+/// Bounding box.
 template<class Num, size_t Dim>
 class BBox final {
 private:
@@ -32,8 +30,8 @@ public:
   // TODO: remove this constructor.
   constexpr BBox() = default;
 
-  /** Construct bounding box with set of points. */
-  /** @{ */
+  /// Construct bounding box with set of points.
+  /// @{
   constexpr explicit BBox(Vec<Num, Dim> point) noexcept
       : low_{point}, high_{point} {}
   template<class... RestPoints>
@@ -43,46 +41,49 @@ public:
       : BBox{point} {
     (update(rest_points), ...);
   }
-  /** @} */
+  /// @}
 
-  /** Low bounding box point. */
+  /// Low bounding box point.
   constexpr auto low() const noexcept -> Vec<Num, Dim> {
     return low_;
   }
-  /** High bounding box point. */
+
+  /// High bounding box point.
   constexpr auto high() const noexcept -> Vec<Num, Dim> {
     return high_;
   }
 
-  /** Bounding box center. */
+  /// Bounding box center.
   constexpr auto center() const noexcept {
     return avg(low_, high_);
   }
-  /** Bounding box extents. */
+
+  /// Bounding box extents.
   constexpr auto extents() const noexcept {
     return high_ - low_;
   }
 
-  /** Update bounding box with point. */
+  /// Update bounding box with point.
   constexpr auto update(Vec<Num, Dim> point) noexcept -> BBox& {
     low_ = minimum(low_, point);
     high_ = maximum(high_, point);
     return *this;
   }
 
-  /** Extend bounding box with delta. */
+  /// Extend bounding box with delta.
   constexpr auto extend(Vec<Num, Dim> delta) noexcept -> BBox& {
     *this = BBox{low_ - delta, high_ + delta};
     return *this;
   }
 
-  /** Clamp point into the bounding box. */
+  /// Clamp point into the bounding box.
   constexpr auto clamp(Vec<Num, Dim> point) const noexcept {
     point = maximum(low_, point);
     point = minimum(high_, point);
     return point;
   }
-  /** Find nearest point on the bounding box boundary. */
+
+  /// Find nearest point on the bounding box boundary.
   constexpr auto proj(Vec<Num, Dim> point) const noexcept {
     // TODO there should be much better implementation for this.
     point = clamp(point);
@@ -92,8 +93,8 @@ public:
     return point;
   }
 
-  /** Split bbox in two. */
-  /** @{ */
+  /// Split bbox in two.
+  /// @{
   constexpr auto split(size_t axis, Num val) const noexcept {
     TIT_ASSERT(axis < Dim, "Axis is out of range.");
     auto left = *this, right = *this;
@@ -104,16 +105,16 @@ public:
     TIT_ASSERT(axis < Dim, "Axis is out of range.");
     return split(axis, point[axis]);
   }
-  /** @} */
+  /// @}
 
 }; // class BBox
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Bounding box type for the specified vector type. */
+/// Bounding box type for the specified vector type.
 template<class Vec>
 using bbox_t = decltype(BBox(std::declval<Vec>()));
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::geom

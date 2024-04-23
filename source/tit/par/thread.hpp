@@ -93,38 +93,38 @@ public:
     return Threading<par_tag_t>::func(__VA_ARGS__);                            \
   }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Wrapper for the `main` that sets up multithreading. */
+/// Wrapper for the `main` that sets up multithreading.
 template<std::invocable<int, char**> Func>
 auto main(int argc, char** argv, Func&& func) -> int {
   TIT_THREAD_FUNC_IMPL_(main_, argc, argv, func);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Number of threads. */
+/// Number of threads.
 constexpr auto num_threads() noexcept -> size_t {
   TIT_THREAD_FUNC_IMPL_(num_threads_);
 }
 
-/** Current thread index. */
+/// Current thread index.
 constexpr auto thread_index() noexcept -> size_t {
   TIT_THREAD_FUNC_IMPL_(thread_index_);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Invoke functions in parallel. */
+/// Invoke functions in parallel.
 template<std::invocable... Funcs>
 constexpr void invoke(Funcs&&... funcs) noexcept {
   TIT_THREAD_FUNC_IMPL_(invoke_, funcs...);
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/** Range that could be processed in parallel. */
-/** @{ */
+/// Range that could be processed in parallel.
+/// @{
 template<class Range>
 concept base_input_range =
     std::ranges::input_range<Range> &&
@@ -134,7 +134,7 @@ concept input_range =
     base_input_range<Range> ||
     (specialization_of<Range, std::ranges::join_view> &&
      base_input_range<decltype(std::declval<Range&&>().base())>);
-/** @} */
+/// @}
 
 template<class Func, class Range>
 concept loop_body =
@@ -148,8 +148,8 @@ concept indirect_loop_body =
     std::indirectly_regular_unary_invocable<
         Func, std::ranges::iterator_t<std::ranges::range_value_t<BaseRange>>>;
 
-/** Iterate through the range in parallel (dynamic partitioning). */
-/** @{ */
+/// Iterate through the range in parallel (dynamic partitioning).
+/// @{
 template<base_input_range Range, loop_body<Range> Func>
 constexpr void for_each(Range&& range, Func&& func) noexcept {
   TIT_THREAD_FUNC_IMPL_(for_each_, dynamic_tag, range, func);
@@ -161,10 +161,10 @@ constexpr void for_each( //
     std::ranges::for_each(subrange, func); //
   });
 }
-/** @} */
+/// @}
 
-/** Iterate through the range in parallel (static partitioning). */
-/** @{ */
+/// Iterate through the range in parallel (static partitioning).
+/// @{
 template<base_input_range Range, loop_body<Range> Func>
 constexpr void static_for_each(Range&& range, Func&& func) noexcept {
   TIT_THREAD_FUNC_IMPL_(for_each_, static_tag, range, func);
@@ -176,7 +176,7 @@ constexpr void static_for_each( //
     std::ranges::for_each(subrange, func);
   });
 }
-/** @} */
+/// @}
 
 template<class Range>
 concept block_input_range = std::ranges::input_range<Range>;
@@ -199,7 +199,7 @@ constexpr void block_for_each(Range&& range, Func&& func) noexcept {
   }
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // NOLINTEND(*-missing-std-forward)
 
