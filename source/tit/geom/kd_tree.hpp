@@ -120,8 +120,8 @@ private:
   // On the input `bbox` contains a rough estimate that was guessed by the
   // caller. On return it contains an exact bounding box of the subtree.
   template<bool IsRoot = false>
-  constexpr auto build_subtree_(size_t* first, size_t* last, PointBBox& bbox)
-      -> KDTreeNode_* {
+  constexpr auto build_subtree_(size_t* first, size_t* last,
+                                PointBBox& bbox) -> KDTreeNode_* {
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // Allocate node.
     // TODO: We are not correctly initializing `node`.
@@ -162,8 +162,8 @@ private:
 
   // Partition the K-dimensional subtree points.
   constexpr auto partition_subtree_(size_t* first, size_t* last, //
-                                    size_t cut_dim, Real cut_value) noexcept
-      -> size_t* {
+                                    size_t cut_dim,
+                                    Real cut_value) noexcept -> size_t* {
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // TODO: make a general `balanced_partition` algorithm from this.
     // Partition the tree based on the cut plane: separate those that

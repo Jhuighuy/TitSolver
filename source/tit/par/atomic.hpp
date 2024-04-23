@@ -13,8 +13,8 @@ namespace tit::par {
 
 /// Atomically perform addition and return what was stored before.
 template<class Val>
-constexpr auto sync_fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept
-    -> Val {
+constexpr auto sync_fetch_and_add(Val& val,
+                                  sub_result_t<Val> delta) noexcept -> Val {
   if consteval {
     auto const tmp = val;
     val += delta;
