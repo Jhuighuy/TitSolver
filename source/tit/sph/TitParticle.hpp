@@ -20,12 +20,12 @@
 #include "tit/core/graph.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/mat.hpp"
-#include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
-
+#include "tit/core/uint_utils.hpp"
 #include "tit/core/vec.hpp"
+
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
@@ -214,7 +214,7 @@ public:
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
     size_t nparts = par::num_threads();
-    size_t const partsize = ceil_divide(parts.size(), nparts);
+    size_t const partsize = divide_up(parts.size(), nparts);
     // Compute partitioning.
     for (size_t i = 0; i < parts.size(); ++i) {
       parts[i] /= partsize;

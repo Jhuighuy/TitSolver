@@ -9,6 +9,7 @@ add_tit_library(
   TYPE
     OBJECT
   SOURCES
+    "func_utils.hpp"
     "test.hpp"
     "test_main.cpp"
   DEPENDS

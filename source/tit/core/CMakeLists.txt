@@ -25,6 +25,7 @@ add_tit_library(
     "system.hpp"
     "time.hpp"
     "type_traits.hpp"
+    "uint_utils.hpp"
     "utils.hpp"
     "vec.hpp"
     "vec_avx.hpp"
@@ -44,6 +45,7 @@ add_tit_executable(
     "mdvector.test.cpp"
     "system.test.cpp"
     "time.test.cpp"
+    "uint_utils.test.cpp"
     "vec.test.cpp"
   DEPENDS
     tit::core tit::testing)

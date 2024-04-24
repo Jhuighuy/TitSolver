@@ -337,7 +337,8 @@ constexpr auto norm(Vec<Num, Dim> a) noexcept {
 /// Normalize vector.
 template<class Num, size_t Dim>
 constexpr auto normalize(Vec<Num, Dim> a) noexcept {
-  return safe_divide(a, norm(a));
+  auto const norm_a = norm(a);
+  return is_tiny(norm_a) ? Vec<Num, Dim>{} : a / norm_a;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -418,6 +419,12 @@ constexpr auto eval(VecCmp<Op, Dim, NumX, NumY> cmp) noexcept {
   return r;
 }
 
+// This function will be removed in the following commit.
+template<class Num>
+constexpr auto merge(bool cmp, Num a, Num b = Num{}) noexcept -> Num {
+  return cmp ? a : b;
+}
+
 /// Merge vector with zero vector based on comparison result.
 template<class Op, class NumX, class NumY, class NumA, size_t Dim>
 constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp,
@@ -456,16 +463,6 @@ template<class Num, size_t Dim>
 constexpr auto maximum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
     -> Vec<Num, Dim> {
   return merge(a > b, a, b);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Evaluate polynomial @f$ \sum c_k q^k @f$.
-template<class NumQ, class NumC, size_t Dim>
-constexpr auto poly(NumQ q, Vec<NumC, Dim> ci) noexcept {
-  add_result_t<mul_result_t<NumQ, NumC>> r{ci[Dim - 1]};
-  for (ssize_t i = Dim - 2; i >= 0; --i) r = ci[i] + r * q;
-  return r;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
