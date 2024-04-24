@@ -36,9 +36,6 @@
 # * cppcoreguidelines-pro-bounds-constant-array-index:
 #   This check does not works correctly with our asserts.
 #
-# * cppcoreguidelines-pro-type-union-access:
-#   We should not use unions, but we do, especially with SIMD implementations.
-#
 # * misc-header-include-cycle:
 #   To be re-enabled in the future.
 #
