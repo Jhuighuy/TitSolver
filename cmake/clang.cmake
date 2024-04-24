@@ -61,7 +61,10 @@ set(
   # Disable warnings for unknown pragmas.
   -Wno-unknown-pragmas
   # Disable warnings for unknown warning options.
-  -Wno-unknown-warning-option)
+  -Wno-unknown-warning-option
+  # `__cpp_concepts` is not updated in clang for some reason.
+  -Wno-builtin-macro-redefined
+  -D__cpp_concepts=202002L)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
