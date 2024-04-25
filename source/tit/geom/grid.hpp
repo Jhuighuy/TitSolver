@@ -17,6 +17,7 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
 
+#include "tit/core/vec/vec.hpp"
 #include "tit/geom/bbox.hpp"
 
 namespace tit::geom {
@@ -38,8 +39,8 @@ public:
   using PointBBox = bbox_t<Point>;
 
   /// Numeric type used by the point type.
-
   using Real = vec_num_t<Point>;
+
   /// Numeric type used by the point type.
   static constexpr auto Dim = vec_dim_v<Point>;
 
@@ -100,7 +101,7 @@ private:
       num_cells_[i] = static_cast<size_t>(std::ceil(approx_num_cells[i]));
       total_num_cells *= num_cells_[i];
     }
-    cell_size_ = extents / num_cells_;
+    cell_size_ = extents / static_vec_cast<Real>(num_cells_);
     // Pack the points into a multivector.
     cell_points_.assemble_tall(
         total_num_cells, std::views::enumerate(points_),

@@ -10,6 +10,7 @@ add_tit_library(
     OBJECT
   SOURCES
     "func_utils.hpp"
+    "strict.hpp"
     "test.hpp"
     "test_main.cpp"
   DEPENDS

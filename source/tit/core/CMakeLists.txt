@@ -27,6 +27,8 @@ add_tit_library(
     "uint_utils.hpp"
     "utils.hpp"
     "vec.hpp"
+    "vec/vec.hpp"
+    "vec/vec_mask.hpp"
   DEPENDS
     tit::base)
 
@@ -42,6 +44,8 @@ add_tit_executable(
     "system.test.cpp"
     "time.test.cpp"
     "uint_utils.test.cpp"
+    "vec/vec.test.cpp"
+    "vec/vec_mask.test.cpp"
   DEPENDS
     tit::core tit::testing)
 

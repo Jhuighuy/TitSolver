@@ -136,7 +136,7 @@ private:
       node->leaf = {first, last};
     } else {
       // Split the points based on the "widest" bounding box dimension.
-      auto const cut_dim = argmax_value(actual_bbox.extents());
+      auto const cut_dim = max_value_index(actual_bbox.extents());
       auto const cut_value = actual_bbox.clamp(bbox.center())[cut_dim];
       auto const pivot = partition_subtree_(first, last, cut_dim, cut_value);
       TIT_ASSERT(first <= pivot && pivot <= last, "Invalid pivot.");
