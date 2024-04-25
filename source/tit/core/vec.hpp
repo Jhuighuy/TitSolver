@@ -36,12 +36,13 @@ public:
 
   /// Construct a vector with elements.
   template<class... Args>
-    requires (sizeof...(Args) == Dim) &&
-             (std::constructible_from<Num, Args> && ...)
-  constexpr explicit Vec(Args... qi) noexcept : col_{qi...} {}
+    requires (Dim > 1) && (sizeof...(Args) == Dim) &&
+             (std::constructible_from<Num, Args &&> && ...)
+  constexpr Vec(Args... qi) noexcept : col_{qi...} {}
 
   /// Fill-initialize the vector.
-  constexpr explicit Vec(Num q = Num{}) noexcept {
+  constexpr Vec() : Vec(Num{0}) {}
+  constexpr explicit(Dim > 1) Vec(Num q) noexcept {
     col_.fill(q);
   }
 
@@ -57,7 +58,7 @@ public:
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     return col_[i];
   }
-  constexpr auto operator[](size_t i) const noexcept -> Num {
+  constexpr auto operator[](size_t i) const noexcept -> Num const& {
     TIT_ASSERT(i < num_rows, "Row index is out of range.");
     return col_[i];
   }
@@ -129,8 +130,8 @@ constexpr auto operator+(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 /// Vector addition assignment.
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator+=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
-    -> auto& {
+constexpr auto operator+=(Vec<NumA, Dim>& a,
+                          Vec<NumB, Dim> b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] += b[i];
   return a;
 }
@@ -155,8 +156,8 @@ constexpr auto operator-(Vec<NumA, Dim> a, Vec<NumB, Dim> b) noexcept {
 
 /// Vector subtraction assignment.
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator-=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
-    -> auto& {
+constexpr auto operator-=(Vec<NumA, Dim>& a,
+                          Vec<NumB, Dim> b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] -= b[i];
   return a;
 }
@@ -193,8 +194,8 @@ constexpr auto operator*=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
   return a;
 }
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator*=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
-    -> auto& {
+constexpr auto operator*=(Vec<NumA, Dim>& a,
+                          Vec<NumB, Dim> b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] *= b[i];
   return a;
 }
@@ -226,8 +227,8 @@ constexpr auto operator/=(Vec<NumA, Dim>& a, NumB b) noexcept -> auto& {
   return a;
 }
 template<class NumA, class NumB, size_t Dim>
-constexpr auto operator/=(Vec<NumA, Dim>& a, Vec<NumB, Dim> b) noexcept
-    -> auto& {
+constexpr auto operator/=(Vec<NumA, Dim>& a,
+                          Vec<NumB, Dim> b) noexcept -> auto& {
   for (size_t i = 0; i < a.num_rows; ++i) a[i] /= b[i];
   return a;
 }
@@ -410,6 +411,12 @@ constexpr auto operator>=(Vec<NumX, Dim> x, Vec<NumY, Dim> y) noexcept {
 }
 /// @}
 
+// TODO: From the future.
+template<class Num, size_t Dim>
+constexpr auto approx_equal_to(Vec<Num, Dim> x, Vec<Num, Dim> y) noexcept {
+  return VecCmp{[](Num ax, Num ay) { return approx_equal_to(ax, ay); }, x, y};
+}
+
 /// Evaluate comparison result.
 template<class Op, class NumX, class NumY, size_t Dim>
 constexpr auto eval(VecCmp<Op, Dim, NumX, NumY> cmp) noexcept {
@@ -417,6 +424,15 @@ constexpr auto eval(VecCmp<Op, Dim, NumX, NumY> cmp) noexcept {
   auto const& [op, x, y] = cmp;
   for (size_t i = 0; i < r.num_rows; ++i) r[i] = op(x[i], y[i]);
   return r;
+}
+
+// TODO: From the future.
+template<class Op, class NumX, class NumY, size_t Dim>
+constexpr auto all(VecCmp<Op, Dim, NumX, NumY> cmp) noexcept {
+  auto const r = eval(cmp);
+  auto a = r[0];
+  for (size_t i = 1; i < r.num_rows; ++i) a &= r[i];
+  return a;
 }
 
 // This function will be removed in the following commit.
@@ -454,26 +470,17 @@ constexpr auto merge(VecCmp<Op, Dim, NumX, NumY> cmp, //
 
 /// Component-wise minimum.
 template<class Num, size_t Dim>
-constexpr auto minimum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
-    -> Vec<Num, Dim> {
+constexpr auto minimum(Vec<Num, Dim> a,
+                       Vec<Num, Dim> b) noexcept -> Vec<Num, Dim> {
   return merge(a < b, a, b);
 }
 /// Component-wise maximum.
 template<class Num, size_t Dim>
-constexpr auto maximum(Vec<Num, Dim> a, Vec<Num, Dim> b) noexcept
-    -> Vec<Num, Dim> {
+constexpr auto maximum(Vec<Num, Dim> a,
+                       Vec<Num, Dim> b) noexcept -> Vec<Num, Dim> {
   return merge(a > b, a, b);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// Enable SIMD.
-// IWYU pragma: begin_exports
-#include "tit/core/vec_simd.hpp"
-// IWYU pragma: end_exports
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

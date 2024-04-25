@@ -36,9 +36,6 @@
 # * cppcoreguidelines-pro-bounds-constant-array-index:
 #   This check does not works correctly with our asserts.
 #
-# * misc-header-include-cycle:
-#   To be re-enabled in the future.
-#
 # * modernize-use-nodiscard:
 #   I do not want to put `[[nodiscard]]` everywhere, especially on functions
 #   like `size()`. I want to use `[[nodiscard]]` only when it is really needed,
@@ -75,7 +72,6 @@ Checks: |
   -cppcoreguidelines-misleading-capture-default-by-value
   -cppcoreguidelines-pro-bounds-constant-array-index
   misc-*
-  -misc-header-include-cycle
   modernize-*
   -modernize-use-nodiscard
   performance-*

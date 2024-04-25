@@ -20,7 +20,6 @@ add_tit_library(
     "multivector.hpp"
     "profiler.cpp"
     "profiler.hpp"
-    "simd.hpp"
     "system.cpp"
     "system.hpp"
     "time.hpp"
@@ -28,9 +27,6 @@ add_tit_library(
     "uint_utils.hpp"
     "utils.hpp"
     "vec.hpp"
-    "vec_avx.hpp"
-    "vec_neon.hpp"
-    "vec_simd.hpp"
   DEPENDS
     tit::base)
 
@@ -46,7 +42,6 @@ add_tit_executable(
     "system.test.cpp"
     "time.test.cpp"
     "uint_utils.test.cpp"
-    "vec.test.cpp"
   DEPENDS
     tit::core tit::testing)
 

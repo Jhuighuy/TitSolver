@@ -47,16 +47,4 @@ constexpr auto pack(Ts&&... vals) -> std::array<T, Size> {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// TODO: To be removed in the future PR.
-template<class T>
-constexpr auto _unwrap(T&& value) noexcept -> decltype(auto) {
-  return std::forward<T>(value);
-}
-template<class T>
-constexpr auto _unwrap(T* value) noexcept -> T& {
-  return *value;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace tit
