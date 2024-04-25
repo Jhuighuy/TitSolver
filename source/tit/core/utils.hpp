@@ -36,13 +36,23 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Pack values into an a padded array of given size.
+/// Pack values into a padded array of given size.
 template<size_t Size, class T, class... Ts>
-  requires (std::convertible_to<Ts, T> && ...) &&
-           ((sizeof...(Ts) == Size) ||
-            ((sizeof...(Ts) <= Size) && std::default_initializable<T>) )
-constexpr auto pack(Ts&&... vals) -> std::array<T, Size> {
+  requires ((std::convertible_to<Ts, T> && ...) &&
+            ((sizeof...(Ts) == Size) ||
+             ((sizeof...(Ts) <= Size) && std::default_initializable<T>) ))
+constexpr auto make_array(Ts&&... vals) -> std::array<T, Size> {
   return {static_cast<T>(std::forward<Ts>(vals))...};
+}
+
+/// Fill an array of the given size initialized with the given value.
+template<size_t Size, class T>
+  requires std::copy_constructible<T>
+constexpr auto fill_array(T const& val) -> std::array<T, Size> {
+  auto const get_val = [&](auto /*arg*/) -> T const& { return val; };
+  return [&]<size_t... Indices>(std::index_sequence<Indices...>) {
+    return std::array<T, Size>{get_val(Indices)...};
+  }(std::make_index_sequence<Size>{});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -252,7 +252,7 @@ public:
     constexpr auto wi = Vec{Real{0.25}, Real{-1.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Real, 2>(q);
-    return sum(merge(qv < qi, wi * pow3(qi - qv)));
+    return sum(blend_zero(qv < qi, wi * pow3(qi - qv)));
 #else
     auto W = Real{0.0};
     if (q < qi[0]) {
@@ -272,7 +272,7 @@ public:
     constexpr auto wi = Vec{Real{0.25}, Real{-1.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Real, 2>(q);
-    return sum(merge(qv < qi, wi * Real{-3.0} * pow2(qi - qv)));
+    return sum(blend_zero(qv < qi, wi * Real{-3.0} * pow2(qi - qv)));
 #else
     auto dW_dq = Real{0.0};
     if (q < qi[0]) {
@@ -354,7 +354,7 @@ public:
     constexpr auto wi = Vec{Real{1.0}, Real{-5.0}, Real{10.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Real, 3>(q);
-    return sum(merge(qv < qi, wi * pow4(qi - qv)));
+    return sum(blend_zero(qv < qi, wi * pow4(qi - qv)));
 #else
     auto W = Real{0.0};
     if (q < qi[0]) {
@@ -377,7 +377,7 @@ public:
     constexpr auto wi = Vec{Real{1.0}, Real{-5.0}, Real{10.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Real, 3>(q);
-    return sum(merge(qv < qi, wi * Real{-4.0} * pow3(qi - qv)));
+    return sum(blend_zero(qv < qi, wi * Real{-4.0} * pow3(qi - qv)));
 #else
     auto dW_dq = Real{0.0};
     if (q < qi[0]) {
@@ -425,7 +425,7 @@ public:
     constexpr auto wi = Vec{Real{1.0}, Real{-6.0}, Real{15.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Real, 3>(q);
-    return sum(merge(qv < qi, wi * pow5(qi - qv)));
+    return sum(blend_zero(qv < qi, wi * pow5(qi - qv)));
 #else
     auto W = Real{0.0};
     if (q < qi[0]) {
@@ -448,7 +448,7 @@ public:
     constexpr auto wi = Vec{Real{1.0}, Real{-6.0}, Real{15.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Real, 3>(q);
-    return sum(merge(qv < qi, wi * Real{-5.0} * pow4(qi - qv)));
+    return sum(blend_zero(qv < qi, wi * Real{-5.0} * pow4(qi - qv)));
 #else
     auto dW_dq = Real{0.0};
     if (q < qi[0]) {
@@ -487,21 +487,13 @@ public:
   /// Value of the unit smoothing kernel at a point.
   template<class Real>
   constexpr auto unit_value(Real q) const noexcept -> Real {
-#if TIT_BRANCHLESS_KERNELS
-    return merge(q < Real{2.0}, derived().unit_value_notrunc(q));
-#else
     return q < Real{2.0} ? derived().unit_value_notrunc(q) : Real{0.0};
-#endif
   }
 
   /// Derivative of the unit smoothing kernel at a point.
   template<class Real>
   constexpr auto unit_deriv(Real q) const noexcept -> Real {
-#if TIT_BRANCHLESS_KERNELS
-    return merge(q < Real{2.0}, derived().unit_deriv_notrunc(q));
-#else
     return q < Real{2.0} ? derived().unit_deriv_notrunc(q) : Real{0.0};
-#endif
   }
 
 }; // class WendlandKernel

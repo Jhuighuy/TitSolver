@@ -88,7 +88,7 @@ public:
     // TODO there should be much better implementation for this.
     point = clamp(point);
     auto const delta = point - center();
-    size_t i = argmax_value(pow2(delta));
+    size_t i = max_value_index(pow2(delta));
     point[i] = delta[i] >= 0 ? high_[i] : low_[i];
     return point;
   }
