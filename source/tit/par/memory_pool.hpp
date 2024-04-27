@@ -59,7 +59,8 @@ public:
   ///
   /// @note Values are not initialized: no constructors are called!
   /// @returns Pointer to the allocated memory or `nullptr`.
-  [[nodiscard]] auto allocate(size_t count = 1) -> Val* {
+  [[nodiscard]]
+  auto allocate(size_t count = 1) -> Val* {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
     auto const num_bytes = count * sizeof(Val);
     return static_cast<Val*>(pool_->malloc(num_bytes));

@@ -376,16 +376,16 @@ public:
   template<meta::type FieldSubset, meta::type ConstSubset>
     requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
              meta::is_set_v<ConstSubset> && (constants.includes(ConstSubset{}))
-  constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space_,
-                                   [[maybe_unused]] FieldSubset fields_ = {},
-                                   [[maybe_unused]] ConstSubset consts_ = {}) {}
+  constexpr explicit ParticleArray(Space<Real, Dim> /*space*/,
+                                   FieldSubset /*fields*/ = {},
+                                   ConstSubset /*consts*/ = {}) {}
   // clang-format on
   template<meta::type FieldSubset, meta::type... ConstSubset>
     requires meta::is_set_v<FieldSubset> && (fields.includes(FieldSubset{})) &&
              (constants.includes(meta::Set<ConstSubset...>{}))
-  constexpr explicit ParticleArray([[maybe_unused]] Space<Real, Dim> space_,
-                                   [[maybe_unused]] FieldSubset fields_ = {},
-                                   [[maybe_unused]] ConstSubset... consts_) {}
+  constexpr explicit ParticleArray(Space<Real, Dim> /*space*/,
+                                   FieldSubset /*fields*/ = {},
+                                   ConstSubset... /*consts*/) {}
   /// @}
 
   /// Number of particles.
