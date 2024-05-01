@@ -41,6 +41,9 @@
 # Pipelines.
 !/.github/workflows/*.yml
 
+# Docker files.
+!/docker/Dockerfile
+
 # Markdown files.
 !*.md
 
