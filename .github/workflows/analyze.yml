@@ -24,7 +24,7 @@ jobs:
     name: Analyze
     runs-on: ubuntu-latest
     container:
-      image: jhuighuy/tit-solver-image:latest
+      image: jhuighuy/tit-solver-base:latest
     defaults:
       run:
         shell: bash

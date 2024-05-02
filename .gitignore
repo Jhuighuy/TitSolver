@@ -30,22 +30,22 @@
 !*.hpp
 !*.cpp
 
+# Scripts.
+!*.sh
+
+# Documentation.
+!*.md
+
 # CMake files.
 !CMakeLists.txt
 !*.cmake
 !/cmake/codespell.txt
 
-# Scripts.
-!*.sh
+# Docker files.
+!/docker/*Dockerfile
 
 # Pipelines.
 !/.github/workflows/*.yml
-
-# Docker files.
-!/docker/Dockerfile
-
-# Markdown files.
-!*.md
 
 # Test input and output files.
 !/tests/**/*stdin*

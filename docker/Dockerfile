@@ -65,6 +65,7 @@ EOF
 
 # Install the manifested packages.
 ENV VCPKG_DEFAULT_BINARY_CACHE=/root/vcpkg_cache
+WORKDIR /
 COPY vcpkg.json .
 RUN <<EOF
   set -ex
