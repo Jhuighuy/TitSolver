@@ -45,6 +45,7 @@
 !/docker/*Dockerfile
 
 # Pipelines.
+!/.circleci/config.yml
 !/.github/workflows/*.yml
 
 # Test input and output files.
