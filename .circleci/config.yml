@@ -60,7 +60,7 @@ jobs:
       # Upload test output.
       - store_artifacts:
           path: output/test_output
-          destination: test-output-<< parameters.os >>-<< parameters.compiler >>-<< parameters.configuration >>
+          destination: test-output
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
