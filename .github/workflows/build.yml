@@ -23,6 +23,11 @@ jobs:
   build_ubuntu:
     name: Ubuntu
     runs-on: ubuntu-latest
+    container:
+      image: jhuighuy/tit-solver-base:latest
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         compiler: [g++-13]
@@ -37,55 +42,12 @@ jobs:
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      - name: Install packages and tools
-        run: |
-          # Install packages and tools
-          ## Fetch fresh packages.
-          sudo apt -qq update
-          ## Install the toolchain.
-          sudo apt -qq install cmake g++-13
-          ## Install LLVM and related tools.
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 18
-          sudo apt -qq install clang-18 clang-tidy-18 libomp-18-dev
-          ## Install Python tools.
-          pip3 install --user --upgrade codespell
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-      - name: Update vcpkg packages
-        run: |
-          # Update vcpkg packages
-          ## Save the current directory.
-          WORK_DIR=$(pwd)
-          ## Update vcpkg packages.
-          cd $VCPKG_INSTALLATION_ROOT
-          git reset --hard
-          git checkout master
-          git pull
-          ./bootstrap-vcpkg.sh
-          ## Stamp the last vcpkg commit hash and the current compiler.
-          VCPKG_HASH_FILE="$WORK_DIR/vcpkg.commit_hash"
-          echo "# vcpkg cache info." > "$VCPKG_HASH_FILE"
-          git rev-parse HEAD >> "$VCPKG_HASH_FILE"
-          ${{ matrix.compiler }} --version >> "$VCPKG_HASH_FILE"
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-      - name: Cache vcpkg packages
-        uses: actions/cache@v4
-        with:
-          path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
-          save-always: true
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
       - name: Build and test
         run: |
           # Build and test
+          ## Temporary fix for 'fatal: detected dubious ownership...'
+          git config --global --add safe.directory '*'
+          ## Run the build script.
           ./build/build.sh -j 4                                                \
             --compiler=${{ matrix.compiler }}                                  \
             --config=${{ matrix.configuration }}                               \
