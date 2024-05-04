@@ -43,6 +43,7 @@ add_tit_executable(
   NAME
     core_tests
   SOURCES
+    "enum_utils.test.cpp"
     "mat/mat.test.cpp"
     "mat/mat.testing.hpp"
     "mat/fact.test.cpp"

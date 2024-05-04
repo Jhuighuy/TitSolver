@@ -42,10 +42,10 @@ TEST_CASE("Flags::operator|") {
 
 TEST_CASE("Flags::operator&") {
   using enum Flags;
-  STATIC_CHECK(flag_12 & flag_1);
-  STATIC_CHECK(flag_12 & flag_2);
-  STATIC_CHECK(flag_12 & flag_23);
-  STATIC_CHECK_FALSE(flag_12 & flag_3);
+  STATIC_CHECK((flag_12 & flag_1));
+  STATIC_CHECK((flag_12 & flag_2));
+  STATIC_CHECK((flag_12 & flag_23));
+  STATIC_CHECK_FALSE((flag_12 & flag_3));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
