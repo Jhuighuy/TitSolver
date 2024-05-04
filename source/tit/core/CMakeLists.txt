@@ -9,11 +9,16 @@ add_tit_library(
   SOURCES
     "basic_types.hpp"
     "checks.hpp"
+    "enum_utils.hpp"
     "graph.hpp"
     "io.hpp"
     "main_func.cpp"
     "main_func.hpp"
     "mat.hpp"
+    "mat/mat.hpp"
+    "mat/fact.hpp"
+    "mat/part.hpp"
+    "mat/traits.hpp"
     "math.hpp"
     "mdvector.hpp"
     "meta.hpp"
@@ -38,6 +43,10 @@ add_tit_executable(
   NAME
     core_tests
   SOURCES
+    "mat/mat.test.cpp"
+    "mat/mat.testing.hpp"
+    "mat/fact.test.cpp"
+    "mat/part.test.cpp"
     "math.test.cpp"
     "meta.test.cpp"
     "mdvector.test.cpp"

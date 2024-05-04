@@ -114,10 +114,10 @@ public:
         S += W_ab * m[b] / rho[b];
         M += outer(B_ab, B_ab * W_ab * m[b] / rho[b]);
       });
-      MatInv inv(M);
-      if (inv) {
+      auto const fact = ldl(M);
+      if (fact) {
         Vec<real_t, 3> e{1.0, 0.0, 0.0};
-        auto E = inv(e);
+        auto E = fact->solve(e);
         rho[a] = {};
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
@@ -232,9 +232,9 @@ public:
       }
       /// Finalize kernel gradient renormalization matrix.
       if constexpr (has<PV>(L)) {
-        auto const invL_a = MatInv{L[a]};
-        if (is_zero(invL_a.det())) L[a] = 1.0;
-        else L[a] = invL_a();
+        auto const fact = ldl(L[a]);
+        if (fact) L[a] = fact->inverse();
+        else L[a] = 1.0;
       }
     });
   }

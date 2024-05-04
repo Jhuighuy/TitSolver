@@ -141,9 +141,9 @@ public:
     });
     par::static_for_each(particles.views(), [&](PV a) {
       /// Finalize kernel gradient renormalization matrix.
-      auto const L_a_inv = MatInv{L[a]};
-      if (!is_zero(L_a_inv.det())) L[a] = transpose(L_a_inv());
-      else L[a] = 1.0;
+      auto const fact = lu(L[a]);
+      if (fact) L[a] = transpose(fact->inverse());
+      else L[a] = eye(L[a]);
     });
   }
 
@@ -190,11 +190,11 @@ public:
       /// and compute auxiliary tensors from it.
       auto const F_a = P[a] * L[a];
       auto const F_T_a = transpose(F_a);
-      auto const F_T_inv_a = MatInv{F_T_a};
-      auto const F_invT_a = F_T_inv_a();
-      auto const J_a = F_T_inv_a.tdet();
+      auto const F_T_fact_a = lu(F_T_a);
+      auto const F_invT_a = F_T_fact_a->inverse();
+      auto const J_a = F_T_fact_a->det();
       /// Compute Green-Lagrange strain tensor.
-      constexpr auto I = decltype(F_a)(1.0);
+      auto const I = eye(F_a);
       auto const E_a = 0.5 * (F_T_a * F_a - I);
       /// Compute Euler strain tensor.
       auto const eps_a = F_invT_a * E_a * F_T_a;

@@ -34,6 +34,10 @@ namespace tit {
 #define TIT_ASSUME_UNIVERSALS(Ts, refs) (TIT_ASSUME_UNIVERSAL(Ts, refs), ...)
 /// @}
 
+/// C-style array reference.
+template<class T, size_t Size>
+using carr_ref_t = T (&)[Size]; // NOLINT(*-c-arrays)
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Pack values into a padded array of given size.

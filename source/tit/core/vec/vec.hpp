@@ -50,9 +50,6 @@ public:
   }
   /// @}
 
-  // TODO: to be removed!
-  static constexpr auto num_rows = Dim;
-
 private:
 
   std::array<Num, Dim> col_;
