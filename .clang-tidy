@@ -15,6 +15,10 @@
 #   Those are crypography-related. We are not doing anything that requires
 #   any level of sequerity right now.
 #
+# * clang-analyzer-optin.core.EnumCastOutOfRange:
+#   To be re-enabled in the future, once there is a better support for flag
+#   enums.
+#
 # * cppcoreguidelines-avoid-do-while:
 #   Doctest uses do-while loops in it's assert macros. Apart from that, the
 #   check is definitely useful.
@@ -63,6 +67,7 @@ Checks: |
   cert-*
   -cert-msc32-c
   -cert-msc51-cpp
+  -clang-analyzer-optin.core.EnumCastOutOfRange
   concurrency-*
   cppcoreguidelines-*
   -cppcoreguidelines-avoid-do-while
