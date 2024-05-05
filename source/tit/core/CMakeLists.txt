@@ -16,6 +16,7 @@ add_tit_library(
     "main_func.hpp"
     "mat.hpp"
     "mat/mat.hpp"
+    "mat/eig.hpp"
     "mat/fact.hpp"
     "mat/part.hpp"
     "mat/traits.hpp"
@@ -44,9 +45,10 @@ add_tit_executable(
     core_tests
   SOURCES
     "enum_utils.test.cpp"
+    "mat/eig.test.cpp"
+    "mat/fact.test.cpp"
     "mat/mat.test.cpp"
     "mat/mat.testing.hpp"
-    "mat/fact.test.cpp"
     "mat/part.test.cpp"
     "math.test.cpp"
     "meta.test.cpp"
