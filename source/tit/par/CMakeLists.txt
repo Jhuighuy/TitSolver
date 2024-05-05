@@ -9,8 +9,6 @@ add_tit_library(
   SOURCES
     "atomic.hpp"
     "memory_pool.hpp"
-    #"thread_omp.hpp"
-    #"thread_tbb.hpp"
     "thread.hpp"
   DEPENDS
     tit::core)

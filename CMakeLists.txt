@@ -12,7 +12,6 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 
 # Setup path to CMake scripts and include them.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(clang_tidy)
 include(clangd)
 include(codespell)
 include(compiler)
@@ -22,7 +21,6 @@ include(tit_testing)
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
-find_package(OpenMP REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
 # Setup output directories.
@@ -63,9 +61,8 @@ endforeach()
 # Link with the dependent libraries.
 target_link_libraries(
   tit_base INTERFACE
-  TBB::tbb TBB::tbbmalloc
-  OpenMP::OpenMP_CXX
-  hdf5::hdf5-static)
+  hdf5::hdf5-static
+  TBB::tbb TBB::tbbmalloc)
 
 # Write "compile_flags.txt" based on the container library.
 write_compile_flags(tit::base)
