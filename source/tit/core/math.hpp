@@ -22,9 +22,12 @@
 namespace tit {
 
 using std::abs;
+using std::atan2;
 using std::ceil;
+using std::cos;
 using std::floor;
 using std::round;
+using std::sin;
 using std::sqrt;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
