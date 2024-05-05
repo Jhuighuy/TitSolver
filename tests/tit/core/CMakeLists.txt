@@ -38,6 +38,20 @@ add_tit_test_from_target(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
+  NAME core_failed_check_test
+  SOURCES "failed_check.cpp"
+  DEPENDS tit::core tit::par)
+
+add_tit_test_from_target(
+  tit::core_failed_check_test
+  NAME "tit/core/failed_check"
+  EXIT_CODE 1
+  MATCH_STDERR "failed_check_stderr.txt"
+  FILTERS "/0x*/d") # Remove everything related to the stack trace.
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
   NAME core_profiler_tests
   SOURCES "profiler.cpp"
   DEPENDS tit::core tit::par)
