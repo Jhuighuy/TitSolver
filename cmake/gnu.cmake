@@ -100,6 +100,7 @@ set(
   ${GNU_COMPILE_OPTIONS_DEBUG}
   # Enable code coverage instrumentation during compilation.
   --coverage
+  -fprofile-update=atomic
   # Pass a definition that we are compiling with gcov.
   -DTIT_HAVE_GCOV=1
   # Disable inlining of functions, preventing the compiler from optimizing
@@ -145,6 +146,7 @@ set(
   # Inherit common options.
   ${GNU_LINK_OPTIONS}
   # Enables code coverage instrumentation during linking.
-  --coverage)
+  --coverage
+  -fprofile-update=atomic)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
