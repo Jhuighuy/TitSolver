@@ -13,7 +13,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_catch_ctrl_c_test
   SOURCES "catch_ctrl_c.cpp"
-  DEPENDS tit::core)
+  DEPENDS tit::core tit::par)
 
 add_tit_test_from_target(
   tit::core_catch_ctrl_c_test
@@ -26,7 +26,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_catch_fatal_signal_test
   SOURCES "catch_fatal_signal.cpp"
-  DEPENDS tit::core)
+  DEPENDS tit::core tit::par)
 
 add_tit_test_from_target(
   tit::core_catch_fatal_signal_test
@@ -40,7 +40,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_profiler_tests
   SOURCES "profiler.cpp"
-  DEPENDS tit::core)
+  DEPENDS tit::core tit::par)
 
 add_tit_test_from_target(
   tit::core_profiler_tests

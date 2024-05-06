@@ -11,9 +11,11 @@
 #include <ranges>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
+
+#include "tit/par/control.hpp"
 
 #include <oneapi/tbb/blocked_range.h>
-#include <oneapi/tbb/global_control.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_invoke.h>
 #include <oneapi/tbb/partitioner.h>
@@ -26,29 +28,12 @@ using std::ranges::input_range;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Number of threads.
-size_t _num_threads = 1;
-
 // Index of the current thread.
 thread_local size_t _thread_index = SIZE_MAX;
-
-/// Number of threads.
-inline auto num_threads() noexcept -> size_t {
-  return _num_threads;
-}
 
 /// Current thread index.
 inline auto thread_index() noexcept -> size_t {
   return _thread_index;
-}
-
-/// Wrapper for the `main` that sets up parallelism.
-template<class Func>
-auto main(int argc, char** argv, Func&& func) noexcept -> int {
-  // TODO: correctly set maximum amount of cores.
-  tbb::global_control gc{tbb::global_control::max_allowed_parallelism,
-                         _num_threads};
-  return func(argc, argv);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,6 +96,7 @@ void static_for_each(std::ranges::join_view<Range> range,
 
 template<std::ranges::input_range Range, class Func>
 void block_for_each(Range&& range, Func&& func) noexcept {
+  TIT_ENSURE(num_threads() == 8, "");
   invoke([&] { std::ranges::for_each(range[0], func); },
          [&] { std::ranges::for_each(range[1], func); },
          [&] { std::ranges::for_each(range[2], func); },

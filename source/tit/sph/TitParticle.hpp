@@ -30,7 +30,7 @@
 #include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
 
-#include "tit/par/thread.hpp"
+#include "tit/par/control.hpp"
 
 #include "tit/sph/field.hpp"
 
