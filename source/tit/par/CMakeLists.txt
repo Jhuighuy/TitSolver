@@ -8,9 +8,9 @@ add_tit_library(
     par
   SOURCES
     "atomic.hpp"
+    "control.cpp"
+    "control.hpp"
     "memory_pool.hpp"
-    #"thread_omp.hpp"
-    #"thread_tbb.hpp"
     "thread.hpp"
   DEPENDS
     tit::core)
@@ -21,6 +21,7 @@ add_tit_executable(
   NAME
     par_tests
   SOURCES
+    "control.test.cpp"
     "memory_pool.test.cpp"
   DEPENDS
     tit::par tit::testing)
