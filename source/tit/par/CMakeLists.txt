@@ -21,6 +21,7 @@ add_tit_executable(
   NAME
     par_tests
   SOURCES
+    "atomic.test.cpp"
     "control.test.cpp"
     "memory_pool.test.cpp"
   DEPENDS

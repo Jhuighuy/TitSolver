@@ -114,7 +114,7 @@ public:
     par::for_each(handles, [&](auto handle) {
       size_t const index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      par::sync_fetch_and_add(val_ranges_[index + 1], 1);
+      par::fetch_and_add(val_ranges_[index + 1], 1);
     });
     /// Perform a partial sum of the computed values to form ranges.
     for (size_t index = 2; index < val_ranges_.size(); ++index) {
@@ -128,7 +128,7 @@ public:
     par::for_each(handles, [&](auto handle) {
       auto const index = index_of(handle);
       TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      auto const addr = par::sync_fetch_and_add(val_ranges_[index], 1);
+      auto const addr = par::fetch_and_add(val_ranges_[index], 1);
       vals_[addr] = value_of(handle);
     });
     /// Fix value ranges, since after incrementing the entire array is shifted

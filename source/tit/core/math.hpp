@@ -13,10 +13,10 @@
 #include <limits>
 #include <ranges>
 #include <type_traits>
-#include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/type_traits.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -29,28 +29,6 @@ using std::floor;
 using std::round;
 using std::sin;
 using std::sqrt;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Negation result type.
-template<class Num>
-using negate_result_t = decltype(-std::declval<Num>());
-
-/// Addition result type.
-template<class NumA, class NumB = NumA>
-using add_result_t = decltype(std::declval<NumA>() + std::declval<NumB>());
-
-/// Subtraction result type.
-template<class NumA, class NumB = NumA>
-using sub_result_t = decltype(std::declval<NumA>() - std::declval<NumB>());
-
-/// Multiplication result type.
-template<class NumA, class NumB = NumA>
-using mul_result_t = decltype(std::declval<NumA>() * std::declval<NumB>());
-
-/// Division result type.
-template<class NumA, class NumB = NumA>
-using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
