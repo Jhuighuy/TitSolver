@@ -21,7 +21,7 @@
 #include "tit/geom/bbox.hpp"
 
 #include "tit/par/memory_pool.hpp"
-#include "tit/par/thread.hpp"
+#include "tit/par/task_group.hpp"
 
 namespace tit::geom {
 
@@ -126,7 +126,7 @@ private:
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // Allocate node.
     // TODO: We are not correctly initializing `node`.
-    auto const node = pool_.allocate(1);
+    auto const node = pool_.create();
     auto const actual_bbox = subtree_bbox_</*Parallel=*/IsRoot>(first, last);
     if constexpr (IsRoot) bbox = actual_bbox;
     // Is leaf node reached?

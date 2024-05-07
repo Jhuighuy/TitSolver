@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <utility>
+
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -25,6 +27,28 @@ inline constexpr bool is_specialization_of_v<T<Args...>, T> = true;
 /// Check if type is a specialization of the given template.
 template<class Type, template<class...> class Template>
 concept specialization_of = impl::is_specialization_of_v<Type, Template>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Negation result type.
+template<class Num>
+using negate_result_t = decltype(-std::declval<Num>());
+
+/// Addition result type.
+template<class NumA, class NumB = NumA>
+using add_result_t = decltype(std::declval<NumA>() + std::declval<NumB>());
+
+/// Subtraction result type.
+template<class NumA, class NumB = NumA>
+using sub_result_t = decltype(std::declval<NumA>() - std::declval<NumB>());
+
+/// Multiplication result type.
+template<class NumA, class NumB = NumA>
+using mul_result_t = decltype(std::declval<NumA>() * std::declval<NumB>());
+
+/// Division result type.
+template<class NumA, class NumB = NumA>
+using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

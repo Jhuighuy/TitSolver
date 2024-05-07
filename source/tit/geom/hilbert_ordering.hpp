@@ -17,7 +17,7 @@
 
 #include "tit/geom/bbox.hpp"
 
-#include "tit/par/thread.hpp"
+#include "tit/par/task_group.hpp"
 
 #include <oneapi/tbb/task_group.h>
 

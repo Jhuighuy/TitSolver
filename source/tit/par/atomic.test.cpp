@@ -3,24 +3,26 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#pragma once
+#include "tit/par/atomic.hpp"
 
-#include <concepts>
-#include <type_traits>
+#include "tit/testing/test.hpp"
 
-#include "tit/core/type_traits.hpp"
-
-namespace tit::par {
+namespace tit {
+namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Atomically perform addition and return what was stored before.
-template<class Val>
-  requires std::integral<Val> || std::is_pointer_v<Val>
-auto fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept -> Val {
-  return __sync_fetch_and_add(&val, delta); // NOLINT(*-vararg)
+TEST_CASE("par::fetch_and_add") {
+  constexpr auto init = 0xDEAD;
+  constexpr auto delta = 0xBEEF;
+  auto val = init;
+  // Ensure we are getting back the original value.
+  CHECK(par::fetch_and_add(val, delta) == init);
+  // Ensure that the value was updated correctly.
+  CHECK(val == init + delta);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit::par
+} // namespace
+} // namespace tit
