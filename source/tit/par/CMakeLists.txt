@@ -11,6 +11,7 @@ add_tit_library(
     "control.cpp"
     "control.hpp"
     "memory_pool.hpp"
+    "task_group.hpp"
     "thread.hpp"
   DEPENDS
     tit::core)
@@ -24,6 +25,7 @@ add_tit_executable(
     "atomic.test.cpp"
     "control.test.cpp"
     "memory_pool.test.cpp"
+    "task_group.test.cpp"
   DEPENDS
     tit::par tit::testing)
 

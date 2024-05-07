@@ -21,7 +21,7 @@
 #include "tit/geom/bbox.hpp"
 
 #include "tit/par/memory_pool.hpp"
-#include "tit/par/thread.hpp"
+#include "tit/par/task_group.hpp"
 
 namespace tit::geom {
 

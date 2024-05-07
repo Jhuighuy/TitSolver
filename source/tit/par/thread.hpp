@@ -6,19 +6,18 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
 #include <cstdint>
 #include <ranges>
+
+#include <oneapi/tbb/blocked_range.h>
+#include <oneapi/tbb/parallel_for.h>
+#include <oneapi/tbb/partitioner.h>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 
 #include "tit/par/control.hpp"
-
-#include <oneapi/tbb/blocked_range.h>
-#include <oneapi/tbb/parallel_for.h>
-#include <oneapi/tbb/parallel_invoke.h>
-#include <oneapi/tbb/partitioner.h>
+#include "tit/par/task_group.hpp"
 
 namespace tit::par {
 
@@ -37,12 +36,6 @@ inline auto thread_index() noexcept -> size_t {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Invoke functions in parallel (inside the current process).
-template<std::invocable... Funcs>
-constexpr void invoke(Funcs&&... funcs) noexcept {
-  tbb::parallel_invoke(funcs...);
-}
 
 /// Iterate through the range in parallel (dynamic partitioning).
 /// @{
