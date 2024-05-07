@@ -44,11 +44,13 @@ void safe_atexit(atexit_callback_t callback) noexcept {
   TIT_ENSURE(status == 0, "Unable to register at-exit callback!");
 }
 
-[[noreturn]] void exit(int exit_code) noexcept {
+[[noreturn]]
+void exit(int exit_code) noexcept {
   std::exit(exit_code); // NOLINT(concurrency-mt-unsafe)
 }
 
-[[noreturn]] void fast_exit(int exit_code) noexcept {
+[[noreturn]]
+void fast_exit(int exit_code) noexcept {
 #if TIT_HAVE_GCOV
   __gcov_dump();
 #endif
@@ -126,7 +128,8 @@ void dump(std::string_view message) noexcept {
 }
 
 // Dump backtrace in the "async-signal-safe" way.
-[[gnu::always_inline]] inline void dump_backtrace() noexcept {
+[[gnu::always_inline]]
+inline void dump_backtrace() noexcept {
   constexpr int max_stack_depth = 100;
   std::array<void*, max_stack_depth> stack_trace{};
   auto const stack_depth = backtrace(stack_trace.data(), max_stack_depth);
@@ -139,6 +142,7 @@ FatalSignalHandler::FatalSignalHandler()
     : SignalHandler{SIGINT, SIGHUP,  SIGQUIT, SIGILL,  SIGTRAP, SIGABRT, SIGFPE,
                     SIGBUS, SIGSEGV, SIGSYS,  SIGPIPE, SIGALRM, SIGTERM} {}
 
+[[noreturn]]
 void FatalSignalHandler::on_signal(int signal_number) noexcept {
   if (signal_number == SIGINT) {
     // Exit normally.

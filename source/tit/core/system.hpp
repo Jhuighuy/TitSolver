@@ -30,12 +30,14 @@ using atexit_callback_t = void (*)();
 void safe_atexit(atexit_callback_t callback) noexcept;
 
 /// Exit from the current process.
-[[noreturn]] void exit(int exit_code) noexcept;
+[[noreturn]]
+void exit(int exit_code) noexcept;
 
 /// Fast-exit from the current process.
 ///
 /// @note No at-exit callbacks are triggered, except for coverage report.
-[[noreturn]] void fast_exit(int exit_code) noexcept;
+[[noreturn]]
+void fast_exit(int exit_code) noexcept;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -103,7 +105,8 @@ public:
 
 protected:
 
-  void on_signal(int signal_number) noexcept final;
+  [[noreturn]]
+  void on_signal(int signal_number) noexcept override;
 
 }; // class FatalSignalHandler
 

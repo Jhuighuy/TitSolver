@@ -40,21 +40,17 @@ inline auto thread_index() noexcept -> size_t {
 /// Iterate through the range in parallel (dynamic partitioning).
 /// @{
 template<class Range, class Func>
-void for_each(Range&& range, Func&& func,
-              [[maybe_unused]] size_t grain_size = 1) noexcept {
+void for_each(Range&& range, Func&& func) noexcept {
   auto const blocked_range =
-      tbb::blocked_range{range.begin(), range.end(), grain_size};
+      tbb::blocked_range{std::begin(range), std::end(range)};
   tbb::parallel_for(blocked_range, [&](auto subrange) {
     std::ranges::for_each(subrange, func);
   });
 }
 template<class Range, class Func>
-void for_each(std::ranges::join_view<Range> range, Func&& func,
-              size_t grain_size = 1) noexcept {
-  for_each(
-      std::move(range).base(),
-      [&](auto subrange) { std::ranges::for_each(subrange, func); },
-      grain_size);
+void for_each(std::ranges::join_view<Range> range, Func&& func) noexcept {
+  for_each(std::move(range).base(),
+           [&](auto subrange) { std::ranges::for_each(subrange, func); });
 }
 /// @}
 
@@ -62,8 +58,8 @@ void for_each(std::ranges::join_view<Range> range, Func&& func,
 /// @{
 template<class Range, class Func>
 void static_for_each(Range&& range, Func&& func) noexcept {
-  auto const partition_size = range.size() / num_threads();
-  auto const partition_rem = range.size() % num_threads();
+  auto const partition_size = std::size(range) / num_threads();
+  auto const partition_rem = std::size(range) % num_threads();
   auto const partition_first = [&](size_t thread) {
     return thread * partition_size + std::min(thread, partition_rem);
   };
@@ -72,8 +68,8 @@ void static_for_each(Range&& range, Func&& func) noexcept {
       0UZ, num_threads(), 1UZ,
       [&](size_t thread) {
         _thread_index = thread;
-        std::for_each(range.begin() + partition_first(thread),
-                      range.begin() + partition_first(thread + 1), func);
+        std::for_each(std::begin(range) + partition_first(thread),
+                      std::begin(range) + partition_first(thread + 1), func);
         _thread_index = SIZE_MAX;
       },
       partitioner);

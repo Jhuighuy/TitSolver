@@ -516,9 +516,10 @@ public:
              n + "_zx " + n + "_zy " + n + "_zz";
   }
 
-  static auto _make_name(auto V) {
-    return _make_name(field_name_v<decltype(V)>,
-                      std::tuple<field_value_type_t<decltype(V), Real, Dim>>{});
+  template<class V>
+  static auto _make_name(V /**/) {
+    return _make_name(field_name_v<V>,
+                      std::tuple<field_value_type_t<V, Real, Dim>>{});
   }
 
   void print(std::string const& path) {
