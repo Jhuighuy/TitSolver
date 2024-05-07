@@ -57,10 +57,6 @@
 #
 # * readability-identifier-length:
 #   We have a lot of short identifiers, since we are doing a lot of math.
-#
-# * readability-isolate-declaration:
-#   I think declaring similar identifiers together is more readable, especially
-#   in math-heavy code.
 Checks: |
   bugprone-*
   -bugprone-easily-swappable-parameters
@@ -85,7 +81,6 @@ Checks: |
   -readability-braces-around-statements
   -readability-function-cognitive-complexity
   -readability-identifier-length
-  -readability-isolate-declaration
   -readability-magic-numbers
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -134,7 +134,8 @@ public:
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       auto const [a, b] = ab;
       auto const grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
-      auto const V0_a = m[a] / rho[a], V0_b = m[b] / rho[b];
+      auto const V0_a = m[a] / rho[a];
+      auto const V0_b = m[b] / rho[b];
       /// Update kernel gradient renormalization matrix.
       auto const L_flux = outer(r_0[b, a], grad0_W_ab);
       L[a] += V0_b * L_flux, L[b] += V0_a * L_flux;
@@ -176,7 +177,8 @@ public:
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       auto const [a, b] = ab;
       auto const grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
-      auto const V0_a = m[a] / rho[a], V0_b = m[b] / rho[b];
+      auto const V0_a = m[a] / rho[a];
+      auto const V0_b = m[b] / rho[b];
       /// Update tensor of deformation gradient (stored in `P`).
       auto const P_flux = outer(r[b, a], grad0_W_ab);
       P[a] += V0_b * P_flux, P[b] += V0_a * P_flux;

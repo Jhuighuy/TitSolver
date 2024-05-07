@@ -170,7 +170,8 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
     auto const f = [](Num x) { return pow2(x) - pow2(root); };
     SUBCASE("success") {
       // Ensure the solver works for basic functions.
-      auto min_x = Num{1.5}, max_x = Num{3.5};
+      Num min_x{1.5};
+      Num max_x{3.5};
       CHECK(bisection(min_x, max_x, f) == success);
       CHECK(approx_equal_to(min_x, root));
       CHECK(approx_equal_to(max_x, root));
@@ -178,8 +179,9 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
     SUBCASE("success_early_min") {
       // Ensure the solver completes with a single function evaluation if the
       // root is already located on the left side of the search interval.
-      auto min_x = Num{2.0}, max_x = Num{4.0};
-      auto counted_f = CountedFunc{f};
+      Num min_x{2.0};
+      Num max_x{4.0};
+      CountedFunc counted_f{f};
       CHECK(bisection(min_x, max_x, counted_f) == success);
       CHECK(approx_equal_to(min_x, root));
       CHECK(approx_equal_to(max_x, root));
@@ -188,8 +190,9 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
     SUBCASE("success_early_max") {
       // Ensure the solver completes with two function evaluations if the root
       // is already located on the right side of the search interval.
-      auto min_x = Num{0.0}, max_x = Num{2.0};
-      auto counted_f = CountedFunc{f};
+      Num min_x{0.0};
+      Num max_x{2.0};
+      CountedFunc counted_f{f};
       CHECK(bisection(min_x, max_x, counted_f) == success);
       CHECK(approx_equal_to(min_x, root));
       CHECK(approx_equal_to(max_x, root));
@@ -198,7 +201,8 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
     SUBCASE("failure_sign") {
       // Ensure the solver terminates if function values on the ends of the
       // search interval have same signs.
-      auto min_x = Num{2.5}, max_x = Num{5.5};
+      Num min_x{2.5};
+      Num max_x{5.5};
       CHECK(bisection(min_x, max_x, f) == failure_sign);
     }
   }
@@ -207,8 +211,9 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
     SUBCASE("success") {
       // Ensure the solver works for a bit more complex functions.
       auto const f = [](Num x) { return sin(x) + Num{0.5}; };
-      auto const root = Num{7.0} * std::numbers::pi_v<Num> / Num{6.0};
-      auto min_x = Num{1.0}, max_x = Num{4.0};
+      Num const root{7.0 * std::numbers::pi / 6.0};
+      Num min_x{1.0};
+      Num max_x{4.0};
       CHECK(bisection(min_x, max_x, f) == success);
       CHECK(approx_equal_to(min_x, root));
       CHECK(approx_equal_to(max_x, root));
@@ -217,7 +222,8 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
       // Ensure the solver fails after the iteration limit is exceeded
       // if no actual root can be found.
       auto const f = [](Num x) { return sin(x) - inverse(x); };
-      auto min_x = Num{0.1}, max_x = Num{1.2};
+      Num min_x{0.1};
+      Num max_x{1.2};
       CHECK(bisection(min_x, max_x, f) == fail_max_iter);
     }
   }

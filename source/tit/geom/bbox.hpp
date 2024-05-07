@@ -97,8 +97,10 @@ public:
   /// @{
   constexpr auto split(size_t axis, Num val) const noexcept {
     TIT_ASSERT(axis < Dim, "Axis is out of range.");
-    auto left = *this, right = *this;
-    left.high_[axis] = val, right.low_[axis] = val;
+    auto left = *this;
+    left.high_[axis] = val;
+    auto right = *this;
+    right.low_[axis] = val;
     return std::tuple{left, right};
   }
   constexpr auto split(size_t axis, Vec<Num, Dim> point) const noexcept {

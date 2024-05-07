@@ -373,7 +373,8 @@ constexpr auto norm(Vec<Num, Dim> const& a) -> Num {
 template<class Num, size_t Dim>
 constexpr auto normalize(Vec<Num, Dim> const& a) -> Vec<Num, Dim> {
   if constexpr (Dim == 1) return Vec{is_tiny(a[0]) ? Num{0} : sign(a[0])};
-  auto const norm_sqr = norm2(a), eps_sqr = pow2(tiny_number_v<Num>);
+  auto const norm_sqr = norm2(a);
+  auto const eps_sqr = pow2(tiny_number_v<Num>);
   auto const has_dir = norm_sqr >= pow2(eps_sqr);
   return has_dir ? a * rsqrt(norm_sqr) : Vec<Num, Dim>{};
 }

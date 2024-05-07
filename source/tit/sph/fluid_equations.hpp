@@ -186,9 +186,14 @@ public:
     // Compute auxiliary density fields.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       auto const [a, b] = ab;
-      [[maybe_unused]] auto const W_ab = kernel_(a, b);
-      [[maybe_unused]] auto const grad_W_ab = kernel_.grad(a, b);
-      [[maybe_unused]] auto const V_a = m[a] / rho[a], V_b = m[b] / rho[b];
+      [[maybe_unused]]
+      auto const W_ab = kernel_(a, b);
+      [[maybe_unused]]
+      auto const grad_W_ab = kernel_.grad(a, b);
+      [[maybe_unused]]
+      auto const V_a = m[a] / rho[a];
+      [[maybe_unused]]
+      auto const V_b = m[b] / rho[b];
       /// Update density gradient.
       if constexpr (has<PV>(grad_rho)) {
         auto const grad_flux = rho[b, a] * grad_W_ab;
@@ -226,7 +231,8 @@ public:
       par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
         auto const [a, b] = ab;
         auto const grad_W_ab = kernel_.grad(a, b);
-        auto const V_a = m[a] / rho[a], V_b = m[b] / rho[b];
+        auto const V_a = m[a] / rho[a];
+        auto const V_b = m[b] / rho[b];
         /// Compute artificial viscosity density term.
         auto const Psi_ab = artvisc_.density_term(a, b);
         /// Update density time derivative.
@@ -257,9 +263,13 @@ public:
     // Compute auxiliary velocity fields.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       auto const [a, b] = ab;
-      [[maybe_unused]] auto const W_ab = kernel_(a, b);
-      [[maybe_unused]] auto const grad_W_ab = kernel_.grad(a, b);
-      [[maybe_unused]] auto const V_a = m[a] / rho[a], V_b = m[b] / rho[b];
+      [[maybe_unused]]
+      auto const W_ab = kernel_(a, b);
+      [[maybe_unused]]
+      auto const grad_W_ab = kernel_.grad(a, b);
+      [[maybe_unused]]
+      auto const V_a = m[a] / rho[a];
+      auto const V_b = m[b] / rho[b];
       /// Update velocity divergence.
       if constexpr (has<PV>(div_v)) {
         auto const div_flux = dot(v[b, a], grad_W_ab);

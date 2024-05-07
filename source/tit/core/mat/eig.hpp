@@ -54,10 +54,14 @@ constexpr auto jacobi(Mat<Num, Dim> A, Num eps = tiny_number_v<Num>,
   }
   for (size_t iter = 0; iter < max_iter; ++iter) {
     // Find maximum off-diagonal element.
-    size_t p = 1, q = 0;
+    size_t p = 1;
+    size_t q = 0;
     for (size_t i = 2; i < Dim; ++i) {
       for (size_t j = 0; j < i; ++j) {
-        if (abs(A[i, j]) > abs(A[p, q])) p = i, q = j;
+        if (abs(A[i, j]) > abs(A[p, q])) {
+          p = i;
+          q = j;
+        }
       }
     }
     // If the maximum off-diagonal element is below the threshold, then the
@@ -67,23 +71,28 @@ constexpr auto jacobi(Mat<Num, Dim> A, Num eps = tiny_number_v<Num>,
     }
     // Compute the rotation angle.
     auto const theta = Num{0.5} * atan2(Num{2.0} * A[p, q], A[q, q] - A[p, p]);
-    auto const c = cos(theta), s = sin(theta);
+    auto const c = cos(theta);
+    auto const s = sin(theta);
     // Update the matrix.
     for (size_t i = 0; i < Dim; ++i) {
       if (i == p || i == q) continue;
-      auto const Api = A[p, i], Aqi = A[q, i];
+      auto const Api = A[p, i];
+      auto const Aqi = A[q, i];
       A[p, i] = A[i, p] = c * Api - s * Aqi;
       A[q, i] = A[i, q] = s * Api + c * Aqi;
     }
     {
-      auto const App = A[p, p], Apq = A[p, q], Aqq = A[q, q];
+      auto const App = A[p, p];
+      auto const Apq = A[p, q];
+      auto const Aqq = A[q, q];
       A[p, p] = c * (c * App - s * Apq) - s * (c * Apq - s * Aqq);
       A[q, q] = s * (s * App + c * Apq) + c * (s * Apq + c * Aqq);
       A[p, q] = A[q, p] = {};
     }
     // Update the eigenvectors.
     for (size_t i = 0; i < Dim; ++i) {
-      auto const Vpi = V[p, i], Vqi = V[q, i];
+      auto const Vpi = V[p, i];
+      auto const Vqi = V[q, i];
       V[p, i] = c * Vpi - s * Vqi;
       V[q, i] = s * Vpi + c * Vqi;
     }

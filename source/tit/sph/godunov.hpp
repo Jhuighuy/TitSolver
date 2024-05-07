@@ -98,7 +98,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   template<class ParticleArray, class ParticleAdjacency>
-  constexpr auto index(ParticleArray& particles,
+  constexpr auto index(ParticleArray& /*particles*/,
                        ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
@@ -109,10 +109,11 @@ public:
   /// Setup boundary particles.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void setup_boundary(ParticleArray& particles,
-                                ParticleAdjacency& adjacent_particles) const {
-    using PV = ParticleView<ParticleArray>;
+  constexpr void setup_boundary(
+      [[maybe_unused]] ParticleArray& particles,
+      [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
 #if WITH_WALLS
+    using PV = ParticleView<ParticleArray>;
     par::for_each(adjacent_particles._fixed(), [&](auto ia) {
       auto [i, a] = ia;
       auto const search_point = a[r];
@@ -222,7 +223,8 @@ public:
       auto const grad_W_ab = kernel_.grad(a, b);
       /// Solve Riemann problem.
       auto const e_ab = -normalize(r[a, b]);
-      auto const U_a = dot(v[a], e_ab), U_b = dot(v[a], e_ab);
+      auto const U_a = dot(v[a], e_ab);
+      auto const U_b = dot(v[b], e_ab);
       auto const U_ab = (rho[a] * U_a + rho[b] * U_b) / (rho[a] + rho[b]);
       auto const p_ab = (rho[a] * p[a] + rho[b] * p[b]) / (rho[a] + rho[b]);
       auto const v_ab = (rho[a] * v[a] + rho[b] * v[b]) / (rho[a] + rho[b]);
