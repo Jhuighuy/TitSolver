@@ -30,7 +30,8 @@ public:
       : SignalHandler(signal_numbers) {}
 
   // Retrieve the last handled signal number.
-  [[nodiscard]] auto last() noexcept -> int {
+  [[nodiscard]]
+  auto last() noexcept -> int {
     return std::exchange(last_signal_number_, {});
   }
 

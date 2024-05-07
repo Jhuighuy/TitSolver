@@ -39,8 +39,10 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Abort the current process in non-`constexpr` context.
-[[noreturn]] inline void _ensure_failed( //
-    std::string_view expr_string, std::string_view message,
+[[noreturn]]
+inline void _ensure_failed(
+    std::string_view expr_string,
+    std::string_view message,
     std::source_location location = std::source_location::current()) noexcept {
   // TODO: print stack trace.
   std::cerr << location.file_name() << ":" << location.line() << ":"
@@ -52,8 +54,10 @@ namespace tit {
 }
 
 // Actual implementation of "Ensure" macro.
-constexpr void _ensure( //
-    bool expr_result, std::string_view expr_string, std::string_view message,
+constexpr void _ensure(
+    bool expr_result,
+    std::string_view expr_string,
+    std::string_view message,
     std::source_location location = std::source_location::current()) noexcept {
   if (expr_result) return; // Gracefully return if check passes.
   _ensure_failed(expr_string, message, location); // Abort process otherwise.

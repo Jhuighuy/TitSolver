@@ -175,8 +175,11 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   Real time{};
   Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time <= 2.7; ++n, time += timestep) {
-    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
-            n, time, exectime.cycle(), printtime.cycle());
+    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
+            n,
+            time,
+            exectime.cycle(),
+            printtime.cycle());
     {
       StopwatchCycle const cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
@@ -322,8 +325,11 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   Real time{};
   Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time * sqrt(g / H) <= 6.90; ++n, time += dt) {
-    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
-            n, time * sqrt(g / H), exectime.cycle(), printtime.cycle());
+    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
+            n,
+            time * sqrt(g / H),
+            exectime.cycle(),
+            printtime.cycle());
     {
       StopwatchCycle const cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
@@ -449,8 +455,11 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   Real time{};
   Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time * omega <= 9.5; ++n, time += dt) {
-    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
-            n, time * omega, exectime.cycle(), printtime.cycle());
+    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
+            n,
+            time * omega,
+            exectime.cycle(),
+            printtime.cycle());
     {
       StopwatchCycle const cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);

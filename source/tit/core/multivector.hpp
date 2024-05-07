@@ -100,13 +100,17 @@ public:
            std::regular_invocable<std::ranges::range_value_t<Handles>> ValueOf =
                std::identity>
     requires std::constructible_from<
-                 size_t, std::invoke_result_t<
-                             IndexOf, std::ranges::range_value_t<Handles>>> &&
+                 size_t,
+                 std::invoke_result_t<IndexOf,
+                                      std::ranges::range_value_t<Handles>>> &&
              std::assignable_from<
-                 Val&, std::invoke_result_t<
-                           ValueOf, std::ranges::range_value_t<Handles>>>
-  constexpr void assemble_tall(size_t count, Handles&& handles,
-                               IndexOf index_of, ValueOf value_of = {}) {
+                 Val&,
+                 std::invoke_result_t<ValueOf,
+                                      std::ranges::range_value_t<Handles>>>
+  constexpr void assemble_tall(size_t count,
+                               Handles&& handles,
+                               IndexOf index_of,
+                               ValueOf value_of = {}) {
     TIT_ASSUME_UNIVERSAL(Handles, handles);
     // Compute value ranges.
     /// First compute how many values there are per each index.
@@ -152,13 +156,17 @@ public:
            std::regular_invocable<std::ranges::range_value_t<Handles>> ValueOf =
                std::identity>
     requires std::constructible_from<
-                 size_t, std::invoke_result_t<
-                             IndexOf, std::ranges::range_value_t<Handles>>> &&
+                 size_t,
+                 std::invoke_result_t<IndexOf,
+                                      std::ranges::range_value_t<Handles>>> &&
              std::assignable_from<
-                 Val&, std::invoke_result_t<
-                           ValueOf, std::ranges::range_value_t<Handles>>>
-  constexpr void assemble_wide(size_t count, Handles&& handles,
-                               IndexOf index_of, ValueOf value_of = {}) {
+                 Val&,
+                 std::invoke_result_t<ValueOf,
+                                      std::ranges::range_value_t<Handles>>>
+  constexpr void assemble_wide(size_t count,
+                               Handles&& handles,
+                               IndexOf index_of,
+                               ValueOf value_of = {}) {
     TIT_ASSUME_UNIVERSAL(Handles, handles);
     // Compute value ranges.
     /// First compute how many values there are per each index per each thread.

@@ -69,8 +69,9 @@ public:
   ///
   /// @param kappa Thermal conductivity coefficient. (???)
   /// @param gamma Adiabatic index.
-  constexpr explicit AdiabaticIdealGasEquationOfState( //
-      real_t kappa = 1.0, real_t gamma = 1.4) noexcept
+  constexpr explicit AdiabaticIdealGasEquationOfState(
+      real_t kappa = 1.0,
+      real_t gamma = 1.4) noexcept
       : kappa_{kappa}, gamma_{gamma} {
     TIT_ASSERT(kappa_ > 0.0,
                "Thermal conductivity coefficient must be positive.");
@@ -107,8 +108,10 @@ public:
   /// @param rho_0 Reference density.
   /// @param p_0 Background pressure.
   /// @param gamma Adiabatic index.
-  constexpr WeaklyCompressibleFluidEquationOfState( //
-      real_t cs_0, real_t rho_0, real_t p_0 = 0.0, real_t gamma = 7.0) noexcept
+  constexpr WeaklyCompressibleFluidEquationOfState(real_t cs_0,
+                                                   real_t rho_0,
+                                                   real_t p_0 = 0.0,
+                                                   real_t gamma = 7.0) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, p_0_{p_0}, gamma_{gamma} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive.");
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");
@@ -146,8 +149,10 @@ public:
   /// @param cs_0 Reference sound speed, typically 10x of the expected velocity.
   /// @param rho_0 Reference density.
   /// @param p_0 Background pressure.
-  constexpr LinearWeaklyCompressibleFluidEquationOfState( //
-      real_t cs_0, real_t rho_0, real_t p_0 = 0.0) noexcept
+  constexpr LinearWeaklyCompressibleFluidEquationOfState(
+      real_t cs_0,
+      real_t rho_0,
+      real_t p_0 = 0.0) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, p_0_{p_0} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive.");
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");

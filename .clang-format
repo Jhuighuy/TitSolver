@@ -23,6 +23,8 @@ AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: true
 AlwaysBreakAfterReturnType: None
 AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: No
+BinPackParameters: No
 BreakAfterAttributes: Always
 BreakBeforeBraces: Attach
 BreakBeforeBinaryOperators: None
@@ -35,6 +37,7 @@ ContinuationIndentWidth: 4
 IncludeIsMainRegex: "_never_matches_"
 IndentCaseLabels: true
 IndentRequiresClause: true
+PenaltyReturnTypeOnItsOwnLine: 1000 # Never.
 RequiresClausePosition: OwnLine
 IndentWidth: 2
 KeepEmptyLinesAtTheStartOfBlocks: false

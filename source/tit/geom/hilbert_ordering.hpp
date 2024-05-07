@@ -64,8 +64,9 @@ public:
     // Compute the root bounding box and build ordering.
     // TODO: refactor with `std::span`.
     // NOLINTBEGIN(*-bounds-pointer-arithmetic)
-    partition_(point_perm_.data(), //
-               point_perm_.data() + point_perm_.size(), bbox);
+    partition_(point_perm_.data(),
+               point_perm_.data() + point_perm_.size(),
+               bbox);
     // NOLINTEND(*-bounds-pointer-arithmetic)
   }
 
@@ -78,7 +79,8 @@ private:
   // Build the K-dimensional subtree.
   // On the input `bbox` contains a rough estimate that was guessed by the
   // caller. On return it contains an exact bounding box of the subtree.
-  constexpr void partition_(size_t* first, size_t* last,
+  constexpr void partition_(size_t* first,
+                            size_t* last,
                             PointBBox bbox) noexcept {
     TIT_ASSERT(first <= last, "Invalid point iterators.");
     if (last - first <= 1) return;

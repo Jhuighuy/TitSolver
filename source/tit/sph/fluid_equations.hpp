@@ -25,8 +25,10 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Fluid equations with fixed kernel width and continuity equation.
-template<equation_of_state EquationOfState, density_equation DensityEquation,
-         kernel Kernel, artificial_viscosity ArtificialViscosity>
+template<equation_of_state EquationOfState,
+         density_equation DensityEquation,
+         kernel Kernel,
+         artificial_viscosity ArtificialViscosity>
 class FluidEquations {
 private:
 
@@ -88,7 +90,7 @@ public:
   /// Setup boundary particles.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void setup_boundary( //
+  constexpr void setup_boundary(
       [[maybe_unused]] ParticleArray& particles,
       [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
     TIT_PROFILE_SECTION("tit::FluidEquations::setup_boundary()");

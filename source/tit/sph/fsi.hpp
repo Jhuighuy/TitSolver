@@ -78,7 +78,8 @@ using tit::sph::artificial_viscosity;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// The particle estimator with a fixed kernel width.
-template<equation_of_state EquationOfState, kernel Kernel,
+template<equation_of_state EquationOfState,
+         kernel Kernel,
          artificial_viscosity ArtificialViscosity>
 class StructureEquations {
 private:
@@ -102,7 +103,8 @@ public:
 
   /// Initialize structure equations.
   constexpr explicit StructureEquations(
-      EquationOfState eos = {}, Kernel kernel = {},
+      EquationOfState eos = {},
+      Kernel kernel = {},
       ArtificialViscosity artvisc = {}) noexcept
       : eos_{std::move(eos)}, kernel_{std::move(kernel)},
         artvisc_{std::move(artvisc)} {}

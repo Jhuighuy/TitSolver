@@ -42,8 +42,10 @@ namespace tit::sph {
 // also requires an additional symmetrization step).
 // So first step during this mess would be to split symmetric and
 // symmetric adjacency implementations.
-template<equation_of_state EquationOfState, density_equation DensityEquation,
-         kernel Kernel, artificial_viscosity ArtificialViscosity>
+template<equation_of_state EquationOfState,
+         density_equation DensityEquation,
+         kernel Kernel,
+         artificial_viscosity ArtificialViscosity>
 class GodunovFluidEquations {
 private:
 

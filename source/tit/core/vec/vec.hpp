@@ -111,8 +111,8 @@ constexpr auto static_vec_cast(Vec<Num, Dim> const& a) -> Vec<To, Dim> {
 
 /// Vector unary plus.
 template<class Num, size_t Dim>
-constexpr auto operator+(Vec<Num, Dim> const& a) noexcept -> //
-    Vec<Num, Dim> const& {
+constexpr auto operator+(Vec<Num, Dim> const& a) noexcept
+    -> Vec<Num, Dim> const& {
   return a;
 }
 

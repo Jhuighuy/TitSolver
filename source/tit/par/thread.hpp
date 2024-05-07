@@ -65,11 +65,14 @@ void static_for_each(Range&& range, Func&& func) noexcept {
   };
   static auto partitioner = tbb::static_partitioner{};
   tbb::parallel_for(
-      0UZ, num_threads(), 1UZ,
+      0UZ,
+      num_threads(),
+      1UZ,
       [&](size_t thread) {
         _thread_index = thread;
         std::for_each(std::begin(range) + partition_first(thread),
-                      std::begin(range) + partition_first(thread + 1), func);
+                      std::begin(range) + partition_first(thread + 1),
+                      func);
         _thread_index = SIZE_MAX;
       },
       partitioner);

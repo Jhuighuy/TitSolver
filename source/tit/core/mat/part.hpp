@@ -37,8 +37,9 @@ inline constexpr bool is_flags_enum_v<MatPart> = true;
 template<MatPart Part>
 struct MatPartAt {
   template<class Num, size_t Dim>
-  static constexpr auto operator()(Mat<Num, Dim> const& A, //
-                                   size_t i, size_t j) -> Num {
+  static constexpr auto operator()(Mat<Num, Dim> const& A,
+                                   size_t i,
+                                   size_t j) -> Num {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
     using enum MatPart;
@@ -83,7 +84,9 @@ constexpr auto transpose(Mat const& A) -> Mat {
 
 /// Partially solve matrix equation inplace:
 /// `x := copy_part<Part>(A)^-1 * x`.
-template<MatPart Part, class Num, size_t Dim,
+template<MatPart Part,
+         class Num,
+         size_t Dim,
          mat_multiplier<Mat<Num, Dim>> Mult>
 constexpr void part_solve_inplace(Mat<Num, Dim> const& A, Mult& x) {
   using enum MatPart;

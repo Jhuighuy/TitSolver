@@ -134,7 +134,7 @@ constexpr auto blend_zero(VecMask<Num, Dim> const& m,
 
 /// Blend two vectors based on a boolean mask.
 template<class Num, size_t Dim>
-constexpr auto blend(VecMask<Num, Dim> const& m, //
+constexpr auto blend(VecMask<Num, Dim> const& m,
                      Vec<Num, Dim> const& a,
                      Vec<Num, Dim> const& b) -> Vec<Num, Dim> {
   Vec<Num, Dim> r;

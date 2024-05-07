@@ -94,14 +94,14 @@ public:
 
   /// Compare particle views.
   /// @{
-  constexpr auto
-  operator==(ParticleView<ParticleArray> other) const noexcept -> bool {
+  constexpr auto operator==(ParticleView<ParticleArray> other) const noexcept
+      -> bool {
     TIT_ASSERT(&array() == &other.array(),
                "Particles must belong to the same array.");
     return index() == other.index();
   }
-  constexpr auto
-  operator!=(ParticleView<ParticleArray> other) const noexcept -> bool {
+  constexpr auto operator!=(ParticleView<ParticleArray> other) const noexcept
+      -> bool {
     TIT_ASSERT(&array() == &other.array(),
                "Particles must belong to the same array.");
     return index() != other.index();
@@ -152,7 +152,8 @@ public:
   ///
   /// @param engine_factory Nearest-neighbors search engine factory.
   constexpr explicit ParticleAdjacency(
-      ParticleArray& particles, EngineFactory engine_factory = {}) noexcept
+      ParticleArray& particles,
+      EngineFactory engine_factory = {}) noexcept
       : particles_{&particles}, engine_factory_{std::move(engine_factory)} {}
 
   /// Associated particle array.
@@ -183,7 +184,8 @@ public:
       TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
       thread_local std::vector<size_t> search_results;
       search_results.clear();
-      engine.search(search_point, search_radius,
+      engine.search(search_point,
+                    search_radius,
                     std::back_inserter(search_results));
       adjacency_.push_back(search_results);
 #if 1
@@ -192,7 +194,8 @@ public:
         auto const clipped_point = Domain.clamp(search_point);
         auto const interp_point = 2 * clipped_point - search_point;
         search_results.clear();
-        engine.search(interp_point, 3 * search_radius,
+        engine.search(interp_point,
+                      3 * search_radius,
                       std::back_inserter(search_results));
         interp_adjacency_.push_back(std::views::all(search_results) |
                                     std::views::filter([&](size_t b_index) {
@@ -319,13 +322,15 @@ ParticleArray(Space, Fields, Consts)
 template<class Space, class Fields, class... Consts>
   requires meta::is_set_v<Fields>
 ParticleArray(Space, Fields, Consts...)
-    -> ParticleArray<Space, decltype(Fields{} | meta::Set<Consts...>{}),
+    -> ParticleArray<Space,
+                     decltype(Fields{} | meta::Set<Consts...>{}),
                      meta::Set<Consts...>>;
 
 /// Particle array.
 template<class Real, size_t Dim, meta::type... Fields, meta::type... Consts>
-class ParticleArray<Space<Real, Dim>, //
-                    meta::Set<Fields...>, meta::Set<Consts...>> {
+class ParticleArray<Space<Real, Dim>,
+                    meta::Set<Fields...>,
+                    meta::Set<Consts...>> {
 public:
 
   /// Set of particle fields that are present.
@@ -438,9 +443,9 @@ public:
   /// @{
   template<meta::type Field>
     requires meta::contains_v<Field, Fields...>
-  constexpr auto
-  operator[]([[maybe_unused]] size_t particle_index,
-             [[maybe_unused]] Field field) noexcept -> decltype(auto) {
+  constexpr auto operator[]([[maybe_unused]] size_t particle_index,
+                            [[maybe_unused]] Field field) noexcept
+      -> decltype(auto) {
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
     if constexpr (meta::contains_v<Field, Consts...>) {
       return auto{(*this)[field]}; // Return a copy for constants.
@@ -471,13 +476,13 @@ public:
   /// @{
   template<meta::type Field>
     requires meta::contains_v<Field, Fields...>
-  constexpr auto
-  operator[]([[maybe_unused]] Field field) noexcept -> decltype(auto) {
+  constexpr auto operator[]([[maybe_unused]] Field field) noexcept
+      -> decltype(auto) {
     if constexpr (meta::contains_v<Field, Consts...>) {
       return std::get<meta::index_of_v<Field, Consts...>>(constants_);
     } else {
       return OnAssignment{[&](auto value) {
-        std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) { //
+        std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) {
           a[field] = value;
         });
       }};

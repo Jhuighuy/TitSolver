@@ -43,10 +43,11 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   constexpr Real m_0 = rho_0 * pow(dr, 2);
 
   // Setup the SPH equations:
-  auto equations = fsi::StructureEquations{
-      fsi::HookesLaw{},
-      // C2 Wendland's spline kernel.
-      EighthOrderWendlandKernel{}, AlphaBetaArtificialViscosity{0.2, 0.4}};
+  auto equations =
+      fsi::StructureEquations{fsi::HookesLaw{},
+                              // C2 Wendland's spline kernel.
+                              EighthOrderWendlandKernel{},
+                              AlphaBetaArtificialViscosity{0.2, 0.4}};
 
   // Setup the time itegrator:
   // auto timeint = EulerIntegrator{std::move(equations), SIZE_MAX};
@@ -91,8 +92,11 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   Real time{};
   Stopwatch exectime{}, printtime{};
   for (size_t n = 0; time * sqrt(g / H) <= 6.90e+6; ++n, time += dt) {
-    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}", //
-            n, time * sqrt(g / H), exectime.cycle(), printtime.cycle());
+    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
+            n,
+            time * sqrt(g / H),
+            exectime.cycle(),
+            printtime.cycle());
     {
       StopwatchCycle const cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);

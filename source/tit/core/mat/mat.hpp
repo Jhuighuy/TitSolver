@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <array>
 #include <initializer_list>
-#include <type_traits>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -194,8 +193,7 @@ Mat(carr_ref_t<Num const, 1 + sizeof...(RestNums)>,
 /// Make a diagonal matrix.
 template<class Num, size_t Dim>
 constexpr auto eye(Mat<Num, Dim> const& /*A*/,
-                   std::type_identity_t<Num> const& q = Num{1.0}) //
-    -> Mat<Num, Dim> {
+                   Num const& q = Num{1.0}) -> Mat<Num, Dim> {
   return Mat<Num, Dim>(q);
 }
 

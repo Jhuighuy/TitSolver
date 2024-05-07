@@ -71,8 +71,8 @@ public:
   /// @param beta Quadratic viscosity coefficient. Typically two times greater
   ///             than linear coefficient for compressible flows and
   ///             zero for weakly-compressible or incompressable flows.
-  constexpr explicit AlphaBetaArtificialViscosity( //
-      real_t alpha = 1.0, real_t beta = 2.0) noexcept
+  constexpr explicit AlphaBetaArtificialViscosity(real_t alpha = 1.0,
+                                                  real_t beta = 2.0) noexcept
       : alpha_{alpha}, beta_{beta} {
     TIT_ASSERT(alpha_ > 0.0, "Linear coefficient must be positive.");
     TIT_ASSERT(beta_ >= 0.0, "Quadratic coefficient must be non-negative.");
@@ -153,16 +153,19 @@ public:
   /// @param alpha_max Maximal value of the switch coefficient.
   /// @param sigma Decay time inverse scale factor.
   constexpr explicit RosswogArtificialViscosity(
-      BaseArtificialViscosity base = {}, //
-      real_t alpha_min = 0.1, real_t alpha_max = 2.0,
+      BaseArtificialViscosity base = {},
+      real_t alpha_min = 0.1,
+      real_t alpha_max = 2.0,
       real_t sigma = 0.1) noexcept
       : BaseArtificialViscosity{std::move(base)}, //
         alpha_min_{alpha_min}, alpha_max_{alpha_max}, sigma_{sigma} {
     TIT_ASSERT(alpha_min_ > 0.0, "Switch minimal value must be positive.");
-    TIT_ASSERT(alpha_max_ > alpha_min_, "Switch maximal value must be "
-                                        "greater than minimal.");
-    TIT_ASSERT(sigma_ > 0.0, "Switch decay time inverse scale factor "
-                             "must be positive.");
+    TIT_ASSERT(alpha_max_ > alpha_min_,
+               "Switch maximal value must be "
+               "greater than minimal.");
+    TIT_ASSERT(sigma_ > 0.0,
+               "Switch decay time inverse scale factor "
+               "must be positive.");
   }
 
   /// Compute momentum equation diffusive term.
@@ -210,8 +213,10 @@ public:
   /// @param rho_0 Reference density, as defined for equation of state.
   /// @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
   /// @param xi Density diffusion coefficient. Typically 0.1.
-  constexpr MolteniColagrossiArtificialViscosity( //
-      real_t cs_0, real_t rho_0, real_t alpha = 0.05, real_t xi = 0.1) noexcept
+  constexpr MolteniColagrossiArtificialViscosity(real_t cs_0,
+                                                 real_t rho_0,
+                                                 real_t alpha = 0.05,
+                                                 real_t xi = 0.1) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, xi_{xi} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive.");
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");
@@ -262,9 +267,10 @@ public:
   /// @param rho_0 Reference density, as defined for equation of state.
   /// @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
   /// @param delta Density diffusion coefficient. Typically 0.1.
-  constexpr DeltaSphArtificialViscosity( //
-      real_t cs_0, real_t rho_0,         //
-      real_t alpha = 0.02, real_t delta = 0.1) noexcept
+  constexpr DeltaSphArtificialViscosity(real_t cs_0,
+                                        real_t rho_0,
+                                        real_t alpha = 0.02,
+                                        real_t delta = 0.1) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, delta_{delta} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive.");
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");

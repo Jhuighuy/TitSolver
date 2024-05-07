@@ -98,8 +98,9 @@ public:
     point_perm_.resize(size);
     std::ranges::copy(std::views::iota(0UZ, size), point_perm_.begin());
     // Compute the root tree node (and bounding box).
-    root_node_ = build_subtree_</*IsRoot=*/true>(
-        point_perm_.data(), point_perm_.data() + size, root_bbox_);
+    root_node_ = build_subtree_</*IsRoot=*/true>(point_perm_.data(),
+                                                 point_perm_.data() + size,
+                                                 root_bbox_);
   }
 
 private:
@@ -121,7 +122,8 @@ private:
   // On the input `bbox` contains a rough estimate that was guessed by the
   // caller. On return it contains an exact bounding box of the subtree.
   template<bool IsRoot = false>
-  constexpr auto build_subtree_(size_t* first, size_t* last,
+  constexpr auto build_subtree_(size_t* first,
+                                size_t* last,
                                 PointBBox& bbox) -> KDTreeNode_* {
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
     // Allocate node.
@@ -162,7 +164,8 @@ private:
   }
 
   // Partition the K-dimensional subtree points.
-  constexpr auto partition_subtree_(size_t* first, size_t* last, //
+  constexpr auto partition_subtree_(size_t* first,
+                                    size_t* last,
                                     size_t cut_dim,
                                     Real cut_value) noexcept -> size_t* {
     TIT_ASSERT(first != nullptr && first < last, "Invalid subtree range.");
@@ -216,7 +219,8 @@ public:
 
   /// Find the points within the radius to the given point.
   template<std::output_iterator<size_t> OutIter>
-  constexpr auto search(Point search_point, Real search_radius,
+  constexpr auto search(Point search_point,
+                        Real search_radius,
                         OutIter indices) const noexcept -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
     TIT_ASSERT(root_node_ != nullptr, "Tree was not built.");
@@ -234,8 +238,10 @@ private:
   // Search for the point neighbors in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
   template<std::output_iterator<size_t> OutIter>
-  constexpr void search_subtree_(KDTreeNode_ const* node, Point dists,
-                                 Point const& search_point, Real search_dist,
+  constexpr void search_subtree_(KDTreeNode_ const* node,
+                                 Point dists,
+                                 Point const& search_point,
+                                 Real search_dist,
                                  OutIter& indices) const noexcept {
     // Is leaf node reached?
     if (node->left_subtree == nullptr) {
@@ -254,12 +260,14 @@ private:
         return delta_left < delta_right ?
                    // Point is on the left to the cut plane, so the
                    // corresponding subtree should be searched first.
-                   std::tuple{pow2(delta_right), //
-                              node->left_subtree, node->right_subtree} :
+                   std::tuple{pow2(delta_right),
+                              node->left_subtree,
+                              node->right_subtree} :
                    // Point is on the right to the cut plane, so the
                    // corresponding subtree should be searched first.
-                   std::tuple{pow2(delta_left), //
-                              node->right_subtree, node->left_subtree};
+                   std::tuple{pow2(delta_left),
+                              node->right_subtree,
+                              node->left_subtree};
       }();
       // Search in the first subtree.
       search_subtree_(first_node, dists, search_point, search_dist, indices);

@@ -212,7 +212,9 @@ enum class NewtonRaphsonStatus : uint8_t {
 /// @returns Status of the operation.
 template<std::floating_point Num, class Func>
   requires std::invocable<Func&&>
-constexpr auto newton_raphson(Num& x, Func&& f, Num eps = tiny_number_v<Num>,
+constexpr auto newton_raphson(Num& x,
+                              Func&& f,
+                              Num eps = tiny_number_v<Num>,
                               size_t max_iter = 10) -> NewtonRaphsonStatus {
   TIT_ASSUME_UNIVERSAL(Func, f);
   using enum NewtonRaphsonStatus;
@@ -249,7 +251,9 @@ enum class BisectionStatus : uint8_t {
 template<class Num, class Func>
   requires (std::invocable<Func &&, Num> &&
             std::same_as<std::invoke_result_t<Func &&, Num>, Num>)
-constexpr auto bisection(Num& min_x, Num& max_x, Func&& f,
+constexpr auto bisection(Num& min_x,
+                         Num& max_x,
+                         Func&& f,
                          Num eps = tiny_number_v<Num>,
                          size_t max_iter = 10) -> BisectionStatus {
   TIT_ASSUME_UNIVERSAL(Func, f);

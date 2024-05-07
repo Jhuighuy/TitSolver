@@ -45,7 +45,8 @@ void fast_exit(int exit_code) noexcept;
 using sigaction_t = struct sigaction;
 
 /// Set signal action.
-void safe_sigaction(int signal_number, sigaction_t const* action,
+void safe_sigaction(int signal_number,
+                    sigaction_t const* action,
                     sigaction_t* prev_action = nullptr) noexcept;
 
 /// Raise a signal.

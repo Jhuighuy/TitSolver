@@ -45,8 +45,9 @@ void Profiler::enable() noexcept {
     std::vector<SectionPtr> sorted_sections{};
     sorted_sections.reserve(sections_.size());
     for (auto const& section : sections_) sorted_sections.push_back(&section);
-    std::ranges::sort(sorted_sections, std::greater{},
-                      [](SectionPtr s) { return s->second.total_ns(); });
+    std::ranges::sort(sorted_sections, std::greater{}, [](SectionPtr s) {
+      return s->second.total_ns();
+    });
     /// Print the sections table. At some point of time, we may want to replace
     /// this hardcoded table printing with a proper utility function.
     auto const width = tty_width(stdout);
@@ -56,18 +57,26 @@ void Profiler::enable() noexcept {
     constexpr std::string_view section_row = "section name";
     print("\nProfiling report:\n\n");
     println("{:->{}}", "", width);
-    println("{}    {}    {}    {}", //
-            abs_time_row, rel_time_row, calls_row, section_row);
+    println("{}    {}    {}    {}",
+            abs_time_row,
+            rel_time_row,
+            calls_row,
+            section_row);
     println("{:->{}}", "", width);
     auto const root_absolute_time = sorted_sections.front()->second.total();
-    for (const SectionPtr section : sorted_sections) {
+    for (SectionPtr const section : sorted_sections) {
       auto const& [section_name, stopwatch] = *section;
       auto const abs_time = stopwatch.total();
       auto const rel_time = 100.0 * abs_time / root_absolute_time;
       auto const calls = stopwatch.cycles();
-      println("{:>{}.5f}    {:>{}.5f}    {:>{}}    {}", //
-              abs_time, abs_time_row.size(), rel_time, rel_time_row.size(),
-              calls, calls_row.size(), section_name);
+      println("{:>{}.5f}    {:>{}.5f}    {:>{}}    {}",
+              abs_time,
+              abs_time_row.size(),
+              rel_time,
+              rel_time_row.size(),
+              calls,
+              calls_row.size(),
+              section_name);
     }
     print("{:->{}}\n\n", "", width);
   });

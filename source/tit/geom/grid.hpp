@@ -104,7 +104,8 @@ private:
     cell_size_ = extents / static_vec_cast<Real>(num_cells_);
     // Pack the points into a multivector.
     cell_points_.assemble_tall(
-        total_num_cells, std::views::enumerate(points_),
+        total_num_cells,
+        std::views::enumerate(points_),
         [this](auto index_and_point) {
           auto const& [_, point] = index_and_point;
           return _point_to_cell_index(point);
@@ -119,7 +120,8 @@ public:
 
   /// Find the points within the radius to the given point.
   template<std::output_iterator<size_t> OutIter>
-  constexpr auto search(Point search_point, Real search_radius,
+  constexpr auto search(Point search_point,
+                        Real search_radius,
                         OutIter out) const noexcept -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
     auto const search_dist = pow2(search_radius);
@@ -127,7 +129,7 @@ public:
     auto const search_bbox =
         BBox{search_point - Point(search_radius) - 0.5 * cell_size_,
              search_point + Point(search_radius) + 0.5 * cell_size_};
-    auto const low = _point_to_cell_md_index( //
+    auto const low = _point_to_cell_md_index(
         grid_bbox_.clamp(search_bbox.low()) + 0.5 * cell_size_);
     auto const high = _point_to_cell_md_index(
         grid_bbox_.clamp(search_bbox.high()) - 0.5 * cell_size_);

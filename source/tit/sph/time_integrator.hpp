@@ -45,7 +45,8 @@ public:
   /// Make a step in time.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void step(real_t dt, ParticleArray& particles,
+  constexpr void step(real_t dt,
+                      ParticleArray& particles,
                       ParticleAdjacency& adjacent_particles) {
     TIT_PROFILE_SECTION("tit::EulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
@@ -106,14 +107,16 @@ public:
 
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(
-      FluidEquations estimator = {}, size_t adjacency_recalc_freq = 10) noexcept
+      FluidEquations estimator = {},
+      size_t adjacency_recalc_freq = 10) noexcept
       : equations_{std::move(estimator)},
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /// Make a step in time.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void step(real_t dt, ParticleArray& particles,
+  constexpr void step(real_t dt,
+                      ParticleArray& particles,
                       ParticleAdjacency& adjacent_particles) {
     // Initialize and index particles.
     if (step_index_ == 0) {
@@ -146,8 +149,10 @@ public:
       });
     };
     // Linear combination.
-    auto const lincomb = [](real_t wa, auto const& in_particles, //
-                            real_t wb, auto& out_particles) {
+    auto const lincomb = [](real_t wa,
+                            auto const& in_particles,
+                            real_t wb,
+                            auto& out_particles) {
       par::for_each(in_particles.views(), [&]<class PV>(PV a) {
         if (fixed[a]) return;
         auto out_a = out_particles[a.index()];

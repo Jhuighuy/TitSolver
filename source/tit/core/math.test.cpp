@@ -116,10 +116,8 @@ TEST_CASE_TEMPLATE("approx_equal_to", Num, NUM_TYPES) {
   CHECK(approx_equal_to(Num{1.23} - tiny_number_v<Num>, Num{1.23}));
   CHECK(approx_equal_to(Num{1.23}, Num{1.23} + Num{0.1} * tiny_number_v<Num>));
   CHECK(approx_equal_to(Num{1.23} - Num{0.1} * tiny_number_v<Num>, Num{1.23}));
-  CHECK(!approx_equal_to(Num{1.23}, //
-                         Num{1.23} + Num{2.0} * tiny_number_v<Num>));
-  CHECK(!approx_equal_to(Num{1.23} - Num{2.0} * tiny_number_v<Num>, //
-                         Num{1.23}));
+  CHECK(!approx_equal_to(Num{1.23}, Num{1.23} + Num{2.0} * tiny_number_v<Num>));
+  CHECK(!approx_equal_to(Num{1.23} - Num{2.0} * tiny_number_v<Num>, Num{1.23}));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

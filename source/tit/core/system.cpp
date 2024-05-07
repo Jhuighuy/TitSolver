@@ -59,7 +59,8 @@ void fast_exit(int exit_code) noexcept {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void safe_sigaction(int signal_number, sigaction_t const* action,
+void safe_sigaction(int signal_number,
+                    sigaction_t const* action,
                     sigaction_t* prev_action) noexcept {
   TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
   TIT_ASSERT(action != nullptr, "Signal actions is invalid!");
@@ -139,8 +140,19 @@ inline void dump_backtrace() noexcept {
 } // namespace
 
 FatalSignalHandler::FatalSignalHandler()
-    : SignalHandler{SIGINT, SIGHUP,  SIGQUIT, SIGILL,  SIGTRAP, SIGABRT, SIGFPE,
-                    SIGBUS, SIGSEGV, SIGSYS,  SIGPIPE, SIGALRM, SIGTERM} {}
+    : SignalHandler{SIGINT,
+                    SIGHUP,
+                    SIGQUIT,
+                    SIGILL,
+                    SIGTRAP,
+                    SIGABRT,
+                    SIGFPE,
+                    SIGBUS,
+                    SIGSEGV,
+                    SIGSYS,
+                    SIGPIPE,
+                    SIGALRM,
+                    SIGTERM} {}
 
 [[noreturn]]
 void FatalSignalHandler::on_signal(int signal_number) noexcept {

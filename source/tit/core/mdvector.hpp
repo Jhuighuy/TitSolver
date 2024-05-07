@@ -50,14 +50,16 @@ public:
   /// Initialize the multidimensional span.
   /// @{
   template<std::contiguous_iterator ValIter>
-    requires std::same_as<Val, std::remove_reference_t< //
-                                   std::iter_reference_t<ValIter>>>
+    requires std::same_as<
+                 Val,
+                 std::remove_reference_t<std::iter_reference_t<ValIter>>>
   constexpr Mdspan(ShapeSpan shape, ValIter val_iter) noexcept
       : shape_{shape}, vals_{val_iter, val_iter + size_from_shape_()} {}
   template<std::ranges::contiguous_range Vals>
     requires (std::ranges::sized_range<Vals> &&
-              std::same_as<Val, std::remove_reference_t<
-                                    std::ranges::range_reference_t<Vals>>>)
+              std::same_as<Val,
+                           std::remove_reference_t<
+                               std::ranges::range_reference_t<Vals>>>)
   constexpr Mdspan(ShapeSpan shape, Vals&& vals) noexcept
       : shape_{shape}, vals_{std::forward<Vals>(vals)} {
     TIT_ASSERT(vals_.size() == size_from_shape_(), "Data size is invalid!");
@@ -90,7 +92,7 @@ public:
   /// Reference to span element or sub-span.
   template<class... Indices>
     requires mdindex<Rank, Indices...>
-  constexpr auto operator[](Indices... indices) const noexcept //
+  constexpr auto operator[](Indices... indices) const noexcept
       -> decltype(auto) {
     // Compute an offset to the data position.
     size_t offset = 0;
@@ -215,13 +217,12 @@ public:
   /// @{
   template<class... Indices>
     requires mdindex<Rank, Indices...>
-  constexpr auto operator[](Indices... indices) noexcept //
-      -> decltype(auto) {
+  constexpr auto operator[](Indices... indices) noexcept -> decltype(auto) {
     return Mdspan<Val, Rank>{shape_, vals_}[indices...];
   }
   template<class... Indices>
     requires mdindex<Rank, Indices...>
-  constexpr auto operator[](Indices... indices) const noexcept //
+  constexpr auto operator[](Indices... indices) const noexcept
       -> decltype(auto) {
     return Mdspan<Val const, Rank>{shape_, vals_}[indices...];
   }

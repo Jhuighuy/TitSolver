@@ -28,8 +28,10 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// The particle estimator with density summation.
-template<equation_of_state EquationOfState, density_equation DensityEquation,
-         kernel Kernel, artificial_viscosity ArtificialViscosity>
+template<equation_of_state EquationOfState,
+         density_equation DensityEquation,
+         kernel Kernel,
+         artificial_viscosity ArtificialViscosity>
 class CompressibleFluidEquations {
 private:
 
@@ -56,8 +58,10 @@ public:
 
   /// Initialize fluid equations.
   constexpr explicit CompressibleFluidEquations(
-      EquationOfState eos = {}, DensityEquation density_equation = {},
-      Kernel kernel = {}, ArtificialViscosity artvisc = {}) noexcept
+      EquationOfState eos = {},
+      DensityEquation density_equation = {},
+      Kernel kernel = {},
+      ArtificialViscosity artvisc = {}) noexcept
       : eos_{std::move(eos)}, density_equation_{std::move(density_equation)},
         kernel_{std::move(kernel)}, artvisc_{std::move(artvisc)} {}
 
@@ -94,7 +98,7 @@ public:
   /// Setup boundary particles.
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
-  constexpr void setup_boundary( //
+  constexpr void setup_boundary(
       [[maybe_unused]] ParticleArray& particles,
       [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
 #if WITH_WALLS
@@ -217,9 +221,12 @@ public:
       if constexpr (has<PV>(L)) L[a] = {};
       /// Compute renormalization fields.
       std::ranges::for_each(adjacent_particles[a], [&](PV b) {
-        [[maybe_unused]] auto const W_ab = kernel_(a, b, h[a]);
-        [[maybe_unused]] auto const grad_W_ab = kernel_.grad(a, b, h[a]);
-        [[maybe_unused]] auto const V_b = m[b] / rho[b];
+        [[maybe_unused]]
+        auto const W_ab = kernel_(a, b, h[a]);
+        [[maybe_unused]]
+        auto const grad_W_ab = kernel_.grad(a, b, h[a]);
+        [[maybe_unused]]
+        auto const V_b = m[b] / rho[b];
         /// Update kernel renormalization coefficient.
         if constexpr (has<PV>(S)) S[a] += V_b * W_ab;
         /// Update kernel gradient renormalization matrix.
@@ -262,8 +269,10 @@ public:
       }
       /// Compute velocity derivative fields.
       std::ranges::for_each(adjacent_particles[a], [&](PV b) {
-        [[maybe_unused]] auto const grad_W_ab = kernel_.grad(a, b, h[a]);
-        [[maybe_unused]] auto const V_b = m[b] / rho[b];
+        [[maybe_unused]]
+        auto const grad_W_ab = kernel_.grad(a, b, h[a]);
+        [[maybe_unused]]
+        auto const V_b = m[b] / rho[b];
         if constexpr (has<PV>(grad_v)) {
           /// Update velocity gradient.
           grad_v[a] += outer(v[b, a], grad_W_ab);

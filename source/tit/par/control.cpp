@@ -26,7 +26,8 @@ void set_num_threads(size_t new_num_threads) {
   if (num_threads() == new_num_threads) return;
   static std::unique_ptr<tbb::global_control> control{};
   control = std::make_unique<tbb::global_control>(
-      tbb::global_control::max_allowed_parallelism, new_num_threads);
+      tbb::global_control::max_allowed_parallelism,
+      new_num_threads);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
