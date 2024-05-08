@@ -151,15 +151,15 @@ public:
 template<class Points, class... Args>
 Grid(Points&&, Args...) -> Grid<std::views::all_t<Points>>;
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
 template<class... Args>
-concept can_grid_ = requires { Grid{std::declval<Args>()...}; };
+concept can_grid = requires(Args... args) { Grid{args...}; };
+} // namespace impl
 
 /// Multidimensional grid factory.
 class GridFactory final {
-private:
-
-  real_t spacing_;
-
 public:
 
   /// Construct a multidimensional grid factory.
@@ -171,10 +171,14 @@ public:
 
   /// Produce a multidimensional grid for the specified set of points.
   template<std::ranges::viewable_range Points>
-    requires can_grid_<Points, real_t>
+    requires impl::can_grid<Points&&, real_t>
   constexpr auto operator()(Points&& points) const noexcept {
     return Grid{std::forward<Points>(points), spacing_};
   }
+
+private:
+
+  real_t spacing_;
 
 }; // class GridFactory
 

@@ -26,9 +26,7 @@ namespace tit::sph::fsi {
 
 /// Equation that links Euler strain tensor to the Cauchy stress tensor.
 template<class Derived>
-class EquationOfState {
-public:
-}; // class EquationOfState
+class EquationOfState {};
 
 /// Equation of state type.
 template<class DerivedEOS>
@@ -38,10 +36,6 @@ concept equation_of_state =
 
 /// Hooke’s law equation of state.
 class HookesLaw final : public EquationOfState<HookesLaw> {
-private:
-
-  real_t E_s_ = 2.0e+6, nu_s_ = 0.4;
-
 public:
 
   /// Compute Cauchy stress tensor from Euler strain tensor.
@@ -63,6 +57,11 @@ public:
     return cs_0;
   }
 
+private:
+
+  real_t E_s_ = 2.0e+6;
+  real_t nu_s_ = 0.4;
+
 }; // class HookesLaw
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,13 +81,6 @@ template<equation_of_state EquationOfState,
          kernel Kernel,
          artificial_viscosity ArtificialViscosity>
 class StructureEquations {
-private:
-
-  EquationOfState eos_;
-  Kernel kernel_;
-  ArtificialViscosity artvisc_;
-  mutable bool initialized_ = false;
-
 public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,7 +105,9 @@ public:
 
   template<class ParticleArray>
     requires (has<ParticleArray>(required_fields))
-  constexpr void init([[maybe_unused]] ParticleArray& particles) const {}
+  constexpr void init(ParticleArray& /*particles*/) const {
+    // Nothing to do here.
+  }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -156,8 +150,10 @@ public:
   template<class ParticleArray, class ParticleAdjacency>
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_density(
-      [[maybe_unused]] ParticleArray& particles,
-      [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {}
+      ParticleArray& /*particles*/,
+      ParticleAdjacency& /*adjacent_particles*/) const {
+    // Nothing to do here.
+  }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -226,6 +222,21 @@ public:
 #endif
     });
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+private:
+
+  [[no_unique_address]]
+  EquationOfState eos_;
+
+  [[no_unique_address]]
+  Kernel kernel_;
+
+  [[no_unique_address]]
+  ArtificialViscosity artvisc_;
+
+  mutable bool initialized_ = false;
 
 }; // class StructureEquations
 

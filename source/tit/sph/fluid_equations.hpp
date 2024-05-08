@@ -30,13 +30,6 @@ template<equation_of_state EquationOfState,
          kernel Kernel,
          artificial_viscosity ArtificialViscosity>
 class FluidEquations {
-private:
-
-  EquationOfState eos_;
-  DensityEquation density_equation_;
-  Kernel kernel_;
-  ArtificialViscosity artvisc_;
-
 public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,9 +134,11 @@ public:
         auto const D = norm(r_a - r[a]);
         // drho/dn = rho_0/(cs_0^2)*dot(g,n).
 #if EASY_DAM_BREAKING
-        constexpr auto rho_0 = 1000.0, cs_0 = 20 * sqrt(9.81 * 0.6);
+        constexpr auto rho_0 = 1000.0;
+        constexpr auto cs_0 = 20 * sqrt(9.81 * 0.6);
 #elif HARD_DAM_BREAKING
-        constexpr auto rho_0 = 1000.0, cs_0 = 120.0;
+        constexpr auto rho_0 = 1000.0;
+        constexpr auto cs_0 = 120.0;
 #endif
 #if WITH_GRAVITY
         constexpr auto G = Vec{0.0, -9.81};
@@ -345,6 +340,22 @@ public:
       if constexpr (has<PV>(dalpha_dt)) artvisc_.compute_switch_deriv(a);
     });
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+private:
+
+  [[no_unique_address]]
+  EquationOfState eos_;
+
+  [[no_unique_address]]
+  DensityEquation density_equation_;
+
+  [[no_unique_address]]
+  Kernel kernel_;
+
+  [[no_unique_address]]
+  ArtificialViscosity artvisc_;
 
 }; // class FluidEquations
 

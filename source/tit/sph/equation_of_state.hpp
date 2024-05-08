@@ -24,10 +24,6 @@ concept equation_of_state = std::movable<EquationOfState>;
 
 /// Ideal gas equation of state.
 class IdealGasEquationOfState {
-private:
-
-  real_t gamma_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -50,16 +46,16 @@ public:
     cs[a] = sqrt(gamma_ * (gamma_ - 1.0) * u[a]);
   }
 
+private:
+
+  real_t gamma_;
+
 }; // class IdealGasEquationOfState
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Adiabatic ideal gas equation of state.
 class AdiabaticIdealGasEquationOfState {
-private:
-
-  real_t kappa_, gamma_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -86,17 +82,17 @@ public:
     cs[a] = sqrt(gamma_ * p[a] / rho[a]);
   }
 
+private:
+
+  real_t kappa_;
+  real_t gamma_;
+
 }; // class GasEquationOfState
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Weakly-compressible fluid equation of state (Cole equation).
 class WeaklyCompressibleFluidEquationOfState {
-private:
-
-  real_t cs_0_, rho_0_, p_0_;
-  real_t gamma_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -129,16 +125,19 @@ public:
     }
   }
 
+private:
+
+  real_t cs_0_;
+  real_t rho_0_;
+  real_t p_0_;
+  real_t gamma_;
+
 }; // class WeaklyCompressibleFluidEquationOfState
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Weakly-compressible fluid equation of state (linear Cole equation).
 class LinearWeaklyCompressibleFluidEquationOfState {
-private:
-
-  real_t cs_0_, rho_0_, p_0_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -168,6 +167,12 @@ public:
       cs[a] = cs_0_;
     }
   }
+
+private:
+
+  real_t cs_0_;
+  real_t rho_0_;
+  real_t p_0_;
 
 }; // class LinearWeaklyCompressibleFluidEquationOfState
 

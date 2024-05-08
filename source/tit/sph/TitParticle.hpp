@@ -93,20 +93,12 @@ public:
   }
 
   /// Compare particle views.
-  /// @{
   constexpr auto operator==(ParticleView<ParticleArray> other) const noexcept
       -> bool {
     TIT_ASSERT(&array() == &other.array(),
                "Particles must belong to the same array.");
     return index() == other.index();
   }
-  constexpr auto operator!=(ParticleView<ParticleArray> other) const noexcept
-      -> bool {
-    TIT_ASSERT(&array() == &other.array(),
-               "Particles must belong to the same array.");
-    return index() != other.index();
-  }
-  /// @}
 
   /// Particle field value.
   template<meta::type Field>
@@ -261,9 +253,6 @@ public:
            std::views::transform(
                [this](size_t b_index) { return array()[b_index]; });
   }
-
-  /// All pairs of the adjacent particles.
-  constexpr auto all_pairs() const noexcept {}
 
   /// Unique pairs of the adjacent particles.
   constexpr auto pairs() const noexcept {
@@ -534,7 +523,6 @@ public:
     output << '\n';
     for (size_t i = 0; i < size(); ++i) {
       auto a = (*this)[i];
-      // if (a[parinfo].part != par::proc_index()) continue;
       ((output << Fields{}[a] << " "), ...);
       output << '\n';
     };

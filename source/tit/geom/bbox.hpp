@@ -21,10 +21,6 @@ namespace tit::geom {
 /// Bounding box.
 template<class Num, size_t Dim>
 class BBox final {
-private:
-
-  Vec<Num, Dim> low_, high_;
-
 public:
 
   // TODO: remove this constructor.
@@ -108,6 +104,11 @@ public:
     return split(axis, point[axis]);
   }
   /// @}
+
+private:
+
+  Vec<Num, Dim> low_;
+  Vec<Num, Dim> high_;
 
 }; // class BBox
 

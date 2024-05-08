@@ -53,7 +53,8 @@ private:
 #pragma GCC diagnostic ignored "-Wpedantic"
     struct {
       size_t cut_dim;
-      Real cut_left, cut_right;
+      Real cut_left;
+      Real cut_right;
       KDTreeNode_* left_subtree;
       KDTreeNode_* right_subtree;
     };
@@ -70,21 +71,6 @@ private:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 public:
-
-  /// K-dimensional tree is non-copyable.
-  KDTree(KDTree const&) = delete;
-
-  /// K-dimensional tree is non-copy-assignable.
-  auto operator=(KDTree const&) -> KDTree& = delete;
-
-  /// Move-construct the K-dimensional tree.
-  KDTree(KDTree&&) = default;
-
-  /// Move-assign the K-dimensional tree.
-  auto operator=(KDTree&&) -> KDTree& = default;
-
-  /// Destroy the K-dimensional tree.
-  ~KDTree() = default;
 
   /// Initialize and build the K-dimensional tree.
   ///
@@ -287,15 +273,13 @@ KDTree(Points&&, Args...) -> KDTree<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace impl {
 template<class... Args>
-concept can_kd_tree_ = requires { KDTree{std::declval<Args>()...}; };
+concept can_kd_tree = requires(Args... args) { KDTree{args...}; };
+} // namespace impl
 
 /// K-dimensional tree factory.
 class KDTreeFactory final {
-private:
-
-  size_t max_leaf_size_;
-
 public:
 
   /// Construct a K-dimensional tree factory.
@@ -308,10 +292,14 @@ public:
 
   /// Produce a K-dimensional tree for the specified set of points.
   template<std::ranges::viewable_range Points>
-    requires can_kd_tree_<Points, size_t>
+    requires impl::can_kd_tree<Points&&, size_t>
   constexpr auto operator()(Points&& points) const noexcept {
     return KDTree{std::forward<Points>(points), max_leaf_size_};
   }
+
+private:
+
+  size_t max_leaf_size_;
 
 }; // class KDTreeFactory
 

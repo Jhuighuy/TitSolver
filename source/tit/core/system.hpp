@@ -57,7 +57,7 @@ class SignalHandler {
 public:
 
   /// Initialize handling for the specified signals.
-  SignalHandler(std::initializer_list<int> signal_numbers);
+  explicit SignalHandler(std::initializer_list<int> signal_numbers);
 
   /// Signal handler is not move-constructible.
   SignalHandler(SignalHandler&&) = delete;

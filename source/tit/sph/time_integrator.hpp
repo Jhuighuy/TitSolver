@@ -24,12 +24,6 @@ namespace tit::sph {
 template<class FluidEquations>
   requires std::is_object_v<FluidEquations>
 class EulerIntegrator {
-private:
-
-  FluidEquations equations_{};
-  size_t step_index_{0};
-  size_t adjacency_recalc_freq_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -85,6 +79,13 @@ public:
     ++step_index_;
   }
 
+private:
+
+  [[no_unique_address]]
+  FluidEquations equations_{};
+  size_t step_index_{0};
+  size_t adjacency_recalc_freq_;
+
 }; // class EulerIntegrator
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,12 +94,6 @@ public:
 template<class FluidEquations>
   requires std::is_object_v<FluidEquations>
 class RungeKuttaIntegrator {
-private:
-
-  FluidEquations equations_{};
-  size_t step_index_{0};
-  size_t adjacency_recalc_freq_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -190,6 +185,13 @@ public:
 #endif
     ++step_index_;
   }
+
+private:
+
+  [[no_unique_address]]
+  FluidEquations equations_{};
+  size_t step_index_{0};
+  size_t adjacency_recalc_freq_;
 
 }; // class RungeKuttaIntegrator
 

@@ -56,10 +56,6 @@ concept artificial_viscosity =
 
 /// α-β artificial viscosity (Monaghan, 1992).
 class AlphaBetaArtificialViscosity : public NoArtificialViscosity {
-private:
-
-  real_t alpha_, beta_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -91,6 +87,11 @@ public:
     auto const Pi_ab = (alpha_ * cs_ab - beta_ * mu_ab) * mu_ab / rho_ab;
     return Pi_ab;
   }
+
+private:
+
+  real_t alpha_;
+  real_t beta_;
 
 }; // class AlphaBetaArtificialViscosity
 
@@ -134,11 +135,6 @@ public:
 template<artificial_viscosity BaseArtificialViscosity =
              BalsaraArtificialViscosity<>>
 class RosswogArtificialViscosity : public BaseArtificialViscosity {
-private:
-
-  real_t alpha_min_, alpha_max_;
-  real_t sigma_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -190,6 +186,12 @@ public:
                    (alpha[a] - alpha_min_) / tau_a;
   }
 
+private:
+
+  real_t alpha_min_;
+  real_t alpha_max_;
+  real_t sigma_;
+
 }; // class RosswogArtificialViscosity
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,11 +199,6 @@ public:
 /// ξ-SPH artificial viscosity (Molteni, Colagrossi, 2009).
 /// Weakly-compressible SPH formulation is assumed.
 class MolteniColagrossiArtificialViscosity : public NoArtificialViscosity {
-private:
-
-  real_t cs_0_, rho_0_;
-  real_t alpha_, xi_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -246,16 +243,18 @@ public:
     return Pi_ab;
   }
 
+private:
+
+  real_t cs_0_;
+  real_t rho_0_;
+  real_t alpha_;
+  real_t xi_;
+
 }; // class MolteniColagrossiArtificialViscosity
 
 /// δ-SPH artificial viscosity (Marrone, 2011).
 /// Weakly-compressible SPH formulation is assumed.
 class DeltaSphArtificialViscosity : public NoArtificialViscosity {
-private:
-
-  real_t cs_0_, rho_0_;
-  real_t alpha_, delta_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -301,6 +300,13 @@ public:
                        dot(r[a, b], v[a, b]) / norm2(r[a, b]);
     return Pi_ab;
   }
+
+private:
+
+  real_t cs_0_;
+  real_t rho_0_;
+  real_t alpha_;
+  real_t delta_;
 
 }; // class DeltaSphArtificialViscosity
 

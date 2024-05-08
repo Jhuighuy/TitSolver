@@ -41,7 +41,10 @@ TEST_CASE("Mat") {
   }
   SUBCASE("aggregate assignment") {
     Mat<double, 2> M;
-    M = {{1.0, 2.0}, {3.0, 4.0}};
+    M = Mat{
+        {1.0, 2.0},
+        {3.0, 4.0},
+    };
     CHECK(all(M[0] == Vec{1.0, 2.0}));
     CHECK(all(M[1] == Vec{3.0, 4.0}));
   }

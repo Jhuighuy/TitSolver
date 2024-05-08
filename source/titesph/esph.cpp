@@ -1,8 +1,6 @@
-#include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <fstream>
-#include <vector>
+#include <format>
 
 #define WITH_GRAVITY 1
 
@@ -11,7 +9,6 @@
 #include "tit/core/time.hpp"
 
 #include "tit/sph/TitParticle.hpp"
-#include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fsi.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/time_integrator.hpp"
@@ -19,17 +16,14 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Real>
-int sph_main(int /*argc*/, char** /*argv*/) {
+auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   using namespace tit;
   using namespace sph;
 
   constexpr Real H = 0.01; // Bar height.
   constexpr Real L = 0.10; // Bar length.
 
-  // constexpr Real E_s = 1.4e+6, nu_s = 0.4;
-  // constexpr Real K_s = E_s / (3.0 * (1.0 - 2.0 * nu_s));
   constexpr Real rho_0 = 1400.0;
-  // constexpr Real cs_0 = sqrt(K_s / rho_0);
 
   constexpr Real dr = H / 10.0;
   constexpr Real h_0 = 1.3 * dr;
@@ -64,7 +58,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
                           rho};
 
   // Generate individual particles.
-  auto num_fixed_particles = 0, num_struct_particles = 0;
+  auto num_fixed_particles = 0;
+  auto num_struct_particles = 0;
   for (auto i = -N_fixed; i < BAR_M; ++i) {
     for (auto j = 0; j < BAR_N; ++j) {
       bool const is_fixed = i < 0;
@@ -90,8 +85,9 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   system("ln -sf output/test_output/particles-0.csv particles.csv");
 
   Real time{};
-  Stopwatch exectime{}, printtime{};
-  for (size_t n = 0; time * sqrt(g / H) <= 6.90e+6; ++n, time += dt) {
+  Stopwatch exectime{};
+  Stopwatch printtime{};
+  for (size_t n = 0;; ++n) {
     println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
             n,
             time * sqrt(g / H),
@@ -104,10 +100,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
     if (n % 200 == 0 && n != 0) {
       StopwatchCycle const cycle{printtime};
       auto const path =
-          "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
+          std::format("output/test_output/particles-{}.csv", n / 200);
       particles.print(path);
       system(("ln -sf ./" + path + " particles.csv").c_str());
     }
+    if (time * sqrt(g / H) > 6.90e+6) break;
+    time += dt;
   }
 
   particles.print("particles-dam.csv");
@@ -117,7 +115,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
   return tit::run_main(argc, argv, &sph_main<tit::real_t>);
 }
 

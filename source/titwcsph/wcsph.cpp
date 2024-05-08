@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <format>
 #include <fstream>
 #include <vector>
 
@@ -274,7 +275,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   };
 
   // Generate individual particles.
-  auto num_fixed_particles = 0, num_fluid_particles = 0;
+  auto num_fixed_particles = 0;
+  auto num_fluid_particles = 0;
   for (auto i = -N_fixed; i < POOL_M + N_fixed; ++i) {
     for (auto j = -N_fixed; j < POOL_N; ++j) {
       bool const is_fixed = (i < 0 || i >= POOL_M) || (j < 0);
@@ -301,13 +303,15 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       return;
     }
     // Compute pressure from Poisson problem.
-    auto const x = r[a][0], y = r[a][1];
+    auto const x = r[a][0];
+    auto const y = r[a][1];
     p[a] = rho_0 * g * (H - y);
     for (size_t N = 1; N < 100; N += 2) {
       constexpr auto pi = std::numbers::pi_v<Real>;
+      auto const n = static_cast<Real>(N);
       p[a] -= 8 * rho_0 * g * H / pow2(pi) *
-              (exp(N * pi * (x - L) / (2 * H)) * cos(N * pi * y / (2 * H))) /
-              pow2(N);
+              (exp(n * pi * (x - L) / (2 * H)) * cos(n * pi * y / (2 * H))) /
+              pow2(n);
     }
     // Recalculate density from EOS.
     rho[a] = rho_0 + p[a] / pow2(cs_0);
@@ -323,8 +327,9 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   system("ln -sf output/test_output/particles-0.csv particles.csv");
 
   Real time{};
-  Stopwatch exectime{}, printtime{};
-  for (size_t n = 0; time * sqrt(g / H) <= 6.90; ++n, time += dt) {
+  Stopwatch exectime{};
+  Stopwatch printtime{};
+  for (size_t n = 0;; ++n) {
     println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
             n,
             time * sqrt(g / H),
@@ -337,10 +342,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
     if (n % 200 == 0 && n != 0) {
       StopwatchCycle const cycle{printtime};
       auto const path =
-          "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
+          std::format("output/test_output/particles-{}.csv", n / 200);
       particles.print(path);
       system(("ln -sf ./" + path + " particles.csv").c_str());
     }
+    if (time * sqrt(g / H) >= 6.9) break;
+    time += dt;
   }
 
   particles.print("particles-dam.csv");

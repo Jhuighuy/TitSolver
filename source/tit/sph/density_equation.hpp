@@ -32,10 +32,6 @@ public:
 
 /// Grad-H summation density.
 class GradHSummationDensity : public SummationDensity {
-private:
-
-  real_t eta_;
-
 public:
 
   /// Set of particle fields that are required.
@@ -65,6 +61,10 @@ public:
     auto const dRho_dh_a = -d * Rho_a / h[a];
     return std::tuple{Rho_a, dRho_dh_a};
   }
+
+private:
+
+  real_t eta_;
 
 }; // class GradHSummationDensity
 

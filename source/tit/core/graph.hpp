@@ -30,11 +30,11 @@ public:
            std::views::transform([this](size_t row_index) {
              return (*this)[row_index] |
                     // Take only lower part of the row.
-                    std::views::take_while([=](size_t col_index) {
+                    std::views::take_while([row_index](size_t col_index) {
                       return col_index < row_index;
                     }) |
                     // Pack row and column indices into a tuple.
-                    std::views::transform([=](size_t col_index) {
+                    std::views::transform([row_index](size_t col_index) {
                       return std::tuple{col_index, row_index};
                     });
            }) |

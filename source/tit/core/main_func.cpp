@@ -16,8 +16,9 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_main(int argc, char** argv, main_like_t main_func) noexcept -> int {
-  TIT_ENSURE(main_func != nullptr, "Main function must be specified!");
+auto run_main(int argc,
+              char** argv,
+              main_func_t const& main_func) noexcept -> int {
   // Setup signal handler.
   FatalSignalHandler const handler{};
   // Enable profiling.
@@ -27,6 +28,7 @@ auto run_main(int argc, char** argv, main_like_t main_func) noexcept -> int {
   // Setup parallelism.
   par::set_num_threads(8);
   // Run the main function.
+  TIT_ENSURE(main_func != nullptr, "Main function must be specified!");
   return main_func(argc, argv);
 }
 

@@ -41,7 +41,7 @@ public:
   }
 
   /// Initialize a matrix with rows.
-  constexpr Mat(std::initializer_list<Row> rows) {
+  constexpr explicit Mat(std::initializer_list<Row> rows) {
     TIT_ASSERT(rows.size() == Dim, "Invalid amount of rows!");
     std::ranges::copy(rows, rows_.begin());
   }

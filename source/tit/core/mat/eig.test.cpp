@@ -27,7 +27,7 @@ TEST_CASE("Mat::jacobi") {
   SUBCASE("2x2") {
     SUBCASE("indefinite") {
       // clang-format off
-      Mat const A = {
+      Mat const A{
           { 1.0, -2.0},
           {-2.0,  1.0},
       };
@@ -41,7 +41,7 @@ TEST_CASE("Mat::jacobi") {
   }
   SUBCASE("4x4") {
     SUBCASE("positive definite") {
-      Mat const A = {
+      Mat const A{
           {2.0, 1.0, 1.0, 0.0},
           {1.0, 3.0, 0.0, 1.0},
           {1.0, 0.0, 4.0, 1.0},
@@ -55,7 +55,7 @@ TEST_CASE("Mat::jacobi") {
     }
   }
   SUBCASE("not converged") {
-    Mat const A = {
+    Mat const A{
         {2.0, 1.0, 1.0, 0.0},
         {1.0, 3.0, 0.0, 1.0},
         {1.0, 0.0, 4.0, 1.0},

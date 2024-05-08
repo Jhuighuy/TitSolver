@@ -28,14 +28,6 @@ namespace tit::sph {
 /// Abstract smoothing kernel.
 template<class Derived>
 class Kernel {
-protected:
-
-  /// Derived class reference.
-  constexpr auto derived() const noexcept -> Derived const& {
-    static_assert(std::derived_from<Derived, Kernel<Derived>>);
-    return static_cast<Derived const&>(*this);
-  }
-
 public:
 
   /// Set of particle fields that are required.
@@ -93,7 +85,7 @@ public:
   /// Width derivative of the smoothing kernel for two points.
   /// @{
   template<class PV>
-  // requires (has<PV>(required_fields) && has_const<PV>(h))
+    requires (has<PV>(required_fields) && has_const<PV>(h))
   constexpr auto width_deriv(PV a, PV b) const noexcept {
     return width_deriv(r[a, b], h[a]);
   }
@@ -166,6 +158,14 @@ public:
            w * derived().unit_deriv(q) * dq_dh;
   }
 
+protected:
+
+  /// Derived class reference.
+  constexpr auto derived() const noexcept -> Derived const& {
+    static_assert(std::derived_from<Derived, Kernel<Derived>>);
+    return static_cast<Derived const&>(*this);
+  }
+
 }; // class Kernel
 
 /// Smoothing kernel type.
@@ -231,12 +231,10 @@ public:
   /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
-    static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) {
-      case 1: return Real{2.0 / 3.0};
-      case 2: return Real{10.0 / 7.0 * std::numbers::inv_pi};
-      case 3: return std::numbers::inv_pi_v<Real>;
-    }
+    if constexpr (Dim == 1) return Real{2.0 / 3.0};
+    else if constexpr (Dim == 2) return Real{10.0 / 7.0 * std::numbers::inv_pi};
+    else if constexpr (Dim == 3) return std::numbers::inv_pi_v<Real>;
+    else static_assert(false);
   }
 
   /// Unit support radius.
@@ -333,12 +331,11 @@ public:
   /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
-    static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) {
-      case 1: return Real{1.0 / 24.0};
-      case 2: return Real{96.0 / 1199.0 * std::numbers::inv_pi};
-      case 3: return Real{1.0 / 20.0 * std::numbers::inv_pi};
-    }
+    using std::numbers::inv_pi;
+    if constexpr (Dim == 1) return Real{1.0 / 24.0};
+    else if constexpr (Dim == 2) return Real{96.0 / 1199.0 * inv_pi};
+    else if constexpr (Dim == 3) return Real{1.0 / 20.0 * inv_pi};
+    else static_assert(false);
   }
 
   /// Unit support radius.
@@ -404,12 +401,11 @@ public:
   /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept {
-    static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) {
-      case 1: return Real{1.0 / 120.0};
-      case 2: return Real{7.0 / 478.0 * std::numbers::inv_pi};
-      case 3: return Real{1.0 / 120.0 * std::numbers::inv_pi}; // or 3/359?
-    }
+    using std::numbers::inv_pi;
+    if constexpr (Dim == 1) return Real{1.0 / 120.0};
+    else if constexpr (Dim == 2) return Real{7.0 / 478.0 * inv_pi};
+    else if constexpr (Dim == 3) return Real{1.0 / 120.0 * inv_pi}; // or 3/359?
+    else static_assert(false);
   }
 
   /// Unit support radius.
@@ -471,10 +467,6 @@ public:
 /// Abstract Wendland's smoothing kernel.
 template<class Derived>
 class WendlandKernel : public Kernel<Derived> {
-protected:
-
-  using Kernel<Derived>::derived;
-
 public:
 
   /// Unit support radius.
@@ -496,6 +488,10 @@ public:
     return q < Real{2.0} ? derived().unit_deriv_notrunc(q) : Real{0.0};
   }
 
+protected:
+
+  using Kernel<Derived>::derived;
+
 }; // class WendlandKernel
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -508,12 +504,11 @@ public:
   /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
-    static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) {
-      case 1: return Real{3.0 / 4.0};
-      case 2: return Real{7.0 / 4.0 * std::numbers::inv_pi};
-      case 3: return Real{21.0 / 16.0 * std::numbers::inv_pi};
-    }
+    using std::numbers::inv_pi;
+    if constexpr (Dim == 1) return Real{3.0 / 4.0};
+    else if constexpr (Dim == 2) return Real{7.0 / 4.0 * inv_pi};
+    else if constexpr (Dim == 3) return Real{21.0 / 16.0 * inv_pi};
+    else static_assert(false);
   }
 
   /// Value of the unit smoothing kernel at a point (no truncation).
@@ -542,12 +537,11 @@ public:
   /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
-    static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) {
-      case 1: return Real{27.0 / 16.0};
-      case 2: return Real{9.0 / 4.0 * std::numbers::inv_pi};
-      case 3: return Real{495.0 / 256.0 * std::numbers::inv_pi};
-    }
+    using std::numbers::inv_pi;
+    if constexpr (Dim == 1) return Real{27.0 / 16.0};
+    else if constexpr (Dim == 2) return Real{9.0 / 4.0 * inv_pi};
+    else if constexpr (Dim == 3) return Real{495.0 / 256.0 * inv_pi};
+    else static_assert(false);
   }
 
   /// Value of the unit smoothing kernel at a point (no truncation).
@@ -576,12 +570,11 @@ public:
   /// Kernel weight.
   template<class Real, size_t Dim>
   static constexpr auto weight() noexcept -> Real {
-    static_assert(1 <= Dim && Dim <= 3);
-    switch (Dim) {
-      case 1: return Real{15.0 / 8.0};
-      case 2: return Real{39.0 / 14.0 * std::numbers::inv_pi};
-      case 3: return Real{339.0 / 128.0 * std::numbers::inv_pi};
-    }
+    using std::numbers::inv_pi;
+    if constexpr (Dim == 1) return Real{15.0 / 8.0};
+    else if constexpr (Dim == 2) return Real{39.0 / 14.0 * inv_pi};
+    else if constexpr (Dim == 3) return Real{339.0 / 128.0 * inv_pi};
+    else static_assert(false);
   }
 
   /// Value of the unit smoothing kernel at a point (no truncation).

@@ -26,14 +26,23 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace impl {
+template<class Val, class Handles, class IndexOf, class ValueOf = std::identity>
+concept can_assemble_multivec =
+    std::is_object_v<Val> && par::input_range<Handles> &&
+    std::regular_invocable<IndexOf, std::ranges::range_reference_t<Handles>> &&
+    std::convertible_to<
+        std::invoke_result_t<IndexOf, std::ranges::range_reference_t<Handles>>,
+        size_t> &&
+    std::regular_invocable<ValueOf, std::ranges::range_reference_t<Handles>> &&
+    std::convertible_to<
+        std::invoke_result_t<ValueOf, std::ranges::range_reference_t<Handles>>,
+        Val>;
+} // namespace impl
+
 /// Compressed vector that can handle multiple elements at a single position.
 template<class Val>
 class Multivector {
-private:
-
-  std::vector<size_t> val_ranges_{0};
-  std::vector<Val> vals_;
-
 public:
 
   /// Multivector size.
@@ -66,6 +75,8 @@ public:
   }
   /// @}
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   /// Append values to the multivector.
   template<std::ranges::input_range Vals>
     requires std::indirectly_copyable<std::ranges::iterator_t<Vals>,
@@ -80,10 +91,13 @@ public:
   template<class Cmp = std::ranges::less, class Proj = std::identity>
     requires std::sortable<std::ranges::iterator_t<std::vector<Val>>, Cmp, Proj>
   constexpr void sort(Cmp cmp = {}, Proj proj = {}) noexcept {
-    par::for_each(std::views::iota(0UZ, size()), [=, this](size_t index) {
-      std::ranges::sort((*this)[index], cmp, proj);
-    });
+    par::for_each(std::views::iota(size_t{0}, size()),
+                  [cmp, proj, this](size_t index) {
+                    std::ranges::sort((*this)[index], cmp, proj);
+                  });
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Assemble the multivector from elements using value to index mapping in
   /// parallel.
@@ -95,18 +109,8 @@ public:
   /// @param handles Range of the value handles to be added.
   /// @param index_of Function that returns bucket index of the handle value.
   /// @param value_of Function that turns value handle into a value.
-  template<par::input_range Handles,
-           std::regular_invocable<std::ranges::range_value_t<Handles>> IndexOf,
-           std::regular_invocable<std::ranges::range_value_t<Handles>> ValueOf =
-               std::identity>
-    requires std::constructible_from<
-                 size_t,
-                 std::invoke_result_t<IndexOf,
-                                      std::ranges::range_value_t<Handles>>> &&
-             std::assignable_from<
-                 Val&,
-                 std::invoke_result_t<ValueOf,
-                                      std::ranges::range_value_t<Handles>>>
+  template<class Handles, class IndexOf, class ValueOf = std::identity>
+    requires impl::can_assemble_multivec<Val, Handles&&, IndexOf, ValueOf>
   constexpr void assemble_tall(size_t count,
                                Handles&& handles,
                                IndexOf index_of,
@@ -115,9 +119,9 @@ public:
     // Compute value ranges.
     /// First compute how many values there are per each index.
     val_ranges_.clear(), val_ranges_.resize(count + 1);
-    par::for_each(handles, [&](auto handle) {
-      size_t const index = index_of(handle);
-      TIT_ASSERT(index < count, "Index of the value is out of expected range.");
+    par::static_for_each(handles, [&](auto const& handle) {
+      auto const index = static_cast<size_t>(index_of(handle));
+      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       par::fetch_and_add(val_ranges_[index + 1], 1);
     });
     /// Perform a partial sum of the computed values to form ranges.
@@ -129,11 +133,11 @@ public:
     /// then increment the position.
     auto const num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
-    par::for_each(handles, [&](auto handle) {
-      auto const index = index_of(handle);
-      TIT_ASSERT(index < count, "Index of the value is out of expected range.");
+    par::static_for_each(handles, [&](auto const& handle) {
+      auto const index = static_cast<size_t>(index_of(handle));
+      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       auto const addr = par::fetch_and_add(val_ranges_[index], 1);
-      vals_[addr] = value_of(handle);
+      vals_[addr] = static_cast<Val>(value_of(handle));
     });
     /// Fix value ranges, since after incrementing the entire array is shifted
     /// left. So we need to shift it right and restore the leading zero.
@@ -151,18 +155,8 @@ public:
   /// @param handles Range of the value handles to be added.
   /// @param index_of Function that returns bucket index of the handle value.
   /// @param value_of Function that turns value handle into a value.
-  template<par::input_range Handles,
-           std::regular_invocable<std::ranges::range_value_t<Handles>> IndexOf,
-           std::regular_invocable<std::ranges::range_value_t<Handles>> ValueOf =
-               std::identity>
-    requires std::constructible_from<
-                 size_t,
-                 std::invoke_result_t<IndexOf,
-                                      std::ranges::range_value_t<Handles>>> &&
-             std::assignable_from<
-                 Val&,
-                 std::invoke_result_t<ValueOf,
-                                      std::ranges::range_value_t<Handles>>>
+  template<class Handles, class IndexOf, class ValueOf = std::identity>
+    requires impl::can_assemble_multivec<Val, Handles&&, IndexOf, ValueOf>
   constexpr void assemble_wide(size_t count,
                                Handles&& handles,
                                IndexOf index_of,
@@ -173,9 +167,9 @@ public:
     val_ranges_.clear(), val_ranges_.resize(count + 1);
     static Mdvector<size_t, 2> val_ranges_per_thread{};
     val_ranges_per_thread.assign(count + 1, par::num_threads());
-    par::static_for_each(handles, [&](auto handle) {
-      size_t const index = index_of(handle);
-      TIT_ASSERT(index < count, "Index of the value is out of expected range.");
+    par::static_for_each(handles, [&](auto const& handle) {
+      auto const index = static_cast<size_t>(index_of(handle));
+      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       val_ranges_per_thread[index, par::thread_index()]++;
     });
     /// Perform a partial sum of the computed values to form ranges.
@@ -197,13 +191,21 @@ public:
     /// then increment the position.
     auto const num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
-    par::static_for_each(handles, [&](auto handle) {
-      auto const index = index_of(handle);
-      TIT_ASSERT(index < count, "Index of the value is out of expected range.");
-      auto const addr = val_ranges_per_thread[index, par::thread_index()]++;
-      vals_[addr] = value_of(handle);
+    par::static_for_each(handles, [&](auto const& handle) {
+      auto const index = static_cast<size_t>(index_of(handle));
+      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
+      auto& addr = val_ranges_per_thread[index, par::thread_index()];
+      vals_[addr] = static_cast<Val>(value_of(handle));
+      addr += 1;
     });
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+private:
+
+  std::vector<size_t> val_ranges_{0};
+  std::vector<Val> vals_;
 
 }; // class Multivector
 
