@@ -9,8 +9,8 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 if [[ "$*" == *"-h"* || "$*" == *"--help"* ]]; then
-    echo "Usage: $(basename "$0") [path ...]"
-    exit 1
+  echo "Usage: $(basename "$0") [path ...]"
+  exit 1
 fi
 
 # Count the lines of code.
