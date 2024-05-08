@@ -32,7 +32,7 @@ jobs:
 
     strategy:
       matrix:
-        compiler: [g++-13]
+        compiler: [g++-14]
         configuration: [Coverage]
 
     runs-on: ubuntu-latest
