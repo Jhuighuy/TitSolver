@@ -44,8 +44,3 @@ using real_t = float64_t;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
-
-// I do not know where to put these, so I'll leave them here.
-#if defined(__GNUC__) && (__GNUC__ > 13)
-#error "It is time for a huge clean-up!"
-#endif
