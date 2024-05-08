@@ -16,64 +16,57 @@ on:
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Cancel previous runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 jobs:
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  analyze_sonar:
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+  analyze:
     name: Analyze
-    runs-on: ubuntu-latest
-    container:
-      image: jhuighuy/tit-solver-base:latest
-    defaults:
-      run:
-        shell: bash
+
     strategy:
       matrix:
         compiler: [g++-13]
         configuration: [Coverage]
-    env:
-      # Coverage report file path (Sonar for the future).
-      SONAR_COVERAGE_REPORT_PATH: sonar_coverage.xml
-      CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
-      # Directory where build-wrapper output will be placed.
-      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    runs-on: ubuntu-latest
+    container:
+      image: jhuighuy/tit-solver-base:latest
+
+    env:
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
+      CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
+      SONAR_COVERAGE_REPORT_PATH: sonar_coverage.xml
 
     steps:
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Fetch all history for proper analysis and coverage reports.
           fetch-depth: 0
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       - name: Install sonar-scanner and build-wrapper
         uses: SonarSource/sonarcloud-github-c-cpp@v2
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      - name: Fix repository ownership
+        run: |
+          git config --global --add safe.directory '*'
 
       - name: Build and test
         run: |
           # Build and test
-          ## Temporary fix for 'fatal: detected dubious ownership...'
-          git config --global --add safe.directory '*'
-          ## Run the build script with the build-wrapper.
           build-wrapper-linux-x86-64                                           \
             --out-dir "${{ env.BUILD_WRAPPER_OUT_DIR }}"                       \
             ./build/build.sh -j 4                                              \
-              --compiler=${{ matrix.compiler }}                                \
-              --config=${{ matrix.configuration }}                             \
+              --compiler ${{ matrix.compiler }}                                \
+              --config ${{ matrix.configuration }}                             \
               --test
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       - name: Collect coverage reports
         run: |
@@ -92,8 +85,6 @@ jobs:
             --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"                    \
             --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
       - name: Upload test output
         uses: actions/upload-artifact@v3
         if: always()
@@ -101,15 +92,11 @@ jobs:
           name: test-output-${{ runner.os }}-${{ matrix.compiler }}-Coverage
           path: output/test_output
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ env.CODECOV_COVERAGE_REPORT_PATH }}
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       - name: Run sonar-scanner
         env:
@@ -119,10 +106,6 @@ jobs:
           sonar-scanner                                                                    \
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
             --define sonar.coverageReportPaths="${{ env.SONAR_COVERAGE_REPORT_PATH }}"
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

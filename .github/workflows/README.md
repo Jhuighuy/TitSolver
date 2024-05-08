@@ -4,8 +4,7 @@
 
 [![Build](https://github.com/Jhuighuy/TitSolver/actions/workflows/build.yml/badge.svg)](https://github.com/Jhuighuy/TitSolver/actions/workflows/build.yml)
 
-Build and run tests on Ubuntu, macOS and Windows under all possible
-configurations.
+Build and run tests on Ubuntu and macOS under all build configurations.
 
 ## `analyze.yaml`
 
