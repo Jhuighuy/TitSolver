@@ -1,4 +1,4 @@
-# GitHub CI/CD scripts🦜
+# GitHub workflows 🦜
 
 ## `build.yml`
 
@@ -15,3 +15,9 @@ configurations.
 
 Build and run tests on Ubuntu under _Coverage_ configuration, run SonarCloud
 analysis and upload coverage reports to Codecov and SonarCloud.
+
+## `docker.yaml`
+
+[![Docker](https://github.com/Jhuighuy/TitSolver/actions/workflows/docker.yml/badge.svg)](https://github.com/Jhuighuy/TitSolver/actions/workflows/docker.yml)
+
+Build Docker image containing development environment for `amd64` and `arm64`.
