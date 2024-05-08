@@ -3,18 +3,18 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-FROM ubuntu:23.10
+FROM ubuntu:24.04
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Install the packages.
 RUN <<EOF
-  set -ex
-
   # Install packages.
   apt-get update -y
   apt-get install -y                                                           \
     build-essential                                                            \
+    clang-18                                                                   \
+    clang-tidy-18                                                              \
     cmake                                                                      \
     curl                                                                       \
     git                                                                        \
@@ -29,22 +29,19 @@ RUN <<EOF
     wget                                                                       \
     zip
 
-  # Add LLVM.
-  wget -q https://apt.llvm.org/llvm.sh
-  chmod +x llvm.sh
-  ./llvm.sh 18
-  apt-get install -y clang-18 clang-tidy-18 libomp-18-dev
-
   # Clean up.
   apt-get -y clean
-  rm ./llvm.sh
   rm -rf /var/lib/apt/lists/*
 EOF
+
+## Use bash as the default shell.
+RUN ln -sf /bin/bash /bin/sh
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Install the Python tools.
-RUN pip3 install --no-cache-dir --break-system-packages codespell gcovr
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+RUN pip3 install --no-cache-dir codespell gcovr
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -53,8 +50,6 @@ ENV CXX=g++-13
 ENV VCPKG_ROOT=/root/vcpkg
 ENV VCPKG_FORCE_SYSTEM_BINARIES=1
 RUN <<EOF
-  set -ex
-
   # Clone and bootstrap vcpkg.
   git clone --depth=1 https://github.com/microsoft/vcpkg.git $VCPKG_ROOT
   $VCPKG_ROOT/bootstrap-vcpkg.sh
@@ -68,8 +63,6 @@ ENV VCPKG_DEFAULT_BINARY_CACHE=/root/vcpkg_cache
 WORKDIR /
 COPY vcpkg.json .
 RUN <<EOF
-  set -ex
-
   # Install the manifested packages.
   mkdir $VCPKG_DEFAULT_BINARY_CACHE
   $VCPKG_ROOT/vcpkg install

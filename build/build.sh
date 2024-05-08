@@ -200,6 +200,8 @@ run_tests() {
   # Run CTest.
   local CTEST_ARGS
   CTEST_ARGS=("$CTEST_EXE" "--output-on-failure")
+  # Output results summary to a JUnit XML file.
+  CTEST_ARGS+=("--output-junit" "$TEST_OUTPUT_DIR/JUnit.xml")
   if [ "$JOBS" -gt 1 ]; then
     echo "# Running tests with $JOBS threads."
     CTEST_ARGS+=("-j" "$JOBS")

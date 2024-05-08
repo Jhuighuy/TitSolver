@@ -16,50 +16,45 @@ on:
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Cancel previous runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 jobs:
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   build_ubuntu:
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     name: Ubuntu
-    runs-on: ubuntu-latest
-    container:
-      image: jhuighuy/tit-solver-base:latest
-    defaults:
-      run:
-        shell: bash
+
     strategy:
       matrix:
         compiler: [g++-13]
         configuration: [Debug, Release]
       fail-fast: false
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    runs-on: ubuntu-latest
+    container:
+      image: jhuighuy/tit-solver-base:latest
 
     steps:
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      - name: Fix repository ownership
+        run: |
+          git config --global --add safe.directory '*'
 
       - name: Build and test
         run: |
           # Build and test
-          ## Temporary fix for 'fatal: detected dubious ownership...'
-          git config --global --add safe.directory '*'
-          ## Run the build script.
           ./build/build.sh -j 4                                                \
-            --compiler=${{ matrix.compiler }}                                  \
-            --config=${{ matrix.configuration }}                               \
+            --compiler ${{ matrix.compiler }}                                  \
+            --config ${{ matrix.configuration }}                               \
             --test
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       - name: Upload test output
         uses: actions/upload-artifact@v3
@@ -68,95 +63,88 @@ jobs:
           name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: output/test_output
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   build_macos:
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     name: macOS
-    # TBB cannot compile on macos-latest, which is macos-12 at the moment.
-    runs-on: macos-13
+
+    runs-on: macos-latest
+
     strategy:
       matrix:
         compiler: [g++-13]
         configuration: [Debug, Release]
       fail-fast: false
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    env:
+      CXX: ${{ matrix.compiler }}
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
+      PIP_BREAK_SYSTEM_PACKAGES: 1
+      VCPKG_ROOT: /Users/Shared/vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: /Users/Shared/vcpkg_cache
 
     steps:
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
       - name: Install packages and tools
-        continue-on-error: true # might fail for unknown reason.
         run: |
           # Install packages and tools
           ## Fetch fresh packages, but do not upgrade them automatically.
-          ## Do not upgrade packages even if it will break other packages.
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
           brew update -q
           ## Install the toolchain.
-          brew install -q cmake gcc@13
+          brew install -q cmake
+          brew install -q gcc@13 || true # Might fail for unknown reason.
           ## Install LLVM and related tools.
           brew install -q llvm@18
-          export PATH="$(brew --prefix llvm@18)/bin:$PATH"
+          echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
           ## Install other tools.
           brew install -q gnu-sed diffutils
           ## Install Python tools.
           pip3 install --user --upgrade codespell
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-      - name: Update vcpkg packages
+      - name: Install vcpkg
         run: |
-          # Update vcpkg packages
-          ## Save the current directory.
-          WORK_DIR=$(pwd)
-          ## Update vcpkg packages.
-          cd $VCPKG_INSTALLATION_ROOT
-          git reset --hard
-          git checkout master
-          git pull
-          ./bootstrap-vcpkg.sh
-          ## Stamp the last vcpkg commit hash and the current compiler.
-          VCPKG_HASH_FILE="$WORK_DIR/vcpkg.commit_hash"
-          echo "# vcpkg cache info." > "$VCPKG_HASH_FILE"
-          git rev-parse HEAD >> "$VCPKG_HASH_FILE"
-          ${{ matrix.compiler }} --version >> "$VCPKG_HASH_FILE"
+          # Install vcpkg
+          git clone --depth=1 https://github.com/microsoft/vcpkg.git $VCPKG_ROOT
+          $VCPKG_ROOT/bootstrap-vcpkg.sh
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-      - name: Cache vcpkg packages
-        uses: actions/cache@v4
+      - name: Restore vcpkg packages cache
+        id: vcpkg-cache-restore
+        uses: actions/cache/restore@v4
         with:
-          path: output/cmake_output/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.*') }}
-          save-always: true
+          path: |
+            ${{ env.VCPKG_ROOT }}/installed
+            ${{ env.VCPKG_ROOT }}/buildtrees
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          # Use the run ID as the cache key, this way the cache is updated
+          # after each run.
+          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ github.run_id }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      - name: Install vcpkg packages
+        run: |
+          # Install vcpkg packages
+          mkdir -p $VCPKG_DEFAULT_BINARY_CACHE || true
+          $VCPKG_ROOT/vcpkg install
+
+      - name: Update vcpkg packages cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}/installed
+            ${{ env.VCPKG_ROOT }}/buildtrees
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
 
       - name: Build and test
         run: |
           # Build and test
           ./build/build.sh -j 4                                                \
-            --compiler=${{ matrix.compiler }}                                  \
-            --config=${{ matrix.configuration }}                               \
+            --compiler ${{ matrix.compiler }}                                  \
+            --config ${{ matrix.configuration }}                               \
             --test
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       - name: Upload test output
         uses: actions/upload-artifact@v3
@@ -164,10 +152,6 @@ jobs:
         with:
           name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: output/test_output
-
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
