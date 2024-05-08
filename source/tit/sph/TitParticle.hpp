@@ -164,9 +164,9 @@ public:
     using PV = ParticleView<ParticleArray>;
     // -------------------------------------------------------------------------
     // STEP I: neighbors search.
-    auto positions = array().views() | //
-                     std::views::transform([](PV a) { return a[r]; });
-    auto const engine = engine_factory_(std::move(positions));
+    auto const positions = array().views() | //
+                           std::views::transform([](PV a) { return a[r]; });
+    auto const engine = engine_factory_(positions);
     adjacency_.clear();
     fixed_.clear();
     interp_adjacency_.clear();
