@@ -8,6 +8,7 @@ add_tit_library(
     core
   SOURCES
     "basic_types.hpp"
+    "checks.cpp"
     "checks.hpp"
     "enum_utils.hpp"
     "graph.hpp"
