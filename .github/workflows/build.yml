@@ -88,6 +88,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Select the latest Xcode
+        run: |
+          # Select the latest Xcode
+          FOUND_XCODES=($(find /Applications -maxdepth 1 -name 'Xcode*.app' | sort -r))
+          XCODE="${FOUND_XCODES[0]}"
+          echo "Selected Xcode: $XCODE"
+          sudo xcode-select --switch "$XCODE"
+
       - name: Install packages and tools
         run: |
           # Install packages and tools
