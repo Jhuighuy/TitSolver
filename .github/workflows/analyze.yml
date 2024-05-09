@@ -86,7 +86,7 @@ jobs:
             --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
 
       - name: Upload test output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-output-${{ runner.os }}-${{ matrix.compiler }}-Coverage

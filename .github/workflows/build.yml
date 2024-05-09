@@ -140,13 +140,13 @@ jobs:
       - name: Build and test
         run: |
           # Build and test
-          ./build/build.sh -j 4                                                \
+          ./build/build.sh -j 3                                                \
             --compiler ${{ matrix.compiler }}                                  \
             --config ${{ matrix.configuration }}                               \
             --test
 
       - name: Upload test output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
