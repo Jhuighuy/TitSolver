@@ -56,7 +56,7 @@ workflows:
           matrix: # Extra indentation is intentional.
             parameters:
               os: [linux-arm64]
-              compiler: ["g++-13"]
+              compiler: ["g++-14"]
               configuration: ["Debug"] # Minimize build time, thus only Debug.
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

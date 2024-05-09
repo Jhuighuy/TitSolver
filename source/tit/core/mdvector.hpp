@@ -96,20 +96,11 @@ public:
       -> decltype(auto) {
     // Compute an offset to the data position.
     size_t offset = 0;
-#ifdef __clang__
-    // TODO: clang doesn't like `std::views::zip`.
-    auto const index_pack = make_array<Rank, size_t>(indices...);
-    for (size_t i = 0; i < Rank; ++i) {
-      TIT_ASSERT(index_pack[i] < shape_[i], "Index is out of range.");
-      offset = index_pack[i] + offset * shape_[i];
-    }
-#else
     for (auto const index_pack = make_array<Rank, size_t>(indices...);
          auto const [extent, index] : std::views::zip(shape_, index_pack)) {
       TIT_ASSERT(index < extent, "Index is out of range!");
       offset = index + offset * extent;
     }
-#endif
     TIT_ASSERT(offset < vals_.size(), "Offset is out of range!");
     // Return with result.
     if constexpr (constexpr auto IndicesRank = sizeof...(Indices);

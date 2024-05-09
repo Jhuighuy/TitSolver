@@ -19,7 +19,7 @@
   "configurations": [
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     {
-      "name": "macOS (arm64-gcc-13)",
+      "name": "macOS (arm64-gcc-14)",
       "includePath": [
         "${includePath}",
         "${brewIncludePath}",
@@ -28,14 +28,14 @@
       "defines": [
         "${defines}"
       ],
-      "compilerPath": "/opt/homebrew/bin/gcc-13",
+      "compilerPath": "/opt/homebrew/bin/gcc-14",
       "cStandard": "c11",
       "cppStandard": "c++23",
       "intelliSenseMode": "macos-gcc-arm64"
     },
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     {
-      "name": "macOS (arm64-gcc-13)",
+      "name": "macOS (x64-gcc-14)",
       "includePath": [
         "${includePath}",
         "${brewIncludePath}",
@@ -44,7 +44,7 @@
       "defines": [
         "${defines}"
       ],
-      "compilerPath": "/opt/homebrew/bin/gcc-13",
+      "compilerPath": "/opt/homebrew/bin/gcc-14",
       "cStandard": "c11",
       "cppStandard": "c++23",
       "intelliSenseMode": "macos-gcc-x64"
