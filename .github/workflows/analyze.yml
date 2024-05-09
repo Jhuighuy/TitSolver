@@ -74,14 +74,13 @@ jobs:
           ## Setup the actual `gcov` executable path.
           GCOV_EXE="${{ matrix.compiler }}"
           GCOV_EXE="${GCOV_EXE/g++/gcov}"
-          ## See reasons for using `--exclude-...` and `--decisions` below:
+          ## See rational for using `--exclude-...` below:
           ## https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
           gcovr                                                                \
             --exclude "output/.*" --exclude "tests/.*" --exclude ".*\.test.*"  \
             --gcov-executable "$GCOV_EXE"                                      \
             --exclude-unreachable-branches                                     \
             --exclude-throw-branches                                           \
-            --decisions                                                        \
             --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"                    \
             --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
 
