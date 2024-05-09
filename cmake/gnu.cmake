@@ -100,6 +100,7 @@ set(
   ${GNU_COMPILE_OPTIONS_DEBUG}
   # Enable code coverage instrumentation during compilation.
   --coverage
+  -fprofile-arcs
   -fprofile-update=atomic
   # Pass a definition that we are compiling with gcov.
   -DTIT_HAVE_GCOV=1
@@ -147,6 +148,7 @@ set(
   ${GNU_LINK_OPTIONS}
   # Enables code coverage instrumentation during linking.
   --coverage
+  -fprofile-arcs
   -fprofile-update=atomic)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
