@@ -51,7 +51,7 @@ jobs:
           # Fetch all history for proper analysis and coverage reports.
           fetch-depth: 0
 
-      - name: Install sonar-scanner and build-wrapper
+      - name: Install Sonar Scanner
         uses: SonarSource/sonarcloud-github-c-cpp@v2
 
       - name: Fix repository ownership
@@ -92,12 +92,13 @@ jobs:
           path: output/test_output
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ env.CODECOV_COVERAGE_REPORT_PATH }}
+          disable_search: true
 
-      - name: Run sonar-scanner
+      - name: Run Sonar Scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
