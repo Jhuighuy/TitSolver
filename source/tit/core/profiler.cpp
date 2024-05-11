@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <format>
 #include <functional>
 #include <mutex>
 #include <string>

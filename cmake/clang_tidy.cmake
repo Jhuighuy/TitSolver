@@ -9,11 +9,11 @@ include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find clang-tidy (at least 18.1). Prefer version-suffixed executables.
+# Find clang-tidy (at least 18.1.3). Prefer version-suffixed executables.
 find_program_with_version(
   CLANG_TIDY_EXE
   NAMES "clang-tidy-18" "clang-tidy"
-  MIN_VERSION "18.1")
+  MIN_VERSION "18.1.3")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

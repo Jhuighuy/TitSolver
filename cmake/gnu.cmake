@@ -132,14 +132,6 @@ set(GNU_LINK_OPTIONS
   # Passes all symbols from the object files to the linker, allowing them to be
   # available at runtime.
   -rdynamic)
-if(APPLE)
-  # Enable "classic" linker for macOS (if possible).
-  include(CheckLinkerFlag)
-  check_linker_flag(CXX -ld_classic HAVE_LD_CLASSIC)
-  if(HAVE_LD_CLASSIC)
-    list(APPEND GNU_LINK_OPTIONS -ld_classic)
-  endif()
-endif()
 
 # Set the link options for "Coverage" configuration.
 set(

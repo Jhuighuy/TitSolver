@@ -16,9 +16,7 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_main(int argc,
-              char** argv,
-              main_func_t const& main_func) noexcept -> int {
+auto run_main(int argc, char** argv, main_func_t const& main_func) -> int {
   // Setup signal handler.
   FatalSignalHandler const handler{};
   // Enable profiling.

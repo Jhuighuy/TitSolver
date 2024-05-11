@@ -9,7 +9,7 @@ include_guard()
 
 # Set minimal compiler version.
 # Disabled, since we do not officially support clang yet.
-# set(CLANG_MIN_VERSION "18.1")
+# set(CLANG_MIN_VERSION "18.1.5")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -68,13 +68,39 @@ set(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Set common compile options.
+set(
+  CLANG_COMPILE_OPTIONS
+  # Always store debug information.
+  -g
+  # Generate machine code for the host system's architecture.
+  -march=native)
+
+# Set compile options for "Release" configuration.
+set(
+  CLANG_COMPILE_OPTIONS_RELEASE
+  # Inherit common options.
+  ${CLANG_COMPILE_OPTIONS}
+  # Enable aggressive optimization levels to maximize performance.
+  -Ofast
+  # Enables aggressive floating-point expression contraction.
+  -ffp-contract=fast
+  -finline-functions
+  -funroll-loops
+  -fomit-frame-pointer
+  -ffinite-loops
+  -ffinite-math-only
+  -fno-stack-protector)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ##
 ## Add compilation options that switch clang from libc++ to libstdcpp++ when
 ## compiling with GCC.
 ##
 ## * std::views::chunk is missing.
 ## * std::views::enumerate is missing.
-## * std::format_string is not detected by include-cleaner.
+## * Some problems with umbrella headers in include-cleaner.
 ##
 function(clang_force_use_libstdcpp OPTIONS_VAR)
   list(
