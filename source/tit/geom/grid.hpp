@@ -105,15 +105,8 @@ private:
     // Pack the points into a multivector.
     cell_points_.assemble_tall(
         total_num_cells,
-        std::views::enumerate(points_),
-        [this](auto index_and_point) {
-          auto const& [_, point] = index_and_point;
-          return _point_to_cell_index(point);
-        },
-        [](auto index_and_point) {
-          auto const& [point_index, _] = index_and_point;
-          return point_index;
-        });
+        std::views::iota(size_t{0}, points_.size()),
+        [this](size_t index) { return _point_to_cell_index(points_[index]); });
   }
 
 public:

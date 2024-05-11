@@ -56,14 +56,14 @@ public:
     // Integrate particle density.
     equations_.compute_density(particles, adjacent_particles);
     if constexpr (has<PV>(drho_dt)) {
-      par::static_for_each(particles.views(), [&](PV a) {
+      par::for_each(particles.views(), [&](PV a) {
         if (fixed[a]) return;
         rho[a] += dt * drho_dt[a];
       });
     }
     // Integrate particle velocty (internal enegry, and rest).
     equations_.compute_forces(particles, adjacent_particles);
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];

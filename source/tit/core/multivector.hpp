@@ -119,7 +119,7 @@ public:
     // Compute value ranges.
     /// First compute how many values there are per each index.
     val_ranges_.clear(), val_ranges_.resize(count + 1);
-    par::static_for_each(handles, [&](auto const& handle) {
+    par::for_each(handles, [&](auto const& handle) {
       auto const index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       par::fetch_and_add(val_ranges_[index + 1], 1);
@@ -133,7 +133,7 @@ public:
     /// then increment the position.
     auto const num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
-    par::static_for_each(handles, [&](auto const& handle) {
+    par::for_each(handles, [&](auto const& handle) {
       auto const index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       auto const addr = par::fetch_and_add(val_ranges_[index], 1);
