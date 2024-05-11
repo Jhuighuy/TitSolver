@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <cmath>
 #include <concepts>
 #include <limits>
 #include <numbers>
@@ -205,7 +204,6 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
     }
   }
   SUBCASE("sin") {
-    using std::sin;
     SUBCASE("success") {
       // Ensure the solver works for a bit more complex functions.
       auto const f = [](Num x) { return sin(x) + Num{0.5}; };
