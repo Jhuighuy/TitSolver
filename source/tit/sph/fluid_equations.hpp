@@ -61,7 +61,7 @@ public:
   constexpr void init(ParticleArray& particles) const {
     TIT_PROFILE_SECTION("tit::FluidEquations::init()");
     using PV = ParticleView<ParticleArray>;
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       // Initialize particle pressure (and sound speed).
       eos_.compute_pressure(a);
       // Initialize particle artificial viscosity switch value.
@@ -172,7 +172,7 @@ public:
     TIT_PROFILE_SECTION("tit::FluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
     // Clean density-related fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Density fields.
       if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
       if constexpr (has<PV>(grad_rho)) grad_rho[a] = {};
@@ -208,7 +208,7 @@ public:
       }
     });
     // Renormalize fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       // Do not renormalize fixed particles.
       if (fixed[a]) return;
       /// Renormalize density (if possible).
@@ -249,7 +249,7 @@ public:
     TIT_PROFILE_SECTION("tit::FluidEquations::compute_forces()");
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Compute pressure (and sound speed).
       eos_.compute_pressure(a);
       /// Clean velocity-related fields.
@@ -330,7 +330,7 @@ public:
       }
 #endif
     });
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
 #if WITH_GRAVITY
       // TODO: Gravity.

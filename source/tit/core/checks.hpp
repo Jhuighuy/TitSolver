@@ -14,15 +14,16 @@
 ///
 /// Do not use this macro for user input, but just to check the internal logic.
 /// If the expression does not hold, the entire process is aborted (in constant
-/// evaluation context compilation is aborted).
+/// evaluation context, compilation is aborted).
 #define TIT_ENSURE(expr, message) tit::impl::run_check((expr), (#expr), message)
 
 /// Check that the given expression holds (in debug mode).
 ///
-/// In release mode this macro hints the compiler that the given check always
-/// holds, thus opening a possibility for extra optimization.
+/// Do not use this macro for user input, but just to check the internal logic.
+/// If the expression does not hold, the entire process is aborted (in constant
+/// evaluation context, compilation is aborted).
 #ifdef NDEBUG
-#define TIT_ASSERT(expr, message) [[assume((expr))]]
+#define TIT_ASSERT(expr, message) static_cast<void>(expr)
 #else
 #define TIT_ASSERT(expr, message) TIT_ENSURE((expr), (message))
 #endif
