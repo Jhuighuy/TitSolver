@@ -15,6 +15,9 @@ namespace {
 #define NUM_TYPES double, Strict<double>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Vec
+//
 
 TEST_CASE_TEMPLATE("Vec", Num, NUM_TYPES) {
   SUBCASE("zero initialization") {
@@ -53,6 +56,9 @@ TEST_CASE_TEMPLATE("Vec", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Vector arthimetic operations
+//
 
 TEST_CASE_TEMPLATE("Vec::operator+", Num, NUM_TYPES) {
   SUBCASE("normal") {
@@ -133,6 +139,9 @@ TEST_CASE_TEMPLATE("Vec::operator/", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Vector comparison operations
+//
 
 TEST_CASE_TEMPLATE("Vec::operator==", Num, NUM_TYPES) {
   CHECK(all(Vec{Num{1}, Num{2}} == Vec{Num{1}, Num{2}}));
@@ -240,6 +249,25 @@ TEST_CASE_TEMPLATE("Vec::max_value", Num, NUM_TYPES) {
   CHECK(max_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{4});
   CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{6});
   CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{6});
+  // Case with 9 and 17 elements to cover the SIMD implementation.
+  CHECK(max_value(Vec<Num, 9>{8, 1, 7, 6, 9, 5, 4, 3, 2}) == Num{9});
+  CHECK(max_value(Vec<Num, 17>{16,
+                               15,
+                               14,
+                               13,
+                               12,
+                               11,
+                               10, //
+                               9,
+                               8,
+                               7,
+                               6,
+                               5,
+                               4,
+                               3,
+                               2,
+                               1,
+                               17}) == Num{17});
 }
 
 TEST_CASE_TEMPLATE("Vec::min_value_index", Num, NUM_TYPES) {
@@ -264,10 +292,47 @@ TEST_CASE_TEMPLATE("Vec::dot", Num, NUM_TYPES) {
             Vec{Num{3}, Num{4}}) == Num{11});
   CHECK(dot(Vec{Num{1}, Num{2}, Num{3}}, //
             Vec{Num{4}, Num{5}, Num{6}}) == Num{32});
-  CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}},
+  CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}}, //
             Vec{Num{5}, Num{6}, Num{7}, Num{8}}) == Num{70});
-  CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}},
+  CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}}, //
             Vec{Num{6}, Num{7}, Num{8}, Num{9}, Num{10}}) == Num{130});
+  // Case with 9 and 17 elements to cover the SIMD implementation.
+  CHECK(dot(Vec<Num, 9>{1, 2, 3, 4, 5, 6, 7, 8, 9},
+            Vec<Num, 9>{10, 11, 12, 13, 14, 15, 16, 17, 18}) == Num{690});
+  CHECK(dot(Vec<Num, 17>{1,
+                         2,
+                         3,
+                         4,
+                         5,
+                         6,
+                         7,
+                         8,
+                         9, //
+                         10,
+                         11,
+                         12,
+                         13,
+                         14,
+                         15,
+                         16,
+                         17},
+            Vec<Num, 17>{18,
+                         19,
+                         20,
+                         21,
+                         22,
+                         23,
+                         24,
+                         25, //
+                         26,
+                         27,
+                         28,
+                         29,
+                         30,
+                         31,
+                         32,
+                         33,
+                         34}) == Num{4386});
 }
 
 TEST_CASE_TEMPLATE("Vec::norm2", Num, NUM_TYPES) {

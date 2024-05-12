@@ -34,6 +34,8 @@ BreakInheritanceList: AfterColon
 ColumnLimit: 80
 CompactNamespaces: false
 ContinuationIndentWidth: 4
+IfMacros:
+  - 'TIT_IF_SIMD_AVALIABLE'
 IncludeIsMainRegex: "_never_matches_"
 IndentCaseLabels: true
 IndentRequiresClause: true

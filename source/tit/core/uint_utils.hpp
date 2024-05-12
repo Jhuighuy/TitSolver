@@ -7,6 +7,9 @@
 
 #include <bit>
 #include <concepts>
+#include <type_traits>
+
+#include "tit/core/basic_types.hpp"
 
 namespace tit {
 
@@ -37,6 +40,39 @@ template<std::unsigned_integral UInt>
 constexpr auto align_up_to_power_of_two(UInt n) noexcept -> UInt {
   return std::bit_ceil(n);
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Signed integer representation of the argument.
+template<std::integral Int>
+constexpr auto to_signed(Int a) noexcept {
+  return static_cast<std::make_signed_t<Int>>(a);
+}
+
+/// Unsigned integer representation of the argument.
+template<std::integral Int>
+constexpr auto to_unsigned(Int a) noexcept {
+  return static_cast<std::make_unsigned_t<Int>>(a);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Bitwise representation of the argument.
+template<class T>
+// requires std::integral<T> || std::floating_point<T>
+constexpr auto to_bits(T a) noexcept {
+  constexpr auto S = sizeof(T);
+  if constexpr (S == sizeof(uint8_t)) return std::bit_cast<uint8_t>(a);
+  else if constexpr (S == sizeof(uint16_t)) return std::bit_cast<uint16_t>(a);
+  else if constexpr (S == sizeof(uint32_t)) return std::bit_cast<uint32_t>(a);
+  else if constexpr (S == sizeof(uint64_t)) return std::bit_cast<uint64_t>(a);
+  else static_assert(false);
+}
+
+/// Unsigned integral type of the same size.
+template<class T>
+// requires std::integral<T> || std::floating_point<T>
+using make_bits_t = decltype(to_bits(std::declval<T>()));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
