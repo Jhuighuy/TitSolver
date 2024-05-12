@@ -21,6 +21,7 @@ include(tit_testing)
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
+find_package(hwy CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
 # Setup output directories.

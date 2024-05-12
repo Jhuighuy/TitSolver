@@ -5,6 +5,7 @@
   "dependencies": [
     "doctest",
     "hdf5",
+    "highway",
     "nanobench",
     "tbb"
   ]
