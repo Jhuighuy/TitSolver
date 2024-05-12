@@ -60,6 +60,7 @@ add_tit_executable(
     "vec/vec.test.cpp"
     "vec/vec_mask.test.cpp"
   DEPENDS
-    tit::core tit::testing)
+    tit::core
+    tit::testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

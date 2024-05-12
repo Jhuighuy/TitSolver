@@ -13,7 +13,8 @@ add_tit_library(
     "kd_tree.hpp"
     "search_engine.hpp"
   DEPENDS
-    tit::core tit::par)
+    tit::core
+    tit::par)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -22,6 +23,7 @@ add_tit_executable(
     geom_tests
   SOURCES
   DEPENDS
-    tit::geom tit::testing)
+    tit::geom
+    tit::testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

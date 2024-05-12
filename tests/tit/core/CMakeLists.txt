@@ -5,8 +5,7 @@
 
 add_tit_test_from_target(
   tit::core_tests
-  NAME "tit/core/unit"
-  EXIT_CODE 0)
+  NAME "tit/core/unit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -18,7 +17,6 @@ add_tit_executable(
 add_tit_test_from_target(
   tit::core_catch_ctrl_c_test
   NAME "tit/core/catch_ctrl_c"
-  EXIT_CODE 0
   MATCH_STDERR "catch_ctrl_c_stderr.txt")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

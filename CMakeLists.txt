@@ -61,8 +61,7 @@ endforeach()
 # Link with the dependent libraries.
 target_link_libraries(
   tit_base INTERFACE
-  hdf5::hdf5-static
-  TBB::tbb TBB::tbbmalloc)
+  hdf5::hdf5-static)
 
 # Write "compile_flags.txt" based on the container library.
 write_compile_flags(tit::base)

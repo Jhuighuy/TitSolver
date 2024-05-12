@@ -14,6 +14,7 @@ add_tit_library(
     "test.hpp"
     "test_main.cpp"
   DEPENDS
-    tit::base doctest::doctest)
+    tit::base
+    doctest::doctest)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -18,7 +18,9 @@ add_tit_library(
     "time_integrator.hpp"
     "TitParticle.hpp"
   DEPENDS
-    tit::core tit::par tit::geom)
+    tit::core
+    tit::geom
+    tit::par)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -27,6 +29,7 @@ add_tit_executable(
     sph_tests
   SOURCES
   DEPENDS
-    tit::sph tit::testing)
+    tit::sph
+    tit::testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

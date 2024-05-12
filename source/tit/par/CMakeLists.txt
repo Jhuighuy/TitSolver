@@ -14,7 +14,9 @@ add_tit_library(
     "task_group.hpp"
     "thread.hpp"
   DEPENDS
-    tit::core)
+    tit::core
+    TBB::tbb
+    TBB::tbbmalloc)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -27,6 +29,7 @@ add_tit_executable(
     "memory_pool.test.cpp"
     "task_group.test.cpp"
   DEPENDS
-    tit::par tit::testing)
+    tit::par
+    tit::testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
