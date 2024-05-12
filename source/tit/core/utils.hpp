@@ -42,11 +42,11 @@ using carr_ref_t = T (&)[Size]; // NOLINT(*-c-arrays)
 
 /// Pack values into a padded array of given size.
 template<size_t Size, class T, class... Ts>
-  requires ((std::convertible_to<Ts, T> && ...) &&
+  requires ((std::constructible_from<T, Ts &&> && ...) &&
             ((sizeof...(Ts) == Size) ||
-             ((sizeof...(Ts) <= Size) && std::default_initializable<T>) ))
+             ((sizeof...(Ts) < Size) && std::default_initializable<T>) ))
 constexpr auto make_array(Ts&&... vals) -> std::array<T, Size> {
-  return {static_cast<T>(std::forward<Ts>(vals))...};
+  return {T(std::forward<Ts>(vals))...};
 }
 
 /// Fill an array of the given size initialized with the given value.

@@ -11,14 +11,11 @@
 namespace tit {
 namespace {
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// Use custom number type in this test to avoid vectorization.
-using Num = Strict<double>;
+#define NUM_TYPES double, Strict<double>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("VecMask") {
+TEST_CASE_TEMPLATE("VecMask", Num, NUM_TYPES) {
   SUBCASE("zero initialization") {
     VecMask<Num, 2> v{};
     CHECK_FALSE(v[0]);
@@ -56,66 +53,19 @@ TEST_CASE("VecMask") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("Vec::operator==") {
-  CHECK(all(Vec{1.0_d, 2.0_d} == Vec{1.0_d, 2.0_d}));
-  CHECK_FALSE(any(Vec{1.0_d, 2.0_d} == Vec{3.0_d, 4.0_d}));
-}
-
-TEST_CASE("Vec::operator!=") {
-  CHECK(all(Vec{1.0_d, 2.0_d} != Vec{3.0_d, 4.0_d}));
-  CHECK_FALSE(any(Vec{1.0_d, 2.0_d} != Vec{1.0_d, 2.0_d}));
-}
-
-TEST_CASE("Vec::operator<") {
-  CHECK(all(Vec{1.0_d, 2.0_d} < Vec{3.0_d, 4.0_d}));
-  CHECK_FALSE(any(Vec{3.0_d, 4.0_d} < Vec{1.0_d, 2.0_d}));
-}
-
-TEST_CASE("Vec::operator<=") {
-  CHECK(all(Vec{1.0_d, 2.0_d} <= Vec{1.0_d, 2.0_d}));
-  CHECK(all(Vec{1.0_d, 2.0_d} <= Vec{3.0_d, 4.0_d}));
-  CHECK_FALSE(any(Vec{3.0_d, 4.0_d} <= Vec{1.0_d, 2.0_d}));
-}
-
-TEST_CASE("Vec::operator>") {
-  CHECK(all(Vec{3.0_d, 4.0_d} > Vec{1.0_d, 2.0_d}));
-  CHECK_FALSE(any(Vec{1.0_d, 2.0_d} > Vec{3.0_d, 4.0_d}));
-}
-
-TEST_CASE("Vec::operator>=") {
-  CHECK(all(Vec{1.0_d, 2.0_d} >= Vec{1.0_d, 2.0_d}));
-  CHECK(all(Vec{3.0_d, 4.0_d} >= Vec{1.0_d, 2.0_d}));
-  CHECK_FALSE(any(Vec{1.0_d, 2.0_d} >= Vec{3.0_d, 4.0_d}));
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("VecMask::blend_zero") {
-  auto const m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
-  CHECK(all(blend_zero(m, Vec{1.0_d, 2.0_d}) == Vec{0.0_d, 2.0_d}));
-}
-
-TEST_CASE("VecMask::blend") {
-  auto const m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
-  CHECK(all(blend(m, Vec{1.0_d, 2.0_d}, Vec{3.0_d, 4.0_d}) == //
-            Vec{3.0_d, 2.0_d}));
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("VecMask::all_any") {
+TEST_CASE_TEMPLATE("VecMask::all_any", Num, NUM_TYPES) {
   SUBCASE("all") {
-    auto const m = Vec{1.0_d, 2.0_d} == Vec{1.0_d, 2.0_d};
+    auto const m = Vec{Num{1}, Num{2}} == Vec{Num{1}, Num{2}};
     CHECK(any(m));
     CHECK(all(m));
   }
   SUBCASE("any") {
-    auto const m = Vec{1.0_d, 2.0_d} == Vec{1.0_d, 3.0_d};
+    auto const m = Vec{Num{1}, Num{2}} == Vec{Num{1}, Num{3}};
     CHECK(any(m));
     CHECK_FALSE(all(m));
   }
   SUBCASE("none") {
-    auto const m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 4.0_d};
+    auto const m = Vec{Num{1}, Num{2}} == Vec{Num{3}, Num{4}};
     CHECK_FALSE(any(m));
     CHECK_FALSE(all(m));
   }

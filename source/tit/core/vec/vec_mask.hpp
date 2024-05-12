@@ -11,9 +11,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/math.hpp"
 #include "tit/core/utils.hpp"
-#include "tit/core/vec/vec.hpp"
 
 namespace tit {
 
@@ -55,92 +53,6 @@ private:
   std::array<bool, Dim> col_;
 
 }; // class VecMask
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Vector element-wise "equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator==(Vec<Num, Dim> const& a,
-                          Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] == b[i];
-  return m;
-}
-
-/// Vector element-wise "not equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator!=(Vec<Num, Dim> const& a,
-                          Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] != b[i];
-  return m;
-}
-
-/// Vector element-wise "less than" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator<(Vec<Num, Dim> const& a,
-                         Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] < b[i];
-  return m;
-}
-
-/// Vector element-wise "less than or equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator<=(Vec<Num, Dim> const& a,
-                          Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] <= b[i];
-  return m;
-}
-
-/// Vector element-wise "greater than" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator>(Vec<Num, Dim> const& a,
-                         Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] > b[i];
-  return m;
-}
-
-/// Vector element-wise "greater than or equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator>=(Vec<Num, Dim> const& a,
-                          Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] >= b[i];
-  return m;
-}
-
-/// Vector element-wise "approximately equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto approx_equal_to(Vec<Num, Dim> const& a,
-                               Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = approx_equal_to(a[i], b[i]);
-  return m;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Blend vector and a zero vector based on a boolean mask.
-template<class Num, size_t Dim>
-constexpr auto blend_zero(VecMask<Num, Dim> const& m,
-                          Vec<Num, Dim> const& a) -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : Num{0};
-  return r;
-}
-
-/// Blend two vectors based on a boolean mask.
-template<class Num, size_t Dim>
-constexpr auto blend(VecMask<Num, Dim> const& m,
-                     Vec<Num, Dim> const& a,
-                     Vec<Num, Dim> const& b) -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : b[i];
-  return r;
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
