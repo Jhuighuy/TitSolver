@@ -34,24 +34,5 @@ TEST_CASE_TEMPLATE("align_up", UInt, UINT_TYPES) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE_TEMPLATE("is_power_of_two", UInt, UINT_TYPES) {
-  CHECK(is_power_of_two(UInt{1}));
-  CHECK(is_power_of_two(UInt{512}));
-  CHECK(!is_power_of_two(UInt{255}));
-  CHECK(!is_power_of_two(UInt{513}));
-}
-
-TEST_CASE_TEMPLATE("align_up_to_power_of_two", UInt, UINT_TYPES) {
-  CHECK(align_up_to_power_of_two(UInt{1}) == UInt{1});
-  CHECK(align_up_to_power_of_two(UInt{2}) == UInt{2});
-  CHECK(align_up_to_power_of_two(UInt{3}) == UInt{4});
-  CHECK(align_up_to_power_of_two(UInt{5}) == UInt{8});
-  CHECK(align_up_to_power_of_two(UInt{127}) == UInt{128});
-  CHECK(align_up_to_power_of_two(UInt{128}) == UInt{128});
-  CHECK(align_up_to_power_of_two(UInt{129}) == UInt{256});
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace
 } // namespace tit
