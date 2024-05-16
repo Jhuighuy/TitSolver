@@ -22,6 +22,7 @@ add_tit_executable(
   NAME
     geom_tests
   SOURCES
+    "bbox.test.cpp"
   DEPENDS
     tit::geom
     tit::testing)

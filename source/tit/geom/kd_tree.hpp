@@ -100,7 +100,7 @@ private:
     auto bbox = BBox{points_[*first]};
     // TODO: refactor with `std::span`.
     // NOLINTNEXTLINE(*-bounds-pointer-arithmetic)
-    while (++first != last) bbox.update(points_[*first]);
+    while (++first != last) bbox.expand(points_[*first]);
     return bbox;
   }
 
