@@ -84,8 +84,8 @@ private:
   constexpr void _build_grid(Real spacing) {
     // Compute grid bounding box.
     grid_bbox_ = BBox{points_[0]};
-    for (auto const& p : points_ | std::views::drop(1)) grid_bbox_.update(p);
-    grid_bbox_.extend(0.5 * Point(spacing));
+    for (auto const& p : points_ | std::views::drop(1)) grid_bbox_.expand(p);
+    grid_bbox_.grow(0.5 * spacing);
     // Compute number of cells and cell sizes.
     auto const extents = grid_bbox_.extents();
     auto const approx_num_cells = ceil(extents / spacing);
