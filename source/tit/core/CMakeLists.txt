@@ -27,6 +27,11 @@ add_tit_library(
     "multivector.hpp"
     "profiler.cpp"
     "profiler.hpp"
+    "simd.hpp"
+    "simd/mask.hpp"
+    "simd/reg.hpp"
+    "simd/reg_mask.hpp"
+    "simd/traits.hpp"
     "system.cpp"
     "system.hpp"
     "time.hpp"
@@ -37,7 +42,8 @@ add_tit_library(
     "vec/vec.hpp"
     "vec/vec_mask.hpp"
   DEPENDS
-    tit::base)
+    tit::base
+    hwy::hwy)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -54,6 +60,9 @@ add_tit_executable(
     "math.test.cpp"
     "meta.test.cpp"
     "mdvector.test.cpp"
+    "simd/mask.test.cpp"
+    "simd/reg.test.cpp"
+    "simd/reg_mask.test.cpp"
     "system.test.cpp"
     "time.test.cpp"
     "uint_utils.test.cpp"
