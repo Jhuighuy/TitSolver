@@ -243,7 +243,7 @@ public:
     constexpr auto wi = Vec{Num{0.25}, Num{-1.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Num, 2>(q);
-    return sum(blend_zero(qv < qi, wi * pow3(qi - qv)));
+    return sum(filter(qv < qi, wi * pow3(qi - qv)));
 #else
     auto W = Num{0.0};
     if (q < qi[0]) {
@@ -263,7 +263,7 @@ public:
     constexpr auto wi = Vec{Num{0.25}, Num{-1.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Num, 2>(q);
-    return sum(blend_zero(qv < qi, wi * Num{-3.0} * pow2(qi - qv)));
+    return sum(filter(qv < qi, wi * Num{-3.0} * pow2(qi - qv)));
 #else
     auto dW_dq = Num{0.0};
     if (q < qi[0]) {
@@ -344,7 +344,7 @@ public:
     constexpr auto wi = Vec{Num{1.0}, Num{-5.0}, Num{10.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Num, 3>(q);
-    return sum(blend_zero(qv < qi, wi * pow4(qi - qv)));
+    return sum(filter(qv < qi, wi * pow4(qi - qv)));
 #else
     auto W = Num{0.0};
     if (q < qi[0]) {
@@ -367,7 +367,7 @@ public:
     constexpr auto wi = Vec{Num{1.0}, Num{-5.0}, Num{10.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Num, 3>(q);
-    return sum(blend_zero(qv < qi, wi * Num{-4.0} * pow3(qi - qv)));
+    return sum(filter(qv < qi, wi * Num{-4.0} * pow3(qi - qv)));
 #else
     auto dW_dq = Num{0.0};
     if (q < qi[0]) {
@@ -414,7 +414,7 @@ public:
     constexpr auto wi = Vec{Num{1.0}, Num{-6.0}, Num{15.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Num, 3>(q);
-    return sum(blend_zero(qv < qi, wi * pow5(qi - qv)));
+    return sum(filter(qv < qi, wi * pow5(qi - qv)));
 #else
     auto W = Num{0.0};
     if (q < qi[0]) {
@@ -437,7 +437,7 @@ public:
     constexpr auto wi = Vec{Num{1.0}, Num{-6.0}, Num{15.0}};
 #if TIT_BRANCHLESS_KERNELS
     auto const qv = Vec<Num, 3>(q);
-    return sum(blend_zero(qv < qi, wi * Num{-5.0} * pow4(qi - qv)));
+    return sum(filter(qv < qi, wi * Num{-5.0} * pow4(qi - qv)));
 #else
     auto dW_dq = Num{0.0};
     if (q < qi[0]) {

@@ -182,13 +182,6 @@ constexpr auto approx_equal_to(Num a, Num b) -> bool {
   return is_tiny(a - b);
 }
 
-inline namespace deprecated_names {
-template<class Num>
-constexpr auto is_zero(Num a) noexcept -> bool {
-  return is_tiny(a);
-}
-} // namespace deprecated_names
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Newton-Raphson solver status.

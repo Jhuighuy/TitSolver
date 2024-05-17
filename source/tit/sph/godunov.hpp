@@ -137,7 +137,7 @@ public:
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
         });
-      } else if (!is_zero(S)) {
+      } else if (!is_tiny(S)) {
         rho[a] = {};
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {

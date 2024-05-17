@@ -90,14 +90,14 @@ TEST_CASE("Vec::operator>=") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("VecMask::blend_zero") {
+TEST_CASE("VecMask::filter") {
   auto const m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
-  CHECK(all(blend_zero(m, Vec{1.0_d, 2.0_d}) == Vec{0.0_d, 2.0_d}));
+  CHECK(all(filter(m, Vec{1.0_d, 2.0_d}) == Vec{0.0_d, 2.0_d}));
 }
 
-TEST_CASE("VecMask::blend") {
+TEST_CASE("VecMask::select") {
   auto const m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
-  CHECK(all(blend(m, Vec{1.0_d, 2.0_d}, Vec{3.0_d, 4.0_d}) == //
+  CHECK(all(select(m, Vec{1.0_d, 2.0_d}, Vec{3.0_d, 4.0_d}) == //
             Vec{3.0_d, 2.0_d}));
 }
 

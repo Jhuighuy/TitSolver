@@ -117,7 +117,7 @@ public:
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
         });
-      } else if (!is_zero(S)) {
+      } else if (!is_tiny(S)) {
         rho[a] = {};
         v[a] = {};
         std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
@@ -213,7 +213,7 @@ public:
       if (fixed[a]) return;
       /// Renormalize density (if possible).
       if constexpr (has<PV>(S)) {
-        if (!is_zero(S[a])) rho[a] /= S[a];
+        if (!is_tiny(S[a])) rho[a] /= S[a];
       }
       /// Renormalize density gradient (if possible).
       if constexpr (has<PV>(L)) {

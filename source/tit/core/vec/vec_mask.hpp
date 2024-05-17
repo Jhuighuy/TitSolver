@@ -125,8 +125,8 @@ constexpr auto approx_equal_to(Vec<Num, Dim> const& a,
 
 /// Blend vector and a zero vector based on a boolean mask.
 template<class Num, size_t Dim>
-constexpr auto blend_zero(VecMask<Num, Dim> const& m,
-                          Vec<Num, Dim> const& a) -> Vec<Num, Dim> {
+constexpr auto filter(VecMask<Num, Dim> const& m,
+                      Vec<Num, Dim> const& a) -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : Num{0};
   return r;
@@ -134,9 +134,9 @@ constexpr auto blend_zero(VecMask<Num, Dim> const& m,
 
 /// Blend two vectors based on a boolean mask.
 template<class Num, size_t Dim>
-constexpr auto blend(VecMask<Num, Dim> const& m,
-                     Vec<Num, Dim> const& a,
-                     Vec<Num, Dim> const& b) -> Vec<Num, Dim> {
+constexpr auto select(VecMask<Num, Dim> const& m,
+                      Vec<Num, Dim> const& a,
+                      Vec<Num, Dim> const& b) -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : b[i];
   return r;
