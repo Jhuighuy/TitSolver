@@ -12,7 +12,7 @@
 
 # Configuration files.
 !.git*
-!/.clang*
+!/.clang-*
 !/sonar-project.properties
 !/vcpkg.json
 
