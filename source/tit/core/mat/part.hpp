@@ -37,7 +37,7 @@ inline constexpr bool is_flags_enum_v<MatPart> = true;
 template<MatPart Part>
 struct MatPartAt {
   template<class Num, size_t Dim>
-  static constexpr auto operator()(Mat<Num, Dim> const& A,
+  static constexpr auto operator()(const Mat<Num, Dim>& A,
                                    size_t i,
                                    size_t j) -> Num {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
@@ -65,7 +65,7 @@ inline constexpr auto part_at = MatPartAt<Part>{};
 
 /// Copy the matrix part.
 template<MatPart Part, class Num, size_t Dim>
-constexpr auto copy_part(Mat<Num, Dim> const& A) -> Mat<Num, Dim> {
+constexpr auto copy_part(const Mat<Num, Dim>& A) -> Mat<Num, Dim> {
   Mat<Num, Dim> R;
   for (size_t i = 0; i < Dim; ++i) {
     for (size_t j = 0; j < Dim; ++j) R[i, j] = part_at<Part>(A, i, j);
@@ -75,7 +75,7 @@ constexpr auto copy_part(Mat<Num, Dim> const& A) -> Mat<Num, Dim> {
 
 /// Transpose the matrix.
 template<class Mat>
-constexpr auto transpose(Mat const& A) -> Mat {
+constexpr auto transpose(const Mat& A) -> Mat {
   using enum MatPart;
   return copy_part<lower | diag | upper | transposed>(A);
 }
@@ -88,7 +88,7 @@ template<MatPart Part,
          class Num,
          size_t Dim,
          mat_multiplier<Mat<Num, Dim>> Mult>
-constexpr void part_solve_inplace(Mat<Num, Dim> const& A, Mult& x) {
+constexpr void part_solve_inplace(const Mat<Num, Dim>& A, Mult& x) {
   using enum MatPart;
   constexpr MatPartAt<Part> at{};
   static_assert(Part & (diag | unit), "Diagonal bit must be set!");
@@ -111,7 +111,7 @@ constexpr void part_solve_inplace(Mat<Num, Dim> const& A, Mult& x) {
 /// Partially solve matrix equation inplace:
 /// `x := copy_part<Parts>(A)^-1 * ... * x`.
 template<MatPart... Parts, class Mat, mat_multiplier<Mat> Mult>
-constexpr void part_solve_inplace(Mat const& A, Mult& x) {
+constexpr void part_solve_inplace(const Mat& A, Mult& x) {
   (part_solve_inplace<Parts>(A, x), ...);
 }
 

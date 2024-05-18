@@ -33,7 +33,7 @@ TEST_CASE("par::num_threads") {
       // Pretend we are doing some work.
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       // Record ID of the current thread.
-      std::scoped_lock const lock{mutex};
+      const std::scoped_lock lock{mutex};
       worker_thread_ids.insert(std::this_thread::get_id());
     });
     // Amount of the recorded worker threads should match the value that we've

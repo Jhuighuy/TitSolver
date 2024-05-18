@@ -33,14 +33,14 @@ public:
   }
 
   /// Compare two numbers by value.
-  constexpr auto operator<=>(Strict const&) const noexcept = default;
+  constexpr auto operator<=>(const Strict&) const noexcept = default;
 
   /// Get the underlying value.
   /// @{
   constexpr auto get() noexcept -> Num& {
     return val_;
   }
-  constexpr auto get() const noexcept -> Num const& {
+  constexpr auto get() const noexcept -> const Num& {
     return val_;
   }
   /// @}
@@ -75,72 +75,72 @@ constexpr auto operator""_ld(long double val) noexcept {
 
 /// Number unary plus operator.
 template<class Num>
-constexpr auto operator+(Strict<Num> const& a) -> Strict<Num> {
+constexpr auto operator+(const Strict<Num>& a) -> Strict<Num> {
   return Strict{+a.get()};
 }
 
 /// Number addition.
 template<class Num>
-constexpr auto operator+(Strict<Num> const& a,
-                         Strict<Num> const& b) -> Strict<Num> {
+constexpr auto operator+(const Strict<Num>& a,
+                         const Strict<Num>& b) -> Strict<Num> {
   return Strict{a.get() + b.get()};
 }
 
 /// Number addition with assignment.
 template<class Num>
 constexpr auto operator+=(Strict<Num>& a,
-                          Strict<Num> const& b) -> Strict<Num>& {
+                          const Strict<Num>& b) -> Strict<Num>& {
   a.get() += b.get();
   return a;
 }
 
 /// Number negation.
 template<class Num>
-constexpr auto operator-(Strict<Num> const& a) -> Strict<Num> {
+constexpr auto operator-(const Strict<Num>& a) -> Strict<Num> {
   return Strict{-a.get()};
 }
 
 /// Number subtraction.
 template<class Num>
-constexpr auto operator-(Strict<Num> const& a,
-                         Strict<Num> const& b) -> Strict<Num> {
+constexpr auto operator-(const Strict<Num>& a,
+                         const Strict<Num>& b) -> Strict<Num> {
   return Strict{a.get() - b.get()};
 }
 
 /// Number subtraction with assignment.
 template<class Num>
 constexpr auto operator-=(Strict<Num>& a,
-                          Strict<Num> const& b) -> Strict<Num>& {
+                          const Strict<Num>& b) -> Strict<Num>& {
   a.get() -= b.get();
   return a;
 }
 
 /// Number multiplication.
 template<class Num>
-constexpr auto operator*(Strict<Num> const& a,
-                         Strict<Num> const& b) -> Strict<Num> {
+constexpr auto operator*(const Strict<Num>& a,
+                         const Strict<Num>& b) -> Strict<Num> {
   return Strict{a.get() * b.get()};
 }
 
 /// Number multiplication with assignment.
 template<class Num>
 constexpr auto operator*=(Strict<Num>& a,
-                          Strict<Num> const& b) -> Strict<Num>& {
+                          const Strict<Num>& b) -> Strict<Num>& {
   a.get() *= b.get();
   return a;
 }
 
 /// Number division.
 template<class Num>
-constexpr auto operator/(Strict<Num> const& a,
-                         Strict<Num> const& b) -> Strict<Num> {
+constexpr auto operator/(const Strict<Num>& a,
+                         const Strict<Num>& b) -> Strict<Num> {
   return Strict{a.get() / b.get()};
 }
 
 /// Number division with assignment.
 template<class Num>
 constexpr auto operator/=(Strict<Num>& a,
-                          Strict<Num> const& b) -> Strict<Num>& {
+                          const Strict<Num>& b) -> Strict<Num>& {
   a.get() /= b.get();
   return a;
 }
@@ -149,7 +149,7 @@ constexpr auto operator/=(Strict<Num>& a,
 
 /// Number absolute value.
 template<class Num>
-constexpr auto abs(Strict<Num> const& a) -> Strict<Num> {
+constexpr auto abs(const Strict<Num>& a) -> Strict<Num> {
   return Strict{abs(a.get())};
 }
 
@@ -157,19 +157,19 @@ constexpr auto abs(Strict<Num> const& a) -> Strict<Num> {
 
 /// Compute the largest integer value not greater than the number.
 template<class Num>
-constexpr auto floor(Strict<Num> const& a) -> Strict<Num> {
+constexpr auto floor(const Strict<Num>& a) -> Strict<Num> {
   return Strict{floor(a.get())};
 }
 
 /// Compute the nearest integer value to the number.
 template<class Num>
-constexpr auto round(Strict<Num> const& a) -> Strict<Num> {
+constexpr auto round(const Strict<Num>& a) -> Strict<Num> {
   return Strict{round(a.get())};
 }
 
 /// Compute the smallest integer value not less than the number.
 template<class Num>
-constexpr auto ceil(Strict<Num> const& a) -> Strict<Num> {
+constexpr auto ceil(const Strict<Num>& a) -> Strict<Num> {
   return Strict{ceil(a.get())};
 }
 
@@ -178,25 +178,25 @@ constexpr auto ceil(Strict<Num> const& a) -> Strict<Num> {
 /// Raise the number to the power.
 /// @{
 template<class Num>
-constexpr auto pow(Strict<Num> const& a, Strict<Num> const& b) -> Strict<Num> {
+constexpr auto pow(const Strict<Num>& a, const Strict<Num>& b) -> Strict<Num> {
   return Strict{pow(a.get(), b.get())};
 }
 template<class Num>
-constexpr auto pow(Strict<Num> const& a,
-                   std::type_identity_t<Num> const& b) -> Strict<Num> {
+constexpr auto pow(const Strict<Num>& a,
+                   const std::type_identity_t<Num>& b) -> Strict<Num> {
   return Strict{pow(a.get(), b)};
 }
 /// @}
 
 /// Compute the square root of the number.
 template<class Num>
-constexpr auto sqrt(Strict<Num> const& a) -> Strict<Num> {
+constexpr auto sqrt(const Strict<Num>& a) -> Strict<Num> {
   return Strict{sqrt(a.get())};
 }
 
 /// Compute the reciprocal square root of the number.
 template<class Num>
-constexpr auto rsqrt(Strict<Num> const& a) -> Strict<Num> {
+constexpr auto rsqrt(const Strict<Num>& a) -> Strict<Num> {
   return Strict{rsqrt(a.get())};
 }
 

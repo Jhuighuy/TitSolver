@@ -79,7 +79,7 @@ private:
 /// lower-triangular matrix with unit diagonal and `U` is an upper-triangular
 /// matrix.
 template<class Num, size_t Dim>
-constexpr auto lu(Mat<Num, Dim> const& A) -> FactResult<FactLU<Num, Dim>> {
+constexpr auto lu(const Mat<Num, Dim>& A) -> FactResult<FactLU<Num, Dim>> {
   Mat<Num, Dim> LU;
   auto& L = LU;
   auto& U = LU;
@@ -116,7 +116,7 @@ public:
   constexpr explicit FactChol(Mat<Num, Dim> L) noexcept : L_{std::move(L)} {}
 
   /// `L` matrix factor.
-  constexpr auto L() const -> Mat<Num, Dim> const& {
+  constexpr auto L() const -> const Mat<Num, Dim>& {
     return L_;
   }
 
@@ -152,7 +152,7 @@ private:
 ///
 /// Only the lower-triangular part of the input matrix is accessed.
 template<class Num, size_t Dim>
-constexpr auto chol(Mat<Num, Dim> const& A) -> FactResult<FactChol<Num, Dim>> {
+constexpr auto chol(const Mat<Num, Dim>& A) -> FactResult<FactChol<Num, Dim>> {
   Mat<Num, Dim> L;
   for (size_t i = 0; i < Dim; ++i) {
     for (size_t j = 0; j < i; ++j) {
@@ -232,7 +232,7 @@ private:
 ///
 /// Only the lower-triangular part of the input matrix is accessed.
 template<class Num, size_t Dim>
-constexpr auto ldl(Mat<Num, Dim> const& A) -> FactResult<FactLDL<Num, Dim>> {
+constexpr auto ldl(const Mat<Num, Dim>& A) -> FactResult<FactLDL<Num, Dim>> {
   Mat<Num, Dim> LD;
   auto& L = LD;
   auto& D = LD;

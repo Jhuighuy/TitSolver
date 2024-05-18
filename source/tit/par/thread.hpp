@@ -41,7 +41,7 @@ inline auto thread_index() noexcept -> size_t {
 /// @{
 template<class Range, class Func>
 void for_each(Range&& range, Func&& func) noexcept {
-  auto const blocked_range =
+  const auto blocked_range =
       tbb::blocked_range{std::begin(range), std::end(range)};
   tbb::parallel_for(blocked_range, [&](auto subrange) {
     std::ranges::for_each(subrange, func);
@@ -58,9 +58,9 @@ void for_each(std::ranges::join_view<Range> range, Func&& func) noexcept {
 /// @{
 template<class Range, class Func>
 void static_for_each(Range&& range, Func&& func) noexcept {
-  auto const partition_size = std::size(range) / num_threads();
-  auto const partition_rem = std::size(range) % num_threads();
-  auto const partition_first = [&](size_t thread) {
+  const auto partition_size = std::size(range) / num_threads();
+  const auto partition_rem = std::size(range) % num_threads();
+  const auto partition_first = [&](size_t thread) {
     return thread * partition_size + std::min(thread, partition_rem);
   };
   static auto partitioner = tbb::static_partitioner{};

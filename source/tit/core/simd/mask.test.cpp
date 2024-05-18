@@ -17,11 +17,11 @@ using FloatMask = simd::Mask<float>;
 TEST_CASE("simd::Mask") {
   static_assert(sizeof(FloatMask) == sizeof(float));
   SUBCASE("zero initialization") {
-    FloatMask const m{};
+    const FloatMask m{};
     CHECK_FALSE(m);
   }
   SUBCASE("value initialization") {
-    FloatMask const m{true};
+    const FloatMask m{true};
     CHECK(m);
   }
 }

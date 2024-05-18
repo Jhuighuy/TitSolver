@@ -17,12 +17,12 @@ namespace {
 
 TEST_CASE("Mat::lu") {
   SUBCASE("1x1") {
-    Mat const A{{2.0}};
-    auto const fact = lu(A);
+    const Mat A{{2.0}};
+    const auto fact = lu(A);
     REQUIRE(fact);
     SUBCASE("factors") {
-      Mat const L{{1.0}};
-      Mat const U{{2.0}};
+      const Mat L{{1.0}};
+      const Mat U{{2.0}};
       REQUIRE(all(A == L * U));
       CHECK(all(approx_equal_to(fact->L(), L)));
       CHECK(all(approx_equal_to(fact->U(), U)));
@@ -31,26 +31,26 @@ TEST_CASE("Mat::lu") {
       CHECK(approx_equal_to(fact->det(), 2.0));
     }
     SUBCASE("solve") {
-      Vec const b{6.0};
-      Vec const x{3.0};
+      const Vec b{6.0};
+      const Vec x{3.0};
       REQUIRE(all(A * x == b));
       CHECK(all(approx_equal_to(fact->solve(b), x)));
     }
     SUBCASE("inverse") {
-      Mat const A_inv{{0.5}};
+      const Mat A_inv{{0.5}};
       REQUIRE(all(approx_equal_to(A * A_inv, eye(A))));
       CHECK(all(approx_equal_to(fact->inverse(), A_inv)));
     }
   }
   SUBCASE("2x2") {
-    Mat const A{
+    const Mat A{
         {4.0, 3.0},
         {6.0, 3.0},
     };
-    auto const fact = lu(A);
+    const auto fact = lu(A);
     REQUIRE(fact);
     SUBCASE("factors") {
-      Mat const L{
+      const Mat L{
           {1.0, 0.0},
           {1.5, 1.0},
       };
@@ -68,8 +68,8 @@ TEST_CASE("Mat::lu") {
       CHECK(approx_equal_to(fact->det(), -6.0));
     }
     SUBCASE("solve") {
-      Vec const b{7.0, 9.0};
-      Vec const x{1.0, 1.0};
+      const Vec b{7.0, 9.0};
+      const Vec x{1.0, 1.0};
       REQUIRE(all(A * x == b));
       CHECK(all(approx_equal_to(fact->solve(b), x)));
     }
@@ -92,7 +92,7 @@ TEST_CASE("Mat::lu") {
         {-4.0, -2.0,  8.0},
     };
     // clang-format on
-    auto const fact = lu(A);
+    const auto fact = lu(A);
     REQUIRE(fact);
     SUBCASE("factors") {
       // clang-format off
@@ -115,8 +115,8 @@ TEST_CASE("Mat::lu") {
       CHECK(approx_equal_to(fact->det(), 24.0));
     }
     SUBCASE("solve") {
-      Vec const b{24.0, 24.0, 24.0};
-      Vec const x{75.0, 30.0, 48.0};
+      const Vec b{24.0, 24.0, 24.0};
+      const Vec x{75.0, 30.0, 48.0};
       REQUIRE(all(A * x == b));
       CHECK(all(approx_equal_to(fact->solve(b), x)));
     }
@@ -141,7 +141,7 @@ TEST_CASE("Mat::lu") {
         {13.0, 14.0, 15.0, 16.0},
     };
     // clang-format on
-    auto const fact = lu(A);
+    const auto fact = lu(A);
     REQUIRE(!fact);
     CHECK(fact.error() == FactError::near_singular);
   }
@@ -151,11 +151,11 @@ TEST_CASE("Mat::lu") {
 
 TEST_CASE("Mat::chol") {
   SUBCASE("1x1") {
-    Mat const A{{4.0}};
-    auto const fact = chol(A);
+    const Mat A{{4.0}};
+    const auto fact = chol(A);
     REQUIRE(fact);
     SUBCASE("factors") {
-      Mat const L{{2.0}};
+      const Mat L{{2.0}};
       REQUIRE(all(A == L * transpose(L)));
       CHECK(all(approx_equal_to(fact->L(), L)));
     }
@@ -163,13 +163,13 @@ TEST_CASE("Mat::chol") {
       CHECK(approx_equal_to(fact->det(), 4.0));
     }
     SUBCASE("solve") {
-      Vec const b{12.0};
-      Vec const x{3.0};
+      const Vec b{12.0};
+      const Vec x{3.0};
       REQUIRE(all(A * x == b));
       CHECK(all(approx_equal_to(fact->solve(b), x)));
     }
     SUBCASE("inverse") {
-      Mat const A_inv{{0.25}};
+      const Mat A_inv{{0.25}};
       REQUIRE(all(approx_equal_to(A * A_inv, eye(A))));
       CHECK(all(approx_equal_to(fact->inverse(), A_inv)));
     }
@@ -182,7 +182,7 @@ TEST_CASE("Mat::chol") {
         {-16.0, -43.0,  98.0},
     };
     // clang-format on
-    auto const fact = chol(A);
+    const auto fact = chol(A);
     REQUIRE(fact);
     SUBCASE("factors") {
       // clang-format off
@@ -199,8 +199,8 @@ TEST_CASE("Mat::chol") {
       CHECK(approx_equal_to(fact->det(), 36.0));
     }
     SUBCASE("solve") {
-      Vec const b{9.0, 9.0, 9.0};
-      Vec const x{341.25, -93.0, 15.0};
+      const Vec b{9.0, 9.0, 9.0};
+      const Vec x{341.25, -93.0, 15.0};
       REQUIRE(all(A * x == b));
       CHECK(all(approx_equal_to(fact->solve(b), x)));
     }
@@ -225,7 +225,7 @@ TEST_CASE("Mat::chol") {
         {  4.0,  14.0,  21.0, 80.0},
     };
     // clang-format on
-    auto const fact = chol(A);
+    const auto fact = chol(A);
     REQUIRE(!fact);
     CHECK(fact.error() == FactError::not_positive_definite);
   }
@@ -238,7 +238,7 @@ TEST_CASE("Mat::chol") {
         {  4.0,  12.0,  11.0, 86.0},
     };
     // clang-format on
-    auto const fact = chol(A);
+    const auto fact = chol(A);
     REQUIRE(!fact);
     CHECK(fact.error() == FactError::near_singular);
   }
@@ -248,12 +248,12 @@ TEST_CASE("Mat::chol") {
 
 TEST_CASE("Mat::ldl") {
   SUBCASE("1x1") {
-    Mat const A{{2.0}};
-    auto const fact = ldl(A);
+    const Mat A{{2.0}};
+    const auto fact = ldl(A);
     REQUIRE(fact);
     SUBCASE("factors") {
-      Mat const L{{1.0}};
-      Mat const D{{2.0}};
+      const Mat L{{1.0}};
+      const Mat D{{2.0}};
       REQUIRE(all(A == L * D * transpose(L)));
       CHECK(all(approx_equal_to(fact->L(), L)));
       CHECK(all(approx_equal_to(fact->D(), D)));
@@ -262,13 +262,13 @@ TEST_CASE("Mat::ldl") {
       CHECK(approx_equal_to(fact->det(), 2.0));
     }
     SUBCASE("solve") {
-      Vec const b{6.0};
-      Vec const x{3.0};
+      const Vec b{6.0};
+      const Vec x{3.0};
       REQUIRE(all(A * x == b));
       CHECK(all(approx_equal_to(fact->solve(b), x)));
     }
     SUBCASE("inverse") {
-      Mat const A_inv{{0.5}};
+      const Mat A_inv{{0.5}};
       REQUIRE(all(approx_equal_to(A * A_inv, eye(A))));
       CHECK(all(approx_equal_to(fact->inverse(), A_inv)));
     }
@@ -281,7 +281,7 @@ TEST_CASE("Mat::ldl") {
         {-16.0, -43.0,  98.0},
     };
     // clang-format on
-    auto const fact = ldl(A);
+    const auto fact = ldl(A);
     REQUIRE(fact);
     SUBCASE("factors") {
       // clang-format off
@@ -291,7 +291,7 @@ TEST_CASE("Mat::ldl") {
           {-4.0, 5.0, 1.0},
       };
       // clang-format on
-      Mat const D{
+      const Mat D{
           {4.0, 0.0, 0.0},
           {0.0, 1.0, 0.0},
           {0.0, 0.0, 9.0},
@@ -304,8 +304,8 @@ TEST_CASE("Mat::ldl") {
       CHECK(approx_equal_to(fact->det(), 36.0));
     }
     SUBCASE("solve") {
-      Vec const b{9.0, 9.0, 9.0};
-      Vec const x{341.25, -93.0, 15.0};
+      const Vec b{9.0, 9.0, 9.0};
+      const Vec x{341.25, -93.0, 15.0};
       REQUIRE(all(A * x == b));
       CHECK(all(approx_equal_to(fact->solve(b), x)));
     }
@@ -330,7 +330,7 @@ TEST_CASE("Mat::ldl") {
         {  4.0,  14.0,  21.0, 80.0},
     };
     // clang-format on
-    auto const fact = ldl(A);
+    const auto fact = ldl(A);
     REQUIRE(fact);
     SUBCASE("factors") {
       // clang-format off
@@ -355,8 +355,8 @@ TEST_CASE("Mat::ldl") {
       CHECK(approx_equal_to(fact->det(), 36.0));
     }
     SUBCASE("solve") {
-      Vec const b{9.0, 9.0, 9.0, 9.0};
-      Vec const x{-27990.75, 7440.0, -1308.0, 441.0};
+      const Vec b{9.0, 9.0, 9.0, 9.0};
+      const Vec x{-27990.75, 7440.0, -1308.0, 441.0};
       REQUIRE(all(A * x == b));
       CHECK(all(approx_equal_to(fact->solve(b), x)));
     }
@@ -382,7 +382,7 @@ TEST_CASE("Mat::ldl") {
         {  4.0,  14.0,  -6.0, -1.0},
     };
     // clang-format on
-    auto const fact = ldl(A);
+    const auto fact = ldl(A);
     REQUIRE(!fact);
     CHECK(fact.error() == FactError::near_singular);
   }

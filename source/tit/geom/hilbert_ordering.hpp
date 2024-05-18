@@ -55,12 +55,12 @@ public:
     TIT_PROFILE_SECTION("tit::ZCurveOrdering::ZCurveOrdering()");
     if (std::ranges::empty(points_)) return;
     // Initialize identity points permutation.
-    auto const size = std::ranges::size(points_);
+    const auto size = std::ranges::size(points_);
     point_perm_.resize(size);
     std::ranges::copy(std::views::iota(0UZ, size), point_perm_.begin());
     // Compute bounding box.
     auto bbox = BBox{points_[0]};
-    for (auto const& p : points_ | std::views::drop(1)) bbox.expand(p);
+    for (const auto& p : points_ | std::views::drop(1)) bbox.expand(p);
     // Compute the root bounding box and build ordering.
     // TODO: refactor with `std::span`.
     // NOLINTBEGIN(*-bounds-pointer-arithmetic)
@@ -84,25 +84,25 @@ private:
                             PointBBox bbox) noexcept {
     TIT_ASSERT(first <= last, "Invalid point iterators.");
     if (last - first <= 1) return;
-    auto const center = bbox.center();
+    const auto center = bbox.center();
     if constexpr (Dim == 2) {
-      auto const in_upper_part = [&](size_t index) {
+      const auto in_upper_part = [&](size_t index) {
         return points_[index][1] > center[1];
       };
-      auto const to_the_left = [&](size_t index) {
+      const auto to_the_left = [&](size_t index) {
         return points_[index][0] < center[0];
       };
       // Split subtree vertically.
-      auto const [lower_bbox, upper_bbox] = bbox.split(1, center[1]);
+      const auto [lower_bbox, upper_bbox] = bbox.split(1, center[1]);
       auto* const upper = first;
       auto* const lower = std::partition(first, last, in_upper_part);
       // Split upper part horizontally.
-      auto const [upper_left_bbox, //
+      const auto [upper_left_bbox, //
                   upper_right_bbox] = upper_bbox.split(0, center[0]);
       auto* const upper_left = upper;
       auto* const upper_right = std::partition(upper, lower, to_the_left);
       // Split lower part horizontally.
-      auto const [lower_left_bbox, //
+      const auto [lower_left_bbox, //
                   lower_right_bbox] = lower_bbox.split(0, center[0]);
       auto* const lower_left = lower;
       auto* const lower_right = std::partition(lower, last, to_the_left);

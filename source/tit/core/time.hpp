@@ -26,9 +26,9 @@ public:
 
   /// Stop the stopwatch cycle and update the measured delta time.
   void stop() noexcept {
-    auto const stop = std::chrono::steady_clock::now();
+    const auto stop = std::chrono::steady_clock::now();
     TIT_ASSERT(stop > start_, "Stopwatch was not started!");
-    auto const delta = stop - start_;
+    const auto delta = stop - start_;
     total_ += std::chrono::duration_cast<std::chrono::nanoseconds>(delta);
     cycles_ += 1;
   }
@@ -98,10 +98,10 @@ public:
   }
 
   /// Stopwatch cycle is not copy-constructible.
-  StopwatchCycle(StopwatchCycle const&) = delete;
+  StopwatchCycle(const StopwatchCycle&) = delete;
 
   /// Stopwatch cycle is not copyable.
-  auto operator=(StopwatchCycle const&) -> StopwatchCycle& = delete;
+  auto operator=(const StopwatchCycle&) -> StopwatchCycle& = delete;
 
 private:
 

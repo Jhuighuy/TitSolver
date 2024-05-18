@@ -21,23 +21,23 @@ using FloatRegMask = simd::RegMask<float, 4>;
 
 TEST_CASE("simd::RegMask") {
   SUBCASE("load and store") {
-    FloatMaskArray const in{false, true, true, false};
-    FloatRegMask const r(in);
+    const FloatMaskArray in{false, true, true, false};
+    const FloatRegMask r(in);
     FloatMaskArray out{};
     r.store(out);
     CHECK(in == out);
   }
   SUBCASE("zero initialization") {
-    FloatRegMask const r{};
+    const FloatRegMask r{};
     FloatMaskArray out{true};
     r.store(out);
-    for (auto const& x : out) CHECK_FALSE(x);
+    for (const auto& x : out) CHECK_FALSE(x);
   }
   SUBCASE("value initialization") {
-    FloatRegMask const r(true);
+    const FloatRegMask r(true);
     FloatMaskArray out{};
     r.store(out);
-    for (auto const& x : out) CHECK(x);
+    for (const auto& x : out) CHECK(x);
   }
 }
 
@@ -45,20 +45,20 @@ TEST_CASE("simd::RegMask") {
 
 TEST_CASE("simd::RegMask::any_and_all") {
   SUBCASE("all") {
-    FloatMaskArray const a{true, true, true, true};
-    FloatRegMask const ra(a);
+    const FloatMaskArray a{true, true, true, true};
+    const FloatRegMask ra(a);
     CHECK(any(ra));
     CHECK(all(ra));
   }
   SUBCASE("some") {
-    FloatMaskArray const a{true, false, true, false};
-    FloatRegMask const ra(a);
+    const FloatMaskArray a{true, false, true, false};
+    const FloatRegMask ra(a);
     CHECK(any(ra));
     CHECK_FALSE(all(ra));
   }
   SUBCASE("none") {
-    FloatMaskArray const a{false, false, false, false};
-    FloatRegMask const ra(a);
+    const FloatMaskArray a{false, false, false, false};
+    const FloatRegMask ra(a);
     CHECK_FALSE(any(ra));
     CHECK_FALSE(all(ra));
   }

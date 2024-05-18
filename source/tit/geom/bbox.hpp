@@ -29,19 +29,19 @@ public:
   constexpr BBox() = default;
 
   /// Construct a bounding box with both low and high points set to @p point.
-  constexpr explicit BBox(Point const& point) : low_{point}, high_{point} {}
+  constexpr explicit BBox(const Point& point) : low_{point}, high_{point} {}
 
   /// Construct a bounding box from two points @p point_1, @p point_2.
-  constexpr BBox(Point const& point_1, Point const& point_2)
+  constexpr BBox(const Point& point_1, const Point& point_2)
       : low_{minimum(point_1, point_2)}, high_{maximum(point_1, point_2)} {}
 
   /// Low bounding box point.
-  constexpr auto low() const noexcept -> Point const& {
+  constexpr auto low() const noexcept -> const Point& {
     return low_;
   }
 
   /// High bounding box point.
-  constexpr auto high() const noexcept -> Point const& {
+  constexpr auto high() const noexcept -> const Point& {
     return high_;
   }
 
@@ -63,14 +63,14 @@ public:
   }
 
   /// Expand to align the edges with the given @p point.
-  constexpr auto expand(Point const& point) -> BBox& {
+  constexpr auto expand(const Point& point) -> BBox& {
     low_ = minimum(low_, point);
     high_ = maximum(high_, point);
     return *this;
   }
 
   /// Extend on all sides by the given @p amount.
-  constexpr auto grow(Num const& amount) -> BBox& {
+  constexpr auto grow(const Num& amount) -> BBox& {
     TIT_ASSERT(amount >= Num{0}, "Grow amount must be positive");
     low_ -= Point(amount);
     high_ += Point(amount);
@@ -79,7 +79,7 @@ public:
 
   /// Split the bbox into two.
   constexpr auto split(size_t axis,
-                       Num const& val) const -> std::pair<BBox, BBox> {
+                       const Num& val) const -> std::pair<BBox, BBox> {
     TIT_ASSERT(axis < Dim, "Split axis is out of range!");
     TIT_ASSERT(low_[axis] <= val && val <= high_[axis],
                "Split value if out out range!");

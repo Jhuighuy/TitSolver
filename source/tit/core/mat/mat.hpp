@@ -33,7 +33,7 @@ public:
   constexpr Mat() = default;
 
   /// Fill-initialize the matrix diagonal with the value @p q.
-  constexpr explicit(Dim > 1) Mat(Num const& q) {
+  constexpr explicit(Dim > 1) Mat(const Num& q) {
     for (size_t i = 0; i < Dim; ++i) {
       rows_[i] = {};
       rows_[i][i] = q;
@@ -52,7 +52,7 @@ public:
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     return rows_[i];
   }
-  constexpr auto operator[](size_t i) const noexcept -> Row const& {
+  constexpr auto operator[](size_t i) const noexcept -> const Row& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     return rows_[i];
   }
@@ -65,7 +65,7 @@ public:
     TIT_ASSERT(j < Dim, "Column index is out of range!");
     return rows_[i][j];
   }
-  constexpr auto operator[](size_t i, size_t j) const noexcept -> Num const& {
+  constexpr auto operator[](size_t i, size_t j) const noexcept -> const Num& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
     return rows_[i][j];
@@ -75,49 +75,49 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Matrix unary plus.
-  friend constexpr auto operator+(Mat const& A) noexcept -> Mat const& {
+  friend constexpr auto operator+(const Mat& A) noexcept -> const Mat& {
     return A;
   }
 
   /// Matrix addition.
-  friend constexpr auto operator+(Mat const& A, Mat const& B) -> Mat {
+  friend constexpr auto operator+(const Mat& A, const Mat& B) -> Mat {
     Mat R;
     for (size_t i = 0; i < Dim; ++i) R[i] = A[i] + B[i];
     return R;
   }
 
   /// Matrix addition with assignment.
-  friend constexpr auto operator+=(Mat& A, Mat const& B) -> Mat& {
+  friend constexpr auto operator+=(Mat& A, const Mat& B) -> Mat& {
     for (size_t i = 0; i < Dim; ++i) A[i] += B[i];
     return A;
   }
 
   /// Matrix negation.
-  friend constexpr auto operator-(Mat const& A) -> Mat {
+  friend constexpr auto operator-(const Mat& A) -> Mat {
     Mat R;
     for (size_t i = 0; i < Dim; ++i) R[i] = -A[i];
     return R;
   }
 
   /// Matrix subtraction.
-  friend constexpr auto operator-(Mat const& A, Mat const& B) -> Mat {
+  friend constexpr auto operator-(const Mat& A, const Mat& B) -> Mat {
     Mat R;
     for (size_t i = 0; i < Dim; ++i) R[i] = A[i] - B[i];
     return R;
   }
 
   /// Matrix subtraction with assignment.
-  friend constexpr auto operator-=(Mat& A, Mat const& B) -> Mat& {
+  friend constexpr auto operator-=(Mat& A, const Mat& B) -> Mat& {
     for (size_t i = 0; i < Dim; ++i) A[i] -= B[i];
     return A;
   }
 
   /// Matrix-scalar multiplication.
   /// @{
-  friend constexpr auto operator*(Num const& a, Mat const& B) -> Mat {
+  friend constexpr auto operator*(const Num& a, const Mat& B) -> Mat {
     return B * a;
   }
-  friend constexpr auto operator*(Mat const& A, Num const& b) -> Mat {
+  friend constexpr auto operator*(const Mat& A, const Num& b) -> Mat {
     Mat R;
     for (size_t i = 0; i < Dim; ++i) R[i] = A[i] * b;
     return R;
@@ -125,21 +125,21 @@ public:
   /// @}
 
   /// Matrix-scalar multiplication with assignment.
-  friend constexpr auto operator*=(Mat& A, Num const& b) -> Mat& {
+  friend constexpr auto operator*=(Mat& A, const Num& b) -> Mat& {
     for (size_t i = 0; i < Dim; ++i) A[i] *= b;
     return A;
   }
 
   /// Matrix-vector multiplication.
-  friend constexpr auto operator*(Mat const& A, Row const& b) -> Row {
-    auto const T = transpose(A);
+  friend constexpr auto operator*(const Mat& A, const Row& b) -> Row {
+    const auto T = transpose(A);
     auto r = T[0] * b[0];
     for (size_t i = 1; i < Dim; ++i) r += T[i] * b[i];
     return r;
   }
 
   /// Matrix-matrix multiplication.
-  friend constexpr auto operator*(Mat const& A, Mat const& B) -> Mat {
+  friend constexpr auto operator*(const Mat& A, const Mat& B) -> Mat {
     Mat R(0.0);
     for (size_t i = 0; i < Dim; ++i) {
       for (size_t j = 0; j < Dim; ++j) {
@@ -150,13 +150,13 @@ public:
   }
 
   /// Matrix-scalar division.
-  friend constexpr auto operator/(Mat const& A, Num const& b) -> Mat {
+  friend constexpr auto operator/(const Mat& A, const Num& b) -> Mat {
     if constexpr (Dim == 1) return A[0, 0] / b;
     return A * inverse(b);
   }
 
   /// Matrix-scalar division with assignment.
-  friend constexpr auto operator/=(Mat& A, Num const& b) -> Mat& {
+  friend constexpr auto operator/=(Mat& A, const Num& b) -> Mat& {
     if constexpr (Dim == 1) A[0, 0] /= b;
     else A *= inverse(b);
     return A;
@@ -166,7 +166,7 @@ public:
 
   /// Matrix output operator.
   template<class Stream>
-  friend constexpr auto operator<<(Stream& stream, Mat const& A) -> Stream& {
+  friend constexpr auto operator<<(Stream& stream, const Mat& A) -> Stream& {
     stream << A[0];
     for (size_t i = 1; i < Dim; ++i) stream << " " << A[i];
     return stream;
@@ -184,22 +184,22 @@ template<class Row, class... RestRows>
 Mat(Row, RestRows...) -> Mat<vec_num_t<Row>, 1 + sizeof...(RestRows)>;
 
 template<class Num, class... RestNums>
-Mat(carr_ref_t<Num const, 1 + sizeof...(RestNums)>,
-    carr_ref_t<RestNums const, 1 + sizeof...(RestNums)>...)
+Mat(carr_ref_t<const Num, 1 + sizeof...(RestNums)>,
+    carr_ref_t<const RestNums, 1 + sizeof...(RestNums)>...)
     -> Mat<Num, 1 + sizeof...(RestNums)>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Make a diagonal matrix.
 template<class Num, size_t Dim>
-constexpr auto eye(Mat<Num, Dim> const& /*A*/,
-                   Num const& q = Num{1.0}) -> Mat<Num, Dim> {
+constexpr auto eye(const Mat<Num, Dim>& /*A*/,
+                   const Num& q = Num{1.0}) -> Mat<Num, Dim> {
   return Mat<Num, Dim>(q);
 }
 
 /// Make a diagonal matrix.
 template<class Num, size_t Dim>
-constexpr auto diag(Vec<Num, Dim> const& d) -> Mat<Num, Dim> {
+constexpr auto diag(const Vec<Num, Dim>& d) -> Mat<Num, Dim> {
   Mat<Num, Dim> D{};
   for (size_t i = 0; i < Dim; ++i) D[i, i] = d[i];
   return D;
@@ -207,7 +207,7 @@ constexpr auto diag(Vec<Num, Dim> const& d) -> Mat<Num, Dim> {
 
 /// Extract matrix diagonal.
 template<class Num, size_t Dim>
-constexpr auto diag(Mat<Num, Dim> const& D) -> Vec<Num, Dim> {
+constexpr auto diag(const Mat<Num, Dim>& D) -> Vec<Num, Dim> {
   Vec<Num, Dim> d{};
   for (size_t i = 0; i < Dim; ++i) d[i] = D[i, i];
   return d;
@@ -217,7 +217,7 @@ constexpr auto diag(Mat<Num, Dim> const& D) -> Vec<Num, Dim> {
 
 /// Matrix trace (sum of the diagonal elements).
 template<class Num, size_t Dim>
-constexpr auto tr(Mat<Num, Dim> const& A) -> Num {
+constexpr auto tr(const Mat<Num, Dim>& A) -> Num {
   auto r = A[0, 0];
   for (size_t i = 1; i < Dim; ++i) r += A[i, i];
   return r;
@@ -225,7 +225,7 @@ constexpr auto tr(Mat<Num, Dim> const& A) -> Num {
 
 /// Product of the diagonal elements.
 template<class Num, size_t Dim>
-constexpr auto prod_diag(Mat<Num, Dim> const& A) -> Num {
+constexpr auto prod_diag(const Mat<Num, Dim>& A) -> Num {
   auto r = A[0, 0];
   for (size_t i = 1; i < Dim; ++i) r *= A[i, i];
   return r;
@@ -234,14 +234,14 @@ constexpr auto prod_diag(Mat<Num, Dim> const& A) -> Num {
 /// Vector outer product.
 /// @{
 template<class Num, size_t Dim>
-constexpr auto outer(Vec<Num, Dim> const& a,
-                     Vec<Num, Dim> const& b) -> Mat<Num, Dim> {
+constexpr auto outer(const Vec<Num, Dim>& a,
+                     const Vec<Num, Dim>& b) -> Mat<Num, Dim> {
   Mat<Num, Dim> R;
   for (size_t i = 0; i < Dim; ++i) R[i] = a[i] * b;
   return R;
 }
 template<class Num, size_t Dim>
-constexpr auto outer_sqr(Vec<Num, Dim> const& a) -> Mat<Num, Dim> {
+constexpr auto outer_sqr(const Vec<Num, Dim>& a) -> Mat<Num, Dim> {
   return outer(a, a);
 }
 /// @}

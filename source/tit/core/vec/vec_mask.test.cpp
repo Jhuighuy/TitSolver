@@ -31,12 +31,12 @@ TEST_CASE("VecMask") {
     CHECK_FALSE(v[1]);
   }
   SUBCASE("value initialization") {
-    VecMask<Num, 2> const v(true);
+    const VecMask<Num, 2> v(true);
     CHECK(v[0]);
     CHECK(v[1]);
   }
   SUBCASE("aggregate initialization") {
-    VecMask<Num, 2> const v{true, false};
+    const VecMask<Num, 2> v{true, false};
     CHECK(v[0]);
     CHECK_FALSE(v[1]);
   }
@@ -91,12 +91,12 @@ TEST_CASE("Vec::operator>=") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("VecMask::filter") {
-  auto const m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
+  const auto m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
   CHECK(all(filter(m, Vec{1.0_d, 2.0_d}) == Vec{0.0_d, 2.0_d}));
 }
 
 TEST_CASE("VecMask::select") {
-  auto const m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
+  const auto m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
   CHECK(all(select(m, Vec{1.0_d, 2.0_d}, Vec{3.0_d, 4.0_d}) == //
             Vec{3.0_d, 2.0_d}));
 }
@@ -105,17 +105,17 @@ TEST_CASE("VecMask::select") {
 
 TEST_CASE("VecMask::all_any") {
   SUBCASE("all") {
-    auto const m = Vec{1.0_d, 2.0_d} == Vec{1.0_d, 2.0_d};
+    const auto m = Vec{1.0_d, 2.0_d} == Vec{1.0_d, 2.0_d};
     CHECK(any(m));
     CHECK(all(m));
   }
   SUBCASE("any") {
-    auto const m = Vec{1.0_d, 2.0_d} == Vec{1.0_d, 3.0_d};
+    const auto m = Vec{1.0_d, 2.0_d} == Vec{1.0_d, 3.0_d};
     CHECK(any(m));
     CHECK_FALSE(all(m));
   }
   SUBCASE("none") {
-    auto const m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 4.0_d};
+    const auto m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 4.0_d};
     CHECK_FALSE(any(m));
     CHECK_FALSE(all(m));
   }

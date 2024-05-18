@@ -27,20 +27,20 @@ TEST_CASE("par::TaskGroup") {
     // Run the parallel tasks and record IDs of the worker threads.
     std::mutex mutex{};
     std::set<std::thread::id> worker_thread_ids{};
-    auto const main_thread_id = std::this_thread::get_id();
+    const auto main_thread_id = std::this_thread::get_id();
     // Create the task group and run the tasks.
     par::TaskGroup group{};
     for (int i = 0; i < 20; ++i) {
       // Define the task.
-      auto const parallel = i % 10 != 0;
+      const auto parallel = i % 10 != 0;
       auto task = [&, parallel] {
         // Pretend we are doing some work.
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         // Check parallelism.
-        auto const this_thread_id = std::this_thread::get_id();
+        const auto this_thread_id = std::this_thread::get_id();
         if (parallel) {
           // Record ID of the current thread.
-          std::scoped_lock const lock{mutex};
+          const std::scoped_lock lock{mutex};
           worker_thread_ids.insert(this_thread_id);
         } else {
           // Ensure sequential tasks run on the main thread.
@@ -71,7 +71,7 @@ TEST_CASE("par::TaskGroup") {
       // Ensure the tasks have finished.
       group.wait();
       FAIL("Task should have thrown an exception!");
-    } catch (std::runtime_error const& e) {
+    } catch (const std::runtime_error& e) {
       // Ensure the exception was caught.
       CHECK(std::strcmp(e.what(), "Task failed!") == 0);
     }

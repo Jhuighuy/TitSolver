@@ -52,8 +52,8 @@ constexpr auto make_array(Ts&&... vals) -> std::array<T, Size> {
 /// Fill an array of the given size initialized with the given value.
 template<size_t Size, class T>
   requires std::copy_constructible<T>
-constexpr auto fill_array(T const& val) -> std::array<T, Size> {
-  auto const get_val = [&](auto /*arg*/) -> T const& { return val; };
+constexpr auto fill_array(const T& val) -> std::array<T, Size> {
+  const auto get_val = [&](auto /*arg*/) -> const T& { return val; };
   return [&]<size_t... Indices>(std::index_sequence<Indices...>) {
     return std::array<T, Size>{get_val(Indices)...};
   }(std::make_index_sequence<Size>{});

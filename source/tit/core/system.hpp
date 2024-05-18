@@ -46,7 +46,7 @@ using sigaction_t = struct sigaction;
 
 /// Set signal action.
 void safe_sigaction(int signal_number,
-                    sigaction_t const* action,
+                    const sigaction_t* action,
                     sigaction_t* prev_action = nullptr) noexcept;
 
 /// Raise a signal.
@@ -66,10 +66,10 @@ public:
   auto operator=(SignalHandler&&) -> SignalHandler& = delete;
 
   /// Signal handler is not copy-constructible.
-  SignalHandler(SignalHandler const&) = delete;
+  SignalHandler(const SignalHandler&) = delete;
 
   /// Signal handler is not copyable.
-  auto operator=(SignalHandler const&) -> SignalHandler& = delete;
+  auto operator=(const SignalHandler&) -> SignalHandler& = delete;
 
   /// Reset signal handling.
   virtual ~SignalHandler() noexcept;

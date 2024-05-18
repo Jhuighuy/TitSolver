@@ -17,10 +17,10 @@ namespace {
 
 TEST_CASE("Mat::jacobi") {
   SUBCASE("1x1") {
-    Mat const A{{2.0}};
-    auto const eig = jacobi(A);
+    const Mat A{{2.0}};
+    const auto eig = jacobi(A);
     REQUIRE(eig);
-    auto const& [V, d] = *eig;
+    const auto& [V, d] = *eig;
     CHECK(norm(V[0]) > 0.0);
     CHECK(all(approx_equal_to(V * A, diag(d) * V)));
   }
@@ -32,37 +32,37 @@ TEST_CASE("Mat::jacobi") {
           {-2.0,  1.0},
       };
       // clang-format on
-      auto const eig = jacobi(A);
+      const auto eig = jacobi(A);
       REQUIRE(eig);
-      auto const& [V, d] = *eig;
+      const auto& [V, d] = *eig;
       for (size_t i = 0; i < 2; ++i) CHECK(norm(V[i]) > 0.0);
       CHECK(all(approx_equal_to(V * A, diag(d) * V)));
     }
   }
   SUBCASE("4x4") {
     SUBCASE("positive definite") {
-      Mat const A{
+      const Mat A{
           {2.0, 1.0, 1.0, 0.0},
           {1.0, 3.0, 0.0, 1.0},
           {1.0, 0.0, 4.0, 1.0},
           {0.0, 1.0, 1.0, 2.0},
       };
-      auto const eig = jacobi(A);
+      const auto eig = jacobi(A);
       REQUIRE(eig);
-      auto const& [V, d] = *eig;
+      const auto& [V, d] = *eig;
       for (size_t i = 0; i < 4; ++i) CHECK(norm(V[i]) > 0.0);
       CHECK(all(approx_equal_to(V * A, diag(d) * V)));
     }
   }
   SUBCASE("not converged") {
-    Mat const A{
+    const Mat A{
         {2.0, 1.0, 1.0, 0.0},
         {1.0, 3.0, 0.0, 1.0},
         {1.0, 0.0, 4.0, 1.0},
         {0.0, 1.0, 1.0, 2.0},
     };
     // Not enough iterations for this threshold.
-    auto const eig = jacobi(A, /*eps=*/1.0e-16, /*max_iter=*/3);
+    const auto eig = jacobi(A, /*eps=*/1.0e-16, /*max_iter=*/3);
     REQUIRE(!eig);
     CHECK(eig.error() == MatEigError::not_converged);
   }

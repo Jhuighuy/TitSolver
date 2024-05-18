@@ -19,10 +19,10 @@ namespace {
 TEST_CASE("Stopwatch") {
   // Run the stopwatch to measure some time.
   Stopwatch stopwatch{};
-  auto const delta = std::chrono::milliseconds(500);
-  auto const delta_sec = 1.0e-3 * static_cast<real_t>(delta.count());
+  const auto delta = std::chrono::milliseconds(500);
+  const auto delta_sec = 1.0e-3 * static_cast<real_t>(delta.count());
   {
-    StopwatchCycle const cycle{stopwatch};
+    const StopwatchCycle cycle{stopwatch};
     std::this_thread::sleep_for(delta);
   }
   // Ensure the measured time is correct. Unfortunately, we cannot check for

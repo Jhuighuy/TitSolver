@@ -30,12 +30,12 @@ TEST_CASE("Mat") {
     CHECK(all(M[1] == Vec<double, 2>{}));
   }
   SUBCASE("value initialization") {
-    Mat<double, 2> const M(3.0);
+    const Mat<double, 2> M(3.0);
     CHECK(all(M[0] == Vec{3.0, 0.0}));
     CHECK(all(M[1] == Vec{0.0, 3.0}));
   }
   SUBCASE("aggregate initialization") {
-    Mat const M{{1.0, 2.0}, {3.0, 4.0}};
+    const Mat M{{1.0, 2.0}, {3.0, 4.0}};
     CHECK(all(M[0] == Vec{1.0, 2.0}));
     CHECK(all(M[1] == Vec{3.0, 4.0}));
   }
@@ -71,7 +71,7 @@ TEST_CASE("Mat") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("Mat::eye") {
-  Mat const I{
+  const Mat I{
       {1.0, 0.0},
       {0.0, 1.0},
   };

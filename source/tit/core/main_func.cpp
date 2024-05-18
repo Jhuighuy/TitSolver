@@ -16,9 +16,9 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_main(int argc, char** argv, main_func_t const& main_func) -> int {
+auto run_main(int argc, char** argv, const main_func_t& main_func) -> int {
   // Setup signal handler.
-  FatalSignalHandler const handler{};
+  const FatalSignalHandler handler{};
   // Enable profiling.
   if (std::getenv("TIT_ENABLE_PROFILER") != nullptr) { // NOLINT(*-mt-unsafe)
     Profiler::enable();

@@ -127,7 +127,7 @@ TEST_CASE_TEMPLATE("newton_raphson", Num, NUM_TYPES) {
     SUBCASE("success") {
       // Ensure the solver works for basic functions.
       auto x = Num{1.0};
-      auto const f = [&x] {
+      const auto f = [&x] {
         return std::tuple{pow2(x) - Num{4.0}, Num{2.0} * x};
       };
       constexpr auto root = Num{2.0};
@@ -138,7 +138,7 @@ TEST_CASE_TEMPLATE("newton_raphson", Num, NUM_TYPES) {
       // Ensure the solver fails after the iteration limit is exceeded
       // if no actual root can be found.
       auto x = Num{1.0};
-      auto const f = [&x] {
+      const auto f = [&x] {
         return std::tuple{pow2(x) + Num{4.0}, Num{2.0} * x};
       };
       CHECK(newton_raphson(x, f) == fail_max_iter);
@@ -149,7 +149,7 @@ TEST_CASE_TEMPLATE("newton_raphson", Num, NUM_TYPES) {
       // Ensure the solver fails if the zero derivative was reached during
       // the computations.
       auto x = Num{2.0};
-      auto const f = [&x] {
+      const auto f = [&x] {
         return std::tuple{pow3(x) - Num{12.0} * x + Num{2.0},
                           Num{3.0} * pow2(x) - Num{12.0}};
       };
@@ -164,7 +164,7 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
   using enum BisectionStatus;
   SUBCASE("quadratic") {
     constexpr auto root = Num{2.0};
-    auto const f = [](Num x) { return pow2(x) - pow2(root); };
+    const auto f = [](Num x) { return pow2(x) - pow2(root); };
     SUBCASE("success") {
       // Ensure the solver works for basic functions.
       Num min_x{1.5};
@@ -206,8 +206,8 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
   SUBCASE("sin") {
     SUBCASE("success") {
       // Ensure the solver works for a bit more complex functions.
-      auto const f = [](Num x) { return sin(x) + Num{0.5}; };
-      Num const root{7.0 * std::numbers::pi / 6.0};
+      const auto f = [](Num x) { return sin(x) + Num{0.5}; };
+      const Num root{7.0 * std::numbers::pi / 6.0};
       Num min_x{1.0};
       Num max_x{4.0};
       CHECK(bisection(min_x, max_x, f) == success);
@@ -217,7 +217,7 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
     SUBCASE("fail_max_iter") {
       // Ensure the solver fails after the iteration limit is exceeded
       // if no actual root can be found.
-      auto const f = [](Num x) { return sin(x) - inverse(x); };
+      const auto f = [](Num x) { return sin(x) - inverse(x); };
       Num min_x{0.1};
       Num max_x{1.2};
       CHECK(bisection(min_x, max_x, f) == fail_max_iter);

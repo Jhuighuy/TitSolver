@@ -71,29 +71,29 @@ constexpr auto jacobi(Mat<Num, Dim> A,
       return MatEig{std::move(V), diag(std::move(A))};
     }
     // Compute the rotation angle.
-    auto const theta = Num{0.5} * atan2(Num{2.0} * A[p, q], A[q, q] - A[p, p]);
-    auto const c = cos(theta);
-    auto const s = sin(theta);
+    const auto theta = Num{0.5} * atan2(Num{2.0} * A[p, q], A[q, q] - A[p, p]);
+    const auto c = cos(theta);
+    const auto s = sin(theta);
     // Update the matrix.
     for (size_t i = 0; i < Dim; ++i) {
       if (i == p || i == q) continue;
-      auto const Api = A[p, i];
-      auto const Aqi = A[q, i];
+      const auto Api = A[p, i];
+      const auto Aqi = A[q, i];
       A[p, i] = A[i, p] = c * Api - s * Aqi;
       A[q, i] = A[i, q] = s * Api + c * Aqi;
     }
     {
-      auto const App = A[p, p];
-      auto const Apq = A[p, q];
-      auto const Aqq = A[q, q];
+      const auto App = A[p, p];
+      const auto Apq = A[p, q];
+      const auto Aqq = A[q, q];
       A[p, p] = c * (c * App - s * Apq) - s * (c * Apq - s * Aqq);
       A[q, q] = s * (s * App + c * Apq) + c * (s * Apq + c * Aqq);
       A[p, q] = A[q, p] = {};
     }
     // Update the eigenvectors.
     for (size_t i = 0; i < Dim; ++i) {
-      auto const Vpi = V[p, i];
-      auto const Vqi = V[q, i];
+      const auto Vpi = V[p, i];
+      const auto Vqi = V[q, i];
       V[p, i] = c * Vpi - s * Vqi;
       V[q, i] = s * Vpi + c * Vqi;
     }

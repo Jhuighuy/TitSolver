@@ -45,7 +45,7 @@ public:
   using ValSpan = std::span<Val>;
 
   /// Shape span type.
-  using ShapeSpan = std::span<size_t const, Rank>;
+  using ShapeSpan = std::span<const size_t, Rank>;
 
   /// Initialize the multidimensional span.
   /// @{
@@ -96,8 +96,8 @@ public:
       -> decltype(auto) {
     // Compute an offset to the data position.
     size_t offset = 0;
-    for (auto const index_pack = make_array<Rank, size_t>(indices...);
-         auto const [extent, index] : std::views::zip(shape_, index_pack)) {
+    for (const auto index_pack = make_array<Rank, size_t>(indices...);
+         const auto [extent, index] : std::views::zip(shape_, index_pack)) {
       TIT_ASSERT(index < extent, "Index is out of range!");
       offset = index + offset * extent;
     }
@@ -176,7 +176,7 @@ public:
   constexpr auto front() noexcept -> Val& {
     return vals_.front();
   }
-  constexpr auto front() const noexcept -> Val const& {
+  constexpr auto front() const noexcept -> const Val& {
     return vals_.front();
   }
   /// @}
@@ -186,7 +186,7 @@ public:
   constexpr auto back() noexcept -> Val& {
     return vals_.back();
   }
-  constexpr auto back() const noexcept -> Val const& {
+  constexpr auto back() const noexcept -> const Val& {
     return vals_.back();
   }
   /// @}
@@ -216,7 +216,7 @@ public:
     requires mdindex<Rank, Indices...>
   constexpr auto operator[](Indices... indices) const noexcept
       -> decltype(auto) {
-    return Mdspan<Val const, Rank>{shape_, vals_}[indices...];
+    return Mdspan<const Val, Rank>{shape_, vals_}[indices...];
   }
   /// @}
 

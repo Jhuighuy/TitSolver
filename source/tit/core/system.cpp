@@ -40,7 +40,7 @@ namespace tit {
 
 void safe_atexit(atexit_callback_t callback) noexcept {
   TIT_ASSERT(callback != nullptr, "At-exit callback is invalid!");
-  auto const status = std::atexit(callback);
+  const auto status = std::atexit(callback);
   TIT_ENSURE(status == 0, "Unable to register at-exit callback!");
 }
 
@@ -60,17 +60,17 @@ void fast_exit(int exit_code) noexcept {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void safe_sigaction(int signal_number,
-                    sigaction_t const* action,
+                    const sigaction_t* action,
                     sigaction_t* prev_action) noexcept {
   TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
   TIT_ASSERT(action != nullptr, "Signal actions is invalid!");
-  auto const status = sigaction(signal_number, action, prev_action);
+  const auto status = sigaction(signal_number, action, prev_action);
   TIT_ENSURE(status == 0, "Unable to set the signal action!");
 }
 
 void safe_raise(int signal_number) noexcept {
   TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
-  auto const status = raise(signal_number);
+  const auto status = raise(signal_number);
   TIT_ENSURE(status == 0, "Failed to raise a signal.");
 }
 
@@ -81,7 +81,7 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
   handlers_.push_back(this);
   // Register the new signal actions (or handlers).
   prev_actions_.reserve(signal_numbers.size());
-  for (auto const signal_number : signal_numbers) {
+  for (const auto signal_number : signal_numbers) {
     TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
     // Prepare the new action.
     sigaction_t action{};
@@ -97,7 +97,7 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
 
 SignalHandler::~SignalHandler() noexcept {
   // Restore the old signal handlers or actions.
-  for (auto const& [signal_number, prev_action] : prev_actions_) {
+  for (const auto& [signal_number, prev_action] : prev_actions_) {
     safe_sigaction(signal_number, &prev_action);
   }
   // Unregister the current signal handler.
@@ -110,7 +110,7 @@ void SignalHandler::handle_signal_(int signal_number) noexcept {
   // that we've just got.
   for (auto* const handler : handlers_ | std::views::reverse) {
     TIT_ASSERT(handler != nullptr, "Invalid handler was registered.");
-    auto const iter = std::ranges::find(handler->signals(), signal_number);
+    const auto iter = std::ranges::find(handler->signals(), signal_number);
     if (iter != handler->signals().end()) {
       handler->on_signal(signal_number);
       return;
@@ -133,7 +133,7 @@ void dump(std::string_view message) noexcept {
 inline void dump_backtrace() noexcept {
   constexpr int max_stack_depth = 100;
   std::array<void*, max_stack_depth> stack_trace{};
-  auto const stack_depth = backtrace(stack_trace.data(), max_stack_depth);
+  const auto stack_depth = backtrace(stack_trace.data(), max_stack_depth);
   backtrace_symbols_fd(stack_trace.data(), stack_depth, STDERR_FILENO);
 }
 
@@ -188,11 +188,11 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto tty_width(std::FILE* stream) noexcept -> size_t {
-  auto const stream_fileno = fileno(stream);
+  const auto stream_fileno = fileno(stream);
   if (isatty(stream_fileno) == 0) return 80; // Redirected.
   struct winsize window_size = {};
   // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
-  auto const status = ioctl(stream_fileno, TIOCGWINSZ, &window_size);
+  const auto status = ioctl(stream_fileno, TIOCGWINSZ, &window_size);
   TIT_ENSURE(status == 0, "Unable to query terminal window size!");
   return window_size.ws_col;
 }

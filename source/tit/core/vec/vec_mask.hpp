@@ -60,8 +60,8 @@ private:
 
 /// Vector element-wise "equal to" comparison boolean mask.
 template<class Num, size_t Dim>
-constexpr auto operator==(Vec<Num, Dim> const& a,
-                          Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
+constexpr auto operator==(const Vec<Num, Dim>& a,
+                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   for (size_t i = 0; i < Dim; ++i) m[i] = a[i] == b[i];
   return m;
@@ -69,8 +69,8 @@ constexpr auto operator==(Vec<Num, Dim> const& a,
 
 /// Vector element-wise "not equal to" comparison boolean mask.
 template<class Num, size_t Dim>
-constexpr auto operator!=(Vec<Num, Dim> const& a,
-                          Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
+constexpr auto operator!=(const Vec<Num, Dim>& a,
+                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   for (size_t i = 0; i < Dim; ++i) m[i] = a[i] != b[i];
   return m;
@@ -78,8 +78,8 @@ constexpr auto operator!=(Vec<Num, Dim> const& a,
 
 /// Vector element-wise "less than" comparison boolean mask.
 template<class Num, size_t Dim>
-constexpr auto operator<(Vec<Num, Dim> const& a,
-                         Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
+constexpr auto operator<(const Vec<Num, Dim>& a,
+                         const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   for (size_t i = 0; i < Dim; ++i) m[i] = a[i] < b[i];
   return m;
@@ -87,8 +87,8 @@ constexpr auto operator<(Vec<Num, Dim> const& a,
 
 /// Vector element-wise "less than or equal to" comparison boolean mask.
 template<class Num, size_t Dim>
-constexpr auto operator<=(Vec<Num, Dim> const& a,
-                          Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
+constexpr auto operator<=(const Vec<Num, Dim>& a,
+                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   for (size_t i = 0; i < Dim; ++i) m[i] = a[i] <= b[i];
   return m;
@@ -96,8 +96,8 @@ constexpr auto operator<=(Vec<Num, Dim> const& a,
 
 /// Vector element-wise "greater than" comparison boolean mask.
 template<class Num, size_t Dim>
-constexpr auto operator>(Vec<Num, Dim> const& a,
-                         Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
+constexpr auto operator>(const Vec<Num, Dim>& a,
+                         const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   for (size_t i = 0; i < Dim; ++i) m[i] = a[i] > b[i];
   return m;
@@ -105,8 +105,8 @@ constexpr auto operator>(Vec<Num, Dim> const& a,
 
 /// Vector element-wise "greater than or equal to" comparison boolean mask.
 template<class Num, size_t Dim>
-constexpr auto operator>=(Vec<Num, Dim> const& a,
-                          Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
+constexpr auto operator>=(const Vec<Num, Dim>& a,
+                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   for (size_t i = 0; i < Dim; ++i) m[i] = a[i] >= b[i];
   return m;
@@ -114,8 +114,8 @@ constexpr auto operator>=(Vec<Num, Dim> const& a,
 
 /// Vector element-wise "approximately equal to" comparison boolean mask.
 template<class Num, size_t Dim>
-constexpr auto approx_equal_to(Vec<Num, Dim> const& a,
-                               Vec<Num, Dim> const& b) -> VecMask<Num, Dim> {
+constexpr auto approx_equal_to(const Vec<Num, Dim>& a,
+                               const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   for (size_t i = 0; i < Dim; ++i) m[i] = approx_equal_to(a[i], b[i]);
   return m;
@@ -125,8 +125,8 @@ constexpr auto approx_equal_to(Vec<Num, Dim> const& a,
 
 /// Blend vector and a zero vector based on a boolean mask.
 template<class Num, size_t Dim>
-constexpr auto filter(VecMask<Num, Dim> const& m,
-                      Vec<Num, Dim> const& a) -> Vec<Num, Dim> {
+constexpr auto filter(const VecMask<Num, Dim>& m,
+                      const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : Num{0};
   return r;
@@ -134,9 +134,9 @@ constexpr auto filter(VecMask<Num, Dim> const& m,
 
 /// Blend two vectors based on a boolean mask.
 template<class Num, size_t Dim>
-constexpr auto select(VecMask<Num, Dim> const& m,
-                      Vec<Num, Dim> const& a,
-                      Vec<Num, Dim> const& b) -> Vec<Num, Dim> {
+constexpr auto select(const VecMask<Num, Dim>& m,
+                      const Vec<Num, Dim>& a,
+                      const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : b[i];
   return r;
@@ -146,7 +146,7 @@ constexpr auto select(VecMask<Num, Dim> const& m,
 
 /// Check if any vector mask element is set to true.
 template<class Num, size_t Dim>
-constexpr auto any(VecMask<Num, Dim> const& m) noexcept -> bool {
+constexpr auto any(const VecMask<Num, Dim>& m) noexcept -> bool {
   for (size_t i = 0; i < Dim; ++i) {
     if (m[i]) return true;
   }
@@ -155,7 +155,7 @@ constexpr auto any(VecMask<Num, Dim> const& m) noexcept -> bool {
 
 /// Check if all vector mask elements are set to true.
 template<class Num, size_t Dim>
-constexpr auto all(VecMask<Num, Dim> const& m) noexcept -> bool {
+constexpr auto all(const VecMask<Num, Dim>& m) noexcept -> bool {
   for (size_t i = 0; i < Dim; ++i) {
     if (!m[i]) return false;
   }

@@ -118,7 +118,7 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr void compute_pressure(PV a) const noexcept {
-    auto const p_1 = rho_0_ * pow2(cs_0_) / gamma_;
+    const auto p_1 = rho_0_ * pow2(cs_0_) / gamma_;
     p[a] = p_0_ + p_1 * (pow(rho[a] / rho_0_, gamma_) - 1.0);
     if constexpr (has<PV>(cs)) {
       cs[a] = sqrt(gamma_ * (p[a] - p_0_ + p_1) / rho[a]);

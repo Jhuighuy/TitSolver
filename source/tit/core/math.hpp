@@ -55,43 +55,43 @@ constexpr auto pow3(Num a) -> Num {
 /// Raise to the fourth power with 2 multiplications.
 template<class Num>
 constexpr auto pow4(Num a) -> Num {
-  auto const a_sqr = a * a;
+  const auto a_sqr = a * a;
   return a_sqr * a_sqr;
 }
 
 /// Raise to the fifth power with 3 multiplications.
 template<class Num>
 constexpr auto pow5(Num a) -> Num {
-  auto const a_sqr = a * a;
+  const auto a_sqr = a * a;
   return a_sqr * a_sqr * a;
 }
 
 /// Raise to the sixth power with 3 multiplications.
 template<class Num>
 constexpr auto pow6(Num a) -> Num {
-  auto const a_cubed = a * a * a;
+  const auto a_cubed = a * a * a;
   return a_cubed * a_cubed;
 }
 
 /// Raise to the seventh power with 4 multiplications.
 template<class Num>
 constexpr auto pow7(Num a) -> Num {
-  auto const a_cubed = a * a * a;
+  const auto a_cubed = a * a * a;
   return a_cubed * a_cubed * a;
 }
 
 /// Raise to the eighth power with 3 multiplications.
 template<class Num>
 constexpr auto pow8(Num a) -> Num {
-  auto const a_sqr = a * a;
-  auto const a_pow4 = a_sqr * a_sqr;
+  const auto a_sqr = a * a;
+  const auto a_pow4 = a_sqr * a_sqr;
   return a_pow4 * a_pow4;
 }
 
 /// Raise to the ninth power with 4 multiplications.
 template<class Num>
 constexpr auto pow9(Num a) -> Num {
-  auto const a_cubed = a * a * a;
+  const auto a_cubed = a * a * a;
   return a_cubed * a_cubed * a_cubed;
 }
 
@@ -106,7 +106,7 @@ constexpr auto pow(Float a,
 template<class Num, class Coeff>
 constexpr auto horner(Num x, std::initializer_list<Coeff> ci) {
   mul_result_t<Num, Coeff> r{0};
-  for (auto const c : ci | std::views::reverse) r = r * x + c;
+  for (const auto c : ci | std::views::reverse) r = r * x + c;
   return r;
 }
 
@@ -212,7 +212,7 @@ constexpr auto newton_raphson(Num& x,
   TIT_ASSUME_UNIVERSAL(Func, f);
   using enum NewtonRaphsonStatus;
   for (size_t iter = 0; iter < max_iter; ++iter) {
-    auto const [y, df_dx] = std::invoke(f /*, x*/);
+    const auto [y, df_dx] = std::invoke(f /*, x*/);
     if (abs(y) <= eps) return success;
     if (is_tiny(df_dx)) return fail_zero_deriv;
     x -= y / df_dx;
@@ -268,13 +268,13 @@ constexpr auto bisection(Num& min_x,
     // Approximate f(x) with line equation:
     // f(x) = min_f + (max_f - min_f)/(max_x - min_x) * (x - min_x),
     // therefore, approximate root of f(x) == 0 is:
-    auto const x = min_x - min_f * (max_x - min_x) / (max_f - min_f);
-    auto const y = std::invoke(f, x);
+    const auto x = min_x - min_f * (max_x - min_x) / (max_f - min_f);
+    const auto y = std::invoke(f, x);
     if (abs(y) <= eps) {
       min_x = max_x = x;
       return success;
     }
-    auto const sign_y = sign(y);
+    const auto sign_y = sign(y);
     if (sign_y != sign(min_f)) max_x = x, max_f = y;
     else if (sign_y != sign(max_f)) min_x = x, min_f = y;
   }

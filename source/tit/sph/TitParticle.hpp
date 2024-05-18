@@ -159,20 +159,20 @@ public:
   /// @param radius_func Function that returns search radius for the
   ///                    specified particle view.
   template<class SearchRadiusFunc>
-  constexpr void build(SearchRadiusFunc const& radius_func) {
+  constexpr void build(const SearchRadiusFunc& radius_func) {
     TIT_PROFILE_SECTION("tit::ParticleAdjacency::build()");
     using PV = ParticleView<ParticleArray>;
     // -------------------------------------------------------------------------
     // STEP I: neighbors search.
-    auto const positions = array().views() | //
+    const auto positions = array().views() | //
                            std::views::transform([](PV a) { return a[r]; });
-    auto const engine = engine_factory_(positions);
+    const auto engine = engine_factory_(positions);
     adjacency_.clear();
     fixed_.clear();
     interp_adjacency_.clear();
     std::ranges::for_each(array().views(), [&](PV a) {
-      auto const search_point = r[a];
-      auto const search_radius = radius_func(a);
+      const auto search_point = r[a];
+      const auto search_radius = radius_func(a);
       TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
       thread_local std::vector<size_t> search_results;
       search_results.clear();
@@ -183,8 +183,8 @@ public:
 #if 1
       if (fixed[a]) {
         fixed_.push_back(a.index());
-        auto const clipped_point = Domain.clamp(search_point);
-        auto const interp_point = 2 * clipped_point - search_point;
+        const auto clipped_point = Domain.clamp(search_point);
+        const auto interp_point = 2 * clipped_point - search_point;
         search_results.clear();
         engine.search(interp_point,
                       3 * search_radius,
@@ -209,7 +209,7 @@ public:
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
     size_t nparts = par::num_threads();
-    size_t const partsize = divide_up(parts.size(), nparts);
+    const size_t partsize = divide_up(parts.size(), nparts);
     // Compute partitioning.
     for (size_t i = 0; i < parts.size(); ++i) {
       parts[i] /= partsize;
@@ -454,7 +454,7 @@ public:
       return (*this)[field];
     } else {
       return [&]<class... Vars>(meta::Set<Vars...>) {
-        auto const& particle = particles_[particle_index];
+        const auto& particle = particles_[particle_index];
         return std::get<meta::index_of_v<Field, Vars...>>(particle);
       }(variables);
     }
@@ -487,18 +487,18 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   template<class x>
-  static auto _make_name(std::string const& n, std::tuple<x> /**/) {
+  static auto _make_name(const std::string& n, std::tuple<x> /**/) {
     return n;
   }
   template<class Realx, size_t Dimx>
-  static auto _make_name(std::string const& n,
+  static auto _make_name(const std::string& n,
                          std::tuple<Vec<Realx, Dimx>> /**/) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2) return n + "_x " + n + "_y";
     if constexpr (Dimx == 3) return n + "_x " + n + "_y " + n + "_z";
   }
   template<class Realx, size_t Dimx>
-  static auto _make_name(std::string const& n,
+  static auto _make_name(const std::string& n,
                          std::tuple<Mat<Realx, Dimx>> /**/) {
     if constexpr (Dimx == 1) return n;
     if constexpr (Dimx == 2)
@@ -516,7 +516,7 @@ public:
                       std::tuple<field_value_type_t<V, Real, Dim>>{});
   }
 
-  void print(std::string const& path) {
+  void print(const std::string& path) {
     std::ofstream output{};
     output.open(path);
     ((output << _make_name(Fields{}) << " "), ...);

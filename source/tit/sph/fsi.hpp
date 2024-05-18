@@ -40,7 +40,7 @@ public:
 
   /// Compute Cauchy stress tensor from Euler strain tensor.
   template<class Real, size_t Dim>
-  constexpr auto stress_tensor(Mat<Real, Dim> const& eps) const noexcept {
+  constexpr auto stress_tensor(const Mat<Real, Dim>& eps) const noexcept {
     static_assert(Dim == 2);
     Mat<Real, Dim> sigma;
     sigma[0, 0] = eps[0, 0] + nu_s_ * eps[1, 1];
@@ -52,8 +52,8 @@ public:
 
   template<class PV>
   constexpr auto sound_speed(PV a) const noexcept {
-    auto const K_s = E_s_ / (3.0 * (1.0 - 2.0 * nu_s_));
-    auto const cs_0 = sqrt(K_s / rho[a]);
+    const auto K_s = E_s_ / (3.0 * (1.0 - 2.0 * nu_s_));
+    const auto cs_0 = sqrt(K_s / rho[a]);
     return cs_0;
   }
 
@@ -128,17 +128,17 @@ public:
     });
     // Compute kernel gradient renormalization matrix.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
-      auto const [a, b] = ab;
-      auto const grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
-      auto const V0_a = m[a] / rho[a];
-      auto const V0_b = m[b] / rho[b];
+      const auto [a, b] = ab;
+      const auto grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
+      const auto V0_a = m[a] / rho[a];
+      const auto V0_b = m[b] / rho[b];
       /// Update kernel gradient renormalization matrix.
-      auto const L_flux = outer(r_0[b, a], grad0_W_ab);
+      const auto L_flux = outer(r_0[b, a], grad0_W_ab);
       L[a] += V0_b * L_flux, L[b] += V0_a * L_flux;
     });
     par::for_each(particles.views(), [&](PV a) {
       /// Finalize kernel gradient renormalization matrix.
-      auto const fact = lu(L[a]);
+      const auto fact = lu(L[a]);
       if (fact) L[a] = transpose(fact->inverse());
       else L[a] = eye(L[a]);
     });
@@ -173,31 +173,31 @@ public:
     });
     // Compute tensor of deformation gradient and artificial viscous force.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
-      auto const [a, b] = ab;
-      auto const grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
-      auto const V0_a = m[a] / rho[a];
-      auto const V0_b = m[b] / rho[b];
+      const auto [a, b] = ab;
+      const auto grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
+      const auto V0_a = m[a] / rho[a];
+      const auto V0_b = m[b] / rho[b];
       /// Update tensor of deformation gradient (stored in `P`).
-      auto const P_flux = outer(r[b, a], grad0_W_ab);
+      const auto P_flux = outer(r[b, a], grad0_W_ab);
       P[a] += V0_b * P_flux, P[b] += V0_a * P_flux;
       /// Update artificial viscous force.
-      auto const Pi_ab = artvisc_.velocity_term(a, b);
-      auto const v_flux = Pi_ab * grad0_W_ab;
+      const auto Pi_ab = artvisc_.velocity_term(a, b);
+      const auto v_flux = Pi_ab * grad0_W_ab;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
     });
     par::for_each(particles.views(), [&](PV a) {
       /// Finalize tensor of deformation gradient (stored in `P`)
       /// and compute auxiliary tensors from it.
-      auto const F_a = P[a] * L[a];
-      auto const F_T_a = transpose(F_a);
-      auto const F_T_fact_a = lu(F_T_a);
-      auto const F_invT_a = F_T_fact_a->inverse();
-      auto const J_a = F_T_fact_a->det();
+      const auto F_a = P[a] * L[a];
+      const auto F_T_a = transpose(F_a);
+      const auto F_T_fact_a = lu(F_T_a);
+      const auto F_invT_a = F_T_fact_a->inverse();
+      const auto J_a = F_T_fact_a->det();
       /// Compute Green-Lagrange strain tensor.
-      auto const I = eye(F_a);
-      auto const E_a = 0.5 * (F_T_a * F_a - I);
+      const auto I = eye(F_a);
+      const auto E_a = 0.5 * (F_T_a * F_a - I);
       /// Compute Euler strain tensor.
-      auto const eps_a = F_invT_a * E_a * F_T_a;
+      const auto eps_a = F_invT_a * E_a * F_T_a;
       /// Cauchy stress tensor.
       auto [weight_a, sigma_a] = eos_.stress_tensor(eps_a);
       sigma_a *= weight_a / pow2(rho[a]);
@@ -208,10 +208,10 @@ public:
     });
     // Compute velocity time derivative.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
-      auto const [a, b] = ab;
-      auto const grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
+      const auto [a, b] = ab;
+      const auto grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
       /// Update velocity time derivative.
-      auto const v_flux = (P[a] + P[b]) * grad0_W_ab;
+      const auto v_flux = (P[a] + P[b]) * grad0_W_ab;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
     });
     par::for_each(particles.views(), [&](PV a) {

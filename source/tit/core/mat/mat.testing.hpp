@@ -22,8 +22,8 @@ constexpr auto all(bool b) noexcept -> bool {
 
 // Matrix exact equality operator.
 template<class Num, size_t Dim>
-constexpr auto operator==(Mat<Num, Dim> const& a,
-                          Mat<Num, Dim> const& b) noexcept -> bool {
+constexpr auto operator==(const Mat<Num, Dim>& a,
+                          const Mat<Num, Dim>& b) noexcept -> bool {
   for (size_t i = 0; i < Dim; ++i) {
     for (size_t j = 0; j < Dim; ++j) {
       if (a[i, j] != b[i, j]) return false;
@@ -34,8 +34,8 @@ constexpr auto operator==(Mat<Num, Dim> const& a,
 
 // Matrix approximate equality operator.
 template<class Num, size_t Dim>
-constexpr auto approx_equal_to(Mat<Num, Dim> const& a,
-                               Mat<Num, Dim> const& b) noexcept -> bool {
+constexpr auto approx_equal_to(const Mat<Num, Dim>& a,
+                               const Mat<Num, Dim>& b) noexcept -> bool {
   for (size_t i = 0; i < Dim; ++i) {
     for (size_t j = 0; j < Dim; ++j) {
       if (!approx_equal_to(a[i, j], b[i, j])) return false;

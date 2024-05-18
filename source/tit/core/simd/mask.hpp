@@ -63,7 +63,7 @@ public:
   }
 
   /// Mask equality operation.
-  constexpr auto operator==(Mask const&) const noexcept -> bool = default;
+  constexpr auto operator==(const Mask&) const noexcept -> bool = default;
 
 private:
 

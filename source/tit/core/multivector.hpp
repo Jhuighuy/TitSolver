@@ -119,8 +119,8 @@ public:
     // Compute value ranges.
     /// First compute how many values there are per each index.
     val_ranges_.clear(), val_ranges_.resize(count + 1);
-    par::for_each(handles, [&](auto const& handle) {
-      auto const index = static_cast<size_t>(index_of(handle));
+    par::for_each(handles, [&](const auto& handle) {
+      const auto index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       par::fetch_and_add(val_ranges_[index + 1], 1);
     });
@@ -131,12 +131,12 @@ public:
     // Place values according to the ranges.
     /// Place each value into position of the first element of it's index range,
     /// then increment the position.
-    auto const num_vals = val_ranges_.back();
+    const auto num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
-    par::for_each(handles, [&](auto const& handle) {
-      auto const index = static_cast<size_t>(index_of(handle));
+    par::for_each(handles, [&](const auto& handle) {
+      const auto index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      auto const addr = par::fetch_and_add(val_ranges_[index], 1);
+      const auto addr = par::fetch_and_add(val_ranges_[index], 1);
       vals_[addr] = static_cast<Val>(value_of(handle));
     });
     /// Fix value ranges, since after incrementing the entire array is shifted
@@ -167,8 +167,8 @@ public:
     val_ranges_.clear(), val_ranges_.resize(count + 1);
     static Mdvector<size_t, 2> val_ranges_per_thread{};
     val_ranges_per_thread.assign(count + 1, par::num_threads());
-    par::static_for_each(handles, [&](auto const& handle) {
-      auto const index = static_cast<size_t>(index_of(handle));
+    par::static_for_each(handles, [&](const auto& handle) {
+      const auto index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       val_ranges_per_thread[index, par::thread_index()]++;
     });
@@ -189,10 +189,10 @@ public:
     // Place values according to the ranges.
     /// Place each value into position of the first element of it's index range,
     /// then increment the position.
-    auto const num_vals = val_ranges_.back();
+    const auto num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
-    par::static_for_each(handles, [&](auto const& handle) {
-      auto const index = static_cast<size_t>(index_of(handle));
+    par::static_for_each(handles, [&](const auto& handle) {
+      const auto index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       auto& addr = val_ranges_per_thread[index, par::thread_index()];
       vals_[addr] = static_cast<Val>(value_of(handle));

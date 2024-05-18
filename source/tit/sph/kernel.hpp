@@ -105,7 +105,7 @@ public:
   template<class Num>
   constexpr auto radius(this auto& self, Num h) noexcept -> Num {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
-    auto const radius = self.template unit_radius<Num>();
+    const auto radius = self.template unit_radius<Num>();
     return radius * h;
   }
 
@@ -115,9 +115,9 @@ public:
                             Vec<Num, Dim> x,
                             Num h) noexcept -> Num {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
-    auto const h_inverse = inverse(h);
-    auto const w = self.template weight<Num, Dim>() * pow(h_inverse, Dim);
-    auto const q = h_inverse * norm(x);
+    const auto h_inverse = inverse(h);
+    const auto w = self.template weight<Num, Dim>() * pow(h_inverse, Dim);
+    const auto q = h_inverse * norm(x);
     return w * self.unit_value(q);
   }
 
@@ -127,9 +127,9 @@ public:
                        Vec<Num, Dim> x,
                        Num h) noexcept -> Num {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
-    auto const h_inverse = inverse(h);
-    auto const w = self.template weight<Num, Dim>() * pow(h_inverse, Dim);
-    auto const q = h_inverse * norm(x);
+    const auto h_inverse = inverse(h);
+    const auto w = self.template weight<Num, Dim>() * pow(h_inverse, Dim);
+    const auto q = h_inverse * norm(x);
     return w * self.unit_deriv(q) * h_inverse;
   }
 
@@ -139,10 +139,10 @@ public:
                       Vec<Num, Dim> x,
                       Num h) noexcept -> Vec<Num, Dim> {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
-    auto const h_inverse = inverse(h);
-    auto const w = self.template weight<Num, Dim>() * pow(h_inverse, Dim);
-    auto const q = h_inverse * norm(x);
-    auto const grad_q = normalize(x) * h_inverse;
+    const auto h_inverse = inverse(h);
+    const auto w = self.template weight<Num, Dim>() * pow(h_inverse, Dim);
+    const auto q = h_inverse * norm(x);
+    const auto grad_q = normalize(x) * h_inverse;
     return w * self.unit_deriv(q) * grad_q;
   }
 
@@ -152,11 +152,11 @@ public:
                              Vec<Num, Dim> x,
                              Num h) noexcept -> Num {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
-    auto const h_inverse = inverse(h);
-    auto const w = self.template weight<Num, Dim>() * pow(h_inverse, Dim);
-    auto const dw_dh = -int{Dim} * w * h_inverse;
-    auto const q = h_inverse * norm(x);
-    auto const dq_dh = -q * h_inverse;
+    const auto h_inverse = inverse(h);
+    const auto w = self.template weight<Num, Dim>() * pow(h_inverse, Dim);
+    const auto dw_dh = -int{Dim} * w * h_inverse;
+    const auto q = h_inverse * norm(x);
+    const auto dq_dh = -q * h_inverse;
     return dw_dh * self.unit_value(q) + w * self.unit_deriv(q) * dq_dh;
   }
 
@@ -242,7 +242,7 @@ public:
     constexpr auto qi = Vec{Num{2.0}, Num{1.0}};
     constexpr auto wi = Vec{Num{0.25}, Num{-1.0}};
 #if TIT_BRANCHLESS_KERNELS
-    auto const qv = Vec<Num, 2>(q);
+    const auto qv = Vec<Num, 2>(q);
     return sum(filter(qv < qi, wi * pow3(qi - qv)));
 #else
     auto W = Num{0.0};
@@ -262,7 +262,7 @@ public:
     constexpr auto qi = Vec{Num{2.0}, Num{1.0}};
     constexpr auto wi = Vec{Num{0.25}, Num{-1.0}};
 #if TIT_BRANCHLESS_KERNELS
-    auto const qv = Vec<Num, 2>(q);
+    const auto qv = Vec<Num, 2>(q);
     return sum(filter(qv < qi, wi * Num{-3.0} * pow2(qi - qv)));
 #else
     auto dW_dq = Num{0.0};
@@ -343,7 +343,7 @@ public:
     constexpr auto qi = Vec{Num{2.5}, Num{1.5}, Num{0.5}};
     constexpr auto wi = Vec{Num{1.0}, Num{-5.0}, Num{10.0}};
 #if TIT_BRANCHLESS_KERNELS
-    auto const qv = Vec<Num, 3>(q);
+    const auto qv = Vec<Num, 3>(q);
     return sum(filter(qv < qi, wi * pow4(qi - qv)));
 #else
     auto W = Num{0.0};
@@ -366,7 +366,7 @@ public:
     constexpr auto qi = Vec{Num{2.5}, Num{1.5}, Num{0.5}};
     constexpr auto wi = Vec{Num{1.0}, Num{-5.0}, Num{10.0}};
 #if TIT_BRANCHLESS_KERNELS
-    auto const qv = Vec<Num, 3>(q);
+    const auto qv = Vec<Num, 3>(q);
     return sum(filter(qv < qi, wi * Num{-4.0} * pow3(qi - qv)));
 #else
     auto dW_dq = Num{0.0};
@@ -413,7 +413,7 @@ public:
     constexpr auto qi = Vec{Num{3.0}, Num{2.0}, Num{1.0}};
     constexpr auto wi = Vec{Num{1.0}, Num{-6.0}, Num{15.0}};
 #if TIT_BRANCHLESS_KERNELS
-    auto const qv = Vec<Num, 3>(q);
+    const auto qv = Vec<Num, 3>(q);
     return sum(filter(qv < qi, wi * pow5(qi - qv)));
 #else
     auto W = Num{0.0};
@@ -436,7 +436,7 @@ public:
     constexpr auto qi = Vec{Num{3.0}, Num{2.0}, Num{1.0}};
     constexpr auto wi = Vec{Num{1.0}, Num{-6.0}, Num{15.0}};
 #if TIT_BRANCHLESS_KERNELS
-    auto const qv = Vec<Num, 3>(q);
+    const auto qv = Vec<Num, 3>(q);
     return sum(filter(qv < qi, wi * Num{-5.0} * pow4(qi - qv)));
 #else
     auto dW_dq = Num{0.0};

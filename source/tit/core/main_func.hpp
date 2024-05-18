@@ -16,7 +16,7 @@ using main_func_t = std::function<int(int, char**)>;
 
 /// Wrapper for the main function that should run sets up the
 /// environment: initialized threading, error handlers, etc.
-auto run_main(int argc, char** argv, main_func_t const& main_func) -> int;
+auto run_main(int argc, char** argv, const main_func_t& main_func) -> int;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

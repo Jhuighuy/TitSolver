@@ -18,9 +18,9 @@ namespace {
 
 TEST_CASE("Mdspan") {
   // Construct `Mdspan`.
-  auto const shape = std::array{3ZU, 3ZU};
-  auto const vals = std::array{1, 2, 3, 4, 5, 6, 7, 8, 9};
-  auto const mdspan = Mdspan<int const, 2>{shape, vals};
+  const auto shape = std::array{3ZU, 3ZU};
+  const auto vals = std::array{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  const auto mdspan = Mdspan<const int, 2>{shape, vals};
   // Check data access.
   CHECK(mdspan.size() == 9);
   CHECK(mdspan.front() == 1);
@@ -38,7 +38,7 @@ TEST_CASE("Mdspan") {
   CHECK(mdspan[1][0] == 4);
   CHECK(mdspan[2][1] == 8);
   // Check data access using iterators.
-  auto const iter = std::ranges::find(mdspan, 7);
+  const auto iter = std::ranges::find(mdspan, 7);
   CHECK(iter - mdspan.begin() == 6);
 }
 
@@ -57,7 +57,7 @@ TEST_CASE("Mdvector") {
     CHECK(mdvector.size() == 0);
   }
   SUBCASE("access") {
-    auto const make_mdvector = []() {
+    const auto make_mdvector = []() {
       // Construct Mdvector.
       Mdvector<int, 2> mdvector(3, 3);
       // Populate it with vals using the different accessors.
@@ -67,7 +67,7 @@ TEST_CASE("Mdvector") {
       return mdvector;
     };
     // Retrieve const copy of our vector to play with.
-    auto const mdvector = make_mdvector();
+    const auto mdvector = make_mdvector();
     // Check basic accessors.
     CHECK(mdvector.front() == 1);
     CHECK(mdvector.back() == 9);
@@ -86,7 +86,7 @@ TEST_CASE("Mdvector") {
     CHECK(mdvector[2][1] == 8);
   }
   SUBCASE("iterators") {
-    auto const make_mdvector = []() {
+    const auto make_mdvector = []() {
       // Construct and populate `Mdvector` using iterators.
       Mdvector<int, 3> mdvector{};
       mdvector.assign(4, 4, 4);
@@ -94,9 +94,9 @@ TEST_CASE("Mdvector") {
       return mdvector;
     };
     // Retrieve const copy of our vector to play with.
-    auto const mdvector = make_mdvector();
+    const auto mdvector = make_mdvector();
     // Find `32` in vector.
-    auto const iter = std::ranges::find(mdvector, 32);
+    const auto iter = std::ranges::find(mdvector, 32);
     CHECK(iter - mdvector.begin() == 31);
   }
 }

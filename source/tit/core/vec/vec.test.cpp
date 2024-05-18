@@ -32,12 +32,12 @@ TEST_CASE("Vec") {
     CHECK(v[1] == 0.0_d);
   }
   SUBCASE("value initialization") {
-    Vec<Num, 2> const v(3.0_d);
+    const Vec<Num, 2> v(3.0_d);
     CHECK(v[0] == 3.0_d);
     CHECK(v[1] == 3.0_d);
   }
   SUBCASE("aggregate initialization") {
-    Vec const v{1.0_d, 2.0_d};
+    const Vec v{1.0_d, 2.0_d};
     CHECK(v[0] == 1.0_d);
     CHECK(v[1] == 2.0_d);
   }

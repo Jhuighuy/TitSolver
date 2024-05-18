@@ -16,7 +16,7 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("Mat::part_at") {
-  Mat const A{
+  const Mat A{
       {1.0, 2.0, 3.0},
       {4.0, 5.0, 6.0},
       {7.0, 8.0, 9.0},
@@ -55,7 +55,7 @@ TEST_CASE("Mat::part_at") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("Mat::copy_part") {
-  Mat const A{
+  const Mat A{
       {1.0, 2.0, 3.0},
       {4.0, 5.0, 6.0},
       {7.0, 8.0, 9.0},
@@ -147,7 +147,7 @@ TEST_CASE("Mat::part_solve_inplace") {
       {-2.0, -1.0,  5.0},
   };
   // clang-format on
-  Vec const x{1.0, 2.0, 3.0};
+  const Vec x{1.0, 2.0, 3.0};
   using enum MatPart;
   SUBCASE("diag") {
     Vec b{2.0, 8.0, 15.0};

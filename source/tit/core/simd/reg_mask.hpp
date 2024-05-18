@@ -39,7 +39,7 @@ public:
 
   /// Construct SIMD register mask from the Highway register.
   [[gnu::always_inline]]
-  RegMask(Base const& b) noexcept
+  RegMask(const Base& b) noexcept
       : base{b} {}
 
   /// Fill-initialize the SIMD register mask with zeroes.
@@ -54,10 +54,10 @@ public:
 
   /// Load SIMD register mask from memory.
   [[gnu::always_inline]]
-  explicit RegMask(std::span<Mask<Num> const> span) noexcept {
+  explicit RegMask(std::span<const Mask<Num>> span) noexcept {
     TIT_ASSERT(span.size() >= Size, "Span size is too small!");
     base = hn::MaskFromVec( // NOLINT(*-prefer-member-initializer)
-        hn::Load(Tag{}, std::bit_cast<Num const*>(span.data())));
+        hn::Load(Tag{}, std::bit_cast<const Num*>(span.data())));
   }
 
   /// Store SIMD register mask into memory.
@@ -79,7 +79,7 @@ public:
 template<class Num, size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto any(RegMask<Num, Size> const& m) noexcept -> bool {
+inline auto any(const RegMask<Num, Size>& m) noexcept -> bool {
   return !hn::AllFalse(typename RegMask<Num, Size>::Tag{}, m.base);
 }
 
@@ -87,7 +87,7 @@ inline auto any(RegMask<Num, Size> const& m) noexcept -> bool {
 template<class Num, size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto all(RegMask<Num, Size> const& m) noexcept -> bool {
+inline auto all(const RegMask<Num, Size>& m) noexcept -> bool {
   return hn::AllTrue(typename RegMask<Num, Size>::Tag{}, m.base);
 }
 
