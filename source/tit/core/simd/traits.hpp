@@ -28,12 +28,10 @@ concept supported_type = std::integral<Num> || std::floating_point<Num>;
 ///
 /// That is 16 bytes for all supported instruction sets.
 inline constexpr size_t min_reg_byte_width_v{
-#ifdef __ARM_NEON
-    16
-#elifdef __SSE__
+#if defined __SSE__ || defined __ARM_NEON
     16
 #else
-    0
+#error Unknown SIMD instruction set!
 #endif
 };
 
@@ -43,16 +41,14 @@ inline constexpr size_t min_reg_byte_width_v{
 /// That is 16 bytes for NEON and SSE instruction set, 32 and 64 bytes for
 /// AVX and AVX-512 respectively.
 inline constexpr size_t max_reg_byte_width_v{
-#ifdef __ARM_NEON
-    16
-#elifdef __AVX512F__
+#if defined __AVX512F__
     64
-#elifdef __AVX__
+#elif defined __AVX__
     32
-#elifdef __SSE__
+#elif defined __SSE__ || defined __ARM_NEON
     16
 #else
-    0
+#error Unknown SIMD instruction set!
 #endif
 };
 
@@ -80,10 +76,10 @@ concept supported =
 namespace impl {
 
 // In Highway, type is identified as an integer, if it is one of the standard
-// fixed-width types. This leads to the problem that if, for example, `int64_t`
-// is defined as `long long` on some platforms, the specialization for `long`
-// would be missing. Even if `long` and `long long` have the same size, they are
-// not the same type:
+// fixed-width types. This leads to the problem that if, for example,
+// `int64_t` is defined as `long long` on some platforms, the specialization
+// for `long` would be missing. Even if `long` and `long long` have the same
+// size, they are not the same type:
 //
 // static_assert(sizeof(long) == sizeof(long long) &&
 //               !std::same_as<long, long long>);
