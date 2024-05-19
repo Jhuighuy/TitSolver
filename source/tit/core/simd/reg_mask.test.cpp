@@ -43,6 +43,62 @@ TEST_CASE("simd::RegMask") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("simd::RegMask::operator!") {
+  const FloatMaskArray in{false, true, false, true};
+  const FloatRegMask r = !FloatRegMask(in);
+  FloatMaskArray out{};
+  r.store(out);
+  CHECK(out == FloatMaskArray{true, false, true, false});
+}
+
+TEST_CASE("simd::RegMask::operator&&") {
+  const FloatMaskArray a{true, false, true, false};
+  const FloatMaskArray b{true, true, false, false};
+  const FloatRegMask ra(a);
+  const FloatRegMask rb(b);
+  const FloatRegMask r = ra && rb;
+  FloatMaskArray out{};
+  r.store(out);
+  CHECK(out == FloatMaskArray{true, false, false, false});
+}
+
+TEST_CASE("simd::RegMask::operator||") {
+  const FloatMaskArray a{true, false, true, false};
+  const FloatMaskArray b{true, true, false, false};
+  const FloatRegMask ra(a);
+  const FloatRegMask rb(b);
+  const FloatRegMask r = ra || rb;
+  FloatMaskArray out{};
+  r.store(out);
+  CHECK(out == FloatMaskArray{true, true, true, false});
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("simd::RegMask::operator==") {
+  const FloatMaskArray a{true, false, true, false};
+  const FloatMaskArray b{true, true, false, false};
+  const FloatRegMask ra(a);
+  const FloatRegMask rb(b);
+  const FloatRegMask r = ra == rb;
+  FloatMaskArray out{};
+  r.store(out);
+  CHECK(out == FloatMaskArray{true, false, false, true});
+}
+
+TEST_CASE("simd::RegMask::operator!=") {
+  const FloatMaskArray a{true, false, true, false};
+  const FloatMaskArray b{true, true, false, false};
+  const FloatRegMask ra(a);
+  const FloatRegMask rb(b);
+  const FloatRegMask r = ra != rb;
+  FloatMaskArray out{};
+  r.store(out);
+  CHECK(out == FloatMaskArray{false, true, true, false});
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("simd::RegMask::any_and_all") {
   SUBCASE("all") {
     const FloatMaskArray a{true, true, true, true};

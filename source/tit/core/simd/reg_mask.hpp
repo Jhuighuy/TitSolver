@@ -72,6 +72,44 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// SIMD mask negation operation.
+  [[gnu::always_inline]]
+  friend auto operator!(const RegMask& m) noexcept -> RegMask {
+    return hn::Not(m.base);
+  }
+
+  /// SIMD mask conjunction operation.
+  [[gnu::always_inline]]
+  friend auto operator&&(const RegMask& m,
+                         const RegMask& n) noexcept -> RegMask {
+    return hn::And(m.base, n.base);
+  }
+
+  /// SIMD mask disjunction operation.
+  [[gnu::always_inline]]
+  friend auto operator||(const RegMask& m,
+                         const RegMask& n) noexcept -> RegMask {
+    return hn::Or(m.base, n.base);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// SIMD mask "equal to" comparison operation.
+  [[gnu::always_inline]]
+  friend auto operator==(const RegMask& m,
+                         const RegMask& n) noexcept -> RegMask {
+    return hn::Not(hn::Xor(m.base, n.base));
+  }
+
+  /// SIMD mask "not equal to" comparison operation.
+  [[gnu::always_inline]]
+  friend auto operator!=(const RegMask& m,
+                         const RegMask& n) noexcept -> RegMask {
+    return hn::Xor(m.base, n.base);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 }; // class RegMask
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
