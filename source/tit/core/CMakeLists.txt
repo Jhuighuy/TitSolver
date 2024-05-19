@@ -40,6 +40,7 @@ add_tit_library(
     "uint_utils.hpp"
     "utils.hpp"
     "vec.hpp"
+    "vec/traits.hpp"
     "vec/vec.hpp"
     "vec/vec_mask.hpp"
   DEPENDS
