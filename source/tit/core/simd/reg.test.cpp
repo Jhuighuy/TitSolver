@@ -47,37 +47,35 @@ TEST_CASE("simd::Reg") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("simd::Reg::min") {
-  const FloatArray a{5.0F, 6.0F, 7.0F, 8.0F};
-  const FloatArray b{1.0F, 7.0F, 4.0F, 9.0F};
-  const FloatReg r = simd::min(FloatReg(a), FloatReg(b));
+  const auto r = simd::min(FloatReg{FloatArray{5.0F, 6.0F, 7.0F, 8.0F}},
+                           FloatReg{FloatArray{1.0F, 7.0F, 4.0F, 9.0F}});
   FloatArray out{};
   r.store(out);
   CHECK(out == FloatArray{1.0F, 6.0F, 4.0F, 8.0F});
 }
 
 TEST_CASE("simd::Reg::max") {
-  const FloatArray a{5.0F, 6.0F, 7.0F, 8.0F};
-  const FloatArray b{1.0F, 7.0F, 4.0F, 9.0F};
-  const FloatReg r = simd::max(FloatReg(a), FloatReg(b));
+  const auto r = simd::max(FloatReg{FloatArray{5.0F, 6.0F, 7.0F, 8.0F}},
+                           FloatReg{FloatArray{1.0F, 7.0F, 4.0F, 9.0F}});
   FloatArray out{};
   r.store(out);
   CHECK(out == FloatArray{5.0F, 7.0F, 7.0F, 9.0F});
 }
 
 TEST_CASE("simd::Reg::filter") {
-  const FloatArray a{5.0F, 6.0F, 7.0F, 8.0F};
-  const FloatMaskArray mask{true, false, true, false};
-  const FloatReg r = simd::filter(FloatRegMask(mask), FloatReg(a));
+  const auto r =
+      simd::filter(FloatRegMask{FloatMaskArray{true, false, true, false}},
+                   FloatReg{FloatArray{5.0F, 6.0F, 7.0F, 8.0F}});
   FloatArray out{};
   r.store(out);
   CHECK(out == FloatArray{5.0F, 0.0F, 7.0F, 0.0F});
 }
 
 TEST_CASE("simd::Reg::select") {
-  const FloatArray a{5.0F, 6.0F, 7.0F, 8.0F};
-  const FloatArray b{1.0F, 2.0F, 3.0F, 4.0F};
-  const FloatMaskArray mask{true, false, true, false};
-  const FloatReg r = simd::select(FloatRegMask(mask), FloatReg(a), FloatReg(b));
+  const auto r =
+      simd::select(FloatRegMask{FloatMaskArray{true, false, true, false}},
+                   FloatReg{FloatArray{5.0F, 6.0F, 7.0F, 8.0F}},
+                   FloatReg{FloatArray{1.0F, 2.0F, 3.0F, 4.0F}});
   FloatArray out{};
   r.store(out);
   CHECK(out == FloatArray{5.0F, 2.0F, 7.0F, 4.0F});
@@ -90,14 +88,14 @@ TEST_CASE("simd::Reg::operator+") {
   const FloatArray b{5.0F, 6.0F, 7.0F, 8.0F};
   const FloatArray sum{6.0F, 8.0F, 10.0F, 12.0F};
   SUBCASE("normal") {
-    const FloatReg r = FloatReg(a) + FloatReg(b);
+    const FloatReg r = FloatReg{a} + FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == sum);
   }
   SUBCASE("with assignment") {
-    FloatReg r(a);
-    r += FloatReg(b);
+    FloatReg r{a};
+    r += FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == sum);
@@ -107,7 +105,7 @@ TEST_CASE("simd::Reg::operator+") {
 TEST_CASE("simd::Reg::operator-") {
   const FloatArray b{1.0F, 2.0F, 3.0F, 4.0F};
   SUBCASE("negation") {
-    const FloatReg r = -FloatReg(b);
+    const FloatReg r = -FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == FloatArray{-1.0F, -2.0F, -3.0F, -4.0F});
@@ -115,14 +113,14 @@ TEST_CASE("simd::Reg::operator-") {
   const FloatArray a{5.0F, 6.0F, 7.0F, 8.0F};
   const FloatArray diff{4.0F, 4.0F, 4.0F, 4.0F};
   SUBCASE("normal") {
-    const FloatReg r = FloatReg(a) - FloatReg(b);
+    const FloatReg r = FloatReg{a} - FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == diff);
   }
   SUBCASE("with assignment") {
-    FloatReg r(a);
-    r -= FloatReg(b);
+    FloatReg r{a};
+    r -= FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == diff);
@@ -134,14 +132,14 @@ TEST_CASE("simd::Reg::operator*") {
   const FloatArray b{6.0F, 7.0F, 8.0F, 9.0F};
   const FloatArray prod{12.0F, 21.0F, 32.0F, 45.0F};
   SUBCASE("normal") {
-    const FloatReg r = FloatReg(a) * FloatReg(b);
+    const FloatReg r = FloatReg{a} * FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == prod);
   }
   SUBCASE("with assignment") {
-    FloatReg r(a);
-    r *= FloatReg(b);
+    FloatReg r{a};
+    r *= FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == prod);
@@ -153,14 +151,14 @@ TEST_CASE("simd::Reg::operator/") {
   const FloatArray b{6.0F, 7.0F, 8.0F, 9.0F};
   const FloatArray quot{2.0F, 3.0F, 4.0F, 5.0F};
   SUBCASE("normal") {
-    const FloatReg r = FloatReg(a) / FloatReg(b);
+    const FloatReg r = FloatReg{a} / FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == quot);
   }
   SUBCASE("with assignment") {
-    FloatReg r(a);
-    r /= FloatReg(b);
+    FloatReg r{a};
+    r /= FloatReg{b};
     FloatArray out{};
     r.store(out);
     CHECK(out == quot);
@@ -170,34 +168,30 @@ TEST_CASE("simd::Reg::operator/") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("simd::Reg::floor") {
-  const FloatArray a{1.5F, 2.7F, 3.1F, 4.9F};
-  const FloatReg r = simd::floor(FloatReg(a));
+  const auto r = simd::floor(FloatReg{FloatArray{1.5F, 2.7F, 3.1F, 4.9F}});
   FloatArray out{};
   r.store(out);
   CHECK(out == FloatArray{1.0F, 2.0F, 3.0F, 4.0F});
 }
 
 TEST_CASE("simd::Reg::round") {
-  const FloatArray a{1.5F, 2.7F, 3.1F, 4.9F};
-  const FloatReg r = simd::round(FloatReg(a));
+  const auto r = simd::round(FloatReg{FloatArray{1.5F, 2.7F, 3.1F, 4.9F}});
   FloatArray out{};
   r.store(out);
   CHECK(out == FloatArray{2.0F, 3.0F, 3.0F, 5.0F});
 }
 
 TEST_CASE("simd::Reg::ceil") {
-  const FloatArray a{1.5F, 2.7F, 3.1F, 4.9F};
-  const FloatReg r = simd::ceil(FloatReg(a));
+  const auto r = simd::ceil(FloatReg{FloatArray{1.5F, 2.7F, 3.1F, 4.9F}});
   FloatArray out{};
   r.store(out);
   CHECK(out == FloatArray{2.0F, 3.0F, 4.0F, 5.0F});
 }
 
 TEST_CASE("simd::Reg::fma") {
-  const FloatArray a{1.0F, 2.0F, 3.0F, 4.0F};
-  const FloatArray b{5.0F, 6.0F, 7.0F, 8.0F};
-  const FloatArray c{9.0F, 10.0F, 11.0F, 12.0F};
-  const FloatReg r = simd::fma(FloatReg(a), FloatReg(b), FloatReg(c));
+  const auto r = simd::fma(FloatReg{FloatArray{1.0F, 2.0F, 3.0F, 4.0F}},
+                           FloatReg{FloatArray{5.0F, 6.0F, 7.0F, 8.0F}},
+                           FloatReg{FloatArray{9.0F, 10.0F, 11.0F, 12.0F}});
   FloatArray out{};
   r.store(out);
   CHECK(out == FloatArray{14.0F, 22.0F, 32.0F, 44.0F});
@@ -209,37 +203,37 @@ TEST_CASE("simd::Reg::operator<=>") {
   const FloatArray a{1.0F, 2.0F, 4.0F, 4.0F};
   const FloatArray b{1.0F, 5.0F, 3.0F, 7.0F};
   SUBCASE("==") {
-    const auto m = FloatReg(a) == FloatReg(b);
+    const auto m = FloatReg{a} == FloatReg{b};
     FloatMaskArray out{};
     m.store(out);
     CHECK(out == FloatMaskArray{true, false, false, false});
   }
   SUBCASE("!=") {
-    const auto m = FloatReg(a) != FloatReg(b);
+    const auto m = FloatReg{a} != FloatReg{b};
     FloatMaskArray out{};
     m.store(out);
     CHECK(out == FloatMaskArray{false, true, true, true});
   }
   SUBCASE("<") {
-    const auto m = FloatReg(a) < FloatReg(b);
+    const auto m = FloatReg{a} < FloatReg{b};
     FloatMaskArray out{};
     m.store(out);
     CHECK(out == FloatMaskArray{false, true, false, true});
   }
   SUBCASE("<=") {
-    const auto m = FloatReg(a) <= FloatReg(b);
+    const auto m = FloatReg{a} <= FloatReg{b};
     FloatMaskArray out{};
     m.store(out);
     CHECK(out == FloatMaskArray{true, true, false, true});
   }
   SUBCASE(">") {
-    const auto m = FloatReg(a) > FloatReg(b);
+    const auto m = FloatReg{a} > FloatReg{b};
     FloatMaskArray out{};
     m.store(out);
     CHECK(out == FloatMaskArray{false, false, true, false});
   }
   SUBCASE(">=") {
-    const auto m = FloatReg(a) >= FloatReg(b);
+    const auto m = FloatReg{a} >= FloatReg{b};
     FloatMaskArray out{};
     m.store(out);
     CHECK(out == FloatMaskArray{true, false, true, false});
@@ -249,18 +243,15 @@ TEST_CASE("simd::Reg::operator<=>") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("simd::Reg::sum") {
-  const FloatArray a{1.0F, 2.0F, 3.0F, 4.0F};
-  CHECK(simd::sum(FloatReg(a)) == 10.0F);
+  CHECK(simd::sum(FloatReg{FloatArray{1.0F, 2.0F, 3.0F, 4.0F}}) == 10.0F);
 }
 
 TEST_CASE("simd::Reg::min_value") {
-  const FloatArray a{3.0F, 2.0F, 4.0F, 1.0F};
-  CHECK(simd::min_value(FloatReg(a)) == 1.0F);
+  CHECK(simd::min_value(FloatReg{FloatArray{3.0F, 2.0F, 4.0F, 1.0F}}) == 1.0F);
 }
 
 TEST_CASE("simd::Reg::max_value") {
-  const FloatArray a{3.0F, 2.0F, 4.0F, 1.0F};
-  CHECK(simd::max_value(FloatReg(a)) == 4.0F);
+  CHECK(simd::max_value(FloatReg{FloatArray{3.0F, 2.0F, 4.0F, 1.0F}}) == 4.0F);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
