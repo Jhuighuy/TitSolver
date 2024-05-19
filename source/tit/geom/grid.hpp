@@ -16,7 +16,6 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/core/vec/vec.hpp"
 #include "tit/geom/bbox.hpp"
 
 namespace tit::geom {

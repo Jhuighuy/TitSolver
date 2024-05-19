@@ -7,13 +7,12 @@
 
 #include <algorithm>
 #include <ranges>
+#include <span>
 #include <utility>
 #include <vector>
 
-#include <oneapi/tbb/parallel_invoke.h>
-
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
 
@@ -23,12 +22,12 @@ namespace tit::geom {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Z-curve spatial ordering.
+/// Morton space filling curve spatial ordering.
 template<std::ranges::view Points>
   requires std::ranges::sized_range<Points> &&
            std::ranges::random_access_range<Points> &&
            is_vec_v<std::ranges::range_value_t<Points>>
-class ZCurveOrdering {
+class MortonCurveOrdering final {
 public:
 
   /// Point type.
@@ -40,86 +39,76 @@ public:
   /// Numeric type used by the point type.
   static constexpr auto Dim = vec_dim_v<Point>;
 
-private:
-
-  Points points_;
-  std::vector<size_t> point_perm_;
-
-public:
-
-  /// Initialize and build the K-dimensional tree.
-  ///
-  /// @param max_leaf_size Maximum amount of points in the leaf node.
-  constexpr explicit ZCurveOrdering(Points points)
-      : points_{std::move(points)} {
-    TIT_PROFILE_SECTION("tit::ZCurveOrdering::ZCurveOrdering()");
+  /// Initialize and build Morton SFC curve ordering.
+  explicit MortonCurveOrdering(Points points) : points_{std::move(points)} {
+    TIT_PROFILE_SECTION("MortonCurveOrdering::ctor()");
     if (std::ranges::empty(points_)) return;
-    // Initialize identity points permutation.
-    const auto size = std::ranges::size(points_);
-    point_perm_.resize(size);
-    std::ranges::copy(std::views::iota(0UZ, size), point_perm_.begin());
+    // Initialize identity point ordering.
+    indices_.resize(std::ranges::size(points_));
+    std::ranges::copy(std::views::iota(size_t{0}, indices_.size()),
+                      indices_.begin());
     // Compute bounding box.
     auto bbox = BBox{points_[0]};
     for (const auto& p : points_ | std::views::drop(1)) bbox.expand(p);
     // Compute the root bounding box and build ordering.
-    // TODO: refactor with `std::span`.
-    // NOLINTBEGIN(*-bounds-pointer-arithmetic)
-    partition_(point_perm_.data(),
-               point_perm_.data() + point_perm_.size(),
-               bbox);
-    // NOLINTEND(*-bounds-pointer-arithmetic)
+    par::TaskGroup tasks{};
+    build_indices_<0>(tasks, bbox, indices_);
+    tasks.wait();
   }
 
   void GetHilbertElementOrdering(std::vector<size_t>& ordering) {
-    ordering = std::move(point_perm_);
+    ordering = std::move(indices_);
   }
 
 private:
 
-  // Build the K-dimensional subtree.
-  // On the input `bbox` contains a rough estimate that was guessed by the
-  // caller. On return it contains an exact bounding box of the subtree.
-  constexpr void partition_(size_t* first,
-                            size_t* last,
-                            PointBBox bbox) noexcept {
-    TIT_ASSERT(first <= last, "Invalid point iterators.");
-    if (last - first <= 1) return;
-    const auto center = bbox.center();
-    if constexpr (Dim == 2) {
-      const auto in_upper_part = [&](size_t index) {
-        return points_[index][1] > center[1];
-      };
-      const auto to_the_left = [&](size_t index) {
-        return points_[index][0] < center[0];
-      };
-      // Split subtree vertically.
-      const auto [lower_bbox, upper_bbox] = bbox.split(1, center[1]);
-      auto* const upper = first;
-      auto* const lower = std::partition(first, last, in_upper_part);
-      // Split upper part horizontally.
-      const auto [upper_left_bbox, //
-                  upper_right_bbox] = upper_bbox.split(0, center[0]);
-      auto* const upper_left = upper;
-      auto* const upper_right = std::partition(upper, lower, to_the_left);
-      // Split lower part horizontally.
-      const auto [lower_left_bbox, //
-                  lower_right_bbox] = lower_bbox.split(0, center[0]);
-      auto* const lower_left = lower;
-      auto* const lower_right = std::partition(lower, last, to_the_left);
-      // Recursively build quadrants.
-      tbb::parallel_invoke(
-          [=, this] { partition_(upper_left, upper_right, upper_left_bbox); },
-          [=, this] { partition_(upper_right, lower_left, upper_right_bbox); },
-          [=, this] { partition_(lower_left, lower_right, lower_left_bbox); },
-          [=, this] { partition_(lower_right, last, lower_right_bbox); });
-    }
+  // Compute the bounding box.
+  auto build_bbox_() noexcept {
+    auto bbox = BBox{points_[0]};
+    for (const auto& p : points_ | std::views::drop(1)) bbox.update(p);
+    return bbox;
   }
 
-}; // class ZCurveOrdering
+  // Build permutation using a divide and conquire approach.
+  template<size_t Axis>
+    requires (Axis < Dim)
+  void build_indices_(par::TaskGroup& tasks, //
+                      PointBBox bbox,
+                      std::span<size_t> range) noexcept {
+    if (range.size() <= 1) return;
+    const auto center = bbox.center();
+    // Split ordering along the given axis.
+    const auto [left_bbox, right_bbox] = bbox.split(Axis, center[Axis]);
+    const auto is_left = [value = center[Axis], this](size_t index) {
+      return points_[index][Axis] <= value;
+    };
+    const std::span right_range(std::ranges::partition(range, is_left));
+    const std::span left_range(range.begin(), right_range.begin());
+    // Recursively split the head and tail along the next axis.
+    constexpr auto NextAxis = (Axis + 1) % Dim;
+    tasks.run(is_async_(left_range), [=, &tasks, this] {
+      build_indices_<NextAxis>(tasks, left_bbox, left_range);
+    });
+    tasks.run(is_async_(right_range), [=, &tasks, this] {
+      build_indices_<NextAxis>(tasks, right_bbox, right_range);
+    });
+  }
+
+  // Should the ordering be done in parallel?
+  static constexpr auto is_async_(std::span<size_t> range) noexcept -> bool {
+    static constexpr size_t TooSmall = 50;
+    return range.size() >= TooSmall;
+  }
+
+  Points points_;
+  std::vector<size_t> indices_;
+
+}; // class MortonCurveOrdering
 
 // Wrap a viewable range into a view on construction.
 template<class Points, class... Args>
-ZCurveOrdering(Points&&, Args...) -> ZCurveOrdering<std::views::all_t<Points>>;
+MortonCurveOrdering(Points&&,
+                    Args...) -> MortonCurveOrdering<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
