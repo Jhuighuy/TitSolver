@@ -5,20 +5,19 @@
 
 #include "tit/core/vec.hpp"
 
+#include "tit/core/vec/vec_mask.hpp"
 #include "tit/testing/strict.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// Use custom number type in this test to avoid vectorization.
-using Num = Strict<double>;
+// To test implementations with and without SIMD.
+#define NUM_TYPES double, Strict<double>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("VecMask") {
+TEST_CASE_TEMPLATE("VecMask", Num, NUM_TYPES) {
   SUBCASE("zero initialization") {
     VecMask<Num, 2> v{};
     CHECK_FALSE(v[0]);
@@ -55,67 +54,61 @@ TEST_CASE("VecMask") {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Logical operations
+//
 
-TEST_CASE("Vec::operator==") {
-  CHECK(all(Vec{1.0_d, 2.0_d} == Vec{1.0_d, 2.0_d}));
-  CHECK_FALSE(any(Vec{1.0_d, 2.0_d} == Vec{3.0_d, 4.0_d}));
+TEST_CASE_TEMPLATE("VecMask::operator!", Num, NUM_TYPES) {
+  CHECK(all(VecMask<Num, 2>{true, false} == !VecMask<Num, 2>{false, true}));
 }
 
-TEST_CASE("Vec::operator!=") {
-  CHECK(all(Vec{1.0_d, 2.0_d} != Vec{3.0_d, 4.0_d}));
-  CHECK_FALSE(any(Vec{1.0_d, 2.0_d} != Vec{1.0_d, 2.0_d}));
+TEST_CASE_TEMPLATE("VecMask::operator&&", Num, NUM_TYPES) {
+  CHECK(all((VecMask<Num, 4>{true, false, true, false} &&
+             VecMask<Num, 4>{true, true, false, false}) ==
+            VecMask<Num, 4>{true, false, false, false}));
 }
 
-TEST_CASE("Vec::operator<") {
-  CHECK(all(Vec{1.0_d, 2.0_d} < Vec{3.0_d, 4.0_d}));
-  CHECK_FALSE(any(Vec{3.0_d, 4.0_d} < Vec{1.0_d, 2.0_d}));
-}
-
-TEST_CASE("Vec::operator<=") {
-  CHECK(all(Vec{1.0_d, 2.0_d} <= Vec{1.0_d, 2.0_d}));
-  CHECK(all(Vec{1.0_d, 2.0_d} <= Vec{3.0_d, 4.0_d}));
-  CHECK_FALSE(any(Vec{3.0_d, 4.0_d} <= Vec{1.0_d, 2.0_d}));
-}
-
-TEST_CASE("Vec::operator>") {
-  CHECK(all(Vec{3.0_d, 4.0_d} > Vec{1.0_d, 2.0_d}));
-  CHECK_FALSE(any(Vec{1.0_d, 2.0_d} > Vec{3.0_d, 4.0_d}));
-}
-
-TEST_CASE("Vec::operator>=") {
-  CHECK(all(Vec{1.0_d, 2.0_d} >= Vec{1.0_d, 2.0_d}));
-  CHECK(all(Vec{3.0_d, 4.0_d} >= Vec{1.0_d, 2.0_d}));
-  CHECK_FALSE(any(Vec{1.0_d, 2.0_d} >= Vec{3.0_d, 4.0_d}));
+TEST_CASE_TEMPLATE("VecMask::operator||", Num, NUM_TYPES) {
+  CHECK(all((VecMask<Num, 4>{true, false, true, false} ||
+             VecMask<Num, 4>{true, true, false, false}) ==
+            VecMask<Num, 4>{true, true, true, false}));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Comparison operations
+//
 
-TEST_CASE("VecMask::filter") {
-  const auto m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
-  CHECK(all(filter(m, Vec{1.0_d, 2.0_d}) == Vec{0.0_d, 2.0_d}));
+TEST_CASE_TEMPLATE("VecMask::operator==", Num, NUM_TYPES) {
+  CHECK(all((VecMask<Num, 4>{true, false, true, false} ==
+             VecMask<Num, 4>{true, true, false, false}) ==
+            VecMask<Num, 4>{true, false, false, true}));
 }
 
-TEST_CASE("VecMask::select") {
-  const auto m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 2.0_d};
-  CHECK(all(select(m, Vec{1.0_d, 2.0_d}, Vec{3.0_d, 4.0_d}) == //
-            Vec{3.0_d, 2.0_d}));
+TEST_CASE_TEMPLATE("VecMask::operator!=", Num, NUM_TYPES) {
+  CHECK(all((VecMask<Num, 4>{true, false, true, false} !=
+             VecMask<Num, 4>{true, true, false, false}) ==
+            VecMask<Num, 4>{false, true, true, false}));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Reduction
+//
 
-TEST_CASE("VecMask::all_any") {
+TEST_CASE_TEMPLATE("VecMask::all_and_any", Num, NUM_TYPES) {
   SUBCASE("all") {
-    const auto m = Vec{1.0_d, 2.0_d} == Vec{1.0_d, 2.0_d};
+    const auto m = VecMask<Num, 2>{true, true};
     CHECK(any(m));
     CHECK(all(m));
   }
-  SUBCASE("any") {
-    const auto m = Vec{1.0_d, 2.0_d} == Vec{1.0_d, 3.0_d};
+  SUBCASE("some") {
+    const auto m = VecMask<Num, 2>{false, true};
     CHECK(any(m));
     CHECK_FALSE(all(m));
   }
   SUBCASE("none") {
-    const auto m = Vec{1.0_d, 2.0_d} == Vec{3.0_d, 4.0_d};
+    const auto m = VecMask<Num, 2>{false, false};
     CHECK_FALSE(any(m));
     CHECK_FALSE(all(m));
   }

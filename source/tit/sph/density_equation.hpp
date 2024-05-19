@@ -11,7 +11,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
 
@@ -48,7 +47,7 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto width(PV a) const noexcept {
-    const auto d = dim(r[a]);
+    const auto d = r[a].dim();
     return eta_ * pow(rho[a] / m[a], -1.0 / d);
   }
 
@@ -56,7 +55,7 @@ public:
   template<class PV>
     requires (has<PV>(required_fields))
   constexpr auto density(PV a) const noexcept {
-    const auto d = dim(r[a]);
+    const auto d = r[a].dim();
     const auto Rho_a = m[a] * pow(eta_ / h[a], d);
     const auto dRho_dh_a = -d * Rho_a / h[a];
     return std::tuple{Rho_a, dRho_dh_a};

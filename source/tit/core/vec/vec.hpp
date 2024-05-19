@@ -15,8 +15,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/type_traits.hpp"
 #include "tit/core/utils.hpp"
+#include "tit/core/vec/vec_mask.hpp"
 
 namespace tit {
 
@@ -33,11 +33,17 @@ public:
   /// Fill-initialize the vector with the value @p q.
   constexpr explicit(Dim > 1) Vec(const Num& q) : col_{fill_array<Dim>(q)} {}
 
-  /// Construct a vector with elements @p qi.
+  /// Construct a vector with elements @p qs.
   template<class... Args>
     requires (Dim > 1) && (sizeof...(Args) == Dim) &&
              (std::constructible_from<Num, Args &&> && ...)
-  constexpr Vec(Args&&... qi) : col_{std::forward<Args>(qi)...} {} // NOSONAR
+  constexpr Vec(Args&&... qs) // NOSONAR
+      : col_{make_array<Dim, Num>(std::forward<Args>(qs)...)} {}
+
+  /// Vector dimensionality.
+  constexpr auto dim() const -> ssize_t {
+    return Dim;
+  }
 
   /// Vector element at index.
   /// @{
@@ -55,69 +61,79 @@ private:
 
   std::array<Num, Dim> col_;
 
-}; // class Vec<Num, Dim>
+}; // class Vec
 
 template<class Num, class... RestNums>
 Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Is the type a specialization of a vector type?
-/// @{
-template<class>
-inline constexpr bool is_vec_v = false;
-template<class Num, size_t Dim>
-inline constexpr bool is_vec_v<Vec<Num, Dim>> = true;
-/// @}
-
-/// Number type of the vector.
-template<class Vec>
-  requires is_vec_v<Vec>
-using vec_num_t = std::remove_cvref_t<decltype(std::declval<Vec>()[0])>;
-
-/// Dimensionality of the vector.
-template<class Num, size_t Dim>
-constexpr auto dim(const Vec<Num, Dim>& /*unused*/) noexcept -> ssize_t {
-  return Dim;
-}
-
-/// Dimensionality of the vector.
-template<class Vec>
-  requires is_vec_v<Vec>
-inline constexpr size_t vec_dim_v = dim(Vec{});
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Vector output operator.
-template<class Stream, class Num, size_t Dim>
-constexpr auto operator<<(Stream& stream, const Vec<Num, Dim>& a) -> Stream& {
-  stream << a[0];
-  for (size_t i = 1; i < Dim; ++i) stream << " " << a[i];
-  return stream;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Casts
+//
 
 /// Element-wise vector cast.
 template<class To, class Num, size_t Dim>
 constexpr auto static_vec_cast(const Vec<Num, Dim>& a) -> Vec<To, Dim> {
-  // Here I would like to avoid problems if `To` has no default constructor,
-  // hence roll the loop explicitly.
-  return [&]<size_t... Indices>(std::index_sequence<Indices...>) {
-    return Vec{static_cast<To>(a[Indices])...};
-  }(std::make_index_sequence<Dim>{});
+  Vec<To, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = static_cast<To>(a[i]);
+  return r;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Algorithms
+//
 
-/// Vector unary plus.
+/// Element-wise minimum of two vectors.
+template<class Num, size_t Dim>
+constexpr auto minimum(const Vec<Num, Dim>& a,
+                       const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = std::min(a[i], b[i]);
+  return r;
+}
+
+/// Element-wise maximum of two vectors.
+template<class Num, size_t Dim>
+constexpr auto maximum(const Vec<Num, Dim>& a,
+                       const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = std::max(a[i], b[i]);
+  return r;
+}
+
+/// Filter a vector with a boolean mask.
+template<class Num, size_t Dim>
+constexpr auto filter(const VecMask<Num, Dim>& m,
+                      const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : Num{0};
+  return r;
+}
+
+/// Select two vectors based on a boolean mask.
+template<class Num, size_t Dim>
+constexpr auto select(const VecMask<Num, Dim>& m,
+                      const Vec<Num, Dim>& a,
+                      const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+  Vec<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : b[i];
+  return r;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Arithmetic operations
+//
+
+/// Vector unary plus operation.
 template<class Num, size_t Dim>
 constexpr auto operator+(const Vec<Num, Dim>& a) noexcept
     -> const Vec<Num, Dim>& {
   return a;
 }
 
-/// Vector addition.
+/// Vector element-wise addition operation.
 template<class Num, size_t Dim>
 constexpr auto operator+(const Vec<Num, Dim>& a,
                          const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
@@ -126,7 +142,7 @@ constexpr auto operator+(const Vec<Num, Dim>& a,
   return r;
 }
 
-/// Vector addition with assignment.
+/// Vector element-wise addition with assignment operation.
 template<class Num, size_t Dim>
 constexpr auto operator+=(Vec<Num, Dim>& a,
                           const Vec<Num, Dim>& b) -> Vec<Num, Dim>& {
@@ -134,7 +150,7 @@ constexpr auto operator+=(Vec<Num, Dim>& a,
   return a;
 }
 
-/// Vector negation.
+/// Vector element-wise negation operation.
 template<class Num, size_t Dim>
 constexpr auto operator-(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
@@ -142,7 +158,7 @@ constexpr auto operator-(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
   return r;
 }
 
-/// Vector subtraction.
+/// Vector element-wise subtraction operation.
 template<class Num, size_t Dim>
 constexpr auto operator-(const Vec<Num, Dim>& a,
                          const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
@@ -151,7 +167,7 @@ constexpr auto operator-(const Vec<Num, Dim>& a,
   return r;
 }
 
-/// Vector subtraction with assignment.
+/// Vector element-wise subtraction with assignment operation.
 template<class Num, size_t Dim>
 constexpr auto operator-=(Vec<Num, Dim>& a,
                           const Vec<Num, Dim>& b) -> Vec<Num, Dim>& {
@@ -159,7 +175,7 @@ constexpr auto operator-=(Vec<Num, Dim>& a,
   return a;
 }
 
-/// Vector-scalar multiplication.
+/// Vector-scalar element-wise multiplication operation.
 /// @{
 template<class Num, size_t Dim>
 constexpr auto operator*(const std::type_identity_t<Num>& a,
@@ -175,7 +191,7 @@ constexpr auto operator*(const Vec<Num, Dim>& a,
 }
 /// @}
 
-/// Vector-scalar multiplication with assignment.
+/// Vector-scalar element-wise multiplication with assignment operation.
 template<class Num, size_t Dim>
 constexpr auto operator*=(Vec<Num, Dim>& a, const std::type_identity_t<Num>& b)
     -> Vec<Num, Dim>& {
@@ -183,7 +199,7 @@ constexpr auto operator*=(Vec<Num, Dim>& a, const std::type_identity_t<Num>& b)
   return a;
 }
 
-/// Element-wise vector multiplication.
+/// Vector element-wise multiplication operation.
 template<class Num, size_t Dim>
 constexpr auto operator*(const Vec<Num, Dim>& a,
                          const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
@@ -192,7 +208,7 @@ constexpr auto operator*(const Vec<Num, Dim>& a,
   return r;
 }
 
-/// Element-wise vector multiplication with assignment.
+/// Vector element-wise multiplication with assignment operation.
 template<class Num, size_t Dim>
 constexpr auto operator*=(Vec<Num, Dim>& a,
                           const Vec<Num, Dim>& b) -> Vec<Num, Dim>& {
@@ -200,7 +216,7 @@ constexpr auto operator*=(Vec<Num, Dim>& a,
   return a;
 }
 
-/// Vector-scalar division.
+/// Vector-scalar element-wise division operation.
 template<class Num, size_t Dim>
 constexpr auto operator/(const Vec<Num, Dim>& a,
                          const std::type_identity_t<Num>& b) -> Vec<Num, Dim> {
@@ -208,7 +224,7 @@ constexpr auto operator/(const Vec<Num, Dim>& a,
   return a * inverse(b);
 }
 
-/// Vector-scalar division with assignment.
+/// Vector-scalar element-wise division with assignment operation.
 template<class Num, size_t Dim>
 constexpr auto operator/=(Vec<Num, Dim>& a, const std::type_identity_t<Num>& b)
     -> Vec<Num, Dim>& {
@@ -217,7 +233,7 @@ constexpr auto operator/=(Vec<Num, Dim>& a, const std::type_identity_t<Num>& b)
   return a;
 }
 
-/// Element-wise vector division.
+/// Vector element-wise division operation.
 template<class Num, size_t Dim>
 constexpr auto operator/(const Vec<Num, Dim>& a,
                          const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
@@ -226,7 +242,7 @@ constexpr auto operator/(const Vec<Num, Dim>& a,
   return r;
 }
 
-/// Element-wise vector division with assignment.
+/// Vector element-wise division with assignment operation.
 template<class Num, size_t Dim>
 constexpr auto operator/=(Vec<Num, Dim>& a,
                           const Vec<Num, Dim>& b) -> Vec<Num, Dim>& {
@@ -235,45 +251,9 @@ constexpr auto operator/=(Vec<Num, Dim>& a,
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Element-wise absolute values of a vector.
-template<class Num, size_t Dim>
-constexpr auto abs(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  for (size_t i = 0; i < Dim; ++i) r[i] = abs(a[i]);
-  return r;
-}
-
-/// Element-wise absolute difference of two vectors.
-template<class Num, size_t Dim>
-constexpr auto abs_delta(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  for (size_t i = 0; i < Dim; ++i) r[i] = abs(a[i] - b[i]);
-  return r;
-}
-
-/// Element-wise minimum of two vectors.
-template<class Num, size_t Dim>
-constexpr auto minimum(const Vec<Num, Dim>& a,
-                       const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
-  using std::min;
-  Vec<Num, Dim> r;
-  for (size_t i = 0; i < Dim; ++i) r[i] = min(a[i], b[i]);
-  return r;
-}
-
-/// Element-wise maximum of two vectors.
-template<class Num, size_t Dim>
-constexpr auto maximum(const Vec<Num, Dim>& a,
-                       const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
-  using std::max;
-  Vec<Num, Dim> r;
-  for (size_t i = 0; i < Dim; ++i) r[i] = max(a[i], b[i]);
-  return r;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Mathematical functions
+//
 
 /// Compute the largest integer value not greater than vector element.
 template<class Num, size_t Dim>
@@ -300,8 +280,66 @@ constexpr auto ceil(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Comparison operations
+//
 
-/// Sum of the vector components.
+/// Vector element-wise "equal to" comparison operation.
+template<class Num, size_t Dim>
+constexpr auto operator==(const Vec<Num, Dim>& a,
+                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> m;
+  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] == b[i];
+  return m;
+}
+
+/// Vector element-wise "not equal to" comparison operation.
+template<class Num, size_t Dim>
+constexpr auto operator!=(const Vec<Num, Dim>& a,
+                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> m;
+  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] != b[i];
+  return m;
+}
+
+/// Vector element-wise "less than" comparison operation.
+template<class Num, size_t Dim>
+constexpr auto operator<(const Vec<Num, Dim>& a,
+                         const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> m;
+  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] < b[i];
+  return m;
+}
+
+/// Vector element-wise "less than or equal to" comparison operation.
+template<class Num, size_t Dim>
+constexpr auto operator<=(const Vec<Num, Dim>& a,
+                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> m;
+  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] <= b[i];
+  return m;
+}
+
+/// Vector element-wise "greater than" comparison operation.
+template<class Num, size_t Dim>
+constexpr auto operator>(const Vec<Num, Dim>& a,
+                         const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+  return b < a;
+}
+
+/// Vector element-wise "greater than or equal to" comparison operation.
+template<class Num, size_t Dim>
+constexpr auto operator>=(const Vec<Num, Dim>& a,
+                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+  return b <= a;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Reductions
+//
+
+/// Sum of the vector elements.
 template<class Num, size_t Dim>
 constexpr auto sum(const Vec<Num, Dim>& a) -> Num {
   auto r = a[0];
@@ -309,29 +347,19 @@ constexpr auto sum(const Vec<Num, Dim>& a) -> Num {
   return r;
 }
 
-/// Vector dot product.
-template<class Num, size_t Dim>
-constexpr auto dot(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b) -> Num {
-  auto r = a[0] * b[0];
-  for (size_t i = 1; i < Dim; ++i) r += a[i] * b[i];
-  return r;
-}
-
 /// Minimal vector element.
 template<class Num, size_t Dim>
 constexpr auto min_value(const Vec<Num, Dim>& a) -> Num {
-  using std::min;
   auto r = a[0];
-  for (size_t i = 1; i < Dim; ++i) r = min(r, a[i]);
+  for (size_t i = 1; i < Dim; ++i) r = std::min(r, a[i]);
   return r;
 }
 
 /// Maximal vector element.
 template<class Num, size_t Dim>
 constexpr auto max_value(const Vec<Num, Dim>& a) -> Num {
-  using std::max;
   auto r = a[0];
-  for (size_t i = 1; i < Dim; ++i) r = max(r, a[i]);
+  for (size_t i = 1; i < Dim; ++i) r = std::max(r, a[i]);
   return r;
 }
 
@@ -356,8 +384,19 @@ constexpr auto max_value_index(const Vec<Num, Dim>& a) -> size_t {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Linear algebra
+//
 
-/// Vector norm square.
+/// Vector dot product.
+template<class Num, size_t Dim>
+constexpr auto dot(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b) -> Num {
+  auto r = a[0] * b[0];
+  for (size_t i = 1; i < Dim; ++i) r += a[i] * b[i];
+  return r;
+}
+
+/// Vector squared norm.
 template<class Num, size_t Dim>
 constexpr auto norm2(const Vec<Num, Dim>& a) -> Num {
   return dot(a, a);
@@ -373,16 +412,22 @@ constexpr auto norm(const Vec<Num, Dim>& a) -> Num {
 /// Normalize a vector.
 template<class Num, size_t Dim>
 constexpr auto normalize(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
-  if constexpr (Dim == 1) return Vec{is_tiny(a[0]) ? Num{0} : sign(a[0])};
+  if constexpr (Dim == 1) return is_tiny(a[0]) ? Num{0} : sign(a[0]);
   const auto norm_sqr = norm2(a);
-  const auto eps_sqr = pow2(tiny_number_v<Num>);
+  constexpr auto eps_sqr = pow2(tiny_number_v<Num>);
   const auto has_dir = norm_sqr >= pow2(eps_sqr);
   return has_dir ? a * rsqrt(norm_sqr) : Vec<Num, Dim>{};
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/// Is a vector approximately equal to another vector?
+template<class Num, size_t Dim>
+constexpr auto approx_equal_to(const Vec<Num, Dim>& a,
+                               const Vec<Num, Dim>& b) -> bool {
+  return norm2(a - b) <= pow2(tiny_number_v<Num>);
+}
 
 /// Vector cross product.
+///
 /// @returns 3D vector with a result of cross product.
 template<class Num, size_t Dim>
   requires in_range_v<Dim, 1, 3>
@@ -393,6 +438,19 @@ constexpr auto cross(const Vec<Num, Dim>& a,
   if constexpr (Dim == 3) r[1] = a[2] * b[0] - a[0] * b[2];
   if constexpr (Dim >= 2) r[2] = a[0] * b[1] - a[1] * b[0];
   return r;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// IO operations.
+//
+
+/// Vector output operator.
+template<class Stream, class Num, size_t Dim>
+constexpr auto operator<<(Stream& stream, const Vec<Num, Dim>& a) -> Stream& {
+  stream << a[0];
+  for (size_t i = 1; i < Dim; ++i) stream << " " << a[i];
+  return stream;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

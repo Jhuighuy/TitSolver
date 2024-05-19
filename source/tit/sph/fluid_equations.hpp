@@ -294,7 +294,7 @@ public:
       // TODO: Viscosity.
       if constexpr (has<PV>(mu)) {
         // Viscous updates.
-        const auto d = dim(r[a]);
+        const auto d = r[a].dim();
         const auto mu_ab = mu.avg(a, b);
         if constexpr (true) {
           /// Laplacian viscosity approach.

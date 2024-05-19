@@ -8,6 +8,7 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // IWYU pragma: begin_exports
+#include "tit/core/vec/traits.hpp"
 #include "tit/core/vec/vec.hpp"
 #include "tit/core/vec/vec_mask.hpp"
 // IWYU pragma: end_exports

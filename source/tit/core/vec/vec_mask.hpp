@@ -8,13 +8,10 @@
 
 #include <array>
 #include <concepts>
-#include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/math.hpp"
 #include "tit/core/utils.hpp"
-#include "tit/core/vec/vec.hpp"
 
 namespace tit {
 
@@ -36,8 +33,8 @@ public:
   template<class... Args>
     requires (Dim > 1) && (sizeof...(Args) == Dim) &&
              (std::constructible_from<bool, Args &&> && ...)
-  constexpr VecMask(Args&&... qi) // NOSONAR
-      : col_{std::forward<Args>(qi)...} {}
+  constexpr VecMask(Args&&... bs) // NOSONAR
+      : col_{make_array<Dim, bool>(std::forward<Args>(bs)...)} {}
 
   /// Element at index.
   /// @{
@@ -58,96 +55,67 @@ private:
 }; // class VecMask
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Logical operations
+//
 
-/// Vector element-wise "equal to" comparison boolean mask.
+/// Vector mask element-wise logical negation operation.
 template<class Num, size_t Dim>
-constexpr auto operator==(const Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] == b[i];
-  return m;
-}
-
-/// Vector element-wise "not equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator!=(const Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] != b[i];
-  return m;
-}
-
-/// Vector element-wise "less than" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator<(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] < b[i];
-  return m;
-}
-
-/// Vector element-wise "less than or equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator<=(const Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] <= b[i];
-  return m;
-}
-
-/// Vector element-wise "greater than" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator>(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] > b[i];
-  return m;
-}
-
-/// Vector element-wise "greater than or equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto operator>=(const Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] >= b[i];
-  return m;
-}
-
-/// Vector element-wise "approximately equal to" comparison boolean mask.
-template<class Num, size_t Dim>
-constexpr auto approx_equal_to(const Vec<Num, Dim>& a,
-                               const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  for (size_t i = 0; i < Dim; ++i) m[i] = approx_equal_to(a[i], b[i]);
-  return m;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Blend vector and a zero vector based on a boolean mask.
-template<class Num, size_t Dim>
-constexpr auto filter(const VecMask<Num, Dim>& m,
-                      const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : Num{0};
+constexpr auto operator!(const VecMask<Num, Dim>& m) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = !m[i];
   return r;
 }
 
-/// Blend two vectors based on a boolean mask.
+/// Vector mask element-wise conjunction operation.
 template<class Num, size_t Dim>
-constexpr auto select(const VecMask<Num, Dim>& m,
-                      const Vec<Num, Dim>& a,
-                      const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] ? a[i] : b[i];
+constexpr auto operator&&(const VecMask<Num, Dim>& m,
+                          const VecMask<Num, Dim>& n) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] && n[i];
+  return r;
+}
+
+/// Vector mask element-wise disjunction operation.
+template<class Num, size_t Dim>
+constexpr auto operator||(const VecMask<Num, Dim>& m,
+                          const VecMask<Num, Dim>& n) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] || n[i];
   return r;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Comparison operations
+//
+
+/// Vector mask element-wise "equal to" comparison operation.
+template<class Num, size_t Dim>
+constexpr auto operator==(const VecMask<Num, Dim>& m,
+                          const VecMask<Num, Dim>& n) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] == n[i];
+  return r;
+}
+
+/// Vector element-wise "not equal to" comparison operation.
+template<class Num, size_t Dim>
+constexpr auto operator!=(const VecMask<Num, Dim>& m,
+                          const VecMask<Num, Dim>& n) -> VecMask<Num, Dim> {
+  VecMask<Num, Dim> r;
+  for (size_t i = 0; i < Dim; ++i) r[i] = m[i] != n[i];
+  return r;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Reduction
+//
 
 /// Check if any vector mask element is set to true.
 template<class Num, size_t Dim>
-constexpr auto any(const VecMask<Num, Dim>& m) noexcept -> bool {
+constexpr auto any(const VecMask<Num, Dim>& m) -> bool {
   for (size_t i = 0; i < Dim; ++i) {
     if (m[i]) return true;
   }
@@ -156,7 +124,7 @@ constexpr auto any(const VecMask<Num, Dim>& m) noexcept -> bool {
 
 /// Check if all vector mask elements are set to true.
 template<class Num, size_t Dim>
-constexpr auto all(const VecMask<Num, Dim>& m) noexcept -> bool {
+constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
   for (size_t i = 0; i < Dim; ++i) {
     if (!m[i]) return false;
   }
