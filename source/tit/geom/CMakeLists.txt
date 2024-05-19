@@ -9,7 +9,7 @@ add_tit_library(
   SOURCES
     "bbox.hpp"
     "grid.hpp"
-    "hilbert_ordering.hpp"
+    "inertial_bisection.hpp"
     "kd_tree.hpp"
     "search_engine.hpp"
   DEPENDS
