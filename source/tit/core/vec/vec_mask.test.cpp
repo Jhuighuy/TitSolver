@@ -97,18 +97,34 @@ TEST_CASE_TEMPLATE("VecMask::operator!=", Num, NUM_TYPES) {
 //
 
 TEST_CASE_TEMPLATE("VecMask::all_and_any", Num, NUM_TYPES) {
+  // To cover all the SIMD paths, 17 element vectors are needed.
   SUBCASE("all") {
-    const auto m = VecMask<Num, 2>{true, true};
+    const VecMask<Num, 17> m(true);
     CHECK(any(m));
     CHECK(all(m));
   }
   SUBCASE("some") {
-    const auto m = VecMask<Num, 2>{false, true};
-    CHECK(any(m));
-    CHECK_FALSE(all(m));
+    SUBCASE("true in registers") {
+      VecMask<Num, 17> m(false);
+      m[9] = true;
+      CHECK(any(m));
+      CHECK_FALSE(all(m));
+    }
+    SUBCASE("true in remainder") {
+      VecMask<Num, 17> m(false);
+      m[16] = true;
+      CHECK(any(m));
+      CHECK_FALSE(all(m));
+    }
+    SUBCASE("false in remainder") {
+      VecMask<Num, 17> m(true);
+      m[16] = false;
+      CHECK(any(m));
+      CHECK_FALSE(all(m));
+    }
   }
   SUBCASE("none") {
-    const auto m = VecMask<Num, 2>{false, false};
+    const VecMask<Num, 17> m(false);
     CHECK_FALSE(any(m));
     CHECK_FALSE(all(m));
   }

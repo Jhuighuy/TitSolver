@@ -245,18 +245,28 @@ TEST_CASE_TEMPLATE("Vec::sum", Num, NUM_TYPES) {
   CHECK(sum(Vec{Num{1}, Num{2}, Num{3}}) == Num{6});
   CHECK(sum(Vec{Num{1}, Num{2}, Num{3}, Num{4}}) == Num{10});
   CHECK(sum(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}}) == Num{15});
+  // To cover all the SIMD paths, 17 element vectors are needed.
+  CHECK(sum(Vec<Num, 17>(Num{16})) == Num{17 * 16});
 }
 
 TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
   CHECK(min_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{2});
   CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{3});
   CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{2});
+  // To cover all the SIMD paths, 17 element vectors are needed.
+  Vec<Num, 17> v(Num{16});
+  v[8] = Num{1};
+  CHECK(min_value(v) == Num{1});
 }
 
 TEST_CASE_TEMPLATE("Vec::max_value", Num, NUM_TYPES) {
   CHECK(max_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{4});
   CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{6});
   CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{6});
+  // To cover all the SIMD paths, 17 element vectors are needed.
+  Vec<Num, 17> v(Num{16});
+  v[8] = Num{17};
+  CHECK(max_value(v) == Num{17});
 }
 
 TEST_CASE_TEMPLATE("Vec::min_value_index", Num, NUM_TYPES) {
@@ -285,6 +295,8 @@ TEST_CASE_TEMPLATE("Vec::dot", Num, NUM_TYPES) {
             Vec{Num{5}, Num{6}, Num{7}, Num{8}}) == Num{70});
   CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}},
             Vec{Num{6}, Num{7}, Num{8}, Num{9}, Num{10}}) == Num{130});
+  // To cover all the SIMD paths, 17 element vectors are needed.
+  CHECK(dot(Vec<Num, 17>(Num{3}), Vec<Num, 17>(Num{4})) == Num{17 * 3 * 4});
 }
 
 TEST_CASE_TEMPLATE("Vec::norm2", Num, NUM_TYPES) {

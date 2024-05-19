@@ -21,6 +21,12 @@ namespace tit::simd {
 template<class Num>
 concept supported_type = std::integral<Num> || std::floating_point<Num>;
 
+/// Evaluate the following command block if SIMD is supported for the given
+/// type and if the code is not executed at compile-time.
+#define TIT_IF_SIMD_AVALIABLE(Num)                                             \
+  if constexpr (simd::supported_type<Num>)                                     \
+    if !consteval
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Minimal byte width of the SIMD register that is available on the current
