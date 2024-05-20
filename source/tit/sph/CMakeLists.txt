@@ -24,6 +24,7 @@ add_tit_library(
     "viscosity.hpp"
   DEPENDS
     tit::core
+    tit::data
     tit::geom
     tit::graph
 )

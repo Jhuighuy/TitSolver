@@ -12,6 +12,7 @@ add_tit_executable(
     "wcsph.cpp"
   DEPENDS
     tit::core
+    tit::data
     tit::sph
 )
 

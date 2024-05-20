@@ -3,12 +3,23 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("core")
-add_subdirectory("data")
-add_subdirectory("geom")
-add_subdirectory("graph")
-add_subdirectory("sph")
-add_subdirectory("testing")
-add_subdirectory("view")
+add_tit_library(
+  NAME
+    data
+  SOURCES
+  DEPENDS
+    tit::core
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    data_tests
+  SOURCES
+  DEPENDS
+    tit::data
+    tit::testing
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
