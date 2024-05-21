@@ -9,6 +9,9 @@ add_tit_library(
   SOURCES
     "sqlite.cpp"
     "sqlite.hpp"
+    "storage.hpp"
+    "storage.cpp"
+    "type.hpp"
   DEPENDS
     tit::core
     unofficial::sqlite3::sqlite3
