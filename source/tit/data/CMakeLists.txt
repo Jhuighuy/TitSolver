@@ -9,6 +9,9 @@ add_tit_library(
   SOURCES
     "sqlite.cpp"
     "sqlite.hpp"
+    "storage.hpp"
+    "storage.cpp"
+    "type.hpp"
     "zstd.cpp"
     "zstd.hpp"
   DEPENDS

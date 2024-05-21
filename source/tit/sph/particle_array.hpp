@@ -96,18 +96,16 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compare particle views.
-  friend constexpr auto operator==(ParticleView<ParticleArray> a,
-                                   ParticleView<ParticleArray> b) noexcept
-      -> bool {
+  friend constexpr auto operator==(ParticleView a,
+                                   ParticleView b) noexcept -> bool {
     TIT_ASSERT(a.array().size() == b.array().size(),
                "Particle arrays must be of the same size!");
     return a.index() == b.index();
   }
 
   /// Distance between particle view indices.
-  friend constexpr auto operator-(ParticleView<ParticleArray> a,
-                                  ParticleView<ParticleArray> b) noexcept
-      -> ssize_t {
+  friend constexpr auto operator-(ParticleView a,
+                                  ParticleView b) noexcept -> ssize_t {
     TIT_ASSERT(a.array().size() == b.array().size(),
                "Particle arrays must be of the same size!");
     return a.index() - b.index();
