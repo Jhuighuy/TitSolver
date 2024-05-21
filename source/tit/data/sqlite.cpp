@@ -37,8 +37,6 @@ auto error_message(int status, sqlite3* db = nullptr) -> std::string {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Database::Database() : Database{/*path=*/":memory:"} {}
-
 Database::Database(const std::filesystem::path& path) {
   sqlite3* db = nullptr;
   const auto status = sqlite3_open_v2( //
@@ -98,7 +96,7 @@ void Database::execute(const char* sql) const {
             error_message_str);
 }
 
-auto Database::last_insert_row_id() const -> int64_t {
+auto Database::last_insert_row_id() const -> RowID {
   return sqlite3_last_insert_rowid(base());
 }
 

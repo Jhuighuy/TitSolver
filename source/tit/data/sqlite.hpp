@@ -21,6 +21,9 @@ struct sqlite3_stmt;
 
 namespace tit::data::sqlite {
 
+/// SQLite row ID type.
+using RowID = int64_t;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SQLite database.
@@ -28,9 +31,6 @@ class Database final {
 public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /// Open in-memory database.
-  explicit Database();
 
   /// Open or create a database file.
   explicit Database(const std::filesystem::path& path);
@@ -47,13 +47,7 @@ public:
   void execute(const char* sql) const;
 
   /// Get the last insert row ID.
-  /// @{
-  auto last_insert_row_id() const -> int64_t;
-  template<std::integral Int>
-  auto last_insert_row_id() const -> Int {
-    return static_cast<Int>(last_insert_row_id());
-  }
-  /// @}
+  auto last_insert_row_id() const -> RowID;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
