@@ -66,6 +66,7 @@ jobs:
             ./build/build.sh -j 4                                              \
               --compiler ${{ matrix.compiler }}                                \
               --config ${{ matrix.configuration }}                             \
+              --force                                                          \
               --test
 
       - name: Collect coverage reports
