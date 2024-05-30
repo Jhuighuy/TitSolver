@@ -37,10 +37,12 @@ private:
 
 }; // class Profiler
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Profile the current scope.
 #define TIT_PROFILE_SECTION(section_name)                                      \
-  static auto& TIT_NAME(prof_section) = tit::Profiler::section(section_name);  \
-  tit::StopwatchCycle const TIT_NAME(prof_cycle)(TIT_NAME(prof_section))
+  const tit::StopwatchCycle TIT_NAME(prof_cycle)(                              \
+      TIT_CACHED_VALUE(tit::Profiler::section(section_name)))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

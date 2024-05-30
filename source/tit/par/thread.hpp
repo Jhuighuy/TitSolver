@@ -63,7 +63,6 @@ void static_for_each(Range&& range, Func&& func) noexcept {
   const auto partition_first = [&](size_t thread) {
     return thread * partition_size + std::min(thread, partition_rem);
   };
-  static auto partitioner = tbb::static_partitioner{};
   tbb::parallel_for(
       0UZ,
       num_threads(),
@@ -75,7 +74,7 @@ void static_for_each(Range&& range, Func&& func) noexcept {
                       func);
         _thread_index = SIZE_MAX;
       },
-      partitioner);
+      tbb::static_partitioner{});
 }
 template<class Range, class Func>
 void static_for_each(std::ranges::join_view<Range> range,

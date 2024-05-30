@@ -24,6 +24,7 @@
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/uint_utils.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -174,7 +175,7 @@ public:
       const auto search_point = r[a];
       const auto search_radius = radius_func(a);
       TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
-      thread_local std::vector<size_t> search_results;
+      TIT_CACHED_VARIABLE(search_results, std::vector<size_t>{});
       search_results.clear();
       engine.search(search_point,
                     search_radius,

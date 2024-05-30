@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 #include <utility>
@@ -22,8 +23,12 @@ namespace tit {
 #define TIT_CAT(a, b) TIT_CAT_IMPL(a, b)
 #define TIT_CAT_IMPL(a, b) a##b
 
+/// Convert macro argument into a string literal.
+#define TIT_STR(a) TIT_STR_IMPL(a)
+#define TIT_STR_IMPL(a) #a
+
 /// Generate a unique identifier
-#define TIT_NAME(prefix) TIT_CAT(prefix##_, __LINE__)
+#define TIT_NAME(prefix) TIT_CAT(TIT_CAT(prefix, _), __LINE__)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -58,6 +63,91 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
     return std::array<T, Size>{get_val(Indices)...};
   }(std::make_index_sequence<Size>{});
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Helper object to store a string literal for non-type template parameters.
+template<size_t Size>
+class StringLiteral {
+public:
+
+  /// String data.
+  // NOLINTNEXTLINE(*-non-private-member-variables-in-classes)
+  std::array<char, Size> data;
+
+  /// Construct the string literal from a character array.
+  consteval StringLiteral(carr_ref_t<const char, Size> str) {
+    std::copy_n(str, Size, data.begin());
+  }
+
+}; // class StringLiteral
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Cache a value for the duration of the program per compilation unit.
+///
+/// Cached values are stored in static storage duration variables. The
+/// difference between this function and a static variable is that the value is
+/// cached uniformly across all template instantiations. This is useful for
+/// avoiding multiple definitions of the same static variable across different
+/// template instantiations.
+///
+/// @tparam ID Unique identifier for the value. Calling this function with
+///         the same ID and type will return the same object per compilation
+///         unit.
+///
+/// Example:
+/// @code
+/// template<class T>
+/// void foo() {
+///   static std::vector<int> static_vector{};
+///   // `static_vector` will be the same object for the duration of the,
+///   // program, but different for template instantiations.
+///   auto& cached = cache_value<"cached_value">(std::vector<int>{});
+///   // `cached_vector` will be the same object for the duration of the
+///   // program, and the same for all template instantiations.
+/// }
+/// @endcode
+template<StringLiteral ID, std::move_constructible Val>
+[[gnu::always_inline]]
+constexpr auto cache_value(Val&& val) -> Val& {
+  static Val cached_val{std::forward<Val>(val)};
+  return cached_val;
+}
+
+/// Helper macro to cache a value for the duration of the program.
+///
+/// Example:
+/// @code
+/// template<class T>
+/// void foo() {
+///   static std::vector<int> static_vector{};
+///   // `static_vector` will be the same object for the duration of the,
+///   // program, but different for template instantiations.
+///   auto& cached = TIT_CACHED_VALUE(std::vector<int>{});
+///   // `cached_vector` will be the same object for the duration of the
+///   // program, and the same for all template instantiations.
+/// }
+/// @endcode
+#define TIT_CACHED_VALUE(...)                                                  \
+  tit::cache_value<TIT_STR(TIT_NAME(__FILE__))>(__VA_ARGS__)
+
+/// Helper macro to cache a variable for the duration of the program.
+///
+/// Example:
+/// @code
+/// template<class T>
+/// void foo() {
+///   static std::vector<int> static_vector{};
+///   // `static_vector` will be the same object for the duration of the,
+///   // program, but different for template instantiations.
+///   TIT_CACHED_VARIABLE(cached_vector, std::vector<int>{});
+///   // `cached_vector` will be the same object for the duration of the
+///   // program, and the same for all template instantiations.
+/// }
+/// @endcode
+#define TIT_CACHED_VARIABLE(name, ...)                                         \
+  auto& name = TIT_CACHED_VALUE(__VA_ARGS__) /* NOLINT(*-macro-parentheses) */
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
