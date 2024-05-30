@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iterator>
 #include <ranges>
+#include <span>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -23,7 +24,6 @@
 #include "tit/core/meta.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/type_traits.hpp"
 #include "tit/core/uint_utils.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
@@ -166,8 +166,7 @@ public:
     using PV = ParticleView<ParticleArray>;
     // -------------------------------------------------------------------------
     // STEP I: neighbors search.
-    const auto positions = array().views() | //
-                           std::views::transform([](PV a) { return a[r]; });
+    const auto positions = array()[r];
     const auto engine = engine_factory_(positions);
     adjacency_.clear();
     fixed_.clear();
@@ -336,35 +335,16 @@ public:
 private:
 
   using Constants_ = std::tuple<field_value_type_t<Consts, Real, Dim>...>;
-  using Particle_ = decltype([]<class... Vars>(meta::Set<Vars...>) {
-    return std::tuple<field_value_type_t<Vars, Real, Dim>...>{};
+  using Particles_ = decltype([]<class... Vars>(meta::Set<Vars...>) {
+    return std::tuple<std::vector<field_value_type_t<Vars, Real, Dim>>...>{};
   }(variables));
 
   Constants_ constants_;
-  std::vector<Particle_> particles_;
+  Particles_ particles_;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 public:
-
-  // TODO: this definitely needs some rework.
-  template<class Func>
-  class OnAssignment {
-  private:
-
-    Func func_;
-
-  public:
-
-    constexpr explicit OnAssignment(Func func) : func_{std::move(func)} {}
-
-    template<class Arg>
-    // NOLINTNEXTLINE(*-copy-assignment-signature,*-unconventional-assign-operator)
-    constexpr void operator=(Arg&& arg) {
-      func_(std::forward<Arg>(arg));
-    }
-
-  }; // class OnAssignment
 
   /// Construct a particle array.
   /// @{
@@ -386,17 +366,18 @@ public:
 
   /// Number of particles.
   constexpr auto size() const noexcept -> size_t {
-    return particles_.size();
+    return std::get<0>(particles_).size();
   }
 
   /// Reserve amount of particles.
   constexpr void reserve(size_t capacity) {
-    particles_.reserve(capacity);
+    std::apply([capacity](auto&... vecs) { ((vecs.reserve(capacity)), ...); },
+               particles_);
   }
 
   /// Appends a new particle.
   constexpr auto append() {
-    particles_.emplace_back();
+    std::apply([](auto&... vecs) { ((vecs.emplace_back()), ...); }, particles_);
     return (*this)[size() - 1];
   }
 
@@ -439,20 +420,21 @@ public:
       -> decltype(auto) {
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
     if constexpr (constants.contains(Field{})) {
-      return auto{(*this)[field]}; // Return a copy for constants.
+      return std::get<constants.find(Field{})>(constants_);
     } else {
-      return std::get<variables.find(Field{})>(particles_[particle_index]);
+      return std::get<variables.find(Field{})>(particles_)[particle_index];
     }
   }
   template<meta::type Field>
-    requires contains_v<Field, Fields...>
+    requires (fields.contains(Field{}))
   constexpr auto operator[]([[maybe_unused]] size_t particle_index,
-                            [[maybe_unused]] Field field) const noexcept {
+                            [[maybe_unused]] Field field) const noexcept
+      -> decltype(auto) {
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
     if constexpr (constants.contains(Field{})) {
-      return (*this)[field];
+      return std::get<constants.find(Field{})>(constants_);
     } else {
-      return std::get<variables.find(Field{})>(particles_[particle_index]);
+      return std::get<variables.find(Field{})>(particles_)[particle_index];
     }
   }
   /// @}
@@ -466,17 +448,18 @@ public:
     if constexpr (constants.contains(Field{})) {
       return std::get<constants.find(Field{})>(constants_);
     } else {
-      return OnAssignment{[&](auto value) {
-        std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) {
-          a[field] = value;
-        });
-      }};
+      return std::span{std::get<variables.find(Field{})>(particles_)};
     }
   }
   template<meta::type Field>
     requires (constants.contains(Field{}))
-  constexpr auto operator[]([[maybe_unused]] Field field) const noexcept {
-    return std::get<index_of_v<Field, Consts...>>(constants_);
+  constexpr auto operator[]([[maybe_unused]] Field field) const noexcept
+      -> decltype(auto) {
+    if constexpr (constants.contains(Field{})) {
+      return std::get<constants.find(Field{})>(constants_);
+    } else {
+      return std::span{std::get<variables.find(Field{})>(particles_)};
+    }
   }
   /// @}
 
