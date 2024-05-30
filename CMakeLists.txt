@@ -46,7 +46,6 @@ add_library(tit::base ALIAS tit_base)
 target_include_directories(tit_base INTERFACE "source")
 
 # Setup configurations.
-target_compile_options(tit_base INTERFACE ${CXX_WARNINGS})
 foreach(CONFIG ${ALL_CONFIGS})
   string(TOUPPER ${CONFIG} CONFIG_UPPER)
   # Apply compilation options.

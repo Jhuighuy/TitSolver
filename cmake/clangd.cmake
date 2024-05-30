@@ -23,14 +23,10 @@ function(write_compile_flags TARGET_OR_ALIAS)
   list(
     APPEND
     CLANG_COMPILE_ARGS
-    # Enable the same set of warnings we would use for normal clang.
-    ${CLANG_WARNINGS}
+    # Enable the same set of compile options we would use for normal clang call.
+    ${CLANG_COMPILE_OPTIONS}
     # Enable C++23.
     -std=c++23)
-  if(APPLE)
-    ## Force use libstdc++ since libc++ misses some stuff.
-    clang_force_use_libstdcpp(CLANG_COMPILE_ARGS)
-  endif()
   # Write the compile flags to a file.
   add_custom_target(
     "${TARGET}_clangd_compile_flags"

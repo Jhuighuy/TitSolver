@@ -46,14 +46,10 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   list(
     APPEND
     CLANG_TIDY_COMPILE_ARGS
-    # Enable the same set of warnings we would use for normal clang.
-    ${CLANG_WARNINGS}
+    # Enable the same set of compile options we would use for normal clang call.
+    ${CLANG_COMPILE_OPTIONS}
     # Enable C++23.
     -std=c++23)
-  if(APPLE)
-    ## Force use libstdc++ since libc++ misses some stuff.
-    clang_force_use_libstdcpp(CLANG_TIDY_COMPILE_ARGS)
-  endif()
   # Loop through the target sources and call clang-tidy.
   set(ALL_STAMPS)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)

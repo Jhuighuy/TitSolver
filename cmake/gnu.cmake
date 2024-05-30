@@ -7,140 +7,198 @@ include_guard()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set minimal compiler version.
+# Define minimal compiler version.
 set(GNU_MIN_VERSION "14.0.1")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set warnings and diagnostics options.
+# Define warnings and diagnostics options.
 set(
   GNU_WARNINGS
-  # Enable most of the commonly used warning options.
-  -Wall
-  # Enable extra warning options not included in `-Wall`.
-  -Wextra
   # Treat warnings as errors.
   -Werror
-  # Issue all the warnings demanded by strict ISO C and ISO C++ standards.
+  # Enable most of the commonly used warning options.
+  -Wall
+  -Wextra
   -Wpedantic
-  # Warn about pointer casts that increase or decrease alignment.
+  # Pointer casts that increase or decrease alignment.
   -Wcast-align
-  # Warn if a pointer is cast so that it removes the `const` qualifier.
+  # Pointer is cast so that it removes the `const` qualifier.
   -Wcast-qual
-  # Warn about type conversions that may lose data.
-# -Wconversion # I am not sure we have to enable this.
-  # Warn when character array subscripts have type `int`.
+  # Character array subscripts have type `int`.
   -Wchar-subscripts
-  # Warn about potentially ambiguous or dangling `else` clauses in code.
+  # Potentially ambiguous or dangling `else` clauses in code.
   -Wdangling-else
-  # Warn when an optimization pass is disabled.
+  # Optimization pass is disabled.
   -Wdisabled-optimization
-  # Warn about duplicated or redundant conditions in code.
+  # Duplicated or redundant conditions in code.
   -Wduplicated-cond
   # Check calls to `printf`-like functions for format string-related issues.
   -Wformat=2
-  # Warn about self-initialization.
+  # Self-initialization.
   -Winit-self
-  # Warn about logical operations in code that is likely to be a mistake.
+  # Logical operations in code that is likely to be a mistake.
   -Wlogical-op
-  # Warn if a global function is defined without a previous declaration.
+  # Global function is defined without a previous declaration.
   -Wmissing-declarations
-  # Warn about using C-style casts.
+  # Usage of C-style casts.
   -Wold-style-cast
-  # Warn about structures that are packed to an unusual degree.
+  # Structures that are packed to an unusual degree.
   -Wpacked
-  # Warn about possibly incorrect pointer arithmetic.
+  # Possibly incorrect pointer arithmetic.
   -Wpointer-arith
-  # Warn about redundant declarations.
+  # Redundant declarations.
   -Wredundant-decls
-  # Warn about incorrect use of the `restrict` keyword.
+  # Incorrect use of the `restrict` keyword.
   -Wrestrict
-  # Warn about implicit conversions changing the sign of an integer.
-  -Wsign-promo
-  # Warn if a local variable or type declaration shadows another local variable.
+  # Local variable or type declaration shadows another local variable.
   -Wshadow
-  # Warn about left-shifting negative values.
+  # Left-shifting negative values.
   -Wshift-negative-value
-  # Warn about potential arithmetic overflows during shifts.
+  # Potential arithmetic overflows during shifts.
   -Wshift-overflow
-  # Warn if a `switch` statement does not have a `default` case.
+  # `switch` statement does not have a `default` case.
   -Wswitch-enum
-  # Warn about the use of uninitialized variables.
+  # Use of uninitialized variables.
   -Wuninitialized
-  # Warn when string constants are passed to non-`const char*` parameters.
+  # String constants are passed to non-`const char*` parameters.
   -Wwrite-strings
-  # Warn about violations of pointer safety annotations (disabled).
+  # Violations of pointer safety annotations (disabled).
   -Wno-psabi
   # TODO: enable this warning later.
   -Wno-unused-result)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Set common compile options.
+# Define common compile options.
 set(
   GNU_COMPILE_OPTIONS
-  # Always store debug information.
-  -g
+  # Warnings and diagnostics.
+  ${GNU_WARNINGS}
   # Generate machine code for the host system's architecture.
   -march=native)
 
-# Set compile options for "Debug" configuration.
-set(
-  GNU_COMPILE_OPTIONS_DEBUG
-  # Inherit common options.
-  ${GNU_COMPILE_OPTIONS}
-  # Disable optimization, resulting in the compilation of unoptimized code.
-  # Useful for debugging and inspecting code in its original form.
-  -O0)
+# Define common link options.
+set(GNU_LINK_OPTIONS)
+if(APPLE)
+  # Do not warn about duplicate libraries.
+  list(APPEND GNU_LINK_OPTIONS -Wl,-no_warn_duplicate_libraries)
+endif()
 
-# Set compile options for "Coverage" configuration.
-set(
-  GNU_COMPILE_OPTIONS_COVERAGE
-  # Inherit all the `Debug` options.
-  ${GNU_COMPILE_OPTIONS_DEBUG}
-  # Enable code coverage instrumentation during compilation.
-  --coverage
-  -fprofile-arcs
-  -fprofile-update=atomic
-  # Pass a definition that we are compiling with gcov.
-  -DTIT_HAVE_GCOV=1
-  # Disable inlining of functions, preventing the compiler from optimizing
-  # function calls by replacing them with the function's code.
-  -fno-default-inline
-  -fno-inline
-  -fno-inline-small-functions
-  # Disable copy constructor elision, which can help in debugging and
-  # inspecting constructor calls.
-  -fno-elide-constructors)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set compile options for "Release" configuration.
+# Define common optimization options.
+set(
+  GNU_OPTIMIZE_OPTIONS
+  # Enable aggressive optimization levels.
+  -Ofast
+  # Enables aggressive floating-point expression contraction.
+  -ffp-contract=fast)
+
+# Use link time optimizations?
+#
+# Note: This is experimental and may significantly decrease performance!
+set(GNU_USE_LTO FALSE)
+if(GNU_USE_LTO)
+  message(WARNING "Link-time optimizations support is experimental!")
+  list(APPEND GNU_OPTIMIZE_OPTIONS -flto=auto)
+endif()
+
+# Use profile-guided optimizations?
+#
+# Note: This is experimental and may significantly decrease performance!
+set(GNU_USE_PGO FALSE)
+if(GNU_USE_PGO)
+  message(WARNING "Profile-guided optimizations support is experimental!")
+  set(GNU_PGO_DIR "${CMAKE_BINARY_DIR}/gnu_pgo")
+  # Create the directory if it does not exist.
+  file(MAKE_DIRECTORY "${GNU_PGO_DIR}")
+  # Check if the directory is empty.
+  file(GLOB RESULT "${GNU_PGO_DIR}/*")
+  list(LENGTH RESULT RESULT)
+  if(RESULT EQUAL 0)
+    # If the directory is empty, we need to generate the profile.
+    message(WARNING "PGO: Profile data will be generated.")
+    list(
+      APPEND
+      GNU_OPTIMIZE_OPTIONS
+      # Generate profile data.
+      "-fprofile-dir=${GNU_PGO_DIR}"
+      "-fprofile-generate=${GNU_PGO_DIR}"
+      # Update profile data atomically, since we are multi-threaded.
+      -fprofile-update=atomic)
+  else()
+    # If the directory is not empty, we can use the profile.
+    message(WARNING "PGO: Profile data will be used.")
+    list(
+      APPEND
+      GNU_OPTIMIZE_OPTIONS
+      # Use profile data.
+      "-fprofile-dir=${GNU_PGO_DIR}"
+      "-fprofile-use=${GNU_PGO_DIR}"
+      # Profiling data may be slightly inaccurate or incomplete.
+      -fprofile-correction
+      -Wno-missing-profile)
+  endif()
+endif()
+
+# Define compile options for "Release" configuration.
 set(
   GNU_COMPILE_OPTIONS_RELEASE
   # Inherit common options.
   ${GNU_COMPILE_OPTIONS}
-  # Enable aggressive optimization levels to maximize performance.
-  -Ofast
-  # Enables aggressive floating-point expression contraction.
-  -ffp-contract=fast
-  # Set a high limit for inlining functions.
-  -finline-limit=10000000)
+  # Inherit optimization options.
+  ${GNU_OPTIMIZE_OPTIONS})
+
+# Define link options for "Release" configuration.
+set(
+  GNU_LINK_OPTIONS_RELEASE
+  # Inherit common options.
+  ${GNU_LINK_OPTIONS}
+  # Inherit optimization options (needed for LTO or PGO).
+  ${GNU_OPTIMIZE_OPTIONS})
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set common link options.
-set(GNU_LINK_OPTIONS
-  # Passes all symbols from the object files to the linker, allowing them to be
-  # available at runtime.
-  -rdynamic)
+# Define compile options for "Debug" configuration.
+set(
+  GNU_COMPILE_OPTIONS_DEBUG
+  # Inherit common options.
+  ${GNU_COMPILE_OPTIONS}
+  # Store debug information.
+  -g
+  # Optimize for debugging experience.
+  -Og)
 
-# Set the link options for "Coverage" configuration.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Define common coverage options.
+set(
+  GNU_COVERAGE_OPTIONS
+  # Enable code coverage instrumentation during compilation.
+  --coverage
+  # Update profile data atomically, since we are multi-threaded.
+  -fprofile-update=atomic)
+
+# Define compile options for "Coverage" configuration.
+set(
+  GNU_COMPILE_OPTIONS_COVERAGE
+  # Inherit coverage options.
+  ${GNU_COVERAGE_OPTIONS}
+  # Disable optimizations.
+  -O0
+  # Pass a definition that we are compiling with gcov.
+  -DTIT_HAVE_GCOV=1
+  # Avoid inlining and elisions, which can make coverage reports less accurate.
+  -fno-default-inline
+  -fno-inline
+  -fno-inline-small-functions
+  -fno-elide-constructors)
+
+# Define the link options for "Coverage" configuration.
 set(
   GNU_LINK_OPTIONS_COVERAGE
   # Inherit common options.
   ${GNU_LINK_OPTIONS}
-  # Enables code coverage instrumentation during linking.
-  --coverage
-  -fprofile-arcs
-  -fprofile-update=atomic)
+  # Inherit coverage options.
+  ${GNU_COVERAGE_OPTIONS})
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
