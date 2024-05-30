@@ -96,21 +96,21 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   using namespace tit;
   using namespace sph;
 
-  auto const N = 100;
-  auto const N_x = 4 * N;
-  auto const N_y = 3 * N;
-  auto const N_fixed = 4;
-  auto const N_x_dam = 1 * N;
-  auto const N_y_dam = 2 * N;
+  const auto N = 100;
+  const auto N_x = 4 * N;
+  const auto N_y = 3 * N;
+  const auto N_fixed = 4;
+  const auto N_x_dam = 1 * N;
+  const auto N_y_dam = 2 * N;
 
-  Real const length = 1.0;
-  Real const spacing = length / N;
-  Real const timestep = 5.0e-5;
-  Real const h_0 = 1.5 * spacing;
-  Real const rho_0 = 1000.0;
-  Real const m_0 = rho_0 * pow2(spacing) / 2;
-  Real const cs_0 = 120.0;
-  Real const mu_0 = 1.0e-3;
+  const Real length = 1.0;
+  const Real spacing = length / N;
+  const Real timestep = 5.0e-5;
+  const Real h_0 = 1.5 * spacing;
+  const Real rho_0 = 1000.0;
+  const Real m_0 = rho_0 * pow2(spacing) / 2;
+  const Real cs_0 = 120.0;
+  const Real mu_0 = 1.0e-3;
 
   // Setup the SPH equations:
   auto equations = FluidEquations{
@@ -147,8 +147,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   auto num_fixed_particles = 0, num_fluid_particles = 0;
   for (auto i = -N_fixed; i < N_x + N_fixed; ++i) {
     for (auto j = -N_fixed; j < N_y; ++j) {
-      bool const is_fixed = (i < 0 || i >= N_x) || (j < 0);
-      bool const is_fluid = (i < N_x_dam) && (j < N_y_dam);
+      const bool is_fixed = (i < 0 || i >= N_x) || (j < 0);
+      const bool is_fluid = (i < N_x_dam) && (j < N_y_dam);
       if (is_fixed) ++num_fixed_particles;
       else if (is_fluid) ++num_fluid_particles;
       else continue;
@@ -182,12 +182,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
             exectime.cycle(),
             printtime.cycle());
     {
-      StopwatchCycle const cycle{exectime};
+      const StopwatchCycle cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
     }
     if (n % 200 == 0 && n != 0) {
-      StopwatchCycle const cycle{printtime};
-      auto const path =
+      const StopwatchCycle cycle{printtime};
+      const auto path =
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
       system(("ln -sf " + path + " output/test_output/particles.csv").c_str());
@@ -279,8 +279,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   auto num_fluid_particles = 0;
   for (auto i = -N_fixed; i < POOL_M + N_fixed; ++i) {
     for (auto j = -N_fixed; j < POOL_N; ++j) {
-      bool const is_fixed = (i < 0 || i >= POOL_M) || (j < 0);
-      bool const is_fluid = (i < WATER_M) && (j < WATER_N);
+      const bool is_fixed = (i < 0 || i >= POOL_M) || (j < 0);
+      const bool is_fluid = (i < WATER_M) && (j < WATER_N);
       if (is_fixed) ++num_fixed_particles;
       else if (is_fluid) ++num_fluid_particles;
       else continue;
@@ -303,12 +303,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       return;
     }
     // Compute pressure from Poisson problem.
-    auto const x = r[a][0];
-    auto const y = r[a][1];
+    const auto x = r[a][0];
+    const auto y = r[a][1];
     p[a] = rho_0 * g * (H - y);
     for (size_t N = 1; N < 100; N += 2) {
       constexpr auto pi = std::numbers::pi_v<Real>;
-      auto const n = static_cast<Real>(N);
+      const auto n = static_cast<Real>(N);
       p[a] -= 8 * rho_0 * g * H / pow2(pi) *
               (exp(n * pi * (x - L) / (2 * H)) * cos(n * pi * y / (2 * H))) /
               pow2(n);
@@ -336,12 +336,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
             exectime.cycle(),
             printtime.cycle());
     {
-      StopwatchCycle const cycle{exectime};
+      const StopwatchCycle cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
     }
     if (n % 200 == 0 && n != 0) {
-      StopwatchCycle const cycle{printtime};
-      auto const path =
+      const StopwatchCycle cycle{printtime};
+      const auto path =
           std::format("output/test_output/particles-{}.csv", n / 200);
       particles.print(path);
       system(("ln -sf ./" + path + " particles.csv").c_str());
@@ -438,7 +438,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   // Density hydrostatic initialization.
   std::ranges::for_each(particles.views(), [&]<class PV>(PV a) {
     // Compute pressure from Poisson problem.
-    auto const x = r[a][0] + L / 2, y = r[a][1] + L / 2;
+    const auto x = r[a][0] + L / 2, y = r[a][1] + L / 2;
     p[a] = 0.0;
     for (size_t m = 1; m < 11; ++m) {
       for (size_t n = 1; n < 11; ++n) {
@@ -468,12 +468,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
             exectime.cycle(),
             printtime.cycle());
     {
-      StopwatchCycle const cycle{exectime};
+      const StopwatchCycle cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
     }
     if (n % 200 == 0 && n != 0) {
-      StopwatchCycle const cycle{printtime};
-      auto const path =
+      const StopwatchCycle cycle{printtime};
+      const auto path =
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
       system(("ln -sf ./" + path + " particles.csv").c_str());

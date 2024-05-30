@@ -21,7 +21,7 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace {
-void my_system(char const* command) {
+void my_system(const char* command) {
   std::system(command); // NOLINT
 }
 } // namespace
@@ -50,7 +50,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real m_0 = rho_0 * pow2(dr);
 
   // Setup the SPH equations:
-  fsi::StructureEquations const equations{
+  const fsi::StructureEquations equations{
       fsi::HookesLaw{},
       // C2 Wendland's spline kernel.
       EighthOrderWendlandKernel{},
@@ -74,7 +74,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   auto num_struct_particles = 0;
   for (auto i = -N_fixed; i < BAR_M; ++i) {
     for (auto j = 0; j < BAR_N; ++j) {
-      bool const is_fixed = i < 0;
+      const bool is_fixed = i < 0;
       if (is_fixed) ++num_fixed_particles;
       else ++num_struct_particles;
       auto a = particles.append();
@@ -106,12 +106,12 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
             exectime.cycle(),
             printtime.cycle());
     {
-      StopwatchCycle const cycle{exectime};
+      const StopwatchCycle cycle{exectime};
       timeint.step(dt, particles, adjacent_particles);
     }
     if (n % 200 == 0 && n != 0) {
-      StopwatchCycle const cycle{printtime};
-      auto const path =
+      const StopwatchCycle cycle{printtime};
+      const auto path =
           std::format("output/test_output/particles-{}.csv", n / 200);
       particles.print(path);
       my_system(("ln -sf ./" + path + " particles.csv").c_str());
