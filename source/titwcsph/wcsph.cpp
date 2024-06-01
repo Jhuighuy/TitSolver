@@ -1,3 +1,4 @@
+#include "tit/geom/kd_tree.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>

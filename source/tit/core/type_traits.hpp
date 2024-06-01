@@ -20,6 +20,12 @@ inline constexpr bool in_range_v = A <= X && X <= B;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Check if the template type can be constructed from the given arguments.
+template<template<class...> class T, class... Args>
+concept deduce_constructible_from = requires(Args... args) { T{args...}; };
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 namespace impl {
 
 template<class Type, template<class...> class Class>

@@ -116,12 +116,27 @@ public:
         grid_bbox_.clamp(search_bbox.low()) + 0.5 * cell_size_);
     const auto high = _point_to_cell_mdindex(
         grid_bbox_.clamp(search_bbox.high()) - 0.5 * cell_size_);
-    for (size_t i = low[0]; i <= high[0]; ++i) {
-      for (size_t j = low[1]; j <= high[1]; ++j) {
-        const size_t cell_index = i * num_cells_[1] + j;
-        for (const size_t k : cell_points_[cell_index]) {
-          const auto dist = norm2(search_point - points_[k]);
-          if (dist < search_dist) *out++ = k;
+    if constexpr (Dim == 2) {
+      for (size_t i = low[0]; i <= high[0]; ++i) {
+        for (size_t j = low[1]; j <= high[1]; ++j) {
+          const size_t cell_index = i * num_cells_[1] + j;
+          for (const size_t k : cell_points_[cell_index]) {
+            const auto dist = norm2(search_point - points_[k]);
+            if (dist < search_dist) *out++ = k;
+          }
+        }
+      }
+    } else if constexpr (Dim == 3) {
+      for (size_t i = low[0]; i <= high[0]; ++i) {
+        for (size_t j = low[1]; j <= high[1]; ++j) {
+          for (size_t k = low[2]; k <= high[2]; ++k) {
+            const size_t cell_index =
+                i * num_cells_[1] * num_cells_[2] + j * num_cells_[2] + k;
+            for (const size_t l : cell_points_[cell_index]) {
+              const auto dist = norm2(search_point - points_[l]);
+              if (dist < search_dist) *out++ = l;
+            }
+          }
         }
       }
     }
