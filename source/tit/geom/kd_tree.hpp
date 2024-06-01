@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include <oneapi/tbb/parallel_invoke.h>
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
@@ -21,7 +23,6 @@
 #include "tit/geom/bbox.hpp"
 
 #include "tit/par/memory_pool.hpp"
-#include "tit/par/task_group.hpp"
 
 namespace tit::geom {
 
@@ -142,8 +143,8 @@ private:
         node->cut_right = right_bbox.low()[cut_dim];
       };
       // Execute tasks.
-      par::invoke(std::move(build_left_subtree),
-                  std::move(build_right_subtree));
+      tbb::parallel_invoke(std::move(build_left_subtree),
+                           std::move(build_right_subtree));
     }
     bbox = actual_bbox;
     return node;

@@ -6,101 +6,138 @@
 #pragma once
 
 #include <algorithm>
-#include <cstdint>
+#include <concepts>
+#include <functional>
 #include <ranges>
+#include <type_traits>
+#include <utility>
 
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/partitioner.h>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
+#include "tit/core/type_traits.hpp"
+#include "tit/core/utils.hpp"
 
 #include "tit/par/control.hpp"
-#include "tit/par/task_group.hpp"
 
 namespace tit::par {
 
-// NOLINTBEGIN
-
-using std::ranges::input_range;
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Index of the current thread.
-thread_local size_t _thread_index = SIZE_MAX;
+/// Underlying range type.
+template<std::ranges::view View>
+using view_base_t = decltype(std::declval<View>().base());
 
-/// Current thread index.
-inline auto thread_index() noexcept -> size_t {
-  return _thread_index;
-}
+/// Parallelizable range that could be processed directly.
+template<class Range>
+concept basic_range =
+    std::ranges::sized_range<Range> && std::ranges::random_access_range<Range>;
+
+/// Parallelizable range.
+template<class Range>
+concept range =
+    basic_range<Range> ||
+    // Not sure if this will be needed in the future, but it's here for now.
+    (specialization_of<std::remove_cvref_t<Range>, std::ranges::join_view> &&
+     basic_range<view_base_t<std::remove_cvref_t<Range>>>);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Iterate through the range in parallel (dynamic partitioning).
-/// @{
-template<class Range, class Func>
-void for_each(Range&& range, Func&& func) noexcept {
-  const auto blocked_range =
-      tbb::blocked_range{std::begin(range), std::end(range)};
-  tbb::parallel_for(blocked_range, [&](auto subrange) {
-    std::ranges::for_each(subrange, func);
-  });
-}
-template<class Range, class Func>
-void for_each(std::ranges::join_view<Range> range, Func&& func) noexcept {
-  for_each(std::move(range).base(),
-           [&](auto subrange) { std::ranges::for_each(subrange, func); });
-}
-/// @}
+struct ForEach {
+  template<basic_range Range,
+           std::regular_invocable<std::ranges::range_reference_t<Range&&>> Func>
+  static void operator()(Range&& range, Func func) {
+    TIT_ASSUME_UNIVERSAL(Range, range);
+#if !(defined(__clang__) && defined(__GLIBCXX__))
+    tbb::parallel_for(tbb::blocked_range{std::begin(range), std::end(range)},
+                      std::bind_back(std::ranges::for_each, std::move(func)));
+#else // `std::bind_back` is broken in clang with libstdc++.
+    tbb::parallel_for(tbb::blocked_range{std::begin(range), std::end(range)},
+                      [func = std::move(func)]<class Block>(Block&& block) {
+                        TIT_ASSUME_UNIVERSAL(Block, block);
+                        std::ranges::for_each(block, std::ref(func));
+                      });
+#endif
+  }
+};
 
-/// Iterate through the range in parallel (static partitioning).
-/// @{
-template<class Range, class Func>
-void static_for_each(Range&& range, Func&& func) noexcept {
-  const auto partition_size = std::size(range) / num_threads();
-  const auto partition_rem = std::size(range) % num_threads();
-  const auto partition_first = [&](size_t thread) {
-    return thread * partition_size + std::min(thread, partition_rem);
-  };
-  tbb::parallel_for(
-      0UZ,
-      num_threads(),
-      1UZ,
-      [&](size_t thread) {
-        _thread_index = thread;
-        std::for_each(std::begin(range) + partition_first(thread),
-                      std::begin(range) + partition_first(thread + 1),
-                      func);
-        _thread_index = SIZE_MAX;
-      },
-      tbb::static_partitioner{});
-}
-template<class Range, class Func>
-void static_for_each(std::ranges::join_view<Range> range,
-                     Func&& func) noexcept {
-  static_for_each(std::move(range).base(), [&](auto subrange) {
-    std::ranges::for_each(subrange, func);
-  });
-}
-/// @}
-
-template<std::ranges::input_range Range, class Func>
-void block_for_each(Range&& range, Func&& func) noexcept {
-  TIT_ENSURE(num_threads() == 8, "");
-  invoke([&] { std::ranges::for_each(range[0], func); },
-         [&] { std::ranges::for_each(range[1], func); },
-         [&] { std::ranges::for_each(range[2], func); },
-         [&] { std::ranges::for_each(range[3], func); },
-         [&] { std::ranges::for_each(range[4], func); },
-         [&] { std::ranges::for_each(range[5], func); },
-         [&] { std::ranges::for_each(range[6], func); },
-         [&] { std::ranges::for_each(range[7], func); });
-  std::ranges::for_each(range[8], func);
-}
+/// @copydoc ForEach
+inline constexpr ForEach for_each{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// NOLINTEND
+/// Iterate through the range in parallel (static partitioning).
+struct StaticForEach {
+  template<basic_range Range,
+           std::invocable<size_t, std::ranges::range_reference_t<Range&&>> Func>
+  static void operator()(Range&& range, Func func) {
+    TIT_ASSUME_UNIVERSAL(Range, range);
+    const auto thread_count = num_threads();
+    auto block_first = [quotient = std::size(range) / thread_count,
+                        remainder = std::size(range) % thread_count,
+                        first = std::begin(range)](size_t index) {
+      const auto offset = index * quotient + std::min(index, remainder);
+      return first + offset;
+    };
+    tbb::parallel_for<size_t>(
+        /*first=*/0,
+        /*last =*/thread_count,
+        /*step =*/1,
+        [block_first = std::move(block_first),
+         func = std::move(func)](size_t thread_index) {
+          std::for_each(block_first(thread_index),
+                        block_first(thread_index + 1),
+                        std::bind_front(std::ref(func), thread_index));
+        },
+        tbb::static_partitioner{});
+  }
+
+  // Not sure if this will be needed in the future, let's keep it here for now.
+  template<basic_range Range,
+           std::invocable<size_t,
+                          std::ranges::range_reference_t<
+                              std::ranges::join_view<Range>>> Func>
+  static void operator()(std::ranges::join_view<Range> join_view, Func func) {
+    StaticForEach{}(
+        std::move(join_view).base(),
+        [func = std::move(func)](size_t thread_index, const auto& range) {
+          std::ranges::for_each(range,
+                                std::bind_front(std::ref(func), thread_index));
+        });
+  }
+};
+
+/// @copydoc StaticForEach
+inline constexpr StaticForEach static_for_each{};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Iterate through the block of ranges in parallel.
+struct BlockForEach {
+  template<range Range,
+           std::invocable<std::ranges::range_reference_t<
+               std::ranges::range_value_t<Range>>> Func>
+  static void operator()(Range&& range, Func func) {
+    TIT_ASSUME_UNIVERSAL(Range, range);
+    for (auto chunk : std::views::chunk(range, num_threads())) {
+      tbb::parallel_for<size_t>(
+          /*first=*/0,
+          /*last =*/std::size(chunk),
+          /*step =*/1,
+          [chunk = std::move(chunk), &func](size_t thread_index) {
+            std::ranges::for_each(chunk[thread_index], func);
+          },
+          tbb::static_partitioner{});
+    }
+  }
+};
+
+/// @copydoc BlockForEach
+inline constexpr BlockForEach block_for_each{};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::par

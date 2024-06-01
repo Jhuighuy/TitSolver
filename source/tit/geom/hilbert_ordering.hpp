@@ -10,14 +10,14 @@
 #include <utility>
 #include <vector>
 
+#include <oneapi/tbb/parallel_invoke.h>
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
-
-#include "tit/par/task_group.hpp"
 
 namespace tit::geom {
 
@@ -107,7 +107,7 @@ private:
       auto* const lower_left = lower;
       auto* const lower_right = std::partition(lower, last, to_the_left);
       // Recursively build quadrants.
-      par::invoke(
+      tbb::parallel_invoke(
           [=, this] { partition_(upper_left, upper_right, upper_left_bbox); },
           [=, this] { partition_(upper_right, lower_left, upper_right_bbox); },
           [=, this] { partition_(lower_left, lower_right, lower_left_bbox); },
