@@ -10,7 +10,6 @@
 #include <type_traits>
 #include <utility>
 
-#include <oneapi/tbb/parallel_invoke.h>
 #include <oneapi/tbb/task_group.h>
 
 #include "tit/core/checks.hpp"
@@ -59,15 +58,6 @@ private:
       std::make_unique<typename decltype(group_)::element_type>();
 
 }; // class TaskGroup
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Invoke functions in parallel.
-template<class... Tasks>
-  requires (task<Tasks &&> && ...)
-constexpr void invoke(Tasks&&... tasks) noexcept {
-  tbb::parallel_invoke(std::forward<Tasks>(tasks)...);
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

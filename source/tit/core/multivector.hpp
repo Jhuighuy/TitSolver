@@ -29,7 +29,7 @@ namespace tit {
 namespace impl {
 template<class Val, class Handles, class IndexOf, class ValueOf = std::identity>
 concept can_assemble_multivec =
-    std::is_object_v<Val> && par::input_range<Handles> &&
+    std::is_object_v<Val> && par::range<Handles> &&
     std::regular_invocable<IndexOf, std::ranges::range_reference_t<Handles>> &&
     std::convertible_to<
         std::invoke_result_t<IndexOf, std::ranges::range_reference_t<Handles>>,
@@ -167,10 +167,10 @@ public:
     val_ranges_.clear(), val_ranges_.resize(count + 1);
     TIT_CACHED_VARIABLE(val_ranges_per_thread, Mdvector<size_t, 2>{});
     val_ranges_per_thread.assign(count + 1, par::num_threads());
-    par::static_for_each(handles, [&](const auto& handle) {
+    par::static_for_each(handles, [&](size_t thread_index, const auto& handle) {
       const auto index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      val_ranges_per_thread[index, par::thread_index()]++;
+      val_ranges_per_thread[index, thread_index]++;
     });
     /// Perform a partial sum of the computed values to form ranges.
     for (size_t index = 1; index < val_ranges_.size(); ++index) {
@@ -191,10 +191,10 @@ public:
     /// then increment the position.
     const auto num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
-    par::static_for_each(handles, [&](const auto& handle) {
+    par::static_for_each(handles, [&](size_t thread_index, const auto& handle) {
       const auto index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      auto& addr = val_ranges_per_thread[index, par::thread_index()];
+      auto& addr = val_ranges_per_thread[index, thread_index];
       vals_[addr] = static_cast<Val>(value_of(handle));
       addr += 1;
     });
