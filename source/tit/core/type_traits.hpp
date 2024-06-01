@@ -5,7 +5,10 @@
 
 #pragma once
 
+#include <type_traits>
 #include <utility>
+
+#include "tit/core/basic_types.hpp"
 
 namespace tit {
 
@@ -18,15 +21,74 @@ inline constexpr bool in_range_v = A <= X && X <= B;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace impl {
-template<class, template<class...> class>
+
+template<class Type, template<class...> class Class>
 inline constexpr bool is_specialization_of_v = false;
-template<class... Args, template<class...> class T>
-inline constexpr bool is_specialization_of_v<T<Args...>, T> = true;
+template<class... Args, template<class...> class Class>
+inline constexpr bool is_specialization_of_v<Class<Args...>, Class> = true;
+
 } // namespace impl
 
 /// Check if type is a specialization of the given template.
-template<class Type, template<class...> class Template>
-concept specialization_of = impl::is_specialization_of_v<Type, Template>;
+template<class Type, template<class...> class Class>
+concept specialization_of = impl::is_specialization_of_v<Type, Class>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Check that type `T` is in the list `Us...`.
+template<class T, class... Us>
+inline constexpr bool contains_v = (... || std::is_same_v<T, Us>);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+
+template<size_t I, class... Ts>
+struct type_at;
+template<class T, class... Ts>
+struct type_at<0, T, Ts...> : std::type_identity<T> {};
+template<size_t I, class T, class... Ts>
+struct type_at<I, T, Ts...> : type_at<I - 1, Ts...> {};
+
+} // namespace impl
+
+/// Type at position `I` in list `Ts...`.
+/// @todo Replace with C++26's pack indexing when available.
+template<size_t I, class... Ts>
+  requires (I < sizeof...(Ts))
+using type_at_t = typename impl::type_at<I, Ts...>::type;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+
+template<class T, class U, class... Us>
+inline constexpr size_t index_of_v = 1 + index_of_v<T, Us...>;
+template<class T, class... Us>
+inline constexpr size_t index_of_v<T, T, Us...> = 0;
+
+} // namespace impl
+
+/// Index of type `T` in list `Us...`.
+template<class T, class... Us>
+  requires contains_v<T, Us...>
+inline constexpr auto index_of_v = impl::index_of_v<T, Us...>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+
+template<class... Ts>
+inline constexpr bool all_unique_v = true;
+template<class T, class... Ts>
+inline constexpr bool all_unique_v<T, Ts...> =
+    (!contains_v<T, Ts...> && all_unique_v<Ts...>);
+
+} // namespace impl
+
+/// Check that all elements in the list `Ts...` are unique.
+template<class... Ts>
+inline constexpr bool all_unique_v = impl::all_unique_v<Ts...>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

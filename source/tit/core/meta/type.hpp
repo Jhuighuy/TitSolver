@@ -3,14 +3,24 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+// IWYU pragma: private, include "tit/core/meta.hpp"
 #pragma once
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#include <type_traits>
 
-// IWYU pragma: begin_exports
-#include "tit/core/meta/list.hpp"
-#include "tit/core/meta/set.hpp"
-#include "tit/core/meta/type.hpp"
-// IWYU pragma: end_exports
+namespace tit::meta {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// An empty and trivial object.
+template<class T>
+concept type =
+    std::is_object_v<T> && std::is_empty_v<T> && std::is_trivial_v<T>;
+
+/// Wrap a non-meta type into the a meta type.
+template<class T>
+struct ID {};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit::meta

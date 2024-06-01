@@ -23,6 +23,7 @@
 #include "tit/core/meta.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/type_traits.hpp"
 #include "tit/core/uint_utils.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
@@ -432,32 +433,26 @@ public:
   /// Particle field at index.
   /// @{
   template<meta::type Field>
-    requires meta::contains_v<Field, Fields...>
+    requires (fields.contains(Field{}))
   constexpr auto operator[]([[maybe_unused]] size_t particle_index,
                             [[maybe_unused]] Field field) noexcept
       -> decltype(auto) {
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
-    if constexpr (meta::contains_v<Field, Consts...>) {
+    if constexpr (constants.contains(Field{})) {
       return auto{(*this)[field]}; // Return a copy for constants.
     } else {
-      return [&]<class... Vars>(meta::Set<Vars...>) -> decltype(auto) {
-        auto& particle = particles_[particle_index];
-        return std::get<meta::index_of_v<Field, Vars...>>(particle);
-      }(variables);
+      return std::get<variables.find(Field{})>(particles_[particle_index]);
     }
   }
   template<meta::type Field>
-    requires meta::contains_v<Field, Fields...>
+    requires contains_v<Field, Fields...>
   constexpr auto operator[]([[maybe_unused]] size_t particle_index,
                             [[maybe_unused]] Field field) const noexcept {
     TIT_ASSERT(particle_index < size(), "Particle index is out of range.");
-    if constexpr (meta::contains_v<Field, Consts...>) {
+    if constexpr (constants.contains(Field{})) {
       return (*this)[field];
     } else {
-      return [&]<class... Vars>(meta::Set<Vars...>) {
-        const auto& particle = particles_[particle_index];
-        return std::get<meta::index_of_v<Field, Vars...>>(particle);
-      }(variables);
+      return std::get<variables.find(Field{})>(particles_[particle_index]);
     }
   }
   /// @}
@@ -465,11 +460,11 @@ public:
   /// Get array-wise constant at index or assign value to all particles.
   /// @{
   template<meta::type Field>
-    requires meta::contains_v<Field, Fields...>
+    requires (fields.contains(Field{}))
   constexpr auto operator[]([[maybe_unused]] Field field) noexcept
       -> decltype(auto) {
-    if constexpr (meta::contains_v<Field, Consts...>) {
-      return std::get<meta::index_of_v<Field, Consts...>>(constants_);
+    if constexpr (constants.contains(Field{})) {
+      return std::get<constants.find(Field{})>(constants_);
     } else {
       return OnAssignment{[&](auto value) {
         std::ranges::for_each(views(), [&](ParticleView<ParticleArray> a) {
@@ -479,9 +474,9 @@ public:
     }
   }
   template<meta::type Field>
-    requires meta::contains_v<Field, Consts...>
+    requires (constants.contains(Field{}))
   constexpr auto operator[]([[maybe_unused]] Field field) const noexcept {
-    return std::get<meta::index_of_v<Field, Consts...>>(constants_);
+    return std::get<index_of_v<Field, Consts...>>(constants_);
   }
   /// @}
 
