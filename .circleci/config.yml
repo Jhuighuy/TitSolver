@@ -5,19 +5,14 @@
 
 version: 2.1
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 executors:
   linux-arm64:
     resource_class: arm.medium
     docker:
       - image: jhuighuy/tit-solver-base:latest
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 jobs:
   build:
-
     parameters:
       os:
         type: executor
@@ -47,8 +42,6 @@ jobs:
       - store_artifacts:
           path: output/test_output
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 workflows:
   all_build:
     jobs:
@@ -58,5 +51,3 @@ workflows:
               os: [linux-arm64]
               compiler: ["g++-14"]
               configuration: ["Debug"] # Minimize build time, thus only Debug.
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3,13 +3,6 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find bash (or zsh).
-# Beware: we cannot use ';' as the command separator since it is treated
-# as the argument separator by CMake.
-find_program(BASH_EXE NAMES "bash" "zsh" REQUIRED)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 # Check that the exit code is matched correctly.
 add_tit_test(
   NAME "test_runner/match_exit_code"
@@ -32,6 +25,8 @@ add_tit_test(
   COMMAND "${BASH_EXE}" -c "test -s /dev/stdin")
 
 # Check that the input files are provided.
+# Beware: we cannot use ';' as the command separator since it is treated
+# as the argument separator by CMake.
 add_tit_test(
   NAME "test_runner/check_input_files"
   INPUT_FILES "input_1.txt" "input_2.txt"
@@ -47,7 +42,7 @@ add_tit_test(
 add_tit_test(
   NAME "test_runner/check_stderr"
   MATCH_STDERR "output_2.txt"
-  COMMAND "${BASH_EXE}" -c "echo 'Some different output.' 1>&2 ")
+  COMMAND "${BASH_EXE}" -c "echo 'Some different output.' 1>&2")
 
 # Check that the output files are captured correctly.
 add_tit_test(
@@ -90,7 +85,7 @@ set_tests_properties(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Check that the empty lines are ignored when matching files.
+# Check that the trailing whitespaces are ignored when matching files.
 add_tit_test(
   NAME "test_runner/ignore_trailing_whitespaces"
   MATCH_STDOUT "output_1.txt"

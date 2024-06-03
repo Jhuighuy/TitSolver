@@ -5,34 +5,28 @@
 
 name: Docker
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 on:
   # Run every Sunday at midnight UTC.
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: "0 0 * * 0"
   # Run on main branch if Dockerfile or packages were updated.
   push:
     branches:
       - main
     paths:
-      - 'docker/**Dockerfile'
-      - 'vcpkg.json'
+      - "docker/**Dockerfile"
+      - "vcpkg.json"
   # Run on PR branch if Dockerfile were updated. Updates in packages are
   # cached separately in PR action runs.
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'docker/**Dockerfile'
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      - "docker/**Dockerfile"
 
 # Cancel previous runs.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 jobs:
   build_docker_images:
@@ -63,5 +57,3 @@ jobs:
           file: docker/Dockerfile
           platforms: "linux/arm64,linux/amd64"
           push: true
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

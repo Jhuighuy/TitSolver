@@ -181,6 +181,8 @@ set(
 # Define compile options for "Coverage" configuration.
 set(
   GNU_COMPILE_OPTIONS_COVERAGE
+  # Inherit common options.
+  ${GNU_COMPILE_OPTIONS}
   # Inherit coverage options.
   ${GNU_COVERAGE_OPTIONS}
   # Disable optimizations.

@@ -15,6 +15,9 @@ find_program(
   PATHS "${CMAKE_SOURCE_DIR}/build"
   REQUIRED)
 
+# Find bash (or zsh).
+find_program(BASH_EXE NAMES "bash" "zsh" REQUIRED)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##
@@ -155,27 +158,26 @@ endfunction()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##
-## Get a selected subset of the target's compile options (include directories,
-## compile definitions).
-##
-## Since most of those are not known at compile time,
-## the output list may contain generator expressions. This makes it unusable
-## for debugging, but fully suitable for `add_custom_command` for example.
+## Get a selected subset of the target's compile options (include directories
+## and compile definitions).
 ##
 macro(get_generated_compile_options TARGET OPTIONS_VAR)
   # Append include directories.
   foreach(PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    set(TARGET_INCLUDE_DIRS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
     list(
       APPEND
       ${OPTIONS_VAR}
-      "$<LIST:TRANSFORM,$<TARGET_PROPERTY:${TARGET},${PROP}>,PREPEND,-I>")
+      "$<LIST:TRANSFORM,${TARGET_INCLUDE_DIRS},PREPEND,-I>")
   endforeach()
   # Append compile definitions.
   foreach(PROP COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
+    set(TARGET_DEFS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
+    set(TARGET_VALID_DEFS "$<FILTER:${TARGET_DEFS},INCLUDE,\\w+(=\\w+)?>")
     list(
       APPEND
       ${OPTIONS_VAR}
-      "$<LIST:TRANSFORM,$<TARGET_PROPERTY:${TARGET},${PROP}>,PREPEND,-D>")
+      "$<LIST:TRANSFORM,${TARGET_VALID_DEFS},PREPEND,-D>")
   endforeach()
 endmacro()
 

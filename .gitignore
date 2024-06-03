@@ -30,6 +30,10 @@
 !*.hpp
 !*.cpp
 
+# Web files.
+# (To be replaced with the PR with the frontend.)
+/front
+
 # Scripts.
 !*.sh
 
