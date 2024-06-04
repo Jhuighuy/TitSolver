@@ -15,8 +15,7 @@ namespace {
 void func_3() {
   eprintln("func_3");
   eprintln("Doing something bad...");
-  int* const null_pointer = nullptr;
-  *null_pointer = 0; // NOLINT
+  throw 0xDEADBEEF;
 }
 
 [[gnu::noinline]]
@@ -46,5 +45,5 @@ auto run_test(int /*argc*/, char** /*argv*/) -> int {
 
 auto main(int argc, char** argv) -> int {
   using namespace tit;
-  return run_main(argc, argv, &run_test);
+  run_main(argc, argv, &run_test);
 }

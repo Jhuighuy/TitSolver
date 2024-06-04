@@ -53,6 +53,5 @@ auto run_test(int /*argc*/, char** /*argv*/) -> int {
 
 auto main(int argc, char** argv) -> int {
   using namespace tit;
-  run_main(argc, argv, &run_test);
-  return 0;
+  return run_main(argc, argv, &run_test);
 }

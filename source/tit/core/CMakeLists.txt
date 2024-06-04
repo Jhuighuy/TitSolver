@@ -11,6 +11,8 @@ add_tit_library(
     "checks.cpp"
     "checks.hpp"
     "enum_utils.hpp"
+    "exception.cpp"
+    "exception.hpp"
     "graph.hpp"
     "io.hpp"
     "main_func.cpp"
