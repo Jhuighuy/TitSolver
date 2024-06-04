@@ -1,0 +1,10 @@
+func_1
+func_2
+func_3
+Throwing an exception...
+
+
+/Users/jhuighuy/TitSolver/tests/tit/core/catch_tit_exception.cpp:19:36: Terminating due to an unhandled exception.
+
+  throw tit::Exception(...);
+  ^~~~~~~~~~~~~~~~~~~~~~~~~~ Test exception.

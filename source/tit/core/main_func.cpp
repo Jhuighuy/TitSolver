@@ -6,6 +6,7 @@
 #include <cstdlib>
 
 #include "tit/core/checks.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/system.hpp"
@@ -19,6 +20,8 @@ namespace tit {
 auto run_main(int argc, char** argv, const main_func_t& main_func) -> int {
   // Setup signal handler.
   const FatalSignalHandler handler{};
+  // Setup terminate handler.
+  const TerminateHandler terminate_handler{};
   // Enable profiling.
   if (std::getenv("TIT_ENABLE_PROFILER") != nullptr) { // NOLINT(*-mt-unsafe)
     Profiler::enable();

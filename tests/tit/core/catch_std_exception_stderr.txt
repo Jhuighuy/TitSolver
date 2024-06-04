@@ -1,0 +1,10 @@
+func_1
+func_2
+func_3
+Doing something bad...
+
+
+Terminating due to an unhandled exception.
+
+  throw std::out_of_range(...);
+  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~ basic_string::at: __n (which is 1) >= this->size() (which is 0)

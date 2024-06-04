@@ -36,6 +36,45 @@ add_tit_test_from_target(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
+  NAME core_catch_std_exception_test
+  SOURCES "catch_std_exception.cpp"
+  DEPENDS tit::core tit::par)
+
+add_tit_test_from_target(
+  tit::core_catch_std_exception_test
+  NAME "tit/core/catch_std_exception"
+  EXIT_CODE 1
+  MATCH_STDERR "catch_std_exception_stderr.txt")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME core_catch_tit_exception_test
+  SOURCES "catch_tit_exception.cpp"
+  DEPENDS tit::core tit::par)
+
+add_tit_test_from_target(
+  tit::core_catch_tit_exception_test
+  NAME "tit/core/catch_tit_exception"
+  EXIT_CODE 1
+  MATCH_STDERR "catch_tit_exception_stderr.txt")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME core_catch_unknown_exception_test
+  SOURCES "catch_unknown_exception.cpp"
+  DEPENDS tit::core tit::par)
+
+add_tit_test_from_target(
+  tit::core_catch_unknown_exception_test
+  NAME "tit/core/catch_unknown_exception"
+  EXIT_CODE 1
+  MATCH_STDERR "catch_unknown_exception_stderr.txt")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
   NAME core_failed_check_test
   SOURCES "failed_check.cpp"
   DEPENDS tit::core tit::par)
