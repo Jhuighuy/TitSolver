@@ -3,23 +3,28 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/par/atomic.hpp"
+#include "tit/core/par.hpp"
 
 #include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
 
+// Disclaimer: Since this submodule is no more that a simple wrapper around the
+// Intel TBB library, there is no need to test it in detail. The only thing we
+// need to test is that our wrappers are working correctly.
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("par::fetch_and_add") {
-  constexpr auto init = 0xDEAD;
-  constexpr auto delta = 0xBEEF;
-  auto val = init;
-  // Ensure we are getting back the original value.
-  CHECK(par::fetch_and_add(val, delta) == init);
-  // Ensure that the value was updated correctly.
-  CHECK(val == init + delta);
+TEST_CASE("par::MemoryPool") {
+  struct Struct {
+    int data_1;
+    int data_2;
+  };
+  par::MemoryPool<Struct> pool{};
+  auto* const root = pool.create(10, 20);
+  CHECK(root->data_1 == 10);
+  CHECK(root->data_2 == 20);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

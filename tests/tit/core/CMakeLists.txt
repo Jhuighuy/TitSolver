@@ -12,7 +12,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_catch_ctrl_c_test
   SOURCES "catch_ctrl_c.cpp"
-  DEPENDS tit::core tit::par)
+  DEPENDS tit::core)
 
 add_tit_test_from_target(
   tit::core_catch_ctrl_c_test
@@ -24,7 +24,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_catch_fatal_signal_test
   SOURCES "catch_fatal_signal.cpp"
-  DEPENDS tit::core tit::par)
+  DEPENDS tit::core)
 
 add_tit_test_from_target(
   tit::core_catch_fatal_signal_test
@@ -38,7 +38,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_catch_std_exception_test
   SOURCES "catch_std_exception.cpp"
-  DEPENDS tit::core tit::par)
+  DEPENDS tit::core)
 
 add_tit_test_from_target(
   tit::core_catch_std_exception_test
@@ -51,7 +51,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_catch_tit_exception_test
   SOURCES "catch_tit_exception.cpp"
-  DEPENDS tit::core tit::par)
+  DEPENDS tit::core)
 
 add_tit_test_from_target(
   tit::core_catch_tit_exception_test
@@ -64,7 +64,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_catch_unknown_exception_test
   SOURCES "catch_unknown_exception.cpp"
-  DEPENDS tit::core tit::par)
+  DEPENDS tit::core)
 
 add_tit_test_from_target(
   tit::core_catch_unknown_exception_test
@@ -77,7 +77,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_failed_check_test
   SOURCES "failed_check.cpp"
-  DEPENDS tit::core tit::par)
+  DEPENDS tit::core)
 
 add_tit_test_from_target(
   tit::core_failed_check_test
@@ -91,7 +91,7 @@ add_tit_test_from_target(
 add_tit_executable(
   NAME core_profiler_tests
   SOURCES "profiler.cpp"
-  DEPENDS tit::core tit::par)
+  DEPENDS tit::core)
 
 add_tit_test_from_target(
   tit::core_profiler_tests

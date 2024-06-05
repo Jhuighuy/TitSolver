@@ -13,8 +13,7 @@ add_tit_library(
     "kd_tree.hpp"
     "search_engine.hpp"
   DEPENDS
-    tit::core
-    tit::par)
+    tit::core)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

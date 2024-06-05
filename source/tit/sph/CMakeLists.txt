@@ -19,8 +19,7 @@ add_tit_library(
     "TitParticle.hpp"
   DEPENDS
     tit::core
-    tit::geom
-    tit::par)
+    tit::geom)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

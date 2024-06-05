@@ -3,20 +3,26 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#pragma once
+#include "tit/core/par.hpp"
 
-#include "tit/core/basic_types.hpp"
+#include "tit/testing/test.hpp"
 
-namespace tit::par {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Get number of the worker threads.
-auto num_threads() noexcept -> size_t;
-
-/// Set number of the worker threads.
-void set_num_threads(size_t new_num_threads);
+namespace tit {
+namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit::par
+TEST_CASE("par::fetch_and_add") {
+  constexpr auto init = 10;
+  constexpr auto delta = 20;
+  auto val = init;
+  // Ensure we are getting back the original value.
+  CHECK(par::fetch_and_add(val, delta) == init);
+  // Ensure that the value was updated correctly.
+  CHECK(val == init + delta);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace
+} // namespace tit
