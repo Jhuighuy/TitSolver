@@ -3,6 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+// IWYU pragma: private, include "tit/core/par.hpp"
 #pragma once
 
 #include <concepts>
@@ -28,24 +29,14 @@ class MemoryPool final {
 public:
 
   /// Allocate and initialize the new value from @p args.
-  ///
-  /// @returns Pointer to the allocated memory or `nullptr`.
   template<class... Args>
     requires std::constructible_from<Val, Args&&...>
   [[nodiscard]]
   auto create(Args&&... args) -> Val* {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
     auto* const ptr = static_cast<Val*>(pool_->malloc(sizeof(Val)));
-    if (ptr != nullptr) std::construct_at(ptr, std::forward<Args>(args)...);
-    return ptr;
-  }
-
-  /// Free memory that was previously allocated inside of the current pool.
-  ///
-  /// @note Values are not deinitialized: no destructors are called!
-  void destroy(Val* pointer) {
-    TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
-    pool_->free(pointer);
+    TIT_ENSURE(ptr != nullptr, "Memory allocation failed!");
+    return std::construct_at(ptr, std::forward<Args>(args)...);
   }
 
 private:

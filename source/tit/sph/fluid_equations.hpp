@@ -8,10 +8,9 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
-
-#include "tit/par/thread.hpp"
 
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"

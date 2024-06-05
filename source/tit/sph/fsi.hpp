@@ -12,8 +12,7 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
-
-#include "tit/par/thread.hpp"
+#include "tit/core/par.hpp"
 
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"

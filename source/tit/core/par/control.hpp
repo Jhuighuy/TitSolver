@@ -3,23 +3,20 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+// IWYU pragma: private, include "tit/core/par.hpp"
 #pragma once
 
-#include <concepts>
-#include <type_traits>
-
-#include "tit/core/type_traits.hpp"
+#include "tit/core/basic_types.hpp"
 
 namespace tit::par {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Atomically perform addition and return what was stored before.
-template<class Val>
-  requires std::integral<Val> || std::is_pointer_v<Val>
-auto fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept -> Val {
-  return __sync_fetch_and_add(&val, delta); // NOLINT(*-vararg)
-}
+/// Get number of the worker threads.
+auto num_threads() noexcept -> size_t;
+
+/// Set number of the worker threads.
+void set_num_threads(size_t value);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

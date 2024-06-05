@@ -8,10 +8,9 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/main_func.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/system.hpp"
-
-#include "tit/par/control.hpp"
 
 namespace tit {
 

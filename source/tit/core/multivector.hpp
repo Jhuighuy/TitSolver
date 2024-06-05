@@ -16,11 +16,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/mdvector.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/utils.hpp"
-
-#include "tit/par/atomic.hpp"
-#include "tit/par/control.hpp"
-#include "tit/par/thread.hpp"
 
 namespace tit {
 

@@ -3,6 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+// IWYU pragma: private, include "tit/core/par.hpp"
 #pragma once
 
 #include <algorithm>
@@ -17,10 +18,9 @@
 #include <oneapi/tbb/partitioner.h>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/par/control.hpp"
 #include "tit/core/type_traits.hpp"
 #include "tit/core/utils.hpp"
-
-#include "tit/par/control.hpp"
 
 namespace tit::par {
 
@@ -50,6 +50,7 @@ struct ForEach {
   template<basic_range Range,
            std::regular_invocable<std::ranges::range_reference_t<Range&&>> Func>
   static void operator()(Range&& range, Func func) {
+    /// @todo Replace with `tbb::parallel_for_each` when it supports ranges.
     TIT_ASSUME_UNIVERSAL(Range, range);
 #if !(defined(__clang__) && defined(__GLIBCXX__))
     tbb::parallel_for(tbb::blocked_range{std::begin(range), std::end(range)},
@@ -84,8 +85,8 @@ struct StaticForEach {
     };
     tbb::parallel_for<size_t>(
         /*first=*/0,
-        /*last =*/thread_count,
-        /*step =*/1,
+        /*last=*/thread_count,
+        /*step=*/1,
         [block_first = std::move(block_first),
          func = std::move(func)](size_t thread_index) {
           std::for_each(block_first(thread_index),
@@ -123,14 +124,15 @@ struct BlockForEach {
   static void operator()(Range&& range, Func func) {
     TIT_ASSUME_UNIVERSAL(Range, range);
     for (auto chunk : std::views::chunk(range, num_threads())) {
-      tbb::parallel_for<size_t>(
-          /*first=*/0,
-          /*last =*/std::size(chunk),
-          /*step =*/1,
-          [chunk = std::move(chunk), &func](size_t thread_index) {
-            std::ranges::for_each(chunk[thread_index], func);
-          },
-          tbb::static_partitioner{});
+#if !(defined(__clang__) && defined(__GLIBCXX__))
+      for_each(std::move(chunk),
+               std::bind_back(std::ranges::for_each, std::cref(func)));
+#else // `std::bind_back` is broken in clang with libstdc++.
+      for_each(std::move(chunk), [&func]<class Subrange>(Subrange&& subrange) {
+        TIT_ASSUME_UNIVERSAL(Subrange, subrange);
+        std::ranges::for_each(subrange, func);
+      });
+#endif
     }
   }
 };

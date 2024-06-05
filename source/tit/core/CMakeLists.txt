@@ -30,6 +30,13 @@ add_tit_library(
     "meta/set.hpp"
     "meta/type.hpp"
     "multivector.hpp"
+    "par.hpp"
+    "par/atomic.hpp"
+    "par/control.hpp"
+    "par/control.cpp"
+    "par/memory_pool.hpp"
+    "par/task_group.hpp"
+    "par/thread.hpp"
     "profiler.cpp"
     "profiler.hpp"
     "simd.hpp"
@@ -50,7 +57,9 @@ add_tit_library(
     "vec/vec_mask.hpp"
   DEPENDS
     tit::base
-    hwy::hwy)
+    hwy::hwy
+    TBB::tbb
+    TBB::tbbmalloc)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -69,6 +78,11 @@ add_tit_executable(
     "meta/set.test.cpp"
     "meta/type.test.cpp"
     "mdvector.test.cpp"
+    "par/atomic.test.cpp"
+    "par/control.test.cpp"
+    "par/memory_pool.test.cpp"
+    "par/task_group.test.cpp"
+    "par/thread.test.cpp"
     "simd/deduce.test.cpp"
     "simd/mask.test.cpp"
     "simd/reg.test.cpp"

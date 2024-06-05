@@ -23,6 +23,7 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/multivector.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/uint_utils.hpp"
 #include "tit/core/utils.hpp"
@@ -31,8 +32,6 @@
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
-
-#include "tit/par/control.hpp"
 
 #include "tit/sph/field.hpp"
 
