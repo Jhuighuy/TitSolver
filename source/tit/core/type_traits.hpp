@@ -114,4 +114,12 @@ using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Compile-time value constant.
+template<auto Val>
+struct value_constant {
+  static constexpr auto value = Val;
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit
