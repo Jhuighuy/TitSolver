@@ -12,20 +12,16 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// 8-bit unsigned integer type.
-using uint8_t = std::uint8_t;
+using std::int16_t;
+using std::int32_t;
+using std::int64_t;
+using std::int8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::uint64_t;
+using std::uint8_t;
 
-/// 16-bit unsigned integer type.
-using uint16_t = std::uint16_t;
-
-/// 32-bit unsigned integer type.
-using uint32_t = std::uint32_t;
-
-/// 64-bit unsigned integer type.
-using uint64_t = std::uint64_t;
-
-/// Unsigned sized type.
-using size_t = std::size_t;
+using std::size_t;
 
 /// Signed sized type.
 using ssize_t = std::ptrdiff_t;
