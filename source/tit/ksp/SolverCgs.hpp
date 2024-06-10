@@ -25,11 +25,10 @@
 
 #pragma once
 
-#include <cmath>
+#include "tit/core/math.hpp"
 
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
-#include "tit/ksp/stormBase.hpp"
 
 namespace tit::ksp {
 
@@ -101,7 +100,7 @@ real_t CgsSolver<Vector>::Init(const Vector& xVec,
   Blas::Set(rTildeVec_, rVec_);
   rho_ = Blas::Dot(rTildeVec_, rVec_);
 
-  return std::sqrt(rho_);
+  return sqrt(rho_);
 
 } // CgsSolver::Init
 
@@ -136,7 +135,7 @@ real_t CgsSolver<Vector>::Iterate(Vector& xVec,
   } else {
     const real_t rhoBar{rho_};
     rho_ = Blas::Dot(rTildeVec_, rVec_);
-    const real_t beta{Utils::SafeDivide(rho_, rhoBar)};
+    const real_t beta{safe_divide(rho_, rhoBar)};
     Blas::Add(uVec_, rVec_, qVec_, beta);
     Blas::Add(pVec_, qVec_, pVec_, beta);
     Blas::Add(pVec_, uVec_, pVec_, beta);
@@ -161,7 +160,7 @@ real_t CgsSolver<Vector>::Iterate(Vector& xVec,
   } else {
     linOp.MatVec(vVec_, pVec_);
   }
-  const real_t alpha{Utils::SafeDivide(rho_, Blas::Dot(rTildeVec_, vVec_))};
+  const real_t alpha{safe_divide(rho_, Blas::Dot(rTildeVec_, vVec_))};
   Blas::Sub(qVec_, uVec_, vVec_, alpha);
   Blas::Add(vVec_, uVec_, qVec_);
 

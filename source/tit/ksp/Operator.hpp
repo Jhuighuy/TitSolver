@@ -5,13 +5,14 @@
 
 #pragma once
 
-#include <cmath>
 #include <functional>
 #include <memory>
 #include <stdexcept>
 
+#include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
+
 #include "tit/ksp/Vector.hpp"
-#include "tit/ksp/stormBase.hpp"
 
 namespace tit::ksp {
 
@@ -100,7 +101,7 @@ public:
   template<operator_like<InVector, OutVector> MatVecFunc>
   explicit FunctionalOperator(MatVecFunc&& matVecFunc)
       : MatVecFunc_{std::forward<MatVecFunc>(matVecFunc)} {
-    StormAssert(MatVecFunc_);
+    TIT_ASSERT(!!MatVecFunc_, "Invalid function!");
   }
   template<operator_like<InVector, OutVector> MatVecFunc,
            operator_like<OutVector, InVector> ConjMatVecFunc>
@@ -108,7 +109,7 @@ public:
                               ConjMatVecFunc&& conjMatVecFunc)
       : MatVecFunc_{std::forward<MatVecFunc>(matVecFunc)},
         ConjMatVecFunc_{std::forward<ConjMatVecFunc>(conjMatVecFunc)} {
-    StormAssert(MatVecFunc_ && ConjMatVecFunc_);
+    TIT_ASSERT(MatVecFunc_ && ConjMatVecFunc_, "Invalid function!");
   }
   /// @}
 

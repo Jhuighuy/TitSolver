@@ -25,11 +25,10 @@
 
 #pragma once
 
-#include <cmath>
+#include "tit/core/math.hpp"
 
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
-#include "tit/ksp/stormBase.hpp"
 
 namespace tit::ksp {
 
@@ -98,7 +97,7 @@ real_t CgSolver<Vector>::Init(const Vector& xVec,
     gamma_ = Blas::Dot(rVec_, rVec_);
   }
 
-  return (preOp != nullptr) ? Blas::Norm2(rVec_) : std::sqrt(gamma_);
+  return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
 
 } // CgSolver::Init
 
@@ -117,7 +116,7 @@ real_t CgSolver<Vector>::Iterate(Vector& xVec,
   // ----------------------
   linOp.MatVec(zVec_, pVec_);
   const real_t gammaBar{gamma_};
-  const real_t alpha{Utils::SafeDivide(gamma_, Blas::Dot(pVec_, zVec_))};
+  const real_t alpha = safe_divide(gamma_, Blas::Dot(pVec_, zVec_));
   Blas::AddAssign(xVec, pVec_, alpha);
   Blas::SubAssign(rVec_, zVec_, alpha);
 
@@ -140,10 +139,10 @@ real_t CgSolver<Vector>::Iterate(Vector& xVec,
   // 𝛽 ← 𝛾/𝛾̅,
   // 𝒑 ← (𝓟 ≠ 𝗻𝗼𝗻𝗲 ? 𝒛 : 𝒓) + 𝛽⋅𝒑.
   // ----------------------
-  const real_t beta = Utils::SafeDivide(gamma_, gammaBar);
+  const real_t beta = safe_divide(gamma_, gammaBar);
   Blas::Add(pVec_, preOp != nullptr ? zVec_ : rVec_, pVec_, beta);
 
-  return (preOp != nullptr) ? Blas::Norm2(rVec_) : std::sqrt(gamma_);
+  return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
 
 } // CgSolver::Iterate
 

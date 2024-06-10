@@ -25,7 +25,10 @@
 
 #pragma once
 
-#include "tit/ksp/stormBase.hpp"
+#include <concepts>
+#include <utility>
+
+#include "tit/core/basic_types.hpp"
 
 namespace tit::ksp {
 

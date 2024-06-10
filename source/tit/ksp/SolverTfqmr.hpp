@@ -25,11 +25,10 @@
 
 #pragma once
 
-#include <cmath>
+#include "tit/core/math.hpp"
 
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
-#include "tit/ksp/stormBase.hpp"
 
 namespace tit::ksp {
 
@@ -157,7 +156,7 @@ real_t BaseTfqmrSolver_<Vector, L1>::Init(const Vector& xVec,
   }
   Blas::Set(uVec_, yVec_);
   Blas::Set(rTildeVec_, uVec_);
-  rho_ = Blas::Dot(rTildeVec_, uVec_), tau_ = std::sqrt(rho_);
+  rho_ = Blas::Dot(rTildeVec_, uVec_), tau_ = sqrt(rho_);
 
   return tau_;
 
@@ -214,7 +213,7 @@ real_t BaseTfqmrSolver_<Vector, L1>::Iterate(
   } else {
     const real_t rhoBar{rho_};
     rho_ = Blas::Dot(rTildeVec_, uVec_);
-    const real_t beta{Utils::SafeDivide(rho_, rhoBar)};
+    const real_t beta{safe_divide(rho_, rhoBar)};
     Blas::Add(vVec_, sVec_, vVec_, beta);
     Blas::Add(yVec_, uVec_, yVec_, beta);
     if (leftPre) {
@@ -256,7 +255,7 @@ real_t BaseTfqmrSolver_<Vector, L1>::Iterate(
   //   𝗲𝗻𝗱 𝗶𝗳
   // 𝗲𝗻𝗱 𝗳𝗼𝗿
   // ----------------------
-  const real_t alpha{Utils::SafeDivide(rho_, Blas::Dot(rTildeVec_, vVec_))};
+  const real_t alpha{safe_divide(rho_, Blas::Dot(rTildeVec_, vVec_))};
   for (size_t m{0}; m <= 1; ++m) {
     Blas::SubAssign(uVec_, sVec_, alpha);
     Blas::AddAssign(dVec_, rightPre ? zVec_ : yVec_, alpha);
@@ -266,7 +265,7 @@ real_t BaseTfqmrSolver_<Vector, L1>::Iterate(
         tau_ = omega, Blas::Set(xVec, dVec_);
       }
     } else {
-      const auto [cs, sn, rr] = Utils::SymOrtho(tau_, omega);
+      const auto [cs, sn, rr] = sym_ortho(tau_, omega);
       tau_ = omega * cs;
       Blas::AddAssign(xVec, dVec_, std::pow(cs, 2));
       Blas::ScaleAssign(dVec_, std::pow(sn, 2));
@@ -294,7 +293,7 @@ real_t BaseTfqmrSolver_<Vector, L1>::Iterate(
   real_t tauTilde{tau_};
   if constexpr (!L1) {
     const size_t k{this->Iteration};
-    tauTilde *= std::sqrt(2.0 * k + 3.0);
+    tauTilde *= sqrt(2.0 * k + 3.0);
   }
 
   return tauTilde;

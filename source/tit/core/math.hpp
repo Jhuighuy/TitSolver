@@ -12,6 +12,7 @@
 #include <initializer_list>
 #include <limits>
 #include <ranges>
+#include <tuple>
 #include <type_traits>
 
 #include "tit/core/basic_types.hpp"
@@ -180,6 +181,22 @@ constexpr auto is_tiny(Num a) noexcept -> bool {
 template<class Num>
 constexpr auto approx_equal_to(Num a, Num b) -> bool {
   return is_tiny(a - b);
+}
+
+/// If denominator is zero, return zero, else return the division result.
+template<class Num>
+constexpr auto safe_divide(Num x, Num y) noexcept -> Num {
+  return y == Num{0} ? Num{0} : (x / y);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// @brief Generate the Givens rotation.
+template<class Num>
+constexpr auto sym_ortho(Num a, Num b) noexcept -> std::tuple<Num, Num, Num> {
+  const Num r = std::hypot(a, b);
+  if (r > Num{0}) return std::tuple{a / r, b / r, r};
+  return std::tuple{Num{1}, Num{0}, r};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
