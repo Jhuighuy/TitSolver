@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -38,15 +18,13 @@
 
 namespace tit::ksp {
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c BiCGStab (Biconjugate Gradients Stabilized)
-///   linear operator equation solver.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The BiCGStab (Biconjugate Gradients Stabilized) linear operator equation
+/// solver.
 ///
-/// @c BiCGStab, like the other @c BiCG type solvers, requires
-///   two operator multiplications per iteration.
-///
-/// @c BiCGStab typically converges much smoother, than
-///   @c CGS. @todo Breakdowns?
+/// BiCGStab, like the other BiCG type solvers, requires two operator
+/// multiplications per iteration.
 ///
 /// References:
 /// @verbatim
@@ -55,29 +33,25 @@ namespace tit::ksp {
 ///      for the Solution of Nonsymmetric Linear Systems.”
 ///     SIAM J. Sci. Comput. 13 (1992): 631-644.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class BiCgStabSolver final : public IterativeSolver<Vector> {
+template<blas::vector Vector>
+class BiCGStab final : public IterativeSolver<Vector> {
 private:
 
-  real_t alpha_, rho_, omega_;
-  Vector pVec_, rVec_, rTildeVec_, tVec_, vVec_, zVec_;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  auto Init(const Vector& xVec,
-            const Vector& bVec,
-            const Operator<Vector>& linOp,
-            const Preconditioner<Vector>* preOp) -> real_t override {
-    const bool leftPre{(preOp != nullptr) &&
-                       (this->PreSide == PreconditionerSide::Left)};
+  constexpr auto init(const Vector& x,
+                      const Vector& b,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* P) -> real_t override {
+    const auto left_pre = (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
 
-    pVec_.Assign(xVec, false);
-    rVec_.Assign(xVec, false);
-    rTildeVec_.Assign(xVec, false);
-    tVec_.Assign(xVec, false);
-    vVec_.Assign(xVec, false);
-    if (preOp != nullptr) {
-      zVec_.Assign(xVec, false);
-    }
+    p_.Assign(x, false);
+    r_.Assign(x, false);
+    r_tilde_.Assign(x, false);
+    t_.Assign(x, false);
+    v_.Assign(x, false);
+    if (P != nullptr) z_.Assign(x, false);
 
     // Initialize:
     // ----------------------
@@ -89,25 +63,27 @@ private:
     // 𝒓̃ ← 𝒓,
     // 𝜌 ← <𝒓̃⋅𝒓>.
     // ----------------------
-    linOp.Residual(rVec_, bVec, xVec);
-    if (leftPre) {
-      Blas::Swap(zVec_, rVec_);
-      preOp->MatVec(rVec_, zVec_);
+    A.Residual(r_, b, x);
+    if (left_pre) {
+      Blas::Swap(z_, r_);
+      P->MatVec(r_, z_);
     }
-    Blas::Set(rTildeVec_, rVec_);
-    rho_ = Blas::Dot(rTildeVec_, rVec_);
+    Blas::Set(r_tilde_, r_);
+    rho_ = Blas::Dot(r_tilde_, r_);
 
     return sqrt(rho_);
   }
 
-  auto Iterate(Vector& xVec,
-               const Vector& /*bVec*/,
-               const Operator<Vector>& linOp,
-               const Preconditioner<Vector>* preOp) -> real_t override {
-    const bool leftPre{(preOp != nullptr) &&
-                       (this->PreSide == PreconditionerSide::Left)};
-    const bool rightPre{(preOp != nullptr) &&
-                        (this->PreSide == PreconditionerSide::Right)};
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto iter(Vector& x,
+                      const Vector& /*b*/,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* P) -> real_t override {
+    const auto left_pre = (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
+    const auto right_pre = (P != nullptr) && //
+                           (this->PreSide == PreconditionerSide::Right);
 
     // Continue the iterations:
     // ----------------------
@@ -121,15 +97,15 @@ private:
     //   𝒑 ← 𝒓 + 𝛽⋅𝒑.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    const bool firstIteration{this->Iteration == 0};
-    if (firstIteration) {
-      Blas::Set(pVec_, rVec_);
+    const auto first_iter = this->Iteration == 0;
+    if (first_iter) {
+      Blas::Set(p_, r_);
     } else {
-      const real_t rhoBar{rho_};
-      rho_ = Blas::Dot(rTildeVec_, rVec_);
-      const real_t beta = safe_divide(alpha_ * rho_, omega_ * rhoBar);
-      Blas::SubAssign(pVec_, vVec_, omega_);
-      Blas::Add(pVec_, rVec_, pVec_, beta);
+      const auto rho_bar = rho_;
+      rho_ = Blas::Dot(r_tilde_, r_);
+      const auto beta = safe_divide(alpha_ * rho_, omega_ * rho_bar);
+      Blas::SubAssign(p_, v_, omega_);
+      Blas::Add(p_, r_, p_, beta);
     }
 
     // Update the solution and the residual:
@@ -145,16 +121,15 @@ private:
     // 𝒙 ← 𝒙 + 𝛼⋅(𝘙𝘪𝘨𝘩𝘵𝘗𝘳𝘦 ? 𝒛 : 𝒑),
     // 𝒓 ← 𝒓 - 𝛼⋅𝒗.
     // ----------------------
-    if (leftPre) {
-      preOp->MatVec(vVec_, zVec_, linOp, pVec_);
-    } else if (rightPre) {
-      linOp.MatVec(vVec_, zVec_, *preOp, pVec_);
+    if (left_pre) P->MatVec(v_, z_, A, p_);
+    else if (right_pre) {
+      A.MatVec(v_, z_, *P, p_);
     } else {
-      linOp.MatVec(vVec_, pVec_);
+      A.MatVec(v_, p_);
     }
-    alpha_ = safe_divide(rho_, Blas::Dot(rTildeVec_, vVec_));
-    Blas::AddAssign(xVec, rightPre ? zVec_ : pVec_, alpha_);
-    Blas::SubAssign(rVec_, vVec_, alpha_);
+    alpha_ = safe_divide(rho_, Blas::Dot(r_tilde_, v_));
+    Blas::AddAssign(x, right_pre ? z_ : p_, alpha_);
+    Blas::SubAssign(r_, v_, alpha_);
 
     // Update the solution and the residual again:
     // ----------------------
@@ -169,28 +144,34 @@ private:
     // 𝒙 ← 𝒙 + 𝜔⋅(𝘙𝘪𝘨𝘩𝘵𝘗𝘳𝘦 ? 𝒛 : 𝒓),
     // 𝒓 ← 𝒓 - 𝜔⋅𝒕.
     // ----------------------
-    if (leftPre) {
-      preOp->MatVec(tVec_, zVec_, linOp, rVec_);
-    } else if (rightPre) {
-      linOp.MatVec(tVec_, zVec_, *preOp, rVec_);
+    if (left_pre) {
+      P->MatVec(t_, z_, A, r_);
+    } else if (right_pre) {
+      A.MatVec(t_, z_, *P, r_);
     } else {
-      linOp.MatVec(tVec_, rVec_);
+      A.MatVec(t_, r_);
     }
-    omega_ = safe_divide(Blas::Dot(tVec_, rVec_), Blas::Dot(tVec_, tVec_));
-    Blas::AddAssign(xVec, rightPre ? zVec_ : rVec_, omega_);
-    Blas::SubAssign(rVec_, tVec_, omega_);
+    omega_ = safe_divide(Blas::Dot(t_, r_), Blas::Dot(t_, t_));
+    Blas::AddAssign(x, right_pre ? z_ : r_, omega_);
+    Blas::SubAssign(r_, t_, omega_);
 
-    return Blas::Norm2(rVec_);
+    return Blas::Norm2(r_);
   }
 
-}; // class BiCgStabSolver
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c BiCGStab(l) (Biconjugate Gradients Stabilized)
-///   linear operator equation solver.
+  real_t alpha_, rho_, omega_;
+  Vector p_, r_, r_tilde_, t_, v_, z_;
+
+}; // class BiCGStab
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The BiCGStab(l) (Biconjugate Gradients Stabilized) linear operator equation
+/// solver.
 ///
-/// @c BiCGStab(l), like the other @c BiCG type solvers, requires
-///   two operator multiplications per iteration.
+/// BiCGStab(l), like the other BiCG type solvers, requires two operator
+/// multiplications per iteration.
 ///
 /// References:
 /// @verbatim
@@ -199,38 +180,38 @@ private:
 ///      Unsymmetric Matrices with Complex Spectrum.”
 ///     Electronic Transactions on Numerical Analysis 1 (1993): 11-32.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class BiCgStabLSolver final : public InnerOuterIterativeSolver<Vector> {
+template<blas::vector Vector>
+class BiCGStabL final : public InnerOuterIterativeSolver<Vector> {
+public:
+
+  BiCGStabL() {
+    this->NumInnerIterations = 3;
+  }
+
 private:
 
-  real_t alpha_{}, rho_{}, omega_{};
-  std::vector<real_t> gamma_, gammaBar_, gammaBarBar_, sigma_;
-  Mdvector<real_t, 2> tau_;
-  Vector rTildeVec_, zVec_;
-  std::vector<Vector> rVecs_, uVecs_;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  auto OuterInit(const Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) -> real_t override {
-    const size_t l{this->NumInnerIterations};
+  constexpr auto outer_init(const Vector& x,
+                            const Vector& b,
+                            const Operator<Vector>& A,
+                            const Preconditioner<Vector>* P)
+      -> real_t override {
+    const auto l = this->NumInnerIterations;
 
     gamma_.resize(l + 1);
-    gammaBar_.resize(l + 1);
-    gammaBarBar_.resize(l + 1);
+    gamma_bar_.resize(l + 1);
+    gamma_bbar_.resize(l + 1);
     sigma_.resize(l + 1);
     tau_.assign(l + 1, l + 1);
 
-    rTildeVec_.Assign(xVec, false);
-    if (preOp != nullptr) {
-      zVec_.Assign(xVec, false);
-    }
+    r_tilde_.Assign(x, false);
+    if (P != nullptr) z_.Assign(x, false);
 
-    rVecs_.resize(l + 1);
-    uVecs_.resize(l + 1);
-    for (Vector& r : rVecs_) r.Assign(xVec, false);
-    for (Vector& u : uVecs_) u.Assign(xVec, false);
+    rs_.resize(l + 1);
+    us_.resize(l + 1);
+    for (Vector& r : rs_) r.Assign(x, false);
+    for (Vector& u : us_) u.Assign(x, false);
 
     // Initialize:
     // ----------------------
@@ -243,24 +224,27 @@ private:
     // 𝒓̃ ← 𝒓₀,
     // 𝜌 ← <𝒓̃⋅𝒓₀>.
     // ----------------------
-    Blas::Fill(uVecs_[0], 0.0);
-    linOp.Residual(rVecs_[0], bVec, xVec);
-    if (preOp != nullptr) {
-      Blas::Swap(zVec_, rVecs_[0]);
-      preOp->MatVec(rVecs_[0], zVec_);
+    Blas::Fill(us_[0], 0.0);
+    A.Residual(rs_[0], b, x);
+    if (P != nullptr) {
+      Blas::Swap(z_, rs_[0]);
+      P->MatVec(rs_[0], z_);
     }
-    Blas::Set(rTildeVec_, rVecs_[0]);
-    rho_ = Blas::Dot(rTildeVec_, rVecs_[0]);
+    Blas::Set(r_tilde_, rs_[0]);
+    rho_ = Blas::Dot(r_tilde_, rs_[0]);
 
     return sqrt(rho_);
   }
 
-  auto InnerIterate(Vector& xVec,
-                    const Vector& /*bVec*/,
-                    const Operator<Vector>& linOp,
-                    const Preconditioner<Vector>* preOp) -> real_t override {
-    const size_t l{this->NumInnerIterations};
-    const size_t j{this->InnerIteration};
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto inner_iter(Vector& x,
+                            const Vector& /*b*/,
+                            const Operator<Vector>& A,
+                            const Preconditioner<Vector>* P)
+      -> real_t override {
+    const auto l = this->NumInnerIterations;
+    const auto j = this->InnerIteration;
 
     // BiCG part:
     // ----------------------
@@ -284,25 +268,25 @@ private:
     //   𝒓ᵢ ← 𝒓ᵢ - 𝛼⋅𝒖ᵢ₊₁.
     // 𝗲𝗻𝗱 𝗳𝗼𝗿
     // ----------------------
-    const bool firstIteration{this->Iteration == 0};
-    if (firstIteration) {
-      Blas::Set(uVecs_[0], rVecs_[0]);
+    const auto first_iter = this->Iteration == 0;
+    if (first_iter) {
+      Blas::Set(us_[0], rs_[0]);
     } else {
-      const real_t rhoBar{rho_};
-      rho_ = Blas::Dot(rTildeVec_, rVecs_[j]);
-      const real_t beta{safe_divide(alpha_ * rho_, rhoBar)};
-      for (size_t i{0}; i <= j; ++i) {
-        Blas::Sub(uVecs_[i], rVecs_[i], uVecs_[i], beta);
+      const auto rho_bar = rho_;
+      rho_ = Blas::Dot(r_tilde_, rs_[j]);
+      const auto beta = safe_divide(alpha_ * rho_, rho_bar);
+      for (size_t i = 0; i <= j; ++i) {
+        Blas::Sub(us_[i], rs_[i], us_[i], beta);
       }
     }
-    if (preOp != nullptr) {
-      preOp->MatVec(uVecs_[j + 1], zVec_, linOp, uVecs_[j]);
+    if (P != nullptr) {
+      P->MatVec(us_[j + 1], z_, A, us_[j]);
     } else {
-      linOp.MatVec(uVecs_[j + 1], uVecs_[j]);
+      A.MatVec(us_[j + 1], us_[j]);
     }
-    alpha_ = safe_divide(rho_, Blas::Dot(rTildeVec_, uVecs_[j + 1]));
-    for (size_t i{0}; i <= j; ++i) {
-      Blas::SubAssign(rVecs_[i], uVecs_[i + 1], alpha_);
+    alpha_ = safe_divide(rho_, Blas::Dot(r_tilde_, us_[j + 1]));
+    for (size_t i = 0; i <= j; ++i) {
+      Blas::SubAssign(rs_[i], us_[i + 1], alpha_);
     }
 
     // Update the solution and the residual:
@@ -314,11 +298,11 @@ private:
     //   𝒓ⱼ₊₁ ← 𝓐𝒓ⱼ.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    Blas::AddAssign(xVec, uVecs_[0], alpha_);
-    if (preOp != nullptr) {
-      preOp->MatVec(rVecs_[j + 1], zVec_, linOp, rVecs_[j]);
+    Blas::AddAssign(x, us_[0], alpha_);
+    if (P != nullptr) {
+      P->MatVec(rs_[j + 1], z_, A, rs_[j]);
     } else {
-      linOp.MatVec(rVecs_[j + 1], rVecs_[j]);
+      A.MatVec(rs_[j + 1], rs_[j]);
     }
 
     if (j == l - 1) {
@@ -333,13 +317,13 @@ private:
       //   𝛾̅ⱼ ← <𝒓₀⋅𝒓ⱼ>/𝜎ⱼ,
       // 𝗲𝗻𝗱 𝗳𝗼𝗿
       // ----------------------
-      for (size_t k{1}; k <= l; ++k) {
-        for (size_t i{1}; i < k; ++i) {
-          tau_[i, k] = safe_divide(Blas::Dot(rVecs_[i], rVecs_[k]), sigma_[i]);
-          Blas::SubAssign(rVecs_[k], rVecs_[i], tau_[i, k]);
+      for (size_t k = 1; k <= l; ++k) {
+        for (size_t i = 1; i < k; ++i) {
+          tau_[i, k] = safe_divide(Blas::Dot(rs_[i], rs_[k]), sigma_[i]);
+          Blas::SubAssign(rs_[k], rs_[i], tau_[i, k]);
         }
-        sigma_[k] = Blas::Dot(rVecs_[k], rVecs_[k]);
-        gammaBar_[k] = safe_divide(Blas::Dot(rVecs_[0], rVecs_[k]), sigma_[k]);
+        sigma_[k] = Blas::Dot(rs_[k], rs_[k]);
+        gamma_bar_[k] = safe_divide(Blas::Dot(rs_[0], rs_[k]), sigma_[k]);
       }
 
       // ----------------------
@@ -357,17 +341,17 @@ private:
       //   𝗲𝗻𝗱 𝗳𝗼𝗿
       // 𝗲𝗻𝗱 𝗳𝗼𝗿
       // ----------------------
-      omega_ = gamma_[l] = gammaBar_[l], rho_ *= -omega_;
+      omega_ = gamma_[l] = gamma_bar_[l], rho_ *= -omega_;
       for (size_t k{l - 1}; k != 0; --k) {
-        gamma_[k] = gammaBar_[k];
+        gamma_[k] = gamma_bar_[k];
         for (size_t i{k + 1}; i <= l; ++i) {
           gamma_[k] -= tau_[k, i] * gamma_[i];
         }
       }
-      for (size_t k{1}; k < l; ++k) {
-        gammaBarBar_[k] = gamma_[k + 1];
+      for (size_t k = 1; k < l; ++k) {
+        gamma_bbar_[k] = gamma_[k + 1];
         for (size_t i{k + 1}; i < l; ++i) {
-          gammaBarBar_[k] += tau_[k, i] * gamma_[i + 1];
+          gamma_bbar_[k] += tau_[k, i] * gamma_[i + 1];
         }
       }
 
@@ -382,25 +366,29 @@ private:
       //   𝒖₀ ← 𝒖₀ - 𝛾ⱼ⋅𝒖ⱼ.
       // 𝗲𝗻𝗱 𝗳𝗼𝗿
       // ----------------------
-      Blas::AddAssign(xVec, rVecs_[0], gamma_[1]);
-      Blas::SubAssign(rVecs_[0], rVecs_[l], gammaBar_[l]);
-      Blas::SubAssign(uVecs_[0], uVecs_[l], gamma_[l]);
-      for (size_t k{1}; k < l; ++k) {
-        Blas::AddAssign(xVec, rVecs_[k], gammaBarBar_[k]);
-        Blas::SubAssign(rVecs_[0], rVecs_[k], gammaBar_[k]);
-        Blas::SubAssign(uVecs_[0], uVecs_[k], gamma_[k]);
+      Blas::AddAssign(x, rs_[0], gamma_[1]);
+      Blas::SubAssign(rs_[0], rs_[l], gamma_bar_[l]);
+      Blas::SubAssign(us_[0], us_[l], gamma_[l]);
+      for (size_t k = 1; k < l; ++k) {
+        Blas::AddAssign(x, rs_[k], gamma_bbar_[k]);
+        Blas::SubAssign(rs_[0], rs_[k], gamma_bar_[k]);
+        Blas::SubAssign(us_[0], us_[k], gamma_[k]);
       }
     }
 
-    return Blas::Norm2(rVecs_[0]);
+    return Blas::Norm2(rs_[0]);
   }
 
-public:
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  BiCgStabLSolver() {
-    this->NumInnerIterations = 3;
-  }
+  real_t alpha_{}, rho_{}, omega_{};
+  std::vector<real_t> gamma_, gamma_bar_, gamma_bbar_, sigma_;
+  Mdvector<real_t, 2> tau_;
+  Vector r_tilde_, z_;
+  std::vector<Vector> rs_, us_;
 
-}; // class BiCgStabLSolver
+}; // class BiCGStabL
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp

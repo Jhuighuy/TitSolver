@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -39,11 +19,12 @@
 
 namespace tit::ksp {
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c Newton method nonlinear operator equation solver.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The Newton method nonlinear operator equation solver.
 ///
-/// The classical Newton iterations are based on the linearization
-/// of 𝓐(𝒙) near 𝒙:
+/// The classical Newton iterations are based on the linearization of 𝓐(𝒙) near
+/// 𝒙:
 ///
 /// 𝓐(𝒙̂) ≈ 𝓐(𝒙) + [∂𝓐(𝒙)/∂𝒙](𝒙̂ - 𝒙) = 𝒃,
 ///
@@ -51,45 +32,45 @@ namespace tit::ksp {
 ///
 /// [∂𝓐(𝒙)/∂𝒙]𝒕 = 𝒓, 𝒕 = 𝒙̂ - 𝒙, 𝒓 = 𝒃 - 𝓐(𝒙)
 ///
-/// where 𝒙 and 𝒙̂ are the current and updated solution vectors.
-/// Therefore, a linear equation has to be solved on each iteration,
-/// linear operator 𝓙(𝒙) ≈ ∂𝓐(𝒙)/∂𝒙 for computing Jacobian-vector
-/// products is required.
-///
-/// References:
-/// @verbatim
-/// [1] ???
-/// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
+/// where 𝒙 and 𝒙̂ are the current and updated solution vectors. Therefore, a
+/// linear equation has to be solved on each iteration, linear operator 𝓙(𝒙) ≈
+/// ∂𝓐(𝒙)/∂𝒙 for computing Jacobian-vector products is required.
+template<blas::vector Vector>
 class NewtonSolver : public IterativeSolver<Vector> {
 private:
 
-  auto Init(const Vector& /*xVec*/,
-            const Vector& /*bVec*/,
-            const Operator<Vector>& /*anyOp*/,
-            const Preconditioner<Vector>* /*preOp*/) -> real_t override {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto init(const Vector& /*x*/,
+                      const Vector& /*b*/,
+                      const Operator<Vector>& /*A*/,
+                      const Preconditioner<Vector>* /*P*/) -> real_t override {
     TIT_ENSURE(false, "Newton solver was not implemented yet!");
     return 0.0;
   }
 
-  auto Iterate(Vector& /*xVec*/,
-               const Vector& /*bVec*/,
-               const Operator<Vector>& /*anyOp*/,
-               const Preconditioner<Vector>* /*preOp*/) -> real_t override {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto iterate(Vector& /*x*/,
+                         const Vector& /*b*/,
+                         const Operator<Vector>& /*A*/,
+                         const Preconditioner<Vector>* /*P*/)
+      -> real_t override {
     TIT_ENSURE(false, "Newton solver was not implemented yet!");
     return 0.0;
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 }; // class NewtonSolver
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The first-order @c JFNK (Jacobian free-Newton-Krylov)
-///   nonlinear operator equation solver.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The first-order JFNK (Jacobian free-Newton-Krylov) nonlinear operator
+/// equation solver.
 ///
-/// For the @c Newton iterations, computing of the Jacobian-vector
-/// products 𝒛 = 𝓙(𝒙)𝒚, where 𝓙(𝒙) ≈ ∂𝓐(𝒙)/∂𝒙 is required.
-/// Consider the expansion:
+/// For the Newton iterations, computing of the Jacobian-vector products
+/// 𝒛 = 𝓙(𝒙)𝒚, where 𝓙(𝒙) ≈ ∂𝓐(𝒙)/∂𝒙 is required. Consider the expansion:
 ///
 /// 𝓐(𝒙 + 𝛿⋅𝒚) = 𝓐(𝒙) + 𝛿⋅[∂𝓐(𝒙)/∂𝒙]𝒚 + 𝓞(𝛿²),
 ///
@@ -97,9 +78,8 @@ private:
 ///
 /// 𝓙(𝒙)𝒚 = [𝓐(𝒙 + 𝛿⋅𝒚) - 𝓐(𝒙)]/𝛿 = [∂𝓐(𝒙)/∂𝒙]𝒚 + 𝓞(𝛿).
 ///
-/// Expression above may be used as the formula for computing
-/// the (approximate) Jacobian-vector products. Parameter 𝛿 is commonly
-/// defined as [1]:
+/// Expression above may be used as the formula for computing  the (approximate)
+/// Jacobian-vector products. Parameter 𝛿 is commonly defined as [1]:
 ///
 /// 𝛿 = 𝜇⋅‖𝒚‖⁺, 𝜇 = (𝜀ₘ)¹ᐟ²⋅(1 + ‖𝒙‖)¹ᐟ²,
 ///
@@ -112,52 +92,52 @@ private:
 ///     “CFD High-order Accurate Scheme JFNK Solver.”
 ///     Procedia Engineering 61 (2013): 9-15.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class JfnkSolver final : public IterativeSolver<Vector> {
+template<blas::vector Vector>
+class JFNK final : public IterativeSolver<Vector> {
 private:
 
-  Vector sVec_, tVec_, rVec_, wVec_;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  auto Init(const Vector& xVec,
-            const Vector& bVec,
-            const Operator<Vector>& anyOp,
-            const Preconditioner<Vector>* /*preOp*/) -> real_t override {
-    sVec_.Assign(xVec, false);
-    tVec_.Assign(xVec, false);
-    rVec_.Assign(xVec, false);
-    wVec_.Assign(xVec, false);
+  constexpr auto init(const Vector& x,
+                      const Vector& b,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* /*P*/) -> real_t override {
+    s_.Assign(x, false);
+    t_.Assign(x, false);
+    r_.Assign(x, false);
+    w_.Assign(x, false);
 
     // Initialize:
     // ----------------------
     // 𝒘 ← 𝓐(𝒙),
     // 𝒓 ← 𝒃 - 𝒘.
     // ----------------------
-    anyOp.MatVec(wVec_, xVec);
-    Blas::Sub(rVec_, bVec, wVec_);
+    A.MatVec(w_, x);
+    Blas::Sub(r_, b, w_);
 
-    return Blas::Norm2(rVec_);
+    return Blas::Norm2(r_);
   }
 
-  auto Iterate(Vector& xVec,
-               const Vector& bVec,
-               const Operator<Vector>& anyOp,
-               const Preconditioner<Vector>* /*preOp*/) -> real_t override {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto iter(Vector& x,
+                      const Vector& b,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* /*P*/) -> real_t override {
     // Solve the Jacobian equation:
     // ----------------------
     // 𝜇 ← (𝜀ₘ)¹ᐟ²⋅(1 + ‖𝒙‖)]¹ᐟ²,
     // 𝒕 ← 𝒓,
     // 𝒕 ← 𝓙(𝒙)⁻¹𝒓.
     // ----------------------
-    static const real_t sqrtOfEpsilon{
-        sqrt(std::numeric_limits<real_t>::epsilon())};
-    const real_t mu{sqrtOfEpsilon * sqrt(1.0 + Blas::Norm2(xVec))};
-    Blas::Set(tVec_, rVec_);
+    const auto sqrt_of_eps = sqrt(std::numeric_limits<real_t>::epsilon());
+    const auto mu = sqrt_of_eps * sqrt(1.0 + Blas::Norm2(x));
+    Blas::Set(t_, r_);
     {
-      auto solver = std::make_unique<BiCgStabSolver<Vector>>();
+      auto solver = std::make_unique<BiCGStab<Vector>>();
       solver->AbsoluteTolerance = 1.0e-8;
       solver->RelativeTolerance = 1.0e-8;
-      auto op = MakeOperator<Vector>([&](Vector& zVec, const Vector& yVec) {
+      auto op = MakeOperator<Vector>([&](Vector& z, const Vector& y) {
         // Compute the Jacobian-vector product:
         // ----------------------
         // 𝛿 ← 𝜇⋅‖𝒚‖⁺,
@@ -165,13 +145,13 @@ private:
         // 𝒛 ← 𝓐(𝒔),
         // 𝒛 ← 𝛿⁺⋅𝒛 - 𝛿⁺⋅𝒘.
         // ----------------------
-        const real_t delta{safe_divide(mu, Blas::Norm2(yVec))};
-        Blas::Add(sVec_, xVec, yVec, delta);
-        anyOp.MatVec(zVec, sVec_);
-        const real_t deltaInverse{safe_divide(1.0, delta)};
-        Blas::Sub(zVec, zVec, deltaInverse, wVec_, deltaInverse);
+        const auto delta = safe_divide(mu, Blas::Norm2(y));
+        Blas::Add(s_, x, y, delta);
+        A.MatVec(z, s_);
+        const real_t delta_recip = safe_divide(1.0, delta);
+        Blas::Sub(z, z, delta_recip, w_, delta_recip);
       });
-      solver->Solve(tVec_, rVec_, *op);
+      solver->Solve(t_, r_, *op);
     }
 
     // Update the solution and the residual:
@@ -180,13 +160,19 @@ private:
     // 𝒘 ← 𝓐(𝒙),
     // 𝒓 ← 𝒃 - 𝒘.
     // ----------------------
-    Blas::AddAssign(xVec, tVec_);
-    anyOp.MatVec(wVec_, xVec);
-    Blas::Sub(rVec_, bVec, wVec_);
+    Blas::AddAssign(x, t_);
+    A.MatVec(w_, x);
+    Blas::Sub(r_, b, w_);
 
-    return Blas::Norm2(rVec_);
+    return Blas::Norm2(r_);
   }
 
-}; // class JfnkSolver
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Vector s_, t_, r_, w_;
+
+}; // class JFNK
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp

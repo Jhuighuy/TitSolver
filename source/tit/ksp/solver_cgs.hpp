@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -35,14 +15,12 @@
 
 namespace tit::ksp {
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c CGS (Conjugate Gradients Squared)
-///   linear operator equation solver.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The CGS (Conjugate Gradients Squared) linear operator equation solver.
 ///
-/// @c CGS, like the other @c BiCG type solvers, requires
-///   two operator multiplications per iteration.
-///
-/// @warning @c CGS convergence behavior may be very erratic.
+/// CGS, like the other BiCG type solvers, requires two operator multiplications
+/// per iteration.
 ///
 /// References:
 /// @verbatim
@@ -50,27 +28,25 @@ namespace tit::ksp {
 ///     “CGS, A Fast Lanczos-Type Solver for Nonsymmetric Linear systems.”
 ///     SIAM J. Sci. Stat. Comput., 10:36-52, 1989.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class CgsSolver final : public IterativeSolver<Vector> {
+template<blas::vector Vector>
+class CGS final : public IterativeSolver<Vector> {
 private:
 
-  real_t rho_;
-  Vector pVec_, qVec_, rVec_, rTildeVec_, uVec_, vVec_;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  auto Init(const Vector& xVec,
-            const Vector& bVec,
-            const Operator<Vector>& linOp,
-            const Preconditioner<Vector>* preOp) -> real_t override {
-    const bool leftPre{(preOp != nullptr) &&
-                       (this->PreSide == PreconditionerSide::Left)};
+  constexpr auto init(const Vector& x,
+                      const Vector& b,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* P) -> real_t override {
+    const auto left_pre = (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
 
-    pVec_.Assign(xVec, false);
-    qVec_.Assign(xVec, false);
-    rVec_.Assign(xVec, false);
-    rTildeVec_.Assign(xVec, false);
-    uVec_.Assign(xVec, false);
-    vVec_.Assign(xVec, false);
+    p_.Assign(x, false);
+    q_.Assign(x, false);
+    r_.Assign(x, false);
+    r_tilde_.Assign(x, false);
+    u_.Assign(x, false);
+    v_.Assign(x, false);
 
     // Initialize:
     // ----------------------
@@ -82,25 +58,27 @@ private:
     // 𝒓̃ ← 𝒓,
     // 𝜌 ← <𝒓̃⋅𝒓>.
     // ----------------------
-    linOp.Residual(rVec_, bVec, xVec);
-    if (leftPre) {
-      Blas::Swap(uVec_, rVec_);
-      preOp->MatVec(rVec_, uVec_);
+    A.Residual(r_, b, x);
+    if (left_pre) {
+      Blas::Swap(u_, r_);
+      P->MatVec(r_, u_);
     }
-    Blas::Set(rTildeVec_, rVec_);
-    rho_ = Blas::Dot(rTildeVec_, rVec_);
+    Blas::Set(r_tilde_, r_);
+    rho_ = Blas::Dot(r_tilde_, r_);
 
     return sqrt(rho_);
   }
 
-  auto Iterate(Vector& xVec,
-               const Vector& /*bVec*/,
-               const Operator<Vector>& linOp,
-               const Preconditioner<Vector>* preOp) -> real_t override {
-    const bool leftPre{(preOp != nullptr) &&
-                       (this->PreSide == PreconditionerSide::Left)};
-    const bool rightPre{(preOp != nullptr) &&
-                        (this->PreSide == PreconditionerSide::Right)};
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto iter(Vector& x,
+                      const Vector& /*b*/,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* P) -> real_t override {
+    const auto left_pre = (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
+    const auto right_pre = (P != nullptr) && //
+                           (this->PreSide == PreconditionerSide::Right);
 
     // Continue the iterations:
     // ----------------------
@@ -116,17 +94,17 @@ private:
     //   𝒑 ← 𝒖 + 𝛽⋅𝒑.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    const bool firstIteration{this->Iteration == 0};
-    if (firstIteration) {
-      Blas::Set(uVec_, rVec_);
-      Blas::Set(pVec_, uVec_);
+    const auto first_iter = this->Iteration == 0;
+    if (first_iter) {
+      Blas::Set(u_, r_);
+      Blas::Set(p_, u_);
     } else {
-      const real_t rhoBar{rho_};
-      rho_ = Blas::Dot(rTildeVec_, rVec_);
-      const real_t beta{safe_divide(rho_, rhoBar)};
-      Blas::Add(uVec_, rVec_, qVec_, beta);
-      Blas::Add(pVec_, qVec_, pVec_, beta);
-      Blas::Add(pVec_, uVec_, pVec_, beta);
+      const auto rho_bar = rho_;
+      rho_ = Blas::Dot(r_tilde_, r_);
+      const auto beta = safe_divide(rho_, rho_bar);
+      Blas::Add(u_, r_, q_, beta);
+      Blas::Add(p_, q_, p_, beta);
+      Blas::Add(p_, u_, p_, beta);
     }
 
     // ----------------------
@@ -141,16 +119,16 @@ private:
     // 𝒒 ← 𝒖 - 𝛼⋅𝒗,
     // 𝒗 ← 𝒖 + 𝒒.
     // ----------------------
-    if (leftPre) {
-      preOp->MatVec(vVec_, qVec_, linOp, pVec_);
-    } else if (rightPre) {
-      linOp.MatVec(vVec_, qVec_, *preOp, pVec_);
+    if (left_pre) {
+      P->MatVec(v_, q_, A, p_);
+    } else if (right_pre) {
+      A.MatVec(v_, q_, *P, p_);
     } else {
-      linOp.MatVec(vVec_, pVec_);
+      A.MatVec(v_, p_);
     }
-    const real_t alpha{safe_divide(rho_, Blas::Dot(rTildeVec_, vVec_))};
-    Blas::Sub(qVec_, uVec_, vVec_, alpha);
-    Blas::Add(vVec_, uVec_, qVec_);
+    const auto alpha = safe_divide(rho_, Blas::Dot(r_tilde_, v_));
+    Blas::Sub(q_, u_, v_, alpha);
+    Blas::Add(v_, u_, q_);
 
     // Update the solution and the residual:
     // ----------------------
@@ -168,23 +146,30 @@ private:
     //   𝒓 ← 𝒓 - 𝛼⋅𝒖.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    if (leftPre) {
-      Blas::AddAssign(xVec, vVec_, alpha);
-      preOp->MatVec(vVec_, uVec_, linOp, vVec_);
-      Blas::SubAssign(rVec_, vVec_, alpha);
-    } else if (rightPre) {
-      linOp.MatVec(vVec_, uVec_, *preOp, vVec_);
-      Blas::AddAssign(xVec, uVec_, alpha);
-      Blas::SubAssign(rVec_, vVec_, alpha);
+    if (left_pre) {
+      Blas::AddAssign(x, v_, alpha);
+      P->MatVec(v_, u_, A, v_);
+      Blas::SubAssign(r_, v_, alpha);
+    } else if (right_pre) {
+      A.MatVec(v_, u_, *P, v_);
+      Blas::AddAssign(x, u_, alpha);
+      Blas::SubAssign(r_, v_, alpha);
     } else {
-      linOp.MatVec(uVec_, vVec_);
-      Blas::AddAssign(xVec, vVec_, alpha);
-      Blas::SubAssign(rVec_, uVec_, alpha);
+      A.MatVec(u_, v_);
+      Blas::AddAssign(x, v_, alpha);
+      Blas::SubAssign(r_, u_, alpha);
     }
 
-    return Blas::Norm2(rVec_);
+    return Blas::Norm2(r_);
   }
 
-}; // class CgsSolver
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  real_t rho_;
+  Vector p_, q_, r_, r_tilde_, u_, v_;
+
+}; // class CGS
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp

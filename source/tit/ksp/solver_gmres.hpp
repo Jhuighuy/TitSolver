@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -40,38 +20,38 @@
 
 namespace tit::ksp {
 
-/// ----------------------------------------------------------------- ///
-/// @brief Base class for @c GMRES, @c FGMRES,
-///   @c LGMRES and @c LFGMRES.
-/// ----------------------------------------------------------------- ///
-template<VectorLike Vector, bool Flexible, bool Loose = false>
-class BaseGmresSolver_ : public InnerOuterIterativeSolver<Vector> {
-private:
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  std::vector<real_t> beta_, cs_, sn_;
-  Mdvector<real_t, 2> H_;
-  std::vector<Vector> qVecs_;
-  std::vector<Vector> zVecs_;
+namespace impl {
 
-  auto OuterInit(const Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) -> real_t override {
-    const size_t m{this->NumInnerIterations};
+// Base class for GMRES, FGMRES, LGMRES and LFGMRES.
+template<blas::vector Vector, bool Flexible>
+class BaseGMRES : public InnerOuterIterativeSolver<Vector> {
+protected:
+
+  constexpr BaseGMRES() = default;
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto outer_init(const Vector& x,
+                            const Vector& b,
+                            const Operator<Vector>& A,
+                            const Preconditioner<Vector>* P)
+      -> real_t override {
+    const auto m = this->NumInnerIterations;
 
     beta_.resize(m + 1);
     cs_.resize(m), sn_.resize(m);
     H_.assign(m + 1, m);
 
-    qVecs_.resize(m + 1);
-    zVecs_.resize(Flexible && preOp != nullptr ? m + 1 : 1);
-    for (Vector& qVec : qVecs_) qVec.Assign(xVec, false);
-    for (Vector& zVec : zVecs_) zVec.Assign(xVec, false);
+    qs_.resize(m + 1);
+    zs_.resize(Flexible && P != nullptr ? m + 1 : 1);
+    for (Vector& q : qs_) q.Assign(x, false);
+    for (Vector& z : zs_) z.Assign(x, false);
 
-    /// @todo Refactor without duplication a code from
-    ///   InnerInit method.
-    const bool leftPre{(preOp != nullptr) && (!Flexible) &&
-                       (this->PreSide == PreconditionerSide::Left)};
+    /// @todo Refactor without duplication a code from inner_init method.
+    const auto left_pre = (!Flexible) && (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
 
     // Initialize:
     // ----------------------
@@ -83,24 +63,26 @@ private:
     // 𝛽₀ ← ‖𝒒₀‖,
     // 𝒒₀ ← 𝒒₀/𝛽₀.
     // ----------------------
-    linOp.Residual(qVecs_[0], bVec, xVec);
-    if (leftPre) {
-      Blas::Swap(zVecs_[0], qVecs_[0]);
-      preOp->MatVec(qVecs_[0], zVecs_[0]);
+    A.Residual(qs_[0], b, x);
+    if (left_pre) {
+      Blas::Swap(zs_[0], qs_[0]);
+      P->MatVec(qs_[0], zs_[0]);
     }
-    beta_[0] = Blas::Norm2(qVecs_[0]);
-    Blas::ScaleAssign(qVecs_[0], 1.0 / beta_[0]);
+    beta_[0] = Blas::Norm2(qs_[0]);
+    Blas::ScaleAssign(qs_[0], 1.0 / beta_[0]);
 
     return beta_[0];
   }
 
-  void InnerInit(const Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) override {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr void inner_init(const Vector& x,
+                            const Vector& b,
+                            const Operator<Vector>& A,
+                            const Preconditioner<Vector>* P) override {
     // Force right preconditioning for the flexible GMRES.
-    const bool leftPre{(preOp != nullptr) && (!Flexible) &&
-                       (this->PreSide == PreconditionerSide::Left)};
+    const bool left_pre = (!Flexible) && (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
 
     // Initialize:
     // ----------------------
@@ -112,28 +94,31 @@ private:
     // 𝛽₀ ← ‖𝒒₀‖,
     // 𝒒₀ ← 𝒒₀/𝛽₀.
     // ----------------------
-    linOp.Residual(qVecs_[0], bVec, xVec);
-    if (leftPre) {
-      Blas::Swap(zVecs_[0], qVecs_[0]);
-      preOp->MatVec(qVecs_[0], zVecs_[0]);
+    A.Residual(qs_[0], b, x);
+    if (left_pre) {
+      Blas::Swap(zs_[0], qs_[0]);
+      P->MatVec(qs_[0], zs_[0]);
     }
-    beta_[0] = Blas::Norm2(qVecs_[0]);
-    Blas::ScaleAssign(qVecs_[0], 1.0 / beta_[0]);
+    beta_[0] = Blas::Norm2(qs_[0]);
+    Blas::ScaleAssign(qs_[0], 1.0 / beta_[0]);
   }
 
-  auto InnerIterate(Vector& /*xVec*/,
-                    const Vector& /*bVec*/,
-                    const Operator<Vector>& linOp,
-                    const Preconditioner<Vector>* preOp) -> real_t override {
-    const size_t k{this->InnerIteration};
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto inner_iter(Vector& /*x*/,
+                            const Vector& /*b*/,
+                            const Operator<Vector>& A,
+                            const Preconditioner<Vector>* P)
+      -> real_t override {
+    const auto k = this->InnerIteration;
 
     // Force right preconditioning for the flexible GMRES.
-    const bool leftPre{
-        (preOp != nullptr) &&
-        (!Flexible && (this->PreSide == PreconditionerSide::Left))};
-    const bool rightPre{
-        (preOp != nullptr) &&
-        (Flexible || (this->PreSide == PreconditionerSide::Right))};
+    const auto left_pre =
+        (P != nullptr) &&
+        (!Flexible && (this->PreSide == PreconditionerSide::Left));
+    const auto right_pre =
+        (P != nullptr) &&
+        (Flexible || (this->PreSide == PreconditionerSide::Right));
 
     // Compute the new 𝒒ₖ₊₁ vector:
     // ----------------------
@@ -152,20 +137,20 @@ private:
     // 𝐻ₖ₊₁,ₖ ← ‖𝒒ₖ₊₁‖,
     // 𝒒ₖ₊₁ ← 𝒒ₖ₊₁/𝐻ₖ₊₁,ₖ.
     // ----------------------
-    if (leftPre) {
-      preOp->MatVec(qVecs_[k + 1], zVecs_[0], linOp, qVecs_[k]);
-    } else if (rightPre) {
-      const size_t j{Flexible ? k : 0};
-      linOp.MatVec(qVecs_[k + 1], zVecs_[j], *preOp, qVecs_[k]);
+    if (left_pre) {
+      P->MatVec(qs_[k + 1], zs_[0], A, qs_[k]);
+    } else if (right_pre) {
+      const auto j = Flexible ? k : 0;
+      A.MatVec(qs_[k + 1], zs_[j], *P, qs_[k]);
     } else {
-      linOp.MatVec(qVecs_[k + 1], qVecs_[k]);
+      A.MatVec(qs_[k + 1], qs_[k]);
     }
-    for (size_t i{0}; i <= k; ++i) {
-      H_[i, k] = Blas::Dot(qVecs_[k + 1], qVecs_[i]);
-      Blas::SubAssign(qVecs_[k + 1], qVecs_[i], H_[i, k]);
+    for (size_t i = 0; i <= k; ++i) {
+      H_[i, k] = Blas::Dot(qs_[k + 1], qs_[i]);
+      Blas::SubAssign(qs_[k + 1], qs_[i], H_[i, k]);
     }
-    H_[k + 1, k] = Blas::Norm2(qVecs_[k + 1]);
-    Blas::ScaleAssign(qVecs_[k + 1], 1.0 / H_[k + 1, k]);
+    H_[k + 1, k] = Blas::Norm2(qs_[k + 1]);
+    Blas::ScaleAssign(qs_[k + 1], 1.0 / H_[k + 1, k]);
 
     // Eliminate the last element in 𝐻
     // and and update the rotation matrix:
@@ -179,8 +164,8 @@ private:
     // 𝐻ₖₖ ← 𝑐𝑠ₖ⋅𝐻ₖₖ + 𝑠𝑛ₖ⋅𝐻ₖ₊₁,ₖ,
     // 𝐻ₖ₊₁,ₖ ← 𝟢.
     // ----------------------
-    for (size_t i{0}; i < k; ++i) {
-      const real_t chi = cs_[i] * H_[i, k] + sn_[i] * H_[i + 1, k];
+    for (size_t i = 0; i < k; ++i) {
+      const auto chi = cs_[i] * H_[i, k] + sn_[i] * H_[i + 1, k];
       H_[i + 1, k] = -sn_[i] * H_[i, k] + cs_[i] * H_[i + 1, k];
       H_[i, k] = chi;
     }
@@ -197,22 +182,24 @@ private:
     return abs(beta_[k + 1]);
   }
 
-  void InnerFinalize(Vector& xVec,
-                     const Vector& /*bVec*/,
-                     const Operator<Vector>& /*linOp*/,
-                     const Preconditioner<Vector>* preOp) override {
-    const size_t k{this->InnerIteration};
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const bool rightPre{
-        (preOp != nullptr) &&
-        (Flexible || (this->PreSide == PreconditionerSide::Right))};
+  constexpr void inner_finalize(Vector& x,
+                                const Vector& /*b*/,
+                                const Operator<Vector>& /*A*/,
+                                const Preconditioner<Vector>* P) override {
+    const auto k = this->InnerIteration;
+
+    const auto right_pre =
+        (P != nullptr) &&
+        (Flexible || (this->PreSide == PreconditionerSide::Right));
 
     // Finalize the 𝛽-solution:
     // ----------------------
     // 𝛽₀:ₖ ← (𝐻₀:ₖ,₀:ₖ)⁻¹𝛽₀:ₖ.
     // ----------------------
-    for (size_t i{k}; i != SIZE_MAX; --i) {
-      for (size_t j{i + 1}; j <= k; ++j) {
+    for (size_t i = k; i != SIZE_MAX; --i) {
+      for (size_t j = i + 1; j <= k; ++j) {
         beta_[i] -= H_[i, j] * beta_[j];
       }
       beta_[i] /= H_[i, i];
@@ -237,46 +224,52 @@ private:
     //   𝒙 ← 𝒙 + 𝒛₀.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    if (!rightPre) {
-      for (size_t i{0}; i <= k; ++i) {
-        Blas::AddAssign(xVec, qVecs_[i], beta_[i]);
+    if (!right_pre) {
+      for (size_t i = 0; i <= k; ++i) {
+        Blas::AddAssign(x, qs_[i], beta_[i]);
       }
     } else if constexpr (Flexible) {
-      for (size_t i{0}; i <= k; ++i) {
-        Blas::AddAssign(xVec, zVecs_[i], beta_[i]);
+      for (size_t i = 0; i <= k; ++i) {
+        Blas::AddAssign(x, zs_[i], beta_[i]);
       }
     } else {
-      Blas::ScaleAssign(qVecs_[0], beta_[0]);
-      for (size_t i{1}; i <= k; ++i) {
-        Blas::AddAssign(qVecs_[0], qVecs_[i], beta_[i]);
+      Blas::ScaleAssign(qs_[0], beta_[0]);
+      for (size_t i = 1; i <= k; ++i) {
+        Blas::AddAssign(qs_[0], qs_[i], beta_[i]);
       }
-      preOp->MatVec(zVecs_[0], qVecs_[0]);
-      Blas::AddAssign(xVec, zVecs_[0]);
+      P->MatVec(zs_[0], qs_[0]);
+      Blas::AddAssign(x, zs_[0]);
     }
   }
 
-protected:
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  BaseGmresSolver_() = default;
+private:
 
-}; // class BaseGmresSolver_
+  std::vector<real_t> beta_, cs_, sn_;
+  Mdvector<real_t, 2> H_;
+  std::vector<Vector> qs_;
+  std::vector<Vector> zs_;
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c GMRES (Generalized Minimal Residual)
-///   linear operator equation solver.
+}; // class BaseGMRES
+
+} // namespace impl
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The GMRES (Generalized Minimal Residual) linear operator equation solver.
 ///
-/// @c GMRES is typically more robust than the @c BiCG type solvers,
-///   but it may be slower than the @c BiCG solvers for the
-///   well-conditioned moderate sized problems.
+/// GMRES is typically more robust than the BiCG type solvers, but it may be
+/// slower than the BiCG solvers for the well-conditioned moderate sized
+/// problems.
 ///
-/// @c GMRES is algebraically equivalent to @c MINRES method
-///   in the self-adjoint operator unpreconditioned case,
-///   however, the need for restarts may lead to the much slower
-///   @c GMRES convergence rate.
+/// GMRES is algebraically equivalent to MINRES method in the self-adjoint
+/// operator unpreconditioned case, however, the need for restarts may lead to
+/// the much slower GMRES convergence rate.
 ///
-/// @c GMRES may be applied to the singular problems, and the square
-///   least squares problems, although, similarly to @c MINRES,
-///   convergeance to minimum norm solution is not guaranteed.
+/// GMRES may be applied to the singular problems, and the square least squares
+/// problems, although, similarly to MINRES, convergeance to minimum norm
+/// solution is not guaranteed.
 ///
 /// References:
 /// @verbatim
@@ -285,28 +278,27 @@ protected:
 ///      nonsymmetric linear systems.”
 ///     SIAM J. Sci. Stat. Comput., 7:856–869, 1986.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class GmresSolver final : public BaseGmresSolver_<Vector, false> {};
+template<blas::vector Vector>
+class GMRES final : public impl::BaseGMRES<Vector, /*Flexible=*/false> {};
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c FGMRES (Flexible Generalized Minimal Residual)
-///   linear operator equation solver.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The FGMRES (Flexible Generalized Minimal Residual) linear operator equation
+/// solver.
 ///
-/// @c FGMRES is typically more robust than the @c BiCG type solvers,
-///   but it may be slower than the @c BiCG solvers for the
-///   well-conditioned moderate sized problems.
+/// FGMRES is typically more robust than the BiCG type solvers, but it may be
+/// slower than the BiCG solvers for the well-conditioned moderate sized
+/// problems.
 ///
-/// @c FGMRES does the same amount of operations per iteration
-///   as @c GMRES, but also allows usage of the variable (or flexible)
-///   preconditioners with the price of doubleing of the memory
-///   usage. For the static preconditioners, @c FGMRES requires
-///   one preconditioner-vector product less than @c GMRES.
-///   @c FGMRES supports only the right preconditioning.
+/// FGMRES does the same amount of operations per iteration as GMRES, but also
+/// allows usage of the variable (or flexible) preconditioners with the price of
+/// doubleing of the memory usage. For the static preconditioners, FGMRES
+/// requires one preconditioner-vector product less than @c GMRES. FGMRES
+/// supports only the right preconditioning.
 ///
-/// @c FGMRES may be applied to the singular problems, and the square
-///   least squares problems, although, similarly to @c MINRES,
-///   convergeance to minimum norm solution is not guaranteed.
+/// FGMRES may be applied to the singular problems, and the square least squares
+/// problems, although, similarly to MINRES, convergeance to minimum norm
+/// solution is not guaranteed.
 ///
 /// References:
 /// @verbatim
@@ -314,8 +306,9 @@ class GmresSolver final : public BaseGmresSolver_<Vector, false> {};
 ///     “A Flexible Inner-Outer Preconditioned GMRES Algorithm.”
 ///     SIAM J. Sci. Comput. 14 (1993): 461-469.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class FgmresSolver final : public BaseGmresSolver_<Vector, true> {};
+template<blas::vector Vector>
+class FGMRES final : public impl::BaseGMRES<Vector, /*Flexible=*/true> {};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp

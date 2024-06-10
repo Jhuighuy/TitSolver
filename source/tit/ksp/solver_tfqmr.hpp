@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -35,32 +15,35 @@
 
 namespace tit::ksp {
 
-/// ----------------------------------------------------------------- ///
-/// @brief Base class for @c TFQMR and @c TFQMR1.
-/// ----------------------------------------------------------------- ///
-template<VectorLike Vector, bool L1>
-class BaseTfqmrSolver_ : public IterativeSolver<Vector> {
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+
+// Base class for TFQMR and TFQMR1.
+template<blas::vector Vector, bool L1>
+class BaseTFQMR : public IterativeSolver<Vector> {
+protected:
+
+  constexpr BaseTFQMR() = default;
+
 private:
 
-  real_t rho_{}, tau_{};
-  Vector dVec_, rTildeVec_, uVec_, vVec_, yVec_, sVec_, zVec_;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  auto Init(const Vector& xVec,
-            const Vector& bVec,
-            const Operator<Vector>& linOp,
-            const Preconditioner<Vector>* preOp) -> real_t override {
-    const bool leftPre{(preOp != nullptr) &&
-                       (this->PreSide == PreconditionerSide::Left)};
+  constexpr auto init(const Vector& x,
+                      const Vector& b,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* P) -> real_t override {
+    const auto left_pre = (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
 
-    dVec_.Assign(xVec, false);
-    rTildeVec_.Assign(xVec, false);
-    uVec_.Assign(xVec, false);
-    vVec_.Assign(xVec, false);
-    yVec_.Assign(xVec, false);
-    sVec_.Assign(xVec, false);
-    if (preOp != nullptr) {
-      zVec_.Assign(xVec, false);
-    }
+    d_.Assign(x, false);
+    r_tilde_.Assign(x, false);
+    u_.Assign(x, false);
+    v_.Assign(x, false);
+    y_.Assign(x, false);
+    s_.Assign(x, false);
+    if (P != nullptr) z_.Assign(x, false);
 
     // Initialize:
     // ----------------------
@@ -79,30 +62,33 @@ private:
     // 𝜌 ← <𝒓̃⋅𝒓>, 𝜏 ← 𝜌¹ᐟ².
     // ----------------------
     if constexpr (L1) {
-      Blas::Set(dVec_, xVec);
+      Blas::Set(d_, x);
     } else {
-      Blas::Fill(dVec_, 0.0);
+      Blas::Fill(d_, 0.0);
     }
-    linOp.Residual(yVec_, bVec, xVec);
-    if (leftPre) {
-      Blas::Swap(zVec_, yVec_);
-      preOp->MatVec(yVec_, zVec_);
+    A.Residual(y_, b, x);
+    if (left_pre) {
+      Blas::Swap(z_, y_);
+      P->MatVec(y_, z_);
     }
-    Blas::Set(uVec_, yVec_);
-    Blas::Set(rTildeVec_, uVec_);
-    rho_ = Blas::Dot(rTildeVec_, uVec_), tau_ = sqrt(rho_);
+    Blas::Set(u_, y_);
+    Blas::Set(r_tilde_, u_);
+    rho_ = Blas::Dot(r_tilde_, u_);
+    tau_ = sqrt(rho_);
 
     return tau_;
   }
 
-  auto Iterate(Vector& xVec,
-               const Vector& /*bVec*/,
-               const Operator<Vector>& linOp,
-               const Preconditioner<Vector>* preOp) -> real_t override {
-    const bool leftPre{(preOp != nullptr) &&
-                       (this->PreSide == PreconditionerSide::Left)};
-    const bool rightPre{(preOp != nullptr) &&
-                        (this->PreSide == PreconditionerSide::Right)};
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto iter(Vector& x,
+                      const Vector& /*b*/,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* P) -> real_t override {
+    const auto left_pre = (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
+    const auto right_pre = (P != nullptr) && //
+                           (this->PreSide == PreconditionerSide::Right);
 
     // Continue the iterations:
     // ----------------------
@@ -131,30 +117,30 @@ private:
     //   𝒗 ← 𝒔 + 𝛽⋅𝒗.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    const bool firstIteration{this->Iteration == 0};
-    if (firstIteration) {
-      if (leftPre) {
-        preOp->MatVec(sVec_, zVec_, linOp, yVec_);
-      } else if (rightPre) {
-        linOp.MatVec(sVec_, zVec_, *preOp, yVec_);
+    const auto first_iter = this->Iteration == 0;
+    if (first_iter) {
+      if (left_pre) {
+        P->MatVec(s_, z_, A, y_);
+      } else if (right_pre) {
+        A.MatVec(s_, z_, *P, y_);
       } else {
-        linOp.MatVec(sVec_, yVec_);
+        A.MatVec(s_, y_);
       }
-      Blas::Set(vVec_, sVec_);
+      Blas::Set(v_, s_);
     } else {
-      const real_t rhoBar{rho_};
-      rho_ = Blas::Dot(rTildeVec_, uVec_);
-      const real_t beta{safe_divide(rho_, rhoBar)};
-      Blas::Add(vVec_, sVec_, vVec_, beta);
-      Blas::Add(yVec_, uVec_, yVec_, beta);
-      if (leftPre) {
-        preOp->MatVec(sVec_, zVec_, linOp, yVec_);
-      } else if (rightPre) {
-        linOp.MatVec(sVec_, zVec_, *preOp, yVec_);
+      const auto rho_bar = rho_;
+      rho_ = Blas::Dot(r_tilde_, u_);
+      const auto beta = safe_divide(rho_, rho_bar);
+      Blas::Add(v_, s_, v_, beta);
+      Blas::Add(y_, u_, y_, beta);
+      if (left_pre) {
+        P->MatVec(s_, z_, A, y_);
+      } else if (right_pre) {
+        A.MatVec(s_, z_, *P, y_);
       } else {
-        linOp.MatVec(sVec_, yVec_);
+        A.MatVec(s_, y_);
       }
-      Blas::Add(vVec_, sVec_, vVec_, beta);
+      Blas::Add(v_, s_, v_, beta);
     }
 
     // Update the solution:
@@ -186,29 +172,29 @@ private:
     //   𝗲𝗻𝗱 𝗶𝗳
     // 𝗲𝗻𝗱 𝗳𝗼𝗿
     // ----------------------
-    const real_t alpha{safe_divide(rho_, Blas::Dot(rTildeVec_, vVec_))};
-    for (size_t m{0}; m <= 1; ++m) {
-      Blas::SubAssign(uVec_, sVec_, alpha);
-      Blas::AddAssign(dVec_, rightPre ? zVec_ : yVec_, alpha);
-      const real_t omega{Blas::Norm2(uVec_)};
+    const auto alpha = safe_divide(rho_, Blas::Dot(r_tilde_, v_));
+    for (size_t m = 0; m <= 1; ++m) {
+      Blas::SubAssign(u_, s_, alpha);
+      Blas::AddAssign(d_, right_pre ? z_ : y_, alpha);
+      const auto omega = Blas::Norm2(u_);
       if constexpr (L1) {
         if (omega < tau_) {
-          tau_ = omega, Blas::Set(xVec, dVec_);
+          tau_ = omega, Blas::Set(x, d_);
         }
       } else {
         const auto [cs, sn, rr] = sym_ortho(tau_, omega);
         tau_ = omega * cs;
-        Blas::AddAssign(xVec, dVec_, pow2(cs));
-        Blas::ScaleAssign(dVec_, pow2(sn));
+        Blas::AddAssign(x, d_, pow2(cs));
+        Blas::ScaleAssign(d_, pow2(sn));
       }
       if (m == 0) {
-        Blas::SubAssign(yVec_, vVec_, alpha);
-        if (leftPre) {
-          preOp->MatVec(sVec_, zVec_, linOp, yVec_);
-        } else if (rightPre) {
-          linOp.MatVec(sVec_, zVec_, *preOp, yVec_);
+        Blas::SubAssign(y_, v_, alpha);
+        if (left_pre) {
+          P->MatVec(s_, z_, A, y_);
+        } else if (right_pre) {
+          A.MatVec(s_, z_, *P, y_);
         } else {
-          linOp.MatVec(sVec_, yVec_);
+          A.MatVec(s_, y_);
         }
       }
     }
@@ -221,35 +207,35 @@ private:
     //   𝜏̃ ← 𝜏⋅(𝟤𝑘 + 𝟥)¹ᐟ².
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    real_t tauTilde{tau_};
+    auto tau_tilde = tau_;
     if constexpr (!L1) {
-      const size_t k{this->Iteration};
-      tauTilde *= sqrt(2.0 * k + 3.0);
+      const auto k = this->Iteration;
+      tau_tilde *= sqrt(2.0 * k + 3.0);
     }
 
-    return tauTilde;
+    return tau_tilde;
   }
 
-protected:
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  BaseTfqmrSolver_() = default;
+  real_t rho_{}, tau_{};
+  Vector d_, r_tilde_, u_, v_, y_, s_, z_;
 
-}; // class BaseTfqmrSolver_
+}; // class BaseTFQMR
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c TFQMR (Transpose-Free Quasi-Minimal Residual)
-///   linear operator equation solver.
+} // namespace impl
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The TFQMR (Transpose-Free Quasi-Minimal Residual) linear operator equation
+/// solver.
 ///
-/// @c TFQMR, like the other @c BiCG type methods, normally
-///   requires two operator-vector products per iteration.
-///   But, unlike the other @c BiCG type methods, @c TFQMR does not
-///   implicitly contain the residual norm estimate, only the rough
-///   upper bound is avariable, so at the latter iterations an extra
-///   operator-vector product per iteration may be required for the
-///   explicit residual estimation.
-///
-/// @c TFQMR typically converges much smoother, than
-///   @c CGS and @c BiCGStab. @todo Breakdowns?
+/// TFQMR, like the other BiCG type methods, normally requires two
+/// operator-vector products per iteration. But, unlike the other BiCG type
+/// methods, TFQMR does not implicitly contain the residual norm estimate, only
+/// the rough upper bound is avariable, so at the latter iterations an extra
+/// operator-vector product per iteration may be required for the explicit
+/// residual estimation.
 ///
 /// References:
 /// @verbatim
@@ -261,22 +247,17 @@ protected:
 ///     “Transpose-Free Quasi-Minimal Residual Methods
 ///      for Non-Hermitian Linear Systems.” (1994).
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class TfqmrSolver final : public BaseTfqmrSolver_<Vector, false> {};
+template<blas::vector Vector>
+class TFQMR final : public impl::BaseTFQMR<Vector, /*L1=*/false> {};
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c TFQMR1 (Transpose-Free 1-norm
-///   Quasi-Minimal Residual) linear operator equation solver.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The TFQMR1 (Transpose-Free 1-norm Quasi-Minimal Residual) linear operator
+/// equation solver.
 ///
-/// @c TFQMR1, like the other @c BiCG type solvers, requires
-///   two operator-vector products per iteration. Unlike @c TFQMR,
-///   @c TFQMR1 implicitly contains the residual norm estimate, so no
-///   extra operator-vector products are required.
-///
-/// @c TFQMR1 typically converges much smoother, than
-///   @c CGS and @c BiCGStab and is slightly faster than
-///   @c TFQMR. @todo Breakdowns?
+/// TFQMR1, like the other BiCG type solvers, requires two operator-vector
+/// products per iteration. Unlike TFQMR, TFQMR1 implicitly contains the
+/// residual norm estimate, so no extra operator-vector products are required.
 ///
 /// References:
 /// @verbatim
@@ -284,8 +265,9 @@ class TfqmrSolver final : public BaseTfqmrSolver_<Vector, false> {};
 ///     “A Transpose-Free 1-norm Quasi-Minimal Residual Algorithm
 ///      for Non-Hermitian Linear Systems.“, FZJ-ZAM-IB-9706.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class Tfqmr1Solver final : public BaseTfqmrSolver_<Vector, true> {};
+template<blas::vector Vector>
+class TFQMR1 final : public impl::BaseTFQMR<Vector, /*L1=*/true> {};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp
