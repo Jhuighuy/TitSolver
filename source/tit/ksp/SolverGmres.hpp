@@ -50,22 +50,204 @@ private:
   real_t OuterInit(const Vector& xVec,
                    const Vector& bVec,
                    const Operator<Vector>& linOp,
-                   const Preconditioner<Vector>* preOp) override;
+                   const Preconditioner<Vector>* preOp) override {
+    const size_t m{this->NumInnerIterations};
+
+    beta_.resize(m + 1);
+    cs_.resize(m), sn_.resize(m);
+    H_.assign(m + 1, m);
+
+    qVecs_.resize(m + 1);
+    zVecs_.resize(Flexible && preOp != nullptr ? m + 1 : 1);
+    for (Vector& qVec : qVecs_) qVec.Assign(xVec, false);
+    for (Vector& zVec : zVecs_) zVec.Assign(xVec, false);
+
+    /// @todo Refactor without duplication a code from
+    ///   InnerInit method.
+    const bool leftPre{(preOp != nullptr) && (!Flexible) &&
+                       (this->PreSide == PreconditionerSide::Left)};
+
+    // Initialize:
+    // ----------------------
+    // 𝒒₀ ← 𝒃 - 𝓐𝒙,
+    // 𝗶𝗳 𝘓𝘦𝘧𝘵𝘗𝘳𝘦:
+    //   𝒛₀ ← 𝒒₀,
+    //   𝒒₀ ← 𝓟𝒛₀,
+    // 𝗲𝗻𝗱 𝗶𝗳
+    // 𝛽₀ ← ‖𝒒₀‖,
+    // 𝒒₀ ← 𝒒₀/𝛽₀.
+    // ----------------------
+    linOp.Residual(qVecs_[0], bVec, xVec);
+    if (leftPre) {
+      Blas::Swap(zVecs_[0], qVecs_[0]);
+      preOp->MatVec(qVecs_[0], zVecs_[0]);
+    }
+    beta_[0] = Blas::Norm2(qVecs_[0]);
+    Blas::ScaleAssign(qVecs_[0], 1.0 / beta_[0]);
+
+    return beta_[0];
+  }
 
   void InnerInit(const Vector& xVec,
                  const Vector& bVec,
                  const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) override;
+                 const Preconditioner<Vector>* preOp) override {
+    // Force right preconditioning for the flexible GMRES.
+    const bool leftPre{(preOp != nullptr) && (!Flexible) &&
+                       (this->PreSide == PreconditionerSide::Left)};
+
+    // Initialize:
+    // ----------------------
+    // 𝒒₀ ← 𝒃 - 𝓐𝒙,
+    // 𝗶𝗳 𝘓𝘦𝘧𝘵𝘗𝘳𝘦:
+    //   𝒛₀ ← 𝒒₀,
+    //   𝒒₀ ← 𝓟𝒛₀,
+    // 𝗲𝗻𝗱 𝗶𝗳
+    // 𝛽₀ ← ‖𝒒₀‖,
+    // 𝒒₀ ← 𝒒₀/𝛽₀.
+    // ----------------------
+    linOp.Residual(qVecs_[0], bVec, xVec);
+    if (leftPre) {
+      Blas::Swap(zVecs_[0], qVecs_[0]);
+      preOp->MatVec(qVecs_[0], zVecs_[0]);
+    }
+    beta_[0] = Blas::Norm2(qVecs_[0]);
+    Blas::ScaleAssign(qVecs_[0], 1.0 / beta_[0]);
+  }
 
   real_t InnerIterate(Vector& xVec,
                       const Vector& bVec,
                       const Operator<Vector>& linOp,
-                      const Preconditioner<Vector>* preOp) override;
+                      const Preconditioner<Vector>* preOp) override {
+    const size_t k{this->InnerIteration};
+
+    // Force right preconditioning for the flexible GMRES.
+    const bool leftPre{
+        (preOp != nullptr) &&
+        (!Flexible && (this->PreSide == PreconditionerSide::Left))};
+    const bool rightPre{
+        (preOp != nullptr) &&
+        (Flexible || (this->PreSide == PreconditionerSide::Right))};
+
+    // Compute the new 𝒒ₖ₊₁ vector:
+    // ----------------------
+    // 𝗶𝗳 𝘓𝘦𝘧𝘵𝘗𝘳𝘦:
+    //   𝒒ₖ₊₁ ← 𝓟(𝒛₀ ← 𝓐𝒒ₖ),
+    // 𝗲𝗹𝘀𝗲 𝗶𝗳 𝘙𝘪𝘨𝘩𝘵𝘗𝘳𝘦:
+    //   𝑗 ← 𝘍𝘭𝘦𝘹𝘪𝘣𝘭𝘦 ? 𝑘 : 𝟢,
+    //   𝒒ₖ₊₁ ← 𝓐(𝒛ⱼ ← 𝓟𝒒ₖ),
+    // 𝗲𝗹𝘀𝗲:
+    //   𝒒ₖ₊₁ ← 𝓐𝒒ₖ,
+    // 𝗲𝗻𝗱 𝗶𝗳
+    // 𝗳𝗼𝗿 𝑖 = 𝟢, 𝑘 𝗱𝗼:
+    //   𝐻ᵢₖ ← <𝒒ₖ₊₁⋅𝒒ᵢ>,
+    //   𝒒ₖ₊₁ ← 𝒒ₖ₊₁ - 𝐻ᵢₖ⋅𝒒ᵢ,
+    // 𝗲𝗻𝗱 𝗳𝗼𝗿
+    // 𝐻ₖ₊₁,ₖ ← ‖𝒒ₖ₊₁‖,
+    // 𝒒ₖ₊₁ ← 𝒒ₖ₊₁/𝐻ₖ₊₁,ₖ.
+    // ----------------------
+    if (leftPre) {
+      preOp->MatVec(qVecs_[k + 1], zVecs_[0], linOp, qVecs_[k]);
+    } else if (rightPre) {
+      const size_t j{Flexible ? k : 0};
+      linOp.MatVec(qVecs_[k + 1], zVecs_[j], *preOp, qVecs_[k]);
+    } else {
+      linOp.MatVec(qVecs_[k + 1], qVecs_[k]);
+    }
+    for (size_t i{0}; i <= k; ++i) {
+      H_[i, k] = Blas::Dot(qVecs_[k + 1], qVecs_[i]);
+      Blas::SubAssign(qVecs_[k + 1], qVecs_[i], H_[i, k]);
+    }
+    H_[k + 1, k] = Blas::Norm2(qVecs_[k + 1]);
+    Blas::ScaleAssign(qVecs_[k + 1], 1.0 / H_[k + 1, k]);
+
+    // Eliminate the last element in 𝐻
+    // and and update the rotation matrix:
+    // ----------------------
+    // 𝗳𝗼𝗿 𝑖 = 𝟢, 𝑘 - 𝟣 𝗱𝗼:
+    //   𝜒 ← 𝑐𝑠ᵢ⋅𝐻ᵢₖ + 𝑠𝑛ᵢ⋅𝐻ᵢ₊₁,ₖ,
+    //   𝐻ᵢ₊₁,ₖ ← -𝑠𝑛ᵢ⋅𝐻ᵢₖ + 𝑐𝑠ᵢ⋅𝐻ᵢ₊₁,ₖ,
+    //   𝐻ᵢₖ ← 𝜒,
+    // 𝗲𝗻𝗱 𝗳𝗼𝗿
+    // 𝑐𝑠ₖ, 𝑠𝑛ₖ ← 𝘚𝘺𝘮𝘖𝘳𝘵𝘩𝘰(𝐻ₖₖ, 𝐻ₖ₊₁,ₖ),
+    // 𝐻ₖₖ ← 𝑐𝑠ₖ⋅𝐻ₖₖ + 𝑠𝑛ₖ⋅𝐻ₖ₊₁,ₖ,
+    // 𝐻ₖ₊₁,ₖ ← 𝟢.
+    // ----------------------
+    for (size_t i{0}; i < k; ++i) {
+      const real_t chi = cs_[i] * H_[i, k] + sn_[i] * H_[i + 1, k];
+      H_[i + 1, k] = -sn_[i] * H_[i, k] + cs_[i] * H_[i + 1, k];
+      H_[i, k] = chi;
+    }
+    std::tie(cs_[k], sn_[k], std::ignore) = sym_ortho(H_[k, k], H_[k + 1, k]);
+    H_[k, k] = cs_[k] * H_[k, k] + sn_[k] * H_[k + 1, k];
+    H_[k + 1, k] = 0.0;
+
+    // Update the 𝛽-solution and the residual norm:
+    // ----------------------
+    // 𝛽ₖ₊₁ ← -𝑠𝑛ₖ⋅𝛽ₖ, 𝛽ₖ ← 𝑐𝑠ₖ⋅𝛽ₖ.
+    // ----------------------
+    beta_[k + 1] = -sn_[k] * beta_[k], beta_[k] *= cs_[k];
+
+    return abs(beta_[k + 1]);
+  }
 
   void InnerFinalize(Vector& xVec,
                      const Vector& bVec,
                      const Operator<Vector>& linOp,
-                     const Preconditioner<Vector>* preOp) override;
+                     const Preconditioner<Vector>* preOp) override {
+    const size_t k{this->InnerIteration};
+
+    const bool rightPre{
+        (preOp != nullptr) &&
+        (Flexible || (this->PreSide == PreconditionerSide::Right))};
+
+    // Finalize the 𝛽-solution:
+    // ----------------------
+    // 𝛽₀:ₖ ← (𝐻₀:ₖ,₀:ₖ)⁻¹𝛽₀:ₖ.
+    // ----------------------
+    for (size_t i{k}; i != SIZE_MAX; --i) {
+      for (size_t j{i + 1}; j <= k; ++j) {
+        beta_[i] -= H_[i, j] * beta_[j];
+      }
+      beta_[i] /= H_[i, i];
+    }
+
+    // Compute the 𝒙-solution:
+    // ----------------------
+    // 𝗶𝗳 𝗻𝗼𝘁 𝘙𝘪𝘨𝘩𝘵𝘗𝘳𝘦:
+    //   𝗳𝗼𝗿 𝑖 = 𝟢, 𝑘 𝗱𝗼:
+    //     𝒙 ← 𝒙 + 𝛽ᵢ⋅𝒒ᵢ.
+    //   𝗲𝗻𝗱 𝗳𝗼𝗿
+    // 𝗲𝗹𝘀𝗲 𝗶𝗳 𝘍𝘭𝘦𝘹𝘪𝘣𝘭𝘦:
+    //   𝗳𝗼𝗿 𝑖 = 𝟢, 𝑘 𝗱𝗼:
+    //     𝒙 ← 𝒙 + 𝛽ᵢ⋅𝒛ᵢ.
+    //   𝗲𝗻𝗱 𝗳𝗼𝗿
+    // 𝗲𝗹𝘀𝗲:
+    //   𝒒₀ ← 𝛽₀⋅𝒒₀,
+    //   𝗳𝗼𝗿 𝑖 = 𝟣, 𝑘 𝗱𝗼:
+    //     𝒒₀ ← 𝒒₀ + 𝛽ᵢ⋅𝒒ᵢ,
+    //   𝗲𝗻𝗱 𝗳𝗼𝗿
+    //   𝒛₀ ← 𝓟𝒒₀,
+    //   𝒙 ← 𝒙 + 𝒛₀.
+    // 𝗲𝗻𝗱 𝗶𝗳
+    // ----------------------
+    if (!rightPre) {
+      for (size_t i{0}; i <= k; ++i) {
+        Blas::AddAssign(xVec, qVecs_[i], beta_[i]);
+      }
+    } else if constexpr (Flexible) {
+      for (size_t i{0}; i <= k; ++i) {
+        Blas::AddAssign(xVec, zVecs_[i], beta_[i]);
+      }
+    } else {
+      Blas::ScaleAssign(qVecs_[0], beta_[0]);
+      for (size_t i{1}; i <= k; ++i) {
+        Blas::AddAssign(qVecs_[0], qVecs_[i], beta_[i]);
+      }
+      preOp->MatVec(zVecs_[0], qVecs_[0]);
+      Blas::AddAssign(xVec, zVecs_[0]);
+    }
+  }
 
 protected:
 
@@ -129,219 +311,5 @@ class GmresSolver final : public BaseGmresSolver_<Vector, false> {};
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<VectorLike Vector>
 class FgmresSolver final : public BaseGmresSolver_<Vector, true> {};
-
-template<VectorLike Vector, bool Flexible, bool Loose>
-real_t BaseGmresSolver_<Vector, Flexible, Loose>::OuterInit(
-    const Vector& xVec,
-    const Vector& bVec,
-    const Operator<Vector>& linOp,
-    const Preconditioner<Vector>* preOp) {
-  const size_t m{this->NumInnerIterations};
-
-  beta_.resize(m + 1);
-  cs_.resize(m), sn_.resize(m);
-  H_.assign(m + 1, m);
-
-  qVecs_.resize(m + 1);
-  zVecs_.resize(Flexible && preOp != nullptr ? m + 1 : 1);
-  for (Vector& qVec : qVecs_) qVec.Assign(xVec, false);
-  for (Vector& zVec : zVecs_) zVec.Assign(xVec, false);
-
-  /// @todo Refactor without duplication a code from
-  ///   InnerInit method.
-  const bool leftPre{(preOp != nullptr) && (!Flexible) &&
-                     (this->PreSide == PreconditionerSide::Left)};
-
-  // Initialize:
-  // ----------------------
-  // 𝒒₀ ← 𝒃 - 𝓐𝒙,
-  // 𝗶𝗳 𝘓𝘦𝘧𝘵𝘗𝘳𝘦:
-  //   𝒛₀ ← 𝒒₀,
-  //   𝒒₀ ← 𝓟𝒛₀,
-  // 𝗲𝗻𝗱 𝗶𝗳
-  // 𝛽₀ ← ‖𝒒₀‖,
-  // 𝒒₀ ← 𝒒₀/𝛽₀.
-  // ----------------------
-  linOp.Residual(qVecs_[0], bVec, xVec);
-  if (leftPre) {
-    Blas::Swap(zVecs_[0], qVecs_[0]);
-    preOp->MatVec(qVecs_[0], zVecs_[0]);
-  }
-  beta_[0] = Blas::Norm2(qVecs_[0]);
-  Blas::ScaleAssign(qVecs_[0], 1.0 / beta_[0]);
-
-  return beta_[0];
-
-} // BaseGmresSolver_::OuterInit
-
-template<VectorLike Vector, bool Flexible, bool Loose>
-void BaseGmresSolver_<Vector, Flexible, Loose>::InnerInit(
-    const Vector& xVec,
-    const Vector& bVec,
-    const Operator<Vector>& linOp,
-    const Preconditioner<Vector>* preOp) {
-  // Force right preconditioning for the flexible GMRES.
-  const bool leftPre{(preOp != nullptr) && (!Flexible) &&
-                     (this->PreSide == PreconditionerSide::Left)};
-
-  // Initialize:
-  // ----------------------
-  // 𝒒₀ ← 𝒃 - 𝓐𝒙,
-  // 𝗶𝗳 𝘓𝘦𝘧𝘵𝘗𝘳𝘦:
-  //   𝒛₀ ← 𝒒₀,
-  //   𝒒₀ ← 𝓟𝒛₀,
-  // 𝗲𝗻𝗱 𝗶𝗳
-  // 𝛽₀ ← ‖𝒒₀‖,
-  // 𝒒₀ ← 𝒒₀/𝛽₀.
-  // ----------------------
-  linOp.Residual(qVecs_[0], bVec, xVec);
-  if (leftPre) {
-    Blas::Swap(zVecs_[0], qVecs_[0]);
-    preOp->MatVec(qVecs_[0], zVecs_[0]);
-  }
-  beta_[0] = Blas::Norm2(qVecs_[0]);
-  Blas::ScaleAssign(qVecs_[0], 1.0 / beta_[0]);
-
-} // BaseGmresSolver_::InnerInit
-
-template<VectorLike Vector, bool Flexible, bool Loose>
-real_t BaseGmresSolver_<Vector, Flexible, Loose>::InnerIterate(
-    Vector& xVec,
-    const Vector& bVec,
-    const Operator<Vector>& linOp,
-    const Preconditioner<Vector>* preOp) {
-  const size_t k{this->InnerIteration};
-
-  // Force right preconditioning for the flexible GMRES.
-  const bool leftPre{
-      (preOp != nullptr) &&
-      (!Flexible && (this->PreSide == PreconditionerSide::Left))};
-  const bool rightPre{
-      (preOp != nullptr) &&
-      (Flexible || (this->PreSide == PreconditionerSide::Right))};
-
-  // Compute the new 𝒒ₖ₊₁ vector:
-  // ----------------------
-  // 𝗶𝗳 𝘓𝘦𝘧𝘵𝘗𝘳𝘦:
-  //   𝒒ₖ₊₁ ← 𝓟(𝒛₀ ← 𝓐𝒒ₖ),
-  // 𝗲𝗹𝘀𝗲 𝗶𝗳 𝘙𝘪𝘨𝘩𝘵𝘗𝘳𝘦:
-  //   𝑗 ← 𝘍𝘭𝘦𝘹𝘪𝘣𝘭𝘦 ? 𝑘 : 𝟢,
-  //   𝒒ₖ₊₁ ← 𝓐(𝒛ⱼ ← 𝓟𝒒ₖ),
-  // 𝗲𝗹𝘀𝗲:
-  //   𝒒ₖ₊₁ ← 𝓐𝒒ₖ,
-  // 𝗲𝗻𝗱 𝗶𝗳
-  // 𝗳𝗼𝗿 𝑖 = 𝟢, 𝑘 𝗱𝗼:
-  //   𝐻ᵢₖ ← <𝒒ₖ₊₁⋅𝒒ᵢ>,
-  //   𝒒ₖ₊₁ ← 𝒒ₖ₊₁ - 𝐻ᵢₖ⋅𝒒ᵢ,
-  // 𝗲𝗻𝗱 𝗳𝗼𝗿
-  // 𝐻ₖ₊₁,ₖ ← ‖𝒒ₖ₊₁‖,
-  // 𝒒ₖ₊₁ ← 𝒒ₖ₊₁/𝐻ₖ₊₁,ₖ.
-  // ----------------------
-  if (leftPre) {
-    preOp->MatVec(qVecs_[k + 1], zVecs_[0], linOp, qVecs_[k]);
-  } else if (rightPre) {
-    const size_t j{Flexible ? k : 0};
-    linOp.MatVec(qVecs_[k + 1], zVecs_[j], *preOp, qVecs_[k]);
-  } else {
-    linOp.MatVec(qVecs_[k + 1], qVecs_[k]);
-  }
-  for (size_t i{0}; i <= k; ++i) {
-    H_[i, k] = Blas::Dot(qVecs_[k + 1], qVecs_[i]);
-    Blas::SubAssign(qVecs_[k + 1], qVecs_[i], H_[i, k]);
-  }
-  H_[k + 1, k] = Blas::Norm2(qVecs_[k + 1]);
-  Blas::ScaleAssign(qVecs_[k + 1], 1.0 / H_[k + 1, k]);
-
-  // Eliminate the last element in 𝐻
-  // and and update the rotation matrix:
-  // ----------------------
-  // 𝗳𝗼𝗿 𝑖 = 𝟢, 𝑘 - 𝟣 𝗱𝗼:
-  //   𝜒 ← 𝑐𝑠ᵢ⋅𝐻ᵢₖ + 𝑠𝑛ᵢ⋅𝐻ᵢ₊₁,ₖ,
-  //   𝐻ᵢ₊₁,ₖ ← -𝑠𝑛ᵢ⋅𝐻ᵢₖ + 𝑐𝑠ᵢ⋅𝐻ᵢ₊₁,ₖ,
-  //   𝐻ᵢₖ ← 𝜒,
-  // 𝗲𝗻𝗱 𝗳𝗼𝗿
-  // 𝑐𝑠ₖ, 𝑠𝑛ₖ ← 𝘚𝘺𝘮𝘖𝘳𝘵𝘩𝘰(𝐻ₖₖ, 𝐻ₖ₊₁,ₖ),
-  // 𝐻ₖₖ ← 𝑐𝑠ₖ⋅𝐻ₖₖ + 𝑠𝑛ₖ⋅𝐻ₖ₊₁,ₖ,
-  // 𝐻ₖ₊₁,ₖ ← 𝟢.
-  // ----------------------
-  for (size_t i{0}; i < k; ++i) {
-    const real_t chi = cs_[i] * H_[i, k] + sn_[i] * H_[i + 1, k];
-    H_[i + 1, k] = -sn_[i] * H_[i, k] + cs_[i] * H_[i + 1, k];
-    H_[i, k] = chi;
-  }
-  std::tie(cs_[k], sn_[k], std::ignore) = sym_ortho(H_[k, k], H_[k + 1, k]);
-  H_[k, k] = cs_[k] * H_[k, k] + sn_[k] * H_[k + 1, k];
-  H_[k + 1, k] = 0.0;
-
-  // Update the 𝛽-solution and the residual norm:
-  // ----------------------
-  // 𝛽ₖ₊₁ ← -𝑠𝑛ₖ⋅𝛽ₖ, 𝛽ₖ ← 𝑐𝑠ₖ⋅𝛽ₖ.
-  // ----------------------
-  beta_[k + 1] = -sn_[k] * beta_[k], beta_[k] *= cs_[k];
-
-  return std::abs(beta_[k + 1]);
-
-} // BaseGmresSolver_::InnerIterate
-
-template<VectorLike Vector, bool Flexible, bool Loose>
-void BaseGmresSolver_<Vector, Flexible, Loose>::InnerFinalize(
-    Vector& xVec,
-    const Vector& bVec,
-    const Operator<Vector>& linOp,
-    const Preconditioner<Vector>* preOp) {
-  const size_t k{this->InnerIteration};
-
-  const bool rightPre{
-      (preOp != nullptr) &&
-      (Flexible || (this->PreSide == PreconditionerSide::Right))};
-
-  // Finalize the 𝛽-solution:
-  // ----------------------
-  // 𝛽₀:ₖ ← (𝐻₀:ₖ,₀:ₖ)⁻¹𝛽₀:ₖ.
-  // ----------------------
-  for (size_t i{k}; i != SIZE_MAX; --i) {
-    for (size_t j{i + 1}; j <= k; ++j) {
-      beta_[i] -= H_[i, j] * beta_[j];
-    }
-    beta_[i] /= H_[i, i];
-  }
-
-  // Compute the 𝒙-solution:
-  // ----------------------
-  // 𝗶𝗳 𝗻𝗼𝘁 𝘙𝘪𝘨𝘩𝘵𝘗𝘳𝘦:
-  //   𝗳𝗼𝗿 𝑖 = 𝟢, 𝑘 𝗱𝗼:
-  //     𝒙 ← 𝒙 + 𝛽ᵢ⋅𝒒ᵢ.
-  //   𝗲𝗻𝗱 𝗳𝗼𝗿
-  // 𝗲𝗹𝘀𝗲 𝗶𝗳 𝘍𝘭𝘦𝘹𝘪𝘣𝘭𝘦:
-  //   𝗳𝗼𝗿 𝑖 = 𝟢, 𝑘 𝗱𝗼:
-  //     𝒙 ← 𝒙 + 𝛽ᵢ⋅𝒛ᵢ.
-  //   𝗲𝗻𝗱 𝗳𝗼𝗿
-  // 𝗲𝗹𝘀𝗲:
-  //   𝒒₀ ← 𝛽₀⋅𝒒₀,
-  //   𝗳𝗼𝗿 𝑖 = 𝟣, 𝑘 𝗱𝗼:
-  //     𝒒₀ ← 𝒒₀ + 𝛽ᵢ⋅𝒒ᵢ,
-  //   𝗲𝗻𝗱 𝗳𝗼𝗿
-  //   𝒛₀ ← 𝓟𝒒₀,
-  //   𝒙 ← 𝒙 + 𝒛₀.
-  // 𝗲𝗻𝗱 𝗶𝗳
-  // ----------------------
-  if (!rightPre) {
-    for (size_t i{0}; i <= k; ++i) {
-      Blas::AddAssign(xVec, qVecs_[i], beta_[i]);
-    }
-  } else if constexpr (Flexible) {
-    for (size_t i{0}; i <= k; ++i) {
-      Blas::AddAssign(xVec, zVecs_[i], beta_[i]);
-    }
-  } else {
-    Blas::ScaleAssign(qVecs_[0], beta_[0]);
-    for (size_t i{1}; i <= k; ++i) {
-      Blas::AddAssign(qVecs_[0], qVecs_[i], beta_[i]);
-    }
-    preOp->MatVec(zVecs_[0], qVecs_[0]);
-    Blas::AddAssign(xVec, zVecs_[0]);
-  }
-
-} // BaseGmresSolver_::InnerFinalize
 
 } // namespace tit::ksp

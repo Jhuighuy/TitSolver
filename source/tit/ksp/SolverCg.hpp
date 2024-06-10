@@ -57,93 +57,79 @@ private:
   real_t Init(const Vector& xVec,
               const Vector& bVec,
               const Operator<Vector>& linOp,
-              const Preconditioner<Vector>* preOp) override;
+              const Preconditioner<Vector>* preOp) override {
+    pVec_.Assign(xVec, false);
+    rVec_.Assign(xVec, false);
+    zVec_.Assign(xVec, false);
+
+    // Initialize:
+    // ----------------------
+    // 𝒓 ← 𝒃 - 𝓐𝒙.
+    // 𝗶𝗳 𝓟 ≠ 𝗻𝗼𝗻𝗲:
+    //   𝒛 ← 𝓟𝒓,
+    //   𝒑 ← 𝒛,
+    //   𝛾 ← <𝒓⋅𝒛>,
+    // 𝗲𝗹𝘀𝗲:
+    //   𝒑 ← 𝒓,
+    //   𝛾 ← <𝒓⋅𝒓>.
+    // 𝗲𝗻𝗱 𝗶𝗳
+    // ----------------------
+    linOp.Residual(rVec_, bVec, xVec);
+    if (preOp != nullptr) {
+      preOp->MatVec(zVec_, rVec_);
+      Blas::Set(pVec_, zVec_);
+      gamma_ = Blas::Dot(rVec_, zVec_);
+    } else {
+      Blas::Set(pVec_, rVec_);
+      gamma_ = Blas::Dot(rVec_, rVec_);
+    }
+
+    return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
+  }
 
   real_t Iterate(Vector& xVec,
                  const Vector& bVec,
                  const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) override;
+                 const Preconditioner<Vector>* preOp) override {
+    // Iterate:
+    // ----------------------
+    // 𝒛 ← 𝓐𝒑,
+    // 𝛾̅ ← 𝛾,
+    // 𝛼 ← 𝛾/<𝒑⋅𝒛>,
+    // 𝒙 ← 𝒙 + 𝛼⋅𝒑,
+    // 𝒓 ← 𝒓 - 𝛼⋅𝒛.
+    // ----------------------
+    linOp.MatVec(zVec_, pVec_);
+    const real_t gammaBar{gamma_};
+    const real_t alpha = safe_divide(gamma_, Blas::Dot(pVec_, zVec_));
+    Blas::AddAssign(xVec, pVec_, alpha);
+    Blas::SubAssign(rVec_, zVec_, alpha);
+
+    // ----------------------
+    // 𝗶𝗳 𝓟 ≠ 𝗻𝗼𝗻𝗲:
+    //   𝒛 ← 𝓟𝒓,
+    //   𝛾 ← <𝒓⋅𝒛>,
+    // 𝗲𝗹𝘀𝗲:
+    //   𝛾 ← <𝒓⋅𝒓>.
+    // 𝗲𝗻𝗱 𝗶𝗳
+    // ----------------------
+    if (preOp != nullptr) {
+      preOp->MatVec(zVec_, rVec_);
+      gamma_ = Blas::Dot(rVec_, zVec_);
+    } else {
+      gamma_ = Blas::Dot(rVec_, rVec_);
+    }
+
+    // ----------------------
+    // 𝛽 ← 𝛾/𝛾̅,
+    // 𝒑 ← (𝓟 ≠ 𝗻𝗼𝗻𝗲 ? 𝒛 : 𝒓) + 𝛽⋅𝒑.
+    // ----------------------
+    const real_t beta = safe_divide(gamma_, gammaBar);
+    Blas::Add(pVec_, preOp != nullptr ? zVec_ : rVec_, pVec_, beta);
+
+    return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
+  }
 
 }; // class CgSolver
-
-template<VectorLike Vector>
-real_t CgSolver<Vector>::Init(const Vector& xVec,
-                              const Vector& bVec,
-                              const Operator<Vector>& linOp,
-                              const Preconditioner<Vector>* preOp) {
-  pVec_.Assign(xVec, false);
-  rVec_.Assign(xVec, false);
-  zVec_.Assign(xVec, false);
-
-  // Initialize:
-  // ----------------------
-  // 𝒓 ← 𝒃 - 𝓐𝒙.
-  // 𝗶𝗳 𝓟 ≠ 𝗻𝗼𝗻𝗲:
-  //   𝒛 ← 𝓟𝒓,
-  //   𝒑 ← 𝒛,
-  //   𝛾 ← <𝒓⋅𝒛>,
-  // 𝗲𝗹𝘀𝗲:
-  //   𝒑 ← 𝒓,
-  //   𝛾 ← <𝒓⋅𝒓>.
-  // 𝗲𝗻𝗱 𝗶𝗳
-  // ----------------------
-  linOp.Residual(rVec_, bVec, xVec);
-  if (preOp != nullptr) {
-    preOp->MatVec(zVec_, rVec_);
-    Blas::Set(pVec_, zVec_);
-    gamma_ = Blas::Dot(rVec_, zVec_);
-  } else {
-    Blas::Set(pVec_, rVec_);
-    gamma_ = Blas::Dot(rVec_, rVec_);
-  }
-
-  return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
-
-} // CgSolver::Init
-
-template<VectorLike Vector>
-real_t CgSolver<Vector>::Iterate(Vector& xVec,
-                                 const Vector& bVec,
-                                 const Operator<Vector>& linOp,
-                                 const Preconditioner<Vector>* preOp) {
-  // Iterate:
-  // ----------------------
-  // 𝒛 ← 𝓐𝒑,
-  // 𝛾̅ ← 𝛾,
-  // 𝛼 ← 𝛾/<𝒑⋅𝒛>,
-  // 𝒙 ← 𝒙 + 𝛼⋅𝒑,
-  // 𝒓 ← 𝒓 - 𝛼⋅𝒛.
-  // ----------------------
-  linOp.MatVec(zVec_, pVec_);
-  const real_t gammaBar{gamma_};
-  const real_t alpha = safe_divide(gamma_, Blas::Dot(pVec_, zVec_));
-  Blas::AddAssign(xVec, pVec_, alpha);
-  Blas::SubAssign(rVec_, zVec_, alpha);
-
-  // ----------------------
-  // 𝗶𝗳 𝓟 ≠ 𝗻𝗼𝗻𝗲:
-  //   𝒛 ← 𝓟𝒓,
-  //   𝛾 ← <𝒓⋅𝒛>,
-  // 𝗲𝗹𝘀𝗲:
-  //   𝛾 ← <𝒓⋅𝒓>.
-  // 𝗲𝗻𝗱 𝗶𝗳
-  // ----------------------
-  if (preOp != nullptr) {
-    preOp->MatVec(zVec_, rVec_);
-    gamma_ = Blas::Dot(rVec_, zVec_);
-  } else {
-    gamma_ = Blas::Dot(rVec_, rVec_);
-  }
-
-  // ----------------------
-  // 𝛽 ← 𝛾/𝛾̅,
-  // 𝒑 ← (𝓟 ≠ 𝗻𝗼𝗻𝗲 ? 𝒛 : 𝒓) + 𝛽⋅𝒑.
-  // ----------------------
-  const real_t beta = safe_divide(gamma_, gammaBar);
-  Blas::Add(pVec_, preOp != nullptr ? zVec_ : rVec_, pVec_, beta);
-
-  return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
-
-} // CgSolver::Iterate
 
 } // namespace tit::ksp
