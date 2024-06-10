@@ -10,17 +10,16 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/ksp/Operator.hpp"       // IWYU pragma: keep
-#include "tit/ksp/Preconditioner.hpp" // IWYU pragma: keep
-#include "tit/ksp/Solver.hpp"         // IWYU pragma: keep
-#include "tit/ksp/SolverBiCgStab.hpp" // IWYU pragma: keep
-#include "tit/ksp/SolverCg.hpp"       // IWYU pragma: keep
-#include "tit/ksp/SolverCgs.hpp"      // IWYU pragma: keep
-#include "tit/ksp/SolverGmres.hpp"    // IWYU pragma: keep
-#include "tit/ksp/SolverIdrs.hpp"     // IWYU pragma: keep
-#include "tit/ksp/SolverNewton.hpp"   // IWYU pragma: keep
-#include "tit/ksp/SolverTfqmr.hpp"    // IWYU pragma: keep
-#include "tit/ksp/Vector.hpp"         // IWYU pragma: keep
+#include "tit/ksp/blas.hpp"
+#include "tit/ksp/operator.hpp"
+#include "tit/ksp/precond.hpp"
+#include "tit/ksp/solver_bicgstab.hpp"
+#include "tit/ksp/solver_cg.hpp"
+#include "tit/ksp/solver_cgs.hpp"
+#include "tit/ksp/solver_gmres.hpp"
+#include "tit/ksp/solver_idrs.hpp"
+#include "tit/ksp/solver_newton.hpp" // IWYU pragma: keep
+#include "tit/ksp/solver_tfqmr.hpp"
 
 #include "tit/testing/test.hpp"
 
