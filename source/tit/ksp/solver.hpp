@@ -29,9 +29,9 @@
 
 #include "tit/core/basic_types.hpp"
 
-#include "tit/ksp/Operator.hpp"
-#include "tit/ksp/Preconditioner.hpp"
-#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/blas.hpp"
+#include "tit/ksp/operator.hpp"
+#include "tit/ksp/precond.hpp"
 
 namespace tit::ksp {
 

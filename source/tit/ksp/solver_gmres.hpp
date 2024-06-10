@@ -33,10 +33,10 @@
 #include "tit/core/math.hpp"
 #include "tit/core/mdvector.hpp"
 
-#include "tit/ksp/Operator.hpp"
-#include "tit/ksp/Preconditioner.hpp"
-#include "tit/ksp/Solver.hpp"
-#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/blas.hpp"
+#include "tit/ksp/operator.hpp"
+#include "tit/ksp/precond.hpp"
+#include "tit/ksp/solver.hpp"
 
 namespace tit::ksp {
 

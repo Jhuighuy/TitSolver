@@ -12,7 +12,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 
-#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/blas.hpp"
 
 namespace tit::ksp {
 
