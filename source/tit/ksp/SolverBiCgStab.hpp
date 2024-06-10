@@ -27,9 +27,12 @@
 
 #include <vector>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/mdvector.hpp"
 
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Preconditioner.hpp"
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
 
@@ -60,10 +63,10 @@ private:
   real_t alpha_, rho_, omega_;
   Vector pVec_, rVec_, rTildeVec_, tVec_, vVec_, zVec_;
 
-  real_t Init(const Vector& xVec,
-              const Vector& bVec,
-              const Operator<Vector>& linOp,
-              const Preconditioner<Vector>* preOp) override {
+  auto Init(const Vector& xVec,
+            const Vector& bVec,
+            const Operator<Vector>& linOp,
+            const Preconditioner<Vector>* preOp) -> real_t override {
     const bool leftPre{(preOp != nullptr) &&
                        (this->PreSide == PreconditionerSide::Left)};
 
@@ -97,10 +100,10 @@ private:
     return sqrt(rho_);
   }
 
-  real_t Iterate(Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) override {
+  auto Iterate(Vector& xVec,
+               const Vector& /*bVec*/,
+               const Operator<Vector>& linOp,
+               const Preconditioner<Vector>* preOp) -> real_t override {
     const bool leftPre{(preOp != nullptr) &&
                        (this->PreSide == PreconditionerSide::Left)};
     const bool rightPre{(preOp != nullptr) &&
@@ -201,16 +204,16 @@ template<VectorLike Vector>
 class BiCgStabLSolver final : public InnerOuterIterativeSolver<Vector> {
 private:
 
-  real_t alpha_, rho_, omega_;
+  real_t alpha_{}, rho_{}, omega_{};
   std::vector<real_t> gamma_, gammaBar_, gammaBarBar_, sigma_;
   Mdvector<real_t, 2> tau_;
   Vector rTildeVec_, zVec_;
   std::vector<Vector> rVecs_, uVecs_;
 
-  real_t OuterInit(const Vector& xVec,
-                   const Vector& bVec,
-                   const Operator<Vector>& linOp,
-                   const Preconditioner<Vector>* preOp) override {
+  auto OuterInit(const Vector& xVec,
+                 const Vector& bVec,
+                 const Operator<Vector>& linOp,
+                 const Preconditioner<Vector>* preOp) -> real_t override {
     const size_t l{this->NumInnerIterations};
 
     gamma_.resize(l + 1);
@@ -252,10 +255,10 @@ private:
     return sqrt(rho_);
   }
 
-  real_t InnerIterate(Vector& xVec,
-                      const Vector& bVec,
-                      const Operator<Vector>& linOp,
-                      const Preconditioner<Vector>* preOp) override {
+  auto InnerIterate(Vector& xVec,
+                    const Vector& /*bVec*/,
+                    const Operator<Vector>& linOp,
+                    const Preconditioner<Vector>* preOp) -> real_t override {
     const size_t l{this->NumInnerIterations};
     const size_t j{this->InnerIteration};
 
@@ -330,13 +333,13 @@ private:
       //   𝛾̅ⱼ ← <𝒓₀⋅𝒓ⱼ>/𝜎ⱼ,
       // 𝗲𝗻𝗱 𝗳𝗼𝗿
       // ----------------------
-      for (size_t j{1}; j <= l; ++j) {
-        for (size_t i{1}; i < j; ++i) {
-          tau_[i, j] = safe_divide(Blas::Dot(rVecs_[i], rVecs_[j]), sigma_[i]);
-          Blas::SubAssign(rVecs_[j], rVecs_[i], tau_[i, j]);
+      for (size_t k{1}; k <= l; ++k) {
+        for (size_t i{1}; i < k; ++i) {
+          tau_[i, k] = safe_divide(Blas::Dot(rVecs_[i], rVecs_[k]), sigma_[i]);
+          Blas::SubAssign(rVecs_[k], rVecs_[i], tau_[i, k]);
         }
-        sigma_[j] = Blas::Dot(rVecs_[j], rVecs_[j]);
-        gammaBar_[j] = safe_divide(Blas::Dot(rVecs_[0], rVecs_[j]), sigma_[j]);
+        sigma_[k] = Blas::Dot(rVecs_[k], rVecs_[k]);
+        gammaBar_[k] = safe_divide(Blas::Dot(rVecs_[0], rVecs_[k]), sigma_[k]);
       }
 
       // ----------------------
@@ -355,16 +358,16 @@ private:
       // 𝗲𝗻𝗱 𝗳𝗼𝗿
       // ----------------------
       omega_ = gamma_[l] = gammaBar_[l], rho_ *= -omega_;
-      for (size_t j{l - 1}; j != 0; --j) {
-        gamma_[j] = gammaBar_[j];
-        for (size_t i{j + 1}; i <= l; ++i) {
-          gamma_[j] -= tau_[j, i] * gamma_[i];
+      for (size_t k{l - 1}; k != 0; --k) {
+        gamma_[k] = gammaBar_[k];
+        for (size_t i{k + 1}; i <= l; ++i) {
+          gamma_[k] -= tau_[k, i] * gamma_[i];
         }
       }
-      for (size_t j{1}; j < l; ++j) {
-        gammaBarBar_[j] = gamma_[j + 1];
-        for (size_t i{j + 1}; i < l; ++i) {
-          gammaBarBar_[j] += tau_[j, i] * gamma_[i + 1];
+      for (size_t k{1}; k < l; ++k) {
+        gammaBarBar_[k] = gamma_[k + 1];
+        for (size_t i{k + 1}; i < l; ++i) {
+          gammaBarBar_[k] += tau_[k, i] * gamma_[i + 1];
         }
       }
 
@@ -382,10 +385,10 @@ private:
       Blas::AddAssign(xVec, rVecs_[0], gamma_[1]);
       Blas::SubAssign(rVecs_[0], rVecs_[l], gammaBar_[l]);
       Blas::SubAssign(uVecs_[0], uVecs_[l], gamma_[l]);
-      for (size_t j{1}; j < l; ++j) {
-        Blas::AddAssign(xVec, rVecs_[j], gammaBarBar_[j]);
-        Blas::SubAssign(rVecs_[0], rVecs_[j], gammaBar_[j]);
-        Blas::SubAssign(uVecs_[0], uVecs_[j], gamma_[j]);
+      for (size_t k{1}; k < l; ++k) {
+        Blas::AddAssign(xVec, rVecs_[k], gammaBarBar_[k]);
+        Blas::SubAssign(rVecs_[0], rVecs_[k], gammaBar_[k]);
+        Blas::SubAssign(uVecs_[0], uVecs_[k], gamma_[k]);
       }
     }
 

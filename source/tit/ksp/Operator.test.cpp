@@ -10,10 +10,6 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 
-// NOLINTBEGIN
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include "tit/ksp/Operator.hpp"       // IWYU pragma: keep
 #include "tit/ksp/Preconditioner.hpp" // IWYU pragma: keep
 #include "tit/ksp/Solver.hpp"         // IWYU pragma: keep
@@ -25,8 +21,6 @@
 #include "tit/ksp/SolverNewton.hpp"   // IWYU pragma: keep
 #include "tit/ksp/SolverTfqmr.hpp"    // IWYU pragma: keep
 #include "tit/ksp/Vector.hpp"         // IWYU pragma: keep
-#pragma GCC diagnostic pop
-// NOLINTEND
 
 #include "tit/testing/test.hpp"
 

@@ -27,9 +27,12 @@
 
 #include <vector>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/mdvector.hpp"
 
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Preconditioner.hpp"
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
 
@@ -55,16 +58,16 @@ template<VectorLike Vector>
 class IdrsSolver final : public InnerOuterIterativeSolver<Vector> {
 private:
 
-  real_t omega_;
+  real_t omega_{};
   std::vector<real_t> phi_, gamma_;
   Mdvector<real_t, 2> mu_;
   Vector rVec_, vVec_, zVec_;
   std::vector<Vector> pVecs_, uVecs_, gVecs_;
 
-  real_t OuterInit(const Vector& xVec,
-                   const Vector& bVec,
-                   const Operator<Vector>& linOp,
-                   const Preconditioner<Vector>* preOp) override {
+  auto OuterInit(const Vector& xVec,
+                 const Vector& bVec,
+                 const Operator<Vector>& linOp,
+                 const Preconditioner<Vector>* preOp) -> real_t override {
     const size_t s{this->NumInnerIterations};
 
     const bool leftPre{(preOp != nullptr) &&
@@ -106,10 +109,10 @@ private:
     return phi_[0];
   }
 
-  void InnerInit(const Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) override {
+  void InnerInit(const Vector& /*xVec*/,
+                 const Vector& /*bVec*/,
+                 const Operator<Vector>& /*linOp*/,
+                 const Preconditioner<Vector>* /*preOp*/) override {
     const size_t s{this->NumInnerIterations};
 
     // Build shadow space and initialize 𝜑:
@@ -154,10 +157,10 @@ private:
     }
   }
 
-  real_t InnerIterate(Vector& xVec,
-                      const Vector& bVec,
-                      const Operator<Vector>& linOp,
-                      const Preconditioner<Vector>* preOp) override {
+  auto InnerIterate(Vector& xVec,
+                    const Vector& /*bVec*/,
+                    const Operator<Vector>& linOp,
+                    const Preconditioner<Vector>* preOp) -> real_t override {
     const size_t s{this->NumInnerIterations};
     const size_t k{this->InnerIteration};
 

@@ -120,7 +120,7 @@ auto Dot(const Vector& xVec, const Vector& yVec) {
 
 /// @brief Compute a norm of @p xVec.
 template<VectorLike Vector>
-real_t Norm2(const Vector& xVec) {
+auto Norm2(const Vector& xVec) -> real_t {
   return VectorOperations<Vector>::Norm2(xVec);
 }
 

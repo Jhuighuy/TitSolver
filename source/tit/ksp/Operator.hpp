@@ -17,6 +17,11 @@
 namespace tit::ksp {
 
 struct Object {
+  constexpr Object() = default;
+  constexpr Object(const Object&) = default;
+  constexpr Object(Object&&) = default;
+  constexpr auto operator=(const Object&) -> Object& = default;
+  constexpr auto operator=(Object&&) -> Object& = default;
   virtual ~Object() = default;
 };
 
@@ -64,7 +69,8 @@ public:
   ///
   /// @param bVec Input vector, 𝒃.
   /// @param xVec Input vector, 𝒙.
-  real_t ResidualNorm(const OutVector& bVec, const InVector& xVec) const {
+  auto ResidualNorm(const OutVector& bVec,
+                    const InVector& xVec) const -> real_t {
     OutVector rVec;
     rVec.Assign(bVec, false);
     Residual(rVec, bVec, xVec);
@@ -75,7 +81,7 @@ public:
   ///
   /// @param xVec Output vector, 𝒙.
   /// @param yVec Input vector, 𝒚.
-  virtual void ConjMatVec(InVector& xVec, const OutVector& yVec) const {
+  virtual void ConjMatVec(InVector& /*xVec*/, const OutVector& /*yVec*/) const {
     throw std::runtime_error("`Operator::ConjMatVec` was not overridden");
   }
 

@@ -25,12 +25,18 @@
 
 #pragma once
 
+#include <cstdint>
+#include <tuple>
 #include <vector>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/mdvector.hpp"
 
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Preconditioner.hpp"
 #include "tit/ksp/Solver.hpp"
+#include "tit/ksp/Vector.hpp"
 
 namespace tit::ksp {
 
@@ -47,10 +53,10 @@ private:
   std::vector<Vector> qVecs_;
   std::vector<Vector> zVecs_;
 
-  real_t OuterInit(const Vector& xVec,
-                   const Vector& bVec,
-                   const Operator<Vector>& linOp,
-                   const Preconditioner<Vector>* preOp) override {
+  auto OuterInit(const Vector& xVec,
+                 const Vector& bVec,
+                 const Operator<Vector>& linOp,
+                 const Preconditioner<Vector>* preOp) -> real_t override {
     const size_t m{this->NumInnerIterations};
 
     beta_.resize(m + 1);
@@ -115,10 +121,10 @@ private:
     Blas::ScaleAssign(qVecs_[0], 1.0 / beta_[0]);
   }
 
-  real_t InnerIterate(Vector& xVec,
-                      const Vector& bVec,
-                      const Operator<Vector>& linOp,
-                      const Preconditioner<Vector>* preOp) override {
+  auto InnerIterate(Vector& /*xVec*/,
+                    const Vector& /*bVec*/,
+                    const Operator<Vector>& linOp,
+                    const Preconditioner<Vector>* preOp) -> real_t override {
     const size_t k{this->InnerIteration};
 
     // Force right preconditioning for the flexible GMRES.
@@ -192,8 +198,8 @@ private:
   }
 
   void InnerFinalize(Vector& xVec,
-                     const Vector& bVec,
-                     const Operator<Vector>& linOp,
+                     const Vector& /*bVec*/,
+                     const Operator<Vector>& /*linOp*/,
                      const Preconditioner<Vector>* preOp) override {
     const size_t k{this->InnerIteration};
 
