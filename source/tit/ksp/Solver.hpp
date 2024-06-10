@@ -117,43 +117,37 @@ public:
 
   bool Solve(InVector& xVec,
              const OutVector& bVec,
-             const Operator<InVector, OutVector>& anyOp) override final;
+             const Operator<InVector, OutVector>& anyOp) override final {
+    // Initialize the solver.
+    if (PreOp != nullptr) {
+      PreOp->Build(xVec, bVec, anyOp);
+    }
+    const real_t initialError{
+        (AbsoluteError = Init(xVec, bVec, anyOp, PreOp.get()))};
+    if (AbsoluteTolerance > 0.0 && AbsoluteError < AbsoluteTolerance) {
+      Finalize(xVec, bVec, anyOp, PreOp.get());
+      return true;
+    }
+
+    // Iterate the solver:
+    bool converged = false;
+    for (Iteration = 0; !converged && (Iteration < NumIterations);
+         ++Iteration) {
+      AbsoluteError = Iterate(xVec, bVec, anyOp, PreOp.get());
+      RelativeError = AbsoluteError / initialError;
+
+      converged |=
+          (AbsoluteTolerance > 0.0) && (AbsoluteError < AbsoluteTolerance);
+      converged |=
+          (RelativeTolerance > 0.0) && (RelativeError < RelativeTolerance);
+    }
+
+    // Exit the solver.
+    Finalize(xVec, bVec, anyOp, PreOp.get());
+    return converged;
+  }
 
 }; // class IterativeSolver
-
-template<VectorLike InVector, VectorLike OutVector>
-bool IterativeSolver<InVector, OutVector>::Solve(
-    InVector& xVec,
-    const OutVector& bVec,
-    const Operator<InVector, OutVector>& anyOp) {
-  // Initialize the solver.
-  if (PreOp != nullptr) {
-    PreOp->Build(xVec, bVec, anyOp);
-  }
-  const real_t initialError{
-      (AbsoluteError = Init(xVec, bVec, anyOp, PreOp.get()))};
-  if (AbsoluteTolerance > 0.0 && AbsoluteError < AbsoluteTolerance) {
-    Finalize(xVec, bVec, anyOp, PreOp.get());
-    return true;
-  }
-
-  // Iterate the solver:
-  bool converged = false;
-  for (Iteration = 0; !converged && (Iteration < NumIterations); ++Iteration) {
-    AbsoluteError = Iterate(xVec, bVec, anyOp, PreOp.get());
-    RelativeError = AbsoluteError / initialError;
-
-    converged |=
-        (AbsoluteTolerance > 0.0) && (AbsoluteError < AbsoluteTolerance);
-    converged |=
-        (RelativeTolerance > 0.0) && (RelativeError < RelativeTolerance);
-  }
-
-  // Exit the solver.
-  Finalize(xVec, bVec, anyOp, PreOp.get());
-  return converged;
-
-} // IterativeSolver::Solve
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Abstract inner-outer iterative solver.

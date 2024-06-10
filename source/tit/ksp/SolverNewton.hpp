@@ -31,6 +31,7 @@
 #include "tit/core/math.hpp"
 
 #include "tit/ksp/Solver.hpp"
+#include "tit/ksp/SolverBiCgStab.hpp"
 #include "tit/ksp/Vector.hpp"
 
 namespace tit::ksp {
@@ -64,32 +65,20 @@ private:
   real_t Init(const Vector& xVec,
               const Vector& bVec,
               const Operator<Vector>& anyOp,
-              const Preconditioner<Vector>* preOp) override final;
+              const Preconditioner<Vector>* preOp) override final {
+    TIT_ENSURE(false, "Newton solver was not implemented yet!");
+    return 0.0;
+  }
 
   real_t Iterate(Vector& xVec,
                  const Vector& bVec,
                  const Operator<Vector>& anyOp,
-                 const Preconditioner<Vector>* preOp) override final;
+                 const Preconditioner<Vector>* preOp) override final {
+    TIT_ENSURE(false, "Newton solver was not implemented yet!");
+    return 0.0;
+  }
 
 }; // class NewtonSolver
-
-template<VectorLike Vector>
-real_t NewtonSolver<Vector>::Init(const Vector& xVec,
-                                  const Vector& bVec,
-                                  const Operator<Vector>& anyOp,
-                                  const Preconditioner<Vector>* preOp) {
-  TIT_ENSURE(false, "Newton solver was not implemented yet!");
-  return 0.0;
-} // NewtonSolver::Init
-
-template<VectorLike Vector>
-real_t NewtonSolver<Vector>::Iterate(Vector& xVec,
-                                     const Vector& bVec,
-                                     const Operator<Vector>& anyOp,
-                                     const Preconditioner<Vector>* preOp) {
-  TIT_ENSURE(false, "Newton solver was not implemented yet!");
-  return 0.0;
-} // NewtonSolver::Iterate
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief The first-order @c JFNK (Jacobian free-Newton-Krylov)
@@ -130,85 +119,71 @@ private:
   real_t Init(const Vector& xVec,
               const Vector& bVec,
               const Operator<Vector>& anyOp,
-              const Preconditioner<Vector>* preOp) override;
+              const Preconditioner<Vector>* preOp) override {
+    sVec_.Assign(xVec, false);
+    tVec_.Assign(xVec, false);
+    rVec_.Assign(xVec, false);
+    wVec_.Assign(xVec, false);
+
+    // Initialize:
+    // ----------------------
+    // 𝒘 ← 𝓐(𝒙),
+    // 𝒓 ← 𝒃 - 𝒘.
+    // ----------------------
+    anyOp.MatVec(wVec_, xVec);
+    Blas::Sub(rVec_, bVec, wVec_);
+
+    return Blas::Norm2(rVec_);
+  }
 
   real_t Iterate(Vector& xVec,
                  const Vector& bVec,
                  const Operator<Vector>& anyOp,
-                 const Preconditioner<Vector>* preOp) override;
+                 const Preconditioner<Vector>* preOp) override {
+    // Solve the Jacobian equation:
+    // ----------------------
+    // 𝜇 ← (𝜀ₘ)¹ᐟ²⋅(1 + ‖𝒙‖)]¹ᐟ²,
+    // 𝒕 ← 𝒓,
+    // 𝒕 ← 𝓙(𝒙)⁻¹𝒓.
+    // ----------------------
+    static const real_t sqrtOfEpsilon{
+        sqrt(std::numeric_limits<real_t>::epsilon())};
+    const real_t mu{sqrtOfEpsilon * sqrt(1.0 + Blas::Norm2(xVec))};
+    Blas::Set(tVec_, rVec_);
+    {
+      auto solver = std::make_unique<BiCgStabSolver<Vector>>();
+      solver->AbsoluteTolerance = 1.0e-8;
+      solver->RelativeTolerance = 1.0e-8;
+      auto op = MakeOperator<Vector>([&](Vector& zVec, const Vector& yVec) {
+        // Compute the Jacobian-vector product:
+        // ----------------------
+        // 𝛿 ← 𝜇⋅‖𝒚‖⁺,
+        // 𝒔 ← 𝒙 + 𝛿⋅𝒚,
+        // 𝒛 ← 𝓐(𝒔),
+        // 𝒛 ← 𝛿⁺⋅𝒛 - 𝛿⁺⋅𝒘.
+        // ----------------------
+        const real_t delta{safe_divide(mu, Blas::Norm2(yVec))};
+        Blas::Add(sVec_, xVec, yVec, delta);
+        anyOp.MatVec(zVec, sVec_);
+        const real_t deltaInverse{safe_divide(1.0, delta)};
+        Blas::Sub(zVec, zVec, deltaInverse, wVec_, deltaInverse);
+      });
+      solver->Solve(tVec_, rVec_, *op);
+    }
 
-}; // class JfnkSolver
+    // Update the solution and the residual:
+    // ----------------------
+    // 𝒙 ← 𝒙 + 𝒕,
+    // 𝒘 ← 𝓐(𝒙),
+    // 𝒓 ← 𝒃 - 𝒘.
+    // ----------------------
+    Blas::AddAssign(xVec, tVec_);
+    anyOp.MatVec(wVec_, xVec);
+    Blas::Sub(rVec_, bVec, wVec_);
 
-template<VectorLike Vector>
-real_t JfnkSolver<Vector>::Init(const Vector& xVec,
-                                const Vector& bVec,
-                                const Operator<Vector>& anyOp,
-                                const Preconditioner<Vector>* preOp) {
-  sVec_.Assign(xVec, false);
-  tVec_.Assign(xVec, false);
-  rVec_.Assign(xVec, false);
-  wVec_.Assign(xVec, false);
-
-  // Initialize:
-  // ----------------------
-  // 𝒘 ← 𝓐(𝒙),
-  // 𝒓 ← 𝒃 - 𝒘.
-  // ----------------------
-  anyOp.MatVec(wVec_, xVec);
-  Blas::Sub(rVec_, bVec, wVec_);
-
-  return Blas::Norm2(rVec_);
-
-} // JfnkSolver::Init
-
-template<VectorLike Vector>
-real_t JfnkSolver<Vector>::Iterate(Vector& xVec,
-                                   const Vector& bVec,
-                                   const Operator<Vector>& anyOp,
-                                   const Preconditioner<Vector>* preOp) {
-  // Solve the Jacobian equation:
-  // ----------------------
-  // 𝜇 ← (𝜀ₘ)¹ᐟ²⋅(1 + ‖𝒙‖)]¹ᐟ²,
-  // 𝒕 ← 𝒓,
-  // 𝒕 ← 𝓙(𝒙)⁻¹𝒓.
-  // ----------------------
-  static const real_t sqrtOfEpsilon{
-      sqrt(std::numeric_limits<real_t>::epsilon())};
-  const real_t mu{sqrtOfEpsilon * sqrt(1.0 + Blas::Norm2(xVec))};
-  Blas::Set(tVec_, rVec_);
-  {
-    auto solver = std::make_unique<BiCgStabSolver<Vector>>();
-    solver->AbsoluteTolerance = 1.0e-8;
-    solver->RelativeTolerance = 1.0e-8;
-    auto op = MakeOperator<Vector>([&](Vector& zVec, const Vector& yVec) {
-      // Compute the Jacobian-vector product:
-      // ----------------------
-      // 𝛿 ← 𝜇⋅‖𝒚‖⁺,
-      // 𝒔 ← 𝒙 + 𝛿⋅𝒚,
-      // 𝒛 ← 𝓐(𝒔),
-      // 𝒛 ← 𝛿⁺⋅𝒛 - 𝛿⁺⋅𝒘.
-      // ----------------------
-      const real_t delta{safe_divide(mu, Blas::Norm2(yVec))};
-      Blas::Add(sVec_, xVec, yVec, delta);
-      anyOp.MatVec(zVec, sVec_);
-      const real_t deltaInverse{safe_divide(1.0, delta)};
-      Blas::Sub(zVec, zVec, deltaInverse, wVec_, deltaInverse);
-    });
-    solver->Solve(tVec_, rVec_, *op);
+    return Blas::Norm2(rVec_);
   }
 
-  // Update the solution and the residual:
-  // ----------------------
-  // 𝒙 ← 𝒙 + 𝒕,
-  // 𝒘 ← 𝓐(𝒙),
-  // 𝒓 ← 𝒃 - 𝒘.
-  // ----------------------
-  Blas::AddAssign(xVec, tVec_);
-  anyOp.MatVec(wVec_, xVec);
-  Blas::Sub(rVec_, bVec, wVec_);
-
-  return Blas::Norm2(rVec_);
-
-} // JfnkSolver::Iterate
+}; // class JfnkSolver
 
 } // namespace tit::ksp
