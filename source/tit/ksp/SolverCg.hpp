@@ -25,8 +25,11 @@
 
 #pragma once
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Preconditioner.hpp"
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
 
@@ -54,10 +57,10 @@ private:
   real_t gamma_;
   Vector pVec_, rVec_, zVec_;
 
-  real_t Init(const Vector& xVec,
-              const Vector& bVec,
-              const Operator<Vector>& linOp,
-              const Preconditioner<Vector>* preOp) override {
+  auto Init(const Vector& xVec,
+            const Vector& bVec,
+            const Operator<Vector>& linOp,
+            const Preconditioner<Vector>* preOp) -> real_t override {
     pVec_.Assign(xVec, false);
     rVec_.Assign(xVec, false);
     zVec_.Assign(xVec, false);
@@ -87,10 +90,10 @@ private:
     return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
   }
 
-  real_t Iterate(Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) override {
+  auto Iterate(Vector& xVec,
+               const Vector& /*bVec*/,
+               const Operator<Vector>& linOp,
+               const Preconditioner<Vector>* preOp) -> real_t override {
     // Iterate:
     // ----------------------
     // 𝒛 ← 𝓐𝒑,

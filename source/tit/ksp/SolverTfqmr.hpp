@@ -25,8 +25,11 @@
 
 #pragma once
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Preconditioner.hpp"
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
 
@@ -39,13 +42,13 @@ template<VectorLike Vector, bool L1>
 class BaseTfqmrSolver_ : public IterativeSolver<Vector> {
 private:
 
-  real_t rho_, tau_;
+  real_t rho_{}, tau_{};
   Vector dVec_, rTildeVec_, uVec_, vVec_, yVec_, sVec_, zVec_;
 
-  real_t Init(const Vector& xVec,
-              const Vector& bVec,
-              const Operator<Vector>& linOp,
-              const Preconditioner<Vector>* preOp) override {
+  auto Init(const Vector& xVec,
+            const Vector& bVec,
+            const Operator<Vector>& linOp,
+            const Preconditioner<Vector>* preOp) -> real_t override {
     const bool leftPre{(preOp != nullptr) &&
                        (this->PreSide == PreconditionerSide::Left)};
 
@@ -92,10 +95,10 @@ private:
     return tau_;
   }
 
-  real_t Iterate(Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) override {
+  auto Iterate(Vector& xVec,
+               const Vector& /*bVec*/,
+               const Operator<Vector>& linOp,
+               const Preconditioner<Vector>* preOp) -> real_t override {
     const bool leftPre{(preOp != nullptr) &&
                        (this->PreSide == PreconditionerSide::Left)};
     const bool rightPre{(preOp != nullptr) &&
@@ -195,8 +198,8 @@ private:
       } else {
         const auto [cs, sn, rr] = sym_ortho(tau_, omega);
         tau_ = omega * cs;
-        Blas::AddAssign(xVec, dVec_, std::pow(cs, 2));
-        Blas::ScaleAssign(dVec_, std::pow(sn, 2));
+        Blas::AddAssign(xVec, dVec_, pow2(cs));
+        Blas::ScaleAssign(dVec_, pow2(sn));
       }
       if (m == 0) {
         Blas::SubAssign(yVec_, vVec_, alpha);

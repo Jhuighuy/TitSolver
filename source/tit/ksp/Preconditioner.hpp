@@ -27,14 +27,17 @@
 
 #include <iostream>
 
+#include "tit/core/basic_types.hpp"
+
 #include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Vector.hpp"
 
 namespace tit::ksp {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Preconditioner side.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-enum class PreconditionerSide {
+enum class PreconditionerSide : uint8_t {
   // clang-format off
 
   /// @brief Left preconditioned equation is solved, 𝓟𝓐𝒙 = 𝓟𝒃.
@@ -72,9 +75,9 @@ public:
   /// @param xVec Solution vector, 𝒙.
   /// @param bVec Right-hand-side vector, 𝒃.
   /// @param anyOp Operator to build the preconditioner upon.
-  virtual void Build(const Vector& xVec,
-                     const Vector& bVec,
-                     const Operator<Vector>& anyOp) {}
+  virtual void Build(const Vector& /*xVec*/,
+                     const Vector& /*bVec*/,
+                     const Operator<Vector>& /*anyOp*/) {}
 
 }; // class Preconditioner
 
@@ -87,12 +90,12 @@ class IdentityPreconditioner final : public Preconditioner<Vector> {
 private:
 
   void MatVec(Vector& yVec, const Vector& xVec) const override {
-    std::clog << "IdentityPreconditioner::MatVec called" << std::endl;
+    std::clog << "IdentityPreconditioner::MatVec called.\n";
     Blas::Set(yVec, xVec);
   }
 
   void ConjMatVec(Vector& xVec, const Vector& yVec) const override {
-    std::clog << "IdentityPreconditioner::ConjMatVec called" << std::endl;
+    std::clog << "IdentityPreconditioner::ConjMatVec called.\n";
     Blas::Set(xVec, yVec);
   }
 

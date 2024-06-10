@@ -3,10 +3,14 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+file(GLOB KSP_SOURCES "*.hpp")
+list(TRANSFORM KSP_SOURCES REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/" "")
+
 add_tit_library(
   NAME
     ksp
   SOURCES
+    ${KSP_SOURCES}
   DEPENDS
     tit::core)
 

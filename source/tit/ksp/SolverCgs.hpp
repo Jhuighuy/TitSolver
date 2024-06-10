@@ -25,8 +25,11 @@
 
 #pragma once
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Preconditioner.hpp"
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
 
@@ -55,10 +58,10 @@ private:
   real_t rho_;
   Vector pVec_, qVec_, rVec_, rTildeVec_, uVec_, vVec_;
 
-  real_t Init(const Vector& xVec,
-              const Vector& bVec,
-              const Operator<Vector>& linOp,
-              const Preconditioner<Vector>* preOp) override {
+  auto Init(const Vector& xVec,
+            const Vector& bVec,
+            const Operator<Vector>& linOp,
+            const Preconditioner<Vector>* preOp) -> real_t override {
     const bool leftPre{(preOp != nullptr) &&
                        (this->PreSide == PreconditionerSide::Left)};
 
@@ -90,10 +93,10 @@ private:
     return sqrt(rho_);
   }
 
-  real_t Iterate(Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) override {
+  auto Iterate(Vector& xVec,
+               const Vector& /*bVec*/,
+               const Operator<Vector>& linOp,
+               const Preconditioner<Vector>* preOp) -> real_t override {
     const bool leftPre{(preOp != nullptr) &&
                        (this->PreSide == PreconditionerSide::Left)};
     const bool rightPre{(preOp != nullptr) &&

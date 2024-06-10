@@ -27,9 +27,12 @@
 
 #include <limits>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Preconditioner.hpp"
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/SolverBiCgStab.hpp"
 #include "tit/ksp/Vector.hpp"
@@ -62,18 +65,18 @@ template<VectorLike Vector>
 class NewtonSolver : public IterativeSolver<Vector> {
 private:
 
-  real_t Init(const Vector& xVec,
-              const Vector& bVec,
-              const Operator<Vector>& anyOp,
-              const Preconditioner<Vector>* preOp) override final {
+  auto Init(const Vector& /*xVec*/,
+            const Vector& /*bVec*/,
+            const Operator<Vector>& /*anyOp*/,
+            const Preconditioner<Vector>* /*preOp*/) -> real_t override {
     TIT_ENSURE(false, "Newton solver was not implemented yet!");
     return 0.0;
   }
 
-  real_t Iterate(Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& anyOp,
-                 const Preconditioner<Vector>* preOp) override final {
+  auto Iterate(Vector& /*xVec*/,
+               const Vector& /*bVec*/,
+               const Operator<Vector>& /*anyOp*/,
+               const Preconditioner<Vector>* /*preOp*/) -> real_t override {
     TIT_ENSURE(false, "Newton solver was not implemented yet!");
     return 0.0;
   }
@@ -116,10 +119,10 @@ private:
 
   Vector sVec_, tVec_, rVec_, wVec_;
 
-  real_t Init(const Vector& xVec,
-              const Vector& bVec,
-              const Operator<Vector>& anyOp,
-              const Preconditioner<Vector>* preOp) override {
+  auto Init(const Vector& xVec,
+            const Vector& bVec,
+            const Operator<Vector>& anyOp,
+            const Preconditioner<Vector>* /*preOp*/) -> real_t override {
     sVec_.Assign(xVec, false);
     tVec_.Assign(xVec, false);
     rVec_.Assign(xVec, false);
@@ -136,10 +139,10 @@ private:
     return Blas::Norm2(rVec_);
   }
 
-  real_t Iterate(Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& anyOp,
-                 const Preconditioner<Vector>* preOp) override {
+  auto Iterate(Vector& xVec,
+               const Vector& bVec,
+               const Operator<Vector>& anyOp,
+               const Preconditioner<Vector>* /*preOp*/) -> real_t override {
     // Solve the Jacobian equation:
     // ----------------------
     // 𝜇 ← (𝜀ₘ)¹ᐟ²⋅(1 + ‖𝒙‖)]¹ᐟ²,
