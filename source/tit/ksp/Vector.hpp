@@ -25,9 +25,9 @@
 
 #pragma once
 
-#include "stormBase.hxx"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Set of the operations for given vector type.
@@ -214,4 +214,4 @@ concept operator_like =
       anyOp(yVec, xVec);
     };
 
-} // namespace Storm
+} // namespace tit::ksp

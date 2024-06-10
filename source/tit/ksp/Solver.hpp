@@ -30,11 +30,11 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "stormBase.hxx"
-#include "stormSolvers/Operator.hxx"
-#include "stormSolvers/Preconditioner.hxx"
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/Preconditioner.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Abstract operator equation solver.
@@ -295,8 +295,8 @@ bool SolveNonUniform(Solver<Vector>& solver,
   Blas::Sub(fVec, bVec, zVec);
 
   const auto uniOp =
-      MakeOperator<Vector>([&](Vector& yVec, const Vector& xVec) {
-        anyOp.MatVec(yVec, xVec);
+      MakeOperator<Vector>([&](Vector& yVec, const Vector& xxVec) {
+        anyOp.MatVec(yVec, xxVec);
         Blas::SubAssign(yVec, zVec);
       });
 
@@ -304,4 +304,4 @@ bool SolveNonUniform(Solver<Vector>& solver,
 
 } // SolveNonUniform
 
-} // namespace Storm
+} // namespace tit::ksp

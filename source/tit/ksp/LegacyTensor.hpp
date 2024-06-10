@@ -31,9 +31,9 @@
 #include <span>
 #include <type_traits>
 
-#include "stormBase.hxx"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Multidimensional shape object,
@@ -223,4 +223,4 @@ using stormTensor4R = stormTensor<Value,
                                              std::dynamic_extent,
                                              std::dynamic_extent>>;
 
-} // namespace Storm
+} // namespace tit::ksp

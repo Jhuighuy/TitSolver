@@ -10,10 +10,10 @@
 #include <memory>
 #include <stdexcept>
 
-#include "stormBase.hxx"
-#include "stormSolvers/Vector.hxx"
+#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 struct Object {
   virtual ~Object() = default;
@@ -75,7 +75,7 @@ public:
   /// @param xVec Output vector, 𝒙.
   /// @param yVec Input vector, 𝒚.
   virtual void ConjMatVec(InVector& xVec, const OutVector& yVec) const {
-    throw std::runtime_error("`Operator::ConjMatVec` was not overriden");
+    throw std::runtime_error("`Operator::ConjMatVec` was not overridden");
   }
 
 }; // class Operator
@@ -163,4 +163,4 @@ auto MakeSymmetricOperator(MatVecFunc&& matVecFunc) {
       std::forward<MatVecFunc>(matVecFunc));
 }
 
-} // namespace Storm
+} // namespace tit::ksp

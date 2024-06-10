@@ -27,11 +27,10 @@
 
 #include <iostream>
 
-#include "stormBase.hxx"
+#include "tit/ksp/Operator.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-#include "stormSolvers/Operator.hxx"
-
-namespace Storm {
+namespace tit::ksp {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Preconditioner side.
@@ -100,4 +99,4 @@ private:
 
 }; // class IdentityPreconditioner
 
-} // namespace Storm
+} // namespace tit::ksp

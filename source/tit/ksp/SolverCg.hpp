@@ -27,11 +27,11 @@
 
 #include <cmath>
 
-#include "stormBase.hxx"
-#include "stormSolvers/Solver.hxx"
-#include "stormSolvers/Vector.hxx"
+#include "tit/ksp/Solver.hpp"
+#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief The @c CG (Conjugate Gradients) linear self-adjoint
@@ -147,4 +147,4 @@ real_t CgSolver<Vector>::Iterate(Vector& xVec,
 
 } // CgSolver::Iterate
 
-} // namespace Storm
+} // namespace tit::ksp

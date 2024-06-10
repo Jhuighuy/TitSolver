@@ -25,13 +25,13 @@
 
 #pragma once
 
-#include "stormBase.hxx"
-#include "stormSolvers/LegacyTensor.hxx"
-#include "stormSolvers/Solver.hxx"
-#include "stormSolvers/Subspace.hxx"
-#include "stormSolvers/Vector.hxx"
+#include "tit/ksp/LegacyTensor.hpp"
+#include "tit/ksp/Solver.hpp"
+#include "tit/ksp/Subspace.hpp"
+#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief The @c IDR(s) (Induced Dimension Reduction)
@@ -311,4 +311,4 @@ real_t IdrsSolver<Vector>::InnerIterate(Vector& xVec,
 
 } // IdrsSolver::InnerIterate
 
-} // namespace Storm
+} // namespace tit::ksp
