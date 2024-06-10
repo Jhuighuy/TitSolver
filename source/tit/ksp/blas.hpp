@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -32,189 +12,183 @@
 
 namespace tit::ksp {
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Set of the operations for given vector type.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Set of the operations for given vector type.
 template<class Vector>
 class VectorOperations {
 public:
 
-  /// @brief Compute a dot product of @p xVec and @p yVec.
-  static auto Dot(const Vector& xVec, const Vector& yVec) = delete;
+  /// Compute a dot product of @p x and @p y.
+  constexpr static auto Dot(const Vector& x, const Vector& y) = delete;
 
-  /// @brief Compute a norm of @p xVec.
-  static auto Norm2(const Vector& xVec) = delete;
+  /// Compute a norm of @p x.
+  constexpr static auto Norm2(const Vector& x) = delete;
 
-  /// @brief Swap @p xVec and @p yVec.
-  static void Swap(Vector& xVec, Vector& yVec) = delete;
+  /// Swap @p x and @p y.
+  constexpr static void Swap(Vector& x, Vector& y) = delete;
 
-  /// @brief Compute @p xVec = @p yVec.
-  static void Set(Vector& xVec, const Vector& yVec) = delete;
+  /// Compute @p x = @p y.
+  constexpr static void Set(Vector& x, const Vector& y) = delete;
 
-  /// @brief Randomly fill the @p xVec with value @p a.
-  static void Fill(Vector& xVec, auto a) = delete;
+  /// Fill the @p x with value @p a.
+  constexpr static void Fill(Vector& x, auto a) = delete;
 
-  /// @brief Randomly fill the @p xVec.
-  static void RandFill(Vector& xVec) = delete;
+  /// Randomly fill the @p x.
+  constexpr static void RandFill(Vector& x) = delete;
 
-  /// @brief Compute @p xVec *= @p a.
-  static void ScaleAssign(Vector& xVec, auto a);
+  /// Compute @p x *= @p a.
+  constexpr static void ScaleAssign(Vector& x, auto a);
 
-  /// @brief Compute @p xVec += @p a * @p yVec.
-  static void AddAssign(Vector& xVec, const Vector& yVec, auto a);
+  /// Compute @p x += @p a * @p y.
+  constexpr static void AddAssign(Vector& x, const Vector& y, auto a);
 
 }; // class VectorOperations
 
-/// @brief A type of a dot product of the two vectors.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// A type of a dot product of the two vectors.
 template<class Vector>
 using DotType = decltype(VectorOperations<Vector>::Dot(std::declval<Vector>(),
                                                        std::declval<Vector>()));
 
-// clang-format off
-
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Vector concept that supports the level 1 BLAS operations.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+namespace blas {
+/// Vector concept that supports the level 1 BLAS operations.
 template<class Vector>
-concept VectorLike =
-  /// @pre Require the vector type to be assignable.
-  requires(Vector& targetVec, Vector const& sourceVector,
-           bool copyContents) {
-    { targetVec.Assign(sourceVector) };
-    { targetVec.Assign(sourceVector, copyContents) };
-  } &&
-  /// @pre Require the dot product operation.
-  requires {
-    typename DotType<Vector>;
-  } &&
-  requires(Vector const& xVec) {
-    { VectorOperations<Vector>::Norm2(xVec) } -> std::convertible_to<real_t>;
-  } &&
-  /// @pre Require the swap and set operations.
-  requires(Vector& xVec, Vector& yVec) {
-    VectorOperations<Vector>::Swap(xVec, yVec);
-  } &&
-  requires(Vector& xVec, Vector const& yVec) {
-    VectorOperations<Vector>::Set(xVec, yVec);
-  } &&
-  /// @pre Require the fill and random fill operations.
-  requires(Vector& xVec, DotType<Vector> a) {
-    VectorOperations<Vector>::Fill(xVec, a);
-    VectorOperations<Vector>::RandFill(xVec);
-  } &&
-  /// @pre Require the scale and addition operations.
-  requires(Vector& xVec, Vector const& yVec, DotType<Vector> a) {
-    VectorOperations<Vector>::ScaleAssign(xVec, a);
-    VectorOperations<Vector>::AddAssign(xVec, yVec, a);
-  };
-
-// clang-format on
+concept vector =
+    requires(Vector& target, const Vector& source, bool copy_contents) {
+      { target.Assign(source) };
+      { target.Assign(source, copy_contents) };
+    } && requires { typename DotType<Vector>; } && requires(const Vector& x) {
+      { VectorOperations<Vector>::Norm2(x) } -> std::convertible_to<real_t>;
+    } && requires(Vector& x, Vector& y) {
+      VectorOperations<Vector>::Swap(x, y);
+    } && requires(Vector& x, const Vector& y) {
+      VectorOperations<Vector>::Set(x, y);
+    } && requires(Vector& x, DotType<Vector> a) {
+      VectorOperations<Vector>::Fill(x, a);
+      VectorOperations<Vector>::RandFill(x);
+    } && requires(Vector& x, const Vector& y, DotType<Vector> a) {
+      VectorOperations<Vector>::ScaleAssign(x, a);
+      VectorOperations<Vector>::AddAssign(x, y, a);
+    };
+} // namespace blas
 
 namespace Blas {
 
-/// @brief Compute a dot product of @p xVec and @p yVec.
-template<VectorLike Vector>
-auto Dot(const Vector& xVec, const Vector& yVec) {
-  return VectorOperations<Vector>::Dot(xVec, yVec);
+/// Compute a dot product of @p x and @p y.
+template<blas::vector Vector>
+constexpr auto Dot(const Vector& x, const Vector& y) {
+  return VectorOperations<Vector>::Dot(x, y);
 }
 
-/// @brief Compute a norm of @p xVec.
-template<VectorLike Vector>
-auto Norm2(const Vector& xVec) -> real_t {
-  return VectorOperations<Vector>::Norm2(xVec);
+/// Compute a norm of @p x.
+template<blas::vector Vector>
+constexpr auto Norm2(const Vector& x) -> real_t {
+  return VectorOperations<Vector>::Norm2(x);
 }
 
-/// @brief Swap @p xVec and @p yVec.
-template<VectorLike Vector>
-void Swap(Vector& xVec, Vector& yVec) {
-  VectorOperations<Vector>::Swap(xVec, yVec);
+/// Swap @p x and @p y.
+template<blas::vector Vector>
+constexpr void Swap(Vector& x, Vector& y) {
+  VectorOperations<Vector>::Swap(x, y);
 }
 
-/// @brief Compute @p xVec = @p yVec.
-template<VectorLike Vector>
-void Set(Vector& xVec, const Vector& yVec) {
-  VectorOperations<Vector>::Set(xVec, yVec);
+/// Compute @p x = @p y.
+template<blas::vector Vector>
+constexpr void Set(Vector& x, const Vector& y) {
+  VectorOperations<Vector>::Set(x, y);
 }
 
-/// @brief Randomly fill the @p xVec with value @p a.
-template<VectorLike Vector>
-void Fill(Vector& xVec, auto a) {
-  VectorOperations<Vector>::Fill(xVec, a);
+/// Fill the @p x with value @p a.
+template<blas::vector Vector>
+constexpr void Fill(Vector& x, auto a) {
+  VectorOperations<Vector>::Fill(x, a);
 }
 
-/// @brief Randomly fill the @p xVec.
-template<VectorLike Vector>
-void RandFill(Vector& xVec) {
-  VectorOperations<Vector>::RandFill(xVec);
+/// Randomly fill the @p x.
+template<blas::vector Vector>
+constexpr void RandFill(Vector& x) {
+  VectorOperations<Vector>::RandFill(x);
 }
 
-/// @brief Compute @p xVec *= @p a.
-template<VectorLike Vector>
-void ScaleAssign(Vector& xVec, auto a) {
-  VectorOperations<Vector>::ScaleAssign(xVec, a);
+/// Compute @p x *= @p a.
+template<blas::vector Vector>
+constexpr void ScaleAssign(Vector& x, auto a) {
+  VectorOperations<Vector>::ScaleAssign(x, a);
 }
 
-/// @brief Compute @p xVec = @p a * @p yVec.
-template<VectorLike Vector>
-void Scale(Vector& xVec, const Vector& yVec, auto a) {
-  VectorOperations<Vector>::Scale(xVec, yVec, a);
+/// Compute @p x = @p a * @p y.
+template<blas::vector Vector>
+constexpr void Scale(Vector& x, const Vector& y, auto a) {
+  VectorOperations<Vector>::Scale(x, y, a);
 }
 
-/// @brief Compute @p xVec += @p a * @p yVec.
-template<VectorLike Vector>
-void AddAssign(Vector& xVec, const Vector& yVec, auto a) {
-  VectorOperations<Vector>::AddAssign(xVec, yVec, a);
+/// Compute @p x += @p a * @p y.
+template<blas::vector Vector>
+constexpr void AddAssign(Vector& x, const Vector& y, auto a) {
+  VectorOperations<Vector>::AddAssign(x, y, a);
 }
 
-template<VectorLike Vector>
-void AddAssign(Vector& xVec, const Vector& yVec) {
-  VectorOperations<Vector>::AddAssign(xVec, yVec);
+template<blas::vector Vector>
+constexpr void AddAssign(Vector& x, const Vector& y) {
+  VectorOperations<Vector>::AddAssign(x, y);
 }
 
-template<VectorLike Vector>
-void Add(Vector& xVec, const Vector& yVec, const Vector& zVec) {
-  VectorOperations<Vector>::Add(xVec, yVec, zVec);
+template<blas::vector Vector>
+constexpr void Add(Vector& x, const Vector& y, const Vector& z) {
+  VectorOperations<Vector>::Add(x, y, z);
 }
-template<VectorLike Vector>
-void Add(Vector& xVec, const Vector& yVec, const Vector& zVec, auto b) {
-  VectorOperations<Vector>::Add(xVec, yVec, zVec, b);
+template<blas::vector Vector>
+constexpr void Add(Vector& x, const Vector& y, const Vector& z, auto b) {
+  VectorOperations<Vector>::Add(x, y, z, b);
 }
-template<VectorLike Vector>
-void Add(Vector& xVec, const Vector& yVec, auto a, const Vector& zVec, auto b) {
-  VectorOperations<Vector>::Add(xVec, yVec, a, zVec, b);
-}
-
-template<VectorLike Vector>
-void SubAssign(Vector& xVec, const Vector& yVec, auto a) {
-  VectorOperations<Vector>::SubAssign(xVec, yVec, a);
-}
-template<VectorLike Vector>
-void SubAssign(Vector& xVec, const Vector& yVec) {
-  VectorOperations<Vector>::SubAssign(xVec, yVec);
+template<blas::vector Vector>
+constexpr void Add(Vector& x,
+                   const Vector& y,
+                   auto a,
+                   const Vector& z,
+                   auto b) {
+  VectorOperations<Vector>::Add(x, y, a, z, b);
 }
 
-template<VectorLike Vector>
-void Sub(Vector& xVec, const Vector& yVec, const Vector& zVec) {
-  VectorOperations<Vector>::Sub(xVec, yVec, zVec);
+template<blas::vector Vector>
+constexpr void SubAssign(Vector& x, const Vector& y, auto a) {
+  VectorOperations<Vector>::SubAssign(x, y, a);
 }
-template<VectorLike Vector>
-void Sub(Vector& xVec, const Vector& yVec, const Vector& zVec, auto b) {
-  VectorOperations<Vector>::Sub(xVec, yVec, zVec, b);
+template<blas::vector Vector>
+constexpr void SubAssign(Vector& x, const Vector& y) {
+  VectorOperations<Vector>::SubAssign(x, y);
 }
-template<VectorLike Vector>
-void Sub(Vector& xVec, const Vector& yVec, auto a, const Vector& zVec, auto b) {
-  VectorOperations<Vector>::Sub(xVec, yVec, a, zVec, b);
+
+template<blas::vector Vector>
+constexpr void Sub(Vector& x, const Vector& y, const Vector& z) {
+  VectorOperations<Vector>::Sub(x, y, z);
+}
+template<blas::vector Vector>
+constexpr void Sub(Vector& x, const Vector& y, const Vector& z, auto b) {
+  VectorOperations<Vector>::Sub(x, y, z, b);
+}
+template<blas::vector Vector>
+constexpr void Sub(Vector& x,
+                   const Vector& y,
+                   auto a,
+                   const Vector& z,
+                   auto b) {
+  VectorOperations<Vector>::Sub(x, y, a, z, b);
 }
 
 } // namespace Blas
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Operator-like concept.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace blas {
+/// Operator-like concept.
 template<class Operator, class InVector, class OutVector = InVector>
-concept operator_like =
-    requires(Operator& anyOp, OutVector& yVec, const InVector& xVec) {
-      anyOp(yVec, xVec);
-    };
+concept op =
+    requires(Operator& A, OutVector& y, const InVector& x) { A(y, x); };
+} // namespace blas
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp

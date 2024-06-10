@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -35,97 +15,93 @@
 
 namespace tit::ksp {
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Abstract operator equation solver.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike InVector, VectorLike OutVector = InVector>
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Abstract operator equation solver.
+template<blas::vector InVector, blas::vector OutVector = InVector>
 class Solver : public Object {
 public:
 
   /// @brief Solve the operator equation 𝓐(𝒙) = 𝒃.
   ///
-  /// @param xVec Solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
+  /// @param x Solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
   ///
   /// @returns Status of operation.
-  virtual auto Solve(InVector& xVec,
-                     const OutVector& bVec,
-                     const Operator<InVector, OutVector>& anyOp) -> bool = 0;
+  constexpr virtual auto solve(InVector& x,
+                               const OutVector& b,
+                               const Operator<InVector, OutVector>& A)
+      -> bool = 0;
 
 }; // class Solver
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Abstract operator equation iterative solver.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike InVector, VectorLike OutVector = InVector>
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Abstract operator equation iterative solver.
+template<blas::vector InVector, blas::vector OutVector = InVector>
 class IterativeSolver : public Solver<InVector, OutVector> {
 public:
 
   // NOLINTBEGIN(*-non-private-member-variables-in-classes)
-  size_t Iteration{0};
-  size_t NumIterations{2000};
-  real_t AbsoluteError{0.0};
-  real_t RelativeError{0.0};
-  real_t AbsoluteTolerance{1.0e-6};
-  real_t RelativeTolerance{1.0e-6};
-  bool VerifySolution{false};
-  PreconditionerSide PreSide{PreconditionerSide::Right};
-  std::unique_ptr<Preconditioner<InVector>> PreOp{nullptr};
+  size_t Iteration = 0;
+  size_t NumIterations = 2000;
+  PreconditionerSide PreSide = PreconditionerSide::Right;
+  std::unique_ptr<Preconditioner<InVector>> PreOp;
   // NOLINTEND(*-non-private-member-variables-in-classes)
 
 protected:
 
-  /// @brief Initialize the iterative solver.
+  /// Initialize the iterative solver.
   ///
-  /// @param xVec Initial guess for the solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
-  /// @param preOp Preconditioner operator, 𝓟(𝒙).
+  /// @param x Initial guess for the solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
+  /// @param P Preconditioner operator, 𝓟(𝒙).
   ///
   /// @returns Residual norm of the initial guess, ‖𝒃 - 𝓐(𝒙)‖.
-  virtual auto Init(const InVector& xVec,
-                    const OutVector& bVec,
-                    const Operator<InVector, OutVector>& anyOp,
-                    const Preconditioner<InVector>* preOp) -> real_t = 0;
+  constexpr virtual auto init(const InVector& x,
+                              const OutVector& b,
+                              const Operator<InVector, OutVector>& A,
+                              const Preconditioner<InVector>* P) -> real_t = 0;
 
-  /// @brief Iterate the solver.
+  /// Iterate the solver.
   ///
-  /// @param xVec Solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
-  /// @param preOp Preconditioner operator, 𝓟(𝒙).
+  /// @param x Solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
+  /// @param P Preconditioner operator, 𝓟(𝒙).
   ///
   /// @returns Residual norm, ‖𝒃 - 𝓐(𝒙)‖.
-  virtual auto Iterate(InVector& xVec,
-                       const OutVector& bVec,
-                       const Operator<InVector, OutVector>& anyOp,
-                       const Preconditioner<InVector>* preOp) -> real_t = 0;
+  constexpr virtual auto iter(InVector& x,
+                              const OutVector& b,
+                              const Operator<InVector, OutVector>& A,
+                              const Preconditioner<InVector>* P) -> real_t = 0;
 
-  /// @brief Finalize the iterations.
+  /// Finalize the iterations.
   ///
-  /// @param xVec Solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
-  /// @param preOp Preconditioner operator, 𝓟(𝒙).
-  virtual void Finalize(InVector& /*xVec*/,
-                        const OutVector& /*bVec*/,
-                        const Operator<InVector, OutVector>& /*anyOp*/,
-                        const Preconditioner<InVector>* /*preOp*/) {}
+  /// @param x Solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
+  /// @param P Preconditioner operator, 𝓟(𝒙).
+  constexpr virtual void finalize(InVector& /*x*/,
+                                  const OutVector& /*b*/,
+                                  const Operator<InVector, OutVector>& /*A*/,
+                                  const Preconditioner<InVector>* /*P*/) {}
 
 public:
 
-  auto Solve(InVector& xVec,
-             const OutVector& bVec,
-             const Operator<InVector, OutVector>& anyOp) -> bool override {
+  constexpr auto solve(InVector& x,
+                       const OutVector& b,
+                       const Operator<InVector, OutVector>& A)
+      -> bool override {
     // Initialize the solver.
     if (PreOp != nullptr) {
-      PreOp->Build(xVec, bVec, anyOp);
+      PreOp->Build(x, b, A);
     }
-    const real_t initialError{
-        (AbsoluteError = Init(xVec, bVec, anyOp, PreOp.get()))};
-    if (AbsoluteTolerance > 0.0 && AbsoluteError < AbsoluteTolerance) {
-      Finalize(xVec, bVec, anyOp, PreOp.get());
+    const real_t init_error = (abs_error_ = init(x, b, A, PreOp.get()));
+    if (abs_error_tol_ > 0.0 && abs_error_ < abs_error_tol_) {
+      finalize(x, b, A, PreOp.get());
       return true;
     }
 
@@ -133,172 +109,181 @@ public:
     bool converged = false;
     for (Iteration = 0; !converged && (Iteration < NumIterations);
          ++Iteration) {
-      AbsoluteError = Iterate(xVec, bVec, anyOp, PreOp.get());
-      RelativeError = AbsoluteError / initialError;
-
-      converged |=
-          (AbsoluteTolerance > 0.0) && (AbsoluteError < AbsoluteTolerance);
-      converged |=
-          (RelativeTolerance > 0.0) && (RelativeError < RelativeTolerance);
+      abs_error_ = iter(x, b, A, PreOp.get());
+      rel_error_ = abs_error_ / init_error;
+      converged |= (abs_error_tol_ > 0.0) && //
+                   (abs_error_ < abs_error_tol_);
+      converged |= (rel_error_tol_ > 0.0) && //
+                   (rel_error_ < rel_error_tol_);
     }
 
     // Exit the solver.
-    Finalize(xVec, bVec, anyOp, PreOp.get());
+    finalize(x, b, A, PreOp.get());
     return converged;
   }
 
+private:
+
+  real_t abs_error_ = 0.0;
+  real_t rel_error_ = 0.0;
+  real_t abs_error_tol_ = 1.0e-6;
+  real_t rel_error_tol_ = 1.0e-6;
+  bool verify_solution_ = false;
+
 }; // class IterativeSolver
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Abstract inner-outer iterative solver.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike InVector, VectorLike OutVector = InVector>
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Abstract inner-outer iterative solver.
+template<blas::vector InVector, blas::vector OutVector = InVector>
 class InnerOuterIterativeSolver : public IterativeSolver<InVector, OutVector> {
 public:
 
   // NOLINTBEGIN(*-non-private-member-variables-in-classes)
-  size_t InnerIteration{0};
-  size_t NumInnerIterations{50};
+  size_t InnerIteration = 0;
+  size_t NumInnerIterations = 50;
   // NOLINTEND(*-non-private-member-variables-in-classes)
 
 protected:
 
-  /// @brief Initialize the outer iterations.
+  /// Initialize the outer iterations.
   ///
-  /// This function is used invoked only once,
-  ///   in the initialization phase.
+  /// This function is used invoked only once, in the initialization phase.
   ///
-  /// @param xVec Initial guess for the solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
-  /// @param preOp Preconditioner operator, 𝓟(𝒙).
+  /// @param x Initial guess for the solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
+  /// @param P Preconditioner operator, 𝓟(𝒙).
   ///
   /// @returns Residual norm of the initial guess, ‖𝒃 - 𝓐(𝒙)‖.
-  virtual auto OuterInit(const InVector& xVec,
-                         const OutVector& bVec,
-                         const Operator<InVector, OutVector>& anyOp,
-                         const Preconditioner<InVector>* preOp) -> real_t = 0;
+  constexpr virtual auto outer_init(const InVector& x,
+                                    const OutVector& b,
+                                    const Operator<InVector, OutVector>& A,
+                                    const Preconditioner<InVector>* P)
+      -> real_t = 0;
 
-  /// @brief Initialize the inner iterations.
+  /// Initialize the inner iterations.
   ///
   /// This function is invoked before the each inner iteration loop.
   ///
-  /// @param xVec Solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
-  /// @param preOp Preconditioner operator, 𝓟(𝒙).
-  virtual void InnerInit(const InVector& /*xVec*/,
-                         const OutVector& /*bVec*/,
-                         const Operator<InVector, OutVector>& /*anyOp*/,
-                         const Preconditioner<InVector>* /*preOp*/) {}
+  /// @param x Solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
+  /// @param P Preconditioner operator, 𝓟(𝒙).
+  constexpr virtual void inner_init(const InVector& /*x*/,
+                                    const OutVector& /*b*/,
+                                    const Operator<InVector, OutVector>& /*A*/,
+                                    const Preconditioner<InVector>* /*P*/) {}
 
-  /// @brief Perform the inner iteration.
+  /// Perform the inner iteration.
   ///
-  /// @param xVec Solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
-  /// @param preOp Preconditioner operator, 𝓟(𝒙).
+  /// @param x Solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
+  /// @param P Preconditioner operator, 𝓟(𝒙).
   ///
   /// @returns Residual norm, ‖𝒃 - 𝓐(𝒙)‖.
-  virtual auto InnerIterate(InVector& xVec,
-                            const OutVector& bVec,
-                            const Operator<InVector, OutVector>& anyOp,
-                            const Preconditioner<InVector>* preOp)
+  constexpr virtual auto inner_iter(InVector& x,
+                                    const OutVector& b,
+                                    const Operator<InVector, OutVector>& A,
+                                    const Preconditioner<InVector>* P)
       -> real_t = 0;
 
-  /// @brief Finalize the inner iterations.
+  /// Finalize the inner iterations.
   ///
-  /// This function is called in order to finalize
-  ///   the inner iterations or if some stopping criterion is met.
+  /// This function is called in order to finalize the inner iterations or if
+  /// some stopping criterion is met.
   ///
-  /// @param xVec Solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
-  /// @param preOp Preconditioner operator, 𝓟(𝒙).
-  virtual void InnerFinalize(InVector& /*xVec*/,
-                             const OutVector& /*bVec*/,
-                             const Operator<InVector, OutVector>& /*anyOp*/,
-                             const Preconditioner<InVector>* /*preOp*/) {}
+  /// @param x Solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
+  /// @param P Preconditioner operator, 𝓟(𝒙).
+  constexpr virtual void inner_finalize(
+      InVector& /*x*/,
+      const OutVector& /*b*/,
+      const Operator<InVector, OutVector>& /*A*/,
+      const Preconditioner<InVector>* /*P*/) {}
 
-  /// @brief Finalize the outer iterations.
+  /// Finalize the outer iterations.
   ///
-  /// This function is used invoked only once,
-  ///   when some stopping criterion is met.
+  /// This function is used invoked only once, when some stopping criterion is
+  /// met.
   ///
-  /// @param xVec Solution vector, 𝒙.
-  /// @param bVec Right-hand-side vector, 𝒃.
-  /// @param anyOp Equation operator, 𝓐(𝒙).
-  /// @param preOp Preconditioner operator, 𝓟(𝒙).
-  virtual void OuterFinalize(InVector& /*xVec*/,
-                             const OutVector& /*bVec*/,
-                             const Operator<InVector, OutVector>& /*anyOp*/,
-                             const Preconditioner<InVector>* /*preOp*/) {}
+  /// @param x Solution vector, 𝒙.
+  /// @param b Right-hand-side vector, 𝒃.
+  /// @param A Equation operator, 𝓐(𝒙).
+  /// @param P Preconditioner operator, 𝓟(𝒙).
+  constexpr virtual void outer_finalize(
+      InVector& /*x*/,
+      const OutVector& /*b*/,
+      const Operator<InVector, OutVector>& /*A*/,
+      const Preconditioner<InVector>* /*P*/) {}
 
 private:
 
-  auto Init(const InVector& xVec,
-            const OutVector& bVec,
-            const Operator<InVector, OutVector>& anyOp,
-            const Preconditioner<InVector>* preOp) -> real_t override {
-    return OuterInit(xVec, bVec, anyOp, preOp);
+  constexpr auto init(const InVector& x,
+                      const OutVector& b,
+                      const Operator<InVector, OutVector>& A,
+                      const Preconditioner<InVector>* P) -> real_t override {
+    return outer_init(x, b, A, P);
   }
 
-  auto Iterate(InVector& xVec,
-               const OutVector& bVec,
-               const Operator<InVector, OutVector>& anyOp,
-               const Preconditioner<InVector>* preOp) -> real_t override {
+  constexpr auto iter(InVector& x,
+                      const OutVector& b,
+                      const Operator<InVector, OutVector>& A,
+                      const Preconditioner<InVector>* P) -> real_t override {
     InnerIteration = this->Iteration % NumInnerIterations;
     if (InnerIteration == 0) {
-      InnerInit(xVec, bVec, anyOp, preOp);
+      inner_init(x, b, A, P);
     }
-    const real_t residualNorm{InnerIterate(xVec, bVec, anyOp, preOp)};
+    const real_t residual_norm = inner_iter(x, b, A, P);
     if (InnerIteration == NumInnerIterations - 1) {
-      InnerFinalize(xVec, bVec, anyOp, preOp);
+      inner_finalize(x, b, A, P);
     }
-    return residualNorm;
+    return residual_norm;
   }
 
-  void Finalize(InVector& xVec,
-                const OutVector& bVec,
-                const Operator<InVector, OutVector>& anyOp,
-                const Preconditioner<InVector>* preOp) override {
+  void finalize(InVector& x,
+                const OutVector& b,
+                const Operator<InVector, OutVector>& A,
+                const Preconditioner<InVector>* P) override {
     if (InnerIteration != NumInnerIterations - 1) {
-      InnerFinalize(xVec, bVec, anyOp, preOp);
+      inner_finalize(x, b, A, P);
     }
-    OuterFinalize(xVec, bVec, anyOp, preOp);
+    outer_finalize(x, b, A, P);
   }
 
 }; // class InnerOuterIterativeSolver
 
-/// ----------------------------------------------------------------- ///
-/// @brief Solve an operator equation 𝓐(𝒙) = 𝒃,
-///   when 𝓐(𝒙) is a non-uniform operator (𝓐(𝟢) ≠ 𝟢).
-/// ----------------------------------------------------------------- ///
-template<VectorLike Vector>
-auto SolveNonUniform(Solver<Vector>& solver,
-                     Vector& xVec,
-                     const Vector& bVec,
-                     const Operator<Vector>& anyOp) -> bool {
-  Vector zVec;
-  Vector fVec;
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  zVec.Assign(xVec, false);
-  fVec.Assign(bVec, false);
+/// Solve an operator equation 𝓐(𝒙) = 𝒃, when 𝓐(𝒙) is a non-uniform
+/// operator (𝓐(𝟢) ≠ 𝟢).
+template<blas::vector Vector>
+constexpr auto solve_nonuniform(Solver<Vector>& solver,
+                                Vector& x,
+                                const Vector& b,
+                                const Operator<Vector>& A) -> bool {
+  Vector z;
+  Vector f;
+
+  z.Assign(x, false);
+  f.Assign(b, false);
 
   // Solve an equation with the "uniformed" operator:
   // 𝓐(𝒙) - 𝓐(𝟢) = 𝒃 - 𝓐(𝟢).
-  Blas::Fill(fVec, 0.0);
-  anyOp.MatVec(zVec, fVec);
-  Blas::Sub(fVec, bVec, zVec);
+  Blas::Fill(f, 0.0);
+  A.MatVec(z, f);
+  Blas::Sub(f, b, z);
 
-  const auto uniOp =
-      MakeOperator<Vector>([&](Vector& yVec, const Vector& xxVec) {
-        anyOp.MatVec(yVec, xxVec);
-        Blas::SubAssign(yVec, zVec);
-      });
+  const auto U = MakeOperator<Vector>([&](Vector& y, const Vector& xx) {
+    A.MatVec(y, xx);
+    Blas::SubAssign(y, z);
+  });
 
-  return solver.Solve(xVec, fVec, *uniOp);
+  return solver.solve(x, f, *U);
+}
 
-} // SolveNonUniform
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp

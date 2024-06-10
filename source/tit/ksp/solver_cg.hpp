@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -35,12 +15,10 @@
 
 namespace tit::ksp {
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c CG (Conjugate Gradients) linear self-adjoint
-///   definite operator equation solver.
-///
-/// @c CG may be applied to the consistent singular problems,
-/// it converges towards..
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The CG (Conjugate Gradients) linear self-adjoint definite operator equation
+/// solver.
 ///
 /// References:
 /// @verbatim
@@ -49,21 +27,19 @@ namespace tit::ksp {
 ///     Journal of research of the National
 ///     Bureau of Standards 49 (1952): 409-435.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class CgSolver final : public IterativeSolver<Vector> {
+template<blas::vector Vector>
+class CG final : public IterativeSolver<Vector> {
 private:
 
-  real_t gamma_;
-  Vector pVec_, rVec_, zVec_;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  auto Init(const Vector& xVec,
-            const Vector& bVec,
-            const Operator<Vector>& linOp,
-            const Preconditioner<Vector>* preOp) -> real_t override {
-    pVec_.Assign(xVec, false);
-    rVec_.Assign(xVec, false);
-    zVec_.Assign(xVec, false);
+  constexpr auto init(const Vector& x,
+                      const Vector& b,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* P) -> real_t override {
+    p_.Assign(x, false);
+    r_.Assign(x, false);
+    z_.Assign(x, false);
 
     // Initialize:
     // ----------------------
@@ -77,23 +53,25 @@ private:
     //   𝛾 ← <𝒓⋅𝒓>.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    linOp.Residual(rVec_, bVec, xVec);
-    if (preOp != nullptr) {
-      preOp->MatVec(zVec_, rVec_);
-      Blas::Set(pVec_, zVec_);
-      gamma_ = Blas::Dot(rVec_, zVec_);
+    A.Residual(r_, b, x);
+    if (P != nullptr) {
+      P->MatVec(z_, r_);
+      Blas::Set(p_, z_);
+      gamma_ = Blas::Dot(r_, z_);
     } else {
-      Blas::Set(pVec_, rVec_);
-      gamma_ = Blas::Dot(rVec_, rVec_);
+      Blas::Set(p_, r_);
+      gamma_ = Blas::Dot(r_, r_);
     }
 
-    return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
+    return (P != nullptr) ? Blas::Norm2(r_) : sqrt(gamma_);
   }
 
-  auto Iterate(Vector& xVec,
-               const Vector& /*bVec*/,
-               const Operator<Vector>& linOp,
-               const Preconditioner<Vector>* preOp) -> real_t override {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr auto iter(Vector& x,
+                      const Vector& /*b*/,
+                      const Operator<Vector>& A,
+                      const Preconditioner<Vector>* P) -> real_t override {
     // Iterate:
     // ----------------------
     // 𝒛 ← 𝓐𝒑,
@@ -102,11 +80,11 @@ private:
     // 𝒙 ← 𝒙 + 𝛼⋅𝒑,
     // 𝒓 ← 𝒓 - 𝛼⋅𝒛.
     // ----------------------
-    linOp.MatVec(zVec_, pVec_);
-    const real_t gammaBar{gamma_};
-    const real_t alpha = safe_divide(gamma_, Blas::Dot(pVec_, zVec_));
-    Blas::AddAssign(xVec, pVec_, alpha);
-    Blas::SubAssign(rVec_, zVec_, alpha);
+    A.MatVec(z_, p_);
+    const auto gamma_bar = gamma_;
+    const auto alpha = safe_divide(gamma_, Blas::Dot(p_, z_));
+    Blas::AddAssign(x, p_, alpha);
+    Blas::SubAssign(r_, z_, alpha);
 
     // ----------------------
     // 𝗶𝗳 𝓟 ≠ 𝗻𝗼𝗻𝗲:
@@ -116,23 +94,30 @@ private:
     //   𝛾 ← <𝒓⋅𝒓>.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    if (preOp != nullptr) {
-      preOp->MatVec(zVec_, rVec_);
-      gamma_ = Blas::Dot(rVec_, zVec_);
+    if (P != nullptr) {
+      P->MatVec(z_, r_);
+      gamma_ = Blas::Dot(r_, z_);
     } else {
-      gamma_ = Blas::Dot(rVec_, rVec_);
+      gamma_ = Blas::Dot(r_, r_);
     }
 
     // ----------------------
     // 𝛽 ← 𝛾/𝛾̅,
     // 𝒑 ← (𝓟 ≠ 𝗻𝗼𝗻𝗲 ? 𝒛 : 𝒓) + 𝛽⋅𝒑.
     // ----------------------
-    const real_t beta = safe_divide(gamma_, gammaBar);
-    Blas::Add(pVec_, preOp != nullptr ? zVec_ : rVec_, pVec_, beta);
+    const auto beta = safe_divide(gamma_, gamma_bar);
+    Blas::Add(p_, P != nullptr ? z_ : r_, p_, beta);
 
-    return (preOp != nullptr) ? Blas::Norm2(rVec_) : sqrt(gamma_);
+    return (P != nullptr) ? Blas::Norm2(r_) : sqrt(gamma_);
   }
 
-}; // class CgSolver
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  real_t gamma_;
+  Vector p_, r_, z_;
+
+}; // class CG
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp

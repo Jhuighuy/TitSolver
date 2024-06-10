@@ -1,27 +1,7 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// Copyright (C) 2022 Oleg Butakov
-///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
-///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
 
@@ -38,9 +18,9 @@
 
 namespace tit::ksp {
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief The @c IDR(s) (Induced Dimension Reduction)
-///   linear operator equation solver.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// The IDR(s) (Induced Dimension Reduction) linear operator equation solver.
 ///
 /// References:
 /// @verbatim
@@ -53,42 +33,44 @@ namespace tit::ksp {
 ///      Exploits Biorthogonality Properties.”
 ///     ACM Trans. Math. Softw. 38 (2011): 5:1-5:19.
 /// @endverbatim
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<VectorLike Vector>
-class IdrsSolver final : public InnerOuterIterativeSolver<Vector> {
+template<blas::vector Vector>
+class IDRs final : public InnerOuterIterativeSolver<Vector> {
+public:
+
+  IDRs() {
+    this->NumInnerIterations = 4;
+  }
+
 private:
 
-  real_t omega_{};
-  std::vector<real_t> phi_, gamma_;
-  Mdvector<real_t, 2> mu_;
-  Vector rVec_, vVec_, zVec_;
-  std::vector<Vector> pVecs_, uVecs_, gVecs_;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  auto OuterInit(const Vector& xVec,
-                 const Vector& bVec,
-                 const Operator<Vector>& linOp,
-                 const Preconditioner<Vector>* preOp) -> real_t override {
-    const size_t s{this->NumInnerIterations};
+  constexpr auto outer_init(const Vector& x,
+                            const Vector& b,
+                            const Operator<Vector>& A,
+                            const Preconditioner<Vector>* P)
+      -> real_t override {
+    const auto s = this->NumInnerIterations;
 
-    const bool leftPre{(preOp != nullptr) &&
-                       (this->PreSide == PreconditionerSide::Left)};
+    const auto left_pre = (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
 
     phi_.resize(s);
     gamma_.resize(s);
     mu_.assign(s, s);
 
-    rVec_.Assign(xVec, false);
-    vVec_.Assign(xVec, false);
-    if (preOp != nullptr) {
-      zVec_.Assign(xVec, false);
+    r_.Assign(x, false);
+    v_.Assign(x, false);
+    if (P != nullptr) {
+      z_.Assign(x, false);
     }
 
-    pVecs_.resize(s);
-    uVecs_.resize(s);
-    gVecs_.resize(s);
-    for (Vector& pVec : pVecs_) pVec.Assign(xVec, false);
-    for (Vector& uVec : uVecs_) uVec.Assign(xVec, false);
-    for (Vector& gVec : gVecs_) gVec.Assign(xVec, false);
+    ps_.resize(s);
+    us_.resize(s);
+    gs_.resize(s);
+    for (Vector& p : ps_) p.Assign(x, false);
+    for (Vector& u : us_) u.Assign(x, false);
+    for (Vector& g : gs_) g.Assign(x, false);
 
     // Initialize:
     // ----------------------
@@ -99,21 +81,23 @@ private:
     // 𝗲𝗻𝗱 𝗶𝗳
     // 𝜑₀ ← ‖𝒓‖.
     // ----------------------
-    linOp.Residual(rVec_, bVec, xVec);
-    if (leftPre) {
-      Blas::Swap(zVec_, rVec_);
-      preOp->MatVec(rVec_, zVec_);
+    A.Residual(r_, b, x);
+    if (left_pre) {
+      Blas::Swap(z_, r_);
+      P->MatVec(r_, z_);
     }
-    phi_[0] = Blas::Norm2(rVec_);
+    phi_[0] = Blas::Norm2(r_);
 
     return phi_[0];
   }
 
-  void InnerInit(const Vector& /*xVec*/,
-                 const Vector& /*bVec*/,
-                 const Operator<Vector>& /*linOp*/,
-                 const Preconditioner<Vector>* /*preOp*/) override {
-    const size_t s{this->NumInnerIterations};
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  constexpr void inner_init(const Vector& /*x*/,
+                            const Vector& /*b*/,
+                            const Operator<Vector>& /*A*/,
+                            const Preconditioner<Vector>* /*P*/) override {
+    const auto s = this->NumInnerIterations;
 
     // Build shadow space and initialize 𝜑:
     // ----------------------
@@ -135,39 +119,40 @@ private:
     //   𝗲𝗻𝗱 𝗳𝗼𝗿
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    const bool firstIteration{this->Iteration == 0};
-    if (firstIteration) {
+    const auto first_iter = this->Iteration == 0;
+    if (first_iter) {
       omega_ = mu_[0, 0] = 1.0;
-      Blas::Scale(pVecs_[0], rVec_, 1.0 / phi_[0]);
-      for (size_t i{1}; i < s; ++i) {
+      Blas::Scale(ps_[0], r_, 1.0 / phi_[0]);
+      for (size_t i = 1; i < s; ++i) {
         mu_[i, i] = 1.0, phi_[i] = 0.0;
-        Blas::RandFill(pVecs_[i]);
-        for (size_t j{0}; j < i; ++j) {
+        Blas::RandFill(ps_[i]);
+        for (size_t j = 0; j < i; ++j) {
           mu_[i, j] = 0.0;
-          Blas::SubAssign(pVecs_[i],
-                          pVecs_[j],
-                          Blas::Dot(pVecs_[i], pVecs_[j]));
+          Blas::SubAssign(ps_[i], ps_[j], Blas::Dot(ps_[i], ps_[j]));
         }
-        Blas::ScaleAssign(pVecs_[i], 1.0 / Blas::Norm2(pVecs_[i]));
+        Blas::ScaleAssign(ps_[i], 1.0 / Blas::Norm2(ps_[i]));
       }
     } else {
-      for (size_t i{0}; i < s; ++i) {
-        phi_[i] = Blas::Dot(pVecs_[i], rVec_);
+      for (size_t i = 0; i < s; ++i) {
+        phi_[i] = Blas::Dot(ps_[i], r_);
       }
     }
   }
 
-  auto InnerIterate(Vector& xVec,
-                    const Vector& /*bVec*/,
-                    const Operator<Vector>& linOp,
-                    const Preconditioner<Vector>* preOp) -> real_t override {
-    const size_t s{this->NumInnerIterations};
-    const size_t k{this->InnerIteration};
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const bool leftPre{(preOp != nullptr) &&
-                       (this->PreSide == PreconditionerSide::Left)};
-    const bool rightPre{(preOp != nullptr) &&
-                        (this->PreSide == PreconditionerSide::Right)};
+  constexpr auto inner_iter(Vector& x,
+                            const Vector& /*b*/,
+                            const Operator<Vector>& A,
+                            const Preconditioner<Vector>* P)
+      -> real_t override {
+    const auto s = this->NumInnerIterations;
+    const auto k = this->InnerIteration;
+
+    const auto left_pre = (P != nullptr) && //
+                          (this->PreSide == PreconditionerSide::Left);
+    const auto right_pre = (P != nullptr) && //
+                           (this->PreSide == PreconditionerSide::Right);
 
     // Compute 𝛾:
     // ----------------------
@@ -201,22 +186,22 @@ private:
     //   𝒈ₖ ← 𝓐𝒖ₖ.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    Blas::Sub(vVec_, rVec_, gVecs_[k], gamma_[k]);
-    for (size_t i{k + 1}; i < s; ++i) {
-      Blas::SubAssign(vVec_, gVecs_[i], gamma_[i]);
+    Blas::Sub(v_, r_, gs_[k], gamma_[k]);
+    for (size_t i = k + 1; i < s; ++i) {
+      Blas::SubAssign(v_, gs_[i], gamma_[i]);
     }
-    if (rightPre) {
-      Blas::Swap(zVec_, vVec_);
-      preOp->MatVec(vVec_, zVec_);
+    if (right_pre) {
+      Blas::Swap(z_, v_);
+      P->MatVec(v_, z_);
     }
-    Blas::Add(uVecs_[k], uVecs_[k], gamma_[k], vVec_, omega_);
-    for (size_t i{k + 1}; i < s; ++i) {
-      Blas::AddAssign(uVecs_[k], uVecs_[i], gamma_[i]);
+    Blas::Add(us_[k], us_[k], gamma_[k], v_, omega_);
+    for (size_t i = k + 1; i < s; ++i) {
+      Blas::AddAssign(us_[k], us_[i], gamma_[i]);
     }
-    if (leftPre) {
-      preOp->MatVec(gVecs_[k], zVec_, linOp, uVecs_[k]);
+    if (left_pre) {
+      P->MatVec(gs_[k], z_, A, us_[k]);
     } else {
-      linOp.MatVec(gVecs_[k], uVecs_[k]);
+      A.MatVec(gs_[k], us_[k]);
     }
 
     // Biorthogonalize the new vectors 𝒈ₖ and 𝒖ₖ:
@@ -227,11 +212,10 @@ private:
     //   𝒈ₖ ← 𝒈ₖ - 𝛼⋅𝒈ᵢ.
     // 𝗲𝗻𝗱 𝗳𝗼𝗿
     // ----------------------
-    for (size_t i{0}; i < k; ++i) {
-      const real_t alpha{
-          safe_divide(Blas::Dot(pVecs_[i], gVecs_[k]), mu_[i, i])};
-      Blas::SubAssign(uVecs_[k], uVecs_[i], alpha);
-      Blas::SubAssign(gVecs_[k], gVecs_[i], alpha);
+    for (size_t i = 0; i < k; ++i) {
+      const auto alpha = safe_divide(Blas::Dot(ps_[i], gs_[k]), mu_[i, i]);
+      Blas::SubAssign(us_[k], us_[i], alpha);
+      Blas::SubAssign(gs_[k], gs_[i], alpha);
     }
 
     // Compute the new column of 𝜇:
@@ -240,8 +224,8 @@ private:
     //   𝜇ᵢₖ ← <𝒑ᵢ⋅𝒈ₖ>.
     // 𝗲𝗻𝗱 𝗳𝗼𝗿
     // ----------------------
-    for (size_t i{k}; i < s; ++i) {
-      mu_[i, k] = Blas::Dot(pVecs_[i], gVecs_[k]);
+    for (size_t i = k; i < s; ++i) {
+      mu_[i, k] = Blas::Dot(ps_[i], gs_[k]);
     }
 
     // Update the solution and the residual:
@@ -250,15 +234,15 @@ private:
     // 𝒙 ← 𝒙 + 𝛽⋅𝒖ₖ,
     // 𝒓 ← 𝒓 - 𝛽⋅𝒈ₖ.
     // ----------------------
-    const real_t beta{safe_divide(phi_[k], mu_[k, k])};
-    Blas::AddAssign(xVec, uVecs_[k], beta);
-    Blas::SubAssign(rVec_, gVecs_[k], beta);
+    const auto beta = safe_divide(phi_[k], mu_[k, k]);
+    Blas::AddAssign(x, us_[k], beta);
+    Blas::SubAssign(r_, gs_[k], beta);
 
     // Update 𝜑:
     // ----------------------
     // 𝜑ₖ₊₁:ₛ₋₁ ← 𝜑ₖ₊₁:ₛ₋₁ - 𝛽⋅𝜇ₖ₊₁:ₛ₋₁,ₖ.
     // ----------------------
-    for (size_t i{k + 1}; i < s; ++i) {
+    for (size_t i = k + 1; i < s; ++i) {
       phi_[i] -= beta * mu_[i, k];
     }
 
@@ -276,27 +260,31 @@ private:
       // 𝒙 ← 𝒙 + 𝜔⋅(𝘙𝘪𝘨𝘩𝘵𝘗𝘳𝘦 ? 𝒛 : 𝒓),
       // 𝒓 ← 𝒓 - 𝜔⋅𝒗.
       // ----------------------
-      if (leftPre) {
-        preOp->MatVec(vVec_, zVec_, linOp, rVec_);
-      } else if (rightPre) {
-        linOp.MatVec(vVec_, zVec_, *preOp, rVec_);
+      if (left_pre) {
+        P->MatVec(v_, z_, A, r_);
+      } else if (right_pre) {
+        A.MatVec(v_, z_, *P, r_);
       } else {
-        linOp.MatVec(vVec_, rVec_);
+        A.MatVec(v_, r_);
       }
-      omega_ = safe_divide(Blas::Dot(vVec_, rVec_), Blas::Dot(vVec_, vVec_));
-      Blas::AddAssign(xVec, rightPre ? zVec_ : rVec_, omega_);
-      Blas::SubAssign(rVec_, vVec_, omega_);
+      omega_ = safe_divide(Blas::Dot(v_, r_), Blas::Dot(v_, v_));
+      Blas::AddAssign(x, right_pre ? z_ : r_, omega_);
+      Blas::SubAssign(r_, v_, omega_);
     }
 
-    return Blas::Norm2(rVec_);
+    return Blas::Norm2(r_);
   }
 
-public:
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  IdrsSolver() {
-    this->NumInnerIterations = 4;
-  }
+  real_t omega_{};
+  std::vector<real_t> phi_, gamma_;
+  Mdvector<real_t, 2> mu_;
+  Vector r_, v_, z_;
+  std::vector<Vector> ps_, us_, gs_;
 
-}; // class IdrsSolver
+}; // class IDRs
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::ksp
