@@ -234,7 +234,7 @@ private:
 public:
 
   BiCgStabLSolver() {
-    this->NumInnerIterations = 2;
+    this->NumInnerIterations = 3;
   }
 
 }; // class BiCgStabLSolver
