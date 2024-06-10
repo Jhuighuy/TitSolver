@@ -27,11 +27,11 @@
 
 #include <cmath>
 
-#include "stormBase.hxx"
-#include "stormSolvers/Solver.hxx"
-#include "stormSolvers/Vector.hxx"
+#include "tit/ksp/Solver.hpp"
+#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief The @c CGS (Conjugate Gradients Squared)
@@ -199,4 +199,4 @@ real_t CgsSolver<Vector>::Iterate(Vector& xVec,
 
 } // CgsSolver::Iterate
 
-} // namespace Storm
+} // namespace tit::ksp

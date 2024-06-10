@@ -27,11 +27,11 @@
 
 #include <cmath>
 
-#include "stormBase.hxx"
-#include "stormSolvers/Solver.hxx"
-#include "stormSolvers/Vector.hxx"
+#include "tit/ksp/Solver.hpp"
+#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// ----------------------------------------------------------------- ///
 /// @brief Base class for @c TFQMR and @c TFQMR1.
@@ -301,4 +301,4 @@ real_t BaseTfqmrSolver_<Vector, L1>::Iterate(
 
 } // BaseTfqmrSolver_::Iterate
 
-} // namespace Storm
+} // namespace tit::ksp

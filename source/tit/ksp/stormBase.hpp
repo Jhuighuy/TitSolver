@@ -71,7 +71,7 @@
 #define StormAssert(x) StormEnsure(x)
 #endif
 
-namespace Storm {
+namespace tit::ksp {
 
 /// @brief Size type.
 using size_t = std::size_t;
@@ -94,7 +94,7 @@ inline constexpr bool is_complex_floating_point_v =
     is_complex_floating_point_t<T>::value;
 /// @}
 
-/// @brief Concept for the real or complex floaing point numbers,
+/// @brief Concept for the real or complex floating point numbers,
 ///   e.g. @c real_t or @c std::complex<real_t>.
 template<class T>
 concept real_or_complex_floating_point =
@@ -143,4 +143,4 @@ auto SymOrtho(Value a, Value b) {
 
 } // namespace Utils
 
-} // namespace Storm
+} // namespace tit::ksp

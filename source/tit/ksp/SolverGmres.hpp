@@ -27,12 +27,12 @@
 
 #include <span>
 
-#include "stormBase.hxx"
-#include "stormSolvers/LegacyTensor.hxx"
-#include "stormSolvers/Solver.hxx"
-#include "stormSolvers/Subspace.hxx"
+#include "tit/ksp/LegacyTensor.hpp"
+#include "tit/ksp/Solver.hpp"
+#include "tit/ksp/Subspace.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// ----------------------------------------------------------------- ///
 /// @brief Base class for @c GMRES, @c FGMRES,
@@ -349,4 +349,4 @@ void BaseGmresSolver_<Vector, Flexible, Loose>::InnerFinalize(
 
 } // BaseGmresSolver_::InnerFinalize
 
-} // namespace Storm
+} // namespace tit::ksp

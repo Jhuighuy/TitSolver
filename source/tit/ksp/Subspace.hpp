@@ -27,10 +27,10 @@
 
 #include <span>
 
-#include "stormBase.hxx"
-#include "stormSolvers/Vector.hxx"
+#include "tit/ksp/Vector.hpp"
+#include "tit/ksp/stormBase.hpp"
 
-namespace Storm {
+namespace tit::ksp {
 
 /// ----------------------------------------------------------------- ///
 /// @brief Vector subspace.
@@ -79,4 +79,4 @@ public:
 
 }; // class Subspace
 
-} // namespace Storm
+} // namespace tit::ksp
