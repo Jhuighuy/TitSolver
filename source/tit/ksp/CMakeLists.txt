@@ -16,6 +16,7 @@ add_tit_executable(
   NAME
     ksp_tests
   SOURCES
+    "Operator.test.cpp"
   DEPENDS
     tit::ksp
     tit::testing)
