@@ -28,7 +28,6 @@
 #include <iostream>
 
 #include "tit/ksp/Operator.hpp"
-#include "tit/ksp/stormBase.hpp"
 
 namespace tit::ksp {
 

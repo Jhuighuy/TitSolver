@@ -24,9 +24,7 @@
 #include "tit/ksp/SolverIdrs.hpp"     // IWYU pragma: keep
 #include "tit/ksp/SolverNewton.hpp"   // IWYU pragma: keep
 #include "tit/ksp/SolverTfqmr.hpp"    // IWYU pragma: keep
-#include "tit/ksp/Subspace.hpp"       // IWYU pragma: keep
 #include "tit/ksp/Vector.hpp"         // IWYU pragma: keep
-#include "tit/ksp/stormBase.hpp"      // IWYU pragma: keep
 #pragma GCC diagnostic pop
 // NOLINTEND
 

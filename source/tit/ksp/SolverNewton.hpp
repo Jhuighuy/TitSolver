@@ -27,9 +27,11 @@
 
 #include <limits>
 
+#include "tit/core/checks.hpp"
+#include "tit/core/math.hpp"
+
 #include "tit/ksp/Solver.hpp"
 #include "tit/ksp/Vector.hpp"
-#include "tit/ksp/stormBase.hpp"
 
 namespace tit::ksp {
 
@@ -76,7 +78,8 @@ real_t NewtonSolver<Vector>::Init(const Vector& xVec,
                                   const Vector& bVec,
                                   const Operator<Vector>& anyOp,
                                   const Preconditioner<Vector>* preOp) {
-  StormEnsure(!"Newton solver was not implemented yet.");
+  TIT_ENSURE(false, "Newton solver was not implemented yet!");
+  return 0.0;
 } // NewtonSolver::Init
 
 template<VectorLike Vector>
@@ -84,7 +87,8 @@ real_t NewtonSolver<Vector>::Iterate(Vector& xVec,
                                      const Vector& bVec,
                                      const Operator<Vector>& anyOp,
                                      const Preconditioner<Vector>* preOp) {
-  StormEnsure(!"Newton solver was not implemented yet.");
+  TIT_ENSURE(false, "Newton solver was not implemented yet!");
+  return 0.0;
 } // NewtonSolver::Iterate
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
@@ -169,8 +173,8 @@ real_t JfnkSolver<Vector>::Iterate(Vector& xVec,
   // 𝒕 ← 𝓙(𝒙)⁻¹𝒓.
   // ----------------------
   static const real_t sqrtOfEpsilon{
-      std::sqrt(std::numeric_limits<real_t>::epsilon())};
-  const real_t mu{sqrtOfEpsilon * std::sqrt(1.0 + Blas::Norm2(xVec))};
+      sqrt(std::numeric_limits<real_t>::epsilon())};
+  const real_t mu{sqrtOfEpsilon * sqrt(1.0 + Blas::Norm2(xVec))};
   Blas::Set(tVec_, rVec_);
   {
     auto solver = std::make_unique<BiCgStabSolver<Vector>>();
@@ -184,10 +188,10 @@ real_t JfnkSolver<Vector>::Iterate(Vector& xVec,
       // 𝒛 ← 𝓐(𝒔),
       // 𝒛 ← 𝛿⁺⋅𝒛 - 𝛿⁺⋅𝒘.
       // ----------------------
-      const real_t delta{Utils::SafeDivide(mu, Blas::Norm2(yVec))};
+      const real_t delta{safe_divide(mu, Blas::Norm2(yVec))};
       Blas::Add(sVec_, xVec, yVec, delta);
       anyOp.MatVec(zVec, sVec_);
-      const real_t deltaInverse{Utils::SafeDivide(1.0, delta)};
+      const real_t deltaInverse{safe_divide(1.0, delta)};
       Blas::Sub(zVec, zVec, deltaInverse, wVec_, deltaInverse);
     });
     solver->Solve(tVec_, rVec_, *op);
