@@ -25,9 +25,6 @@ public:
   /// Compute a norm of @p x.
   constexpr static auto Norm2(const Vector& x) = delete;
 
-  /// Swap @p x and @p y.
-  constexpr static void Swap(Vector& x, Vector& y) = delete;
-
   /// Compute @p x = @p y.
   constexpr static void Set(Vector& x, const Vector& y) = delete;
 
@@ -56,13 +53,12 @@ namespace blas {
 /// Vector concept that supports the level 1 BLAS operations.
 template<class Vector>
 concept vector =
+    std::swappable<Vector> &&
     requires(Vector& target, const Vector& source, bool copy_contents) {
       { target.Assign(source) };
       { target.Assign(source, copy_contents) };
     } && requires { typename DotType<Vector>; } && requires(const Vector& x) {
       { VectorOperations<Vector>::Norm2(x) } -> std::convertible_to<real_t>;
-    } && requires(Vector& x, Vector& y) {
-      VectorOperations<Vector>::Swap(x, y);
     } && requires(Vector& x, const Vector& y) {
       VectorOperations<Vector>::Set(x, y);
     } && requires(Vector& x, DotType<Vector> a) {
@@ -86,12 +82,6 @@ constexpr auto Dot(const Vector& x, const Vector& y) {
 template<blas::vector Vector>
 constexpr auto Norm2(const Vector& x) -> real_t {
   return VectorOperations<Vector>::Norm2(x);
-}
-
-/// Swap @p x and @p y.
-template<blas::vector Vector>
-constexpr void Swap(Vector& x, Vector& y) {
-  VectorOperations<Vector>::Swap(x, y);
 }
 
 /// Compute @p x = @p y.

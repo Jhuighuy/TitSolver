@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <memory>
 
 #include "tit/core/basic_types.hpp"
@@ -257,13 +258,24 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+template<blas::vector Vector, class Op>
+  requires std::invocable<const Op&, Vector&, const Vector&>
+constexpr auto solve(Solver<Vector>& solver,
+                     const Op& A,
+                     Vector& x,
+                     const Vector& b) -> bool {
+  return solver.solve(x, b, *MakeOperator<Vector>(A));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Solve an operator equation 𝓐(𝒙) = 𝒃, when 𝓐(𝒙) is a non-uniform
 /// operator (𝓐(𝟢) ≠ 𝟢).
 template<blas::vector Vector>
 constexpr auto solve_nonuniform(Solver<Vector>& solver,
+                                const Operator<Vector>& A,
                                 Vector& x,
-                                const Vector& b,
-                                const Operator<Vector>& A) -> bool {
+                                const Vector& b) -> bool {
   Vector z;
   Vector f;
 
@@ -282,6 +294,15 @@ constexpr auto solve_nonuniform(Solver<Vector>& solver,
   });
 
   return solver.solve(x, f, *U);
+}
+
+template<blas::vector Vector, class Op>
+  requires std::invocable<const Op&, Vector&, const Vector&>
+constexpr auto solve_nonuniform(Solver<Vector>& solver,
+                                const Op& A,
+                                Vector& x,
+                                const Vector& b) -> bool {
+  return solve_nonuniform(solver, *MakeOperator<Vector>(A), x, b);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

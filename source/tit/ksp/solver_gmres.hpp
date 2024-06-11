@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -65,7 +66,7 @@ protected:
     // ----------------------
     A.Residual(qs_[0], b, x);
     if (left_pre) {
-      Blas::Swap(zs_[0], qs_[0]);
+      std::swap(zs_[0], qs_[0]);
       P->MatVec(qs_[0], zs_[0]);
     }
     beta_[0] = Blas::Norm2(qs_[0]);
@@ -96,7 +97,7 @@ protected:
     // ----------------------
     A.Residual(qs_[0], b, x);
     if (left_pre) {
-      Blas::Swap(zs_[0], qs_[0]);
+      std::swap(zs_[0], qs_[0]);
       P->MatVec(qs_[0], zs_[0]);
     }
     beta_[0] = Blas::Norm2(qs_[0]);

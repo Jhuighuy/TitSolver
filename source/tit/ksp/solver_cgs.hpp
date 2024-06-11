@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 
@@ -60,7 +62,7 @@ private:
     // ----------------------
     A.Residual(r_, b, x);
     if (left_pre) {
-      Blas::Swap(u_, r_);
+      std::swap(u_, r_);
       P->MatVec(r_, u_);
     }
     Blas::Set(r_tilde_, r_);

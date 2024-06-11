@@ -11,8 +11,8 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/ksp/blas.hpp"
-#include "tit/ksp/operator.hpp"
 #include "tit/ksp/precond.hpp"
+#include "tit/ksp/solver.hpp"
 #include "tit/ksp/solver_bicgstab.hpp"
 #include "tit/ksp/solver_cg.hpp"
 #include "tit/ksp/solver_cgs.hpp"
@@ -37,10 +37,6 @@ public:
 
   static auto Norm2(const Vec<Num, Dim>& x) {
     return norm(x);
-  }
-
-  static void Swap(Vec<Num, Dim>& x, Vec<Num, Dim>& y) {
-    std::swap(x, y);
   }
 
   static void Set(Vec<Num, Dim>& x, const Vec<Num, Dim>& y) {
@@ -132,52 +128,51 @@ TEST_CASE("KSP") {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0},
   };
   const auto b = A * x;
-  const auto Op = ksp::MakeOperator<Vec<double, 8>>(
-      [A](auto& y, const auto& z) { y = A * z; });
+  const auto Op = [A](auto& y, const auto& z) { y = A * z; };
   Vec<double, 8> u{};
   SUBCASE("BiCGStab") {
     ksp::BiCGStab<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("BiCGStabL") {
     ksp::BiCGStabL<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("CG") {
     ksp::CG<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("CGS") {
     ksp::CGS<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("GMRES") {
     ksp::GMRES<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("FGMRES") {
     ksp::FGMRES<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("IDRs") {
     ksp::IDRs<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("TFQMR") {
     ksp::TFQMR<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("TFQMR1") {
     ksp::TFQMR1<Vec<double, 8>> solver{};
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
 }
@@ -197,119 +192,118 @@ TEST_CASE("KSP with Preconditioner") {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0},
   };
   const auto b = A * x;
-  const auto Op = ksp::MakeOperator<Vec<double, 8>>(
-      [A](auto& y, const auto& z) { y = A * z; });
+  const auto Op = [A](auto& y, const auto& z) { y = A * z; };
   auto Pre = std::make_unique<ksp::IdentityPreconditioner<Vec<double, 8>>>();
   Vec<double, 8> u{};
   SUBCASE("BiCGStab Left") {
     ksp::BiCGStab<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Left;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("BiCGStab Right") {
     ksp::BiCGStab<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Right;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("BiCGStabL") {
     // Looks like BiCgStabL has no preconditioner side option.
     ksp::BiCGStabL<Vec<double, 8>> solver{};
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("CG") {
     ksp::CG<Vec<double, 8>> solver{};
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("CGS Left") {
     ksp::CGS<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Left;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("CGS Right") {
     ksp::CGS<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Right;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("GMRES Left") {
     ksp::GMRES<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Left;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("GMRES Right") {
     ksp::GMRES<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Right;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("FGMRES Left") {
     ksp::FGMRES<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Left;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("FGMRES Right") {
     ksp::FGMRES<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Right;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("IDRs Left") {
     ksp::IDRs<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Left;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("IDRs Right") {
     ksp::IDRs<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Right;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("TFQMR Left") {
     ksp::TFQMR<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Left;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("TFQMR Right") {
     ksp::TFQMR<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Right;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("TFQMR1 Left") {
     ksp::TFQMR1<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Left;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
   SUBCASE("TFQMR1 Right") {
     ksp::TFQMR1<Vec<double, 8>> solver{};
     solver.PreSide = ksp::PreconditionerSide::Right;
     solver.PreOp = std::move(Pre);
-    solver.solve(u, b, *Op);
+    ksp::solve(solver, Op, u, b);
     CHECK(approx_equal_to(u, x));
   }
 }

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -83,7 +84,7 @@ private:
     // ----------------------
     A.Residual(r_, b, x);
     if (left_pre) {
-      Blas::Swap(z_, r_);
+      std::swap(z_, r_);
       P->MatVec(r_, z_);
     }
     phi_[0] = Blas::Norm2(r_);
@@ -191,7 +192,7 @@ private:
       Blas::SubAssign(v_, gs_[i], gamma_[i]);
     }
     if (right_pre) {
-      Blas::Swap(z_, v_);
+      std::swap(z_, v_);
       P->MatVec(v_, z_);
     }
     Blas::Add(us_[k], us_[k], gamma_[k], v_, omega_);
