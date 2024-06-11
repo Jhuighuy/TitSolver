@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -65,7 +66,7 @@ private:
     // ----------------------
     A.Residual(r_, b, x);
     if (left_pre) {
-      Blas::Swap(z_, r_);
+      std::swap(z_, r_);
       P->MatVec(r_, z_);
     }
     Blas::Set(r_tilde_, r_);
@@ -227,7 +228,7 @@ private:
     Blas::Fill(us_[0], 0.0);
     A.Residual(rs_[0], b, x);
     if (P != nullptr) {
-      Blas::Swap(z_, rs_[0]);
+      std::swap(z_, rs_[0]);
       P->MatVec(rs_[0], z_);
     }
     Blas::Set(r_tilde_, rs_[0]);
