@@ -10,6 +10,11 @@ import type { Config } from "@jest/types";
 const config: Config.InitialOptions = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
+  testEnvironmentOptions: {
+    // TODO: This is a hack to make Jest work with the server.
+    url: "http://localhost:18080",
+  },
+  setupFilesAfterEnv: ["<rootDir>/setupTests.ts"],
   transform: {
     "^.+\\.tsx?$": "ts-jest",
   },

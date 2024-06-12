@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { app, BrowserWindow } from "electron";
+import { ChildProcess, spawn } from "child_process";
 
 // This allows TypeScript to pick up the magic constants that's auto-generated
 // by Forge's Webpack plugin that tells the Electron app where to look for the
@@ -14,6 +15,32 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+let serverProcess: ChildProcess | null = null;
+
+const createServer = (): void => {
+  // Start the backend server.
+  serverProcess = spawn(
+    "/Users/jhuighuy/TitSolver/output/TIT_ROOT/bin/tit_server"
+  );
+  serverProcess.stdout.on("data", (data) => {
+    console.log(`stdout: ${data}`);
+  });
+  serverProcess.stderr.on("data", (data) => {
+    console.error(`stderr: ${data}`);
+  });
+  serverProcess.on("close", (code) => {
+    console.log(`child process exited with code ${code}`);
+  });
+};
+
+const killServer = (): void => {
+  if (serverProcess) {
+    serverProcess.kill();
+  }
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 const createWindow = (): void => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -21,6 +48,7 @@ const createWindow = (): void => {
     width: 1280,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      webSecurity: false,
     },
   });
 
@@ -31,7 +59,10 @@ const createWindow = (): void => {
 // This method will be called when Electron has finished initialization and is
 // ready to create browser windows. Some APIs can only be used after this event
 // occurs.
-app.on("ready", createWindow);
+app.on("ready", () => {
+  createServer();
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common for
 // applications and their menu bar to stay active until the user quits
@@ -48,6 +79,11 @@ app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+app.on("quit", () => {
+  // Ensure the server is killed when Electron quits.
+  killServer();
 });
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
