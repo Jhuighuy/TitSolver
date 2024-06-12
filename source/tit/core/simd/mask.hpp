@@ -41,10 +41,11 @@ class Mask final {
 public:
 
   /// Construct a mask equivalent to boolean @p b.
-  constexpr Mask(bool b = false) noexcept : bits_{b ? ~Bits{0} : Bits{0}} {}
+  constexpr explicit(false) Mask(bool b = false) noexcept
+      : bits_{b ? ~Bits{0} : Bits{0}} {}
 
   /// Cast back to the boolean.
-  constexpr operator bool() const noexcept {
+  constexpr explicit(false) operator bool() const noexcept {
     return bits_ != 0;
   }
 

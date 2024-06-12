@@ -45,6 +45,7 @@ add_tit_library(
     "simd/reg.hpp"
     "simd/reg_mask.hpp"
     "simd/traits.hpp"
+    "string_utils.hpp"
     "system.cpp"
     "system.hpp"
     "time.hpp"

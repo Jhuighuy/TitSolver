@@ -15,6 +15,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/string_utils.hpp"
 #include "tit/core/system.hpp"
 #include "tit/core/time.hpp"
 
@@ -23,11 +24,12 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 std::mutex Profiler::sections_mutex_{};
-std::unordered_map<std::string, Stopwatch> Profiler::sections_{};
+StringHashMap<Stopwatch> Profiler::sections_{};
 
 auto Profiler::section(std::string_view section_name) -> Stopwatch& {
   TIT_ASSERT(!section_name.empty(), "Section name must not be empty!");
   const std::scoped_lock lock{sections_mutex_};
+  /// @todo In C++26 there would be no need for `std::string{...}`.
   return sections_[std::string{section_name}];
 }
 

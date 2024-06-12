@@ -34,30 +34,31 @@ using FactResult = std::expected<Fact, FactError>;
 
 /// LU matrix factorization: `A = L * U`, where `L` is a lower-triangular matrix
 /// with unit diagonal and `U` is an upper-triangular matrix.
-template<class Num, size_t Dim>
+template<class Mat>
+  requires is_mat_v<Mat>
 class FactLU final {
 public:
 
   /// Initialize a factorization.
-  constexpr explicit FactLU(Mat<Num, Dim> LU) noexcept : LU_{std::move(LU)} {}
+  constexpr explicit FactLU(Mat LU) noexcept : LU_{std::move(LU)} {}
 
   /// `L` matrix factor.
-  constexpr auto L() const -> Mat<Num, Dim> {
+  constexpr auto L() const -> Mat {
     return copy_part<MatPart::lower_unit>(LU_);
   }
 
   /// `U` matrix factor.
-  constexpr auto U() const -> Mat<Num, Dim> {
+  constexpr auto U() const -> Mat {
     return copy_part<MatPart::upper_diag>(LU_);
   }
 
   /// Determinant of the matrix.
-  constexpr auto det() const -> Num {
+  constexpr auto det() const -> mat_num_t<Mat> {
     return prod_diag(LU_);
   }
 
   /// Solve the matrix equation.
-  template<mat_multiplier<Mat<Num, Dim>> Mult>
+  template<mat_multiplier<Mat> Mult>
   constexpr auto solve(Mult x) const -> Mult {
     using enum MatPart;
     part_solve_inplace<lower_unit, upper_diag>(LU_, x);
@@ -65,14 +66,13 @@ public:
   }
 
   /// Compute the inverse matrix.
-  constexpr auto inverse() const -> Mat<Num, Dim> {
-    constexpr Mat<Num, Dim> I(Num{1.0});
-    return solve(I);
+  constexpr auto inverse() const -> Mat {
+    return solve(eye(LU_));
   }
 
 private:
 
-  Mat<Num, Dim> LU_{};
+  Mat LU_{};
 
 }; // class FactLU
 
@@ -80,7 +80,7 @@ private:
 /// lower-triangular matrix with unit diagonal and `U` is an upper-triangular
 /// matrix.
 template<class Num, size_t Dim>
-constexpr auto lu(const Mat<Num, Dim>& A) -> FactResult<FactLU<Num, Dim>> {
+constexpr auto lu(const Mat<Num, Dim>& A) -> FactResult<FactLU<Mat<Num, Dim>>> {
   Mat<Num, Dim> LU;
   auto& L = LU;
   auto& U = LU;
@@ -109,25 +109,26 @@ constexpr auto lu(const Mat<Num, Dim>& A) -> FactResult<FactLU<Num, Dim>> {
 
 /// Cholesky matrix factorization: `A = L * L^T`, where `L` is a
 /// lower-triangular matrix.
-template<class Num, size_t Dim>
+template<class Mat>
+  requires is_mat_v<Mat>
 class FactChol final {
 public:
 
   /// Initialize a factorization.
-  constexpr explicit FactChol(Mat<Num, Dim> L) noexcept : L_{std::move(L)} {}
+  constexpr explicit FactChol(Mat L) noexcept : L_{std::move(L)} {}
 
   /// `L` matrix factor.
-  constexpr auto L() const -> const Mat<Num, Dim>& {
+  constexpr auto L() const -> const Mat& {
     return L_;
   }
 
   /// Determinant of the matrix.
-  constexpr auto det() const -> Num {
+  constexpr auto det() const -> mat_num_t<Mat> {
     return pow2(prod_diag(L_));
   }
 
   /// Solve the matrix equation.
-  template<mat_multiplier<Mat<Num, Dim>> Mult>
+  template<mat_multiplier<Mat> Mult>
   constexpr auto solve(Mult x) const -> Mult {
     using enum MatPart;
     part_solve_inplace<lower_diag, upper_diag | transposed>(L_, x);
@@ -135,14 +136,13 @@ public:
   }
 
   /// Compute the inverse matrix.
-  constexpr auto inverse() const -> Mat<Num, Dim> {
-    constexpr Mat<Num, Dim> I(Num{1.0});
-    return solve(I);
+  constexpr auto inverse() const -> Mat {
+    return solve(eye(L_));
   }
 
 private:
 
-  Mat<Num, Dim> L_{};
+  Mat L_{};
 
 }; // class FactChol
 
@@ -153,7 +153,8 @@ private:
 ///
 /// Only the lower-triangular part of the input matrix is accessed.
 template<class Num, size_t Dim>
-constexpr auto chol(const Mat<Num, Dim>& A) -> FactResult<FactChol<Num, Dim>> {
+constexpr auto chol(const Mat<Num, Dim>& A)
+    -> FactResult<FactChol<Mat<Num, Dim>>> {
   Mat<Num, Dim> L;
   for (size_t i = 0; i < Dim; ++i) {
     for (size_t j = 0; j < i; ++j) {
@@ -183,30 +184,31 @@ constexpr auto chol(const Mat<Num, Dim>& A) -> FactResult<FactChol<Num, Dim>> {
 /// Modified Cholesky matrix factorization: `A = L * D * L^T`,
 /// where `D` is a diagonal matrix and `L` is a lower-triangular matrix with
 /// unit diagonal.
-template<class Num, size_t Dim>
+template<class Mat>
+  requires is_mat_v<Mat>
 class FactLDL final {
 public:
 
   /// Initialize a factorization.
-  constexpr explicit FactLDL(Mat<Num, Dim> LD) noexcept : LD_{std::move(LD)} {}
+  constexpr explicit FactLDL(Mat LD) noexcept : LD_{std::move(LD)} {}
 
   /// `L` matrix factor.
-  constexpr auto L() const -> Mat<Num, Dim> {
+  constexpr auto L() const -> Mat {
     return copy_part<MatPart::lower_unit>(LD_);
   }
 
   /// `D` matrix factor.
-  constexpr auto D() const -> Mat<Num, Dim> {
+  constexpr auto D() const -> Mat {
     return copy_part<MatPart::diag>(LD_);
   }
 
   /// Determinant of the matrix.
-  constexpr auto det() const -> Num {
+  constexpr auto det() const -> mat_num_t<Mat> {
     return prod_diag(LD_);
   }
 
   /// Solve the matrix equation.
-  template<mat_multiplier<Mat<Num, Dim>> Mult>
+  template<mat_multiplier<Mat> Mult>
   constexpr auto solve(Mult x) const -> Mult {
     using enum MatPart;
     part_solve_inplace<lower_unit, diag, upper_unit | transposed>(LD_, x);
@@ -214,14 +216,13 @@ public:
   }
 
   /// Compute the inverse matrix.
-  constexpr auto inverse() const -> Mat<Num, Dim> {
-    constexpr Mat<Num, Dim> I(Num{1.0});
-    return solve(I);
+  constexpr auto inverse() const -> Mat {
+    return solve(eye(LD_));
   }
 
 private:
 
-  Mat<Num, Dim> LD_{};
+  Mat LD_{};
 
 }; // class FactLDL
 
@@ -233,7 +234,8 @@ private:
 ///
 /// Only the lower-triangular part of the input matrix is accessed.
 template<class Num, size_t Dim>
-constexpr auto ldl(const Mat<Num, Dim>& A) -> FactResult<FactLDL<Num, Dim>> {
+constexpr auto ldl(const Mat<Num, Dim>& A)
+    -> FactResult<FactLDL<Mat<Num, Dim>>> {
   Mat<Num, Dim> LD;
   auto& L = LD;
   auto& D = LD;

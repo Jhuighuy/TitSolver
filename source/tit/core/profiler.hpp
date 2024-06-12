@@ -6,10 +6,9 @@
 #pragma once
 
 #include <mutex>
-#include <string>
 #include <string_view>
-#include <unordered_map>
 
+#include "tit/core/string_utils.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/utils.hpp"
 
@@ -33,7 +32,7 @@ public:
 private:
 
   static std::mutex sections_mutex_;
-  static std::unordered_map<std::string, Stopwatch> sections_;
+  static StringHashMap<Stopwatch> sections_;
 
 }; // class Profiler
 

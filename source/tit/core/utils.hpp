@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <concepts>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/string_utils.hpp"
 
 namespace tit {
 
@@ -39,10 +39,6 @@ namespace tit {
 #define TIT_ASSUME_UNIVERSALS(Ts, refs) (TIT_ASSUME_UNIVERSAL(Ts, refs), ...)
 /// @}
 
-/// C-style array reference.
-template<class T, size_t Size>
-using carr_ref_t = T (&)[Size]; // NOLINT(*-c-arrays)
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Pack values into a padded array of given size.
@@ -63,24 +59,6 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
     return std::array<T, Size>{get_val(Indices)...};
   }(std::make_index_sequence<Size>{});
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Helper object to store a string literal for non-type template parameters.
-template<size_t Size>
-class StringLiteral {
-public:
-
-  /// String data.
-  // NOLINTNEXTLINE(*-non-private-member-variables-in-classes)
-  std::array<char, Size> data;
-
-  /// Construct the string literal from a character array.
-  consteval StringLiteral(carr_ref_t<const char, Size> str) {
-    std::copy_n(str, Size, data.begin());
-  }
-
-}; // class StringLiteral
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -108,7 +86,8 @@ public:
 ///   // program, and the same for all template instantiations.
 /// }
 /// @endcode
-template<StringLiteral ID, std::move_constructible Val>
+template<StringLiteral ID, class Val>
+  requires std::move_constructible<Val&&>
 [[gnu::always_inline]]
 constexpr auto cache_value(Val&& val) -> Val& {
   static Val cached_val{std::forward<Val>(val)};

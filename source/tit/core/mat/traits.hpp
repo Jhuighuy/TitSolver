@@ -7,6 +7,7 @@
 #pragma once
 
 #include <concepts>
+#include <type_traits>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/mat/mat.hpp"
@@ -30,6 +31,11 @@ inline constexpr bool is_mat_v = impl::is_mat_v<T>;
 template<class Mat>
   requires is_mat_v<Mat>
 using mat_row_t = typename Mat::Row;
+
+/// Number type of the matrix.
+template<class Mat>
+  requires is_mat_v<Mat>
+using mat_num_t = std::remove_cvref_t<decltype(Mat{}[0, 0])>;
 
 /// Matrix multiplier type: matrix or vector of the same size.
 template<class Mult, class Mat>
