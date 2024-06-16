@@ -36,7 +36,7 @@ public:
   template<particle_view<required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
-    return 0;
+    return decltype(auto(r[a, b])){};
   }
 
   /// Momentum equation diffusive term.
@@ -77,7 +77,7 @@ public:
   template<particle_view<required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
-    return 0;
+    return decltype(auto(r[a, b])){};
   }
 
   /// Momentum equation diffusive term.
@@ -89,8 +89,7 @@ public:
     const auto rho_ab = rho.avg(a, b);
     const auto cs_ab = cs.avg(a, b);
     const auto mu_ab = h_ab * dot(v[a, b], r[a, b]) / norm2(r[a, b]);
-    const auto Pi_ab = (alpha_ * cs_ab - beta_ * mu_ab) * mu_ab / rho_ab;
-    return Pi_ab;
+    return (alpha_ * cs_ab - beta_ * mu_ab) * mu_ab / rho_ab;
   }
 
 private:
@@ -246,7 +245,7 @@ public:
   constexpr explicit MolteniColagrossiArtificialViscosity(
       real_t cs_0,
       real_t rho_0,
-      real_t alpha = 0.05,
+      real_t alpha = 0.02,
       real_t xi = 0.1) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, xi_{xi} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive.");
@@ -260,10 +259,9 @@ public:
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
-    const auto Xi_ab = xi_ * h_ab * cs_0_;
-    const auto D_ab = 2 * rho[a, b];
-    const auto Psi_ab = Xi_ab * D_ab * r[a, b] / norm2(r[a, b]);
-    return Psi_ab;
+    const auto D_ab = rho[a, b];
+    const auto Xi_ab = xi_ * cs_0_ * h_ab;
+    return 2 * Xi_ab * D_ab * r[a, b] / norm2(r[a, b]);
   }
 
   /// Momentum equation diffusive term.
@@ -271,10 +269,9 @@ public:
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
-    const auto Alpha_ab = alpha_ * h_ab * cs_0_ * rho_0_;
-    const auto Pi_ab = Alpha_ab / (rho[a] * rho[b]) * //
-                       dot(r[a, b], v[a, b]) / norm2(r[a, b]);
-    return Pi_ab;
+    const auto Alpha_ab = alpha_ * cs_0_ * rho_0_ * h_ab;
+    return Alpha_ab * dot(r[a, b], v[a, b]) /
+           (rho[a] * rho[b] * norm2(r[a, b]));
   }
 
 private:
@@ -307,7 +304,7 @@ public:
   /// @param delta Density diffusion coefficient. Typically 0.1.
   constexpr explicit DeltaSPHArtificialViscosity(real_t cs_0,
                                                  real_t rho_0,
-                                                 real_t alpha = 0.05,
+                                                 real_t alpha = 0.02,
                                                  real_t delta = 0.1) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, delta_{delta} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive!");
@@ -321,12 +318,11 @@ public:
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
-    const auto Delta_ab = delta_ * h_ab * cs_0_;
     // Here we assume that density gradients are renormalized because
     // kernel gradient renormalization filter (`L`) was requested.
-    const auto D_ab = 2 * rho[a, b] - dot(grad_rho[a] + grad_rho[b], r[a, b]);
-    const auto Psi_ab = Delta_ab * D_ab * r[a, b] / norm2(r[a, b]);
-    return Psi_ab;
+    const auto D_ab = rho[a, b] - dot(grad_rho.avg(a, b), r[a, b]);
+    const auto Delta_ab = delta_ * cs_0_ * h_ab;
+    return 2 * Delta_ab * D_ab * r[a, b] / norm2(r[a, b]);
   }
 
   /// Momentum equation diffusive term.
@@ -334,10 +330,9 @@ public:
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
-    const auto Alpha_ab = alpha_ * h_ab * cs_0_ * rho_0_;
-    const auto Pi_ab = Alpha_ab / (rho[a] * rho[b]) * //
-                       dot(r[a, b], v[a, b]) / norm2(r[a, b]);
-    return Pi_ab;
+    const auto Alpha_ab = alpha_ * cs_0_ * rho_0_ * h_ab;
+    return Alpha_ab * dot(r[a, b], v[a, b]) /
+           (rho[a] * rho[b] * norm2(r[a, b]));
   }
 
 private:

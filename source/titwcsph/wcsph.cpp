@@ -1,5 +1,6 @@
 #include "tit/sph/field.hpp"
 #include "tit/sph/heat_conductivity.hpp"
+#include "tit/sph/viscosity.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -231,6 +232,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
+  constexpr Real kappa_0 = 0.6;
+  constexpr Real c_v = 4184.0;
 
   // Setup the SPH equations:
   auto equations =
@@ -260,7 +263,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
           // Momentum equation with gravity source term.
           MomentumEquation{GravitySource{g}},
           // Energy equation with heat transfer and no source terms.
-          EnergyEquation{ConstantHeatConductivity{6, 4184}},
+          EnergyEquation{HeatConductivity{c_v}},
           // Weakly compressible equation of state.
           LinearTaitEquationOfState{cs_0, rho_0},
           // Inviscid flow.
@@ -310,6 +313,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   // Set global particle constants.
   m[particles] = m_0;
   h[particles] = h_0;
+  kappa[particles] = kappa_0;
 
   // Density hydrostatic initialization.
   std::ranges::for_each(particles.views(), [&]<class PV>(PV a) {

@@ -241,6 +241,12 @@ TIT_DEFINE_SCALAR_FIELD(u)
 /// Particle thermal energy time derivative.
 TIT_DEFINE_SCALAR_FIELD(du_dt)
 
+/// Particle dynamic viscosity.
+TIT_DEFINE_SCALAR_FIELD(mu)
+
+/// Particle heat conductivity coefficient.
+TIT_DEFINE_SCALAR_FIELD(kappa)
+
 /// Particle artificial viscosity switch.
 TIT_DEFINE_SCALAR_FIELD(alpha)
 /// Particle artificial viscosity switch time derivative.

@@ -28,7 +28,7 @@
 /// [x] `ParticleArray` must use NTTPs for the fields.
 /// [ ] The whole field header must be cleaned up.
 /// [ ] Boundary conditions must be implemented in a separate header.
-/// [ ] Viscosity and heat conductivity must support non-constant
+/// [x] Viscosity and heat conductivity must support non-constant
 ///     coefficients.
 /// [ ] `ParticleMesh` must be cleaned up.
 /// [ ] Clean up the Godunov implementation.
@@ -323,6 +323,8 @@ public:
       dv_dt[a] = {};
       if constexpr (has<PV>(div_v)) div_v[a] = {};
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
+      // Clean-up energy fields.
+      if constexpr (has<PV>(du_dt)) du_dt[a] = {};
       // Compute pressure and sound speed, if necessary.
       p[a] = eos_.pressure(a);
       if constexpr (has<PV>(cs)) cs[a] = eos_.sound_speed(a);
@@ -358,17 +360,15 @@ public:
       // Update velocity time derivative.
       const auto P_a = p[a] / pow2(rho[a]);
       const auto P_b = p[b] / pow2(rho[b]);
-      const auto Pi_phs_ab = visc_(a, b);
-      const auto Pi_art_ab = artvisc_.velocity_term(a, b);
-      const auto v_flux = (-P_a - P_b + Pi_phs_ab + Pi_art_ab) * grad_W_ab;
+      const auto Pi_ab = visc_(a, b) + artvisc_.velocity_term(a, b);
+      const auto v_flux = (-P_a - P_b + Pi_ab) * grad_W_ab;
       dv_dt[a] += m[b] * v_flux;
       dv_dt[b] -= m[a] * v_flux;
       // Update internal energy time derivative, if necessary.
       if constexpr (has<PV>(du_dt)) {
         const auto Q_ab = energy_equation_.heat_conductivity()(a, b);
-        const auto v_grad_W_ab = dot(v[b, a], grad_W_ab);
-        du_dt[a] += m[b] * (P_a + Pi_phs_ab + Q_ab) * v_grad_W_ab;
-        du_dt[b] += m[a] * (P_b + Pi_phs_ab - Q_ab) * v_grad_W_ab;
+        du_dt[a] -= m[b] * dot((P_a - Pi_ab / 2) * v[b, a] - Q_ab, grad_W_ab);
+        du_dt[b] -= m[a] * dot((P_b - Pi_ab / 2) * v[b, a] + Q_ab, grad_W_ab);
       }
     });
 

@@ -7,7 +7,6 @@
 
 #include <concepts>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/meta.hpp"
 
@@ -32,42 +31,32 @@ public:
   template<particle_view<required_fields> PV>
   constexpr auto operator()(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
-    return 0;
+    return decltype(auto(rho[a, b])){};
   }
 
 }; // class NoViscosity
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Viscosity with a constant coefficient.
-class ConstantViscosity final {
+/// Laplacian viscosity term.
+class LaplacianViscosity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho, r, v};
+  static constexpr meta::Set required_fields{rho, r, v, mu};
 
   /// Set of particle fields that are modified.
   static constexpr meta::Set modified_fields{/*empty*/};
-
-  /// Construct viscosity with a constant coefficient.
-  ///
-  /// @param mu Viscosity coefficient.
-  constexpr explicit ConstantViscosity(real_t mu) noexcept : mu_{mu} {
-    TIT_ASSERT(mu_ > 0.0, "Viscosity coefficient must be positive!");
-  }
 
   /// Compute viscosity term.
   template<particle_view<required_fields> PV>
   constexpr auto operator()(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto d = r[a].dim();
-    return 2 * (d + 2) * mu_ / (rho[a] * rho[b]) * //
-           dot(r[a, b], v[a, b]) / (norm2(r[a, b]));
+    const auto mu_ab = mu.havg(a, b);
+    return 2 * (d + 2) * mu_ab * dot(r[a, b], v[a, b]) /
+           (rho[a] * rho[b] * norm2(r[a, b]));
   }
-
-private:
-
-  real_t mu_;
 
 }; // class ConstantViscosity
 
@@ -76,7 +65,7 @@ private:
 /// Viscosity type.
 template<class V>
 concept viscosity = std::same_as<V, NoViscosity> || //
-                    std::same_as<V, ConstantViscosity>;
+                    std::same_as<V, LaplacianViscosity>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
