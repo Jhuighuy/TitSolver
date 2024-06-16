@@ -25,6 +25,7 @@
 #include "tit/sph/gas_equations.hpp"
 #include "tit/sph/godunov.hpp"
 #include "tit/sph/kernel.hpp"
+#include "tit/sph/particle_array_io.hpp"
 #include "tit/sph/time_integrator.hpp"
 
 #if 0
@@ -276,22 +277,15 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 #if WITH_GODUNOV
   auto timeint = RungeKuttaIntegrator{equations};
 #else
-  auto timeint = RungeKuttaIntegrator{equations};
+  auto timeint = EulerIntegrator{equations};
 #endif
-
-  constexpr auto X =
-      decltype(timeint)::required_fields - decltype(timeint)::modified_fields;
-  static_assert(X == meta::Set{m, h});
 
   // Setup the particles array:
   ParticleArray particles{
       // 2D space.
       Space<Real, 2>{},
-      // Fields that are required by the equations.
-      timeint.required_fields,
-      // Set of whole system constants.
-      m, // Particle mass assumed constant.
-      h  // Particle width assumed constant.
+      // Set of fields is inferred from the equations.
+      timeint,
   };
 
   // Generate individual particles.

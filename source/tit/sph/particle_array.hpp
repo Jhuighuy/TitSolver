@@ -5,49 +5,46 @@
 
 #pragma once
 
-#include <format>
-#include <fstream>
 #include <ranges>
 #include <span>
-#include <string>
 #include <tuple>
 #include <type_traits>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/mat.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
 
 namespace tit {
 
-template<class PV, auto... Fields>
-concept particle_view = has<PV>(Fields...);
-
 template<class PA, auto... Fields>
 concept particle_array = has<PA>(Fields...);
+
+template<class PV, auto... Fields>
+concept particle_view = has<PV>(Fields...);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle view.
 template<class ParticleArray>
-  requires std::is_object_v<ParticleArray>
 class ParticleView final {
 public:
 
-  /// Set of particle fields that are present.
-  static constexpr auto fields = std::remove_const_t<ParticleArray>::fields;
+  /// Particle space.
+  static constexpr auto space = std::remove_cvref_t<ParticleArray>::space;
 
   /// Subset of particle fields that are array-wise constants.
-  static constexpr auto constants =
-      std::remove_const_t<ParticleArray>::constants;
+  static constexpr auto uniform_fields =
+      std::remove_const_t<ParticleArray>::uniform_fields;
 
   /// Subset of particle fields that are individual for each particle.
-  static constexpr auto variables =
-      std::remove_const_t<ParticleArray>::variables;
+  static constexpr auto varying_fields =
+      std::remove_const_t<ParticleArray>::varying_fields;
+
+  /// Set of particle fields that are present.
+  static constexpr auto fields = std::remove_const_t<ParticleArray>::fields;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -93,53 +90,49 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle array.
-template<meta::type Space, meta::type FieldSet, meta::type ConstSet>
+template<meta::type Space, meta::Set Uniforms, meta::Set Varyings>
 class ParticleArray final {
 public:
 
-  /// Set of particle fields that are present.
-  static constexpr auto fields = FieldSet{};
+  /// Particle space.
+  static constexpr auto space = Space{};
 
   /// Subset of particle fields that are array-wise constants.
-  static constexpr auto constants = ConstSet{};
+  static constexpr auto uniform_fields = Uniforms;
 
   /// Subset of particle fields that are individual for each particle.
-  static constexpr auto variables = fields - constants;
+  static constexpr auto varying_fields = Varyings;
+
+  /// Set of particle fields that are present.
+  static constexpr auto fields = Uniforms | Varyings;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct a particle array.
-  /// @{
-  template<meta::type FieldSubset, meta::type ConstSubset>
-    requires (meta::is_set_v<FieldSubset> && fields.includes(FieldSubset{})) &&
-             (meta::is_set_v<ConstSubset> && constants.includes(ConstSubset{}))
+  ///
+  /// @param space The space in which the particles are defined.
+  /// @param equations The equations that define the particle fields.
+  template<class Equations>
   constexpr explicit ParticleArray(Space /*space*/,
-                                   FieldSubset /*field_subset*/ = {},
-                                   ConstSubset /*const_subset*/ = {}) {}
-  template<meta::type FieldSubset, meta::type... ConstSubset>
-    requires (meta::is_set_v<FieldSubset> && fields.includes(FieldSubset{})) &&
-             (constants.includes(meta::Set<ConstSubset...>{}))
-  constexpr explicit ParticleArray(Space /*space*/,
-                                   FieldSubset /*field_subset*/ = {},
-                                   ConstSubset... /*consts*/) {}
-  /// @}
+                                   Equations /*equations*/) noexcept {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Number of particles.
   constexpr auto size() const noexcept -> size_t {
-    return std::get<0>(variables_).size();
+    return std::get<0>(varying_data_).size();
   }
 
   /// Reserve amount of particles.
   constexpr void reserve(size_t capacity) {
-    std::apply([capacity](auto&... vecs) { ((vecs.reserve(capacity)), ...); },
-               variables_);
+    std::apply([capacity](auto&... cols) { ((cols.reserve(capacity)), ...); },
+               varying_data_);
   }
 
   /// Appends a new particle.
   constexpr auto append() {
-    std::apply([](auto&... vecs) { ((vecs.emplace_back()), ...); }, variables_);
+    std::apply([](auto&... cols) { ((cols.emplace_back()), ...); },
+               varying_data_);
     return (*this)[size() - 1];
   }
 
@@ -164,10 +157,10 @@ public:
                             [[maybe_unused]] size_t index,
                             Field /*field*/) noexcept -> decltype(auto) {
     TIT_ASSERT(index < self.size(), "Particle index is out of range.");
-    if constexpr (constants.contains(Field{})) {
-      return std::get<constants.find(Field{})>(self.constants_);
-    } else if constexpr (variables.contains(Field{})) {
-      return std::get<variables.find(Field{})>(self.variables_)[index];
+    if constexpr (uniform_fields.contains(Field{})) {
+      return std::get<uniform_fields.find(Field{})>(self.uniform_data_);
+    } else if constexpr (varying_fields.contains(Field{})) {
+      return std::get<varying_fields.find(Field{})>(self.varying_data_)[index];
     } else static_assert(false);
   }
 
@@ -176,10 +169,11 @@ public:
     requires (fields.contains(Field{}))
   constexpr auto operator[](this auto& self,
                             Field /*field*/) noexcept -> decltype(auto) {
-    if constexpr (constants.contains(Field{})) {
-      return std::get<constants.find(Field{})>(self.constants_);
-    } else if constexpr (variables.contains(Field{})) {
-      return std::span{std::get<variables.find(Field{})>(self.variables_)};
+    if constexpr (uniform_fields.contains(Field{})) {
+      return std::get<uniform_fields.find(Field{})>(self.uniform_data_);
+    } else if constexpr (varying_fields.contains(Field{})) {
+      return std::span{
+          std::get<varying_fields.find(Field{})>(self.varying_data_)};
     } else static_assert(false);
   }
 
@@ -187,90 +181,22 @@ public:
 
 private:
 
-  using Constants_ = decltype([]<class... Consts>(meta::Set<Consts...>) {
-    return std::tuple<field_value_type_t<Consts, Space>...>{};
-  }(constants));
+  decltype(uniform_fields.apply([](auto... consts) {
+    return std::tuple<field_value_type_t<decltype(consts), Space>...>{};
+  })) uniform_data_;
 
-  using Variables_ = decltype([]<class... Vars>(meta::Set<Vars...>) {
-    return std::tuple<std::vector<field_value_type_t<Vars, Space>>...>{};
-  }(variables));
-
-  Constants_ constants_;
-  Variables_ variables_;
+  decltype(varying_fields.apply([](auto... vars) {
+    return std::tuple<
+        std::vector<field_value_type_t<decltype(vars), Space>>...>{};
+  })) varying_data_;
 
 }; // class ParticleArray
 
-// This template deduction guides ensure that constants are always included
-// into a set of fields.
-template<class Space, class Fields, class Consts>
-ParticleArray(Space, Fields, Consts)
-    -> ParticleArray<Space, decltype(Fields{} | Consts{}), Consts>;
-
-template<class Space, class Fields, class... Consts>
-  requires meta::is_set_v<Fields>
-ParticleArray(Space, Fields, Consts...)
+template<class Space, class Equations>
+ParticleArray(Space, Equations)
     -> ParticleArray<Space,
-                     decltype(Fields{} | meta::Set<Consts...>{}),
-                     meta::Set<Consts...>>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-namespace impl {
-
-template<class Num>
-constexpr auto format_field_name(const std::string& prefix,
-                                 meta::ID<Num> /*scal*/) -> const std::string& {
-  return prefix;
-}
-
-template<class Num, size_t Dim>
-constexpr auto format_field_name(const std::string& prefix,
-                                 meta::ID<Vec<Num, Dim>> /*vec*/)
-    -> std::string {
-  if constexpr (Dim == 1) return prefix;
-  else if constexpr (Dim == 2) return std::format("{0}_x {0}_y", prefix);
-  else if constexpr (Dim == 3) return std::format("{0}_x {0}_y {0}_z", prefix);
-  else static_assert(false);
-}
-
-template<class Num, size_t Dim>
-constexpr auto format_field_name(const std::string& prefix,
-                                 meta::ID<Mat<Num, Dim>> /*mat*/)
-    -> std::string {
-  if constexpr (Dim == 1) return prefix;
-  else if constexpr (Dim == 2) {
-    return std::format("{0}_xx {0}_xy "
-                       "{0}_yx {0}_yy",
-                       prefix);
-  } else if constexpr (Dim == 3) {
-    return std::format("{0}_xx {0}_xy {0}_xz "
-                       "{0}_yx {0}_yy {0}_yz "
-                       "{0}_zx {0}_zy {0}_zz",
-                       prefix);
-  } else static_assert(false);
-}
-
-template<class Space, class Field>
-constexpr auto make_field_name(Space /*space*/, Field /*field*/) {
-  return format_field_name(field_name_v<Field>,
-                           meta::ID<field_value_type_t<Field, Space>>{});
-}
-
-} // namespace impl
-
-/// A blueprint for printing particle arrays in CSV-like format.
-template<meta::type Space, meta::type... Fields, meta::type ConstSet>
-void print(const ParticleArray<Space, meta::Set<Fields...>, ConstSet>& array,
-           const std::string& path) {
-  std::ofstream output{};
-  output.open(path);
-  ((output << impl::make_field_name(Space{}, Fields{}) << " "), ...);
-  output << '\n';
-  for (const auto a : array.views()) {
-    ((output << Fields{}[a] << " "), ...);
-    output << '\n';
-  };
-}
+                     Equations::required_fields - Equations::modified_fields,
+                     Equations::required_fields & Equations::modified_fields>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

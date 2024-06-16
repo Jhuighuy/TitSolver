@@ -25,7 +25,7 @@
 #include "tit/sph/viscosity.hpp"
 
 /// @todo What do we need to clean-up?
-/// [ ] `ParticleArray` must use NTTPs for the fields.
+/// [x] `ParticleArray` must use NTTPs for the fields.
 /// [ ] The whole field header must be cleaned up.
 /// [ ] Boundary conditions must be implemented in a separate header.
 /// [ ] Viscosity and heat conductivity must support non-constant

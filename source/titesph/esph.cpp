@@ -17,6 +17,7 @@
 #include "tit/sph/fsi.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
+#include "tit/sph/particle_array_io.hpp"
 #include "tit/sph/time_integrator.hpp"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,14 +62,12 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   RungeKuttaIntegrator timeint{equations, SIZE_MAX};
 
   // Setup the particles array:
-  ParticleArray particles{// 2D space.
-                          Space<Real, 2>{},
-                          // Fields that are required by the equations.
-                          decltype(timeint)::required_fields,
-                          // Set of whole system constants.
-                          m, // Particle mass assumed constant.
-                          h, // Particle width assumed constant.
-                          rho};
+  ParticleArray particles{
+      // 2D space.
+      Space<Real, 2>{},
+      // Set of fields is inferred from the equations.
+      timeint,
+  };
 
   // Generate individual particles.
   auto num_fixed_particles = 0;

@@ -94,8 +94,8 @@ public:
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
       meta::Set{fixed, parinfo} | // TODO: fixed should not be here.
-      meta::Set{h, m, rho, P, cs, r, r_0, v, dv_dt, L} |
-      Kernel::modified_fields | ArtificialViscosity::modified_fields;
+      meta::Set{P, cs, r, r_0, v, dv_dt, L} | Kernel::modified_fields |
+      ArtificialViscosity::modified_fields;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

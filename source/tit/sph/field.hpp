@@ -17,6 +17,9 @@
 
 namespace tit {
 
+template<class Field>
+concept field = true;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class PV>
@@ -26,8 +29,8 @@ concept has_fields_ =
 
 template<class PV>
 concept has_constants_ =
-    requires { std::remove_cvref_t<PV>::constants; } && //
-    meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::constants))>;
+    requires { std::remove_cvref_t<PV>::uniform_fields; } && //
+    meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::uniform_fields))>;
 
 /// Check particle fields presence.
 /// @{
@@ -52,7 +55,7 @@ consteval auto has_const(meta::Set<Consts...> consts) -> bool {
   if constexpr (!has_constants_<PV>) return false;
   else {
     return has<PV>(consts) &&
-           std::remove_cvref_t<PV>::constants.includes(consts);
+           std::remove_cvref_t<PV>::uniform_fields.includes(consts);
   }
 }
 template<has_fields_ PV, meta::type... Consts>
