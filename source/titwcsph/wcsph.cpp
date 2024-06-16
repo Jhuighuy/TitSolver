@@ -1,3 +1,5 @@
+#include "tit/sph/field.hpp"
+#include "tit/sph/heat_conductivity.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -233,35 +235,53 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   auto equations =
 #if WITH_GODUNOV
       GodunovFluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
+          // Standard equation of motion.
+          EquationOfMotion{},
+          // Continuity equation with no source terms.
           ContinuityEquation{},
+          // Momentum equation with gravity source term.
+          MomentumEquation{GravitySource{g}},
+          // Energy equation with heat transfer and no source terms.
+          EnergyEquation{ConstantHeatConductivity{6, 4184}},
+          // Weakly compressible equation of state.
+          LinearTaitEquationOfState{cs_0, rho_0},
+          // Inviscid flow.
+          NoViscosity{},
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #else
       FluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
+          // Standard equation of motion.
+          EquationOfMotion{},
+          // Continuity equation with no source terms.
           ContinuityEquation{},
+          // Momentum equation with gravity source term.
+          MomentumEquation{GravitySource{g}},
+          // Energy equation with heat transfer and no source terms.
+          EnergyEquation{ConstantHeatConductivity{6, 4184}},
+          // Weakly compressible equation of state.
+          LinearTaitEquationOfState{cs_0, rho_0},
+          // Inviscid flow.
+          NoViscosity{},
+          // Use δ-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #endif
   ;
 
   // Setup the time integrator:
 #if WITH_GODUNOV
-  auto timeint = RungeKuttaIntegrator{std::move(equations)};
+  auto timeint = RungeKuttaIntegrator{equations};
 #else
-  auto timeint = EulerIntegrator{std::move(equations)};
+  auto timeint = RungeKuttaIntegrator{equations};
 #endif
+
+  constexpr auto X =
+      decltype(timeint)::required_fields - decltype(timeint)::modified_fields;
+  static_assert(X == meta::Set{m, h});
 
   // Setup the particles array:
   ParticleArray particles{
@@ -287,6 +307,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       auto a = particles.append();
       fixed[a] = is_fixed;
       r[a] = dr * Vec{i + 0.5, j + 0.5};
+      u[a] = 10.0;
     }
   }
   println("Num. fixed particles: {}", num_fixed_particles);
@@ -317,13 +338,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
     rho[a] = rho_0 + p[a] / pow2(cs_0);
   });
 
-  // Setup the particle adjacency structure.
-  auto adjacent_particles =
-      ParticleAdjacency{particles, geom::GridFactory{h_0}};
+  // Setup the particle mesh structure.
+  ParticleMesh mesh{geom::GridFactory{h_0}};
 
   system("mkdir -p output/test_output/");
   system("rm -f output/test_output/*");
-  particles.print("output/test_output/particles-0.csv");
+  print(particles, "output/test_output/particles-0.csv");
   system("ln -sf output/test_output/particles-0.csv particles.csv");
 
   Real time{};
@@ -337,20 +357,20 @@ int sph_main(int /*argc*/, char** /*argv*/) {
             printtime.cycle());
     {
       const StopwatchCycle cycle{exectime};
-      timeint.step(dt, particles, adjacent_particles);
+      timeint.step(dt, mesh, particles);
     }
     if (n % 200 == 0 && n != 0) {
       const StopwatchCycle cycle{printtime};
       const auto path =
           std::format("output/test_output/particles-{}.csv", n / 200);
-      particles.print(path);
+      print(particles, path);
       system(("ln -sf ./" + path + " particles.csv").c_str());
     }
     if (time * sqrt(g / H) >= 6.9) break;
     time += dt;
   }
 
-  particles.print("particles-dam.csv");
+  print(particles, "particles-dam.csv");
 
   return 0;
 }

@@ -57,7 +57,7 @@ public:
   /// @param spacing Grid cell size, typically 2x of the particle spacing.
   constexpr explicit Grid(Points points, Real spacing)
       : points_{std::move(points)} {
-    TIT_PROFILE_SECTION("tit::Grid::Grid()");
+    TIT_PROFILE_SECTION("Grid::Grid()");
     TIT_ASSERT(spacing > 0.0, "Spacing must be positive.");
     if (std::ranges::empty(points_)) return;
     // Build the grid.

@@ -152,10 +152,22 @@ public:
 template<meta::type Field>
 inline constexpr auto field_name_v = std::remove_cvref_t<Field>::field_name;
 
-/// Field type.
+/// Space specification.
+template<class Num, size_t Dim>
+struct Space {};
+
+template<meta::type Field, class Space>
+struct field_value_type;
+
 template<meta::type Field, class Real, size_t Dim>
-using field_value_type_t =
-    typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
+struct field_value_type<Field, Space<Real, Dim>> {
+  using type =
+      typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
+};
+
+/// Field type.
+template<meta::type Field, class Space>
+using field_value_type_t = typename field_value_type<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -225,13 +237,6 @@ TIT_DEFINE_SCALAR_FIELD(cs)
 TIT_DEFINE_SCALAR_FIELD(u)
 /// Particle thermal energy time derivative.
 TIT_DEFINE_SCALAR_FIELD(du_dt)
-
-/// Particle molecular viscosity.
-TIT_DEFINE_SCALAR_FIELD(mu)
-/// Particle molecular turbulent viscosity.
-TIT_DEFINE_SCALAR_FIELD(mu_T)
-/// Particle second viscosity.
-TIT_DEFINE_SCALAR_FIELD(lambda)
 
 /// Particle artificial viscosity switch.
 TIT_DEFINE_SCALAR_FIELD(alpha)
