@@ -129,6 +129,13 @@ constexpr auto avg(Nums... vals) {
   return (vals + ...) / sizeof...(Nums);
 }
 
+/// Harmonic average function.
+template<class... Nums>
+  requires (sizeof...(Nums) > 0)
+constexpr auto havg(Nums... vals) noexcept {
+  return sizeof...(Nums) / (inverse(vals) + ...);
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Tiny number, used a systemwise zero tolerance.

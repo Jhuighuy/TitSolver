@@ -1,3 +1,6 @@
+#include "tit/sph/field.hpp"
+#include "tit/sph/heat_conductivity.hpp"
+#include "tit/sph/viscosity.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -20,7 +23,6 @@
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/kernel.hpp"
-#include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_array_io.hpp"
 #include "tit/sph/time_integrator.hpp"
 
@@ -227,51 +229,64 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
+  constexpr Real kappa_0 = 0.6;
+  constexpr Real c_v = 4184.0;
 
   // Setup the SPH equations:
   auto equations =
 #if WITH_GODUNOV
       GodunovFluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
+          // Standard equation of motion.
+          EquationOfMotion{},
+          // Continuity equation with no source terms.
           ContinuityEquation{},
+          // Momentum equation with gravity source term.
+          MomentumEquation{GravitySource{g}},
+          // Energy equation with heat transfer and no source terms.
+          EnergyEquation{ConstantHeatConductivity{6, 4184}},
+          // Weakly compressible equation of state.
+          LinearTaitEquationOfState{cs_0, rho_0},
+          // Inviscid flow.
+          NoViscosity{},
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #else
       FluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
+          // Standard equation of motion.
+          EquationOfMotion{},
+          // Continuity equation with no source terms.
           ContinuityEquation{},
+          // Momentum equation with gravity source term.
+          MomentumEquation{GravitySource{g}},
+          // Energy equation with heat transfer and no source terms.
+          EnergyEquation{HeatConductivity{c_v}},
+          // Weakly compressible equation of state.
+          LinearTaitEquationOfState{cs_0, rho_0},
+          // Inviscid flow.
+          NoViscosity{},
+          // Use δ-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #endif
   ;
 
   // Setup the time integrator:
 #if WITH_GODUNOV
-  auto timeint = RungeKuttaIntegrator{std::move(equations)};
+  auto timeint = RungeKuttaIntegrator{equations};
 #else
-  auto timeint = EulerIntegrator{std::move(equations)};
+  auto timeint = EulerIntegrator{equations};
 #endif
 
   // Setup the particles array:
-  ParticleArray particles{// 2D space.
-                          Space<Real, 2>{},
-                          // Fields that are required by the equations.
-                          timeint.required_fields,
-                          // Set of whole system constants.
-                          meta::Set{
-                              m, // Particle mass assumed constant.
-                              h, // Particle width assumed constant.
-                          }};
+  ParticleArray particles{
+      // 2D space.
+      Space<Real, 2>{},
+      // Set of fields is inferred from the equations.
+      timeint,
+  };
 
   // Generate individual particles.
   auto num_fixed_particles = 0;
@@ -286,6 +301,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       auto a = particles.append(is_fixed ? ParticleType::fixed :
                                            ParticleType::fluid);
       r[a] = dr * Vec{i + 0.5, j + 0.5};
+      u[a] = 10.0;
     }
   }
   println("Num. fixed particles: {}", num_fixed_particles);
@@ -294,6 +310,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   // Set global particle constants.
   m[particles] = m_0;
   h[particles] = h_0;
+  kappa[particles] = kappa_0;
 
   // Density hydrostatic initialization.
   std::ranges::for_each(particles.all(), [&]<class PV>(PV a) {

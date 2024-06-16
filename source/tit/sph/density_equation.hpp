@@ -24,19 +24,25 @@ class SummationDensity {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields = meta::Set{};
+  static constexpr meta::Set required_fields{/*empty*/};
+
+  /// Set of particle fields that are modified.
+  static constexpr meta::Set modified_fields{/*empty*/};
 
 }; // class SummationDensity
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Grad-H summation density.
-class GradHSummationDensity : public SummationDensity {
+class GradHSummationDensity {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      meta::Set{h, m, r, rho, Omega} | SummationDensity::required_fields;
+  static constexpr auto required_fields = meta::Set{h, m, r, rho, Omega} | //
+                                          SummationDensity::required_fields;
+
+  /// Set of particle fields that are modified.
+  static constexpr auto modified_fields = SummationDensity::modified_fields;
 
   /// Construct Grad-H summation density.
   ///
@@ -68,23 +74,10 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Continuity equation as equation for density.
-class ContinuityEquation {
-public:
-
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields = meta::Set{drho_dt};
-
-}; // class ContinuityEquation
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Density equation type.
-template<class DensityEquation>
-concept density_equation =
-    std::movable<DensityEquation> &&
-    (std::derived_from<DensityEquation, SummationDensity> ||
-     std::same_as<DensityEquation, ContinuityEquation>);
+template<class DE>
+concept density_equation = std::same_as<DE, SummationDensity> ||
+                           std::same_as<DE, GradHSummationDensity>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

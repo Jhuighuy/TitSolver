@@ -71,6 +71,10 @@ TEST_CASE_TEMPLATE("avg", Num, NUM_TYPES) {
   CHECK(avg(Num{1}, Num{2}, Num{3}) == static_cast<Num>(2.0));
 }
 
+TEST_CASE_TEMPLATE("havg", Num, NUM_TYPES) {
+  CHECK(havg(Num{1.0}, Num{4.0}) == Num{1.6});
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("tiny_number_v", Num, NUM_TYPES) {

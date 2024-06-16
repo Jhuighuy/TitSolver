@@ -70,6 +70,15 @@ public:
     return tit::avg(std::forward<PVs>(ai)[self]...);
   }
 
+  /// Harmonic average of the field values over the specified particle views.
+  ///
+  /// @todo Here we should check for all `PVs` types to be the same and avoid
+  ///       averaging when the current field is const.
+  template<class Self, impl::has_field_<Self>... PVs>
+  constexpr auto havg(this const Self& self, PVs&&... ai) {
+    return tit::havg(std::forward<PVs>(ai)[self]...);
+  }
+
 }; // class BaseField
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -195,12 +204,11 @@ TIT_DEFINE_SCALAR_FIELD(u)
 /// Particle thermal energy time derivative.
 TIT_DEFINE_SCALAR_FIELD(du_dt)
 
-/// Particle molecular viscosity.
+/// Particle dynamic viscosity.
 TIT_DEFINE_SCALAR_FIELD(mu)
-/// Particle molecular turbulent viscosity.
-TIT_DEFINE_SCALAR_FIELD(mu_T)
-/// Particle second viscosity.
-TIT_DEFINE_SCALAR_FIELD(lambda)
+
+/// Particle heat conductivity coefficient.
+TIT_DEFINE_SCALAR_FIELD(kappa)
 
 /// Particle artificial viscosity switch.
 TIT_DEFINE_SCALAR_FIELD(alpha)
