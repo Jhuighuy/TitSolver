@@ -5,6 +5,10 @@
 
 #pragma once
 
+#include <algorithm>
+#include <numbers>
+#include <ranges>
+
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
@@ -44,20 +48,21 @@ public:
       EnergyEquation::required_fields |     //
       EquationOfState::required_fields |    //
       Kernel::required_fields |
-      meta::Set{parinfo} | // TODO: parinfo should not be here.
+      meta::Set{parinfo, dr, N, FS} | // TODO: these should not be here.
       meta::Set{h, m, r, rho, p, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      MotionEquation::modified_fields |         //
-      ContinuityEquation::modified_fields |     //
-      MomentumEquation::modified_fields |       //
-      EnergyEquation::modified_fields |         //
-      EquationOfState::modified_fields |        //
-      Kernel::modified_fields |                 //
-      meta::Set{rho, drho_dt, grad_rho, S, L} | //
-      meta::Set{p, v, dv_dt, div_v, curl_v} |   //
-      meta::Set{u, du_dt};
+      MotionEquation::modified_fields |            //
+      ContinuityEquation::modified_fields |        //
+      MomentumEquation::modified_fields |          //
+      EnergyEquation::modified_fields |            //
+      EquationOfState::modified_fields |           //
+      Kernel::modified_fields |                    //
+      meta::Set{rho, drho_dt, grad_rho, C, N, L} | //
+      meta::Set{p, v, dv_dt, div_v, curl_v} |      //
+      meta::Set{u, du_dt} |                        //
+      meta::Set{dr, FS};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -122,8 +127,8 @@ public:
       const auto& search_point = r[b];
       const auto clipped_point = Domain.clamp(search_point);
       const auto r_ghost = 2 * clipped_point - search_point;
-      const auto N = normalize(search_point - clipped_point);
-      const auto D = norm(r_ghost - r[b]);
+      const auto SN = normalize(search_point - clipped_point);
+      const auto SD = norm(r_ghost - r[b]);
 
       // Compute the interpolation weights, both for the constant and
       // linear interpolations.
@@ -175,10 +180,10 @@ public:
       constexpr auto rho_0 = 1000.0;
       constexpr auto cs_0 = 20 * sqrt(9.81 * 0.6);
       constexpr auto G = Vec{0.0, -9.81};
-      rho[b] += D * rho_0 / pow2(cs_0) * dot(G, N);
+      rho[b] += SD * rho_0 / pow2(cs_0) * dot(G, SN);
 
       // Compute the velocity at the boundary (slip wall boundary condition).
-      const auto Vn = dot(v[b], N) * N;
+      const auto Vn = dot(v[b], SN) * SN;
       const auto Vt = v[b] - Vn;
       v[b] = Vt - Vn;
     });
@@ -198,7 +203,8 @@ public:
       // Clean-up continuity equation fields.
       drho_dt[a] = {};
       if constexpr (has<PV>(grad_rho)) grad_rho[a] = {};
-      if constexpr (has<PV>(S)) S[a] = {};
+      if constexpr (has<PV>(C)) C[a] = {};
+      if constexpr (has<PV>(N)) N[a] = {};
       if constexpr (has<PV>(L)) L[a] = {};
 
       // Apply continuity equation source terms.
@@ -207,7 +213,8 @@ public:
     });
 
     // Compute density gradient and renormalization fields.
-    if constexpr (has<PV>(grad_rho) || has<PV>(S) || has<PV>(L)) {
+    if constexpr (has<PV>(grad_rho) || has<PV>(C) || has<PV>(N) || has<PV>(L)) {
+      // Precompute the fields.
       par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
         const auto [a, b] = ab;
         const auto V_a = m[a] / rho[a];
@@ -222,36 +229,45 @@ public:
           grad_rho[b] += V_a * grad_flux;
         }
 
-        // Update kernel renormalization coefficient.
-        if constexpr (has<PV>(S)) {
-          const auto S_flux = W_ab;
-          S[a] += V_b * S_flux;
-          S[b] += V_a * S_flux;
+        // Update concentration.
+        if constexpr (has<PV>(C)) {
+          const auto C_flux = W_ab;
+          C[a] += V_b * C_flux;
+          C[b] += V_a * C_flux;
         }
 
-        // Update kernel gradient renormalization matrix.
+        // Update normal vector.
+        if constexpr (has<PV>(N)) {
+          N[a] += V_b * grad_W_ab;
+          N[b] -= V_a * grad_W_ab;
+        }
+
+        // Update renormalization matrix.
         if constexpr (has<PV>(L)) {
           const auto L_flux = outer(r[b, a], grad_W_ab);
           L[a] += V_b * L_flux;
           L[b] += V_a * L_flux;
         }
       });
-    }
 
-    // Renormalize fields.
-    if constexpr (has<PV>(S) || has<PV>(L)) {
-      par::for_each(particles.fluid(), [](PV a) {
+      // Renormalize fields.
+      par::for_each(particles.all(), [](PV a) {
         // Renormalize density, if possible.
-        if constexpr (has<PV>(S)) {
-          if (!is_tiny(S[a])) rho[a] /= S[a];
+        if constexpr (has<PV>(C)) {
+          if (!is_tiny(C[a])) rho[a] /= C[a];
         }
 
-        // Renormalize density gradient, if possible.
-        if constexpr (has<PV>(L, grad_rho)) {
+        // Renormalize density gradient and normal vector, if possible.
+        if constexpr (has<PV>(L) && (has<PV>(N) || has<PV>(grad_rho))) {
           if (const auto fact = ldl(L[a]); fact) {
-            grad_rho[a] = fact->solve(grad_rho[a]);
+            if constexpr (has<PV>(N)) N[a] = fact->solve(N[a]);
+            if constexpr (has<PV>(grad_rho))
+              grad_rho[a] = fact->solve(grad_rho[a]);
           }
         }
+
+        // Finalize the normal vector.
+        if constexpr (has<PV>(N)) N[a] = normalize(N[a]);
       });
     }
 
@@ -358,6 +374,100 @@ public:
             momentum_equation_.artificial_viscosity().switch_source(a);
       });
     }
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Compute particle shifts.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_shifts(ParticleMesh& mesh,
+                                ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::compute_shifts()");
+    using PV = ParticleView<ParticleArray>;
+    using Num = particle_num_t<PV>;
+
+    /// @todo Factor out the constants.
+    static constexpr Num R{0.2};
+    static constexpr Num Ma{0.1};
+    static constexpr Num CFL{0.8};
+
+    // Initialize the free surface flag values and clear the particle shifts.
+    //
+    // A positive value `FS_FAR` means that the particle is far from the free
+    // surface, any positive value that is less than `FS_FAR` means that the
+    // particle is near the free surface (has at least one neighbor that is on
+    // the free surface), and a zero value `FS_ON` means that the particle is
+    // on the free surface.
+    const auto a_0 = particles[0];
+    const auto FS_FAR = 2 * CFL * Ma * pow2(h[a_0]);
+    static constexpr Num FS_ON{0};
+    par::for_each(particles.fluid(), [](PV a) { FS[a] = FS_ON, dr[a] = {}; });
+    par::for_each(particles.fixed(), [FS_FAR](PV a) { FS[a] = FS_FAR; });
+
+    // Classify the particles into the free surface and non-free surface.
+    //
+    // Here we are reading and writing the same field `FS` in the parallel loop.
+    // There is no race condition because the we read the neighbor to compare it
+    // with `FS_ON`, and now on-free-surface particles are updated in the loop.
+    par::block_for_each(mesh.block_pairs(particles), [FS_FAR](auto ab) {
+      const auto [a, b] = ab;
+
+      // Skip the particles that are too far away.
+      const auto r_ab = norm2(r[a, b]);
+      const auto dist_threshold = pow2(2 * h[a]);
+      if (r_ab > dist_threshold) return;
+
+      // Perform "visibility" test. The actual test is just an optimized
+      // version of `acos(n_{a,b} / sqrt(r_ab)) <= fov`.
+      constexpr Num cos_fov{cos(std::numbers::pi / 4)};
+      const auto fov_threshold = cos_fov * r_ab;
+      if (bitwise_equal(FS[a], FS_ON)) {
+        const auto n_a = dot(N[a], r[a, b]);
+        if (n_a > 0 && pow2(n_a) >= fov_threshold) FS[a] = FS_FAR;
+      }
+      if (bitwise_equal(FS[b], FS_ON)) {
+        const auto n_b = dot(N[b], r[a, b]);
+        if (n_b < 0 && pow2(n_b) >= fov_threshold) FS[b] = FS_FAR;
+      }
+    });
+
+    // Classify the non-free surface particles into the near and far.
+    par::for_each(particles.fluid(), [FS_FAR, &mesh, this](PV a) {
+      if (!bitwise_equal(FS[a], FS_FAR)) return;
+
+      // Do not apply the shifts to the particles near the walls.
+      /// @todo No article mentions this. We shall investigate it.
+      if (std::ranges::any_of(mesh[a], [](PV b) { return b.is_fixed(); })) {
+        FS[a] = Num{1.0e-30} * FS_FAR;
+        return;
+      }
+
+      constexpr auto on_fs = [](PV b) { return bitwise_equal(FS[b], FS_ON); };
+      if (std::ranges::any_of(mesh[a], on_fs)) {
+        auto fs_neighbors = std::views::filter(mesh[a], on_fs);
+        const auto dist_to_a = [a](PV b) { return norm2(r[a, b]); };
+        const auto b = *std::ranges::min_element(fs_neighbors, {}, dist_to_a);
+        FS[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius(a);
+      }
+    });
+
+    // Compute the particle shifts.
+    const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h[a_0] / 2), h[a_0]));
+    par::block_for_each(
+        mesh.block_pairs(particles),
+        [inv_W_0, FS_FAR, this](auto ab) {
+          const auto [a, b] = ab;
+          const auto W_ab = kernel_(a, b);
+          const auto grad_W_ab = kernel_.grad(a, b);
+
+          // Update the particle shifts.
+          const auto Chi_ab = R * pow4(W_ab * inv_W_0);
+          const auto Xi_a = static_cast<Num>(bitwise_equal(FS[a], FS_FAR));
+          const auto Xi_b = static_cast<Num>(bitwise_equal(FS[b], FS_FAR));
+          dr[a] -= (Xi_a + Chi_ab) * FS[a] * m[b] / rho[b] * grad_W_ab;
+          dr[b] += (Xi_b + Chi_ab) * FS[b] * m[a] / rho[a] * grad_W_ab;
+        });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

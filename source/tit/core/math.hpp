@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <bit>
 #include <cmath>
 #include <concepts>
 #include <expected>
@@ -221,6 +222,20 @@ constexpr auto is_tiny(Num a) noexcept -> bool {
 template<class Num>
 constexpr auto approx_equal_to(Num a, Num b) -> bool {
   return is_tiny(a - b);
+}
+
+/// Check if two numbers are bitwise equal.
+///
+/// This function may be used to as a fast comparison of floating-point numbers
+/// that are known to be not NaN.
+template<std::floating_point Num>
+[[gnu::always_inline]]
+constexpr auto bitwise_equal(Num a, Num b) noexcept -> bool {
+  if constexpr (sizeof(Num) == sizeof(uint32_t)) {
+    return std::bit_cast<uint32_t>(a) == std::bit_cast<uint32_t>(b);
+  } else if constexpr (sizeof(Num) == sizeof(uint64_t)) {
+    return std::bit_cast<uint64_t>(a) == std::bit_cast<uint64_t>(b);
+  } else static_assert(false);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

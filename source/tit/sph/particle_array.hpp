@@ -40,7 +40,7 @@ class ParticleView final {
 public:
 
   /// Particle array type.
-  using Array = std::remove_cvref_t<ParticleArray>;
+  using Array = std::remove_const_t<ParticleArray>;
 
   /// Particle space.
   static constexpr space auto space = Array::space;
@@ -74,6 +74,16 @@ public:
   /// Check if the particle has the specified type.
   constexpr auto has_type(ParticleType type) const noexcept -> bool {
     return array().has_type(index(), type);
+  }
+
+  /// Check if the particle is fluid.
+  constexpr auto is_fluid() const noexcept -> bool {
+    return has_type(ParticleType::fluid);
+  }
+
+  /// Check if the particle is fixed.
+  constexpr auto is_fixed() const noexcept -> bool {
+    return has_type(ParticleType::fixed);
   }
 
   /// Particle field value.

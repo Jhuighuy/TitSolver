@@ -57,9 +57,9 @@ public:
   }
 
   /// Field value delta for the specified particle view.
-  template<class Self, impl::has_field_<Self> PV>
-  constexpr auto operator[](this const Self& self, PV&& a, PV&& b) noexcept {
-    return std::forward<PV>(a)[self] - std::forward<PV>(b)[self];
+  template<class Self, impl::has_field_<Self> PVa, impl::has_field_<Self> PVb>
+  constexpr auto operator[](this const Self& self, PVa&& a, PVb&& b) noexcept {
+    return std::forward<PVa>(a)[self] - std::forward<PVb>(b)[self];
   }
 
   /// Average of the field values over the specified particle views.
@@ -222,11 +222,10 @@ namespace sph {
 /// Particle position.
 TIT_DEFINE_VECTOR_FIELD(r)
 } // namespace sph
+TIT_DEFINE_VECTOR_FIELD(dr)
 
 /// Particle velocity.
 TIT_DEFINE_VECTOR_FIELD(v)
-/// Particle velocity (XSPH model).
-TIT_DEFINE_VECTOR_FIELD(v_xsph)
 /// Particle acceleration.
 TIT_DEFINE_VECTOR_FIELD(dv_dt)
 /// Particle velocity gradient.
@@ -247,8 +246,6 @@ TIT_DEFINE_SCALAR_FIELD(drho_dt)
 
 /// Particle width.
 TIT_DEFINE_SCALAR_FIELD(h)
-/// Particle "Omega" variable (Grad-H model)
-TIT_DEFINE_SCALAR_FIELD(Omega)
 
 /// Particle pressure.
 TIT_DEFINE_SCALAR_FIELD(p)
@@ -271,10 +268,15 @@ TIT_DEFINE_SCALAR_FIELD(alpha)
 /// Particle artificial viscosity switch time derivative.
 TIT_DEFINE_SCALAR_FIELD(dalpha_dt)
 
-/// Kernel renormalization coefficient (Shepard filter).
-TIT_DEFINE_SCALAR_FIELD(S)
-/// Kernel gradient renormalization matrix.
+/// Particle concentration value.
+TIT_DEFINE_SCALAR_FIELD(C)
+/// Particle normal vector.
+TIT_DEFINE_VECTOR_FIELD(N)
+/// Particle renormalization matrix.
 TIT_DEFINE_MATRIX_FIELD(L)
+
+/// Particle free surface flag.
+TIT_DEFINE_SCALAR_FIELD(FS)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
