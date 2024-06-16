@@ -36,6 +36,9 @@ public:
   /// Set of particle fields that are required.
   static constexpr meta::Set required_fields{r, h};
 
+  /// Set of particle fields that are modified.
+  static constexpr meta::Set modified_fields{/*empty*/};
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Support radius for particle.

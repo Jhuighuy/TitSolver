@@ -36,16 +36,9 @@
 
 namespace tit::sph {
 
-// TODO: move it to an appropriate place!
-#if COMPRESSIBLE_SOD_PROBLEM
-inline constexpr auto Domain = geom::BBox{Vec{0.0}, Vec{2.0}};
-#elif HARD_DAM_BREAKING
-inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{4.0, 3.0}};
-#elif EASY_DAM_BREAKING
+/// @todo Move it to an appropriate place!
+constexpr auto RADIUS_SCALE = 3;
 inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
-#else
-inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
-#endif
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -119,8 +112,7 @@ public:
 
   /// Update the adjacency graph.
   template<particle_array ParticleArray, class SearchRadiusFunc>
-  constexpr void update(ParticleArray& particles,
-                        const SearchRadiusFunc& radius_func) {
+  void update(ParticleArray& particles, const SearchRadiusFunc& radius_func) {
     TIT_PROFILE_SECTION("ParticleMesh::update()");
 
     // Update the adjacency graphs.
@@ -133,8 +125,7 @@ public:
 private:
 
   template<particle_array ParticleArray, class SearchRadiusFunc>
-  constexpr void search_(ParticleArray& particles,
-                         const SearchRadiusFunc& radius_func) {
+  void search_(ParticleArray& particles, const SearchRadiusFunc& radius_func) {
     TIT_PROFILE_SECTION("ParticleMesh::search()");
     using PV = ParticleView<ParticleArray>;
 
@@ -176,7 +167,7 @@ private:
             /// @todo Once we have a proper geometry library, we should use
             ///       here and clean up the code.
             const auto& search_point = r[a];
-            const auto search_radius = 3 * radius_func(a);
+            const auto search_radius = RADIUS_SCALE * radius_func(a);
             const auto point_on_boundary = Domain.clamp(search_point);
             const auto interp_point = 2 * point_on_boundary - search_point;
 
@@ -200,7 +191,7 @@ private:
   }
 
   template<particle_array ParticleArray>
-  constexpr void partition_(ParticleArray& particles, size_t num_levels = 2) {
+  void partition_(ParticleArray& particles, size_t num_levels = 2) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
     TIT_ASSERT(num_levels < PartVec::MaxNumLevels,
                "Number of levels exceeds the predefined maximum!");
