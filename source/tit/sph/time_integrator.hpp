@@ -5,53 +5,73 @@
 
 #pragma once
 
-#include <type_traits>
+#include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
+// #include "tit/core/type_traits.hpp"
 
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
+// #include "tit/sph/fluid_equations.hpp"
 
 namespace tit::sph {
+/// Explicit equations type.
+template<class EE>
+concept explicit_equations = true; // specialization_of<EE, FluidEquations>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Semi-implicit Euler time integrator.
-template<class FluidEquations>
-  requires std::is_object_v<FluidEquations>
-class EulerIntegrator {
+/// Drift-Kick Euler time integrator.
+template<explicit_equations Equations>
+class EulerIntegrator final {
 public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
+      Equations::required_fields | //
+      meta::Set{fixed, parinfo, r, v, dv_dt};
+
+  /// Set of particle fields that are modified.
+  static constexpr auto modified_fields =
+      Equations::modified_fields | //
+      meta::Set{fixed, parinfo, r, v, u, alpha};
 
   /// Construct time integrator.
-  constexpr explicit EulerIntegrator(FluidEquations estimator = {},
-                                     size_t adjacency_recalc_freq = 10) noexcept
-      : equations_{std::move(estimator)},
-        adjacency_recalc_freq_{adjacency_recalc_freq} {}
+  ///
+  /// @param equations Equations to integrate.
+  constexpr explicit EulerIntegrator(Equations equations,
+                                     size_t mesh_update_freq = 10) noexcept
+      : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   constexpr void step(real_t dt, ParticleMesh& mesh, ParticleArray& particles) {
-    TIT_PROFILE_SECTION("EulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
-    // Initialize and index particles.
-    if (step_index_ == 0) {
-      // Initialize particles.
-      equations_.init(particles);
-    }
-    if (step_index_ % adjacency_recalc_freq_ == 0) {
-      // Update particle adjacency.
-      equations_.index(mesh, particles);
-    }
-    // Integrate particle density.
+    TIT_PROFILE_SECTION("EulerIntegrator::step()");
+
+    // Initialize particles, build the mesh.
+    if (step_index_ == 0) equations_.init(particles);
+    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+
+    // Setup boundary conditions.
+    equations_.setup_boundary(mesh, particles);
+
+    // Update particle velocty, internal energy, etc.
+    equations_.compute_forces(mesh, particles);
+    par::for_each(particles.all(), [dt](PV a) {
+      if (fixed[a]) return;
+      v[a] += dt * dv_dt[a];
+      r[a] += dt * v[a]; // important: position is updated after velocity!
+      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
+      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
+    });
+
+    // Update particle density.
     equations_.compute_density(mesh, particles);
     if constexpr (has<PV>(drho_dt)) {
       par::for_each(particles.all(), [dt](PV a) {
@@ -59,116 +79,167 @@ public:
         rho[a] += dt * drho_dt[a];
       });
     }
-    // Integrate particle velocty (internal enegry, and rest).
-    equations_.compute_forces(mesh, particles);
-    par::for_each(particles.all(), [dt](PV a) {
-      if (fixed[a]) return;
-      // Velocity is updated first, so the integrator is semi-implicit.
-      v[a] += dt * dv_dt[a];
-      if constexpr (has<PV>(v_xsph)) {
-        // TODO: extract "0.5" to parameter epsilon.
-        r[a] += dt * (v[a] - 0.5 * v_xsph[a]);
-      } else {
-        r[a] += dt * v[a];
-      }
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
-    });
-    ++step_index_;
+
+    // Increment step index.
+    step_index_ += 1;
   }
 
 private:
 
-  [[no_unique_address]] FluidEquations equations_{};
+  [[no_unique_address]] Equations equations_{};
   size_t step_index_{0};
-  size_t adjacency_recalc_freq_;
+  size_t mesh_update_freq_;
 
 }; // class EulerIntegrator
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Runge-Kutta time integrator.
-template<class FluidEquations>
-  requires std::is_object_v<FluidEquations>
-class RungeKuttaIntegrator {
+/// Drift-Kick-Drift Leapfrog time integrator.
+template<explicit_equations Equations>
+class LeapfrogIntegrator final {
 public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
+      Equations::required_fields | //
+      meta::Set{fixed, parinfo, r, v, dv_dt};
+
+  /// Set of particle fields that are modified.
+  static constexpr auto modified_fields =
+      Equations::modified_fields | //
+      meta::Set{fixed, parinfo, r, v, u, alpha};
 
   /// Construct time integrator.
-  constexpr explicit RungeKuttaIntegrator(
-      FluidEquations estimator = {},
-      size_t adjacency_recalc_freq = 10) noexcept
-      : equations_{std::move(estimator)},
-        adjacency_recalc_freq_{adjacency_recalc_freq} {}
+  ///
+  /// @param equations Equations to integrate.
+  constexpr explicit LeapfrogIntegrator(Equations equations,
+                                        size_t mesh_update_freq = 10) noexcept
+      : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   constexpr void step(real_t dt, ParticleMesh& mesh, ParticleArray& particles) {
+    using PV = ParticleView<ParticleArray>;
+    TIT_PROFILE_SECTION("LeapfrogIntegrator::step()");
+
     // Initialize and index particles.
-    if (step_index_ == 0) {
-      // Initialize particles.
-      equations_.init(particles);
+    if (step_index_ == 0) equations_.init(particles);
+    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+
+    // Setup boundary conditions.
+    equations_.setup_boundary(mesh, particles);
+
+    // Update particle velocity to the half step, and position to the full
+    // step.
+    const auto dt_2 = dt / 2.0;
+    equations_.compute_forces(mesh, particles);
+    par::for_each(particles.all(), [dt, dt_2](PV a) {
+      if (fixed[a]) return;
+      v[a] += dt_2 * dv_dt[a];
+      r[a] += dt * v[a]; // important: position is updated after velocity!
+      if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
+      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
+    });
+
+    // Update particle velocity to the full step.
+    equations_.compute_density(mesh, particles);
+    if constexpr (has<PV>(drho_dt)) {
+      par::for_each(particles.all(), [dt](PV a) {
+        if (fixed[a]) return;
+        rho[a] += dt * drho_dt[a];
+      });
     }
-    if (step_index_ % adjacency_recalc_freq_ == 0) {
-      // Update particle adjacency.
-      equations_.index(mesh, particles);
-    }
-#if 1
+
+    // Update particle velocity to the full step.
+    equations_.compute_forces(mesh, particles);
+    par::for_each(particles.all(), [dt_2](PV a) {
+      if (fixed[a]) return;
+      v[a] += dt_2 * dv_dt[a];
+      if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
+      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
+    });
+
+    // Increment step index.
+    step_index_ += 1;
+  }
+
+private:
+
+  [[no_unique_address]] Equations equations_{};
+  size_t step_index_{0};
+  size_t mesh_update_freq_;
+
+}; // class LeapfrogIntegrator
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Runge-Kutta time integrator (SSPRK(3,3)).
+template<explicit_equations Equations>
+class RungeKuttaIntegrator final {
+public:
+
+  /// Set of particle fields that are required.
+  static constexpr auto required_fields =
+      Equations::required_fields | //
+      meta::Set{fixed, parinfo, r, v, dv_dt};
+
+  /// Set of particle fields that are modified.
+  static constexpr auto modified_fields =
+      Equations::modified_fields | //
+      meta::Set{fixed, parinfo, r, v, u, alpha};
+
+  /// Construct time integrator.
+  constexpr explicit RungeKuttaIntegrator(Equations equations,
+                                          size_t mesh_update_freq = 10) noexcept
+      : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
+
+  /// Make a step in time.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void step(real_t dt, ParticleMesh& mesh, ParticleArray& particles) {
+    using PV = ParticleView<ParticleArray>;
+    TIT_PROFILE_SECTION("RungeKuttaIntegrator::step()");
+
+    // Initialize and index particles.
+    if (step_index_ == 0) equations_.init(particles);
+    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+
     // Do an explicit Euler substep.
     const auto substep = [&](auto& _particles) {
       // Calculate right hand sides for the given particle array.
+      equations_.setup_boundary(mesh, _particles);
       equations_.compute_density(mesh, _particles);
       equations_.compute_forces(mesh, _particles);
       // Integrate.
-      par::for_each(_particles.all(), [dt]<class PV>(PV a) {
+      par::for_each(_particles.all(), [&](PV a) {
         if (fixed[a]) return;
-        if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
-        if constexpr (has<PV>(v_xsph)) {
-          // TODO: extract "0.5" to parameter epsilon.
-          r[a] += dt * (v[a] - 0.5 * v_xsph[a]);
-        } else {
-          r[a] += dt * v[a];
-        }
+        r[a] += dt * v[a]; // important: position is updated before velocity!
         v[a] += dt * dv_dt[a];
+        if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
         if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
         if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
       });
     };
+
     // Linear combination.
     const auto lincomb = [](real_t wa,
                             const auto& in_particles,
                             real_t wb,
                             auto& out_particles) {
-      par::for_each( //
-          in_particles.all(),
-          [&out_particles, wa, wb]<class PV>(PV a) {
-            if (fixed[a]) return;
-            auto out_a = out_particles[a.index()];
-            if constexpr (has<PV>(rho) && !has_uniform<PV>(rho)) {
-              rho[out_a] = wa * rho[a] + wb * rho[out_a];
-            }
-            v[out_a] = wa * v[a] + wb * v[out_a];
-            r[out_a] = wa * r[a] + wb * r[out_a];
-          });
+      par::for_each(in_particles.all(), [&](auto a) {
+        if (fixed[a]) return;
+        auto out_a = out_particles[a.index()];
+        v[out_a] = wa * v[a] + wb * v[out_a];
+        r[out_a] = wa * r[a] + wb * r[out_a];
+        rho[out_a] = wa * rho[a] + wb * rho[out_a];
+        if constexpr (has<PV>(u)) u[out_a] = wa * u[a] + wb * u[out_a];
+        if constexpr (has<PV>(alpha)) {
+          alpha[out_a] = wa * alpha[a] + wb * alpha[out_a];
+        }
+      });
     };
-#if 0
-    {
-      auto& u = particles;
-      substep(u);
-    }
-#elif 0
-    {
-      auto& u = particles;
-      auto u1 = auto(u);
-      substep(u);
-      substep(u);
-      lincomb(0.5, u1, 0.5, u);
-    }
-#elif 1
+
     {
       auto& u = particles;
       auto u1 = auto(u);
@@ -178,16 +249,16 @@ public:
       substep(u);
       lincomb(1.0 / 3.0, u1, 2.0 / 3.0, u);
     }
-#endif
-#endif
-    ++step_index_;
+
+    // Increment step index.
+    step_index_ += 1;
   }
 
 private:
 
-  [[no_unique_address]] FluidEquations equations_{};
+  [[no_unique_address]] Equations equations_;
   size_t step_index_{0};
-  size_t adjacency_recalc_freq_;
+  size_t mesh_update_freq_;
 
 }; // class RungeKuttaIntegrator
 
