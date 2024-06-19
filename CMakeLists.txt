@@ -21,6 +21,7 @@ include(tit_testing)
 # Find the third-party libraries.
 find_package(doctest CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
+find_package(httplib CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
@@ -68,6 +69,7 @@ write_compile_flags(tit::base)
 
 # Add the actual sources.
 add_subdirectory("source")
+add_subdirectory("front")
 add_subdirectory("tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
