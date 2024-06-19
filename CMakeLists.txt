@@ -68,6 +68,7 @@ write_compile_flags(tit::base)
 
 # Add the actual sources.
 add_subdirectory("source")
+add_subdirectory("front")
 add_subdirectory("tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
