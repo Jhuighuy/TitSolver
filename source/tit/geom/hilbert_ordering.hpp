@@ -35,7 +35,7 @@ public:
   using Point = std::ranges::range_value_t<Points>;
 
   /// Bounding box type.
-  using PointBBox = bbox_t<Point>;
+  using PointBBox = BBox<Point>;
 
   /// Numeric type used by the point type.
   static constexpr auto Dim = vec_dim_v<Point>;
