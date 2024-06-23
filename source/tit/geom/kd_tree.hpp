@@ -37,40 +37,12 @@ class KDTree final {
 public:
 
   /// Point type.
-  using Point = std::ranges::range_value_t<Points>;
-
-  /// Bounding box type.
-  using PointBBox = BBox<Point>;
+  using Vec = std::ranges::range_value_t<Points>;
 
   /// Numeric type used by the point type.
-  using Real = vec_num_t<Point>;
-
-private:
-
-  union KDTreeNode_ {
-    std::span<const size_t> leaf{};
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-    struct {
-      size_t cut_dim;
-      Real cut_left;
-      Real cut_right;
-      KDTreeNode_* left_subtree;
-      KDTreeNode_* right_subtree;
-    };
-#pragma GCC diagnostic pop
-  }; // union KDTreeNode_
-
-  Points points_;
-  size_t max_leaf_size_;
-  par::MemoryPool<KDTreeNode_> pool_;
-  std::vector<size_t> perm_;
-  const KDTreeNode_* root_node_ = nullptr;
-  PointBBox root_bbox_;
+  using Num = vec_num_t<Vec>;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-public:
 
   /// Initialize and build the K-dimensional tree.
   ///
@@ -83,37 +55,58 @@ public:
     // Initialize identity points permutation.
     const auto size = std::ranges::size(points_);
     perm_.resize(size);
-    std::ranges::copy(std::views::iota(0UZ, size), perm_.begin());
+    std::ranges::copy(std::views::iota(size_t{0}, size), perm_.begin());
     // Compute the root tree node (and bounding box).
     par::TaskGroup tasks{};
-    root_node_ = build_subtree_</*IsRoot=*/true>(tasks, perm_, root_bbox_);
+    root_ = build_subtree_(tasks, perm_, root_bbox_);
     tasks.wait();
   }
 
+  /// Find the points within the radius to the given point.
+  template<std::output_iterator<size_t> OutIter>
+  constexpr auto search(const Vec& search_point,
+                        const Num& search_radius,
+                        OutIter indices) const -> OutIter {
+    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
+    TIT_ASSERT(root_ != nullptr, "Tree was not built.");
+    // Compute distance from the query point to the root bounding box
+    // per each dimension. (By "dist" square distances are meant.)
+    const auto dists = pow2(search_point - root_bbox_.clamp(search_point));
+    const auto search_dist = pow2(search_radius);
+    // Do the actual search.
+    search_subtree_(root_, dists, search_point, search_dist, indices);
+    return indices;
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 private:
 
-  // Compute bounding box for the K-dimensional subtree.
-  template<bool Parallel>
-  auto subtree_bbox_(std::span<const size_t> perm) const -> PointBBox {
-    /// @todo Run in parallel!
-    auto bbox = BBox{points_[perm.front()]};
-    for (const auto i : perm | std::views::drop(1)) bbox.expand(points_[i]);
-    return bbox;
-  }
+  union KDTreeNode_ {
+    std::span<const size_t> leaf{};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    struct {
+      size_t cut_dim;
+      Num cut_left;
+      Num cut_right;
+      KDTreeNode_* left_subtree;
+      KDTreeNode_* right_subtree;
+    };
+#pragma GCC diagnostic pop
+  }; // union KDTreeNode_
 
   // Build the K-dimensional subtree.
   // On the input `bbox` contains a rough estimate that was guessed by the
   // caller. On return it contains an exact bounding box of the subtree.
-  template<bool IsRoot = false>
   auto build_subtree_(par::TaskGroup& tasks,
                       std::span<size_t> perm,
-                      PointBBox& bbox) -> KDTreeNode_* {
+                      BBox<Vec>& bbox) -> KDTreeNode_* {
     // Allocate node.
     const auto node = pool_.create();
-    const auto actual_bbox = subtree_bbox_</*Parallel=*/IsRoot>(perm);
-    // I am not sure why all the mess around actual_bbox and bbox is needed.
-    // But the original code had it, so I am keeping it for now.
-    if constexpr (IsRoot) bbox = actual_bbox;
+    // Compute the bounding box.
+    bbox = BBox{points_[perm.front()]};
+    for (const auto i : perm | std::views::drop(1)) bbox.expand(points_[i]);
     // Is leaf node reached?
     if (perm.size() <= max_leaf_size_) {
       // Fill the leaf node and end partitioning.
@@ -121,28 +114,24 @@ private:
       node->left_subtree = node->right_subtree = nullptr;
     } else {
       // Split the points based on the "widest" bounding box dimension.
-      const auto cut_dim = max_value_index(actual_bbox.extents());
-      const auto cut_val = actual_bbox.clamp(bbox.center())[cut_dim];
+      const auto cut_dim = node->cut_dim = max_value_index(bbox.extents());
+      const auto cut_val = bbox.center()[cut_dim];
       const auto pivot =
           partition_subtree_(perm.begin(), perm.end(), cut_dim, cut_val);
       const auto left_perm = std::span(perm.begin(), pivot);
       const auto right_perm = std::span(pivot, perm.end());
-      // Build subtrees.
-      node->cut_dim = cut_dim;
-      tasks.run(is_async_(left_perm), [=, &tasks, this] {
-        // Build left subtree and update it's bounding box.
-        auto [left_bbox, _] = bbox.split(cut_dim, cut_val);
+      // Recursively build subtrees.
+      tasks.run(run_async_(left_perm), [=, &tasks, this] {
+        BBox<Vec> left_bbox{};
         node->left_subtree = build_subtree_(tasks, left_perm, left_bbox);
         node->cut_left = left_bbox.high()[cut_dim];
       });
-      tasks.run(is_async_(right_perm), [=, &tasks, this] {
-        // Build right subtree and update it's bounding box.
-        auto [_, right_bbox] = bbox.split(cut_dim, cut_val);
+      tasks.run(run_async_(right_perm), [=, &tasks, this] {
+        BBox<Vec> right_bbox{};
         node->right_subtree = build_subtree_(tasks, right_perm, right_bbox);
         node->cut_right = right_bbox.low()[cut_dim];
       });
     }
-    bbox = actual_bbox;
     return node;
   }
 
@@ -151,8 +140,7 @@ private:
   constexpr auto partition_subtree_(Iter first,
                                     Iter last,
                                     size_t cut_dim,
-                                    Real cut_val) const noexcept -> Iter {
-    // TODO: make a general `balanced_partition` algorithm from this.
+                                    const Num& cut_val) const -> Iter {
     // Partition the tree based on the cut plane: separate those that
     // are to the left ("<") from those that are to the right or exactly on
     // the splitting plane (">=").
@@ -195,41 +183,21 @@ private:
   }
 
   // Should the ordering be done in parallel?
-  constexpr auto is_async_(std::span<size_t> perm) noexcept -> bool {
+  constexpr auto run_async_(std::span<size_t> perm) noexcept -> bool {
     static constexpr size_t TooSmall = 50;
     return perm.size() >= TooSmall * max_leaf_size_;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-public:
-
-  /// Find the points within the radius to the given point.
-  template<std::output_iterator<size_t> OutIter>
-  constexpr auto search(Point search_point,
-                        Real search_radius,
-                        OutIter indices) const noexcept -> OutIter {
-    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
-    TIT_ASSERT(root_node_ != nullptr, "Tree was not built.");
-    // Compute distance from the query point to the root bounding box
-    // per each dimension. (By "dist" square distances are meant.)
-    const auto dists = pow2(search_point - root_bbox_.clamp(search_point));
-    const auto search_dist = pow2(search_radius);
-    // Do the actual search.
-    search_subtree_(root_node_, dists, search_point, search_dist, indices);
-    return indices;
-  }
-
-private:
-
   // Search for the point neighbors in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
   template<std::output_iterator<size_t> OutIter>
   constexpr void search_subtree_(const KDTreeNode_* node,
-                                 Point dists,
-                                 const Point& search_point,
-                                 Real search_dist,
-                                 OutIter& indices) const noexcept {
+                                 Vec dists,
+                                 const Vec& search_point,
+                                 const Num& search_dist,
+                                 OutIter& indices) const {
     // Is leaf node reached?
     if (node->left_subtree == nullptr) {
       TIT_ASSERT(node->right_subtree == nullptr, "Invalid leaf node.");
@@ -265,6 +233,15 @@ private:
       }
     }
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Points points_;
+  size_t max_leaf_size_;
+  par::MemoryPool<KDTreeNode_> pool_;
+  const KDTreeNode_* root_ = nullptr;
+  BBox<Vec> root_bbox_;
+  std::vector<size_t> perm_;
 
 }; // class KDTree
 

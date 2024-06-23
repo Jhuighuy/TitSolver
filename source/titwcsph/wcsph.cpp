@@ -319,8 +319,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   });
 
   // Setup the particle adjacency structure.
-  auto adjacent_particles =
-      ParticleAdjacency{particles, geom::GridFactory{h_0}};
+  auto adjacent_particles = ParticleAdjacency{particles, geom::KDTreeFactory{}};
 
   system("mkdir -p output/test_output/");
   system("rm -f output/test_output/*");
