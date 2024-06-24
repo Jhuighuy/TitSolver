@@ -77,8 +77,8 @@ public:
     const auto search_dist = pow2(search_radius);
     // Convert point to bounding box.
     const auto search_bbox =
-        BBox{search_point - Point(search_radius) - 0.5 * cell_size_,
-             search_point + Point(search_radius) + 0.5 * cell_size_};
+        BBox{search_point - Vec(search_radius) - 0.5 * cell_size_,
+             search_point + Vec(search_radius) + 0.5 * cell_size_};
     const auto low = _point_to_cell_mdindex(
         grid_bbox_.clamp(search_bbox.low()) + 0.5 * cell_size_);
     const auto high = _point_to_cell_mdindex(
@@ -98,7 +98,7 @@ public:
         for (size_t j = low[1]; j <= high[1]; ++j) {
           for (size_t k = low[2]; k <= high[2]; ++k) {
             const size_t cell_index =
-                i * num_cells_[1] * num_cells_[2] + j * num_cells_[2] + k;
+                (i * num_cells_[1] + j) * num_cells_[2] + k;
             for (const size_t l : cell_points_[cell_index]) {
               const auto dist = norm2(search_point - points_[l]);
               if (dist < search_dist) *out++ = l;

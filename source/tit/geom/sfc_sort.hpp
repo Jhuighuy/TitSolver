@@ -11,6 +11,9 @@
 #include <utility>
 #include <vector>
 
+#include <oneapi/tbb/blocked_range.h>
+#include <oneapi/tbb/parallel_reduce.h>
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
@@ -43,9 +46,21 @@ public:
     perm_.resize(std::size(points_));
     std::ranges::copy(std::views::iota(size_t{0}, perm_.size()), perm_.begin());
     // Compute bounding box.
-    /// @todo Parallelize me!
     auto bbox = BBox{points_[0]};
-    for (const auto& p : points_ | std::views::drop(1)) bbox.expand(p);
+    bbox = tbb::parallel_reduce(
+        tbb::blocked_range<size_t>(0, points_.size()),
+        bbox,
+        [&](tbb::blocked_range<size_t> r, auto my_bbox) {
+          for (size_t i = r.begin(); i < r.end(); ++i) {
+            my_bbox.expand(points_[i]);
+          }
+          return my_bbox;
+        },
+        [](auto lhs, auto rhs) {
+          lhs.expand(rhs.low());
+          lhs.expand(rhs.high());
+          return lhs;
+        });
     // Compute the root bounding box and build permutation.
     par::TaskGroup tasks{};
     constexpr size_t InitAxis = 0;
