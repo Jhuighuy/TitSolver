@@ -7,14 +7,17 @@
 add_tit_test(
   NAME "test_runner/match_exit_code"
   COMMAND "${BASH_EXE}" -c "exit -1"
-  EXIT_CODE "-1")
+  EXIT_CODE "-1"
+)
 
 add_tit_test(
   NAME "test_runner/match_exit_code_failure"
-  COMMAND "${BASH_EXE}" -c "exit -1")
+  COMMAND "${BASH_EXE}" -c "exit -1"
+)
 set_tests_properties(
   "test_runner/match_exit_code_failure"
-  PROPERTIES WILL_FAIL TRUE)
+  PROPERTIES WILL_FAIL TRUE
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -22,15 +25,19 @@ set_tests_properties(
 add_tit_test(
   NAME "test_runner/check_stdin"
   STDIN "input_1.txt"
-  COMMAND "${BASH_EXE}" -c "test -s /dev/stdin")
+  COMMAND "${BASH_EXE}" -c "test -s /dev/stdin"
+)
 
 # Check that the input files are provided.
-# Beware: we cannot use ';' as the command separator since it is treated
-# as the argument separator by CMake.
+#
+# Note: we cannot use `; as the command separator since it is treated
+# as the argument separator by CMake. Instead, we use `&&` to separate
+# commands.
 add_tit_test(
   NAME "test_runner/check_input_files"
   INPUT_FILES "input_1.txt" "input_2.txt"
-  COMMAND "${BASH_EXE}" -c "stat ./input_1.txt && stat ./input_2.txt")
+  COMMAND "${BASH_EXE}" -c "stat ./input_1.txt && stat ./input_2.txt"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -38,11 +45,13 @@ add_tit_test(
 add_tit_test(
   NAME "test_runner/check_stdout"
   MATCH_STDOUT "output_1.txt"
-  COMMAND "${BASH_EXE}" -c "echo 'Some output.'")
+  COMMAND "${BASH_EXE}" -c "echo 'Some output.'"
+)
 add_tit_test(
   NAME "test_runner/check_stderr"
   MATCH_STDERR "output_2.txt"
-  COMMAND "${BASH_EXE}" -c "echo 'Some different output.' 1>&2")
+  COMMAND "${BASH_EXE}" -c "echo 'Some different output.' 1>&2"
+)
 
 # Check that the output files are captured correctly.
 add_tit_test(
@@ -50,38 +59,46 @@ add_tit_test(
   MATCH_FILES "output_1.txt" "output_2.txt"
   COMMAND "${BASH_EXE}" -c
     "echo 'Some output.' > ./output_1.txt &&
-     echo 'Some different output.' > ./output_2.txt")
+     echo 'Some different output.' > ./output_2.txt"
+)
 
 # Check that the output files with '.checksum' suffix are matched correctly.
 add_tit_test(
   NAME "test_runner/check_output_file_checksum"
   MATCH_FILES "output_1.txt.checksum"
-  COMMAND "${BASH_EXE}" -c "echo 'Some output.' > ./output_1.txt")
+  COMMAND "${BASH_EXE}" -c "echo 'Some output.' > ./output_1.txt"
+)
 
 add_tit_test(
   NAME "test_runner/check_output_file_checksum_failure"
   MATCH_FILES "output_1.txt.checksum"
-  COMMAND "${BASH_EXE}" -c "echo 'Some erroneous output.' > ./output_1.txt")
+  COMMAND "${BASH_EXE}" -c "echo 'Some erroneous output.' > ./output_1.txt"
+)
 set_tests_properties(
   "test_runner/check_output_file_checksum_failure"
-  PROPERTIES WILL_FAIL TRUE)
+  PROPERTIES WILL_FAIL TRUE
+)
 
 # Check that the missing output files are detected.
 add_tit_test(
   NAME "test_runner/missing_output_file_1"
   MATCH_FILES "output_1.txt"
-  COMMAND "${BASH_EXE}" -c "exit 0")
+  COMMAND "${BASH_EXE}" -c "exit 0"
+)
 set_tests_properties(
   "test_runner/missing_output_file_1"
-  PROPERTIES WILL_FAIL TRUE)
+  PROPERTIES WILL_FAIL TRUE
+)
 
 add_tit_test(
   NAME "test_runner/missing_output_file_2"
   MATCH_FILES "output_1.txt.checksum"
-  COMMAND "${BASH_EXE}" -c "exit 0")
+  COMMAND "${BASH_EXE}" -c "exit 0"
+)
 set_tests_properties(
   "test_runner/missing_output_file_2"
-  PROPERTIES WILL_FAIL TRUE)
+  PROPERTIES WILL_FAIL TRUE
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -89,7 +106,8 @@ set_tests_properties(
 add_tit_test(
   NAME "test_runner/ignore_trailing_whitespaces"
   MATCH_STDOUT "output_1.txt"
-  COMMAND "${BASH_EXE}" -c "echo 'Some output.        '")
+  COMMAND "${BASH_EXE}" -c "echo 'Some output.        '"
+)
 
 # Check that the empty lines are ignored when matching files.
 add_tit_test(
@@ -99,13 +117,15 @@ add_tit_test(
     "printf 'First line.\n\n\n' &&
      printf 'Second line.\n\n' &&
      printf 'Third line.\n\n\n\n' &&
-     printf 'Fourth line.\n'")
+     printf 'Fourth line.\n'"
+)
 
 # Check that all the escape sequences are correctly filtered.
 add_tit_test(
   NAME "test_runner/ignore_escapes"
   MATCH_STDOUT "output_1.txt"
-  COMMAND "${BASH_EXE}" -c "printf '\\033[1mSome \\033[94moutput\\033[0m.\n'")
+  COMMAND "${BASH_EXE}" -c "printf '\\033[1mSome \\033[94moutput\\033[0m.\n'"
+)
 
 # Check that the full paths in the output files are correctly filtered.
 add_tit_test(
@@ -113,7 +133,8 @@ add_tit_test(
   MATCH_FILES "output_with_paths.txt"
   COMMAND "${BASH_EXE}" -c
     "echo Ensure /file/name/should.stay >> ./output_with_paths.txt &&
-     echo Ensure relative/paths/are.untouched >> ./output_with_paths.txt")
+     echo Ensure relative/paths/are.untouched >> ./output_with_paths.txt"
+)
 
 # Check that custom filters work.
 add_tit_test(
@@ -122,7 +143,8 @@ add_tit_test(
   FILTERS "s/#.*$//g"
   COMMAND "${BASH_EXE}" -c
     "echo '# This comment should be filtered away.' &&
-     echo 'Some output. # Another comment.'")
+     echo 'Some output. # Another comment.'"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -132,10 +154,12 @@ add_tit_test(
   MATCH_FILES "output_1.txt" "output_2.txt"
   COMMAND "${BASH_EXE}" -c
     "echo 'Some output.' > ./output_1.txt &&
-     echo 'Some different erroneous output.' > ./output_2.txt")
+     echo 'Some different erroneous output.' > ./output_2.txt"
+)
 set_tests_properties(
   "test_runner/integration_test_1"
-  PROPERTIES WILL_FAIL TRUE)
+  PROPERTIES WILL_FAIL TRUE
+)
 
 # All output files are correct, but a file is missing.
 add_tit_test(
@@ -143,10 +167,12 @@ add_tit_test(
   MATCH_FILES "output_1.txt" "output_2.txt" "output_3.txt"
   COMMAND "${BASH_EXE}" -c
     "echo 'Some output.' > ./output_1.txt &&
-     echo 'Some different erroneous output.' > ./output_2.txt")
+     echo 'Some different erroneous output.' > ./output_2.txt"
+)
 set_tests_properties(
   "test_runner/integration_test_2"
-  PROPERTIES WILL_FAIL TRUE)
+  PROPERTIES WILL_FAIL TRUE
+)
 
 # All output files are correct, but exit code is not.
 add_tit_test(
@@ -155,9 +181,11 @@ add_tit_test(
   COMMAND "${BASH_EXE}" -c
     "echo 'Some output.' > ./output_1.txt &&
      echo 'Some different output.' > ./output_2.txt &&
-     exit -1")
+     exit -1"
+)
 set_tests_properties(
   "test_runner/integration_test_3"
-  PROPERTIES WILL_FAIL TRUE)
+  PROPERTIES WILL_FAIL TRUE
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -15,32 +15,30 @@ function(write_compile_flags TARGET_OR_ALIAS)
   if(NOT TARGET ${TARGET})
     set(TARGET ${TARGET_OR_ALIAS})
   endif()
+
   # Setup "compilation" arguments for mock "clang" call.
   set(CLANG_COMPILE_ARGS)
-  ## Get generated compile options from target.
   get_generated_compile_options(${TARGET} CLANG_COMPILE_ARGS)
-  ## Append some extra options.
   list(
     APPEND
     CLANG_COMPILE_ARGS
     # Enable the same set of compile options we would use for normal clang call.
     ${CLANG_COMPILE_OPTIONS}
     # Enable C++23.
-    -std=c++23)
-  # Write the compile flags to a file.
+    -std=c++23
+  )
+
+  # Write the compile flags to a file, each on a new line.
   add_custom_target(
     "${TARGET}_clangd_compile_flags"
-    ## Run each time during the build process.
     ALL
-    ## Write the compile flags to a file, each on a new line.
     COMMAND
       "${CMAKE_COMMAND}" -E echo ${CLANG_COMPILE_ARGS} |
       xargs -n 1 > "${CMAKE_CURRENT_SOURCE_DIR}/compile_flags.txt"
-    ## Add message.
     COMMENT "Writing compile_flags.txt"
-    ## This is needed for generator expressions to work.
-    COMMAND_EXPAND_LISTS
-    VERBATIM)
+    COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
+    VERBATIM
+  )
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

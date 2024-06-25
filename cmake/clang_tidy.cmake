@@ -13,44 +13,52 @@ include(utils)
 find_program_with_version(
   CLANG_TIDY_EXE
   NAMES "clang-tidy-18" "clang-tidy"
-  MIN_VERSION "18.1.3")
+  MIN_VERSION "18.1.3"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+##
 ## Analyze source code with clang-tidy.
+##
 function(enable_clang_tidy TARGET_OR_ALIAS)
   # Should we skip analysis?
   if(SKIP_ANALYSIS)
     return()
   endif()
+
   # Exit early in case sufficient clang-tidy was not found.
   if(NOT CLANG_TIDY_EXE)
     return()
   endif()
+
   # Get the original target name if it is an alias.
   get_target_property(TARGET ${TARGET_OR_ALIAS} ALIASED_TARGET)
   if(NOT TARGET ${TARGET})
     set(TARGET ${TARGET_OR_ALIAS})
   endif()
+
   # Setup common arguments for clang-tidy call.
   set(
     CLANG_TIDY_ARGS
     # No annoying output.
     --quiet
     # Enable colors during piping through chronic.
-    --use-color)
+    --use-color
+  )
+
   # Setup "compilation" arguments for clang-tidy call.
-  ## Get generated compile options from target.
   get_generated_compile_options(${TARGET} CLANG_TIDY_COMPILE_ARGS)
-  ## Append some extra options.
   list(
     APPEND
     CLANG_TIDY_COMPILE_ARGS
-    # Enable the same set of compile options we would use for normal clang call.
+    # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
     # Enable C++23.
-    -std=c++23)
-  # Loop through the target sources and call clang-tidy.
+    -std=c++23
+  )
+
+  # Get the source directory and sources of the target.
   set(ALL_STAMPS)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
@@ -58,6 +66,8 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     message(WARNING "clang-tidy: no sources found for target ${TARGET}!")
     return()
   endif()
+
+  # Loop through the target sources and call clang-tidy.
   foreach(SOURCE ${TARGET_SOURCES})
     # Skip non-C/C++ files.
     is_cpp_file("${SOURCE}" SOURCE_IS_CPP)
@@ -65,31 +75,30 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       message(WARNING "clang-tidy: a skipping non C/C++ file: '${SOURCE}'.")
       continue()
     endif()
+
     # Create a stamp.
     string(REPLACE "/" "_" STAMP "${SOURCE}.tidy_stamp")
     list(APPEND ALL_STAMPS "${STAMP}")
+
     # Execute clang-tidy and update a stamp file on success.
     # (wrapped with chronic to avoid annoying `N warnings generated` messages).
     set(SOURCE_PATH "${TARGET_SOURCE_DIR}/${SOURCE}")
     add_custom_command(
+      COMMENT "Analyzing ${SOURCE_PATH}"
       OUTPUT "${STAMP}"
-      ## Execute clang-tidy.
       COMMAND
         "${CHRONIC_EXE}"
         "${CLANG_TIDY_EXE}" "${SOURCE_PATH}"
         ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_ARGS}
-      ## Update stamp.
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
-      ## Depend on our source file and all it's dependencies.
       DEPENDS "${SOURCE_PATH}"
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
-      ## Add message.
-      COMMENT "Analyzing ${SOURCE_PATH}"
-      ## This is needed for generator expressions to work.
-      COMMAND_EXPAND_LISTS
-      VERBATIM)
+      COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
+      VERBATIM
+    )
   endforeach()
+
   # Create a custom target that should "build" once all checks succeed.
   add_custom_target("${TARGET}_tidy" ALL DEPENDS ${TARGET} ${ALL_STAMPS})
 endfunction()

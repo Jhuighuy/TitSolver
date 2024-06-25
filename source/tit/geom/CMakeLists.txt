@@ -13,7 +13,8 @@ add_tit_library(
     "kd_tree.hpp"
     "search_engine.hpp"
   DEPENDS
-    tit::core)
+    tit::core
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -24,6 +25,7 @@ add_tit_executable(
     "bbox.test.cpp"
   DEPENDS
     tit::geom
-    tit::testing)
+    tit::testing
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

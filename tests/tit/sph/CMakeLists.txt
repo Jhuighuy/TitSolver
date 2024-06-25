@@ -5,6 +5,7 @@
 
 add_tit_test_from_target(
   tit::sph_tests
-  NAME "tit/sph/unit")
+  NAME "tit/sph/unit"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

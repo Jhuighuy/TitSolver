@@ -46,7 +46,8 @@ set(
   # No warnings for unknown pragmas.
   -Wno-unknown-pragmas
   # No warnings for unknown warning options.
-  -Wno-unknown-warning-option)
+  -Wno-unknown-warning-option
+)
 
 # Define common compile options.
 set(
@@ -57,7 +58,8 @@ set(
   -march=native
   # `__cpp_concepts` is not updated in clang for some reason.
   -Wno-builtin-macro-redefined
-  -D__cpp_concepts=202002L)
+  -D__cpp_concepts=202002L
+)
 
 # When compiling with GCC, force LLVM tools to use libstdc++.
 #
@@ -70,10 +72,12 @@ if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # `<install-path>/gcc/<version>/include/c++/<version>/<platform>/`.
   set(
     STDCPP_INCLUDE_DIR_REGEX
-    "gcc/([0-9]+(\\.[0-9]+)+(_[0-9]+)?)/include/c\\+\\+/([0-9]+)")
+    "gcc/([0-9]+(\\.[0-9]+)+(_[0-9]+)?)/include/c\\+\\+/([0-9]+)"
+  )
   set(
     STDCPP_SYS_INCLUDE_DIR_REGEX
-    "${STDCPP_INCLUDE_DIR_REGEX}/(.*-apple-.*)")
+    "${STDCPP_INCLUDE_DIR_REGEX}/(.*-apple-.*)"
+  )
   set(STDCPP_INCLUDE_DIR)
   set(STDCPP_SYS_INCLUDE_DIR)
   foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
@@ -87,12 +91,15 @@ if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     list(JOIN CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "\n" DIRS)
     message(FATAL_ERROR "Could not find libstdc++ in:\n${DIRS}")
   endif()
+
   # Add libstdc++ include paths.
   list(
     APPEND
     CLANG_COMPILE_OPTIONS
     -stdlib++-isystem "${STDCPP_INCLUDE_DIR}"
-    -cxx-isystem "${STDCPP_SYS_INCLUDE_DIR}")
+    -cxx-isystem "${STDCPP_SYS_INCLUDE_DIR}"
+  )
+
   # Clear variables.
   unset(STDCPP_INCLUDE_DIR)
   unset(STDCPP_SYS_INCLUDE_DIR)
@@ -115,7 +122,8 @@ set(
   -fomit-frame-pointer
   -ffinite-loops
   -ffinite-math-only
-  -fno-stack-protector)
+  -fno-stack-protector
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -127,6 +135,7 @@ set(
   # Store debug information.
   -g
   # Optimize for debugging experience.
-  -Og)
+  -Og
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

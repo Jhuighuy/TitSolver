@@ -66,7 +66,8 @@ set(
   # Violations of pointer safety annotations (disabled).
   -Wno-psabi
   # TODO: enable this warning later.
-  -Wno-unused-result)
+  -Wno-unused-result
+)
 
 # Define common compile options.
 set(
@@ -74,7 +75,8 @@ set(
   # Warnings and diagnostics.
   ${GNU_WARNINGS}
   # Generate machine code for the host system's architecture.
-  -march=native)
+  -march=native
+)
 
 # Define common link options.
 set(GNU_LINK_OPTIONS)
@@ -91,7 +93,8 @@ set(
   # Enable aggressive optimization levels.
   -Ofast
   # Enables aggressive floating-point expression contraction.
-  -ffp-contract=fast)
+  -ffp-contract=fast
+)
 
 # Use link time optimizations?
 #
@@ -108,9 +111,11 @@ endif()
 set(GNU_USE_PGO FALSE)
 if(GNU_USE_PGO)
   message(WARNING "Profile-guided optimizations support is experimental!")
+
+  # Setup the directory for profile data.
   set(GNU_PGO_DIR "${CMAKE_BINARY_DIR}/gnu_pgo")
-  # Create the directory if it does not exist.
   file(MAKE_DIRECTORY "${GNU_PGO_DIR}")
+
   # Check if the directory is empty.
   file(GLOB RESULT "${GNU_PGO_DIR}/*")
   list(LENGTH RESULT RESULT)
@@ -124,7 +129,8 @@ if(GNU_USE_PGO)
       "-fprofile-dir=${GNU_PGO_DIR}"
       "-fprofile-generate=${GNU_PGO_DIR}"
       # Update profile data atomically, since we are multi-threaded.
-      -fprofile-update=atomic)
+      -fprofile-update=atomic
+    )
   else()
     # If the directory is not empty, we can use the profile.
     message(WARNING "PGO: Profile data will be used.")
@@ -136,7 +142,8 @@ if(GNU_USE_PGO)
       "-fprofile-use=${GNU_PGO_DIR}"
       # Profiling data may be slightly inaccurate or incomplete.
       -fprofile-correction
-      -Wno-missing-profile)
+      -Wno-missing-profile
+    )
   endif()
 endif()
 
@@ -146,7 +153,8 @@ set(
   # Inherit common options.
   ${GNU_COMPILE_OPTIONS}
   # Inherit optimization options.
-  ${GNU_OPTIMIZE_OPTIONS})
+  ${GNU_OPTIMIZE_OPTIONS}
+)
 
 # Define link options for "Release" configuration.
 set(
@@ -154,7 +162,8 @@ set(
   # Inherit common options.
   ${GNU_LINK_OPTIONS}
   # Inherit optimization options (needed for LTO or PGO).
-  ${GNU_OPTIMIZE_OPTIONS})
+  ${GNU_OPTIMIZE_OPTIONS}
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -166,7 +175,8 @@ set(
   # Store debug information.
   -g
   # Optimize for debugging experience.
-  -Og)
+  -Og
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -176,7 +186,8 @@ set(
   # Enable code coverage instrumentation during compilation.
   --coverage
   # Update profile data atomically, since we are multi-threaded.
-  -fprofile-update=atomic)
+  -fprofile-update=atomic
+)
 
 # Define compile options for "Coverage" configuration.
 set(
@@ -193,7 +204,8 @@ set(
   -fno-default-inline
   -fno-inline
   -fno-inline-small-functions
-  -fno-elide-constructors)
+  -fno-elide-constructors
+)
 
 # Define the link options for "Coverage" configuration.
 set(
@@ -201,6 +213,7 @@ set(
   # Inherit common options.
   ${GNU_LINK_OPTIONS}
   # Inherit coverage options.
-  ${GNU_COVERAGE_OPTIONS})
+  ${GNU_COVERAGE_OPTIONS}
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

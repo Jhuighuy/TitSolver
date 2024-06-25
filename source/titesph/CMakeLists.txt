@@ -10,6 +10,7 @@ add_tit_executable(
     "esph.cpp"
   DEPENDS
     tit::core
-    tit::sph)
+    tit::sph
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

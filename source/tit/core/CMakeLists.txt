@@ -60,7 +60,8 @@ add_tit_library(
     tit::base
     hwy::hwy
     TBB::tbb
-    TBB::tbbmalloc)
+    TBB::tbbmalloc
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -96,6 +97,7 @@ add_tit_executable(
     "vec/vec_mask.test.cpp"
   DEPENDS
     tit::core
-    tit::testing)
+    tit::testing
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

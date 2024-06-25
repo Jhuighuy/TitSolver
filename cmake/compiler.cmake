@@ -18,7 +18,8 @@ set(
   # Configuration with aggressive optimizations, suitable for production.
   "Release"
   # Same as `Debug`, but instrumented for test coverage analysis.
-  "Coverage")
+  "Coverage"
+)
 
 if(CMAKE_BUILD_TYPE)
   # Single-configuration generator is used. Check the current configuration.
@@ -27,10 +28,11 @@ if(CMAKE_BUILD_TYPE)
     message(
       FATAL_ERROR
       "Unknown build configuration ${CMAKE_BUILD_TYPE}. "
-      "Choose from: ${ALL_CONFIGS}.")
+      "Choose from: ${ALL_CONFIGS}."
+    )
   endif()
 else()
-  # Tell CMake about our configurations.
+  # Multi-configuration generator is used. Tell CMake about our configurations.
   set(CMAKE_CONFIGURATION_TYPES ${ALL_CONFIGS})
 endif()
 
@@ -48,14 +50,16 @@ try_set(CXX_COMPILER_MIN_VERSION "${CXX_COMPILER}_MIN_VERSION")
 if(NOT DEFINED CXX_COMPILER_MIN_VERSION)
   message(
     FATAL_ERROR
-    "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported.")
+    "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported."
+  )
 endif()
 # ...and it's version is sufficient.
 if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CXX_COMPILER_MIN_VERSION})
   message(
     FATAL_ERROR
     "Insufficient version of compiler ${CMAKE_CXX_COMPILER_ID} is used. "
-    "Minimum required version is ${CXX_COMPILER_MIN_VERSION}.")
+    "Minimum required version is ${CXX_COMPILER_MIN_VERSION}."
+  )
 endif()
 
 # Setup warnings and diagnostics options.
@@ -68,7 +72,8 @@ foreach(CONFIG ${ALL_CONFIGS})
   try_set(
     "CXX_COMPILE_OPTIONS_${CONFIG}"
     "${CXX_COMPILER}_COMPILE_OPTIONS_${CONFIG}"
-    ${CXX_COMPILE_OPTIONS})
+    ${CXX_COMPILE_OPTIONS}
+  )
 endforeach()
 
 # Setup link options.
@@ -78,7 +83,8 @@ foreach(CONFIG ${ALL_CONFIGS})
   try_set(
     "CXX_LINK_OPTIONS_${CONFIG}"
     "${CXX_COMPILER}_LINK_OPTIONS_${CONFIG}"
-    ${CXX_LINK_OPTIONS})
+    ${CXX_LINK_OPTIONS}
+  )
 endforeach()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

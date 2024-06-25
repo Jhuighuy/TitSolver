@@ -15,7 +15,8 @@ find_program(
   TEST_RUNNER_EXE
   NAMES "test_runner.sh"
   PATHS "${CMAKE_SOURCE_DIR}/build"
-  REQUIRED)
+  REQUIRED
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -29,14 +30,16 @@ function(add_tit_test)
     ""
     "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
     "COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
-    ${ARGN})
+    ${ARGN}
+  )
   if(NOT TEST_NAME)
     message(FATAL_ERROR "Test name must be specified.")
   endif()
   if(NOT TEST_COMMAND)
     message(FATAL_ERROR "Command line must not be empty.")
   endif()
-  # Prepare the list of arguments for the test driver.
+
+  # Build the list of arguments for the test driver.
   set(TEST_DRIVER_ARGS "--name=${TEST_NAME}")
   if(TEST_EXIT_CODE)
     list(APPEND TEST_DRIVER_ARGS "--exit-code=${TEST_EXIT_CODE}")
@@ -65,16 +68,20 @@ function(add_tit_test)
     list(APPEND TEST_DRIVER_ARGS "--filter=${FILTER}")
   endforeach()
   list(APPEND TEST_DRIVER_ARGS "--" ${TEST_COMMAND})
+
   # Register the test.
   add_test(
     NAME "${TEST_NAME}"
     COMMAND "${TEST_RUNNER_EXE}" ${TEST_DRIVER_ARGS}
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  )
+
   # Set test environment.
   if(TEST_ENVIRONMENT)
     set_tests_properties(
       "${TEST_NAME}"
-      PROPERTIES ENVIRONMENT ${TEST_ENVIRONMENT})
+      PROPERTIES ENVIRONMENT ${TEST_ENVIRONMENT}
+    )
   endif()
 endfunction()
 
@@ -92,12 +99,14 @@ function(add_tit_test_from_target TARGET)
     TEST
     ""
     "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
-    "EXTRA_ARGS;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
-    ${ARGN})
+    "ARGS;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
+    ${ARGN}
+  )
+
   # Add the test for this executable.
   add_tit_test(
     NAME ${TEST_NAME}
-    COMMAND "$<TARGET_FILE:${TARGET}>" ${TEST_EXTRA_ARGS}
+    COMMAND "$<TARGET_FILE:${TARGET}>" ${TEST_ARGS}
     EXIT_CODE ${TEST_EXIT_CODE}
     STDIN ${TEST_STDIN}
     ENVIRONMENT ${TEST_ENVIRONMENT}
@@ -105,7 +114,8 @@ function(add_tit_test_from_target TARGET)
     MATCH_STDOUT ${TEST_MATCH_STDOUT}
     MATCH_STDERR ${TEST_MATCH_STDERR}
     MATCH_FILES ${TEST_MATCH_FILES}
-    FILTERS ${TEST_FILTERS})
+    FILTERS ${TEST_FILTERS}
+  )
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

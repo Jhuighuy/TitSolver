@@ -19,7 +19,8 @@ add_tit_library(
     "TitParticle.hpp"
   DEPENDS
     tit::core
-    tit::geom)
+    tit::geom
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -29,6 +30,7 @@ add_tit_executable(
   SOURCES
   DEPENDS
     tit::sph
-    tit::testing)
+    tit::testing
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

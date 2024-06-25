@@ -13,10 +13,14 @@ find_program(
   CHRONIC_EXE
   NAMES "chronic" "chronic.sh"
   PATHS "${CMAKE_SOURCE_DIR}/build"
-  REQUIRED)
+  REQUIRED
+)
 
 # Find bash (or zsh).
 find_program(BASH_EXE NAMES "bash" "zsh" REQUIRED)
+
+# Find git.
+find_program(GIT_EXE NAMES "git" REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -32,19 +36,23 @@ function(get_program_version PROG_EXE PROG_VERSION_VAR)
   if(NOT PROG_EXE)
     message(FATAL_ERROR "Program path must be specified.")
   endif()
+
   # Run the executable to get its version.
   execute_process(
     COMMAND ${PROG_EXE} --version
     RESULT_VARIABLE PROCESS_RESULT
-    OUTPUT_VARIABLE PROCESS_OUTPUT)
+    OUTPUT_VARIABLE PROCESS_OUTPUT
+  )
   if(NOT PROCESS_RESULT EQUAL 0)
     message(FATAL_ERROR "Could not execute ${PROG_EXE} --version")
   endif()
+
   # Extract the full version string.
   string(REGEX MATCH "[0-9]+(\\.[0-9]+)+" PROG_VERSION "${PROCESS_OUTPUT}")
   if(NOT PROG_VERSION)
     message(FATAL_ERROR "Could not find a version number.")
   endif()
+
   # Propagate the version variable to parent scope.
   set(${PROG_VERSION_VAR} ${PROG_VERSION} PARENT_SCOPE)
 endfunction()
@@ -64,30 +72,35 @@ function(find_program_with_version PROG_EXE_VAR)
     "REQUIRED;NO_CACHE"
     "MIN_VERSION"
     "NAMES;HINTS;PATHS"
-    ${ARGN})
+    ${ARGN}
+  )
   if(NOT PROG_NAMES)
     message(FATAL_ERROR "Program names must be specified.")
   endif()
   if(NOT PROG_MIN_VERSION)
     message(FATAL_ERROR "Program minimal version must be specified.")
   endif()
+
   # Search for the program. Do not cache the result yet.
   find_program(
     PROG_EXE
     NAMES ${PROG_NAMES}
     HINTS ${PROG_HINTS}
     PATHS ${PROG_PATHS}
-    NO_CACHE)
+    NO_CACHE
+  )
   if(NOT PROG_EXE)
     if(PROG_REQUIRED)
       list(JOIN PROG_NAMES ", " PROG_NAMES)
       message(
         FATAL_ERROR
         "Count not find ${PROG_EXE_VAR} using the following names: "
-        ${PROG_NAMES})
+        ${PROG_NAMES}
+      )
     endif()
     return()
   endif()
+
   # Check program version.
   get_program_version(${PROG_EXE} PROG_VERSION)
   if(PROG_VERSION VERSION_LESS ${PROG_MIN_VERSION})
@@ -99,9 +112,11 @@ function(find_program_with_version PROG_EXE_VAR)
     message(
       ${MESSAGE_LEVEL}
       "Insufficient version ${PROG_VERSION} of ${PROG_EXE_VAR} was found. "
-      "Minimum required version is ${PROG_MIN_VERSION}.")
+      "Minimum required version is ${PROG_MIN_VERSION}."
+    )
     return()
   endif()
+
   # Propagate the program path to parent scope or cache on success.
   if(PROG_NO_CACHE)
     set(${PROG_EXE_VAR} ${PROG_EXE} PARENT_SCOPE)
@@ -158,8 +173,8 @@ endfunction()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##
-## Get a selected subset of the target's compile options (include directories
-## and compile definitions).
+## Get a selected subset of the target's compile options: include directories
+## and compile definitions.
 ##
 macro(get_generated_compile_options TARGET OPTIONS_VAR)
   # Append include directories.
@@ -168,8 +183,10 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
     list(
       APPEND
       ${OPTIONS_VAR}
-      "$<LIST:TRANSFORM,${TARGET_INCLUDE_DIRS},PREPEND,-I>")
+      "$<LIST:TRANSFORM,${TARGET_INCLUDE_DIRS},PREPEND,-I>"
+    )
   endforeach()
+
   # Append compile definitions.
   foreach(PROP COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
     set(TARGET_DEFS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
@@ -177,7 +194,8 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
     list(
       APPEND
       ${OPTIONS_VAR}
-      "$<LIST:TRANSFORM,${TARGET_VALID_DEFS},PREPEND,-D>")
+      "$<LIST:TRANSFORM,${TARGET_VALID_DEFS},PREPEND,-D>"
+    )
   endforeach()
 endmacro()
 
