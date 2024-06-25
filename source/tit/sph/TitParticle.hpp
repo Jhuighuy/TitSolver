@@ -30,7 +30,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
-#include "tit/geom/search_engine.hpp"
+#include "tit/geom/knn_search.hpp"
 #include "tit/geom/sfc_sort.hpp"
 
 #include "tit/sph/field.hpp"
