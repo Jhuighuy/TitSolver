@@ -66,6 +66,11 @@ function(add_tit_library)
   # Link with the dependent libraries.
   target_link_libraries(${LIB_TARGET} ${LIB_PUBLIC} ${LIB_DEPENDS})
 
+  # Install the library.
+  if(LIB_TYPE STREQUAL "SHARED")
+    install(TARGETS ${LIB_TARGET} LIBRARY DESTINATION lib)
+  endif()
+
   # Enable static analysis.
   enable_clang_tidy(${LIB_TARGET})
 endfunction()
@@ -90,6 +95,9 @@ function(add_tit_executable)
 
   # Link with the dependent libraries.
   target_link_libraries(${EXE_TARGET} PRIVATE ${EXE_DEPENDS})
+
+  # Install the executable.
+  install(TARGETS ${EXE_TARGET} RUNTIME DESTINATION bin)
 
   # Enable static analysis.
   enable_clang_tidy(${EXE_TARGET})

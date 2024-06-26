@@ -116,7 +116,6 @@ find_vcpkg() {
   fi
 }
 
-# Function to configure the project
 configure() {
   local CMAKE_ARGS
   CMAKE_ARGS=("$CMAKE_EXE")
@@ -189,6 +188,14 @@ build() {
   "${CMAKE_ARGS[@]}" || exit $?
 }
 
+install() {
+  local CMAKE_ARGS
+  CMAKE_ARGS=("cmake")
+  CMAKE_ARGS+=("--install" "$OUTPUT_DIR")
+  CMAKE_ARGS+=("--prefix" "$INSTALL_DIR")
+  "${CMAKE_ARGS[@]}" || exit $?
+}
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CTEST_EXE="ctest"
@@ -226,6 +233,7 @@ configure
 echo_banner
 echo "# Building..."
 build
+install
 if [ "$RUN_TESTS" = true ]; then
   echo_banner
   echo "# Running tests..."
