@@ -44,6 +44,9 @@ numfig_format = {
 # Options for HTML output.
 #
 
+# TODO: Currently, the resulting folder contains a lot of files that are not
+# needed: images, search indices, etc. We should find a way to exclude them.
+
 html_short_title = "Tit Solver"
 
 html_use_index = False
@@ -51,5 +54,7 @@ html_use_modindex = False
 html_copy_source = False
 
 html_theme = "basic"
+html_static_path = ["_static"]
+html_css_files = ["styles.css"]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

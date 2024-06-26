@@ -34,6 +34,10 @@
 !*.cpp
 
 # Web files.
+!*.js
+!*.html
+!*.css
+!*.svg
 # (To be replaced with the PR with the frontend.)
 /front
 

@@ -27,10 +27,13 @@ function(add_sphinx_target)
     message(FATAL_ERROR "Sphinx configuration file does not exist!")
   endif()
 
-  # Find source files.
+  # Find all source files: `*.rst` files for documentation,
+  # `*.html`, `*.css`, `*.js` and `*.svg` files for the theme.
   set(SPHINX_SOURCES "conf.py")
-  file(GLOB_RECURSE FILES "${CMAKE_CURRENT_SOURCE_DIR}/*.rst")
-  list(APPEND SPHINX_SOURCES ${FILES})
+  foreach(EXT ".rst" ".html" ".css" ".js" ".svg")
+    file(GLOB_RECURSE FILES "${CMAKE_CURRENT_SOURCE_DIR}/*${EXT}")
+    list(APPEND SPHINX_SOURCES ${FILES})
+  endforeach()
 
   # Create a stamp.
   set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${SPHINX_NAME}.sphinx_stamp")

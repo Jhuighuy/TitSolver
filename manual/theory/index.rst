@@ -3,14 +3,15 @@
 .. See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. include:: shared.rst
+.. include:: ../shared.rst
 
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-User Manual
-===========
+Theory Guide
+============
 
 .. toctree::
-  theory/index
+  sph
+  wcsph
 
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
