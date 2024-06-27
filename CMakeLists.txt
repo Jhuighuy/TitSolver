@@ -69,6 +69,7 @@ target_link_libraries(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Add the actual sources.
+add_subdirectory("manual")
 add_subdirectory("source")
 add_subdirectory("tests")
 
