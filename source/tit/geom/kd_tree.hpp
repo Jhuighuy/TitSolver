@@ -40,7 +40,7 @@ public:
   using Point = std::ranges::range_value_t<Points>;
 
   /// Bounding box type.
-  using PointBBox = bbox_t<Point>;
+  using PointBBox = BBox<Point>;
 
   /// Numeric type used by the point type.
   using Real = vec_num_t<Point>;
