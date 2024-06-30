@@ -5,6 +5,11 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+#include <numbers>
+
+#include "tit/core/basic_types.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
@@ -38,6 +43,7 @@
 /// [ ] `TitParticle` header must become an umbrella header for all the
 ///     particle-related headers.
 /// [ ] CFL condition must be implemented.
+/// [ ] Something like `has_any`.
 
 namespace tit::sph {
 
@@ -66,7 +72,8 @@ public:
       ArtificialViscosity::required_fields | //
       Kernel::required_fields |              //
       meta::Set{fixed, parinfo} |            // TODO: fixed should not be here.
-      meta::Set{h, m, rho, drho_dt, p, r, v, dv_dt, u, du_dt};
+      meta::Set{h, m, rho, drho_dt, p, r, v, dv_dt, u, du_dt} | //
+      meta::Set{n, fs, Theta, dr, cs};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
@@ -79,7 +86,7 @@ public:
       ArtificialViscosity::modified_fields | //
       Kernel::modified_fields |              //
       meta::Set{p, rho, drho_dt, grad_rho, v, dv_dt, div_v, curl_v, u, du_dt} |
-      meta::Set{S, L};
+      meta::Set{S, L, n, fs, Theta, dr, cs};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -237,6 +244,9 @@ public:
       // Renormalization fields.
       if constexpr (has<PV>(S)) S[a] = {};
       if constexpr (has<PV>(L)) L[a] = {};
+      // Free surface fields.
+      if constexpr (has<PV>(n)) n[a] = {};
+      if constexpr (has<PV>(fs)) fs[a] = {};
     });
 
     // Compute density gradient and renormalization fields, if necessary.
@@ -254,19 +264,22 @@ public:
           grad_rho[a] += V_b * grad_flux;
           grad_rho[b] += V_a * grad_flux;
         }
-        // Update kernel renormalization coefficient, if
-        // necessary.
+        // Update kernel renormalization coefficient, if necessary.
         if constexpr (has<PV>(S)) {
           const auto S_flux = W_ab;
           S[a] += V_b * S_flux;
           S[b] += V_a * S_flux;
         }
-        // Update kernel gradient renormalization matrix, if
-        // necessary.
+        // Update kernel gradient renormalization matrix, if necessary.
         if constexpr (has<PV>(L)) {
           const auto L_flux = outer(r[b, a], grad_W_ab);
           L[a] += V_b * L_flux;
           L[b] += V_a * L_flux;
+        }
+        // Update normal vector, if necessary.
+        if constexpr (has<PV>(n)) {
+          n[a] += V_b * grad_W_ab;
+          n[b] -= V_a * grad_W_ab;
         }
       });
     }
@@ -280,10 +293,13 @@ public:
         if constexpr (has<PV>(S)) {
           if (!is_tiny(S[a])) rho[a] /= S[a];
         }
-        // Renormalize density gradient, if possible.
-        if constexpr (has<PV>(L)) {
+        // Renormalize density gradient and normal vector, if possible.
+        if constexpr (has<PV>(L) || has<PV>(n)) {
           const auto fact = ldl(L[a]);
-          if (fact) grad_rho[a] = fact->solve(grad_rho[a]);
+          if (fact) {
+            grad_rho[a] = fact->solve(grad_rho[a]);
+            if constexpr (has<PV>(n)) n[a] = -normalize(fact->solve(n[a]));
+          } else if constexpr (has<PV>(n)) n[a] = {};
         }
       });
     }
@@ -322,6 +338,7 @@ public:
     par::for_each(particles.views(), [this](PV a) {
       // Clean-up velocity fields.
       dv_dt[a] = {};
+      dr[a] = {};
       if constexpr (has<PV>(div_v)) div_v[a] = {};
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
       // Clean-up energy fields.
@@ -389,6 +406,75 @@ public:
       if constexpr (has<PV>(dalpha_dt)) {
         dalpha_dt[a] = artvisc_.switch_source(a);
       }
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_shifts(ParticleMesh& mesh,
+                                ParticleArray& particles) const {
+    using PV = ParticleView<ParticleArray>;
+    TIT_PROFILE_SECTION("FluidEquations::compute_shifts()");
+
+    // Track free surface particles, if necessary.
+    par::for_each(particles.views(), [this, &mesh](PV a) {
+      // No free surface for fixed particles.
+      if (fixed[a]) return;
+
+      // Detect if the particle is a free surface particle.
+      Theta[a] = 100.0;
+      /*if (std::size(mesh[a]) >= 8)*/ {
+        std::ranges::for_each(mesh[a], [&](PV b) {
+          constexpr auto theta_0 = std::numbers::pi_v<real_t> / 2;
+          const auto theta = std::acos(dot(n[a], r[b, a]) / norm(r[a, b]));
+          Theta[a] = std::min(Theta[a], theta);
+          if (theta <= theta_0 / 2 && norm(r[a, b]) <= 2 * h[a]) {
+            return;
+          }
+        });
+      }
+
+      constexpr auto theta_0 = std::numbers::pi_v<real_t> / 2;
+      fs[a] = !(Theta[a] <= theta_0 / 2) ? FreeSurface::on : FreeSurface::far;
+    });
+
+    par::for_each(particles.views(), [this, &mesh](PV a) {
+      if (fixed[a]) return;
+      std::ranges::for_each(mesh[a], [&](PV b) {
+        if (fs[a] == FreeSurface::far && fs[b] == FreeSurface::on) {
+          fs[a] = FreeSurface::near;
+        }
+      });
+    });
+
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
+      const auto W_0 = kernel_(Vec{0.0, 0.5 * h[a]}, h[a]);
+      const auto W_ab = kernel_(a, b);
+      const auto grad_W_ab = kernel_.grad(a, b);
+      const auto V_a = m[a] / rho[a];
+      const auto V_b = m[b] / rho[b];
+      const auto Chi_ab = 0.2 * pow4(W_ab / W_0);
+      dr[a] -= (1 + Chi_ab) * V_b * grad_W_ab;
+      dr[b] += (1 + Chi_ab) * V_a * grad_W_ab;
+    });
+    par::for_each(particles.views(), [&](PV a) {
+      if (fixed[a]) return;
+      const auto CFL_a = 0.8;
+      const auto Ma_a = norm(v[a]) / cs[a];
+      const auto Phi_a = [&] { //
+        if (fs[a] == FreeSurface::far) return 1.0;
+        // if (fs[a] == FreeSurface::on) return 0.0;
+        //  for (PV b : mesh[a]) {
+        //    if (fs[b] == FreeSurface::on) {
+        //      return dot(r[b, a], n[b]) / (2 * h[a]);
+        //    }
+        //  }
+        return 0.0;
+      }();
+      dr[a] *= 2 * CFL_a * Phi_a * Ma_a * pow2(h[a]);
     });
   }
 

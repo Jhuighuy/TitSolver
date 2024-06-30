@@ -62,7 +62,7 @@ public:
     // Setup boundary conditions.
     equations_.setup_boundary(mesh, particles);
 
-    // Update particle velocty, internal energy, etc.
+    // Update particle velocty, position, internal energy, etc.
     equations_.compute_forces(mesh, particles);
     par::for_each(particles.views(), [dt](PV a) {
       if (fixed[a]) return;
@@ -71,6 +71,15 @@ public:
       if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
+
+    // Apply particle shifting, if necessary.
+    if constexpr (has<PV>(dr)) {
+      equations_.compute_shifts(mesh, particles);
+      par::for_each(particles.views(), [](PV a) {
+        if (fixed[a]) return;
+        r[a] += dr[a];
+      });
+    }
 
     // Update particle density.
     equations_.compute_density(mesh, particles);
@@ -160,6 +169,15 @@ public:
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
     });
 
+    // Apply particle shifting, if necessary.
+    if constexpr (has<PV>(dr)) {
+      equations_.compute_shifts(mesh, particles);
+      par::for_each(particles.views(), [](PV a) {
+        if (fixed[a]) return;
+        r[a] += dr[a];
+      });
+    }
+
     // Increment step index.
     step_index_ += 1;
   }
@@ -248,6 +266,15 @@ public:
       lincomb(0.75, u1, 0.25, u);
       substep(u);
       lincomb(1.0 / 3.0, u1, 2.0 / 3.0, u);
+    }
+
+    // Apply particle shifting, if necessary.
+    if constexpr (has<PV>(dr)) {
+      equations_.compute_shifts(mesh, particles);
+      par::for_each(particles.views(), [](PV a) {
+        if (fixed[a]) return;
+        r[a] += dr[a];
+      });
     }
 
     // Increment step index.
