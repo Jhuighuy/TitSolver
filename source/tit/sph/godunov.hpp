@@ -6,110 +6,108 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
-#include <ranges>
-#include <tuple>
-#include <type_traits>
 
-#include "tit/core/basic_types.hpp"
-#include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/par.hpp"
+#include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/TitParticle.hpp"
-#include "tit/sph/artificial_viscosity.hpp"
-#include "tit/sph/density_equation.hpp"
+#include "tit/sph/continuity_equation.hpp"
+#include "tit/sph/energy_equation.hpp"
+#include "tit/sph/equation_of_motion.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
+#include "tit/sph/momentum_equation.hpp"
+#include "tit/sph/particle_array.hpp"
+#include "tit/sph/viscosity.hpp"
 
 namespace tit::sph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// The particle estimator with a fixed kernel width.
-// TODO: I am not sure whether we should separate "symmetric" and
-// "non-symmetric" SPH equations. Basically, implementation of the cases
-// are both different and similar at the same time. The entire logic the same,
-// although there is a difference is a way we compute interactions.
-// In symmetric case the best option is to compute pair interactions,
-// since the very similar term is added to or subtracted from each particle
-// in pair. In non-symmetric case this is no more true, an the most terms are
-// generally not similar (mainly because of the different width). So
-// implementing loops using unique pair is not sensible any more. (And it
-// also requires an additional symmetrization step).
-// So first step during this mess would be to split symmetric and
-// symmetric adjacency implementations.
-template<equation_of_state EquationOfState,
-         density_equation DensityEquation,
-         kernel Kernel,
-         artificial_viscosity ArtificialViscosity>
-class GodunovFluidEquations {
+/// Fluid equations with fixed kernel width and continuity equation, that
+/// use Godunov's method.
+template<equation_of_motion EquationOfMotion,
+         continuity_equation ContinuityEquation,
+         momentum_equation MomentumEquation,
+         energy_equation EnergyEquation,
+         equation_of_state EquationOfState,
+         viscosity Viscosity,
+         kernel Kernel>
+class GodunovFluidEquations final {
 public:
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      meta::Set{fixed, parinfo} | // TODO: fixed should not be here.
-#if HARD_DAM_BREAKING
-      meta::Set{v_xsph} |
-#endif
-      meta::Set{h, m, rho, p, cs, r, v, dv_dt} |
-      EquationOfState::required_fields | DensityEquation::required_fields |
-      Kernel::required_fields | ArtificialViscosity::required_fields;
+      EquationOfMotion::required_fields |   //
+      ContinuityEquation::required_fields | //
+      MomentumEquation::required_fields |   //
+      EnergyEquation::required_fields |     //
+      EquationOfState::required_fields |    //
+      Viscosity::required_fields |          //
+      Kernel::required_fields |             //
+      meta::Set{fixed, parinfo} |           // TODO: fixed should not be here.
+      meta::Set{h, m, rho, drho_dt, p, cs, r, v, dv_dt, u, du_dt};
+
+  /// Set of particle fields that are modified.
+  static constexpr auto modified_fields =
+      EquationOfMotion::modified_fields |   //
+      ContinuityEquation::modified_fields | //
+      MomentumEquation::modified_fields |   //
+      EnergyEquation::modified_fields |     //
+      EquationOfState::modified_fields |    //
+      Viscosity::modified_fields |          //
+      Kernel::modified_fields |             //
+      meta::Set{p, rho, drho_dt, grad_rho, v, dv_dt, div_v, curl_v, u, du_dt} |
+      meta::Set{cs, S, L};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Initialize fluid equations.
-  constexpr GodunovFluidEquations(EquationOfState eos = {},
-                                  DensityEquation density_equation = {},
-                                  Kernel kernel = {},
-                                  ArtificialViscosity artvisc = {}) noexcept
-      : eos_{std::move(eos)}, density_equation_{std::move(density_equation)},
-        kernel_{std::move(kernel)}, artvisc_{std::move(artvisc)} {}
+  /// Construct the fluid equations.
+  constexpr explicit GodunovFluidEquations(EquationOfMotion eom,
+                                           ContinuityEquation continuity,
+                                           MomentumEquation momentum,
+                                           EnergyEquation energy,
+                                           EquationOfState eos,
+                                           Viscosity viscosity,
+                                           Kernel kernel) noexcept
+      : eom_{std::move(eom)}, continuity_{std::move(continuity)},
+        momentum_{std::move(momentum)}, energy_{std::move(energy)},
+        eos_{std::move(eos)}, viscosity_{std::move(viscosity)},
+        kernel_{std::move(kernel)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void init(ParticleArray& particles) const {
-    using PV = ParticleView<ParticleArray>;
-    par::static_for_each(particles.views(), [&](PV a) {
-      // Initialize particle pressure (and sound speed).
-      eos_.compute_pressure(a);
-      // Initialize particle width and Omega.
-      if constexpr (std::same_as<DensityEquation, GradHSummationDensity>) {
-        h[a] = density_equation_.width(a);
-        Omega[a] = 1.0;
-      }
-      // Initialize particle artificial viscosity switch value.
-      if constexpr (has<PV>(alpha)) alpha[a] = 1.0;
-    });
+  template<particle_array<required_fields> ParticleArray>
+  constexpr void init(ParticleArray& /*particles*/) const {
+    // Nothing to do.
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray, class ParticleAdjacency>
-  constexpr auto index(ParticleArray& /*particles*/,
-                       ParticleAdjacency& adjacent_particles) const {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr auto index(ParticleMesh& mesh,
+                       [[maybe_unused]] ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
+    mesh.build(particles, [&](PV a) { return kernel_.radius(a); });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Setup boundary particles.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
   constexpr void setup_boundary(
-      [[maybe_unused]] ParticleArray& particles,
-      [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
+      [[maybe_unused]] ParticleMesh& mesh,
+      [[maybe_unused]] ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
 #if WITH_WALLS
     using PV = ParticleView<ParticleArray>;
-    par::for_each(adjacent_particles._fixed(), [&](auto ia) {
+    par::for_each(mesh._fixed(particles), [&](auto ia) {
       auto [i, a] = ia;
       const auto search_point = a[r];
       const auto clipped_point = Domain.clamp(search_point);
@@ -117,7 +115,7 @@ public:
       real_t S = {};
       Mat<real_t, 3> M{};
       constexpr auto SCALE = 3;
-      std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
+      std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
         const auto r_ab = r_a - r[b];
         const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
         const auto W_ab = kernel_(r_ab, SCALE * h[a]);
@@ -130,21 +128,25 @@ public:
         auto E = fact->solve(e);
         rho[a] = {};
         v[a] = {};
-        std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
+        u[a] = {};
+        std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
           const auto r_ab = r_a - r[b];
           const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
           auto W_ab = dot(E, B_ab) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
+          u[a] += m[b] / rho[b] * u[b] * W_ab;
         });
       } else if (!is_tiny(S)) {
         rho[a] = {};
         v[a] = {};
-        std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
+        u[a] = {};
+        std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
           const auto r_ab = r_a - r[b];
           auto W_ab = (1 / S) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
+          u[a] += m[b] / rho[b] * u[b] * W_ab;
         });
       } else {
         goto fail;
@@ -184,14 +186,13 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute density-related fields.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void compute_density(ParticleArray& particles,
-                                 ParticleAdjacency& adjacent_particles) const {
-    setup_boundary(particles, adjacent_particles);
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_density(ParticleMesh& /*mesh*/,
+                                 ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
     // Clean density-related fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       // Density fields.
       if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
     });
@@ -200,22 +201,22 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute velocity related fields.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void compute_forces(ParticleArray& particles,
-                                ParticleAdjacency& adjacent_particles) const {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_forces(ParticleMesh& mesh,
+                                ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       /// Compute pressure (and sound speed).
-      eos_.compute_pressure(a);
+      p[a] = eos_.pressure(a);
       /// Clean velocity-related fields.
       dv_dt[a] = {};
       if constexpr (has<PV>(du_dt)) du_dt[a] = {};
       if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
     });
     // Compute velocity and internal energy time derivatives.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [&](auto ab) {
       const auto [a, b] = ab;
       const auto grad_W_ab = kernel_.grad(a, b);
       /// Solve Riemann problem.
@@ -238,7 +239,7 @@ public:
       const auto v_flux = -2.0 * p_ast / (rho[a] * rho[b]) * grad_W_ab;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
     });
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.views(), [&](PV a) {
       if (fixed[a]) return;
 #if WITH_GRAVITY
       // TODO: Gravity.
@@ -251,17 +252,13 @@ public:
 
 private:
 
-  [[no_unique_address]]
-  EquationOfState eos_;
-
-  [[no_unique_address]]
-  DensityEquation density_equation_;
-
-  [[no_unique_address]]
-  Kernel kernel_;
-
-  [[no_unique_address]]
-  ArtificialViscosity artvisc_;
+  [[no_unique_address]] EquationOfMotion eom_;
+  [[no_unique_address]] ContinuityEquation continuity_;
+  [[no_unique_address]] MomentumEquation momentum_;
+  [[no_unique_address]] EnergyEquation energy_;
+  [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] Viscosity viscosity_;
+  [[no_unique_address]] Kernel kernel_;
 
 }; // class FluidEquations
 

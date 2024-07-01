@@ -16,6 +16,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
+#include "tit/sph/particle_array.hpp"
 
 #ifndef TIT_BRANCHLESS_KERNELS
 #define TIT_BRANCHLESS_KERNELS 1
@@ -26,76 +27,76 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Abstract smoothing kernel.
-class BaseKernel {
+class Kernel {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields = meta::Set{r, h};
+  static constexpr meta::Set required_fields{r, h};
+
+  /// Set of particle fields that are modified.
+  static constexpr meta::Set modified_fields{/*empty*/};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Support radius for particle.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto radius(this auto& self, PV a) noexcept {
     return self.radius(h[a]);
   }
 
   /// Value of the smoothing kernel for two particles.
   /// @{
-  template<class PV>
-    requires (has<PV>(required_fields) && has_const<PV>(h))
+  template<particle_view<required_fields> PV>
   constexpr auto operator()(this auto& self, PV a, PV b) noexcept {
+    static_assert(has_const<PV>(h));
     return self(r[a, b], h[a]);
   }
-  template<class PV, class Num>
-    requires (has<PV>(required_fields) && !has_const<PV>(h))
-  constexpr auto operator()(this auto& self, PV a, PV b, Num h) noexcept {
-    return self(r[a, b], h);
+  template<particle_view<required_fields> PV>
+  constexpr auto operator()(this auto& self, PV a, PV b, auto h_ab) noexcept {
+    static_assert(!has_const<PV>(h));
+    return self(r[a, b], h_ab);
   }
   /// @}
 
   /// Directional derivative of the smoothing kernel for two particles.
   /// @{
-  template<class PV>
-    requires (has<PV>(required_fields) && has_const<PV>(h))
+  template<particle_view<required_fields> PV>
   constexpr auto deriv(this auto& self, PV a, PV b) noexcept {
+    static_assert(has_const<PV>(h));
     return self.deriv(r[a, b], h[a]);
   }
-  template<class PV, class Num>
-    requires (has<PV>(required_fields) && !has_const<PV>(h))
-  constexpr auto deriv(this auto& self, PV a, PV b, Num h) noexcept {
-    return self.deriv(r[a, b], h);
+  template<particle_view<required_fields> PV>
+  constexpr auto deriv(this auto& self, PV a, PV b, auto h_ab) noexcept {
+    static_assert(!has_const<PV>(h));
+    return self.deriv(r[a, b], h_ab);
   }
   /// @}
 
   /// Value of the smoothing kernel for two particles.
   /// @{
-  template<class PV>
-    requires (has<PV>(required_fields) && has_const<PV>(h))
+  template<particle_view<required_fields> PV>
   constexpr auto grad(this auto& self, PV a, PV b) noexcept {
+    static_assert(has_const<PV>(h));
     return self.grad(r[a, b], h[a]);
   }
-  template<class PV, class Num>
-    requires (has<PV>(required_fields) && !has_const<PV>(h))
-  constexpr auto grad(this auto& self, PV a, PV b, Num h) noexcept {
-    return self.grad(r[a, b], h);
+  template<particle_view<required_fields> PV>
+  constexpr auto grad(this auto& self, PV a, PV b, auto h_ab) noexcept {
+    static_assert(!has_const<PV>(h));
+    return self.grad(r[a, b], h_ab);
   }
   /// @}
 
   /// Width derivative of the smoothing kernel for two points.
   /// @{
-  template<class PV>
-    requires (has<PV>(required_fields) && has_const<PV>(h))
-  constexpr auto width_deriv(this auto& self, //
-                             PV a,
-                             PV b) noexcept {
+  template<particle_view<required_fields> PV>
+  constexpr auto width_deriv(this auto& self, PV a, PV b) noexcept {
+    static_assert(has_const<PV>(h));
     return self.width_deriv(r[a, b], h[a]);
   }
-  template<class PV, class Num>
-    requires (has<PV>(required_fields) && !has_const<PV>(h))
-  constexpr auto width_deriv(this auto& self, PV a, PV b, Num h) noexcept {
-    return self.width_deriv(r[a, b], h);
+  template<particle_view<required_fields> PV>
+  constexpr auto width_deriv(this auto& self, PV a, PV b, auto h_ab) noexcept {
+    static_assert(!has_const<PV>(h));
+    return self.width_deriv(r[a, b], h_ab);
   }
   /// @}
 
@@ -112,7 +113,7 @@ public:
   /// Value of the smoothing kernel at point.
   template<class Num, size_t Dim>
   constexpr auto operator()(this auto& self,
-                            Vec<Num, Dim> x,
+                            const Vec<Num, Dim>& x,
                             Num h) noexcept -> Num {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
@@ -124,7 +125,7 @@ public:
   /// Directional derivative of the smoothing kernel at point.
   template<class Num, size_t Dim>
   constexpr auto deriv(this auto& self,
-                       Vec<Num, Dim> x,
+                       const Vec<Num, Dim>& x,
                        Num h) noexcept -> Num {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
@@ -136,7 +137,7 @@ public:
   /// Spatial gradient of the smoothing kernel at point.
   template<class Num, size_t Dim>
   constexpr auto grad(this auto& self,
-                      Vec<Num, Dim> x,
+                      const Vec<Num, Dim>& x,
                       Num h) noexcept -> Vec<Num, Dim> {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
@@ -149,7 +150,7 @@ public:
   /// Width derivative of the smoothing kernel at point.
   template<class Num, size_t Dim>
   constexpr auto width_deriv(this auto& self,
-                             Vec<Num, Dim> x,
+                             const Vec<Num, Dim>& x,
                              Num h) noexcept -> Num {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
     const auto h_inverse = inverse(h);
@@ -160,22 +161,12 @@ public:
     return dw_dh * self.unit_value(q) + w * self.unit_deriv(q) * dq_dh;
   }
 
-}; // class BaseKernel
-
-/// Smoothing kernel type.
-template<class Kernel>
-concept kernel = std::movable<Kernel> && std::derived_from<Kernel, BaseKernel>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Bell-shaped smoothing kernel.
-// TODO: Implement me! What am I?
-class BellShapedKernel : public BaseKernel {};
+}; // class Kernel
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Gaussian smoothing kernel (Monaghan, 1992).
-class GaussianKernel final : public BaseKernel {
+class GaussianKernel final : public Kernel {
 public:
 
   /// Kernel weight.
@@ -211,14 +202,8 @@ public:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Super-gaussian smoothing kernel (Monaghan, 1992).
-// TODO: implement me!
-class SuperGaussianKernel {};
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Cubic B-spline (M4) smoothing kernel.
-class CubicSplineKernel final : public BaseKernel {
+class CubicSplineKernel final : public Kernel {
 public:
 
   /// Kernel weight.
@@ -280,45 +265,8 @@ public:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Cubic B-spline (M4) smoothing kernel
-/// with modified derivative (Thomas, Couchman, 1992).
-class ThomasCouchmanKernel final : public BaseKernel {
-public:
-
-  /// Kernel weight.
-  template<class Num, size_t Dim>
-  static consteval auto weight() noexcept -> Num {
-    return CubicSplineKernel::weight<Num, Dim>();
-  }
-
-  /// Unit support radius.
-  template<class Num>
-  static consteval auto unit_radius() noexcept -> Num {
-    return CubicSplineKernel::unit_radius<Num>();
-  }
-
-  /// Value of the unit smoothing kernel at a point.
-  template<class Num>
-  static constexpr auto unit_value(Num q) noexcept -> Num {
-    return CubicSplineKernel::unit_value(q);
-  }
-
-  /// Derivative of the unit smoothing kernel at a point.
-  template<class Num>
-  static constexpr auto unit_deriv(Num q) noexcept -> Num {
-    // TODO: provide a branchless implementation.
-    if (q < Num{2.0 / 3.0}) return Num{-1.0};
-    if (q < Num{1.0}) return (Num{2.25} * q - Num{3.0}) * q;
-    if (q < Num{2.0}) return Num{0.75} * pow2(Num{2.0} - q);
-    return Num{0.0};
-  }
-
-}; // class ThomasCouchmanKernel
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// The quartic B-spline (M5) smoothing kernel.
-class QuarticSplineKernel final : public BaseKernel {
+class QuarticSplineKernel final : public Kernel {
 public:
 
   /// Kernel weight.
@@ -388,7 +336,7 @@ public:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Quintic B-spline (M6) smoothing kernel.
-class QuinticSplineKernel final : public BaseKernel {
+class QuinticSplineKernel final : public Kernel {
 public:
 
   /// Kernel weight.
@@ -458,7 +406,7 @@ public:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Abstract Wendland's smoothing kernel.
-class WendlandKernel : public BaseKernel {
+class WendlandKernel : public Kernel {
 public:
 
   /// Unit support radius.
@@ -577,6 +525,18 @@ public:
   }
 
 }; // class SixthOrderWendlandKernel
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Smoothing kernel type.
+template<class K>
+concept kernel = std::same_as<K, GaussianKernel> || //
+                 std::same_as<K, CubicSplineKernel> ||
+                 std::same_as<K, QuarticSplineKernel> ||
+                 std::same_as<K, QuinticSplineKernel> ||
+                 std::same_as<K, QuarticWendlandKernel> ||
+                 std::same_as<K, SixthOrderWendlandKernel> ||
+                 std::same_as<K, EighthOrderWendlandKernel>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

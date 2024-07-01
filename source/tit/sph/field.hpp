@@ -17,6 +17,9 @@
 
 namespace tit {
 
+template<class Field>
+concept field = true;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class PV>
@@ -26,8 +29,8 @@ concept has_fields_ =
 
 template<class PV>
 concept has_constants_ =
-    requires { std::remove_cvref_t<PV>::constants; } && //
-    meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::constants))>;
+    requires { std::remove_cvref_t<PV>::uniform_fields; } && //
+    meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::uniform_fields))>;
 
 /// Check particle fields presence.
 /// @{
@@ -52,7 +55,7 @@ consteval auto has_const(meta::Set<Consts...> consts) -> bool {
   if constexpr (!has_constants_<PV>) return false;
   else {
     return has<PV>(consts) &&
-           std::remove_cvref_t<PV>::constants.includes(consts);
+           std::remove_cvref_t<PV>::uniform_fields.includes(consts);
   }
 }
 template<has_fields_ PV, meta::type... Consts>
@@ -152,10 +155,22 @@ public:
 template<meta::type Field>
 inline constexpr auto field_name_v = std::remove_cvref_t<Field>::field_name;
 
-/// Field type.
+/// Space specification.
+template<class Num, size_t Dim>
+struct Space {};
+
+template<meta::type Field, class Space>
+struct field_value_type;
+
 template<meta::type Field, class Real, size_t Dim>
-using field_value_type_t =
-    typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
+struct field_value_type<Field, Space<Real, Dim>> {
+  using type =
+      typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
+};
+
+/// Field type.
+template<meta::type Field, class Space>
+using field_value_type_t = typename field_value_type<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -188,6 +203,7 @@ TIT_DEFINE_FIELD(ParInfo, parinfo)
 
 /// Particle position.
 TIT_DEFINE_VECTOR_FIELD(r)
+TIT_DEFINE_VECTOR_FIELD(dr)
 
 /// Particle velocity.
 TIT_DEFINE_VECTOR_FIELD(v)
@@ -226,12 +242,11 @@ TIT_DEFINE_SCALAR_FIELD(u)
 /// Particle thermal energy time derivative.
 TIT_DEFINE_SCALAR_FIELD(du_dt)
 
-/// Particle molecular viscosity.
+/// Particle dynamic viscosity.
 TIT_DEFINE_SCALAR_FIELD(mu)
-/// Particle molecular turbulent viscosity.
-TIT_DEFINE_SCALAR_FIELD(mu_T)
-/// Particle second viscosity.
-TIT_DEFINE_SCALAR_FIELD(lambda)
+
+/// Particle heat conductivity coefficient.
+TIT_DEFINE_SCALAR_FIELD(kappa)
 
 /// Particle artificial viscosity switch.
 TIT_DEFINE_SCALAR_FIELD(alpha)
@@ -242,6 +257,17 @@ TIT_DEFINE_SCALAR_FIELD(dalpha_dt)
 TIT_DEFINE_SCALAR_FIELD(S)
 /// Kernel gradient renormalization matrix.
 TIT_DEFINE_MATRIX_FIELD(L)
+/// Particle normal vector.
+TIT_DEFINE_VECTOR_FIELD(n)
+
+enum class FreeSurface : uint8_t { far, near, on };
+template<class Stream>
+constexpr auto operator<<(Stream& stream, FreeSurface fs) -> Stream& {
+  stream << static_cast<int>(fs);
+  return stream;
+}
+TIT_DEFINE_FIELD(FreeSurface, fs)
+TIT_DEFINE_SCALAR_FIELD(Theta)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
