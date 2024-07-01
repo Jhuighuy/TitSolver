@@ -8,6 +8,7 @@
 SOURCE_DIR=$(pwd)
 export SOURCE_DIR
 export OUTPUT_DIR="$SOURCE_DIR/output/cmake_output"
+export INSTALL_DIR="$SOURCE_DIR/output/TIT_ROOT"
 export TEST_DIR="$OUTPUT_DIR/tests"
 export TEST_OUTPUT_DIR="$SOURCE_DIR/output/test_output"
 

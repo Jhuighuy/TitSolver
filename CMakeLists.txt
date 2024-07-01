@@ -30,12 +30,6 @@ find_package(TBB CONFIG REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Setup output directories.
-# TODO: This must be gone once we switch to installation.
-set(_ROOT_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/output/TIT_ROOT")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${_ROOT_OUTPUT_DIR}/bin")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${_ROOT_OUTPUT_DIR}/bin")
-
 # Setup C++ globally.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)

@@ -19,4 +19,7 @@ target_link_libraries(titwcsph PRIVATE tit::sph)
 # Enable static analysis.
 # enable_clang_tidy(tit::wcsph)
 
+# Install the executable.
+install(TARGETS titwcsph RUNTIME DESTINATION bin)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
