@@ -30,8 +30,8 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
-#include "tit/geom/hilbert_ordering.hpp"
 #include "tit/geom/search_engine.hpp"
+#include "tit/geom/sfc_sort.hpp"
 
 #include "tit/sph/field.hpp"
 
@@ -201,11 +201,8 @@ public:
 #if 1
     // -------------------------------------------------------------------------
     // STEP I: reordering.
-    auto ordering = geom::ZCurveOrdering{positions};
-    std::vector<size_t> perm;
-    ordering.GetHilbertElementOrdering(perm);
-    std::vector<size_t> parts(perm.size());
-    for (size_t i = 0; i < parts.size(); ++i) parts[perm[i]] = i;
+    auto sfc_sort = geom::MortonCurveSort{positions};
+    std::vector<size_t> parts = sfc_sort.iperm();
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
     size_t nparts = par::num_threads();
