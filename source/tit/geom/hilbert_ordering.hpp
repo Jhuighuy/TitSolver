@@ -35,7 +35,7 @@ public:
   using Point = std::ranges::range_value_t<Points>;
 
   /// Bounding box type.
-  using PointBBox = bbox_t<Point>;
+  using PointBBox = BBox<Point>;
 
   /// Numeric type used by the point type.
   static constexpr auto Dim = vec_dim_v<Point>;
@@ -52,7 +52,7 @@ public:
   /// @param max_leaf_size Maximum amount of points in the leaf node.
   constexpr explicit ZCurveOrdering(Points points)
       : points_{std::move(points)} {
-    TIT_PROFILE_SECTION("tit::ZCurveOrdering::ZCurveOrdering()");
+    TIT_PROFILE_SECTION("ZCurveOrdering::ZCurveOrdering()");
     if (std::ranges::empty(points_)) return;
     // Initialize identity points permutation.
     const auto size = std::ranges::size(points_);

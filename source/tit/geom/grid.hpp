@@ -16,7 +16,6 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/core/vec/vec.hpp"
 #include "tit/geom/bbox.hpp"
 
 namespace tit::geom {
@@ -35,7 +34,7 @@ public:
   using Point = std::ranges::range_value_t<Points>;
 
   /// Bounding box type.
-  using PointBBox = bbox_t<Point>;
+  using PointBBox = BBox<Point>;
 
   /// Numeric type used by the point type.
   using Real = vec_num_t<Point>;
@@ -58,7 +57,7 @@ public:
   /// @param spacing Grid cell size, typically 2x of the particle spacing.
   constexpr explicit Grid(Points points, Real spacing)
       : points_{std::move(points)} {
-    TIT_PROFILE_SECTION("tit::Grid::Grid()");
+    TIT_PROFILE_SECTION("Grid::Grid()");
     TIT_ASSERT(spacing > 0.0, "Spacing must be positive.");
     if (std::ranges::empty(points_)) return;
     // Build the grid.
