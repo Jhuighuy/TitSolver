@@ -9,9 +9,9 @@ add_tit_library(
   SOURCES
     "bbox.hpp"
     "grid.hpp"
-    "hilbert_ordering.hpp"
     "kd_tree.hpp"
     "search_engine.hpp"
+    "sfc_sort.hpp"
   DEPENDS
     tit::core
 )
@@ -23,6 +23,7 @@ add_tit_executable(
     geom_tests
   SOURCES
     "bbox.test.cpp"
+    "sfc_sort.test.cpp"
   DEPENDS
     tit::geom
     tit::testing
