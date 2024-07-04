@@ -58,7 +58,12 @@ TEST_CASE_TEMPLATE("Vec", Num, NUM_TYPES) {
 // Casts
 //
 
-TEST_CASE_TEMPLATE("static_vec_cast", Num, NUM_TYPES) {
+TEST_CASE_TEMPLATE("Vec::unit", Num, NUM_TYPES) {
+  CHECK(all(unit(Vec<Num, 2>{}) == Vec{Num{1}, Num{0}}));
+  CHECK(all(unit<1>(Vec<Num, 2>{}) == Vec{Num{0}, Num{1}}));
+}
+
+TEST_CASE_TEMPLATE("Vec::static_vec_cast", Num, NUM_TYPES) {
   CHECK(all(static_vec_cast<int>(Vec{Num{1}, Num{2}}) == Vec{1, 2}));
 }
 

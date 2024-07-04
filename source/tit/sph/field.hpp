@@ -159,32 +159,10 @@ using field_value_type_t =
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-enum class ParState : uint8_t {
-  /// Particle is far from subdomain boundary.
-  INNER,
-  /// Particle is near subdomain boundary, and is in halo of some other
-  /// subdomain. Fields of such particles are send to the corresponding
-  /// processes during synchronization.
-  NEAR_HALO,
-  /// Particle is on the subdomain boundary. Fields of such particles are
-  /// received from the corresponding processes during synchronization.
-  HALO
-};
-struct ParInfo {
-  size_t part;
-  size_t global_index;
-  ParState state;
-};
-template<class Stream>
-constexpr auto operator<<(Stream& stream, ParInfo p) -> Stream& {
-  stream << p.part;
-  return stream;
-}
-
 /// Is particle fixed? For the fixed particles,
 /// no variables are updated during the simulation.
 TIT_DEFINE_FIELD(bool, fixed)
-TIT_DEFINE_FIELD(ParInfo, parinfo)
+TIT_DEFINE_FIELD(size_t, parinfo)
 
 /// Particle position.
 TIT_DEFINE_VECTOR_FIELD(r)
