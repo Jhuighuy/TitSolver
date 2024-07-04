@@ -41,7 +41,7 @@ public:
   constexpr void step(real_t dt,
                       ParticleArray& particles,
                       ParticleAdjacency& adjacent_particles) {
-    TIT_PROFILE_SECTION("tit::EulerIntegrator::step()");
+    TIT_PROFILE_SECTION("EulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
     // Initialize and index particles.
     if (step_index_ == 0) {

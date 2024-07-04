@@ -161,7 +161,7 @@ public:
   ///                    specified particle view.
   template<class SearchRadiusFunc>
   constexpr void build(const SearchRadiusFunc& radius_func) {
-    TIT_PROFILE_SECTION("tit::ParticleAdjacency::build()");
+    TIT_PROFILE_SECTION("ParticleAdjacency::build()");
     using PV = ParticleView<ParticleArray>;
     // -------------------------------------------------------------------------
     // STEP I: neighbors search.

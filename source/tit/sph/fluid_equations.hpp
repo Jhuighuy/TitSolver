@@ -58,7 +58,7 @@ public:
   template<class ParticleArray>
     requires (has<ParticleArray>(required_fields))
   constexpr void init(ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("tit::FluidEquations::init()");
+    TIT_PROFILE_SECTION("FluidEquations::init()");
     using PV = ParticleView<ParticleArray>;
     par::for_each(particles.views(), [&](PV a) {
       // Initialize particle pressure (and sound speed).
@@ -85,7 +85,7 @@ public:
   constexpr void setup_boundary(
       [[maybe_unused]] ParticleArray& particles,
       [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
-    TIT_PROFILE_SECTION("tit::FluidEquations::setup_boundary()");
+    TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
 #if WITH_WALLS
     using PV = ParticleView<ParticleArray>;
     par::for_each(adjacent_particles._fixed(), [&](auto ia) {
@@ -168,7 +168,7 @@ public:
   constexpr void compute_density(ParticleArray& particles,
                                  ParticleAdjacency& adjacent_particles) const {
     setup_boundary(particles, adjacent_particles);
-    TIT_PROFILE_SECTION("tit::FluidEquations::compute_density()");
+    TIT_PROFILE_SECTION("FluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
     // Clean density-related fields.
     par::for_each(particles.views(), [&](PV a) {
@@ -245,7 +245,7 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void compute_forces(ParticleArray& particles,
                                 ParticleAdjacency& adjacent_particles) const {
-    TIT_PROFILE_SECTION("tit::FluidEquations::compute_forces()");
+    TIT_PROFILE_SECTION("FluidEquations::compute_forces()");
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
     par::for_each(particles.views(), [&](PV a) {
