@@ -194,6 +194,15 @@ Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 // Casts
 //
 
+/// Create a unit vector.
+template<size_t Axis = 0, class Num, size_t Dim>
+constexpr auto unit(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
+  static_assert(Axis < Dim, "Axis is out of range!");
+  Vec<Num, Dim> e;
+  e[Axis] = Num{1.0};
+  return e;
+}
+
 /// Element-wise vector cast.
 template<class To, class Num, size_t Dim>
 constexpr auto static_vec_cast(const Vec<Num, Dim>& a) -> Vec<To, Dim> {
