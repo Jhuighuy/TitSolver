@@ -85,19 +85,18 @@ private:
     }
     inertia_tensor -= outer(sum, sum / perm.size());
 
-    // Compute the axis of inertia.
-    const auto axis_of_inertia = //
+    // Compute the inertia axis corresponding to the smallest principal inertia
+    // moment.
+    const auto inertia_axis = //
         jacobi(inertia_tensor)
+            // Axis of inertia is the largest eigenvector.
             .transform([](const auto& eig) {
-              // Axis of inertia is the largest eigenvector.
               const auto& [V, d] = eig;
               return V[max_value_index(d)];
             })
-            .value_or([this] {
-              // Fallback to a unit vector as an axis of inertia if
-              // the eigendecomposition fails.
-              return unit(points_[0]);
-            }());
+            // Fallback to a unit vector as an axis of inertia if
+            // the eigendecomposition fails.
+            .value_or(unit(points_[0]));
 
     // Split the parts into halves.
     const auto left_num_parts = num_parts / 2;
@@ -110,8 +109,8 @@ private:
     std::ranges::nth_element( //
         perm,
         perm.begin() + static_cast<ssize_t>(median),
-        [&axis_of_inertia, this](size_t i, size_t j) {
-          return dot(axis_of_inertia, points_[i] - points_[j]) < 0;
+        [&inertia_axis, this](size_t i, size_t j) {
+          return dot(inertia_axis, points_[i] - points_[j]) < 0;
         });
     const auto left_range = perm.subspan(0, median);
     const auto right_range = perm.subspan(median);
