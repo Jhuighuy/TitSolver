@@ -43,7 +43,7 @@ private:
   constexpr auto init(const Vector& x,
                       const Vector& b,
                       const Operator<Vector>& A,
-                      const Preconditioner<Vector>* P) -> real_t override {
+                      const Preconditioner<Vector>* P) -> real_t {
     const auto left_pre = (P != nullptr) && //
                           (this->PreSide == PreconditionerSide::Left);
 
@@ -80,7 +80,7 @@ private:
   constexpr auto iter(Vector& x,
                       const Vector& /*b*/,
                       const Operator<Vector>& A,
-                      const Preconditioner<Vector>* P) -> real_t override {
+                      const Preconditioner<Vector>* P) -> real_t {
     const auto left_pre = (P != nullptr) && //
                           (this->PreSide == PreconditionerSide::Left);
     const auto right_pre = (P != nullptr) && //
@@ -164,6 +164,8 @@ private:
   real_t alpha_, rho_, omega_;
   Vector p_, r_, r_tilde_, t_, v_, z_;
 
+  friend class IterativeSolver<Vector>;
+
 }; // class BiCGStab
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -196,8 +198,7 @@ private:
   constexpr auto outer_init(const Vector& x,
                             const Vector& b,
                             const Operator<Vector>& A,
-                            const Preconditioner<Vector>* P)
-      -> real_t override {
+                            const Preconditioner<Vector>* P) -> real_t {
     const auto l = this->NumInnerIterations;
 
     gamma_.resize(l + 1);
@@ -242,8 +243,7 @@ private:
   constexpr auto inner_iter(Vector& x,
                             const Vector& /*b*/,
                             const Operator<Vector>& A,
-                            const Preconditioner<Vector>* P)
-      -> real_t override {
+                            const Preconditioner<Vector>* P) -> real_t {
     const auto l = this->NumInnerIterations;
     const auto j = this->InnerIteration;
 
@@ -387,6 +387,8 @@ private:
   Mdvector<real_t, 2> tau_;
   Vector r_tilde_, z_;
   std::vector<Vector> rs_, us_;
+
+  friend class InnerOuterIterativeSolver<Vector>;
 
 }; // class BiCGStabL
 

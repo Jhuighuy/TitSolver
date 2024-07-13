@@ -36,7 +36,7 @@ private:
   constexpr auto init(const Vector& x,
                       const Vector& b,
                       const Operator<Vector>& A,
-                      const Preconditioner<Vector>* P) -> real_t override {
+                      const Preconditioner<Vector>* P) -> real_t {
     p_.Assign(x, false);
     r_.Assign(x, false);
     z_.Assign(x, false);
@@ -71,7 +71,7 @@ private:
   constexpr auto iter(Vector& x,
                       const Vector& /*b*/,
                       const Operator<Vector>& A,
-                      const Preconditioner<Vector>* P) -> real_t override {
+                      const Preconditioner<Vector>* P) -> real_t {
     // Iterate:
     // ----------------------
     // 𝒛 ← 𝓐𝒑,
@@ -115,6 +115,8 @@ private:
 
   real_t gamma_;
   Vector p_, r_, z_;
+
+  friend class IterativeSolver<Vector>;
 
 }; // class CG
 

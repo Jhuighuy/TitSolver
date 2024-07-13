@@ -30,10 +30,9 @@ public:
   /// @param A Equation operator, 𝓐(𝒙).
   ///
   /// @returns Status of operation.
-  constexpr virtual auto solve(InVector& x,
-                               const OutVector& b,
-                               const Operator<InVector, OutVector>& A)
-      -> bool = 0;
+  constexpr auto solve(InVector& x,
+                       const OutVector& b,
+                       const Operator<InVector, OutVector>& A) -> bool;
 
 }; // class Solver
 
@@ -61,10 +60,10 @@ protected:
   /// @param P Preconditioner operator, 𝓟(𝒙).
   ///
   /// @returns Residual norm of the initial guess, ‖𝒃 - 𝓐(𝒙)‖.
-  constexpr virtual auto init(const InVector& x,
-                              const OutVector& b,
-                              const Operator<InVector, OutVector>& A,
-                              const Preconditioner<InVector>* P) -> real_t = 0;
+  constexpr auto init(const InVector& x,
+                      const OutVector& b,
+                      const Operator<InVector, OutVector>& A,
+                      const Preconditioner<InVector>* P) -> real_t;
 
   /// Iterate the solver.
   ///
@@ -74,10 +73,10 @@ protected:
   /// @param P Preconditioner operator, 𝓟(𝒙).
   ///
   /// @returns Residual norm, ‖𝒃 - 𝓐(𝒙)‖.
-  constexpr virtual auto iter(InVector& x,
-                              const OutVector& b,
-                              const Operator<InVector, OutVector>& A,
-                              const Preconditioner<InVector>* P) -> real_t = 0;
+  constexpr auto iter(InVector& x,
+                      const OutVector& b,
+                      const Operator<InVector, OutVector>& A,
+                      const Preconditioner<InVector>* P) -> real_t;
 
   /// Finalize the iterations.
   ///
@@ -85,41 +84,43 @@ protected:
   /// @param b Right-hand-side vector, 𝒃.
   /// @param A Equation operator, 𝓐(𝒙).
   /// @param P Preconditioner operator, 𝓟(𝒙).
-  constexpr virtual void finalize(InVector& /*x*/,
-                                  const OutVector& /*b*/,
-                                  const Operator<InVector, OutVector>& /*A*/,
-                                  const Preconditioner<InVector>* /*P*/) {}
+  constexpr void finalize(InVector& /*x*/,
+                          const OutVector& /*b*/,
+                          const Operator<InVector, OutVector>& /*A*/,
+                          const Preconditioner<InVector>* /*P*/) {}
 
 public:
 
-  constexpr auto solve(InVector& x,
+  constexpr auto solve(this auto& self,
+                       InVector& x,
                        const OutVector& b,
-                       const Operator<InVector, OutVector>& A)
-      -> bool override {
+                       const Operator<InVector, OutVector>& A) -> bool {
     // Initialize the solver.
-    if (PreOp != nullptr) {
-      PreOp->Build(x, b, A);
+    if (self.PreOp != nullptr) {
+      self.PreOp->Build(x, b, A);
     }
-    const real_t init_error = (abs_error_ = init(x, b, A, PreOp.get()));
-    if (abs_error_tol_ > 0.0 && abs_error_ < abs_error_tol_) {
-      finalize(x, b, A, PreOp.get());
+    const auto init_error =
+        (self.abs_error_ = self.init(x, b, A, self.PreOp.get()));
+    if (self.abs_error_tol_ > 0.0 && self.abs_error_ < self.abs_error_tol_) {
+      self.finalize(x, b, A, self.PreOp.get());
       return true;
     }
 
-    // Iterate the solver:
+    // Iterate the solver.
     bool converged = false;
-    for (Iteration = 0; !converged && (Iteration < NumIterations);
-         ++Iteration) {
-      abs_error_ = iter(x, b, A, PreOp.get());
-      rel_error_ = abs_error_ / init_error;
-      converged |= (abs_error_tol_ > 0.0) && //
-                   (abs_error_ < abs_error_tol_);
-      converged |= (rel_error_tol_ > 0.0) && //
-                   (rel_error_ < rel_error_tol_);
+    for (self.Iteration = 0;
+         !converged && (self.Iteration < self.NumIterations);
+         ++self.Iteration) {
+      self.abs_error_ = self.iter(x, b, A, self.PreOp.get());
+      self.rel_error_ = self.abs_error_ / init_error;
+      converged |= (self.abs_error_tol_ > 0.0) && //
+                   (self.abs_error_ < self.abs_error_tol_);
+      converged |= (self.rel_error_tol_ > 0.0) && //
+                   (self.rel_error_ < self.rel_error_tol_);
     }
 
     // Exit the solver.
-    finalize(x, b, A, PreOp.get());
+    self.finalize(x, b, A, self.PreOp.get());
     return converged;
   }
 
@@ -157,11 +158,10 @@ protected:
   /// @param P Preconditioner operator, 𝓟(𝒙).
   ///
   /// @returns Residual norm of the initial guess, ‖𝒃 - 𝓐(𝒙)‖.
-  constexpr virtual auto outer_init(const InVector& x,
-                                    const OutVector& b,
-                                    const Operator<InVector, OutVector>& A,
-                                    const Preconditioner<InVector>* P)
-      -> real_t = 0;
+  constexpr auto outer_init(const InVector& x,
+                            const OutVector& b,
+                            const Operator<InVector, OutVector>& A,
+                            const Preconditioner<InVector>* P) -> real_t;
 
   /// Initialize the inner iterations.
   ///
@@ -171,10 +171,10 @@ protected:
   /// @param b Right-hand-side vector, 𝒃.
   /// @param A Equation operator, 𝓐(𝒙).
   /// @param P Preconditioner operator, 𝓟(𝒙).
-  constexpr virtual void inner_init(const InVector& /*x*/,
-                                    const OutVector& /*b*/,
-                                    const Operator<InVector, OutVector>& /*A*/,
-                                    const Preconditioner<InVector>* /*P*/) {}
+  constexpr void inner_init(const InVector& /*x*/,
+                            const OutVector& /*b*/,
+                            const Operator<InVector, OutVector>& /*A*/,
+                            const Preconditioner<InVector>* /*P*/) {}
 
   /// Perform the inner iteration.
   ///
@@ -184,11 +184,10 @@ protected:
   /// @param P Preconditioner operator, 𝓟(𝒙).
   ///
   /// @returns Residual norm, ‖𝒃 - 𝓐(𝒙)‖.
-  constexpr virtual auto inner_iter(InVector& x,
-                                    const OutVector& b,
-                                    const Operator<InVector, OutVector>& A,
-                                    const Preconditioner<InVector>* P)
-      -> real_t = 0;
+  constexpr auto inner_iter(InVector& x,
+                            const OutVector& b,
+                            const Operator<InVector, OutVector>& A,
+                            const Preconditioner<InVector>* P) -> real_t;
 
   /// Finalize the inner iterations.
   ///
@@ -199,11 +198,10 @@ protected:
   /// @param b Right-hand-side vector, 𝒃.
   /// @param A Equation operator, 𝓐(𝒙).
   /// @param P Preconditioner operator, 𝓟(𝒙).
-  constexpr virtual void inner_finalize(
-      InVector& /*x*/,
-      const OutVector& /*b*/,
-      const Operator<InVector, OutVector>& /*A*/,
-      const Preconditioner<InVector>* /*P*/) {}
+  constexpr void inner_finalize(InVector& /*x*/,
+                                const OutVector& /*b*/,
+                                const Operator<InVector, OutVector>& /*A*/,
+                                const Preconditioner<InVector>* /*P*/) {}
 
   /// Finalize the outer iterations.
   ///
@@ -214,45 +212,49 @@ protected:
   /// @param b Right-hand-side vector, 𝒃.
   /// @param A Equation operator, 𝓐(𝒙).
   /// @param P Preconditioner operator, 𝓟(𝒙).
-  constexpr virtual void outer_finalize(
-      InVector& /*x*/,
-      const OutVector& /*b*/,
-      const Operator<InVector, OutVector>& /*A*/,
-      const Preconditioner<InVector>* /*P*/) {}
+  constexpr void outer_finalize(InVector& /*x*/,
+                                const OutVector& /*b*/,
+                                const Operator<InVector, OutVector>& /*A*/,
+                                const Preconditioner<InVector>* /*P*/) {}
 
 private:
 
-  constexpr auto init(const InVector& x,
+  constexpr auto init(this auto& self,
+                      const InVector& x,
                       const OutVector& b,
                       const Operator<InVector, OutVector>& A,
-                      const Preconditioner<InVector>* P) -> real_t override {
-    return outer_init(x, b, A, P);
+                      const Preconditioner<InVector>* P) -> real_t {
+    return self.outer_init(x, b, A, P);
   }
 
-  constexpr auto iter(InVector& x,
+  constexpr auto iter(this auto& self,
+                      InVector& x,
                       const OutVector& b,
                       const Operator<InVector, OutVector>& A,
-                      const Preconditioner<InVector>* P) -> real_t override {
-    InnerIteration = this->Iteration % NumInnerIterations;
-    if (InnerIteration == 0) {
-      inner_init(x, b, A, P);
+                      const Preconditioner<InVector>* P) -> real_t {
+    self.InnerIteration = self.Iteration % self.NumInnerIterations;
+    if (self.InnerIteration == 0) {
+      self.inner_init(x, b, A, P);
     }
-    const real_t residual_norm = inner_iter(x, b, A, P);
-    if (InnerIteration == NumInnerIterations - 1) {
-      inner_finalize(x, b, A, P);
+    const auto residual_norm = self.inner_iter(x, b, A, P);
+    if (self.InnerIteration == self.NumInnerIterations - 1) {
+      self.inner_finalize(x, b, A, P);
     }
     return residual_norm;
   }
 
-  void finalize(InVector& x,
+  void finalize(this auto& self,
+                InVector& x,
                 const OutVector& b,
                 const Operator<InVector, OutVector>& A,
-                const Preconditioner<InVector>* P) override {
-    if (InnerIteration != NumInnerIterations - 1) {
-      inner_finalize(x, b, A, P);
+                const Preconditioner<InVector>* P) {
+    if (self.InnerIteration != self.NumInnerIterations - 1) {
+      self.inner_finalize(x, b, A, P);
     }
-    outer_finalize(x, b, A, P);
+    self.outer_finalize(x, b, A, P);
   }
+
+  friend class IterativeSolver<InVector, OutVector>;
 
 }; // class InnerOuterIterativeSolver
 
@@ -260,7 +262,7 @@ private:
 
 template<blas::vector Vector, class Op>
   requires std::invocable<const Op&, Vector&, const Vector&>
-constexpr auto solve(Solver<Vector>& solver,
+constexpr auto solve(std::derived_from<Solver<Vector>> auto& solver,
                      const Op& A,
                      Vector& x,
                      const Vector& b) -> bool {
@@ -272,7 +274,7 @@ constexpr auto solve(Solver<Vector>& solver,
 /// Solve an operator equation 𝓐(𝒙) = 𝒃, when 𝓐(𝒙) is a non-uniform
 /// operator (𝓐(𝟢) ≠ 𝟢).
 template<blas::vector Vector>
-constexpr auto solve_nonuniform(Solver<Vector>& solver,
+constexpr auto solve_nonuniform(std::derived_from<Solver<Vector>> auto& solver,
                                 const Operator<Vector>& A,
                                 Vector& x,
                                 const Vector& b) -> bool {

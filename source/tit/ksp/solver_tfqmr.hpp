@@ -35,7 +35,7 @@ private:
   constexpr auto init(const Vector& x,
                       const Vector& b,
                       const Operator<Vector>& A,
-                      const Preconditioner<Vector>* P) -> real_t override {
+                      const Preconditioner<Vector>* P) -> real_t {
     const auto left_pre = (P != nullptr) && //
                           (this->PreSide == PreconditionerSide::Left);
 
@@ -86,7 +86,7 @@ private:
   constexpr auto iter(Vector& x,
                       const Vector& /*b*/,
                       const Operator<Vector>& A,
-                      const Preconditioner<Vector>* P) -> real_t override {
+                      const Preconditioner<Vector>* P) -> real_t {
     const auto left_pre = (P != nullptr) && //
                           (this->PreSide == PreconditionerSide::Left);
     const auto right_pre = (P != nullptr) && //
@@ -222,6 +222,8 @@ private:
 
   real_t rho_{}, tau_{};
   Vector d_, r_tilde_, u_, v_, y_, s_, z_;
+
+  friend class IterativeSolver<Vector>;
 
 }; // class BaseTFQMR
 

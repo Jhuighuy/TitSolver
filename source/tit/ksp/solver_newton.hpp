@@ -44,7 +44,7 @@ private:
   constexpr auto init(const Vector& /*x*/,
                       const Vector& /*b*/,
                       const Operator<Vector>& /*A*/,
-                      const Preconditioner<Vector>* /*P*/) -> real_t override {
+                      const Preconditioner<Vector>* /*P*/) -> real_t {
     TIT_ENSURE(false, "Newton solver was not implemented yet!");
     return 0.0;
   }
@@ -54,8 +54,7 @@ private:
   constexpr auto iterate(Vector& /*x*/,
                          const Vector& /*b*/,
                          const Operator<Vector>& /*A*/,
-                         const Preconditioner<Vector>* /*P*/)
-      -> real_t override {
+                         const Preconditioner<Vector>* /*P*/) -> real_t {
     TIT_ENSURE(false, "Newton solver was not implemented yet!");
     return 0.0;
   }
@@ -101,7 +100,7 @@ private:
   constexpr auto init(const Vector& x,
                       const Vector& b,
                       const Operator<Vector>& A,
-                      const Preconditioner<Vector>* /*P*/) -> real_t override {
+                      const Preconditioner<Vector>* /*P*/) -> real_t {
     s_.Assign(x, false);
     t_.Assign(x, false);
     r_.Assign(x, false);
@@ -123,7 +122,7 @@ private:
   constexpr auto iter(Vector& x,
                       const Vector& b,
                       const Operator<Vector>& A,
-                      const Preconditioner<Vector>* /*P*/) -> real_t override {
+                      const Preconditioner<Vector>* /*P*/) -> real_t {
     // Solve the Jacobian equation:
     // ----------------------
     // 𝜇 ← (𝜀ₘ)¹ᐟ²⋅(1 + ‖𝒙‖)]¹ᐟ²,

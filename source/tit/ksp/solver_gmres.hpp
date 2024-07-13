@@ -37,8 +37,7 @@ protected:
   constexpr auto outer_init(const Vector& x,
                             const Vector& b,
                             const Operator<Vector>& A,
-                            const Preconditioner<Vector>* P)
-      -> real_t override {
+                            const Preconditioner<Vector>* P) -> real_t {
     const auto m = this->NumInnerIterations;
 
     beta_.resize(m + 1);
@@ -80,7 +79,7 @@ protected:
   constexpr void inner_init(const Vector& x,
                             const Vector& b,
                             const Operator<Vector>& A,
-                            const Preconditioner<Vector>* P) override {
+                            const Preconditioner<Vector>* P) {
     // Force right preconditioning for the flexible GMRES.
     const bool left_pre = (!Flexible) && (P != nullptr) && //
                           (this->PreSide == PreconditionerSide::Left);
@@ -109,8 +108,7 @@ protected:
   constexpr auto inner_iter(Vector& /*x*/,
                             const Vector& /*b*/,
                             const Operator<Vector>& A,
-                            const Preconditioner<Vector>* P)
-      -> real_t override {
+                            const Preconditioner<Vector>* P) -> real_t {
     const auto k = this->InnerIteration;
 
     // Force right preconditioning for the flexible GMRES.
@@ -188,7 +186,7 @@ protected:
   constexpr void inner_finalize(Vector& x,
                                 const Vector& /*b*/,
                                 const Operator<Vector>& /*A*/,
-                                const Preconditioner<Vector>* P) override {
+                                const Preconditioner<Vector>* P) {
     const auto k = this->InnerIteration;
 
     const auto right_pre =
@@ -251,6 +249,8 @@ private:
   Mdvector<real_t, 2> H_;
   std::vector<Vector> qs_;
   std::vector<Vector> zs_;
+
+  friend class InnerOuterIterativeSolver<Vector>;
 
 }; // class BaseGMRES
 

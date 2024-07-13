@@ -49,8 +49,7 @@ private:
   constexpr auto outer_init(const Vector& x,
                             const Vector& b,
                             const Operator<Vector>& A,
-                            const Preconditioner<Vector>* P)
-      -> real_t override {
+                            const Preconditioner<Vector>* P) -> real_t {
     const auto s = this->NumInnerIterations;
 
     const auto left_pre = (P != nullptr) && //
@@ -97,7 +96,7 @@ private:
   constexpr void inner_init(const Vector& /*x*/,
                             const Vector& /*b*/,
                             const Operator<Vector>& /*A*/,
-                            const Preconditioner<Vector>* /*P*/) override {
+                            const Preconditioner<Vector>* /*P*/) {
     const auto s = this->NumInnerIterations;
 
     // Build shadow space and initialize 𝜑:
@@ -145,8 +144,7 @@ private:
   constexpr auto inner_iter(Vector& x,
                             const Vector& /*b*/,
                             const Operator<Vector>& A,
-                            const Preconditioner<Vector>* P)
-      -> real_t override {
+                            const Preconditioner<Vector>* P) -> real_t {
     const auto s = this->NumInnerIterations;
     const auto k = this->InnerIteration;
 
@@ -283,6 +281,8 @@ private:
   Mdvector<real_t, 2> mu_;
   Vector r_, v_, z_;
   std::vector<Vector> ps_, us_, gs_;
+
+  friend class InnerOuterIterativeSolver<Vector>;
 
 }; // class IDRs
 
