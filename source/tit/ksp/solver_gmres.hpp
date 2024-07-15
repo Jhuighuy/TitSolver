@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <cstdint>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -31,6 +30,8 @@ class BaseGMRES : public InnerOuterIterativeSolver<Vector> {
 protected:
 
   constexpr BaseGMRES() = default;
+
+private:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -197,7 +198,7 @@ protected:
     // ----------------------
     // 𝛽₀:ₖ ← (𝐻₀:ₖ,₀:ₖ)⁻¹𝛽₀:ₖ.
     // ----------------------
-    for (size_t i = k; i != SIZE_MAX; --i) {
+    for (ssize_t i = k; i >= 0; --i) {
       for (size_t j = i + 1; j <= k; ++j) {
         beta_[i] -= H_[i, j] * beta_[j];
       }
@@ -242,8 +243,6 @@ protected:
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-private:
 
   std::vector<real_t> beta_, cs_, sn_;
   Mdvector<real_t, 2> H_;

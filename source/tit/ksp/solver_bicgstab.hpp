@@ -343,7 +343,7 @@ private:
       // 𝗲𝗻𝗱 𝗳𝗼𝗿
       // ----------------------
       omega_ = gamma_[l] = gamma_bar_[l], rho_ *= -omega_;
-      for (size_t k{l - 1}; k != 0; --k) {
+      for (size_t k = l - 1; k != 0; --k) {
         gamma_[k] = gamma_bar_[k];
         for (size_t i{k + 1}; i <= l; ++i) {
           gamma_[k] -= tau_[k, i] * gamma_[i];
@@ -351,7 +351,7 @@ private:
       }
       for (size_t k = 1; k < l; ++k) {
         gamma_bbar_[k] = gamma_[k + 1];
-        for (size_t i{k + 1}; i < l; ++i) {
+        for (size_t i = k + 1; i < l; ++i) {
           gamma_bbar_[k] += tau_[k, i] * gamma_[i + 1];
         }
       }
