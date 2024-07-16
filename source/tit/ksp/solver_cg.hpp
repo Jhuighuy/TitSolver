@@ -56,14 +56,14 @@ private:
     A.Residual(r_, b, x);
     if (P != nullptr) {
       P->MatVec(z_, r_);
-      Blas::Set(p_, z_);
-      gamma_ = Blas::Dot(r_, z_);
+      blas::copy(p_, z_);
+      gamma_ = blas::dot(r_, z_);
     } else {
-      Blas::Set(p_, r_);
-      gamma_ = Blas::Dot(r_, r_);
+      blas::copy(p_, r_);
+      gamma_ = blas::dot(r_, r_);
     }
 
-    return (P != nullptr) ? Blas::Norm2(r_) : sqrt(gamma_);
+    return (P != nullptr) ? blas::norm(r_) : sqrt(gamma_);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,9 +82,9 @@ private:
     // ----------------------
     A.MatVec(z_, p_);
     const auto gamma_bar = gamma_;
-    const auto alpha = safe_divide(gamma_, Blas::Dot(p_, z_));
-    Blas::AddAssign(x, p_, alpha);
-    Blas::SubAssign(r_, z_, alpha);
+    const auto alpha = safe_divide(gamma_, blas::dot(p_, z_));
+    blas::add_assign(x, p_, alpha);
+    blas::sub_assign(r_, z_, alpha);
 
     // ----------------------
     // 𝗶𝗳 𝓟 ≠ 𝗻𝗼𝗻𝗲:
@@ -96,9 +96,9 @@ private:
     // ----------------------
     if (P != nullptr) {
       P->MatVec(z_, r_);
-      gamma_ = Blas::Dot(r_, z_);
+      gamma_ = blas::dot(r_, z_);
     } else {
-      gamma_ = Blas::Dot(r_, r_);
+      gamma_ = blas::dot(r_, r_);
     }
 
     // ----------------------
@@ -106,9 +106,9 @@ private:
     // 𝒑 ← (𝓟 ≠ 𝗻𝗼𝗻𝗲 ? 𝒛 : 𝒓) + 𝛽⋅𝒑.
     // ----------------------
     const auto beta = safe_divide(gamma_, gamma_bar);
-    Blas::Add(p_, P != nullptr ? z_ : r_, p_, beta);
+    blas::add(p_, P != nullptr ? z_ : r_, p_, beta);
 
-    return (P != nullptr) ? Blas::Norm2(r_) : sqrt(gamma_);
+    return (P != nullptr) ? blas::norm(r_) : sqrt(gamma_);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -69,8 +69,8 @@ private:
       std::swap(z_, r_);
       P->MatVec(r_, z_);
     }
-    Blas::Set(r_tilde_, r_);
-    rho_ = Blas::Dot(r_tilde_, r_);
+    blas::copy(r_tilde_, r_);
+    rho_ = blas::dot(r_tilde_, r_);
 
     return sqrt(rho_);
   }
@@ -100,13 +100,13 @@ private:
     // ----------------------
     const auto first_iter = this->Iteration == 0;
     if (first_iter) {
-      Blas::Set(p_, r_);
+      blas::copy(p_, r_);
     } else {
       const auto rho_bar = rho_;
-      rho_ = Blas::Dot(r_tilde_, r_);
+      rho_ = blas::dot(r_tilde_, r_);
       const auto beta = safe_divide(alpha_ * rho_, omega_ * rho_bar);
-      Blas::SubAssign(p_, v_, omega_);
-      Blas::Add(p_, r_, p_, beta);
+      blas::sub_assign(p_, v_, omega_);
+      blas::add(p_, r_, p_, beta);
     }
 
     // Update the solution and the residual:
@@ -128,9 +128,9 @@ private:
     } else {
       A.MatVec(v_, p_);
     }
-    alpha_ = safe_divide(rho_, Blas::Dot(r_tilde_, v_));
-    Blas::AddAssign(x, right_pre ? z_ : p_, alpha_);
-    Blas::SubAssign(r_, v_, alpha_);
+    alpha_ = safe_divide(rho_, blas::dot(r_tilde_, v_));
+    blas::add_assign(x, right_pre ? z_ : p_, alpha_);
+    blas::sub_assign(r_, v_, alpha_);
 
     // Update the solution and the residual again:
     // ----------------------
@@ -152,11 +152,11 @@ private:
     } else {
       A.MatVec(t_, r_);
     }
-    omega_ = safe_divide(Blas::Dot(t_, r_), Blas::Dot(t_, t_));
-    Blas::AddAssign(x, right_pre ? z_ : r_, omega_);
-    Blas::SubAssign(r_, t_, omega_);
+    omega_ = safe_divide(blas::dot(t_, r_), blas::dot(t_, t_));
+    blas::add_assign(x, right_pre ? z_ : r_, omega_);
+    blas::sub_assign(r_, t_, omega_);
 
-    return Blas::Norm2(r_);
+    return blas::norm(r_);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -226,14 +226,14 @@ private:
     // 𝒓̃ ← 𝒓₀,
     // 𝜌 ← <𝒓̃⋅𝒓₀>.
     // ----------------------
-    Blas::Fill(us_[0], 0.0);
+    blas::fill(us_[0], 0.0);
     A.Residual(rs_[0], b, x);
     if (P != nullptr) {
       std::swap(z_, rs_[0]);
       P->MatVec(rs_[0], z_);
     }
-    Blas::Set(r_tilde_, rs_[0]);
-    rho_ = Blas::Dot(r_tilde_, rs_[0]);
+    blas::copy(r_tilde_, rs_[0]);
+    rho_ = blas::dot(r_tilde_, rs_[0]);
 
     return sqrt(rho_);
   }
@@ -271,13 +271,13 @@ private:
     // ----------------------
     const auto first_iter = this->Iteration == 0;
     if (first_iter) {
-      Blas::Set(us_[0], rs_[0]);
+      blas::copy(us_[0], rs_[0]);
     } else {
       const auto rho_bar = rho_;
-      rho_ = Blas::Dot(r_tilde_, rs_[j]);
+      rho_ = blas::dot(r_tilde_, rs_[j]);
       const auto beta = safe_divide(alpha_ * rho_, rho_bar);
       for (size_t i = 0; i <= j; ++i) {
-        Blas::Sub(us_[i], rs_[i], us_[i], beta);
+        blas::sub(us_[i], rs_[i], us_[i], beta);
       }
     }
     if (P != nullptr) {
@@ -285,9 +285,9 @@ private:
     } else {
       A.MatVec(us_[j + 1], us_[j]);
     }
-    alpha_ = safe_divide(rho_, Blas::Dot(r_tilde_, us_[j + 1]));
+    alpha_ = safe_divide(rho_, blas::dot(r_tilde_, us_[j + 1]));
     for (size_t i = 0; i <= j; ++i) {
-      Blas::SubAssign(rs_[i], us_[i + 1], alpha_);
+      blas::sub_assign(rs_[i], us_[i + 1], alpha_);
     }
 
     // Update the solution and the residual:
@@ -299,7 +299,7 @@ private:
     //   𝒓ⱼ₊₁ ← 𝓐𝒓ⱼ.
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
-    Blas::AddAssign(x, us_[0], alpha_);
+    blas::add_assign(x, us_[0], alpha_);
     if (P != nullptr) {
       P->MatVec(rs_[j + 1], z_, A, rs_[j]);
     } else {
@@ -320,11 +320,11 @@ private:
       // ----------------------
       for (size_t k = 1; k <= l; ++k) {
         for (size_t i = 1; i < k; ++i) {
-          tau_[i, k] = safe_divide(Blas::Dot(rs_[i], rs_[k]), sigma_[i]);
-          Blas::SubAssign(rs_[k], rs_[i], tau_[i, k]);
+          tau_[i, k] = safe_divide(blas::dot(rs_[i], rs_[k]), sigma_[i]);
+          blas::sub_assign(rs_[k], rs_[i], tau_[i, k]);
         }
-        sigma_[k] = Blas::Dot(rs_[k], rs_[k]);
-        gamma_bar_[k] = safe_divide(Blas::Dot(rs_[0], rs_[k]), sigma_[k]);
+        sigma_[k] = blas::dot(rs_[k], rs_[k]);
+        gamma_bar_[k] = safe_divide(blas::dot(rs_[0], rs_[k]), sigma_[k]);
       }
 
       // ----------------------
@@ -367,17 +367,17 @@ private:
       //   𝒖₀ ← 𝒖₀ - 𝛾ⱼ⋅𝒖ⱼ.
       // 𝗲𝗻𝗱 𝗳𝗼𝗿
       // ----------------------
-      Blas::AddAssign(x, rs_[0], gamma_[1]);
-      Blas::SubAssign(rs_[0], rs_[l], gamma_bar_[l]);
-      Blas::SubAssign(us_[0], us_[l], gamma_[l]);
+      blas::add_assign(x, rs_[0], gamma_[1]);
+      blas::sub_assign(rs_[0], rs_[l], gamma_bar_[l]);
+      blas::sub_assign(us_[0], us_[l], gamma_[l]);
       for (size_t k = 1; k < l; ++k) {
-        Blas::AddAssign(x, rs_[k], gamma_bbar_[k]);
-        Blas::SubAssign(rs_[0], rs_[k], gamma_bar_[k]);
-        Blas::SubAssign(us_[0], us_[k], gamma_[k]);
+        blas::add_assign(x, rs_[k], gamma_bbar_[k]);
+        blas::sub_assign(rs_[0], rs_[k], gamma_bar_[k]);
+        blas::sub_assign(us_[0], us_[k], gamma_[k]);
       }
     }
 
-    return Blas::Norm2(rs_[0]);
+    return blas::norm(rs_[0]);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

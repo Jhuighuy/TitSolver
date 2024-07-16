@@ -65,8 +65,8 @@ private:
       std::swap(u_, r_);
       P->MatVec(r_, u_);
     }
-    Blas::Set(r_tilde_, r_);
-    rho_ = Blas::Dot(r_tilde_, r_);
+    blas::copy(r_tilde_, r_);
+    rho_ = blas::dot(r_tilde_, r_);
 
     return sqrt(rho_);
   }
@@ -98,15 +98,15 @@ private:
     // ----------------------
     const auto first_iter = this->Iteration == 0;
     if (first_iter) {
-      Blas::Set(u_, r_);
-      Blas::Set(p_, u_);
+      blas::copy(u_, r_);
+      blas::copy(p_, u_);
     } else {
       const auto rho_bar = rho_;
-      rho_ = Blas::Dot(r_tilde_, r_);
+      rho_ = blas::dot(r_tilde_, r_);
       const auto beta = safe_divide(rho_, rho_bar);
-      Blas::Add(u_, r_, q_, beta);
-      Blas::Add(p_, q_, p_, beta);
-      Blas::Add(p_, u_, p_, beta);
+      blas::add(u_, r_, q_, beta);
+      blas::add(p_, q_, p_, beta);
+      blas::add(p_, u_, p_, beta);
     }
 
     // ----------------------
@@ -128,9 +128,9 @@ private:
     } else {
       A.MatVec(v_, p_);
     }
-    const auto alpha = safe_divide(rho_, Blas::Dot(r_tilde_, v_));
-    Blas::Sub(q_, u_, v_, alpha);
-    Blas::Add(v_, u_, q_);
+    const auto alpha = safe_divide(rho_, blas::dot(r_tilde_, v_));
+    blas::sub(q_, u_, v_, alpha);
+    blas::add(v_, u_, q_);
 
     // Update the solution and the residual:
     // ----------------------
@@ -149,20 +149,20 @@ private:
     // 𝗲𝗻𝗱 𝗶𝗳
     // ----------------------
     if (left_pre) {
-      Blas::AddAssign(x, v_, alpha);
+      blas::add_assign(x, v_, alpha);
       P->MatVec(v_, u_, A, v_);
-      Blas::SubAssign(r_, v_, alpha);
+      blas::sub_assign(r_, v_, alpha);
     } else if (right_pre) {
       A.MatVec(v_, u_, *P, v_);
-      Blas::AddAssign(x, u_, alpha);
-      Blas::SubAssign(r_, v_, alpha);
+      blas::add_assign(x, u_, alpha);
+      blas::sub_assign(r_, v_, alpha);
     } else {
       A.MatVec(u_, v_);
-      Blas::AddAssign(x, v_, alpha);
-      Blas::SubAssign(r_, u_, alpha);
+      blas::add_assign(x, v_, alpha);
+      blas::sub_assign(r_, u_, alpha);
     }
 
-    return Blas::Norm2(r_);
+    return blas::norm(r_);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

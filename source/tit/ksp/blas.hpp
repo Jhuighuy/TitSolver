@@ -50,6 +50,7 @@ using DotType = decltype(VectorOperations<Vector>::Dot(std::declval<Vector>(),
                                                        std::declval<Vector>()));
 
 namespace blas {
+
 /// Vector concept that supports the level 1 BLAS operations.
 template<class Vector>
 concept vector =
@@ -68,6 +69,103 @@ concept vector =
       VectorOperations<Vector>::ScaleAssign(x, a);
       VectorOperations<Vector>::AddAssign(x, y, a);
     };
+
+/// Compute a dot product of @p x and @p y.
+template<blas::vector Vector>
+constexpr auto dot(const Vector& x, const Vector& y) {
+  return VectorOperations<Vector>::Dot(x, y);
+}
+
+/// Compute a norm of @p x.
+template<blas::vector Vector>
+constexpr auto norm(const Vector& x) -> real_t {
+  return VectorOperations<Vector>::Norm2(x);
+}
+
+/// Compute @p x = @p y.
+template<blas::vector Vector>
+constexpr void copy(Vector& x, const Vector& y) {
+  VectorOperations<Vector>::Set(x, y);
+}
+
+/// Fill the @p x with value @p a.
+template<blas::vector Vector>
+constexpr void fill(Vector& x, auto a) {
+  VectorOperations<Vector>::Fill(x, a);
+}
+
+/// Randomly fill the @p x.
+template<blas::vector Vector>
+constexpr void rand_fill(Vector& x) {
+  VectorOperations<Vector>::RandFill(x);
+}
+
+/// Compute @p x *= @p a.
+template<blas::vector Vector>
+constexpr void scale_assign(Vector& x, auto a) {
+  VectorOperations<Vector>::ScaleAssign(x, a);
+}
+
+/// Compute @p x = @p a * @p y.
+template<blas::vector Vector>
+constexpr void scale(Vector& x, const Vector& y, auto a) {
+  VectorOperations<Vector>::Scale(x, y, a);
+}
+
+/// Compute @p x += @p a * @p y.
+template<blas::vector Vector>
+constexpr void add_assign(Vector& x, const Vector& y, auto a) {
+  VectorOperations<Vector>::AddAssign(x, y, a);
+}
+
+template<blas::vector Vector>
+constexpr void add_ssign(Vector& x, const Vector& y) {
+  VectorOperations<Vector>::AddAssign(x, y);
+}
+
+template<blas::vector Vector>
+constexpr void add(Vector& x, const Vector& y, const Vector& z) {
+  VectorOperations<Vector>::Add(x, y, z);
+}
+template<blas::vector Vector>
+constexpr void add(Vector& x, const Vector& y, const Vector& z, auto b) {
+  VectorOperations<Vector>::Add(x, y, z, b);
+}
+template<blas::vector Vector>
+constexpr void add(Vector& x,
+                   const Vector& y,
+                   auto a,
+                   const Vector& z,
+                   auto b) {
+  VectorOperations<Vector>::Add(x, y, a, z, b);
+}
+
+template<blas::vector Vector>
+constexpr void sub_assign(Vector& x, const Vector& y, auto a) {
+  VectorOperations<Vector>::SubAssign(x, y, a);
+}
+template<blas::vector Vector>
+constexpr void sub_assign(Vector& x, const Vector& y) {
+  VectorOperations<Vector>::SubAssign(x, y);
+}
+
+template<blas::vector Vector>
+constexpr void sub(Vector& x, const Vector& y, const Vector& z) {
+  VectorOperations<Vector>::Sub(x, y, z);
+}
+template<blas::vector Vector>
+constexpr void sub(Vector& x, const Vector& y, const Vector& z, auto b) {
+  VectorOperations<Vector>::Sub(x, y, z, b);
+}
+template<blas::vector Vector>
+constexpr void sub(Vector& x,
+                   const Vector& y,
+                   auto a,
+                   const Vector& z,
+                   auto b) {
+  VectorOperations<Vector>::Sub(x, y, a, z, b);
+}
+
 } // namespace blas
 
 namespace Blas {
