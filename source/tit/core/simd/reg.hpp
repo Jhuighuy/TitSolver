@@ -176,6 +176,16 @@ public:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// SIMD element-wise cast.
+template<class To, class From, size_t Size>
+  requires castable_to<From, To, Size>
+[[gnu::always_inline]]
+inline auto reg_cast(const Reg<From, Size>& a) noexcept -> Reg<To, Size> {
+  return hn::ConvertTo(typename Reg<To, Size>::Tag{}, a.base);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// SIMD element-wise minimum algorithm.
 template<class Num, size_t Size>
   requires supported<Num, Size>

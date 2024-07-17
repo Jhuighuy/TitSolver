@@ -204,9 +204,15 @@ constexpr auto unit(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
 }
 
 /// Element-wise vector cast.
-template<class To, class Num, size_t Dim>
-constexpr auto static_vec_cast(const Vec<Num, Dim>& a) -> Vec<To, Dim> {
+template<class To, class From, size_t Dim>
+constexpr auto static_vec_cast(const Vec<From, Dim>& a) -> Vec<To, Dim> {
   Vec<To, Dim> r;
+  TIT_IF_SIMD_CAST_AVALIABLE(From, To) {
+    for (size_t i = 0; i < Vec<From, Dim>::RegCount; ++i) {
+      r.reg(i) = simd::reg_cast<To>(a.reg(i));
+    }
+    return r;
+  }
   for (size_t i = 0; i < Dim; ++i) r[i] = static_cast<To>(a[i]);
   return r;
 }
@@ -609,6 +615,15 @@ constexpr auto sum(const Vec<Num, Dim>& a) -> Num {
   }
   auto r = a[0];
   for (size_t i = 1; i < Dim; ++i) r += a[i];
+  return r;
+}
+
+/// Product of the vector elements.
+template<class Num, size_t Dim>
+constexpr auto prod(const Vec<Num, Dim>& a) -> Num {
+  // This function is rarely used, so we do not bother with SIMD.
+  Num r = a[0];
+  for (size_t i = 1; i < Dim; ++i) r *= a[i];
   return r;
 }
 

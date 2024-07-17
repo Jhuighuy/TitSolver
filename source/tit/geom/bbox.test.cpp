@@ -62,6 +62,15 @@ TEST_CASE("geom::BBox::grow") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("geom::BBox::shrink") {
+  geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
+  box.shrink(0.5);
+  CHECK(all(box.low() == Vec{0.5, 0.5}));
+  CHECK(all(box.high() == Vec{1.5, 1.5}));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("geom::BBox::expand") {
   geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
   box.expand(Vec{0.5, 0.5});
@@ -69,6 +78,15 @@ TEST_CASE("geom::BBox::expand") {
   CHECK(all(box.high() == Vec{2.0, 2.0}));
   box.expand(Vec{-0.5, -0.5});
   CHECK(all(box.low() == Vec{-0.5, -0.5}));
+  CHECK(all(box.high() == Vec{2.0, 2.0}));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("geom::BBox::intersect") {
+  geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
+  box.intersect(geom::BBox{Vec{1.0, 1.0}, Vec{3.0, 3.0}});
+  CHECK(all(box.low() == Vec{1.0, 1.0}));
   CHECK(all(box.high() == Vec{2.0, 2.0}));
 }
 
