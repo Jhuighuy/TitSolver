@@ -254,6 +254,11 @@ TEST_CASE_TEMPLATE("Vec::sum", Num, NUM_TYPES) {
   CHECK(sum(Vec<Num, 17>(Num{16})) == Num{17 * 16});
 }
 
+TEST_CASE_TEMPLATE("Vec::prod", Num, NUM_TYPES) {
+  CHECK(prod(Vec{Num{1}, Num{2}}) == Num{2});
+  CHECK(prod(Vec{Num{1}, Num{2}, Num{3}}) == Num{6});
+}
+
 TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
   CHECK(min_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{2});
   CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{3});

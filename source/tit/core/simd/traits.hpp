@@ -27,6 +27,17 @@ concept supported_type = std::integral<Num> || std::floating_point<Num>;
   if constexpr (simd::supported_type<Num>)                                     \
     if !consteval
 
+/// Is SIMD castable from one type to another?
+template<class From, class To>
+concept castable_to_type =
+    supported_type<To> && supported_type<From> && (sizeof(To) == sizeof(From));
+
+/// Evaluate the following command block if SIMD cast is supported for the given
+/// type and if the code is not executed at compile-time.
+#define TIT_IF_SIMD_CAST_AVALIABLE(From, To)                                   \
+  if constexpr (simd::castable_to_type<From, To>)                              \
+    if !consteval
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Minimal byte width of the SIMD register that is available on the current
@@ -76,6 +87,11 @@ concept supported =
     supported_type<Num> &&
     in_range_v<Size, min_reg_size_v<Num>, max_reg_size_v<Num>> &&
     (Size % min_reg_size_v<Num> == 0);
+
+// Is SIMD castable from one type to another?
+template<class From, class To, size_t Size>
+concept castable_to =
+    supported<To, Size> && supported<From, Size> && castable_to_type<From, To>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

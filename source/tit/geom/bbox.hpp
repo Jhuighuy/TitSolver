@@ -58,6 +58,32 @@ public:
     return point;
   }
 
+  /// Extend on all sides by the given @p amount.
+  /// @{
+  constexpr auto grow(const Vec& amount) -> BBox& {
+    TIT_ASSERT(all(amount >= Vec(0)), "Grow amount must be positive!");
+    low_ -= amount;
+    high_ += amount;
+    return *this;
+  }
+  constexpr auto grow(const vec_num_t<Vec>& amount) -> BBox& {
+    return grow(Vec(amount));
+  }
+  /// @}
+
+  /// Shrink bounding box by the given @p amount.
+  /// @{
+  constexpr auto shrink(const Vec& amount) -> BBox& {
+    TIT_ASSERT(all(amount >= Vec(0)), "Shrink amount must be positive!");
+    low_ += amount;
+    high_ -= amount;
+    return *this;
+  }
+  constexpr auto shrink(const vec_num_t<Vec>& amount) -> BBox& {
+    return shrink(Vec(amount));
+  }
+  /// @}
+
   /// Expand to align the edges with the given @p point.
   constexpr auto expand(const Vec& point) -> BBox& {
     low_ = minimum(low_, point);
@@ -65,11 +91,10 @@ public:
     return *this;
   }
 
-  /// Extend on all sides by the given @p amount.
-  constexpr auto grow(const vec_num_t<Vec>& amount) -> BBox& {
-    TIT_ASSERT(amount >= 0, "Grow amount must be positive");
-    low_ -= Vec(amount);
-    high_ += Vec(amount);
+  /// Intersect the bounding box with another @p bbox.
+  constexpr auto intersect(const BBox& bbox) -> BBox& {
+    low_ = maximum(low_, bbox.low());
+    high_ = minimum(high_, bbox.high());
     return *this;
   }
 
