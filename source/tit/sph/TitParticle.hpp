@@ -30,7 +30,7 @@
 
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/inertial_bisection.hpp"
-#include "tit/geom/search_engine.hpp"
+#include "tit/geom/search.hpp"
 
 #include "tit/sph/field.hpp"
 
