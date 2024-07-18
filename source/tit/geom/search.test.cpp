@@ -1,0 +1,115 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+#include <iterator>
+#include <random>
+#include <ranges>
+#include <set>
+#include <vector>
+
+#include "tit/core/basic_types.hpp"
+#include "tit/core/math.hpp"
+#include "tit/core/vec.hpp"
+
+#include "tit/geom/search.hpp"
+
+#include "tit/testing/test.hpp"
+
+namespace tit {
+namespace {
+
+using Vec3D = Vec<double, 3>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Nearest neighbor search result.
+using SearchResult = std::vector<std::vector<size_t>>;
+
+// Match the two nearest neighbor search results.
+void match_search_results(const SearchResult& expected_result,
+                          const SearchResult& actual_result) {
+  REQUIRE(expected_result.size() == actual_result.size());
+  for (const auto& [expected_row, actual_row] :
+       std::views::zip(expected_result, actual_result)) {
+    const std::set expected_set(expected_row.begin(), expected_row.end());
+    const std::set actual_set(actual_row.begin(), actual_row.end());
+    CHECK(expected_set == actual_set);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Naive O(N^2) implementation of a nearest neighbor search.
+auto search_naive(const std::vector<Vec3D>& points,
+                  double search_radius) -> SearchResult {
+  const auto search_radius_sqr = pow2(search_radius);
+  SearchResult result(points.size());
+  for (size_t i = 0; i < points.size(); ++i) {
+    result[i] = {i};
+    for (size_t j = 0; j < i; ++j) {
+      if (norm2(points[i] - points[j]) < search_radius_sqr) {
+        result[i].push_back(j);
+        result[j].push_back(i);
+      }
+    }
+  }
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// KNN search via a K-dimensional tree.
+auto search_kd_tree(const std::vector<Vec3D>& points,
+                    double search_radius,
+                    size_t max_leaf_size) -> SearchResult {
+  // Construct the K-dimensional tree.
+  const geom::KDTree kd_tree{points, max_leaf_size};
+
+  // Perform the nearest neighbor search.
+  SearchResult result(points.size());
+  for (const auto& [point, result_row] : std::views::zip(points, result)) {
+    kd_tree.search(point, search_radius, std::back_inserter(result_row));
+  }
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("geom::Search") {
+  // Generate random points in the unit cube.
+  static const auto points = [] {
+    std::mt19937 random_engine{/*seed=*/123};
+    std::uniform_real_distribution<double> dist{0.0, 1.0};
+    std::vector<Vec3D> points_(1000);
+    for (auto& point : points_) {
+      for (size_t i = 0; i < 3; ++i) point[i] = dist(random_engine);
+    }
+    return points_;
+  }();
+
+  // Nearest neighbor search using a naive approach.
+  constexpr double search_radius = 0.1;
+  static const auto result_naive = search_naive(points, search_radius);
+  SUBCASE("naive") {
+    match_search_results(result_naive, result_naive);
+  }
+
+  // Nearest neighbor search with a K-dimensional tree.
+  SUBCASE("kdtree") {
+    SUBCASE("max leaf size = 1") {
+      const auto result_kd_tree = search_kd_tree(points, search_radius, 1);
+      match_search_results(result_naive, result_kd_tree);
+    }
+    SUBCASE("max leaf size = 10") {
+      const auto result_kd_tree = search_kd_tree(points, search_radius, 10);
+      match_search_results(result_naive, result_kd_tree);
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace
+} // namespace tit

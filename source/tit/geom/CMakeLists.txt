@@ -11,7 +11,7 @@ add_tit_library(
     "grid.hpp"
     "inertial_bisection.hpp"
     "kd_tree.hpp"
-    "search_engine.hpp"
+    "search.hpp"
     "sfc_sort.hpp"
   DEPENDS
     tit::core
@@ -25,6 +25,7 @@ add_tit_executable(
   SOURCES
     "bbox.test.cpp"
     "inertial_bisection.test.cpp"
+    "search.test.cpp"
     "sfc_sort.test.cpp"
   DEPENDS
     tit::geom
