@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <iterator>
 #include <ranges>
 #include <utility>
@@ -14,6 +15,7 @@
 #include "tit/core/math.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/type_traits.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -31,102 +33,122 @@ class Grid final {
 public:
 
   /// Point type.
-  using Point = std::ranges::range_value_t<Points>;
+  using Vec = std::ranges::range_value_t<Points>;
 
-  /// Bounding box type.
-  using PointBBox = BBox<Point>;
-
-  /// Numeric type used by the point type.
-  using Real = vec_num_t<Point>;
-
-  /// Numeric type used by the point type.
-  static constexpr auto Dim = vec_dim_v<Point>;
-
-private:
-
-  Points points_;
-  PointBBox grid_bbox_;
-  Vec<size_t, Dim> num_cells_;
-  Point cell_size_;
-  Multivector<size_t> cell_points_;
-
-public:
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Initialize and build the multidimensional grid.
   ///
-  /// @param spacing Grid cell size, typically 2x of the particle spacing.
-  constexpr explicit Grid(Points points, Real spacing)
+  /// @param size_hint Grid cell size hint, typically 2x of the particle
+  ///                  spacing.
+  constexpr explicit Grid(Points points, vec_num_t<Vec> size_hint)
       : points_{std::move(points)} {
     TIT_PROFILE_SECTION("Grid::Grid()");
-    TIT_ASSERT(spacing > 0.0, "Spacing must be positive.");
-    if (std::ranges::empty(points_)) return;
-    // Build the grid.
-    _build_grid(spacing);
-  }
+    TIT_ASSERT(size_hint > 0.0, "Cell size hint must be positive!");
 
-private:
+    // Compute bounding box.
+    //
+    /// @todo Introduce a helper function for this computation.
+    grid_box_ = BBox{points_[0]}; // NOLINT(*-prefer-member-initializer)
+    for (const auto& p : points_ | std::views::drop(1)) grid_box_.expand(p);
+    grid_box_.grow(size_hint / 2);
 
-  // Compute index of the point.
-  constexpr auto _point_to_cell_mdindex(Point point) const noexcept {
-    point = (point - grid_bbox_.low()) / cell_size_;
-    return static_vec_cast<size_t>(point);
-  }
-  constexpr auto _point_to_cell_index(Point point) const noexcept -> size_t {
-    const auto mdindex = _point_to_cell_mdindex(point);
-    auto index = mdindex[0];
-    for (size_t i = 1; i < Dim; ++i) {
-      index = num_cells_[i] * index + mdindex[i];
-    }
-    return index;
-  }
-
-  constexpr void _build_grid(Real spacing) {
-    // Compute grid bounding box.
-    grid_bbox_ = BBox{points_[0]};
-    for (const auto& p : points_ | std::views::drop(1)) grid_bbox_.expand(p);
-    grid_bbox_.grow(0.5 * spacing);
     // Compute number of cells and cell sizes.
-    const auto extents = grid_bbox_.extents();
-    const auto approx_num_cells = ceil(extents / spacing);
-    num_cells_ = static_vec_cast<size_t>(approx_num_cells);
-    cell_size_ = extents / approx_num_cells;
-    auto total_num_cells = 1UZ;
-    for (size_t i = 0; i < Dim; ++i) total_num_cells *= num_cells_[i];
-    // Pack the points into a multivector.
-    cell_points_.assemble_tall(
-        total_num_cells,
-        std::views::iota(size_t{0}, points_.size()),
-        [this](size_t index) { return _point_to_cell_index(points_[index]); });
-  }
+    const auto extents = grid_box_.extents();
+    const auto num_cells_float = ceil(extents / size_hint);
+    num_cells_ = static_vec_cast<size_t>(num_cells_float);
+    cell_extents_ = extents / num_cells_float;
+    cell_extents_recip_ = Vec(1) / cell_extents_; // NOLINT(*member-initializer)
 
-public:
+    // Pack the points into a multivector.
+    cell_points_.assemble_tall( //
+        prod(num_cells_),
+        std::views::iota(size_t{0}, points_.size()),
+        [this](size_t index) {
+          return flatten_cell_index_(cell_index_(points_[index]));
+        });
+  }
 
   /// Find the points within the radius to the given point.
   template<std::output_iterator<size_t> OutIter>
-  constexpr auto search(Point search_point,
-                        Real search_radius,
-                        OutIter out) const noexcept -> OutIter {
+  constexpr auto search(const Vec& search_point,
+                        vec_num_t<Vec> search_radius,
+                        OutIter out) const -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
-    const auto search_dist = pow2(search_radius);
-    // Convert point to bounding box.
-    const auto search_bbox =
-        BBox{search_point - Point(search_radius) - 0.5 * cell_size_,
-             search_point + Point(search_radius) + 0.5 * cell_size_};
-    const auto low = _point_to_cell_mdindex(
-        grid_bbox_.clamp(search_bbox.low()) + 0.5 * cell_size_);
-    const auto high = _point_to_cell_mdindex(
-        grid_bbox_.clamp(search_bbox.high()) - 0.5 * cell_size_);
-    for (size_t i = low[0]; i <= high[0]; ++i) {
-      for (size_t j = low[1]; j <= high[1]; ++j) {
-        const size_t cell_index = i * num_cells_[1] + j;
-        for (const size_t k : cell_points_[cell_index]) {
-          const auto dist = norm2(search_point - points_[k]);
-          if (dist < search_dist) *out++ = k;
+
+    // Calculate the search box.
+    const auto half_cell_extents = cell_extents_ / 2;
+    const auto search_box = BBox{search_point}
+                                .grow(search_radius)
+                                .grow(half_cell_extents)
+                                .intersect(grid_box_)
+                                .shrink(half_cell_extents);
+    const auto low = cell_index_(search_box.low());
+    const auto high = cell_index_(search_box.high());
+
+    // Collect points within the search box.
+    const auto collect_cell_points = [&out,
+                                      &search_point,
+                                      search_dist = pow2(search_radius),
+                                      this](const CellIndex_& cell_index) {
+      std::ranges::copy_if(
+          cell_points_[flatten_cell_index_(cell_index)],
+          out,
+          [&search_point, search_dist](const Vec& point) {
+            return norm2(search_point - point) < search_dist;
+          },
+          [this](size_t i) -> const Vec& { return points_[i]; });
+    };
+    if constexpr (vec_dim_v<Vec> == 1) {
+      for (size_t i = low[0]; i <= high[0]; ++i) {
+        collect_cell_points({i});
+      }
+    } else if constexpr (vec_dim_v<Vec> == 2) {
+      for (size_t i = low[0]; i <= high[0]; ++i) {
+        for (size_t j = low[1]; j <= high[1]; ++j) {
+          collect_cell_points({i, j});
         }
       }
-    }
+    } else if constexpr (vec_dim_v<Vec> == 3) {
+      for (size_t i = low[0]; i <= high[0]; ++i) {
+        for (size_t j = low[1]; j <= high[1]; ++j) {
+          for (size_t k = low[2]; k <= high[2]; ++k) {
+            collect_cell_points({i, j, k});
+          }
+        }
+      }
+    } else static_assert(false);
+
     return out;
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+private:
+
+  using CellIndex_ = decltype(static_vec_cast<size_t>(std::declval<Vec>()));
+
+  constexpr auto cell_index_(const Vec& point) const -> CellIndex_ {
+    const auto index_float = (point - grid_box_.low()) * cell_extents_recip_;
+    TIT_ASSERT(all(index_float >= Vec(0)), "Point is out of range!");
+    return static_vec_cast<size_t>(index_float);
+  }
+
+  constexpr auto flatten_cell_index_(const CellIndex_& index) const noexcept
+      -> size_t {
+    auto flat_index = index[0];
+    for (size_t i = 1; i < vec_dim_v<Vec>; ++i) {
+      flat_index = num_cells_[i] * flat_index + index[i];
+    }
+    return flat_index;
+  }
+
+  Points points_;
+  BBox<Vec> grid_box_;
+  CellIndex_ num_cells_;
+  Vec cell_extents_;
+  Vec cell_extents_recip_;
+  Multivector<size_t> cell_points_;
 
 }; // class Grid
 
@@ -136,32 +158,27 @@ Grid(Points&&, Args...) -> Grid<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-namespace impl {
-template<class... Args>
-concept can_grid = requires(Args... args) { Grid{args...}; };
-} // namespace impl
-
 /// Multidimensional grid factory.
 class GridFactory final {
 public:
 
   /// Construct a multidimensional grid factory.
   ///
-  /// @param spacing Grid cell size, typically 2x of the particle spacing.
-  constexpr explicit GridFactory(real_t spacing) : spacing_{spacing} {
-    TIT_ASSERT(spacing_ > 0.0, "Spacing must be positive.");
+  /// @param size_hint Grid cell size, typically 2x of the particle spacing.
+  constexpr explicit GridFactory(real_t size_hint) : size_hint_{size_hint} {
+    TIT_ASSERT(size_hint_ > 0.0, "Cell size hint must be positive!");
   }
 
   /// Produce a multidimensional grid for the specified set of points.
   template<std::ranges::viewable_range Points>
-    requires impl::can_grid<Points&&, real_t>
+    requires deduce_constructible_from<Grid, Points&&, real_t>
   constexpr auto operator()(Points&& points) const noexcept {
-    return Grid{std::forward<Points>(points), spacing_};
+    return Grid{std::forward<Points>(points), size_hint_};
   }
 
 private:
 
-  real_t spacing_;
+  real_t size_hint_;
 
 }; // class GridFactory
 
