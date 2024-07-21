@@ -297,9 +297,9 @@ public:
       const auto Pi_ab = artvisc_.velocity_term(a, b);
       /// Update velocity time derivative.
       // clang-format off
-      auto const v_flux_a = (-p[a] / (Omega.get(a, 1.0) * pow2(rho[a])) +
+      const auto v_flux_a = (-p[a] / (Omega.get(a, 1.0) * pow2(rho[a])) +
                              0.5 * Pi_ab) * grad_W_aba;
-      auto const v_flux_b = (-p[b] / (Omega.get(b, 1.0) * pow2(rho[b])) +
+      const auto v_flux_b = (-p[b] / (Omega.get(b, 1.0) * pow2(rho[b])) +
                              0.5 * Pi_ab) * grad_W_abb;
       // clang-format on
       const auto v_flux = v_flux_a + v_flux_b;

@@ -141,7 +141,7 @@ TEST_CASE("Mat::transpose") {
 
 TEST_CASE("Mat::part_solve_inplace") {
   // clang-format off
-  Mat const A{
+  const Mat A{
       { 2.0, -1.0, -2.0},
       {-2.0,  4.0, -1.0},
       {-2.0, -1.0,  5.0},

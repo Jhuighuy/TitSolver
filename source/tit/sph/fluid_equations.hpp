@@ -299,7 +299,7 @@ public:
           /// Laplacian viscosity approach.
           /// Update velocity time derivative.
           // clang-format off
-          auto const visc_flux = mu_ab / (rho[a] * rho[b] * norm2(r[a, b])) *
+          const auto visc_flux = mu_ab / (rho[a] * rho[b] * norm2(r[a, b])) *
                                  (2 * (d + 2) * dot(v[a, b], r[a, b]) *
                                   grad_W_ab);
           // clang-format on
@@ -314,7 +314,7 @@ public:
           // Full stress tensor approach.
           /// Update velocity time derivative.
           // clang-format off
-          auto const visc_flux = mu_ab / (rho[a] * rho[b] * norm2(r[a, b])) *
+          const auto visc_flux = mu_ab / (rho[a] * rho[b] * norm2(r[a, b])) *
                                  ((d + 2) * dot(v[a, b], r[a, b]) * grad_W_ab +
                                   v[a, b] * dot(r[a, b], grad_W_ab));
           // clang-format on

@@ -55,7 +55,7 @@ TEST_CASE("Mat::lu") {
           {1.5, 1.0},
       };
       // clang-format off
-      Mat const U{
+      const Mat U{
           {4.0,  3.0},
           {0.0, -1.5},
       };
@@ -75,7 +75,7 @@ TEST_CASE("Mat::lu") {
     }
     SUBCASE("inverse") {
       // clang-format off
-      auto const A_inv = Mat{
+      const auto A_inv = Mat{
           {-3.0,  3.0},
           { 6.0, -4.0},
       } / 6.0;
@@ -86,7 +86,7 @@ TEST_CASE("Mat::lu") {
   }
   SUBCASE("3x3") {
     // clang-format off
-    Mat const A{
+    const Mat A{
         { 2.0, -1.0, -2.0},
         {-4.0,  6.0,  3.0},
         {-4.0, -2.0,  8.0},
@@ -96,12 +96,12 @@ TEST_CASE("Mat::lu") {
     REQUIRE(fact);
     SUBCASE("factors") {
       // clang-format off
-      Mat const L{
+      const Mat L{
           { 1.0,  0.0, 0.0},
           {-2.0,  1.0, 0.0},
           {-2.0, -1.0, 1.0},
       };
-      Mat const U{
+      const Mat U{
           {2.0, -1.0, -2.0},
           {0.0,  4.0, -1.0},
           {0.0,  0.0,  3.0},
@@ -122,7 +122,7 @@ TEST_CASE("Mat::lu") {
     }
     SUBCASE("inverse") {
       // clang-format off
-      auto const A_inv = Mat{
+      const auto A_inv = Mat{
           {6.75, 1.5, 1.125},
           { 2.5, 1.0,  0.25},
           { 4.0, 1.0,   1.0},
@@ -134,7 +134,7 @@ TEST_CASE("Mat::lu") {
   }
   SUBCASE("4x4 singular") {
     // clang-format off
-    Mat const A{
+    const Mat A{
         { 1.0, -2.0,  3.0,  4.0},
         { 5.0,  6.0,  7.0,  8.0},
         { 9.0, 10.0, 11.0, 12.0},
@@ -176,7 +176,7 @@ TEST_CASE("Mat::chol") {
   }
   SUBCASE("3x3") {
     // clang-format off
-    Mat const A{
+    const Mat A{
         {  4.0,  12.0, -16.0},
         { 12.0,  37.0, -43.0},
         {-16.0, -43.0,  98.0},
@@ -186,7 +186,7 @@ TEST_CASE("Mat::chol") {
     REQUIRE(fact);
     SUBCASE("factors") {
       // clang-format off
-      Mat const L{
+      const Mat L{
           { 2.0, 0.0, 0.0},
           { 6.0, 1.0, 0.0},
           {-8.0, 5.0, 3.0},
@@ -206,7 +206,7 @@ TEST_CASE("Mat::chol") {
     }
     SUBCASE("inverse") {
       // clang-format off
-      auto const A_inv = Mat{
+      const auto A_inv = Mat{
           {444.25, -122.0, 19.0},
           {-122.0,   34.0, -5.0},
           {  19.0,   -5.0,  1.0},
@@ -218,7 +218,7 @@ TEST_CASE("Mat::chol") {
   }
   SUBCASE("4x4 indefinite") {
     // clang-format off
-    Mat const A{
+    const Mat A{
         {  4.0,  12.0, -16.0,  4.0},
         { 12.0,  35.0, -53.0, 14.0},
         {-16.0, -53.0,  48.0, 21.0},
@@ -231,7 +231,7 @@ TEST_CASE("Mat::chol") {
   }
   SUBCASE("4x4 singular") {
     // clang-format off
-    Mat const A{
+    const Mat A{
         {  4.0,  12.0, -16.0,  4.0},
         { 12.0,  36.0, -48.0, 12.0},
         {-16.0, -48.0,  73.0, 11.0},
@@ -275,7 +275,7 @@ TEST_CASE("Mat::ldl") {
   }
   SUBCASE("3x3") {
     // clang-format off
-    Mat const A{
+    const Mat A{
         {  4.0,  12.0, -16.0},
         { 12.0,  37.0, -43.0},
         {-16.0, -43.0,  98.0},
@@ -285,7 +285,7 @@ TEST_CASE("Mat::ldl") {
     REQUIRE(fact);
     SUBCASE("factors") {
       // clang-format off
-      Mat const L{
+      const Mat L{
           { 1.0, 0.0, 0.0},
           { 3.0, 1.0, 0.0},
           {-4.0, 5.0, 1.0},
@@ -311,7 +311,7 @@ TEST_CASE("Mat::ldl") {
     }
     SUBCASE("inverse") {
       // clang-format off
-      auto const A_inv = Mat{
+      const auto A_inv = Mat{
           {444.25, -122.0, 19.0},
           {-122.0,   34.0, -5.0},
           {  19.0,   -5.0,  1.0},
@@ -323,7 +323,7 @@ TEST_CASE("Mat::ldl") {
   }
   SUBCASE("4x4 indefinite") {
     // clang-format off
-    Mat const A{
+    const Mat A{
         {  4.0,  12.0, -16.0,  4.0},
         { 12.0,  35.0, -53.0, 14.0},
         {-16.0, -53.0,  48.0, 21.0},
@@ -334,13 +334,13 @@ TEST_CASE("Mat::ldl") {
     REQUIRE(fact);
     SUBCASE("factors") {
       // clang-format off
-      Mat const L{
+      const Mat L{
           { 1.0,  0.0, 0.0, 0.0},
           { 3.0,  1.0, 0.0, 0.0},
           {-4.0,  5.0, 1.0, 0.0},
           { 1.0, -2.0, 3.0, 1.0},
       };
-      Mat const D{
+      const Mat D{
           {4.0,  0.0, 0.0,  0.0},
           {0.0, -1.0, 0.0,  0.0},
           {0.0,  0.0, 9.0,  0.0},
@@ -362,7 +362,7 @@ TEST_CASE("Mat::ldl") {
     }
     SUBCASE("inverse") {
       // clang-format off
-      auto const A_inv = Mat{
+      const auto A_inv = Mat{
           {-36581.75,  9724.0, -1709.0,  576.0},
           {   9724.0, -2585.0,   454.0, -153.0},
           {  -1709.0,   454.0,   -80.0,   27.0},
@@ -375,7 +375,7 @@ TEST_CASE("Mat::ldl") {
   }
   SUBCASE("4x4 singular") {
     // clang-format off
-    Mat const A{
+    const Mat A{
         {  4.0,  12.0, -16.0,  4.0},
         { 12.0,  35.0, -53.0, 14.0},
         {-16.0, -53.0,  39.0, -6.0},

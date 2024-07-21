@@ -27,7 +27,7 @@ TEST_CASE("Mat::jacobi") {
   SUBCASE("2x2") {
     SUBCASE("indefinite") {
       // clang-format off
-      Mat const A{
+      const Mat A{
           { 1.0, -2.0},
           {-2.0,  1.0},
       };
