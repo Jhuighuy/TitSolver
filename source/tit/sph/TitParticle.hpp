@@ -16,6 +16,8 @@
 #include <type_traits>
 #include <vector>
 
+#include <oneapi/tbb/concurrent_vector.h>
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/graph.hpp"
@@ -25,7 +27,6 @@
 #include "tit/core/multivector.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -134,7 +135,7 @@ private:
   ParticleArray* particles_;
   EngineFactory engine_factory_;
   Graph adjacency_;
-  std::vector<size_t> fixed_;
+  tbb::concurrent_vector<size_t> fixed_;
   Graph interp_adjacency_;
   Multivector<std::tuple<size_t, size_t>> block_adjacency_;
 
@@ -165,39 +166,50 @@ public:
     // -------------------------------------------------------------------------
     // STEP I: neighbors search.
     const auto positions = array()[r];
-    const auto engine = engine_factory_(positions);
-    adjacency_.clear();
-    fixed_.clear();
-    interp_adjacency_.clear();
-    std::ranges::for_each(array().views(), [&](PV a) {
-      const auto search_point = r[a];
-      const auto search_radius = radius_func(a);
-      TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
-      TIT_CACHED_VARIABLE(search_results, std::vector<size_t>{});
-      search_results.clear();
-      engine.search(search_point,
-                    search_radius,
-                    std::back_inserter(search_results));
-      adjacency_.push_back(search_results);
-#if 1
-      if (fixed[a]) {
-        fixed_.push_back(a.index());
+    {
+      TIT_PROFILE_SECTION("ParticleAdjacency::search()");
+      const auto engine = engine_factory_(positions);
+      // -----------------------------------------------------------------------
+      fixed_.clear();
+      fixed_.reserve(array().size() / 2);
+      static std::vector<std::vector<size_t>> adj_vov{};
+      adj_vov.resize(array().size());
+      par::for_each(array().views(), [&radius_func, &engine, this](PV a) {
+        const auto search_point = r[a];
+        const auto search_radius = radius_func(a);
+        TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
+        auto& search_results = adj_vov[a.index()];
+        search_results.clear();
+        engine.search(search_point,
+                      search_radius,
+                      std::back_inserter(search_results));
+        if (fixed[a]) *fixed_.grow_by(1) = a.index();
+      });
+      adjacency_.clear();
+      for (const auto& adj : adj_vov) adjacency_.push_back(adj);
+      adjacency_.sort();
+      // -----------------------------------------------------------------------
+      static std::vector<std::vector<size_t>> interp_adj_vov{};
+      interp_adj_vov.resize(fixed_.size());
+      par::for_each(_fixed(), [&radius_func, &engine, this](auto ia) {
+        auto [i, a] = ia;
+        const auto search_point = r[a];
+        const auto search_radius = 3 * radius_func(a);
         const auto clipped_point = Domain.clamp(search_point);
         const auto interp_point = 2 * clipped_point - search_point;
+        auto& search_results = interp_adj_vov[i];
         search_results.clear();
         engine.search(interp_point,
-                      3 * search_radius,
+                      search_radius,
                       std::back_inserter(search_results));
-        interp_adjacency_.push_back(std::views::all(search_results) |
-                                    std::views::filter([&](size_t b_index) {
-                                      return !fixed[array()[b_index]];
-                                    }));
-      }
-#endif
-    });
-    adjacency_.sort();
-    interp_adjacency_.sort();
-#if 1
+        std::erase_if(search_results, [this](size_t b_index) {
+          return fixed[array()[b_index]];
+        });
+      });
+      interp_adjacency_.clear();
+      for (const auto& adj : interp_adj_vov) interp_adjacency_.push_back(adj);
+      interp_adjacency_.sort();
+    }
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
     size_t nparts = par::num_threads();
@@ -218,7 +230,6 @@ public:
       }
       eprint("\n");
     }
-#endif
   }
 
   constexpr auto _fixed() const noexcept {
@@ -252,7 +263,6 @@ public:
              return std::tuple{array()[a_index], array()[b_index]};
            });
   }
-#if 1
   constexpr auto block_pairs() const noexcept {
     return std::views::iota(0UZ, block_adjacency_.size()) |
            std::views::transform([&](size_t block_index) {
@@ -263,24 +273,6 @@ public:
                     });
            });
   }
-#else
-  constexpr auto block_pairs() const noexcept {
-    return std::views::iota(0UZ, _color_ranges.size() - 1) |
-           std::views::transform([&](size_t k) {
-             return std::ranges::subrange(
-                        _colored_edges.begin() + _color_ranges[k],
-                        _colored_edges.begin() + _color_ranges[k + 1]) |
-                    std::views::transform([this](auto ab_indices) {
-                      auto [a_index, b_index] = ab_indices;
-                      TIT_ASSERT(a_index < array().size(),
-                                 "Particle is out of range.");
-                      TIT_ASSERT(b_index < array().size(),
-                                 "Particle is out of range.");
-                      return std::tuple{array()[a_index], array()[b_index]};
-                    });
-           });
-  }
-#endif
 
 }; // class ParticleAdjacency
 
