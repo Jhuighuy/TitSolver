@@ -215,12 +215,9 @@ public:
       if constexpr (has<PV>(L)) L[a] = {};
       /// Compute renormalization fields.
       std::ranges::for_each(adjacent_particles[a], [&](PV b) {
-        [[maybe_unused]]
-        const auto W_ab = kernel_(a, b, h[a]);
-        [[maybe_unused]]
-        const auto grad_W_ab = kernel_.grad(a, b, h[a]);
-        [[maybe_unused]]
-        const auto V_b = m[b] / rho[b];
+        [[maybe_unused]] const auto W_ab = kernel_(a, b, h[a]);
+        [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b, h[a]);
+        [[maybe_unused]] const auto V_b = m[b] / rho[b];
         /// Update kernel renormalization coefficient.
         if constexpr (has<PV>(S)) S[a] += V_b * W_ab;
         /// Update kernel gradient renormalization matrix.
@@ -263,10 +260,8 @@ public:
       }
       /// Compute velocity derivative fields.
       std::ranges::for_each(adjacent_particles[a], [&](PV b) {
-        [[maybe_unused]]
-        const auto grad_W_ab = kernel_.grad(a, b, h[a]);
-        [[maybe_unused]]
-        const auto V_b = m[b] / rho[b];
+        [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b, h[a]);
+        [[maybe_unused]] const auto V_b = m[b] / rho[b];
         if constexpr (has<PV>(grad_v)) {
           /// Update velocity gradient.
           grad_v[a] += outer(v[b, a], grad_W_ab);
@@ -327,17 +322,10 @@ public:
 
 private:
 
-  [[no_unique_address]]
-  EquationOfState eos_;
-
-  [[no_unique_address]]
-  DensityEquation density_equation_;
-
-  [[no_unique_address]]
-  Kernel kernel_;
-
-  [[no_unique_address]]
-  ArtificialViscosity artvisc_;
+  [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] DensityEquation density_equation_;
+  [[no_unique_address]] Kernel kernel_;
+  [[no_unique_address]] ArtificialViscosity artvisc_;
 
 }; // class CompressibleFluidEquations
 

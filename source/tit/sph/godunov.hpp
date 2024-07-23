@@ -251,17 +251,10 @@ public:
 
 private:
 
-  [[no_unique_address]]
-  EquationOfState eos_;
-
-  [[no_unique_address]]
-  DensityEquation density_equation_;
-
-  [[no_unique_address]]
-  Kernel kernel_;
-
-  [[no_unique_address]]
-  ArtificialViscosity artvisc_;
+  [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] DensityEquation density_equation_;
+  [[no_unique_address]] Kernel kernel_;
+  [[no_unique_address]] ArtificialViscosity artvisc_;
 
 }; // class FluidEquations
 

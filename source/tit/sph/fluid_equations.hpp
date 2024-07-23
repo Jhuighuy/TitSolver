@@ -182,14 +182,10 @@ public:
     // Compute auxiliary density fields.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
-      [[maybe_unused]]
-      const auto W_ab = kernel_(a, b);
-      [[maybe_unused]]
-      const auto grad_W_ab = kernel_.grad(a, b);
-      [[maybe_unused]]
-      const auto V_a = m[a] / rho[a];
-      [[maybe_unused]]
-      const auto V_b = m[b] / rho[b];
+      [[maybe_unused]] const auto W_ab = kernel_(a, b);
+      [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
+      [[maybe_unused]] const auto V_a = m[a] / rho[a];
+      [[maybe_unused]] const auto V_b = m[b] / rho[b];
       /// Update density gradient.
       if constexpr (has<PV>(grad_rho)) {
         const auto grad_flux = rho[b, a] * grad_W_ab;
@@ -259,13 +255,10 @@ public:
     // Compute auxiliary velocity fields.
     par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
       const auto [a, b] = ab;
-      [[maybe_unused]]
-      const auto W_ab = kernel_(a, b);
-      [[maybe_unused]]
-      const auto grad_W_ab = kernel_.grad(a, b);
-      [[maybe_unused]]
-      const auto V_a = m[a] / rho[a];
-      const auto V_b = m[b] / rho[b];
+      [[maybe_unused]] const auto W_ab = kernel_(a, b);
+      [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
+      [[maybe_unused]] const auto V_a = m[a] / rho[a];
+      [[maybe_unused]] const auto V_b = m[b] / rho[b];
       /// Update velocity divergence.
       if constexpr (has<PV>(div_v)) {
         const auto div_flux = dot(v[b, a], grad_W_ab);
@@ -344,17 +337,10 @@ public:
 
 private:
 
-  [[no_unique_address]]
-  EquationOfState eos_;
-
-  [[no_unique_address]]
-  DensityEquation density_equation_;
-
-  [[no_unique_address]]
-  Kernel kernel_;
-
-  [[no_unique_address]]
-  ArtificialViscosity artvisc_;
+  [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] DensityEquation density_equation_;
+  [[no_unique_address]] Kernel kernel_;
+  [[no_unique_address]] ArtificialViscosity artvisc_;
 
 }; // class FluidEquations
 

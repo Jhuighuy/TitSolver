@@ -80,8 +80,7 @@ public:
 
 private:
 
-  [[no_unique_address]]
-  FluidEquations equations_{};
+  [[no_unique_address]] FluidEquations equations_{};
   size_t step_index_{0};
   size_t adjacency_recalc_freq_;
 
@@ -187,8 +186,7 @@ public:
 
 private:
 
-  [[no_unique_address]]
-  FluidEquations equations_{};
+  [[no_unique_address]] FluidEquations equations_{};
   size_t step_index_{0};
   size_t adjacency_recalc_freq_;
 
