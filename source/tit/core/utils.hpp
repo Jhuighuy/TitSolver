@@ -7,7 +7,11 @@
 
 #include <array>
 #include <concepts>
+#include <format>
 #include <functional>
+#include <iterator>
+#include <ranges>
+#include <string>
 #include <tuple>
 #include <utility>
 
@@ -63,6 +67,38 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Virtual base class.
+class VirtualBase {
+public:
+
+  /// Construct the virtual class instance.
+  VirtualBase() = default;
+
+  /// Virtual class instance is not move-constructible.
+  VirtualBase(VirtualBase&&) = delete;
+
+  /// Virtual class instance is not copy-constructible.
+  VirtualBase(const VirtualBase&) = delete;
+
+  /// Virtual class instance is not movable.
+  auto operator=(VirtualBase&&) -> VirtualBase& = delete;
+
+  /// Virtual class instance is not copyable.
+  auto operator=(const VirtualBase&) -> VirtualBase& = delete;
+
+  /// Virtual destructor.
+  virtual ~VirtualBase() = default;
+
+}; // class VirtualBase
+
+/// Is a virtual class instance of the given type?
+template<std::derived_from<VirtualBase> Derived>
+constexpr auto instance_of(const VirtualBase& instance) -> bool {
+  return dynamic_cast<const Derived*>(&instance) != nullptr;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 namespace Std {
 /// Simple implementation of `std::bind_back`, since Clang 18 cannot handle
 /// it's libstdc++ implementation.
@@ -81,6 +117,21 @@ constexpr auto bind_back(Func&& func, BackArgs&&... back_arguments) {
             },
             back_args_tuple);
       };
+}
+
+/// Format a range.
+/// @todo To be removed when ranges are supported in std::format.
+template<std::ranges::input_range Range>
+  requires std::formattable<std::ranges::range_value_t<Range>, char>
+constexpr auto format_range(Range&& range) -> std::string {
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  if (std::empty(range)) return "[]";
+  std::string result = std::format("[{}", *std::begin(range));
+  for (const auto& elem : range | std::views::drop(1)) {
+    result += std::format(", {}", elem);
+  }
+  result += "]";
+  return result;
 }
 } // namespace Std
 

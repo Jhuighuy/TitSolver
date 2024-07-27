@@ -15,10 +15,10 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/graph.hpp"
-#include "tit/core/io.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/stats.hpp"
 #include "tit/core/type_traits.hpp"
 #include "tit/core/vec.hpp"
 
@@ -112,7 +112,7 @@ public:
   template<particle_array ParticleArray, class SearchRadiusFunc>
   constexpr void update(ParticleArray& particles,
                         const SearchRadiusFunc& radius_func) {
-    TIT_PROFILE_SECTION("ParticleAdjacency::update()");
+    TIT_PROFILE_SECTION("ParticleMesh::update()");
 
     // Update the adjacency graphs.
     search_(particles, radius_func);
@@ -126,7 +126,7 @@ private:
   template<particle_array ParticleArray, class SearchRadiusFunc>
   constexpr void search_(ParticleArray& particles,
                          const SearchRadiusFunc& radius_func) {
-    TIT_PROFILE_SECTION("ParticleAdjacency::search()");
+    TIT_PROFILE_SECTION("ParticleMesh::search()");
     using PV = ParticleView<ParticleArray>;
 
     // Build the search index.
@@ -189,7 +189,7 @@ private:
 
   template<particle_array ParticleArray>
   constexpr void partition_(ParticleArray& particles) {
-    TIT_PROFILE_SECTION("ParticleAdjacency::partition()");
+    TIT_PROFILE_SECTION("ParticleMesh::partition()");
 
     // Build the geometric partitioning.
     const auto num_parts = par::num_threads();
@@ -208,9 +208,7 @@ private:
         });
 
     // Report the block sizes.
-    eprint("NCOL: ");
-    for (const auto s : block_adjacency_.sizes()) eprint("{} ", s);
-    eprint("\n");
+    TIT_STATS("ParticleMesh::block_adjacency_", block_adjacency_.sizes());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
