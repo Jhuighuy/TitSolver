@@ -79,16 +79,17 @@ std::vector<SignalHandler*> SignalHandler::handlers_{};
 SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
   // Register the current handler object.
   handlers_.push_back(this);
+
   // Register the new signal actions (or handlers).
   prev_actions_.reserve(signal_numbers.size());
   for (const auto signal_number : signal_numbers) {
     TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
-    // Prepare the new action.
+
+    // Register the new action and store the previous one.
     sigaction_t action{};
     action.sa_flags = 0;
     action.sa_handler = &handle_signal_;
     sigemptyset(&action.sa_mask);
-    // Register the new action and store the previous one.
     sigaction_t prev_action{};
     safe_sigaction(signal_number, &action, &prev_action);
     prev_actions_.emplace_back(signal_number, prev_action);
@@ -100,6 +101,7 @@ SignalHandler::~SignalHandler() noexcept {
   for (const auto& [signal_number, prev_action] : prev_actions_) {
     safe_sigaction(signal_number, &prev_action);
   }
+
   // Unregister the current signal handler.
   TIT_ASSERT(handlers_.back() == this, "Signal handler was not registered!");
   handlers_.pop_back();
@@ -162,7 +164,7 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
     exit(0);
   } else {
     // Dump backtrace and exit fast with an error.
-    dump("\n\nTerminated by signal ");
+    dump("\n\nTerminated by ");
     switch (signal_number) {
       case SIGHUP:  dump("SIGHUP (hangup)"); break;
       case SIGQUIT: dump("SIGQUIT (quit)"); break;
@@ -176,7 +178,7 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
       case SIGPIPE: dump("SIGPIPE (broken pipe)"); break;
       case SIGALRM: dump("SIGALRM (alarm clock)"); break;
       case SIGTERM: dump("SIGTERM"); break;
-      default:      TIT_ASSERT(false, "Must not be reached.");
+      default:      dump("unknown signal"); break;
     }
     dump(".\n");
     dump("\nStacktrace:\n");

@@ -40,9 +40,9 @@ public:
 /// Transparent string hash function.
 struct StringHash {
   using is_transparent = void; // enables heterogeneous operations.
-  auto operator()(std::string_view sv) const noexcept -> size_t {
+  auto operator()(std::string_view string) const noexcept -> size_t {
     constexpr std::hash<std::string_view> hasher{};
-    return hasher(sv);
+    return hasher(string);
   }
 }; // struct StringHash
 

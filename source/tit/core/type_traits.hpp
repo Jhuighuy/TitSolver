@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -23,6 +24,19 @@ inline constexpr bool in_range_v = A <= X && X <= B;
 /// Check if the template type can be constructed from the given arguments.
 template<template<class...> class T, class... Args>
 concept deduce_constructible_from = requires(Args... args) { T{args...}; };
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Contiguous range with fixed size.
+template<class Range>
+concept contiguous_fixed_size_range =
+    requires(Range& range) { std::span{range}; } && //
+    decltype(std::span{std::declval<Range&>()})::extent != std::dynamic_extent;
+
+/// Size of the contiguous fixed size range.
+template<contiguous_fixed_size_range Range>
+inline constexpr auto range_fixed_size_v =
+    decltype(std::span{std::declval<Range&>()})::extent;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

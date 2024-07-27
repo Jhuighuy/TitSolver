@@ -33,24 +33,44 @@ auto demangle_type_name_(const char* name) -> std::string {
   return name; // Demangling failed, so just return the original name.
 }
 
+// Type name of the argument.
+template<class Arg>
+auto type_name_(const Arg& arg) -> std::string {
+  return demangle_type_name_(typeid(arg).name());
+}
+
 // Report unhandled exception that derives from `std::exception`.
 void report_std_exception_(const std::exception& e) {
-  eprint("\n\n");
-  if (const auto* const ee = dynamic_cast<const Exception*>(&e);
-      ee != nullptr) {
-    const auto& loc = ee->where();
+  eprintln();
+  eprintln();
+  if (const auto* const tit_e = dynamic_cast<const Exception*>(&e);
+      tit_e != nullptr) {
+    /// @todo We should also report stacktrace once we have it.
+    const auto& loc = tit_e->where();
     eprint("{}:{}:{}: ", loc.file_name(), loc.line(), loc.column());
   }
-  eprint("Terminating due to an unhandled exception.\n\n");
-  const auto throw_expression =
-      std::format("throw {}(...);", demangle_type_name_(typeid(e).name()));
-  eprint("  {}\n", throw_expression);
-  eprint("  ^{:~>{}} {}\n\n", "", throw_expression.size() - 1, e.what());
+  eprintln("Terminating due to an unhandled exception.");
+  eprintln();
+  const auto throw_expression = std::format("throw {}(...);", type_name_(e));
+  eprintln("  {}", throw_expression);
+  eprintln("  ^{:~>{}} {}", "", throw_expression.size() - 1, e.what());
+  eprintln();
 }
 
 // Report unhandled exception that does not derive from `std::exception`.
-void report_non_std_exception() {
-  eprint("\n\nTerminating due to an unhandled exception.");
+void report_non_std_exception_() {
+  eprintln();
+  eprintln();
+  eprint("Terminating due to an unhandled exception.");
+  eprintln();
+}
+
+// Report call to `std::terminate`.
+void report_terminate_call_() {
+  eprintln();
+  eprintln();
+  eprintln("Terminating due to a call to std::terminate.");
+  eprintln();
 }
 
 } // namespace
@@ -73,11 +93,11 @@ void TerminateHandler::handle_terminate_() {
     } catch (const std::exception& e) {
       report_std_exception_(e);
     } catch (...) {
-      report_non_std_exception();
+      report_non_std_exception_();
     }
   } else {
     // We've got here for some other reason.
-    eprint("\n\nTerminating due to a call to std::terminate.\n\n");
+    report_terminate_call_();
   }
   fast_exit(1);
 }

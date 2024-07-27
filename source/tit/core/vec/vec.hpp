@@ -22,6 +22,9 @@
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Vector class.
+//
 
 /// Column vector.
 template<class Num, size_t Dim>

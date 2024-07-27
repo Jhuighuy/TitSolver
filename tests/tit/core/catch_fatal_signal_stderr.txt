@@ -4,7 +4,7 @@ func_3
 Doing something bad...
 
 
-Terminated by signal SIGSEGV (segmentation fault).
+Terminated by SIGSEGV (segmentation fault).
 
 Stacktrace:
 0   tit_core_catch_fatal_signal_test    0x0000000102a9e1b0 _ZN3tit18FatalSignalHandler9on_signalEi + 160

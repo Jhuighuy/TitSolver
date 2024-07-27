@@ -72,6 +72,8 @@ private:
 
 }; // class Stopwatch
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Scoped stopwatch cycle.
 class StopwatchCycle final {
 public:

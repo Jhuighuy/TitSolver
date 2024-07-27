@@ -33,8 +33,8 @@ void match_search_results(const SearchResult& expected_result,
   REQUIRE(expected_result.size() == actual_result.size());
   for (const auto& [expected_row, actual_row] :
        std::views::zip(expected_result, actual_result)) {
-    const std::set expected_set(expected_row.begin(), expected_row.end());
-    const std::set actual_set(actual_row.begin(), actual_row.end());
+    const auto expected_set = expected_row | std::ranges::to<std::set>();
+    const auto actual_set = actual_row | std::ranges::to<std::set>();
     CHECK(expected_set == actual_set);
   }
 }

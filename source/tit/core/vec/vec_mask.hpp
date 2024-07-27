@@ -17,6 +17,9 @@
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Vector mask class.
+//
 
 /// Column vector element-wise boolean mask.
 template<class Num, size_t Dim>

@@ -58,7 +58,7 @@ public:
   explicit RegMask(std::span<const Mask<Num>> span) noexcept {
     TIT_ASSERT(span.size() >= Size, "Span size is too small!");
     base = hn::MaskFromVec( // NOLINT(*-prefer-member-initializer)
-        hn::Load(Tag{}, std::bit_cast<const Num*>(span.data())));
+        hn::LoadU(Tag{}, std::bit_cast<const Num*>(span.data())));
   }
 
   /// Store SIMD register mask into memory.

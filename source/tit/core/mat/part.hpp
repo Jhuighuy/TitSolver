@@ -109,7 +109,7 @@ constexpr void part_solve_inplace(const Mat<Num, Dim>& A, Mult& x) {
   } else static_assert(Part & unit);
 }
 
-/// Partially solve matrix equation inplace:
+/// Partially solve a sequence of matrix equations inplace:
 /// `x := copy_part<Parts>(A)^-1 * ... * x`.
 template<MatPart... Parts, class Mat, mat_multiplier<Mat> Mult>
 constexpr void part_solve_inplace(const Mat& A, Mult& x) {

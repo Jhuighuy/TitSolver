@@ -9,7 +9,7 @@ Checking how floating point arithmetic works...
   0.1 + 0.2 == 0.3
   ^~~~~~~~~~~~~~~~ Right?!
 
-Terminated by signal SIGABRT (aborted).
+Terminated by SIGABRT (aborted).
 
 Stacktrace:
 0   tit_core_failed_check_test          0x0000000104539894 _ZN3tit18FatalSignalHandler9on_signalEi + 180

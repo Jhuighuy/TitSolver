@@ -98,10 +98,10 @@ concept castable_to =
 namespace impl {
 
 // In Highway, type is identified as an integer, if it is one of the standard
-// fixed-width types. This leads to the problem that if, for example,
-// `int64_t` is defined as `long long` on some platforms, the specialization
-// for `long` would be missing. Even if `long` and `long long` have the same
-// size, they are not the same type:
+// fixed-width types, like `uint32_t`. This leads to the problem that if, for
+// example, `int64_t` is defined as `long long` on some platforms, the
+// specialization for `long` would be missing. Even if `long` and `long long`
+// have the same size, they are not the same type:
 //
 // static_assert(sizeof(long) == sizeof(long long) &&
 //               !std::same_as<long, long long>);

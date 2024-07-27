@@ -29,6 +29,18 @@ void eprintln(std::format_string<Args...> fmt, Args&&... args) {
   println(std::cerr, fmt, std::forward<Args>(args)...);
 }
 
+/// Print the newline to the standard error stream.
+inline void eprintln() {
+  std::cerr << '\n';
+}
+
+/// @todo Argumentless `println` is not supported by GCC 14.0.1.
+#if defined(__GLIBCXX__) && (__GLIBCXX__ < 20240507)
+inline void println() {
+  std::cout << '\n';
+}
+#endif
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

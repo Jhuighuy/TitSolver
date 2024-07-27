@@ -59,14 +59,14 @@ public:
   /// Load SIMD register from memory.
   [[gnu::always_inline]]
   explicit Reg(std::span<const Num> span) noexcept {
-    TIT_ASSERT(span.size() >= Size, "Span size is too small!");
-    base = hn::Load(Tag{}, span.data()); // NOLINT(*-prefer-member-initializer)
+    TIT_ASSERT(span.size() >= Size, "Data size is too small!");
+    base = hn::LoadU(Tag{}, span.data()); // NOLINT(*-prefer-member-initializer)
   }
 
   /// Store SIMD register into memory.
   [[gnu::always_inline]]
   void store(std::span<Num> span) const noexcept {
-    TIT_ASSERT(span.size() >= Size, "Span size is too small!");
+    TIT_ASSERT(span.size() >= Size, "Data size is too small!");
     hn::StoreU(base, Tag{}, span.data());
   }
 

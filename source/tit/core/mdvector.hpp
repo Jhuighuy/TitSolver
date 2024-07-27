@@ -41,25 +41,20 @@ template<class Val, size_t Rank>
 class Mdspan {
 public:
 
-  /// Value span type.
-  using ValSpan = std::span<Val>;
-
   /// Shape span type.
   using ShapeSpan = std::span<const size_t, Rank>;
+
+  /// Value span type.
+  using ValSpan = std::span<Val>;
 
   /// Initialize the multidimensional span.
   /// @{
   template<std::contiguous_iterator ValIter>
-    requires std::same_as<
-                 Val,
-                 std::remove_reference_t<std::iter_reference_t<ValIter>>>
+    requires std::constructible_from<ValSpan, ValIter, ValIter>
   constexpr Mdspan(ShapeSpan shape, ValIter val_iter) noexcept
       : shape_{shape}, vals_{val_iter, val_iter + size_from_shape_()} {}
   template<std::ranges::contiguous_range Vals>
-    requires (std::ranges::sized_range<Vals> &&
-              std::same_as<Val,
-                           std::remove_reference_t<
-                               std::ranges::range_reference_t<Vals>>>)
+    requires std::constructible_from<ValSpan, Vals&&>
   constexpr Mdspan(ShapeSpan shape, Vals&& vals) noexcept
       : shape_{shape}, vals_{std::forward<Vals>(vals)} {
     TIT_ASSERT(vals_.size() == size_from_shape_(), "Data size is invalid!");
@@ -107,9 +102,8 @@ public:
                   IndicesRank == Rank) {
       return vals_[offset];
     } else {
-      using Subspan = Mdspan<Val, Rank - IndicesRank>;
-      return Subspan{shape_.template subspan<IndicesRank>(),
-                     vals_.begin() + offset};
+      return tit::Mdspan{shape_.template subspan<IndicesRank>(),
+                         vals_.begin() + offset};
     }
   }
 
@@ -126,7 +120,15 @@ private:
 
 }; // class Mdspan
 
-// TODO: maybe some deduction guide?
+template<contiguous_fixed_size_range Shape, std::contiguous_iterator ValIter>
+Mdspan(Shape&&, ValIter)
+    -> Mdspan<std::remove_reference_t<std::iter_reference_t<ValIter>>,
+              range_fixed_size_v<Shape>>;
+
+template<contiguous_fixed_size_range Shape, std::ranges::contiguous_range Vals>
+Mdspan(Shape&&, Vals&&)
+    -> Mdspan<std::remove_reference_t<std::ranges::range_reference_t<Vals&&>>,
+              range_fixed_size_v<Shape>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -210,13 +212,13 @@ public:
   template<class... Indices>
     requires mdindex<Rank, Indices...>
   constexpr auto operator[](Indices... indices) noexcept -> decltype(auto) {
-    return Mdspan<Val, Rank>{shape_, vals_}[indices...];
+    return Mdspan{shape_, vals_}[indices...];
   }
   template<class... Indices>
     requires mdindex<Rank, Indices...>
   constexpr auto operator[](Indices... indices) const noexcept
       -> decltype(auto) {
-    return Mdspan<const Val, Rank>{shape_, vals_}[indices...];
+    return Mdspan{shape_, vals_}[indices...];
   }
   /// @}
 

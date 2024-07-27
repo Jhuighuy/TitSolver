@@ -19,12 +19,18 @@ void handle_check_failure( // NOLINT(*-exception-escape)
     std::string_view expression,
     std::string_view message,
     std::source_location location) noexcept {
-  eprint("\n\n{}:{}:{}: Internal consistency check failed!\n\n",
-         location.file_name(),
-         location.line(),
-         location.column());
-  eprint("  {}\n", expression);
-  eprint("  ^{:~>{}} {}\n\n", "", expression.size() - 1, message);
+  /// @todo We should also report stacktrace once we have it.
+  eprintln();
+  eprintln();
+  eprintln("{}:{}:{}: Internal consistency check failed!",
+           location.file_name(),
+           location.line(),
+           location.column());
+  eprintln();
+  eprintln("  {}", expression);
+  eprintln("  ^{:~>{}} {}", "", expression.size() - 1, message);
+  eprintln();
+
   std::abort();
 }
 

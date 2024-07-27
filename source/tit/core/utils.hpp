@@ -54,79 +54,86 @@ constexpr auto make_array(Ts&&... vals) -> std::array<T, Size> {
 template<size_t Size, class T>
   requires std::copy_constructible<T>
 constexpr auto fill_array(const T& val) -> std::array<T, Size> {
-  const auto get_val = [&](auto /*arg*/) -> const T& { return val; };
-  return [&]<size_t... Indices>(std::index_sequence<Indices...>) {
+  const auto get_val = [&val](auto /*arg*/) -> const T& { return val; };
+  return [&get_val]<size_t... Indices>(std::index_sequence<Indices...>) {
     return std::array<T, Size>{get_val(Indices)...};
   }(std::make_index_sequence<Size>{});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Cache a value for the duration of the program per compilation unit.
+/// Save a value for the duration of the program per compilation unit.
 ///
-/// Cached values are stored in static storage duration variables. The
+/// Saved values are stored in static storage duration variables. The main
 /// difference between this function and a static variable is that the value is
 /// cached uniformly across all template instantiations. This is useful for
 /// avoiding multiple definitions of the same static variable across different
 /// template instantiations.
 ///
-/// @tparam ID Unique identifier for the value. Calling this function with
-///         the same ID and type will return the same object per compilation
-///         unit.
+/// @tparam Key Unique identifier for the value. Calling this function with
+///             the same key and type will return the same object per
+///             compilation unit.
 ///
 /// Example:
 /// @code
 /// template<class T>
 /// void foo() {
-///   static std::vector<int> static_vector{};
 ///   // `static_vector` will be the same object for the duration of the,
 ///   // program, but different for template instantiations.
-///   auto& cached = cache_value<"cached_value">(std::vector<int>{});
-///   // `cached_vector` will be the same object for the duration of the
-///   // program, and the same for all template instantiations.
+///   static std::vector<int> static_vector{};
+///
+///   // `saved_vector` will be the same object for the duration of the
+///   // program, and the same across all template instantiations.
+///   auto& saved_vector = cache_value<"saved_vector">(std::vector<int>{});
 /// }
 /// @endcode
-template<StringLiteral ID, class Val>
+template<StringLiteral Key, class Val>
   requires std::move_constructible<Val&&>
 [[gnu::always_inline]]
-constexpr auto cache_value(Val&& val) -> Val& {
-  static Val cached_val{std::forward<Val>(val)};
-  return cached_val;
+constexpr auto save_value(Val&& val) -> Val& {
+  static Val saved_val{std::forward<Val>(val)};
+  return saved_val;
 }
 
-/// Helper macro to cache a value for the duration of the program.
+/// Helper macro to save a value for the duration of the program.
 ///
 /// Example:
 /// @code
 /// template<class T>
 /// void foo() {
-///   static std::vector<int> static_vector{};
 ///   // `static_vector` will be the same object for the duration of the,
 ///   // program, but different for template instantiations.
-///   auto& cached = TIT_CACHED_VALUE(std::vector<int>{});
-///   // `cached_vector` will be the same object for the duration of the
-///   // program, and the same for all template instantiations.
+///   static std::vector<int> static_vector{};
+///
+///   // `saved_vector` will be the same object for the duration of the
+///   // program, and the same across all template instantiations.
+///   auto& saved_vector = TIT_SAVED_VALUE(std::vector<int>{});
 /// }
 /// @endcode
-#define TIT_CACHED_VALUE(...)                                                  \
-  tit::cache_value<TIT_STR(TIT_NAME(__FILE__))>(__VA_ARGS__)
+///
+/// @see save_value
+#define TIT_SAVED_VALUE(...)                                                   \
+  tit::save_value<TIT_STR(TIT_NAME(__FILE__))>(__VA_ARGS__)
 
-/// Helper macro to cache a variable for the duration of the program.
+/// Helper macro to save a variable for the duration of the program.
 ///
 /// Example:
 /// @code
 /// template<class T>
 /// void foo() {
-///   static std::vector<int> static_vector{};
 ///   // `static_vector` will be the same object for the duration of the,
 ///   // program, but different for template instantiations.
-///   TIT_CACHED_VARIABLE(cached_vector, std::vector<int>{});
-///   // `cached_vector` will be the same object for the duration of the
-///   // program, and the same for all template instantiations.
+///   static std::vector<int> static_vector{};
+///
+///   // `saved_vector` will be the same object for the duration of the
+///   // program, and the same across all template instantiations.
+///   TIT_SAVED_VARIABLE(saved_vector, std::vector<int>{});
 /// }
 /// @endcode
-#define TIT_CACHED_VARIABLE(name, ...)                                         \
-  auto& name = TIT_CACHED_VALUE(__VA_ARGS__) /* NOLINT(*-macro-parentheses) */
+///
+/// @see save_value
+#define TIT_SAVED_VARIABLE(name, ...)                                          \
+  auto& name = TIT_SAVED_VALUE(__VA_ARGS__) /* NOLINT(*-macro-parentheses) */
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

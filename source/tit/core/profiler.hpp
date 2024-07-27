@@ -23,13 +23,15 @@ public:
   /// Profiler is a static object.
   Profiler() = delete;
 
-  /// Stopwatch that is associated with a section.
+  /// Stopwatch associated with a section.
   static auto section(std::string_view section_name) -> Stopwatch&;
 
   /// Enable profiling. Report will be printed at exit.
   static void enable() noexcept;
 
 private:
+
+  static void report_();
 
   static std::mutex sections_mutex_;
   static StringHashMap<Stopwatch> sections_;
@@ -41,7 +43,7 @@ private:
 /// Profile the current scope.
 #define TIT_PROFILE_SECTION(section_name)                                      \
   const tit::StopwatchCycle TIT_NAME(prof_cycle)(                              \
-      TIT_CACHED_VALUE(tit::Profiler::section(section_name)))
+      TIT_SAVED_VALUE(tit::Profiler::section(section_name)))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

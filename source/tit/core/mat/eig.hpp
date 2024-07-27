@@ -54,6 +54,7 @@ constexpr auto jacobi(Mat<Num, Dim> A,
   if constexpr (Dim == 1) {
     return MatEig{std::move(V), Vec{std::move(A[0, 0])}};
   }
+
   for (size_t iter = 0; iter < max_iter; ++iter) {
     // Find maximum off-diagonal element.
     size_t p = 1;
@@ -66,15 +67,18 @@ constexpr auto jacobi(Mat<Num, Dim> A,
         }
       }
     }
+
     // If the maximum off-diagonal element is below the threshold, then the
     // matrix is considered diagonal, and the algorithm has converged.
     if (abs(A[p, q]) <= eps) {
       return MatEig{std::move(V), diag(std::move(A))};
     }
+
     // Compute the rotation angle.
     const auto theta = Num{0.5} * atan2(Num{2.0} * A[p, q], A[q, q] - A[p, p]);
     const auto c = cos(theta);
     const auto s = sin(theta);
+
     // Update the matrix.
     for (size_t i = 0; i < Dim; ++i) {
       if (i == p || i == q) continue;
@@ -91,6 +95,7 @@ constexpr auto jacobi(Mat<Num, Dim> A,
       A[q, q] = s * (s * App + c * Apq) + c * (s * Apq + c * Aqq);
       A[p, q] = A[q, p] = {};
     }
+
     // Update the eigenvectors.
     for (size_t i = 0; i < Dim; ++i) {
       const auto Vpi = V[p, i];

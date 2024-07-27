@@ -19,14 +19,18 @@ namespace tit {
 auto run_main(int argc, char** argv, const main_func_t& main_func) -> int {
   // Setup signal handler.
   const FatalSignalHandler handler{};
+
   // Setup terminate handler.
   const TerminateHandler terminate_handler{};
+
   // Enable profiling.
   if (std::getenv("TIT_ENABLE_PROFILER") != nullptr) { // NOLINT(*-mt-unsafe)
     Profiler::enable();
   }
+
   // Setup parallelism.
   par::set_num_threads(8);
+
   // Run the main function.
   TIT_ENSURE(main_func != nullptr, "Main function must be specified!");
   return main_func(argc, argv);

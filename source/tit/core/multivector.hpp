@@ -10,6 +10,7 @@
 #include <functional>
 #include <iterator>
 #include <ranges>
+#include <span>
 #include <type_traits>
 #include <vector>
 
@@ -37,14 +38,24 @@ concept can_assemble_multivec =
         Val>;
 } // namespace impl
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Compressed vector that can handle multiple elements at a single position.
 template<class Val>
 class Multivector {
 public:
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   /// Multivector size.
   constexpr auto size() const noexcept -> size_t {
     return val_ranges_.size() - 1;
+  }
+
+  /// Range of bucket sizes.
+  constexpr auto sizes() const noexcept {
+    return val_ranges_ | std::views::adjacent_transform<2>(
+                             [](size_t a, size_t b) { return b - a; });
   }
 
   /// Is multivector empty?
@@ -60,15 +71,16 @@ public:
 
   /// Range of values at index.
   /// @{
-  constexpr auto operator[](size_t index) noexcept {
+  constexpr auto operator[](size_t index) noexcept -> std::span<Val> {
     TIT_ASSERT(index < size(), "Multivector index is out of range.");
-    return std::ranges::subrange{vals_.begin() + val_ranges_[index],
-                                 vals_.begin() + val_ranges_[index + 1]};
+    return std::span{vals_.begin() + val_ranges_[index],
+                     vals_.begin() + val_ranges_[index + 1]};
   }
-  constexpr auto operator[](size_t index) const noexcept {
+  constexpr auto operator[](size_t index) const noexcept
+      -> std::span<const Val> {
     TIT_ASSERT(index < size(), "Multivector index is out of range.");
-    return std::ranges::subrange{vals_.begin() + val_ranges_[index],
-                                 vals_.begin() + val_ranges_[index + 1]};
+    return std::span{vals_.begin() + val_ranges_[index],
+                     vals_.begin() + val_ranges_[index + 1]};
   }
   /// @}
 
@@ -162,7 +174,7 @@ public:
     // Compute value ranges.
     /// First compute how many values there are per each index per each thread.
     val_ranges_.clear(), val_ranges_.resize(count + 1);
-    TIT_CACHED_VARIABLE(val_ranges_per_thread, Mdvector<size_t, 2>{});
+    TIT_SAVED_VARIABLE(val_ranges_per_thread, Mdvector<size_t, 2>{});
     val_ranges_per_thread.assign(count + 1, par::num_threads());
     par::static_for_each(handles, [&](size_t thread_index, const auto& handle) {
       const auto index = static_cast<size_t>(index_of(handle));
