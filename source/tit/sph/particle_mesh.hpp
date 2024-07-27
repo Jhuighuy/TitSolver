@@ -15,10 +15,10 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/graph.hpp"
-#include "tit/core/io.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/stats.hpp"
 #include "tit/core/type_traits.hpp"
 #include "tit/core/vec.hpp"
 
@@ -123,14 +123,7 @@ public:
       auto [i, j] = ij;
       return parts[i] == parts[j] ? parts[i] : (nparts - 1);
     });
-    {
-      // Finalize color ranges.
-      eprint("NCOL: ");
-      for (size_t i = 0; i < block_adjacency_.size(); ++i) {
-        eprint("{} ", block_adjacency_[i].size());
-      }
-      eprint("\n");
-    }
+    TIT_STATS("ParticleAdjacency::block_adjacency_", block_adjacency_.sizes());
   }
 
   /// Adjacent particles.

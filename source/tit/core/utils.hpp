@@ -7,6 +7,10 @@
 
 #include <array>
 #include <concepts>
+#include <format>
+#include <iterator>
+#include <ranges>
+#include <string>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
@@ -58,6 +62,23 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
   return [&get_val]<size_t... Indices>(std::index_sequence<Indices...>) {
     return std::array<T, Size>{get_val(Indices)...};
   }(std::make_index_sequence<Size>{});
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Format a range.
+/// @todo To be removed when ranges are supported in std::format.
+template<std::ranges::input_range Range>
+  requires std::formattable<std::ranges::range_value_t<Range>, char>
+constexpr auto format_range(Range&& range) -> std::string {
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  if (std::empty(range)) return std::string{};
+  std::string result = std::format("[{}", *std::begin(range));
+  for (const auto& elem : range | std::views::drop(1)) {
+    result += std::format(", {}", elem);
+  }
+  result += "]";
+  return result;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
