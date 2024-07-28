@@ -6,6 +6,9 @@
 // IWYU pragma: private, include "tit/core/meta.hpp"
 #pragma once
 
+#include <concepts>
+#include <functional>
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/meta/type.hpp"
 #include "tit/core/type_traits.hpp"
@@ -45,6 +48,19 @@ public:
     requires contains_v<U, Ts...>
   constexpr auto find(U /*elem*/) const noexcept -> size_t {
     return index_of_v<U, Ts...>;
+  }
+
+  /// Call a function with all elements.
+  template<std::invocable<Ts...> Func>
+  constexpr auto apply(Func func) const -> decltype(auto) {
+    return std::invoke(func, Ts{}...);
+  }
+
+  /// Call a function for each element.
+  template<class Func>
+    requires (std::invocable<Func, Ts> && ...)
+  constexpr void for_each(Func func) const {
+    (std::invoke(func, Ts{}), ...);
   }
 
 }; // class Set

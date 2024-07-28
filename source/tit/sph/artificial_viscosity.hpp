@@ -14,6 +14,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
+#include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
 
@@ -27,8 +28,7 @@ public:
   static constexpr auto required_fields = meta::Set{};
 
   /// Compute continuity equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     constexpr auto Psi_ab = decltype(auto(v[a]))(0.0);
@@ -36,8 +36,7 @@ public:
   }
 
   /// Compute momentum equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     constexpr auto Pi_ab = 0.0;
@@ -75,8 +74,7 @@ public:
   }
 
   /// Compute momentum equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     if (dot(v[a, b], r[a, b]) >= 0.0) return 0.0;
@@ -114,8 +112,7 @@ public:
       : BaseArtificialViscosity{std::move(base)} {}
 
   /// Compute momentum equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
@@ -165,8 +162,7 @@ public:
   }
 
   /// Compute momentum equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     auto Pi_ab = BaseArtificialViscosity::velocity_term(a, b);
@@ -177,8 +173,7 @@ public:
   }
 
   /// Compute switch temporal derivative.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr void compute_switch_deriv(PV a) const {
     const auto S_a = plus(-div_v[a]);
     const auto tau_a = h[a] / (sigma_ * cs[a]);
@@ -222,8 +217,7 @@ public:
   }
 
   /// Compute continuity equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     const auto h_ab = h.avg(a, b);
@@ -233,8 +227,7 @@ public:
   }
 
   /// Compute momentum equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     const auto h_ab = h.avg(a, b);
@@ -278,8 +271,7 @@ public:
   }
 
   /// Compute continuity equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     const auto h_ab = h.avg(a, b);
@@ -291,8 +283,7 @@ public:
   }
 
   /// Compute momentum equation diffusive term.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different.");
     const auto h_ab = h.avg(a, b);

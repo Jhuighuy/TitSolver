@@ -73,8 +73,7 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray>
-    requires (has<ParticleArray>(required_fields))
+  template<particle_array<required_fields> ParticleArray>
   constexpr void init(ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
     par::static_for_each(particles.all(), [this](PV a) {
@@ -92,7 +91,8 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray, class ParticleAdjacency>
+  template<particle_array<required_fields> ParticleArray,
+           class ParticleAdjacency>
   constexpr auto index(ParticleArray& /*particles*/,
                        ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
@@ -102,8 +102,8 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Setup boundary particles.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
+  template<particle_array<required_fields> ParticleArray,
+           class ParticleAdjacency>
   constexpr void setup_boundary(
       [[maybe_unused]] ParticleArray& particles,
       [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
@@ -184,8 +184,8 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute density-related fields.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
+  template<particle_array<required_fields> ParticleArray,
+           class ParticleAdjacency>
   constexpr void compute_density(ParticleArray& particles,
                                  ParticleAdjacency& adjacent_particles) const {
     setup_boundary(particles, adjacent_particles);
@@ -200,8 +200,8 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute velocity related fields.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
+  template<particle_array<required_fields> ParticleArray,
+           class ParticleAdjacency>
   constexpr void compute_forces(ParticleArray& particles,
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;

@@ -13,6 +13,7 @@
 #include "tit/core/meta.hpp"
 
 #include "tit/sph/field.hpp"
+#include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
 
@@ -44,16 +45,14 @@ public:
       : eta_{eta} {}
 
   /// Particle width with respect to density.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto width(PV a) const noexcept {
     const auto d = r[a].dim();
     return eta_ * pow(rho[a] / m[a], -1.0 / d);
   }
 
   /// Particle density (and it's width derivative) with respect to width.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto density(PV a) const noexcept {
     const auto d = r[a].dim();
     const auto Rho_a = m[a] * pow(eta_ / h[a], d);

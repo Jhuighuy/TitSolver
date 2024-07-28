@@ -7,6 +7,7 @@ add_tit_library(
   NAME
     sph
   SOURCES
+    "TitParticle.hpp"
     "artificial_viscosity.hpp"
     "density_equation.hpp"
     "equation_of_state.hpp"
@@ -15,8 +16,10 @@ add_tit_library(
     "fsi.hpp"
     "gas_equations.hpp"
     "kernel.hpp"
+    "particle_array.hpp"
+    "particle_array_io.hpp"
+    "particle_mesh.hpp"
     "time_integrator.hpp"
-    "TitParticle.hpp"
   DEPENDS
     tit::core
     tit::geom
