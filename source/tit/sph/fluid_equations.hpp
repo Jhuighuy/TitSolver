@@ -5,6 +5,12 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+#include <numbers>
+#include <ranges> // IWYU pragma: keep
+
+#include "tit/core/basic_types.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
@@ -38,6 +44,7 @@
 /// [ ] `TitParticle` header must become an umbrella header for all the
 ///     particle-related headers.
 /// [ ] CFL condition must be implemented.
+/// [ ] Something like `has_any`.
 
 namespace tit::sph {
 
@@ -66,7 +73,8 @@ public:
       ArtificialViscosity::required_fields | //
       Kernel::required_fields |              //
       meta::Set{parinfo} | // TODO: parinfo should not be here.
-      meta::Set{h, m, rho, drho_dt, p, r, v, dv_dt, u, du_dt};
+      meta::Set{h, m, rho, drho_dt, p, r, v, dv_dt, u, du_dt} | //
+      meta::Set{n, fs, Theta, dr, cs};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
@@ -79,7 +87,7 @@ public:
       ArtificialViscosity::modified_fields | //
       Kernel::modified_fields |              //
       meta::Set{p, rho, drho_dt, grad_rho, v, dv_dt, div_v, curl_v, u, du_dt} |
-      meta::Set{S, L};
+      meta::Set{S, L, n, fs, Theta, dr, cs};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -236,6 +244,9 @@ public:
       // Renormalization fields.
       if constexpr (has<PV>(S)) S[a] = {};
       if constexpr (has<PV>(L)) L[a] = {};
+      // Free surface fields.
+      if constexpr (has<PV>(n)) n[a] = {};
+      if constexpr (has<PV>(fs)) fs[a] = {};
     });
 
     // Compute density gradient and renormalization fields, if necessary.
@@ -253,19 +264,22 @@ public:
           grad_rho[a] += V_b * grad_flux;
           grad_rho[b] += V_a * grad_flux;
         }
-        // Update kernel renormalization coefficient, if
-        // necessary.
+        // Update kernel renormalization coefficient, if necessary.
         if constexpr (has<PV>(S)) {
           const auto S_flux = W_ab;
           S[a] += V_b * S_flux;
           S[b] += V_a * S_flux;
         }
-        // Update kernel gradient renormalization matrix, if
-        // necessary.
+        // Update kernel gradient renormalization matrix, if necessary.
         if constexpr (has<PV>(L)) {
           const auto L_flux = outer(r[b, a], grad_W_ab);
           L[a] += V_b * L_flux;
           L[b] += V_a * L_flux;
+        }
+        // Update normal vector, if necessary.
+        if constexpr (has<PV>(n)) {
+          n[a] += V_b * grad_W_ab;
+          n[b] -= V_a * grad_W_ab;
         }
       });
     }
@@ -274,13 +288,16 @@ public:
     if constexpr (has<PV>(S) || has<PV>(L)) {
       par::for_each(particles.fluid(), [](PV a) {
         // Renormalize density, if possible.
-        if constexpr (has<PV>(S)) {
-          if (!is_tiny(S[a])) rho[a] /= S[a];
-        }
-        // Renormalize density gradient, if possible.
-        if constexpr (has<PV>(L)) {
+        // if constexpr (has<PV>(S)) {
+        //  if (!is_tiny(S[a])) rho[a] /= S[a];
+        //}
+        // Renormalize density gradient and normal vector, if possible.
+        if constexpr (has<PV>(L) || has<PV>(n)) {
           const auto fact = ldl(L[a]);
-          if (fact) grad_rho[a] = fact->solve(grad_rho[a]);
+          if (fact) {
+            grad_rho[a] = fact->solve(grad_rho[a]);
+            if constexpr (has<PV>(n)) n[a] = -normalize(fact->solve(n[a]));
+          } else if constexpr (has<PV>(n)) n[a] = {};
         }
       });
     }
@@ -382,6 +399,101 @@ public:
       if constexpr (has<PV>(dalpha_dt)) {
         dalpha_dt[a] = artvisc_.switch_source(a);
       }
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_shifts(ParticleMesh& mesh,
+                                ParticleArray& particles) const {
+    using PV = ParticleView<ParticleArray>;
+    TIT_PROFILE_SECTION("FluidEquations::compute_shifts()");
+
+    // Clean-up shift fields.
+    par::for_each(particles.all(), [this](PV a) { dr[a] = {}; });
+
+    // Detect free surface particles.
+    par::for_each(particles.fluid(), [this, &mesh](PV a) {
+      // Detect if the particle is a free surface particle.
+      Theta[a] = 100.0;
+      /*if (std::size(mesh[a]) >= 8)*/ {
+        std::ranges::for_each(mesh[a], [&](PV b) {
+          const auto theta = std::acos(dot(n[a], r[b, a]) / norm(r[a, b]));
+          if (norm(r[a, b]) <= 2 * h[a]) {
+            Theta[a] = std::min(Theta[a], theta);
+          }
+        });
+      }
+
+      constexpr auto theta_0 = std::numbers::pi_v<real_t> / 2;
+      fs[a] = !(Theta[a] <= theta_0 / 2 || std::size(mesh[a]) < 8) ?
+                  FreeSurface::on :
+                  FreeSurface::far;
+    });
+
+    // Detect particles that are near the free surface.
+    par::for_each(particles.fluid(), [this, &mesh](PV a) {
+      if (fs[a] != FreeSurface::far) return;
+      for (PV b : mesh[a]) {
+        if (fs[b] == FreeSurface::on) {
+          fs[a] = FreeSurface::near;
+          break;
+        }
+      }
+    });
+
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
+      const auto W_0 = kernel_(Vec{0.5 * h[a], 0.0}, h[a]);
+      const auto W_ab = kernel_(a, b);
+      const auto grad_W_ab = kernel_.grad(a, b);
+      const auto V_a = m[a] / rho[a];
+      const auto V_b = m[b] / rho[b];
+      const auto Xi_a = (fs[a] == FreeSurface::far) ? 1.0 : 0.0;
+      const auto Xi_b = (fs[b] == FreeSurface::far) ? 1.0 : 0.0;
+      const auto Chi_ab = 0.2 * pow4(W_ab / W_0);
+      dr[a] -= (Xi_a + Chi_ab) * V_b * grad_W_ab;
+      dr[b] += (Xi_b + Chi_ab) * V_a * grad_W_ab;
+    });
+
+    par::for_each(particles.all(), [&](PV a) {
+      if (a.has_type(ParticleType::fixed)) {
+        dr[a] = {};
+        return;
+      }
+
+      const auto wall_nearby = std::ranges::any_of(mesh[a], [&](PV b) {
+        return b.has_type(ParticleType::fixed);
+      });
+      if (wall_nearby) {
+        dr[a] = {};
+        return;
+      }
+
+      const auto Phi_a = [&] {
+        if (fs[a] == FreeSurface::on) return 0.0;
+        if (fs[a] == FreeSurface::near) {
+          auto rr = mesh[a] | std::views::filter([](PV x) {
+                      return fs[x] == FreeSurface::on;
+                    });
+          const auto bb = std::ranges::min_element(rr, {}, [a](PV x) {
+            return norm2(r[a, x]);
+          });
+          const auto b = *bb;
+          const auto r_ab = norm(r[a, b]);
+          const auto cos_ab = abs(dot(r[a, b], n[b])) / r_ab;
+          return cos_ab;
+        }
+        if (fs[a] == FreeSurface::far) {
+          return 1.0;
+        }
+        return 0.0;
+      }();
+      const auto CFL_a = 0.8;
+      const auto Ma_a = 0.1;
+      dr[a] *= 2 * CFL_a * Phi_a * Ma_a * pow2(h[a]);
     });
   }
 
