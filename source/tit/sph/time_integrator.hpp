@@ -55,14 +55,14 @@ public:
     // Integrate particle density.
     equations_.compute_density(particles, adjacent_particles);
     if constexpr (has<PV>(drho_dt)) {
-      par::for_each(particles.views(), [&](PV a) {
+      par::for_each(particles.all(), [dt](PV a) {
         if (fixed[a]) return;
         rho[a] += dt * drho_dt[a];
       });
     }
     // Integrate particle velocty (internal enegry, and rest).
     equations_.compute_forces(particles, adjacent_particles);
-    par::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.all(), [dt](PV a) {
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];
@@ -127,7 +127,7 @@ public:
       equations_.compute_density(_particles, adjacent_particles);
       equations_.compute_forces(_particles, adjacent_particles);
       // Integrate.
-      par::for_each(_particles.views(), [&]<class PV>(PV a) {
+      par::for_each(_particles.all(), [dt]<class PV>(PV a) {
         if (fixed[a]) return;
         if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
         if constexpr (has<PV>(v_xsph)) {
@@ -146,15 +146,17 @@ public:
                             const auto& in_particles,
                             real_t wb,
                             auto& out_particles) {
-      par::for_each(in_particles.views(), [&]<class PV>(PV a) {
-        if (fixed[a]) return;
-        auto out_a = out_particles[a.index()];
-        if constexpr (has<PV>(rho) && !has_const<PV>(rho)) {
-          rho[out_a] = wa * rho[a] + wb * rho[out_a];
-        }
-        v[out_a] = wa * v[a] + wb * v[out_a];
-        r[out_a] = wa * r[a] + wb * r[out_a];
-      });
+      par::for_each( //
+          in_particles.all(),
+          [&out_particles, wa, wb]<class PV>(PV a) {
+            if (fixed[a]) return;
+            auto out_a = out_particles[a.index()];
+            if constexpr (has<PV>(rho) && !has_const<PV>(rho)) {
+              rho[out_a] = wa * rho[a] + wb * rho[out_a];
+            }
+            v[out_a] = wa * v[a] + wb * v[out_a];
+            r[out_a] = wa * r[a] + wb * r[out_a];
+          });
     };
 #if 0
     {

@@ -63,7 +63,7 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void init(ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    par::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.all(), [this](PV a) {
       // Initialize particle pressure (and sound speed).
       eos_.compute_pressure(a);
       // Initialize particle width and Omega.
@@ -179,7 +179,7 @@ public:
     // Calculate density.
     if constexpr (std::same_as<DensityEquation, SummationDensity>) {
       /// Classic density summation.
-      par::for_each(particles.views(), [&](PV a) {
+      par::for_each(particles.all(), [&adjacent_particles, this](PV a) {
         if (fixed[a]) return;
         rho[a] = {};
         std::ranges::for_each(adjacent_particles[a], [&](PV b) {
@@ -189,7 +189,7 @@ public:
       });
     } else if constexpr (std::same_as<DensityEquation, GradHSummationDensity>) {
       /// Grad-H density summation.
-      par::for_each(particles.views(), [&](PV a) {
+      par::for_each(particles.all(), [&adjacent_particles, this](PV a) {
         if (fixed[a]) return;
         /// Solve `zeta(h) = 0` for `h`, where: `zeta(h) = Rho(h) - rho(h)`,
         /// `Rho(h)` - desired density, defined by the density equation.
@@ -209,7 +209,7 @@ public:
       });
     }
     // Compute renormalization fields.
-    par::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.all(), [adjacent_particles, this](PV a) {
       /// Clean renormalization fields.
       if constexpr (has<PV>(S)) S[a] = {};
       if constexpr (has<PV>(L)) L[a] = {};
@@ -246,7 +246,7 @@ public:
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     // Compute velocity derivative fields.
-    par::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.all(), [adjacent_particles, this](PV a) {
       /// Compute pressure (and sound speed).
       eos_.compute_pressure(a);
       /// Clean velocity derivative fields.
@@ -311,7 +311,7 @@ public:
         du_dt[b] += m[a] * (dot(v_flux_b, v[b, a]) - Lambda_flux);
       }
     });
-    par::for_each(particles.views(), [&](PV a) {
+    par::for_each(particles.all(), [this](PV a) {
       if (fixed[a]) return;
       /// Compute artificial viscosity switch time.
       if constexpr (has<PV>(dalpha_dt)) artvisc_.compute_switch_deriv(a);
