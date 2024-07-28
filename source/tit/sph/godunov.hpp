@@ -77,7 +77,7 @@ public:
     requires (has<ParticleArray>(required_fields))
   constexpr void init(ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.all(), [this](PV a) {
       // Initialize particle pressure (and sound speed).
       eos_.compute_pressure(a);
       // Initialize particle width and Omega.
@@ -191,7 +191,7 @@ public:
     setup_boundary(particles, adjacent_particles);
     using PV = ParticleView<ParticleArray>;
     // Clean density-related fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.all(), [](PV a) {
       // Density fields.
       if constexpr (has<PV>(drho_dt)) drho_dt[a] = {};
     });
@@ -206,7 +206,7 @@ public:
                                 ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.all(), [this](PV a) {
       /// Compute pressure (and sound speed).
       eos_.compute_pressure(a);
       /// Clean velocity-related fields.
@@ -238,7 +238,7 @@ public:
       const auto v_flux = -2.0 * p_ast / (rho[a] * rho[b]) * grad_W_ab;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
     });
-    par::static_for_each(particles.views(), [&](PV a) {
+    par::static_for_each(particles.all(), [](PV a) {
       if (fixed[a]) return;
 #if WITH_GRAVITY
       // TODO: Gravity.

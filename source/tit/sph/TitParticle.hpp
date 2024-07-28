@@ -174,7 +174,7 @@ public:
       fixed_.reserve(array().size() / 2);
       static std::vector<std::vector<size_t>> adj_vov{};
       adj_vov.resize(array().size());
-      par::for_each(array().views(), [&radius_func, &engine, this](PV a) {
+      par::for_each(array().all(), [&radius_func, &engine, this](PV a) {
         const auto search_point = r[a];
         const auto search_radius = radius_func(a);
         TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
@@ -366,13 +366,13 @@ public:
 
   /// Range of particles.
   /// @{
-  constexpr auto views() noexcept {
+  constexpr auto all() noexcept {
     return std::views::iota(0UZ, size()) |
            std::views::transform([this](size_t particle_index) {
              return ParticleView{*this, particle_index};
            });
   }
-  constexpr auto views() const noexcept {
+  constexpr auto all() const noexcept {
     return std::views::iota(0UZ, size()) |
            std::views::transform([this](size_t particle_index) {
              return ParticleView{*this, particle_index};

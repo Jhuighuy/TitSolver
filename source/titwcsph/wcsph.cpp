@@ -297,7 +297,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   h[particles] = h_0;
 
   // Density hydrostatic initialization.
-  std::ranges::for_each(particles.views(), [&]<class PV>(PV a) {
+  std::ranges::for_each(particles.all(), [&]<class PV>(PV a) {
     if (fixed[a]) {
       rho[a] = rho_0;
       return;
@@ -436,7 +436,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   h[particles] = h_0;
 
   // Density hydrostatic initialization.
-  std::ranges::for_each(particles.views(), [&]<class PV>(PV a) {
+  std::ranges::for_each(particles.all(), [&]<class PV>(PV a) {
     // Compute pressure from Poisson problem.
     const auto x = r[a][0] + L / 2, y = r[a][1] + L / 2;
     p[a] = 0.0;
