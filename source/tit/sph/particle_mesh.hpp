@@ -6,13 +6,16 @@
 #pragma once
 
 #include <algorithm>
+#include <bits/ranges_algo.h>
 #include <cstddef>
 #include <iterator>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
+#include <metis.h>
 #include <oneapi/tbb/concurrent_vector.h>
 
 #include "tit/core/basic_types.hpp"
@@ -26,6 +29,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/coordinate_bisection.hpp"
 #include "tit/geom/inertial_bisection.hpp"
 #include "tit/geom/search.hpp"
 
@@ -44,6 +48,51 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
 #else
 inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 #endif
+
+struct Subgraph {
+  std::vector<size_t> indices; // NOLINT
+  Graph adjacency;             // NOLINT
+
+  template<class Range>
+  constexpr void push_back(size_t i, Range&& range) {
+    indices.push_back(i);
+    adjacency.push_back(std::forward<Range>(range));
+  }
+
+  constexpr auto operator[](size_t i) const noexcept {
+    return adjacency[i] | std::views::transform([x = indices[i]](size_t j) {
+             return std::tuple{x, j};
+           });
+  }
+
+  constexpr auto size() const noexcept {
+    return indices.size();
+  }
+
+  constexpr auto edges() const noexcept {
+    return std::views::iota(size_t{0}, size()) |
+           std::views::transform([this](size_t i) {
+             return (*this)[i] | std::views::take_while([](auto xy) {
+                      return std::get<1>(xy) < std::get<0>(xy);
+                    });
+           }) |
+           std::views::join;
+  }
+
+  constexpr auto as_graph() const {
+    Graph graph{};
+    for (size_t i = 0; i < size(); ++i) {
+      graph.push_back(                                         //
+          adjacency[i] | std::views::transform([&](size_t j) { //
+            // Binary-search for j in indices.
+            const auto it = std::ranges::lower_bound(indices, j);
+            TIT_ENSURE(it != indices.end(), "Index is out of range!");
+            return it - indices.begin();
+          }));
+    }
+    return graph;
+  }
+};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -119,24 +168,95 @@ public:
     }
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
-    size_t nparts = par::num_threads();
-    const auto parts = particles[parinfo];
-    auto partitioner = geom::InertialBisection(positions, parts, nparts);
+    block_adjacency_.clear();
+    depth = 0;
+    build_blocks<true>(particles,
+                       std::views::iota(0UZ, particles.size()),
+                       adjacency_);
+    block_edges_.clear();
+    for (auto& block : block_adjacency_) {
+      block.as_graph();
+      block_edges_.push_back(block.edges());
+    }
     // -------------------------------------------------------------------------
     // STEP III: assembly.
-    nparts += 1; // since we have the leftover
-    block_adjacency_.assemble_wide(nparts, adjacency_.edges(), [&](auto ij) {
-      auto [i, j] = ij;
-      return parts[i] == parts[j] ? parts[i] : (nparts - 1);
-    });
     {
       // Finalize color ranges.
       eprint("NCOL: ");
-      for (size_t i = 0; i < block_adjacency_.size(); ++i) {
-        eprint("{} ", block_adjacency_[i].size());
+      for (size_t i = 0; i < block_edges_.size(); ++i) {
+        eprint("{} ", block_edges_[i].size());
       }
       eprint("\n");
     }
+  }
+
+  template<bool Root = false>
+  constexpr void build_blocks(auto& particles,
+                              auto&& indices,
+                              auto&& adj) { // NOLINT
+    const auto parts = particles[parinfo];
+    const auto proj_parts =
+        std::views::all(indices) |
+        std::views::transform([parts](size_t i) -> auto& { return parts[i]; });
+    const auto positions = particles[r];
+    const auto proj_positions =
+        std::views::all(indices) |
+        std::views::transform(
+            [positions](size_t i) -> const auto& { return positions[i]; });
+
+    const auto init = block_adjacency_.size();
+    const auto nparts = par::num_threads();
+    const auto partitioner = [&] {
+      if constexpr (Root) {
+        return geom::InertialBisection{proj_positions,
+                                       proj_parts,
+                                       nparts,
+                                       init};
+      } else {
+        return geom::CoordinateBisection{proj_positions,
+                                         proj_parts,
+                                         nparts,
+                                         init};
+      }
+    }();
+
+    block_adjacency_.resize(init + nparts);
+    Subgraph leftover_block{};
+    par::for_each(std::views::iota(init, init + nparts + 1), [&](size_t part) {
+      if (part != init + nparts) {
+        for (const auto i : partitioner.part(part)) {
+          const auto ia = indices[i];
+          block_adjacency_[part].push_back(
+              ia,
+              adj[i] | std::views::take_while([&](size_t ib) {
+                return ib < ia;
+              }) | std::views::filter([&](size_t ib) {
+                return parts[ib] == part;
+              }));
+        }
+      } else {
+        for (const auto [i, ia] : std::views::enumerate(indices)) {
+          part = parts[ia];
+          if (std::ranges::none_of(adj[i], [&](size_t ib) {
+                return parts[ib] != part;
+              }))
+            continue;
+          leftover_block.push_back(ia,
+                                   adj[i] | std::views::filter([&](size_t ib) {
+                                     return parts[ib] != part;
+                                   }));
+        }
+      }
+    });
+
+    const auto too_deep = ++depth > 1;
+    if (too_deep) {
+      for (const auto ai : leftover_block.indices) parts[ai] = init + nparts;
+      block_adjacency_.push_back(std::move(leftover_block));
+      return;
+    }
+
+    build_blocks(particles, leftover_block.indices, leftover_block.adjacency);
   }
 
   template<class ParticleArray>
@@ -177,9 +297,9 @@ public:
 
   template<class ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
-    return std::views::iota(0UZ, block_adjacency_.size()) |
+    return std::views::iota(0UZ, block_edges_.size()) |
            std::views::transform([&](size_t block_index) {
-             return block_adjacency_[block_index] |
+             return block_edges_[block_index] |
                     std::views::transform([&particles](auto ab_indices) {
                       const auto [a_index, b_index] = ab_indices;
                       return std::tuple{particles[a_index], particles[b_index]};
@@ -193,7 +313,10 @@ private:
   Graph adjacency_;
   tbb::concurrent_vector<size_t> fixed_;
   Graph interp_adjacency_;
-  Multivector<std::tuple<size_t, size_t>> block_adjacency_;
+
+  size_t depth = 0;
+  std::vector<Subgraph> block_adjacency_;
+  Multivector<std::tuple<size_t, size_t>> block_edges_;
 
 }; // class ParticleMesh
 
