@@ -39,6 +39,7 @@ public:
                     size_t init_part = 0)
       : points_{std::move(points)}, parts_{std::move(parts)} {
     TIT_PROFILE_SECTION("InertialBisection::InertialBisection()");
+    TIT_ASSERT(num_parts > 0, "Number of parts must be positive!");
     build_(num_parts, init_part);
   }
 
@@ -58,8 +59,8 @@ private:
   void build_(size_t num_parts, size_t init_part) {
     // Initialize identity permutation.
     parts_ranges_.resize(init_part + num_parts);
-    perm_.resize(std::size(points_));
-    std::ranges::copy(std::views::iota(size_t{0}, perm_.size()), perm_.begin());
+    perm_ = std::views::iota(size_t{0}, std::size(points_)) |
+            std::ranges::to<std::vector>();
 
     // Build the partitioning.
     par::TaskGroup tasks{};
