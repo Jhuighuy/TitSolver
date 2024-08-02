@@ -15,7 +15,6 @@
 #include <utility>
 #include <vector>
 
-#include <metis.h>
 #include <oneapi/tbb/concurrent_vector.h>
 
 #include "tit/core/basic_types.hpp"
@@ -29,8 +28,8 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
-#include "tit/geom/coordinate_bisection.hpp"
 #include "tit/geom/inertial_bisection.hpp"
+#include "tit/geom/metis.hpp"
 #include "tit/geom/search.hpp"
 
 #include "tit/sph/field.hpp"
@@ -175,7 +174,6 @@ public:
                        adjacency_);
     block_edges_.clear();
     for (auto& block : block_adjacency_) {
-      block.as_graph();
       block_edges_.push_back(block.edges());
     }
     // -------------------------------------------------------------------------
@@ -213,10 +211,8 @@ public:
                                        nparts,
                                        init};
       } else {
-        return geom::CoordinateBisection{proj_positions,
-                                         proj_parts,
-                                         nparts,
-                                         init};
+        const auto proj_graph = Subgraph{indices, adj}.as_graph();
+        return geom::MetisPartitioner{proj_graph, proj_parts, nparts, init};
       }
     }();
 

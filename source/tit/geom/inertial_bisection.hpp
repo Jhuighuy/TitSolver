@@ -39,6 +39,7 @@ public:
                     size_t init_part = 0)
       : points_{std::move(points)}, parts_{std::move(parts)} {
     TIT_PROFILE_SECTION("InertialBisection::InertialBisection()");
+    TIT_ASSERT(num_parts > 0, "Number of parts must be positive!");
     build_(num_parts, init_part);
   }
 
