@@ -75,7 +75,6 @@ private:
                   std::span<size_t> perm) {
     if (num_parts == 1) {
       // No further partitioning, assign part index to the output.
-      std::ranges::sort(perm);
       parts_ranges_[part_index] = perm;
       for (const auto i : perm) parts_[i] = part_index;
       return;

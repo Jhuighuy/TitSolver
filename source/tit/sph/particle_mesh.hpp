@@ -174,7 +174,7 @@ public:
                        adjacency_);
     block_edges_.clear();
     for (auto& block : block_adjacency_) {
-      block_edges_.push_back(block.edges());
+      block_edges_.push_back(block);
     }
     // -------------------------------------------------------------------------
     // STEP III: assembly.
@@ -217,18 +217,20 @@ public:
     }();
 
     block_adjacency_.resize(init + nparts);
-    Subgraph leftover_block{};
+    std::vector<size_t> leftover{};
+    std::vector<size_t> leftover_i{};
     par::for_each(std::views::iota(init, init + nparts + 1), [&](size_t part) {
       if (part != init + nparts) {
         for (const auto i : partitioner.part(part)) {
           const auto ia = indices[i];
-          block_adjacency_[part].push_back(
-              ia,
-              adj[i] | std::views::take_while([&](size_t ib) {
-                return ib < ia;
-              }) | std::views::filter([&](size_t ib) {
-                return parts[ib] == part;
-              }));
+          std::ranges::copy(adj[i] | std::views::filter([&](size_t ib) {
+                              return parts[ib] == part;
+                            }) | std::views::take_while([&](size_t ib) {
+                              return ib < ia;
+                            }) | std::views::transform([&](size_t ib) {
+                              return std::tuple{ia, ib};
+                            }),
+                            std::back_inserter(block_adjacency_[part]));
         }
       } else {
         for (const auto [i, ia] : std::views::enumerate(indices)) {
@@ -237,22 +239,37 @@ public:
                 return parts[ib] != part;
               }))
             continue;
-          leftover_block.push_back(ia,
-                                   adj[i] | std::views::filter([&](size_t ib) {
-                                     return parts[ib] != part;
-                                   }));
+          leftover_i.push_back(i);
+          leftover.push_back(ia);
         }
       }
     });
 
     const auto too_deep = ++depth > 1;
     if (too_deep) {
-      for (const auto ai : leftover_block.indices) parts[ai] = init + nparts;
-      block_adjacency_.push_back(std::move(leftover_block));
+      block_adjacency_.emplace_back();
+      for (const auto [i, ia] : std::views::zip(leftover_i, leftover)) {
+        std::ranges::copy(adj[i] | std::views::filter([&](size_t ib) {
+                            return parts[ib] != parts[ia];
+                          }) | std::views::take_while([&](size_t ib) {
+                            return ib < ia;
+                          }) | std::views::transform([&](size_t ib) {
+                            return std::tuple{ia, ib};
+                          }),
+                          std::back_inserter(block_adjacency_.back()));
+      }
+      for (const auto ia : leftover) parts[ia] = init + nparts;
       return;
     }
 
-    build_blocks(particles, leftover_block.indices, leftover_block.adjacency);
+    Graph leftover_adj{};
+    for (const auto ia : leftover) {
+      leftover_adj.push_back(adj[ia] | std::views::filter([&](size_t ib) {
+                               return parts[ib] != parts[ia];
+                             }));
+    }
+
+    build_blocks(particles, leftover, leftover_adj);
   }
 
   template<class ParticleArray>
@@ -311,7 +328,7 @@ private:
   Graph interp_adjacency_;
 
   size_t depth = 0;
-  std::vector<Subgraph> block_adjacency_;
+  std::vector<std::vector<std::tuple<size_t, size_t>>> block_adjacency_;
   Multivector<std::tuple<size_t, size_t>> block_edges_;
 
 }; // class ParticleMesh
