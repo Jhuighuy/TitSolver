@@ -86,8 +86,8 @@ private:
     if (std::ranges::empty(points_)) return;
 
     // Initialize identity points permutation.
-    perm_.resize(std::size(points_));
-    std::ranges::copy(std::views::iota(size_t{0}, perm_.size()), perm_.begin());
+    perm_ = std::views::iota(size_t{0}, std::size(points_)) |
+            std::ranges::to<std::vector>();
 
     // Compute the root tree node (and bounding box).
     par::TaskGroup tasks{};

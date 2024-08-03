@@ -13,6 +13,7 @@
 #include "tit/core/meta.hpp"
 
 #include "tit/sph/field.hpp"
+#include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
 
@@ -38,8 +39,7 @@ public:
   }
 
   /// Compute particle pressure (and sound speed).
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr void compute_pressure(PV a) const noexcept {
     p[a] = (gamma_ - 1.0) * rho[a] * u[a];
     // The same as sqrt(gamma * p / rho).
@@ -75,8 +75,7 @@ public:
   }
 
   /// Compute particle pressure (and sound speed).
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr void compute_pressure(PV a) const noexcept {
     p[a] = kappa_ * pow(rho[a], gamma_);
     cs[a] = sqrt(gamma_ * p[a] / rho[a]);
@@ -115,8 +114,7 @@ public:
   }
 
   /// Compute particle pressure (and sound speed).
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr void compute_pressure(PV a) const noexcept {
     const auto p_1 = rho_0_ * pow2(cs_0_) / gamma_;
     p[a] = p_0_ + p_1 * (pow(rho[a] / rho_0_, gamma_) - 1.0);
@@ -158,8 +156,7 @@ public:
   }
 
   /// Compute particle pressure (and sound speed).
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr void compute_pressure(PV a) const noexcept {
     p[a] = p_0_ + pow2(cs_0_) * (rho[a] - rho_0_);
     if constexpr (has<PV>(cs)) {

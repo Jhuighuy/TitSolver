@@ -121,15 +121,15 @@ struct BlockForEach {
   template<range Range,
            std::invocable<std::ranges::range_reference_t<
                std::ranges::range_value_t<Range>>> Func>
-  static void operator()(Range&& range, Func func) {
-    TIT_ASSUME_UNIVERSAL(Range, range);
+  static void operator()(Range range, Func func) {
+    // TIT_ASSUME_UNIVERSAL(Range, range);
     for (auto chunk : std::views::chunk(range, num_threads())) {
-#if !(defined(__clang__) && defined(__GLIBCXX__))
+#if !(defined(__clang__) && defined(__GLIBCXX__)) && 0
       for_each(std::move(chunk),
                std::bind_back(std::ranges::for_each, std::cref(func)));
 #else // `std::bind_back` is broken in clang with libstdc++.
-      for_each(std::move(chunk), [&func]<class Subrange>(Subrange&& subrange) {
-        TIT_ASSUME_UNIVERSAL(Subrange, subrange);
+      for_each(chunk, [&func]<class Subrange>(Subrange subrange) {
+        // TIT_ASSUME_UNIVERSAL(Subrange, subrange);
         std::ranges::for_each(subrange, func);
       });
 #endif
