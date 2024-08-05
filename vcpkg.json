@@ -3,6 +3,11 @@
   "name": "tit",
   "version-string": "0.1.0",
   "dependencies": [
+    {
+      "name": "cpp-httplib",
+      "default-features": false,
+      "features": []
+    },
     "doctest",
     "hdf5",
     "highway",

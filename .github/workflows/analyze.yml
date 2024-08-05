@@ -33,7 +33,9 @@ jobs:
     env:
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
       CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
+      CODECOV_JEST_COVERAGE_REPORT_PATH: output/jest_coverage_report/cobertura-coverage.xml
       SONAR_COVERAGE_REPORT_PATH: sonar_coverage.xml
+      SONAR_JEST_COVERAGE_REPORT_PATH: output/jest_coverage_report/lcov.info
 
     steps:
       - name: Checkout
@@ -45,9 +47,16 @@ jobs:
       - name: Install Sonar Scanner
         uses: SonarSource/sonarcloud-github-c-cpp@v2
 
+      # TODO: Node should be installed via Docker image.
+      - name: Install Node.js
+        run: |
+          apt-get update -q
+          apt-get install -y -qq npm
+
       - name: Fix repository ownership
         run: |
           git config --global --add safe.directory '*'
+          # This should be installed via Docker image.
 
       - name: Build and test
         run: |
@@ -87,7 +96,9 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{ env.CODECOV_COVERAGE_REPORT_PATH }}
+          files: |
+            ${{ env.CODECOV_COVERAGE_REPORT_PATH }},
+            ${{ env.CODECOV_JEST_COVERAGE_REPORT_PATH }}
           disable_search: true
 
       - name: Run Sonar Scanner
@@ -95,6 +106,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          sonar-scanner                                                                    \
-            --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
-            --define sonar.coverageReportPaths="${{ env.SONAR_COVERAGE_REPORT_PATH }}"
+          sonar-scanner                                                                     \
+            --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"  \
+            --define sonar.coverageReportPaths="${{ env.SONAR_COVERAGE_REPORT_PATH }}"      \
+            --define sonar.cfamily.gcov.reportsPath="${{ env.SONAR_COVERAGE_REPORT_PATH }}" \
+            --define sonar.javascript.lcov.reportPaths="${{ env.SONAR_JEST_COVERAGE_REPORT_PATH }}"

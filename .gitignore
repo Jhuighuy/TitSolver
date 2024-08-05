@@ -15,6 +15,9 @@
 !/.clang-*
 !/sonar-project.properties
 !/vcpkg.json
+!/front/.eslintrc.json
+!/front/package.json
+!/front/tsconfig.json
 
 # Editor configuration files.
 !/.vscode/c_cpp_properties.json
@@ -23,6 +26,8 @@
 # Output.
 .cache/
 /output/
+/front/.webpack/
+/front/node_modules/
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -31,8 +36,12 @@
 !*.cpp
 
 # Web files.
-# (To be replaced with the PR with the frontend.)
-/front
+!*.js
+!*.jsx
+!*.ts
+!*.tsx
+!*.html
+!*.css
 
 # Scripts.
 !*.sh

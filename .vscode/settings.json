@@ -6,6 +6,15 @@
   "[cpp]": {
     "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
   },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
@@ -20,12 +29,18 @@
   "files.exclude": {
     ".cache": true,
     "output": true,
-    "compile_flags.txt": true
+    "compile_flags.txt": true,
+    "front/.webpack": true,
+    "front/node_modules": true,
+    "front/package-lock.json": true
   },
   "files.watcherExclude": {
     "**/.cache/**": true,
     "**/output/**": true,
-    "**/compile_flags.txt": true
+    "**/compile_flags.txt": true,
+    "**/.webpack/**": true,
+    "**/node_modules/**": true,
+    "**/package-lock.json": true
   },
   "files.associations": {
     ".vscode/c_cpp_properties.json": "jsonc",

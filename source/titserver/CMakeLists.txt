@@ -3,9 +3,13 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("test_runner")
-add_subdirectory("tit")
-add_subdirectory("titwcsph")
-add_subdirectory("front")
+add_tit_executable(
+  NAME
+    server
+  SOURCES
+    "server.cpp"
+  DEPENDS
+    tit::core
+    httplib::httplib)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -35,6 +35,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # TODO: Node should be installed via Docker image.
+      - name: Install Node.js
+        run: |
+          apt-get update -q
+          apt-get install -y -qq npm
+
       - name: Fix repository ownership
         run: |
           git config --global --add safe.directory '*'
