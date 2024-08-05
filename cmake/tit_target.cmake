@@ -5,6 +5,7 @@
 
 include_guard()
 include(clang_tidy)
+include(sphinx)
 include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,6 +102,29 @@ function(add_tit_executable)
 
   # Enable static analysis.
   enable_clang_tidy(${EXE_TARGET})
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+##
+## Add a target for the user manual.
+##
+## This function is a simple wrapper for now, but it will be extended in the
+## future to once we'll switch to installation process.
+##
+function(add_tit_manual)
+  # Parse and check arguments.
+  cmake_parse_arguments(MAN "" "NAME" "" ${ARGN})
+  if(NOT MAN_NAME)
+    message(FATAL_ERROR "Manual target name must be specified.")
+  endif()
+
+  # Create the target.
+  set(MAN_TARGET "${TARGET_NAME_PREFIX}_${MAN_NAME}")
+  add_sphinx_target(NAME ${MAN_TARGET})
+
+  # Install the target.
+  install_sphinx_target(TARGET ${MAN_TARGET} DESTINATION "manual")
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
