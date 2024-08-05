@@ -1,9 +1,11 @@
+#include "tit/sph/field.hpp"
+#include "tit/sph/heat_conductivity.hpp"
+#include "tit/sph/viscosity.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <format>
-#include <fstream>
-#include <vector>
+#include <print>
 
 #define COMPRESSIBLE_SOD_PROBLEM 0
 #define HARD_DAM_BREAKING 0
@@ -20,10 +22,7 @@
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fluid_equations.hpp"
-#include "tit/sph/gas_equations.hpp"
-#include "tit/sph/godunov.hpp"
 #include "tit/sph/kernel.hpp"
-#include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_array_io.hpp"
 #include "tit/sph/time_integrator.hpp"
 
@@ -216,7 +215,6 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   constexpr Real POOL_WIDTH = 5.366 * H;
   constexpr Real POOL_HEIGHT = 2.5 * H;
 
-  constexpr Real dt = 5.0e-5;
   constexpr Real dr = H / 80.0;
 
   constexpr auto N_fixed = 4;
@@ -229,52 +227,69 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   constexpr Real rho_0 = 1000.0;
   constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
-  constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
+  constexpr Real m_0 = rho_0 * pow(dr, 2);
+
+  constexpr Real CFL = 0.8;
+  constexpr Real dt = std::min(CFL * h_0 / cs_0, 0.25 * sqrt(h_0 / g));
+
+  constexpr Real kappa_0 = 0.6;
+  constexpr Real c_v = 4184.0;
 
   // Setup the SPH equations:
   auto equations =
 #if WITH_GODUNOV
       GodunovFluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
+          // Standard equation of motion.
+          EquationOfMotion{},
+          // Continuity equation with no source terms.
           ContinuityEquation{},
+          // Momentum equation with gravity source term.
+          MomentumEquation{GravitySource{g}},
+          // Energy equation with heat transfer and no source terms.
+          EnergyEquation{ConstantHeatConductivity{6, 4184}},
+          // Weakly compressible equation of state.
+          LinearTaitEquationOfState{cs_0, rho_0},
+          // Inviscid flow.
+          NoViscosity{},
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #else
       FluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
+          // Standard equation of motion.
+          EquationOfMotion{},
+          // Continuity equation with no source terms.
           ContinuityEquation{},
+          // Momentum equation with gravity source term.
+          MomentumEquation{GravitySource{g}},
+          // Energy equation with heat transfer and no source terms.
+          EnergyEquation{HeatConductivity{c_v}},
+          // Weakly compressible equation of state.
+          LinearTaitEquationOfState{cs_0, rho_0},
+          // Inviscid flow.
+          NoViscosity{},
+          // Use δ-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
       }
 #endif
   ;
 
   // Setup the time integrator:
 #if WITH_GODUNOV
-  auto timeint = RungeKuttaIntegrator{std::move(equations)};
+  auto timeint = RungeKuttaIntegrator{equations};
 #else
-  auto timeint = EulerIntegrator{std::move(equations)};
+  auto timeint = RungeKuttaIntegrator{equations};
 #endif
 
   // Setup the particles array:
-  ParticleArray particles{// 2D space.
-                          Space<Real, 2>{},
-                          // Fields that are required by the equations.
-                          timeint.required_fields,
-                          // Set of whole system constants.
-                          meta::Set{
-                              m, // Particle mass assumed constant.
-                              h, // Particle width assumed constant.
-                          }};
+  ParticleArray particles{
+      // 2D space.
+      Space<Real, 2>{},
+      // Set of fields is inferred from the equations.
+      timeint,
+  };
 
   // Generate individual particles.
   auto num_fixed_particles = 0;
@@ -289,6 +304,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       auto a = particles.append();
       fixed[a] = is_fixed;
       r[a] = dr * Vec{i + 0.5, j + 0.5};
+      u[a] = 10.0;
     }
   }
   println("Num. fixed particles: {}", num_fixed_particles);
@@ -297,6 +313,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   // Set global particle constants.
   m[particles] = m_0;
   h[particles] = h_0;
+  kappa[particles] = kappa_0;
 
   // Density hydrostatic initialization.
   std::ranges::for_each(particles.all(), [&]<class PV>(PV a) {
@@ -340,14 +357,15 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       const StopwatchCycle cycle{exectime};
       timeint.step(dt, mesh, particles);
     }
-    if (n % 200 == 0 && n != 0) {
+    const auto end = time * sqrt(g / H) >= 6.9;
+    if ((n % 100 == 0 && n != 0) || end) {
       const StopwatchCycle cycle{printtime};
       const auto path =
-          std::format("output/test_output/particles-{}.csv", n / 200);
+          std::format("output/test_output/particles-{}.csv", n / 100);
       print_csv(particles, path);
       system(("ln -sf ./" + path + " particles.csv").c_str());
     }
-    if (time * sqrt(g / H) >= 6.9) break;
+    if (end) break;
     time += dt;
   }
 

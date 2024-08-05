@@ -160,6 +160,7 @@ TIT_DEFINE_FIELD(size_t, parinfo)
 
 /// Particle position.
 TIT_DEFINE_VECTOR_FIELD(r)
+TIT_DEFINE_VECTOR_FIELD(dr)
 
 /// Particle velocity.
 TIT_DEFINE_VECTOR_FIELD(v)
@@ -198,12 +199,11 @@ TIT_DEFINE_SCALAR_FIELD(u)
 /// Particle thermal energy time derivative.
 TIT_DEFINE_SCALAR_FIELD(du_dt)
 
-/// Particle molecular viscosity.
+/// Particle dynamic viscosity.
 TIT_DEFINE_SCALAR_FIELD(mu)
-/// Particle molecular turbulent viscosity.
-TIT_DEFINE_SCALAR_FIELD(mu_T)
-/// Particle second viscosity.
-TIT_DEFINE_SCALAR_FIELD(lambda)
+
+/// Particle heat conductivity coefficient.
+TIT_DEFINE_SCALAR_FIELD(kappa)
 
 /// Particle artificial viscosity switch.
 TIT_DEFINE_SCALAR_FIELD(alpha)
@@ -214,6 +214,17 @@ TIT_DEFINE_SCALAR_FIELD(dalpha_dt)
 TIT_DEFINE_SCALAR_FIELD(S)
 /// Kernel gradient renormalization matrix.
 TIT_DEFINE_MATRIX_FIELD(L)
+/// Particle normal vector.
+TIT_DEFINE_VECTOR_FIELD(n)
+
+enum class FreeSurface : uint8_t { far, near, on };
+template<class Stream>
+constexpr auto operator<<(Stream& stream, FreeSurface fs) -> Stream& {
+  stream << static_cast<int>(fs);
+  return stream;
+}
+TIT_DEFINE_FIELD(FreeSurface, fs)
+TIT_DEFINE_SCALAR_FIELD(Theta)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

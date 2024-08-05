@@ -77,7 +77,8 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray, class ParticleAdjacency>
+  template<particle_array<required_fields> ParticleArray,
+           class ParticleAdjacency>
   constexpr auto index([[maybe_unused]] ParticleArray& particles,
                        ParticleAdjacency& adjacent_particles) const {
     using PV = ParticleView<ParticleArray>;

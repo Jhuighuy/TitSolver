@@ -65,6 +65,8 @@ set(
   -Wwrite-strings
   # Violations of pointer safety annotations (disabled).
   -Wno-psabi
+  # Comma expression in array subscript changed meaning in C++23 (disabled).
+  -Wno-comma-subscript
   # TODO: enable this warning later.
   -Wno-unused-result
   -Wno-maybe-uninitialized
