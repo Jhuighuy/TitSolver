@@ -45,8 +45,8 @@ private:
   // Build the partitioning recursively.
   void build_(size_t num_parts) {
     // Initialize identity permutation.
-    perm_.resize(std::size(points_));
-    std::ranges::copy(std::views::iota(size_t{0}, perm_.size()), perm_.begin());
+    perm_ = std::views::iota(size_t{0}, std::size(points_)) |
+            std::ranges::to<std::vector>();
 
     // Build the partitioning.
     par::TaskGroup tasks{};
