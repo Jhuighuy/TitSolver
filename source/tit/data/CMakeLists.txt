@@ -5,32 +5,23 @@
 
 add_tit_library(
   NAME
-    sph
+    data
   SOURCES
-    "artificial_viscosity.hpp"
-    "density_equation.hpp"
-    "equation_of_state.hpp"
-    "field.hpp"
-    "fluid_equations.hpp"
-    "fsi.hpp"
-    "gas_equations.hpp"
-    "kernel.hpp"
-    "time_integrator.hpp"
-    "TitParticle.hpp"
+    "darray.hpp"
+    "dtype.hpp"
   DEPENDS
     tit::core
-    tit::data
-    tit::geom
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
   NAME
-    sph_tests
+    data_tests
   SOURCES
+    "darray.test.cpp"
   DEPENDS
-    tit::sph
+    tit::data
     tit::testing
 )
 

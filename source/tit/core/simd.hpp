@@ -8,6 +8,7 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // IWYU pragma: begin_exports
+#include "tit/core/simd/allocator.hpp"
 #include "tit/core/simd/deduce.hpp"
 #include "tit/core/simd/mask.hpp"
 #include "tit/core/simd/reg.hpp"
