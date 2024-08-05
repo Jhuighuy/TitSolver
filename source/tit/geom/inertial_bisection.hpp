@@ -45,8 +45,8 @@ private:
   // Build the partitioning recursively.
   void build_(size_t num_parts) {
     // Initialize identity permutation.
-    perm_.resize(std::size(points_));
-    std::ranges::copy(std::views::iota(size_t{0}, perm_.size()), perm_.begin());
+    perm_ = std::views::iota(size_t{0}, std::size(points_)) |
+            std::ranges::to<std::vector>();
 
     // Build the partitioning.
     par::TaskGroup tasks{};
@@ -86,7 +86,8 @@ private:
     inertia_tensor -= outer(sum, sum / perm.size());
 
     // Compute the inertia axis corresponding to the smallest principal inertia
-    // moment.
+    // moment (the smallest eigenvalue of the true inertia tensor, or the
+    // largest eigenvalue of our simplified version).
     const auto inertia_axis = //
         jacobi(inertia_tensor)
             // Axis of inertia is the largest eigenvector.
@@ -133,7 +134,9 @@ private:
 }; // class InertialBisection
 
 // Wrap a viewable range into a view on construction.
-template<class Points, class Parts, class... Args>
+template<std::ranges::viewable_range Points,
+         std::ranges::viewable_range Parts,
+         class... Args>
 InertialBisection(Points&&, Parts&&, Args...)
     -> InertialBisection<std::views::all_t<Points>, std::views::all_t<Parts>>;
 

@@ -60,8 +60,8 @@ private:
   // Build the permutation recursively.
   void build_() {
     // Initialize the identity permutation.
-    perm_.resize(std::size(points_));
-    std::ranges::copy(std::views::iota(size_t{0}, perm_.size()), perm_.begin());
+    perm_ = std::views::iota(size_t{0}, std::size(points_)) |
+            std::ranges::to<std::vector>();
 
     // Compute bounding box.
     //
@@ -117,7 +117,7 @@ private:
 }; // class MortonCurveSort
 
 // Wrap a viewable range into a view on construction.
-template<class Points>
+template<std::ranges::viewable_range Points>
 MortonCurveSort(Points&&) -> MortonCurveSort<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

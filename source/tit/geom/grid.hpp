@@ -153,7 +153,7 @@ private:
 }; // class Grid
 
 // Wrap a viewable range into a view on construction.
-template<class Points, class... Args>
+template<std::ranges::viewable_range Points, class... Args>
 Grid(Points&&, Args...) -> Grid<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
