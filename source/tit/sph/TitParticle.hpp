@@ -183,11 +183,11 @@ public:
         engine.search(search_point,
                       search_radius,
                       std::back_inserter(search_results));
+        std::ranges::sort(search_results);
         if (fixed[a]) *fixed_.grow_by(1) = a.index();
       });
       adjacency_.clear();
       for (const auto& adj : adj_vov) adjacency_.push_back(adj);
-      adjacency_.sort();
       // -----------------------------------------------------------------------
       static std::vector<std::vector<size_t>> interp_adj_vov{};
       interp_adj_vov.resize(fixed_.size());
@@ -205,10 +205,10 @@ public:
         std::erase_if(search_results, [this](size_t b_index) {
           return fixed[array()[b_index]];
         });
+        std::ranges::sort(search_results);
       });
       interp_adjacency_.clear();
       for (const auto& adj : interp_adj_vov) interp_adjacency_.push_back(adj);
-      interp_adjacency_.sort();
     }
     // -------------------------------------------------------------------------
     // STEP II: partitioning.
@@ -217,7 +217,7 @@ public:
     auto partitioner = geom::InertialBisection(positions, parts, nparts);
     // -------------------------------------------------------------------------
     // STEP III: assembly.
-    nparts += 1; // since we have the leftover
+    nparts += 1; // since we have the leftover.
     block_adjacency_.assemble_wide(nparts, adjacency_.edges(), [&](auto ij) {
       auto [i, j] = ij;
       return parts[i] == parts[j] ? parts[i] : (nparts - 1);

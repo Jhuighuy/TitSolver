@@ -96,16 +96,6 @@ public:
     val_ranges_.push_back(vals_.size());
   }
 
-  /// Sort values of each index.
-  template<class Cmp = std::ranges::less, class Proj = std::identity>
-    requires std::sortable<std::ranges::iterator_t<std::vector<Val>>, Cmp, Proj>
-  constexpr void sort(Cmp cmp = {}, Proj proj = {}) noexcept {
-    par::for_each(std::views::iota(size_t{0}, size()),
-                  [cmp, proj, this](size_t index) {
-                    std::ranges::sort((*this)[index], cmp, proj);
-                  });
-  }
-
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Assemble the multivector from elements using value to index mapping in
