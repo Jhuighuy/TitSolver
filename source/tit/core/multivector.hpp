@@ -117,14 +117,17 @@ public:
     TIT_ASSUME_UNIVERSAL(Handles, handles);
     // Compute value ranges.
     /// First compute how many values there are per each index.
-    val_ranges_.clear(), val_ranges_.resize(count + 1);
-    par::for_each(handles, [&](const auto& handle) {
+    ///
+    /// @todo If we one decide to use atomics again, we can use
+    ///       `__atomic_fetch_add(ptr, 1, __ATOMIC_RELAXED)`
+    val_ranges_.clear(), val_ranges_.resize(count + 2);
+    std::ranges::for_each(handles, [&](const auto& handle) {
       const auto index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      par::fetch_and_add(val_ranges_[index + 1], 1);
+      val_ranges_[index + 2] += 1;
     });
     /// Perform a partial sum of the computed values to form ranges.
-    for (size_t index = 2; index < val_ranges_.size(); ++index) {
+    for (size_t index = 3; index < val_ranges_.size(); ++index) {
       val_ranges_[index] += val_ranges_[index - 1];
     }
     // Place values according to the ranges.
@@ -132,16 +135,13 @@ public:
     /// then increment the position.
     const auto num_vals = val_ranges_.back();
     vals_.resize(num_vals); // No need to clear the `vals_`!
-    par::for_each(handles, [&](const auto& handle) {
+    std::ranges::for_each(handles, [&](const auto& handle) {
       const auto index = static_cast<size_t>(index_of(handle));
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      const auto addr = par::fetch_and_add(val_ranges_[index], 1);
+      const auto addr = val_ranges_[index + 1]++;
       vals_[addr] = static_cast<Val>(value_of(handle));
     });
-    /// Fix value ranges, since after incrementing the entire array is shifted
-    /// left. So we need to shift it right and restore the leading zero.
-    std::shift_right(val_ranges_.begin(), val_ranges_.end(), 1);
-    val_ranges_[0] = 0;
+    val_ranges_.pop_back();
   }
 
   /// Assemble the multivector from elements using value to index mapping in
