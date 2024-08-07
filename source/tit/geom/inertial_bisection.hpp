@@ -17,17 +17,16 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
 
+#include "tit/geom/cloud.hpp"
+
 namespace tit::geom {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Inertial bisection partitioning.
-template<std::ranges::view Points, std::ranges::view Parts>
-  requires (std::ranges::sized_range<Points> &&
-            std::ranges::random_access_range<Points> &&
-            is_vec_v<std::ranges::range_value_t<Points>>) &&
-           (std::ranges::random_access_range<Parts> &&
-            std::ranges::output_range<Parts, size_t>)
+template<cloud_view Points, std::ranges::view Parts>
+  requires std::ranges::random_access_range<Parts> &&
+           std::ranges::output_range<Parts, size_t>
 class InertialBisection final {
 public:
 
@@ -66,27 +65,12 @@ private:
     }
 
     // Compute the inertia tensor.
-    //
-    // Note: the true inertia tensor is ∑(rᵢ·rᵢI - rᵢ⊗rᵢ) where rᵢ is the
-    // position vector of the i-th point relative to the center of mass.
-    // Since the first term is a scalar multiple of the identity matrix, it
-    // does not affect the eigenvectors of the inertia tensor. Thus, we can
-    // simplify the computation to ∑(rᵢ⊗rᵢ) and seek for largest eigenvector
-    // of this matrix instead of the smallest eigenvector of the true inertia
-    // tensor.
-    //
-    /// @todo Introduce a helper function for this computation.
-    auto sum = points_[perm[0]];
-    auto inertia_tensor = outer_sqr(points_[perm[0]]);
-    for (const auto i : perm.subspan(1)) {
-      const auto& point = points_[i];
-      sum += point;
-      inertia_tensor += outer_sqr(point);
-    }
-    inertia_tensor -= outer(sum, sum / perm.size());
+    const auto inertia_tensor =
+        cloud_inertia_tensor(permuted_cloud(points_, perm));
 
     // Compute the inertia axis corresponding to the smallest principal inertia
     // moment.
+    /// @todo I have a feeling that we are doing something wrong here.
     const auto inertia_axis = //
         jacobi(inertia_tensor)
             // Axis of inertia is the largest eigenvector.
@@ -105,7 +89,7 @@ private:
     const auto right_part_index = part_index + left_num_parts;
 
     // Partition the permutation along the inertial axis.
-    const auto median = left_num_parts * perm.size() / num_parts;
+    const auto median = perm.size() * left_num_parts / num_parts;
     std::ranges::nth_element( //
         perm,
         perm.begin() + static_cast<ssize_t>(median),
@@ -133,7 +117,9 @@ private:
 }; // class InertialBisection
 
 // Wrap a viewable range into a view on construction.
-template<class Points, class Parts, class... Args>
+template<std::ranges::viewable_range Points,
+         std::ranges::viewable_range Parts,
+         class... Args>
 InertialBisection(Points&&, Parts&&, Args...)
     -> InertialBisection<std::views::all_t<Points>, std::views::all_t<Parts>>;
 

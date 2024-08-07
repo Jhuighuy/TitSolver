@@ -22,6 +22,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/cloud.hpp"
 
 namespace tit::geom {
 
@@ -29,10 +30,7 @@ namespace tit::geom {
 
 /// K-dimensional tree.
 /// Inspired by nanoflann: https://github.com/jlblancoc/nanoflann
-template<std::ranges::view Points>
-  requires std::ranges::sized_range<Points> &&
-           std::ranges::random_access_range<Points> &&
-           is_vec_v<std::ranges::range_value_t<Points>>
+template<cloud_view Points>
 class KDTree final {
 public:
 
@@ -99,10 +97,7 @@ private:
   auto build_subtree_(par::TaskGroup& tasks, std::span<size_t> perm)
       -> std::pair<KDTreeNode_*, BBox<Vec>> {
     // Compute bounding box.
-    //
-    /// @todo Introduce a helper function for this computation.
-    BBox box{points_[perm.front()]};
-    for (const auto i : perm | std::views::drop(1)) box.expand(points_[i]);
+    const auto box = cloud_bbox(permuted_cloud(points_, perm));
 
     // Is leaf node reached?
     const auto node = pool_.create();
@@ -224,7 +219,7 @@ private:
 }; // class KDTree
 
 // Wrap a viewable range into a view on construction.
-template<class Points, class... Args>
+template<std::ranges::viewable_range Points, class... Args>
 KDTree(Points&&, Args...) -> KDTree<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

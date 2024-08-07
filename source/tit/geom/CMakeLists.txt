@@ -8,6 +8,7 @@ add_tit_library(
     geom
   SOURCES
     "bbox.hpp"
+    "cloud.hpp"
     "grid.hpp"
     "inertial_bisection.hpp"
     "kd_tree.hpp"
@@ -24,6 +25,7 @@ add_tit_executable(
     geom_tests
   SOURCES
     "bbox.test.cpp"
+    "cloud.test.cpp"
     "inertial_bisection.test.cpp"
     "search.test.cpp"
     "sfc_sort.test.cpp"

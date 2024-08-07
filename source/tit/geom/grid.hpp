@@ -19,16 +19,14 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/cloud.hpp"
 
 namespace tit::geom {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Uniform multidimensional grid.
-template<std::ranges::view Points>
-  requires std::ranges::sized_range<Points> &&
-           std::ranges::random_access_range<Points> &&
-           is_vec_v<std::ranges::range_value_t<Points>>
+template<cloud_view Points>
 class Grid final {
 public:
 
@@ -47,11 +45,7 @@ public:
     TIT_ASSERT(size_hint > 0.0, "Cell size hint must be positive!");
 
     // Compute bounding box.
-    //
-    /// @todo Introduce a helper function for this computation.
-    grid_box_ = BBox{points_[0]}; // NOLINT(*-prefer-member-initializer)
-    for (const auto& p : points_ | std::views::drop(1)) grid_box_.expand(p);
-    grid_box_.grow(size_hint / 2);
+    grid_box_ = cloud_bbox(points_).grow(size_hint / 2); // NOLINT(*initializer)
 
     // Compute number of cells and cell sizes.
     const auto extents = grid_box_.extents();
@@ -153,7 +147,7 @@ private:
 }; // class Grid
 
 // Wrap a viewable range into a view on construction.
-template<class Points, class... Args>
+template<std::ranges::viewable_range Points, class... Args>
 Grid(Points&&, Args...) -> Grid<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

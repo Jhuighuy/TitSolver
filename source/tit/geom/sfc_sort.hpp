@@ -17,16 +17,14 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/cloud.hpp"
 
 namespace tit::geom {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Morton space filling curve (Z curve) spatial sorting.
-template<std::ranges::view Points>
-  requires std::ranges::sized_range<Points> &&
-           std::ranges::random_access_range<Points> &&
-           is_vec_v<std::ranges::range_value_t<Points>>
+template<cloud_view Points>
 class MortonCurveSort final {
 public:
 
@@ -64,12 +62,9 @@ private:
             std::ranges::to<std::vector>();
 
     // Compute bounding box.
-    //
-    /// @todo Introduce a helper function for this computation.
-    auto bbox = BBox{points_[0]};
-    for (const auto& p : points_ | std::views::drop(1)) bbox.expand(p);
+    const auto bbox = cloud_bbox(points_);
 
-    // Compute the root bounding box and build permutation.
+    // Build the permutation.
     par::TaskGroup tasks{};
     constexpr size_t InitAxis = 0;
     partition_<InitAxis>(tasks, bbox, perm_);
@@ -117,7 +112,7 @@ private:
 }; // class MortonCurveSort
 
 // Wrap a viewable range into a view on construction.
-template<class Points>
+template<std::ranges::viewable_range Points>
 MortonCurveSort(Points&&) -> MortonCurveSort<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
