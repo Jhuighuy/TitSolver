@@ -21,33 +21,64 @@ using Vec2D = Vec<double, 2>;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("geom::InertialBisection") {
-  // Create points on a 8x8 lattice.
-  std::array<Vec2D, 64> points{};
-  for (size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
+  SUBCASE("axis-aligned") {
+    // Create points on a 8x8 lattice.
+    std::array<Vec2D, 64> points{};
+    for (size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
 
-  // Partition the points using the inertial bisection algorithm.
-  std::array<size_t, 64> parts{};
-  const geom::InertialBisection ib{points, parts, 4};
+    // Partition the points using the inertial bisection algorithm.
+    std::array<size_t, 64> parts{};
+    const geom::InertialBisection ib{points, parts, 4};
 
-  // Ensure the resulting partitioning is correct.
-  // We shall have 4 parts in each quadrant:
-  //
-  // 0 ----------------->
-  // | 0 0 0 0 2 2 2 2    Y
-  // | 0 0 0 0 2 2 2 2
-  // | 0 0 0 0 2 2 2 2
-  // | 0 0 0 0 2 2 2 2
-  // | 1 1 1 1 3 3 3 3
-  // | 1 1 1 1 3 3 3 3
-  // | 1 1 1 1 3 3 3 3
-  // | 1 1 1 1 3 3 3 3
-  // |
-  // v
-  //  X
-  for (const auto& [part, point] : std::views::zip(parts, points)) {
-    const auto pi = static_vec_cast<size_t>(point);
-    const auto quadrant = pi[1] / 4 + pi[0] / 4 * 2;
-    CHECK(part == quadrant);
+    // Ensure the resulting partitioning is correct.
+    // We shall have 4 parts in each quadrant:
+    //
+    // 0 ----------------->
+    // | 0 0 0 0 2 2 2 2    X
+    // | 0 0 0 0 2 2 2 2
+    // | 0 0 0 0 2 2 2 2
+    // | 0 0 0 0 2 2 2 2
+    // | 1 1 1 1 3 3 3 3
+    // | 1 1 1 1 3 3 3 3
+    // | 1 1 1 1 3 3 3 3
+    // | 1 1 1 1 3 3 3 3
+    // |
+    // v
+    //  Y
+    for (const auto& [part, point] : std::views::zip(parts, points)) {
+      const auto pi = static_vec_cast<size_t>(point);
+      CHECK(part == pi[1] / 4 + pi[0] / 4 * 2);
+    }
+  }
+
+  SUBCASE("rotated") {
+    // Create points on a 8x10 lattice rotated by 45 degrees.
+    //
+    // Note: we cannot use a square lattice as inertia tensor will always be
+    // a scaled identity matrix, and the partitioning won't produce the
+    // expected result.
+    std::array<Vec2D, 80> rotated_points{};
+    for (size_t i = 0; i < 80; ++i) {
+      const Vec2D point{i % 10, i / 10};
+      rotated_points[i] = {0.5 * (point[0] + point[1]),
+                           0.5 * (point[0] - point[1])};
+    }
+
+    // Partition the points using the inertial bisection algorithm.
+    std::array<size_t, 80> parts{};
+    const geom::InertialBisection ib{rotated_points, parts, 4};
+
+    // Ensure the resulting partitioning is correct.
+    for (const auto& [part, rotated_point] :
+         std::views::zip(parts, rotated_points)) {
+      // Rotate the point back.
+      const Vec2D point{rotated_point[0] + rotated_point[1],
+                        rotated_point[0] - rotated_point[1]};
+
+      // Ensure the partition index is correct.
+      const auto pi = static_vec_cast<size_t>(point);
+      CHECK(part == pi[1] / 4 + pi[0] / 5 * 2);
+    }
   }
 }
 
