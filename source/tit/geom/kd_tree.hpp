@@ -70,7 +70,7 @@ private:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
     struct {
-      size_t cut_dim;
+      size_t cut_axis;
       vec_num_t<Vec> cut_left;
       vec_num_t<Vec> cut_right;
       KDTreeNode_* left_subtree;
@@ -91,26 +91,18 @@ private:
 
     // Compute the root tree node (and bounding box).
     par::TaskGroup tasks{};
-    root_node_ = build_subtree_</*IsRoot=*/true>(tasks, perm_, tree_box_);
+    std::tie(root_node_, tree_box_) = build_subtree_(tasks, perm_);
     tasks.wait();
   }
 
   // Build the K-dimensional subtree.
-  // On the input `box` contains a rough estimate that was guessed by the
-  // caller. On return it contains an exact bounding box of the subtree.
-  //
-  /// @todo We must do something with the `IsRoot` template parameter
-  ///       and the `box` parameter. It is confusing.
-  template<bool IsRoot = false>
-  auto build_subtree_(par::TaskGroup& tasks,
-                      std::span<size_t> perm,
-                      BBox<Vec>& box) -> KDTreeNode_* {
+  auto build_subtree_(par::TaskGroup& tasks, std::span<size_t> perm)
+      -> std::pair<KDTreeNode_*, BBox<Vec>> {
     // Compute bounding box.
     //
     /// @todo Introduce a helper function for this computation.
-    BBox true_box{points_[perm.front()]};
-    for (const auto i : perm | std::views::drop(1)) true_box.expand(points_[i]);
-    if constexpr (IsRoot) box = true_box;
+    BBox box{points_[perm.front()]};
+    for (const auto i : perm | std::views::drop(1)) box.expand(points_[i]);
 
     // Is leaf node reached?
     const auto node = pool_.create();
@@ -118,96 +110,32 @@ private:
       // Fill the leaf node and end partitioning.
       node->perm = perm;
       node->left_subtree = node->right_subtree = nullptr;
-    } else {
-      // Split the points based on the "widest" bounding box dimension.
-      const auto cut_dim = max_value_index(true_box.extents());
-      const auto cut_val = true_box.clamp(box.center())[cut_dim];
-      const auto [left_box, right_box] = box.split(cut_dim, cut_val);
-      const auto pivot =
-          partition_subtree_(perm.begin(), perm.end(), cut_dim, cut_val);
-      const std::span left_perm(perm.begin(), pivot);
-      const std::span right_perm(pivot, perm.end());
-
-      // Build subtrees.
-      //
-      /// @todo These two `NOLINT`s are a workaround for a clang-tidy bug.
-      node->cut_dim = cut_dim;
-      tasks.run( //
-          is_async_(left_perm),
-          [left_box, left_perm, cut_dim, node, &tasks, this] {
-            auto true_left_box = left_box; // NOLINT
-            node->left_subtree =
-                build_subtree_(tasks, left_perm, true_left_box);
-            node->cut_left = true_left_box.high()[cut_dim];
-          });
-      tasks.run( //
-          is_async_(right_perm),
-          [right_box, right_perm, cut_dim, node, &tasks, this] {
-            auto true_right_box = right_box; // NOLINT
-            node->right_subtree =
-                build_subtree_(tasks, right_perm, true_right_box);
-            node->cut_right = true_right_box.low()[cut_dim];
-          });
+      return {node, box};
     }
 
-    box = true_box;
-    return node;
-  }
+    // Split the points based on the "widest" bounding box dimension.
+    const auto cut_axis = max_value_index(box.extents());
+    const auto center_coord = box.clamp(box.center())[cut_axis];
+    const std::span right_perm = std::ranges::partition(
+        perm,
+        [center_coord](vec_num_t<Vec> coord) { return coord < center_coord; },
+        [cut_axis, this](size_t index) { return points_[index][cut_axis]; });
+    const std::span left_perm(perm.begin(), right_perm.begin());
 
-  // Partition the K-dimensional subtree points (iterator version).
-  template<class Iter, class Sent>
-  constexpr auto partition_subtree_(Iter first,
-                                    Sent last,
-                                    size_t cut_dim,
-                                    vec_num_t<Vec> cut_val) const -> Iter {
-    // Partition the tree based on the cut plane: separate those that
-    // are to the left ("<") from those that are to the right or exactly on
-    // the splitting plane (">=").
-    auto pivot = std::begin( //
-        std::ranges::partition(
-            first,
-            last,
-            [cut_dim, cut_val](const Vec& p) { return p[cut_dim] < cut_val; },
-            [this](size_t i) -> const Vec& { return points_[i]; }));
+    // Build subtrees.
+    node->cut_axis = cut_axis;
+    tasks.run(is_async_(left_perm), [left_perm, node, &tasks, this] {
+      const auto [left_tree, left_box] = build_subtree_(tasks, left_perm);
+      node->left_subtree = left_tree;
+      node->cut_left = left_box.high()[node->cut_axis];
+    });
+    tasks.run(is_async_(right_perm), [right_perm, node, &tasks, this] {
+      const auto [right_tree, right_box] = build_subtree_(tasks, right_perm);
+      node->right_subtree = right_tree;
+      node->cut_right = right_box.low()[node->cut_axis];
+    });
 
-    // Try to balance the partition by redistributing the points that are
-    // exactly ("==") on the splitting plane.
-    //
-    // Partition may be already balanced if the left part ("<") is too large,
-    // so moving points into it from the part after the pivot makes no sense:
-    //
-    //   first                      middle                     last
-    //   |--------------------------|--------------------------|
-    //   |------------- "<" --------------|------- ">=" -------|
-    //   first                            pivot                last
-    const auto middle = first + (last - first) / 2;
-    if (middle <= pivot) return pivot;
-
-    // Now partition the right part (">=") on the middle part ("==") and the
-    // truly right part (">").
-    pivot = std::begin( //
-        std::ranges::partition(
-            pivot,
-            last,
-            [cut_dim, cut_val](const Vec& p) { return p[cut_dim] == cut_val; },
-            [this](size_t i) -> const Vec& { return points_[i]; }));
-
-    // Two outcomes may be possible:
-    //
-    // - Either midpoint of our range is the best possible option:
-    //
-    //   first                      middle                     last
-    //   |--------------------------|--------------------------|
-    //   |--------- "<" ----------|- "==" -|------- ">" -------|
-    //   first                             pivot               last
-    //
-    // - Either it is optimal to attach the middle part to the left:
-    //
-    //   first                      middle                     last
-    //   |--------------------------|--------------------------|
-    //   |----- "<" ----|- "==" -|------------ ">" ------------|
-    //   first                   pivot                         last
-    return std::min(pivot, middle);
+    return {node, box};
   }
 
   // Should the building be done in parallel?
@@ -257,10 +185,10 @@ private:
     }
 
     // Determine which branch should be taken first.
-    const auto cut_dim = node->cut_dim;
+    const auto cut_axis = node->cut_axis;
     const auto [cut_dist, first_node, second_node] = [&] {
-      const auto delta_left = search_point[cut_dim] - node->cut_left;
-      const auto delta_right = node->cut_right - search_point[cut_dim];
+      const auto delta_left = search_point[cut_axis] - node->cut_left;
+      const auto delta_right = node->cut_right - search_point[cut_axis];
       return delta_left < delta_right ?
                  // Point is on the left to the cut plane, so the
                  // corresponding subtree should be searched first.
@@ -278,7 +206,7 @@ private:
     search_subtree_(first_node, dists, search_point, search_dist, out);
 
     // Search in the second subtree (if it not too far).
-    dists[cut_dim] = cut_dist;
+    dists[cut_axis] = cut_dist;
     if (const auto dist = sum(dists); dist < search_dist) {
       search_subtree_(second_node, dists, search_point, search_dist, out);
     }

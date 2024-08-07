@@ -87,10 +87,10 @@ private:
     // Split permutation along the current axis.
     const auto center_coord = bbox.center()[Axis];
     const auto [left_bbox, right_bbox] = bbox.split(Axis, center_coord);
-    const std::span right_perm =
-        std::ranges::partition(perm, [center_coord, this](size_t index) {
-          return points_[index][Axis] <= center_coord;
-        });
+    const std::span right_perm = std::ranges::partition(
+        perm,
+        [center_coord](vec_num_t<Vec> coord) { return coord <= center_coord; },
+        [this](size_t index) { return points_[index][Axis]; });
     const std::span left_perm(perm.begin(), right_perm.begin());
 
     // Recursively split the parts along the next axis.
