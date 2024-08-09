@@ -60,8 +60,8 @@ private:
   // Build the permutation recursively.
   void build_() {
     // Initialize the identity permutation.
-    perm_.resize(std::size(points_));
-    std::ranges::copy(std::views::iota(size_t{0}, perm_.size()), perm_.begin());
+    perm_ = std::views::iota(size_t{0}, std::size(points_)) |
+            std::ranges::to<std::vector>();
 
     // Compute bounding box.
     //
@@ -87,10 +87,10 @@ private:
     // Split permutation along the current axis.
     const auto center_coord = bbox.center()[Axis];
     const auto [left_bbox, right_bbox] = bbox.split(Axis, center_coord);
-    const std::span right_perm =
-        std::ranges::partition(perm, [center_coord, this](size_t index) {
-          return points_[index][Axis] <= center_coord;
-        });
+    const std::span right_perm = std::ranges::partition(
+        perm,
+        [center_coord](vec_num_t<Vec> coord) { return coord <= center_coord; },
+        [this](size_t index) { return points_[index][Axis]; });
     const std::span left_perm(perm.begin(), right_perm.begin());
 
     // Recursively split the parts along the next axis.
@@ -117,7 +117,7 @@ private:
 }; // class MortonCurveSort
 
 // Wrap a viewable range into a view on construction.
-template<class Points>
+template<std::ranges::viewable_range Points>
 MortonCurveSort(Points&&) -> MortonCurveSort<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
