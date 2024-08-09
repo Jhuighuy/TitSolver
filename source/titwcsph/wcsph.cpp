@@ -20,8 +20,6 @@
 #include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fluid_equations.hpp"
-#include "tit/sph/gas_equations.hpp"
-#include "tit/sph/godunov.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/time_integrator.hpp"
 

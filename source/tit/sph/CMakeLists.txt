@@ -13,7 +13,6 @@ add_tit_library(
     "field.hpp"
     "fluid_equations.hpp"
     "fsi.hpp"
-    "gas_equations.hpp"
     "kernel.hpp"
     "time_integrator.hpp"
     "TitParticle.hpp"
