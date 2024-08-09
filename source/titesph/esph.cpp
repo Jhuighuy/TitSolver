@@ -12,10 +12,10 @@
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/sph/TitParticle.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fsi.hpp"
 #include "tit/sph/kernel.hpp"
+#include "tit/sph/particle_array.hpp"
 #include "tit/sph/time_integrator.hpp"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -14,10 +14,10 @@
 #include "tit/core/meta.hpp"
 #include "tit/core/par.hpp"
 
-#include "tit/sph/TitParticle.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
+#include "tit/sph/particle_array.hpp"
 
 namespace tit::sph::fsi {
 

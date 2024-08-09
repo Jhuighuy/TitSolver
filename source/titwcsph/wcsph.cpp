@@ -17,10 +17,10 @@
 #include "tit/core/main_func.hpp"
 #include "tit/core/time.hpp"
 
-#include "tit/sph/TitParticle.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/kernel.hpp"
+#include "tit/sph/particle_array.hpp"
 #include "tit/sph/time_integrator.hpp"
 
 #if 0

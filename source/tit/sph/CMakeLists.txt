@@ -14,8 +14,8 @@ add_tit_library(
     "fluid_equations.hpp"
     "fsi.hpp"
     "kernel.hpp"
+    "particle_array.hpp"
     "time_integrator.hpp"
-    "TitParticle.hpp"
   DEPENDS
     tit::core
     tit::geom

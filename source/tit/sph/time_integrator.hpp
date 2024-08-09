@@ -12,8 +12,8 @@
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 
-#include "tit/sph/TitParticle.hpp"
 #include "tit/sph/field.hpp"
+#include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
 
