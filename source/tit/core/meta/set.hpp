@@ -6,7 +6,7 @@
 // IWYU pragma: private, include "tit/core/meta.hpp"
 #pragma once
 
-#include "tit/core/basic_types.hpp"
+#include "tit/core/meta/range.hpp"
 #include "tit/core/meta/type.hpp"
 #include "tit/core/type_traits.hpp"
 
@@ -17,7 +17,7 @@ namespace tit::meta {
 /// Set of meta types, with no duplicates.
 template<type... Ts>
   requires all_unique_v<Ts...>
-class Set final {
+class Set final : public Range<Ts...> {
 public:
 
   /// Construct a set.
@@ -27,25 +27,6 @@ public:
     requires (sizeof...(Ts) != 0)
   {}
   /// @}
-
-  /// Check if the set contains a type `U`.
-  template<type U>
-  constexpr auto contains(U /*elem*/) const noexcept -> bool {
-    return contains_v<U, Ts...>;
-  }
-
-  /// Check if the set contains all types in the set `Us...`.
-  template<type... Us>
-  constexpr auto includes(Set<Us...> /*set*/) const noexcept -> bool {
-    return (contains_v<Us, Ts...> && ...);
-  }
-
-  /// Index of the type in the set.
-  template<type U>
-    requires contains_v<U, Ts...>
-  constexpr auto find(U /*elem*/) const noexcept -> size_t {
-    return index_of_v<U, Ts...>;
-  }
 
 }; // class Set
 
