@@ -6,14 +6,11 @@
 #pragma once
 
 #include <algorithm>
-#include <cstddef>
 #include <iterator>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
 #include <vector>
-
-#include <oneapi/tbb/concurrent_vector.h>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -75,11 +72,9 @@ public:
       TIT_PROFILE_SECTION("ParticleAdjacency::search()");
       const auto engine = engine_factory_(positions);
       // -----------------------------------------------------------------------
-      fixed_.clear();
-      fixed_.reserve(particles.size() / 2);
       static std::vector<std::vector<size_t>> adj_vov{};
       adj_vov.resize(particles.size());
-      par::for_each(particles.all(), [&radius_func, &engine, this](PV a) {
+      par::for_each(particles.all(), [&radius_func, &engine](PV a) {
         const auto search_point = r[a];
         const auto search_radius = radius_func(a);
         TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
@@ -88,16 +83,15 @@ public:
         engine.search(search_point,
                       search_radius,
                       std::back_inserter(search_results));
-        if (fixed[a]) *fixed_.grow_by(1) = a.index();
       });
       adjacency_.clear();
       for (const auto& adj : adj_vov) adjacency_.push_back(adj);
       adjacency_.sort();
       // -----------------------------------------------------------------------
       static std::vector<std::vector<size_t>> interp_adj_vov{};
-      interp_adj_vov.resize(fixed_.size());
+      interp_adj_vov.resize(particles.fixed().size());
       par::for_each(
-          _fixed(particles),
+          std::views::enumerate(particles.fixed()),
           [&radius_func, &engine, &particles](auto ia) {
             auto [i, a] = ia;
             const auto search_point = r[a];
@@ -110,7 +104,7 @@ public:
                           search_radius,
                           std::back_inserter(search_results));
             std::erase_if(search_results, [&particles](size_t b_index) {
-              return fixed[particles[b_index]];
+              return particles.has_type(b_index, ParticleType::fixed);
             });
           });
       interp_adjacency_.clear();
@@ -139,14 +133,6 @@ public:
     }
   }
 
-  template<class ParticleArray>
-  constexpr auto _fixed(ParticleArray& particles) const noexcept {
-    return std::views::iota(0UZ, fixed_.size()) |
-           std::views::transform([&particles, this](size_t i) {
-             return std::tuple{i, particles[fixed_[i]]};
-           });
-  }
-
   /// Adjacent particles.
   template<class PV>
   constexpr auto operator[](PV a) const noexcept {
@@ -156,13 +142,14 @@ public:
   }
 
   /// Adjacent fixed particles.
-  template<class ParticleArray>
-  constexpr auto operator[](std::nullptr_t,
-                            ParticleArray& particles,
-                            size_t i) const noexcept {
+  template<class PV>
+  constexpr auto fixed_interp(PV a) const noexcept {
+    TIT_ASSERT(a.has_type(ParticleType::fixed),
+               "Particle must be of the fixed type!");
+    const auto i = a - *a.array().fixed().begin();
     return std::views::all(interp_adjacency_[i]) |
            std::views::transform(
-               [&](size_t b_index) { return particles[b_index]; });
+               [a](size_t b_index) { return a.array()[b_index]; });
   }
 
   /// Unique pairs of the adjacent particles.
@@ -191,7 +178,6 @@ private:
 
   EngineFactory engine_factory_;
   Graph adjacency_;
-  tbb::concurrent_vector<size_t> fixed_;
   Graph interp_adjacency_;
   Multivector<std::tuple<size_t, size_t>> block_adjacency_;
 

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <array>
 #include <ranges>
 #include <span>
 #include <tuple>
@@ -19,6 +20,15 @@
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Particle type.
+enum class ParticleType : uint8_t {
+  fluid, ///< Fluid particle.
+  fixed, ///< Fixed (boundary) particle.
+  count, ///< Number of particle types.
+};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -59,21 +69,36 @@ public:
     return index_;
   }
 
-  /// Compare particle views.
-  constexpr auto operator==(ParticleView<ParticleArray> other) const noexcept
-      -> bool {
-    TIT_ASSERT(&array() == &other.array(),
-               "Cannot compare particle views of different arrays!");
-    return index() == other.index();
+  /// Check if the particle has the specified type.
+  constexpr auto has_type(ParticleType type) const noexcept -> bool {
+    return array().has_type(index(), type);
   }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Particle field value.
   template<field Field>
   constexpr auto operator[](Field field) const noexcept -> decltype(auto) {
     static_assert(fields.contains(Field{}));
     return array()[index(), field];
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Compare particle views.
+  friend constexpr auto operator==(ParticleView<ParticleArray> a,
+                                   ParticleView<ParticleArray> b) noexcept
+      -> bool {
+    TIT_ASSERT(a.array().size() == b.array().size(),
+               "Particle arrays must be of the same size!");
+    return a.index() == b.index();
+  }
+
+  /// Distance between particle view indices.
+  friend constexpr auto operator-(ParticleView<ParticleArray> a,
+                                  ParticleView<ParticleArray> b) noexcept
+      -> ssize_t {
+    TIT_ASSERT(a.array().size() == b.array().size(),
+               "Particle arrays must be of the same size!");
+    return a.index() - b.index();
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -133,19 +158,57 @@ public:
                varying_data_);
   }
 
-  /// Appends a new particle.
-  constexpr auto append() {
-    std::apply([](auto&... cols) { ((cols.emplace_back()), ...); },
-               varying_data_);
-    return (*this)[size() - 1];
+  /// Appends a new particle of the specified type @p type.
+  constexpr auto append(ParticleType type) -> ParticleView<ParticleArray> {
+    TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
+    const auto type_index = static_cast<size_t>(type);
+    // Get the index of the next particle of the specified type and increment
+    // the range of particles for the next types.
+    const size_t index = particle_ranges_[type_index + 1];
+    for (auto& r : particle_ranges_ | std::views::drop(type_index + 1)) r += 1;
+    // Insert the new particle.
+    std::apply(
+        [index](auto&... cols) { ((cols.emplace(cols.begin() + index)), ...); },
+        varying_data_);
+    return (*this)[index];
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Particles.
+  /// All particles.
   constexpr auto all(this auto& self) noexcept {
     return std::views::iota(size_t{0}, self.size()) |
            std::views::transform([&self](size_t index) { return self[index]; });
+  }
+
+  /// Particles of the specified type.
+  constexpr auto typed(this auto& self, ParticleType type) noexcept {
+    TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
+    const auto type_index = static_cast<size_t>(type);
+    return std::views::iota(self.particle_ranges_[type_index],
+                            self.particle_ranges_[type_index + 1]) |
+           std::views::transform([&self](size_t index) { return self[index]; });
+  }
+
+  /// Fluid particles.
+  constexpr auto fluid(this auto& self) noexcept {
+    return self.typed(ParticleType::fluid);
+  }
+
+  /// Fixed particles.
+  constexpr auto fixed(this auto& self) noexcept {
+    return self.typed(ParticleType::fixed);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Check if the particle has the specified type.
+  constexpr auto has_type(size_t index,
+                          ParticleType type) const noexcept -> bool {
+    TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
+    const auto type_index = static_cast<size_t>(type);
+    return particle_ranges_[type_index] <= index &&
+           index < particle_ranges_[type_index + 1];
   }
 
   /// Particle at index.
@@ -184,6 +247,9 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 private:
+
+  std::array<size_t, static_cast<size_t>(ParticleType::count) + 1>
+      particle_ranges_{0};
 
   decltype(uniform_fields.apply([](auto... consts) {
     return std::tuple<field_value_t<decltype(consts), Space>...>{};

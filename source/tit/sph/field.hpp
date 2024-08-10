@@ -165,9 +165,6 @@ using field_value_t = typename field_value<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Is particle fixed? For the fixed particles,
-/// no variables are updated during the simulation.
-TIT_DEFINE_FIELD(bool, fixed)
 TIT_DEFINE_FIELD(size_t, parinfo)
 
 /// Particle position.

@@ -283,8 +283,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       if (is_fixed) ++num_fixed_particles;
       else if (is_fluid) ++num_fluid_particles;
       else continue;
-      auto a = particles.append();
-      fixed[a] = is_fixed;
+      auto a = particles.append(is_fixed ? ParticleType::fixed :
+                                           ParticleType::fluid);
       r[a] = dr * Vec{i + 0.5, j + 0.5};
     }
   }
@@ -297,7 +297,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 
   // Density hydrostatic initialization.
   std::ranges::for_each(particles.all(), [&]<class PV>(PV a) {
-    if (fixed[a]) {
+    if (a.has_type(ParticleType::fixed)) {
       rho[a] = rho_0;
       return;
     }

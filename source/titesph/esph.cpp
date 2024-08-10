@@ -82,8 +82,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       const bool is_fixed = i < 0;
       if (is_fixed) ++num_fixed_particles;
       else ++num_struct_particles;
-      auto a = particles.append();
-      fixed[a] = is_fixed;
+      auto a = particles.append(is_fixed ? ParticleType::fixed :
+                                           ParticleType::fluid);
       r[a] = dr * Vec{i + 0.5, j + 0.5};
     }
   }
