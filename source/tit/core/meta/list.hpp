@@ -8,6 +8,7 @@
 
 #include <type_traits>
 
+#include "tit/core/meta/range.hpp"
 #include "tit/core/meta/type.hpp"
 
 namespace tit::meta {
@@ -16,7 +17,7 @@ namespace tit::meta {
 
 /// List of meta types.
 template<type... Ts>
-class List final {
+class List final : public Range<Ts...> {
 public:
 
   /// Construct a list.

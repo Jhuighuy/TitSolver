@@ -30,34 +30,6 @@ TEST_CASE("meta::Set") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("meta::Set::contains") {
-  constexpr meta::Set<A, B, C, D> s1{};
-  STATIC_CHECK(s1.contains(A{}));
-  STATIC_CHECK(s1.contains(B{}));
-  STATIC_CHECK(s1.contains(C{}));
-  STATIC_CHECK(s1.contains(D{}));
-  STATIC_CHECK_FALSE(s1.contains(E{}));
-}
-
-TEST_CASE("meta::Set::includes") {
-  constexpr meta::Set<A, B, C, D> s1{};
-  STATIC_CHECK(s1.includes(s1));
-  STATIC_CHECK(s1.includes(meta::Set<A, B, C, D>{}));
-  STATIC_CHECK(s1.includes(meta::Set<A, B, C>{}));
-  STATIC_CHECK_FALSE(s1.includes(meta::Set<E, F>{}));
-  STATIC_CHECK_FALSE(s1.includes(meta::Set<A, F>{}));
-}
-
-TEST_CASE("meta::Set::find") {
-  constexpr meta::Set<A, B, C, D> s1{};
-  STATIC_CHECK(s1.find(A{}) == 0);
-  STATIC_CHECK(s1.find(B{}) == 1);
-  STATIC_CHECK(s1.find(C{}) == 2);
-  STATIC_CHECK(s1.find(D{}) == 3);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 TEST_CASE("meta::Set::operator==") {
   constexpr meta::Set<A, B, C, D> s1{};
   constexpr meta::Set<B, C, D, A> s2{};
