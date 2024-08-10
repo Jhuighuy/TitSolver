@@ -18,6 +18,7 @@
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
+#include "tit/sph/particle_mesh.hpp"
 
 namespace tit::sph::fsi {
 
@@ -102,22 +103,21 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray>
-    requires (has<ParticleArray>(required_fields))
+  template<particle_array<required_fields> ParticleArray>
   constexpr void init(ParticleArray& /*particles*/) const {
     // Nothing to do here.
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray, class ParticleAdjacency>
-  constexpr auto index(ParticleArray& particles,
-                       ParticleAdjacency& adjacent_particles) const {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr auto index(ParticleMesh& mesh, ParticleArray& particles) const {
     // In Total Lagrangian SPH reference state is captured just once.
     if (initialized_) return;
     initialized_ = true;
     using PV = ParticleView<ParticleArray>;
-    adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
+    mesh.build(particles, [&](PV a) { return kernel_.radius(a); });
     // Store the reference state.
     par::for_each(particles.all(), [](PV a) {
       /// Store initial particle positions.
@@ -126,7 +126,7 @@ public:
       L[a] = {};
     });
     // Compute kernel gradient renormalization matrix.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [&](auto ab) {
       const auto [a, b] = ab;
       const auto grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
       const auto V0_a = m[a] / rho[a];
@@ -146,21 +146,21 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute density-related fields.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void compute_density(
-      ParticleArray& /*particles*/,
-      ParticleAdjacency& /*adjacent_particles*/) const {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_density(ParticleMesh& /*mesh*/,
+                                 ParticleArray& /*particles*/
+  ) const {
     // Nothing to do here.
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute velocity related fields.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void compute_forces(ParticleArray& particles,
-                                ParticleAdjacency& adjacent_particles) const {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_forces(ParticleMesh& mesh,
+                                ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
     par::for_each(particles.all(), [this](PV a) {
@@ -171,7 +171,7 @@ public:
       cs[a] = eos_.sound_speed(a);
     });
     // Compute tensor of deformation gradient and artificial viscous force.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [&](auto ab) {
       const auto [a, b] = ab;
       const auto grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
       const auto V0_a = m[a] / rho[a];
@@ -206,7 +206,7 @@ public:
       dv_dt[a] = J_a * F_invT_a * dv_dt[a];
     });
     // Compute velocity time derivative.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [&](auto ab) {
       const auto [a, b] = ab;
       const auto grad0_W_ab = kernel_.grad(r_0[a, b], h[a]);
       /// Update velocity time derivative.

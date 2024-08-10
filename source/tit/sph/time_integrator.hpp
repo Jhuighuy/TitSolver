@@ -14,6 +14,7 @@
 
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
+#include "tit/sph/particle_mesh.hpp"
 
 namespace tit::sph {
 
@@ -36,11 +37,9 @@ public:
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /// Make a step in time.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void step(real_t dt,
-                      ParticleArray& particles,
-                      ParticleAdjacency& adjacent_particles) {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void step(real_t dt, ParticleMesh& mesh, ParticleArray& particles) {
     TIT_PROFILE_SECTION("EulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
     // Initialize and index particles.
@@ -50,10 +49,10 @@ public:
     }
     if (step_index_ % adjacency_recalc_freq_ == 0) {
       // Update particle adjacency.
-      equations_.index(particles, adjacent_particles);
+      equations_.index(mesh, particles);
     }
     // Integrate particle density.
-    equations_.compute_density(particles, adjacent_particles);
+    equations_.compute_density(mesh, particles);
     if constexpr (has<PV>(drho_dt)) {
       par::for_each(particles.all(), [dt](PV a) {
         if (fixed[a]) return;
@@ -61,7 +60,7 @@ public:
       });
     }
     // Integrate particle velocty (internal enegry, and rest).
-    equations_.compute_forces(particles, adjacent_particles);
+    equations_.compute_forces(mesh, particles);
     par::for_each(particles.all(), [dt](PV a) {
       if (fixed[a]) return;
       // Velocity is updated first, so the integrator is semi-implicit.
@@ -106,11 +105,9 @@ public:
         adjacency_recalc_freq_{adjacency_recalc_freq} {}
 
   /// Make a step in time.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void step(real_t dt,
-                      ParticleArray& particles,
-                      ParticleAdjacency& adjacent_particles) {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void step(real_t dt, ParticleMesh& mesh, ParticleArray& particles) {
     // Initialize and index particles.
     if (step_index_ == 0) {
       // Initialize particles.
@@ -118,14 +115,14 @@ public:
     }
     if (step_index_ % adjacency_recalc_freq_ == 0) {
       // Update particle adjacency.
-      equations_.index(particles, adjacent_particles);
+      equations_.index(mesh, particles);
     }
 #if 1
     // Do an explicit Euler substep.
     const auto substep = [&](auto& _particles) {
       // Calculate right hand sides for the given particle array.
-      equations_.compute_density(_particles, adjacent_particles);
-      equations_.compute_forces(_particles, adjacent_particles);
+      equations_.compute_density(mesh, _particles);
+      equations_.compute_forces(mesh, _particles);
       // Integrate.
       par::for_each(_particles.all(), [dt]<class PV>(PV a) {
         if (fixed[a]) return;
@@ -151,7 +148,7 @@ public:
           [&out_particles, wa, wb]<class PV>(PV a) {
             if (fixed[a]) return;
             auto out_a = out_particles[a.index()];
-            if constexpr (has<PV>(rho) && !has_const<PV>(rho)) {
+            if constexpr (has<PV>(rho) && !has_uniform<PV>(rho)) {
               rho[out_a] = wa * rho[a] + wb * rho[out_a];
             }
             v[out_a] = wa * v[a] + wb * v[out_a];

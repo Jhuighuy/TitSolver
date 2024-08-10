@@ -9,6 +9,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
+#include "tit/core/meta.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 
@@ -16,6 +17,8 @@
 #include "tit/sph/fsi.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
+#include "tit/sph/particle_array_io.hpp"
+#include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,9 +68,11 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
                           // Fields that are required by the equations.
                           decltype(timeint)::required_fields,
                           // Set of whole system constants.
-                          m, // Particle mass assumed constant.
-                          h, // Particle width assumed constant.
-                          rho};
+                          meta::Set{
+                              m, // Particle mass assumed constant.
+                              h, // Particle width assumed constant.
+                              rho,
+                          }};
 
   // Generate individual particles.
   auto num_fixed_particles = 0;
@@ -90,10 +95,10 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   m[particles] = m_0;
   h[particles] = h_0;
 
-  // Setup the particle adjacency structure.
-  auto adjacent_particles = ParticleAdjacency{particles, geom::KDTreeFactory{}};
+  // Setup the particle mesh structure.
+  ParticleMesh mesh{geom::KDTreeFactory{}};
 
-  particles.print("output/test_output/particles-0.csv");
+  print_csv(particles, "output/test_output/particles-0.csv");
   my_system("ln -sf output/test_output/particles-0.csv particles.csv");
 
   Real time{};
@@ -107,20 +112,20 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
             printtime.cycle());
     {
       const StopwatchCycle cycle{exectime};
-      timeint.step(dt, particles, adjacent_particles);
+      timeint.step(dt, mesh, particles);
     }
     if (n % 200 == 0 && n != 0) {
       const StopwatchCycle cycle{printtime};
       const auto path =
           std::format("output/test_output/particles-{}.csv", n / 200);
-      particles.print(path);
+      print_csv(particles, path);
       my_system(("ln -sf ./" + path + " particles.csv").c_str());
     }
     if (time * sqrt(g / H) > 6.90e+6) break;
     time += dt;
   }
 
-  particles.print("particles-dam.csv");
+  print_csv(particles, "particles-dam.csv");
 
   return 0;
 }

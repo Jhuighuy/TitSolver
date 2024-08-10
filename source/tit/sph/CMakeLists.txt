@@ -15,6 +15,8 @@ add_tit_library(
     "fsi.hpp"
     "kernel.hpp"
     "particle_array.hpp"
+    "particle_array_io.hpp"
+    "particle_mesh.hpp"
     "time_integrator.hpp"
   DEPENDS
     tit::core
