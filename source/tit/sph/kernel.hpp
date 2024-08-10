@@ -16,6 +16,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
+#include "tit/sph/particle_array.hpp"
 
 #ifndef TIT_BRANCHLESS_KERNELS
 #define TIT_BRANCHLESS_KERNELS 1
@@ -35,67 +36,64 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Support radius for particle.
-  template<class PV>
-    requires (has<PV>(required_fields))
+  template<particle_view<required_fields> PV>
   constexpr auto radius(this auto& self, PV a) noexcept {
     return self.radius(h[a]);
   }
 
   /// Value of the smoothing kernel for two particles.
   /// @{
-  template<class PV>
-    requires (has<PV>(required_fields) && has_const<PV>(h))
+  template<particle_view<required_fields> PV>
   constexpr auto operator()(this auto& self, PV a, PV b) noexcept {
+    static_assert(has_uniform<PV>(h));
     return self(r[a, b], h[a]);
   }
-  template<class PV, class Num>
-    requires (has<PV>(required_fields) && !has_const<PV>(h))
-  constexpr auto operator()(this auto& self, PV a, PV b, Num h) noexcept {
-    return self(r[a, b], h);
+  template<particle_view<required_fields> PV>
+  constexpr auto operator()(this auto& self, PV a, PV b, auto h_ab) noexcept {
+    static_assert(!has_uniform<PV>(h));
+    return self(r[a, b], h_ab);
   }
   /// @}
 
   /// Directional derivative of the smoothing kernel for two particles.
   /// @{
-  template<class PV>
-    requires (has<PV>(required_fields) && has_const<PV>(h))
+  template<particle_view<required_fields> PV>
   constexpr auto deriv(this auto& self, PV a, PV b) noexcept {
+    static_assert(has_uniform<PV>(h));
     return self.deriv(r[a, b], h[a]);
   }
-  template<class PV, class Num>
-    requires (has<PV>(required_fields) && !has_const<PV>(h))
-  constexpr auto deriv(this auto& self, PV a, PV b, Num h) noexcept {
-    return self.deriv(r[a, b], h);
+  template<particle_view<required_fields> PV>
+  constexpr auto deriv(this auto& self, PV a, PV b, auto h_ab) noexcept {
+    static_assert(!has_uniform<PV>(h));
+    return self.deriv(r[a, b], h_ab);
   }
   /// @}
 
   /// Value of the smoothing kernel for two particles.
   /// @{
-  template<class PV>
-    requires (has<PV>(required_fields) && has_const<PV>(h))
+  template<particle_view<required_fields> PV>
   constexpr auto grad(this auto& self, PV a, PV b) noexcept {
+    static_assert(has_uniform<PV>(h));
     return self.grad(r[a, b], h[a]);
   }
-  template<class PV, class Num>
-    requires (has<PV>(required_fields) && !has_const<PV>(h))
-  constexpr auto grad(this auto& self, PV a, PV b, Num h) noexcept {
-    return self.grad(r[a, b], h);
+  template<particle_view<required_fields> PV>
+  constexpr auto grad(this auto& self, PV a, PV b, auto h_ab) noexcept {
+    static_assert(!has_uniform<PV>(h));
+    return self.grad(r[a, b], h_ab);
   }
   /// @}
 
   /// Width derivative of the smoothing kernel for two points.
   /// @{
-  template<class PV>
-    requires (has<PV>(required_fields) && has_const<PV>(h))
-  constexpr auto width_deriv(this auto& self, //
-                             PV a,
-                             PV b) noexcept {
+  template<particle_view<required_fields> PV>
+  constexpr auto width_deriv(this auto& self, PV a, PV b) noexcept {
+    static_assert(has_uniform<PV>(h));
     return self.width_deriv(r[a, b], h[a]);
   }
-  template<class PV, class Num>
-    requires (has<PV>(required_fields) && !has_const<PV>(h))
-  constexpr auto width_deriv(this auto& self, PV a, PV b, Num h) noexcept {
-    return self.width_deriv(r[a, b], h);
+  template<particle_view<required_fields> PV>
+  constexpr auto width_deriv(this auto& self, PV a, PV b, auto h_ab) noexcept {
+    static_assert(!has_uniform<PV>(h));
+    return self.width_deriv(r[a, b], h_ab);
   }
   /// @}
 

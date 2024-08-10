@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <type_traits>
 #include <utility>
 
@@ -19,111 +20,92 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace impl {
+
 template<class PV>
-concept has_fields_ =
+concept with_fields_ =
     requires { std::remove_cvref_t<PV>::fields; } && //
     meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::fields))>;
 
-template<class PV>
-concept has_constants_ =
-    requires { std::remove_cvref_t<PV>::constants; } && //
-    meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::constants))>;
+template<class PV, class Field>
+concept has_field_ = with_fields_<PV> && meta::type<Field> &&
+                     std::remove_cvref_t<PV>::fields.contains(Field{});
 
-/// Check particle fields presence.
-/// @{
-template<has_fields_ PV, meta::type... Fields>
-consteval auto has(meta::Set<Fields...> fields) -> bool {
-  return std::remove_cvref_t<PV>::fields.includes(fields);
-}
-template<has_fields_ PV, meta::type... Fields>
-consteval auto has(Fields... fields) -> bool {
-  return has<PV>(meta::Set{fields...});
-}
-template<has_fields_ PV, meta::type... Fields>
-consteval auto has() -> bool {
-  return has<PV>(Fields{}...);
-}
-/// @}
-
-/// Check particle constant presence.
-/// @{
-template<has_fields_ PV, meta::type... Consts>
-consteval auto has_const(meta::Set<Consts...> consts) -> bool {
-  if constexpr (!has_constants_<PV>) return false;
-  else {
-    return has<PV>(consts) &&
-           std::remove_cvref_t<PV>::constants.includes(consts);
-  }
-}
-template<has_fields_ PV, meta::type... Consts>
-consteval auto has_const(Consts... consts) -> bool {
-  return has_const<PV>(meta::Set{consts...});
-}
-template<has_fields_ PV, meta::type... Consts>
-consteval auto has_const() -> bool {
-  return has_const<PV>(Consts{}...);
-}
-/// @}
+} // namespace impl
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Abstract class for fields specification.
-template<class field_t>
-class Field {
+/// Base field specification.
+class BaseField {
 public:
 
   /// Field value for the specified particle view.
-  template<has_fields_ PV>
-    requires (has<PV, field_t>())
-  constexpr auto operator[](PV&& a) const noexcept -> decltype(auto) {
-    return std::forward<PV>(a)[field_t{}];
+  template<class Self, impl::has_field_<Self> PV>
+  constexpr auto operator[](this const Self& self,
+                            PV&& a) noexcept -> decltype(auto) {
+    return std::forward<PV>(a)[self];
   }
 
   /// Field value for the specified particle view or default value.
-  template<has_fields_ PV>
-  constexpr auto get(PV&& a, auto default_) const noexcept {
-    if constexpr (has<PV, field_t>()) return std::forward<PV>(a)[field_t{}];
-    else return default_;
+  template<class Self, impl::with_fields_ PV, class Default>
+  constexpr auto get(this const Self& self,
+                     PV&& a,
+                     Default&& default_val) noexcept -> decltype(auto) {
+    if constexpr (impl::has_field_<PV, Self>) return std::forward<PV>(a)[self];
+    else return std::forward<Default>(default_val);
   }
 
   /// Field value delta for the specified particle view.
-  template<has_fields_ PV>
-    requires (has<PV, field_t>())
-  constexpr auto operator[](PV&& a, PV&& b) const noexcept {
-    return std::forward<PV>(a)[field_t{}] - std::forward<PV>(b)[field_t{}];
+  template<class Self, impl::has_field_<Self> PV>
+  constexpr auto operator[](this const Self& self, PV&& a, PV&& b) noexcept {
+    return std::forward<PV>(a)[self] - std::forward<PV>(b)[self];
   }
 
   /// Average of the field values over the specified particle views.
-  // TODO: here we should check for all `PVs` types to be the same and avoid
-  // averaging if the current field is const.
-  template<has_fields_... PVs>
-    requires (... && has<PVs, field_t>())
-  constexpr auto avg(PVs&&... ai) const noexcept {
-    // Namespace prefix is a must here to avoid recursion.
-    return tit::avg(std::forward<PVs>(ai)[field_t{}]...);
+  ///
+  /// @todo Here we should check for all `PVs` types to be the same and avoid
+  ///       averaging when the current field is const.
+  template<class Self, impl::has_field_<Self>... PVs>
+  constexpr auto avg(this const Self& self, PVs&&... ai) {
+    return tit::avg(std::forward<PVs>(ai)[self]...);
   }
 
   /// Weighted average of the field values over the specified particle views.
-  template<has_fields_... PVs>
-    requires (... && has<PVs, field_t>())
-  constexpr auto wavg(PVs&&... ai) const noexcept {
-    // Namespace prefix is a must here to avoid recursion.
-    return tit::avg(std::forward<PVs>(ai)[field_t{}]...);
+  template<class Self, impl::has_field_<Self>... PVs>
+  constexpr auto wavg(this const Self& self, PVs&&... ai) {
+    return tit::avg(std::forward<PVs>(ai)[self]...);
   }
 
   /// Harmonic average of the field values over the specified particle views.
-  template<has_fields_... PVs>
-    requires (... && has<PVs, field_t>())
-  constexpr auto havg(PVs&&... ai) const noexcept {
-    // Namespace prefix is a must here to avoid recursion.
-    return tit::havg(std::forward<PVs>(ai)[field_t{}]...);
+  template<class Self, impl::has_field_<Self>... PVs>
+  constexpr auto havg(this const Self& self, PVs&&... ai) {
+    return tit::havg(std::forward<PVs>(ai)[self]...);
   }
 
-}; // class Field
+}; // class BaseField
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Field specification type.
+template<class Field>
+concept field = meta::type<Field> && std::derived_from<Field, BaseField>;
+
+namespace impl {
+template<class FieldSet>
+inline constexpr bool is_field_set_v = false;
+template<field... Fields>
+inline constexpr bool is_field_set_v<meta::Set<Fields...>> = true;
+} // namespace impl
+
+/// Field set specification type.
+template<class FieldSet>
+concept field_set = impl::is_field_set_v<FieldSet>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Declare a particle field.
 #define TIT_DEFINE_FIELD(type, name, ...)                                      \
-  class name##_t final : public Field<name##_t> {                              \
+  class name##_t final : public BaseField {                                    \
   public:                                                                      \
                                                                                \
     /** Field name. */                                                         \
@@ -152,10 +134,34 @@ public:
 template<meta::type Field>
 inline constexpr auto field_name_v = std::remove_cvref_t<Field>::field_name;
 
-/// Field type.
+/// Space specification.
+/// @todo We shall think more about the concept of space.
+template<class Num, size_t Dim>
+struct Space {};
+
+namespace impl {
+template<class T>
+struct is_space : std::false_type {};
+template<class Num, size_t Dim>
+struct is_space<Space<Num, Dim>> : std::true_type {};
+} // namespace impl
+
+/// Space type.
+template<class S>
+concept space = impl::is_space<S>::value;
+
+template<meta::type Field, class Space>
+struct field_value;
+
 template<meta::type Field, class Real, size_t Dim>
-using field_value_type_t =
-    typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
+struct field_value<Field, Space<Real, Dim>> {
+  using type =
+      typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
+};
+
+/// Field value type.
+template<meta::type Field, class Space>
+using field_value_t = typename field_value<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

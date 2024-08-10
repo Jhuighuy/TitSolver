@@ -18,6 +18,7 @@
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
+#include "tit/sph/particle_mesh.hpp"
 
 namespace tit::sph {
 
@@ -55,8 +56,7 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray>
-    requires (has<ParticleArray>(required_fields))
+  template<particle_array<required_fields> ParticleArray>
   constexpr void init(ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::init()");
     using PV = ParticleView<ParticleArray>;
@@ -70,25 +70,26 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<class ParticleArray, class ParticleAdjacency>
-  constexpr auto index([[maybe_unused]] ParticleArray& particles,
-                       ParticleAdjacency& adjacent_particles) const {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr auto index(ParticleMesh& mesh,
+                       [[maybe_unused]] ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    adjacent_particles.build([&](PV a) { return kernel_.radius(a); });
+    mesh.build(particles, [&](PV a) { return kernel_.radius(a); });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Setup boundary particles.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
   constexpr void setup_boundary(
-      [[maybe_unused]] ParticleArray& particles,
-      [[maybe_unused]] ParticleAdjacency& adjacent_particles) const {
+      [[maybe_unused]] ParticleMesh& mesh,
+      [[maybe_unused]] ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
 #if WITH_WALLS
     using PV = ParticleView<ParticleArray>;
-    par::for_each(adjacent_particles._fixed(), [&](auto ia) {
+    par::for_each(mesh._fixed(particles), [&](auto ia) {
       auto [i, a] = ia;
       const auto search_point = a[r];
       const auto clipped_point = Domain.clamp(search_point);
@@ -96,7 +97,7 @@ public:
       real_t S = {};
       Mat<real_t, 3> M{};
       constexpr auto SCALE = 3;
-      std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
+      std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
         const auto r_ab = r_a - r[b];
         const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
         const auto W_ab = kernel_(r_ab, SCALE * h[a]);
@@ -109,7 +110,7 @@ public:
         auto E = fact->solve(e);
         rho[a] = {};
         v[a] = {};
-        std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
+        std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
           const auto r_ab = r_a - r[b];
           const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
           auto W_ab = dot(E, B_ab) * kernel_(r_ab, SCALE * h[a]);
@@ -119,7 +120,7 @@ public:
       } else if (!is_tiny(S)) {
         rho[a] = {};
         v[a] = {};
-        std::ranges::for_each(adjacent_particles[nullptr, i], [&](PV b) {
+        std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
           const auto r_ab = r_a - r[b];
           auto W_ab = (1 / S) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
@@ -163,11 +164,11 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute density-related fields.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void compute_density(ParticleArray& particles,
-                                 ParticleAdjacency& adjacent_particles) const {
-    setup_boundary(particles, adjacent_particles);
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_density(ParticleMesh& mesh,
+                                 ParticleArray& particles) const {
+    setup_boundary(mesh, particles);
     TIT_PROFILE_SECTION("FluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
     // Clean density-related fields.
@@ -180,7 +181,7 @@ public:
       if constexpr (has<PV>(L)) L[a] = {};
     });
     // Compute auxiliary density fields.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
       [[maybe_unused]] const auto W_ab = kernel_(a, b);
       [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
@@ -220,7 +221,7 @@ public:
     // loop because some artificial viscosities (e.g. δ-SPH) require density
     // gradients (or renormalized density gradients).
     if constexpr (has<PV>(drho_dt)) {
-      par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
+      par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
         const auto [a, b] = ab;
         const auto grad_W_ab = kernel_.grad(a, b);
         const auto V_a = m[a] / rho[a];
@@ -237,10 +238,10 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute velocity related fields.
-  template<class ParticleArray, class ParticleAdjacency>
-    requires (has<ParticleArray>(required_fields))
-  constexpr void compute_forces(ParticleArray& particles,
-                                ParticleAdjacency& adjacent_particles) const {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void compute_forces(ParticleMesh& mesh,
+                                ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_forces()");
     using PV = ParticleView<ParticleArray>;
     // Prepare velocity-related fields.
@@ -253,7 +254,7 @@ public:
       if constexpr (has<PV>(curl_v)) curl_v[a] = {};
     });
     // Compute auxiliary velocity fields.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
       [[maybe_unused]] const auto W_ab = kernel_(a, b);
       [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
@@ -271,7 +272,7 @@ public:
       }
     });
     // Compute velocity and internal energy time derivatives.
-    par::block_for_each(adjacent_particles.block_pairs(), [&](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
       const auto grad_W_ab = kernel_.grad(a, b);
       // Convective updates.
