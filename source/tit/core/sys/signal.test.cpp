@@ -12,7 +12,7 @@
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
 
-#include "tit/core/system.hpp"
+#include "tit/core/sys.hpp"
 
 #include "tit/testing/test.hpp"
 

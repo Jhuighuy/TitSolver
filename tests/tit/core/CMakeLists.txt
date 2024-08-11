@@ -86,6 +86,25 @@ add_tit_test_from_target(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
+  NAME core_env_test
+  SOURCES "env.cpp"
+  DEPENDS tit::core
+)
+
+add_tit_test_from_target(
+  tit::core_env_test
+  NAME "tit/core/env"
+  ENVIRONMENT
+    "TEST_ZERO=0"
+    "TEST_INT=123"
+    "TEST_FLOAT=123.456"
+    "TEST_TRUE=TRUE"
+    "TEST_FALSE=false"
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
   NAME core_failed_check_test
   SOURCES "failed_check.cpp"
   DEPENDS tit::core
