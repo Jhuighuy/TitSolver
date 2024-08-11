@@ -67,6 +67,7 @@ set(
   -Wno-psabi
   # TODO: enable this warning later.
   -Wno-unused-result
+  -Wno-maybe-uninitialized
 )
 
 # Define common compile options.

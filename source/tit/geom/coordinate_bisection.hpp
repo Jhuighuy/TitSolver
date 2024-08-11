@@ -13,10 +13,11 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/mat.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
+
+#include "tit/geom/bbox.hpp"
 
 namespace tit::geom {
 
@@ -29,16 +30,16 @@ template<std::ranges::view Points, std::ranges::view Parts>
             is_vec_v<std::ranges::range_value_t<Points>>) &&
            (std::ranges::random_access_range<Parts> &&
             std::ranges::output_range<Parts, size_t>)
-class InertialBisection final {
+class CoordinateBisection final {
 public:
 
   /// Initialize and build the partitioning.
-  InertialBisection(Points points,
-                    Parts parts,
-                    size_t num_parts,
-                    size_t init_part = 0)
+  CoordinateBisection(Points points,
+                      Parts parts,
+                      size_t num_parts,
+                      size_t init_part = 0)
       : points_{std::move(points)}, parts_{std::move(parts)} {
-    TIT_PROFILE_SECTION("InertialBisection::InertialBisection()");
+    TIT_PROFILE_SECTION("CoordinateBisection::CoordinateBisection()");
     build_(num_parts, init_part);
   }
 
@@ -57,9 +58,9 @@ private:
   // Build the partitioning recursively.
   void build_(size_t num_parts, size_t init_part) {
     // Initialize identity permutation.
-    perm_ = std::views::iota(size_t{0}, std::size(points_)) |
-            std::ranges::to<std::vector>();
     parts_ranges_.resize(init_part + num_parts);
+    perm_.resize(std::size(points_));
+    std::ranges::copy(std::views::iota(size_t{0}, perm_.size()), perm_.begin());
 
     // Build the partitioning.
     par::TaskGroup tasks{};
@@ -80,39 +81,9 @@ private:
       return;
     }
 
-    // Compute the inertia tensor.
-    //
-    // Note: the true inertia tensor is ∑(rᵢ·rᵢI - rᵢ⊗rᵢ) where rᵢ is the
-    // position vector of the i-th point relative to the center of mass.
-    // Since the first term is a scalar multiple of the identity matrix, it
-    // does not affect the eigenvectors of the inertia tensor. Thus, we can
-    // simplify the computation to ∑(rᵢ⊗rᵢ) and seek for largest eigenvector
-    // of this matrix instead of the smallest eigenvector of the true inertia
-    // tensor.
-    //
-    /// @todo Introduce a helper function for this computation.
-    auto sum = points_[perm[0]];
-    auto inertia_tensor = outer_sqr(points_[perm[0]]);
-    for (const auto i : perm.subspan(1)) {
-      const auto& point = points_[i];
-      sum += point;
-      inertia_tensor += outer_sqr(point);
-    }
-    inertia_tensor -= outer(sum, sum / perm.size());
-
-    // Compute the inertia axis corresponding to the smallest principal inertia
-    // moment (the smallest eigenvalue of the true inertia tensor, or the
-    // largest eigenvalue of our simplified version).
-    const auto inertia_axis = //
-        jacobi(inertia_tensor)
-            // Axis of inertia is the largest eigenvector.
-            .transform([](const auto& eig) {
-              const auto& [V, d] = eig;
-              return V[max_value_index(d)];
-            })
-            // Fallback to a unit vector as an axis of inertia if
-            // the eigendecomposition fails.
-            .value_or(unit(points_[0]));
+    BBox box{points_[perm.front()]};
+    for (const auto i : perm | std::views::drop(1)) box.expand(points_[i]);
+    const auto cut_dim = max_value_index(box.extents());
 
     // Split the parts into halves.
     const auto left_num_parts = num_parts / 2;
@@ -125,8 +96,8 @@ private:
     std::ranges::nth_element( //
         perm,
         perm.begin() + static_cast<ssize_t>(median),
-        [&inertia_axis, this](size_t i, size_t j) {
-          return dot(inertia_axis, points_[i] - points_[j]) < 0;
+        [cut_dim, this](size_t i, size_t j) {
+          return points_[i][cut_dim] - points_[j][cut_dim] < 0;
         });
     const auto left_range = perm.subspan(0, median);
     const auto right_range = perm.subspan(median);
@@ -147,14 +118,12 @@ private:
   std::vector<size_t> perm_;
   std::vector<std::span<const size_t>> parts_ranges_;
 
-}; // class InertialBisection
+}; // class CoordinateBisection
 
 // Wrap a viewable range into a view on construction.
-template<std::ranges::viewable_range Points,
-         std::ranges::viewable_range Parts,
-         class... Args>
-InertialBisection(Points&&, Parts&&, Args...)
-    -> InertialBisection<std::views::all_t<Points>, std::views::all_t<Parts>>;
+template<class Points, class Parts, class... Args>
+CoordinateBisection(Points&&, Parts&&, Args...)
+    -> CoordinateBisection<std::views::all_t<Points>, std::views::all_t<Parts>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -58,6 +58,11 @@ public:
                              [](size_t a, size_t b) { return b - a; });
   }
 
+  /// Total amount of values.
+  constexpr auto total_size() const noexcept -> size_t {
+    return vals_.size();
+  }
+
   /// Is multivector empty?
   constexpr auto empty() const noexcept -> bool {
     return val_ranges_.size() == 1;
