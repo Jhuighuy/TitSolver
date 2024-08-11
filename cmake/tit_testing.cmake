@@ -78,9 +78,10 @@ function(add_tit_test)
 
   # Set test environment.
   if(TEST_ENVIRONMENT)
+    list(JOIN TEST_ENVIRONMENT ";" TEST_ENVIRONMENT)
     set_tests_properties(
       "${TEST_NAME}"
-      PROPERTIES ENVIRONMENT ${TEST_ENVIRONMENT}
+      PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}"
     )
   endif()
 endfunction()

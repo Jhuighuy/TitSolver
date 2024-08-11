@@ -3,41 +3,21 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+// IWYU pragma: private, include "tit/core/sys.hpp"
 #pragma once
 
-#include <cstdio>
 #include <initializer_list>
 #include <ranges>
-#include <tuple>
+#include <utility>
 #include <vector>
+
+namespace tit {
 
 #ifdef __APPLE__
 #include <sys/signal.h>
 #else
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
-
-#include "tit/core/basic_types.hpp"
-
-namespace tit {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// At-exit callback function.
-using atexit_callback_t = void (*)();
-
-/// Register a function to be called at exit.
-void safe_atexit(atexit_callback_t callback) noexcept;
-
-/// Exit from the current process.
-[[noreturn]]
-void exit(int exit_code) noexcept;
-
-/// Fast-exit from the current process.
-///
-/// @note No at-exit callbacks are triggered, except for coverage report.
-[[noreturn]]
-void fast_exit(int exit_code) noexcept;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -51,6 +31,8 @@ void safe_sigaction(int signal_number,
 
 /// Raise a signal.
 void safe_raise(int signal_number) noexcept;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Scoped signal handler.
 class SignalHandler {
@@ -88,7 +70,7 @@ protected:
 
 private:
 
-  std::vector<std::tuple<int, sigaction_t>> prev_actions_;
+  std::vector<std::pair<int, sigaction_t>> prev_actions_;
 
   static std::vector<SignalHandler*> handlers_;
   static void handle_signal_(int signal_number) noexcept;
@@ -110,13 +92,6 @@ protected:
   void on_signal(int signal_number) noexcept override;
 
 }; // class FatalSignalHandler
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Get terminal width.
-///
-/// @param stream The output stream to use for the width query.
-auto tty_width(std::FILE* stream) noexcept -> size_t;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
