@@ -36,7 +36,7 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      meta::Set{fixed, parinfo} | // TODO: fixed should not be here.
+      meta::Set{parinfo} | // TODO: parinfo should not be here.
 #if HARD_DAM_BREAKING
       meta::Set{v_xsph} |
 #endif
@@ -89,43 +89,42 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
 #if WITH_WALLS
     using PV = ParticleView<ParticleArray>;
-    par::for_each(mesh._fixed(particles), [&](auto ia) {
-      auto [i, a] = ia;
-      const auto search_point = a[r];
+    par::for_each(particles.fixed(), [&](PV a) {
+      const auto search_point = r[a];
       const auto clipped_point = Domain.clamp(search_point);
       const auto r_a = 2 * clipped_point - search_point;
       real_t S = {};
       Mat<real_t, 3> M{};
       constexpr auto SCALE = 3;
-      std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
+      for (const PV b : mesh.fixed_interp(a)) {
         const auto r_ab = r_a - r[b];
         const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
         const auto W_ab = kernel_(r_ab, SCALE * h[a]);
         S += W_ab * m[b] / rho[b];
         M += outer(B_ab, B_ab * W_ab * m[b] / rho[b]);
-      });
+      }
       const auto fact = ldl(M);
       if (fact) {
         Vec<real_t, 3> e{1.0, 0.0, 0.0};
         auto E = fact->solve(e);
         rho[a] = {};
         v[a] = {};
-        std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
+        for (const PV b : mesh.fixed_interp(a)) {
           const auto r_ab = r_a - r[b];
           const auto B_ab = Vec{1.0, r_ab[0], r_ab[1]};
           auto W_ab = dot(E, B_ab) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
-        });
+        }
       } else if (!is_tiny(S)) {
         rho[a] = {};
         v[a] = {};
-        std::ranges::for_each(mesh[nullptr, particles, i], [&](PV b) {
+        for (const PV b : mesh.fixed_interp(a)) {
           const auto r_ab = r_a - r[b];
           auto W_ab = (1 / S) * kernel_(r_ab, SCALE * h[a]);
           rho[a] += m[b] * W_ab;
           v[a] += m[b] / rho[b] * v[b] * W_ab;
-        });
+        }
       } else {
         goto fail;
       }
@@ -204,9 +203,7 @@ public:
       }
     });
     // Renormalize fields.
-    par::for_each(particles.all(), [](PV a) {
-      // Do not renormalize fixed particles.
-      if (fixed[a]) return;
+    par::for_each(particles.fluid(), [](PV a) {
       /// Renormalize density (if possible).
       if constexpr (has<PV>(S)) {
         if (!is_tiny(S[a])) rho[a] /= S[a];
@@ -323,8 +320,7 @@ public:
       }
 #endif
     });
-    par::for_each(particles.all(), [this](PV a) {
-      if (fixed[a]) return;
+    par::for_each(particles.fluid(), [this](PV a) {
 #if WITH_GRAVITY
       // TODO: Gravity.
       dv_dt[a][1] -= 9.81;

@@ -87,7 +87,7 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      meta::Set{fixed, parinfo} | // TODO: fixed should not be here.
+      meta::Set{parinfo} | // TODO: parinfo should not be here.
       meta::Set{h, m, rho, P, cs, r, r_0, v, dv_dt, L} |
       Kernel::required_fields | ArtificialViscosity::required_fields;
 
@@ -213,8 +213,7 @@ public:
       const auto v_flux = (P[a] + P[b]) * grad0_W_ab;
       dv_dt[a] += m[b] * v_flux, dv_dt[b] -= m[a] * v_flux;
     });
-    par::for_each(particles.all(), [](PV a) {
-      if (fixed[a]) return;
+    par::for_each(particles.fluid(), []([[maybe_unused]] PV a) {
 #if WITH_GRAVITY
       // TODO: Gravity.
       dv_dt[a][1] -= 9.81;

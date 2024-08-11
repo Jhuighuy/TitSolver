@@ -28,7 +28,7 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
+      meta::Set{r, v, dv_dt} | FluidEquations::required_fields;
 
   /// Construct time integrator.
   constexpr explicit EulerIntegrator(FluidEquations estimator = {},
@@ -54,15 +54,12 @@ public:
     // Integrate particle density.
     equations_.compute_density(mesh, particles);
     if constexpr (has<PV>(drho_dt)) {
-      par::for_each(particles.all(), [dt](PV a) {
-        if (fixed[a]) return;
-        rho[a] += dt * drho_dt[a];
-      });
+      par::for_each(particles.fluid(),
+                    [dt](PV a) { rho[a] += dt * drho_dt[a]; });
     }
     // Integrate particle velocty (internal enegry, and rest).
     equations_.compute_forces(mesh, particles);
-    par::for_each(particles.all(), [dt](PV a) {
-      if (fixed[a]) return;
+    par::for_each(particles.fluid(), [dt](PV a) {
       // Velocity is updated first, so the integrator is semi-implicit.
       v[a] += dt * dv_dt[a];
       if constexpr (has<PV>(v_xsph)) {
@@ -95,7 +92,7 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      meta::Set{fixed, r, v, dv_dt} | FluidEquations::required_fields;
+      meta::Set{r, v, dv_dt} | FluidEquations::required_fields;
 
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(
@@ -124,8 +121,7 @@ public:
       equations_.compute_density(mesh, _particles);
       equations_.compute_forces(mesh, _particles);
       // Integrate.
-      par::for_each(_particles.all(), [dt]<class PV>(PV a) {
-        if (fixed[a]) return;
+      par::for_each(_particles.fluid(), [dt]<class PV>(PV a) {
         if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
         if constexpr (has<PV>(v_xsph)) {
           // TODO: extract "0.5" to parameter epsilon.
@@ -144,9 +140,8 @@ public:
                             real_t wb,
                             auto& out_particles) {
       par::for_each( //
-          in_particles.all(),
+          in_particles.fluid(),
           [&out_particles, wa, wb]<class PV>(PV a) {
-            if (fixed[a]) return;
             auto out_a = out_particles[a.index()];
             if constexpr (has<PV>(rho) && !has_uniform<PV>(rho)) {
               rho[out_a] = wa * rho[a] + wb * rho[out_a];
