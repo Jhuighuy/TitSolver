@@ -91,6 +91,7 @@ add_tit_executable(
     "simd/mask.test.cpp"
     "simd/reg.test.cpp"
     "simd/reg_mask.test.cpp"
+    "string_utils.test.cpp"
     "system.test.cpp"
     "time.test.cpp"
     "type_traits.test.cpp"
