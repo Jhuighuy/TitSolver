@@ -75,7 +75,7 @@ public:
   constexpr auto index(ParticleMesh& mesh,
                        [[maybe_unused]] ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    mesh.build(particles, [&](PV a) { return kernel_.radius(a); });
+    mesh.update(particles, [&](PV a) { return kernel_.radius(a); });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

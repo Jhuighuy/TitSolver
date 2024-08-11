@@ -117,7 +117,7 @@ public:
     if (initialized_) return;
     initialized_ = true;
     using PV = ParticleView<ParticleArray>;
-    mesh.build(particles, [&](PV a) { return kernel_.radius(a); });
+    mesh.update(particles, [&](PV a) { return kernel_.radius(a); });
     // Store the reference state.
     par::for_each(particles.all(), [](PV a) {
       /// Store initial particle positions.
