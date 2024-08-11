@@ -14,48 +14,17 @@
 
 #include <execinfo.h>
 #include <signal.h> // NOLINT(*-deprecated-headers)
-#include <stdio.h>  // NOLINT(*-deprecated-headers)
 #include <sys/ioctl.h>
 #ifdef __APPLE__
 #include <sys/signal.h>
-#include <sys/ttycom.h>
 #endif
 #include <unistd.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/system.hpp"
-
-#ifndef TIT_HAVE_GCOV
-#define TIT_HAVE_GCOV 0
-#endif
-
-#if TIT_HAVE_GCOV
-extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
-#endif
+#include "tit/core/sys/exit.hpp"
+#include "tit/core/sys/signal.hpp"
 
 namespace tit {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-void safe_atexit(atexit_callback_t callback) noexcept {
-  TIT_ASSERT(callback != nullptr, "At-exit callback is invalid!");
-  const auto status = std::atexit(callback);
-  TIT_ENSURE(status == 0, "Unable to register at-exit callback!");
-}
-
-[[noreturn]]
-void exit(int exit_code) noexcept {
-  std::exit(exit_code); // NOLINT(concurrency-mt-unsafe)
-}
-
-[[noreturn]]
-void fast_exit(int exit_code) noexcept {
-#if TIT_HAVE_GCOV
-  __gcov_dump();
-#endif
-  std::_Exit(exit_code);
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -73,6 +42,8 @@ void safe_raise(int signal_number) noexcept {
   const auto status = raise(signal_number);
   TIT_ENSURE(status == 0, "Failed to raise a signal.");
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 std::vector<SignalHandler*> SignalHandler::handlers_{};
 
@@ -185,18 +156,6 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
     dump_backtrace();
     fast_exit(1);
   }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto tty_width(std::FILE* stream) noexcept -> size_t {
-  const auto stream_fileno = fileno(stream);
-  if (isatty(stream_fileno) == 0) return 80; // Redirected.
-  struct winsize window_size = {};
-  // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
-  const auto status = ioctl(stream_fileno, TIOCGWINSZ, &window_size);
-  TIT_ENSURE(status == 0, "Unable to query terminal window size!");
-  return window_size.ws_col;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

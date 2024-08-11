@@ -14,7 +14,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/io.hpp"
-#include "tit/core/system.hpp"
+#include "tit/core/sys.hpp"
 
 namespace tit {
 

@@ -16,7 +16,7 @@
 #include "tit/core/io.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/string_utils.hpp"
-#include "tit/core/system.hpp"
+#include "tit/core/sys.hpp"
 #include "tit/core/time.hpp"
 
 namespace tit {

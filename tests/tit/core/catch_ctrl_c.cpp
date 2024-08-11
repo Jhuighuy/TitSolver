@@ -7,7 +7,7 @@
 
 #include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/system.hpp"
+#include "tit/core/sys.hpp"
 
 namespace tit {
 namespace {
