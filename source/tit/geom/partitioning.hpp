@@ -8,8 +8,7 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // IWYU pragma: begin_exports
-#include "tit/geom/grid.hpp"
-#include "tit/geom/kd_tree.hpp"
+#include "tit/geom/inertial_bisection.hpp"
 // IWYU pragma: end_exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,10 +17,9 @@
 
 namespace tit::geom {
 
-/// Search factory type.
-template<class SF>
-concept search_factory =
-    std::same_as<SF, GridFactory> || std::same_as<SF, KDTreeFactory>;
+/// Partitioning factory type.
+template<class PF>
+concept partitioning_factory = std::same_as<PF, InertialBisectionFactory>;
 
 } // namespace tit::geom
 

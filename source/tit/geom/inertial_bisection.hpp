@@ -15,6 +15,7 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/type_traits.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit::geom {
@@ -139,6 +140,26 @@ template<std::ranges::viewable_range Points,
          class... Args>
 InertialBisection(Points&&, Parts&&, Args...)
     -> InertialBisection<std::views::all_t<Points>, std::views::all_t<Parts>>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Inertial bisection partitioning factory.
+class InertialBisectionFactory {
+public:
+
+  /// Produce an inertial bisection partitioning.
+  template<std::ranges::viewable_range Points,
+           std::ranges::viewable_range Parts>
+    requires deduce_constructible_from<InertialBisection, Points, Parts, size_t>
+  constexpr auto operator()(Points&& points,
+                            Parts&& parts,
+                            size_t num_parts) const {
+    return InertialBisection{std::forward<Points>(points),
+                             std::forward<Parts>(parts),
+                             num_parts};
+  }
+
+}; // class InertialBisectionFactory
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

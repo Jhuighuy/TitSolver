@@ -11,6 +11,7 @@ add_tit_library(
     "grid.hpp"
     "inertial_bisection.hpp"
     "kd_tree.hpp"
+    "partitioning.hpp"
     "search.hpp"
     "sfc_sort.hpp"
   DEPENDS

@@ -172,7 +172,7 @@ public:
   /// Produce a multidimensional grid for the specified set of points.
   template<std::ranges::viewable_range Points>
     requires deduce_constructible_from<Grid, Points&&, real_t>
-  constexpr auto operator()(Points&& points) const noexcept {
+  constexpr auto operator()(Points&& points) const {
     return Grid{std::forward<Points>(points), size_hint_};
   }
 

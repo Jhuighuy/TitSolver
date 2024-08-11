@@ -244,7 +244,7 @@ public:
   /// Produce a K-dimensional tree for the specified set of points.
   template<std::ranges::viewable_range Points>
     requires deduce_constructible_from<KDTree, Points&&, size_t>
-  constexpr auto operator()(Points&& points) const noexcept {
+  constexpr auto operator()(Points&& points) const {
     return KDTree{std::forward<Points>(points), max_leaf_size_};
   }
 
