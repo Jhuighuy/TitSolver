@@ -9,7 +9,7 @@
 #include <iterator>
 #include <ranges>
 #include <tuple>
-#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -23,7 +23,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
-#include "tit/geom/inertial_bisection.hpp"
+#include "tit/geom/partitioning.hpp"
 #include "tit/geom/search.hpp"
 
 #include "tit/sph/field.hpp"
@@ -45,141 +45,181 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle adjacency graph.
-template<class EngineFactory = geom::GridFactory>
-  requires std::is_object_v<EngineFactory>
+template<geom::search_factory SearchFactory = geom::GridFactory,
+         geom::partitioning_factory PartitioningFactory =
+             geom::InertialBisectionFactory>
 class ParticleMesh final {
 public:
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   /// Construct a particle adjacency graph.
   ///
-  /// @param engine_factory Nearest-neighbors search engine factory.
-  constexpr explicit ParticleMesh(EngineFactory engine_factory = {}) noexcept
-      : engine_factory_{std::move(engine_factory)} {}
-
-  /// Build an adjacency graph.
-  ///
-  /// @param radius_func Function that returns search radius for the
-  ///                    specified particle view.
-  template<class ParticleArray, class SearchRadiusFunc>
-  constexpr void build(ParticleArray& particles,
-                       const SearchRadiusFunc& radius_func) {
-    TIT_PROFILE_SECTION("ParticleAdjacency::build()");
-    using PV = ParticleView<ParticleArray>;
-    // -------------------------------------------------------------------------
-    // STEP I: neighbors search.
-    const auto positions = particles[r];
-    {
-      TIT_PROFILE_SECTION("ParticleAdjacency::search()");
-      const auto engine = engine_factory_(positions);
-      // -----------------------------------------------------------------------
-      static std::vector<std::vector<size_t>> adj_vov{};
-      adj_vov.resize(particles.size());
-      par::for_each(particles.all(), [&radius_func, &engine](PV a) {
-        const auto search_point = r[a];
-        const auto search_radius = radius_func(a);
-        TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
-        auto& search_results = adj_vov[a.index()];
-        search_results.clear();
-        engine.search(search_point,
-                      search_radius,
-                      std::back_inserter(search_results));
-      });
-      adjacency_.clear();
-      for (const auto& adj : adj_vov) adjacency_.push_back(adj);
-      adjacency_.sort();
-      // -----------------------------------------------------------------------
-      static std::vector<std::vector<size_t>> interp_adj_vov{};
-      interp_adj_vov.resize(particles.fixed().size());
-      par::for_each(
-          std::views::enumerate(particles.fixed()),
-          [&radius_func, &engine, &particles](auto ia) {
-            auto [i, a] = ia;
-            const auto search_point = r[a];
-            const auto search_radius = 3 * radius_func(a);
-            const auto clipped_point = Domain.clamp(search_point);
-            const auto interp_point = 2 * clipped_point - search_point;
-            auto& search_results = interp_adj_vov[i];
-            search_results.clear();
-            engine.search(interp_point,
-                          search_radius,
-                          std::back_inserter(search_results));
-            std::erase_if(search_results, [&particles](size_t b_index) {
-              return particles.has_type(b_index, ParticleType::fixed);
-            });
-          });
-      interp_adjacency_.clear();
-      for (const auto& adj : interp_adj_vov) interp_adjacency_.push_back(adj);
-      interp_adjacency_.sort();
-    }
-    // -------------------------------------------------------------------------
-    // STEP II: partitioning.
-    size_t nparts = par::num_threads();
-    const auto parts = particles[parinfo];
-    auto partitioner = geom::InertialBisection(positions, parts, nparts);
-    // -------------------------------------------------------------------------
-    // STEP III: assembly.
-    nparts += 1; // since we have the leftover
-    block_adjacency_.assemble_wide(nparts, adjacency_.edges(), [&](auto ij) {
-      auto [i, j] = ij;
-      return parts[i] == parts[j] ? parts[i] : (nparts - 1);
-    });
-    {
-      // Finalize color ranges.
-      eprint("NCOL: ");
-      for (size_t i = 0; i < block_adjacency_.size(); ++i) {
-        eprint("{} ", block_adjacency_[i].size());
-      }
-      eprint("\n");
-    }
-  }
+  /// @param search_factory Nearest-neighbors search factory.
+  /// @param partitioning_factory Geometry partitioning factory.
+  constexpr explicit ParticleMesh(SearchFactory search_factory = {},
+                                  PartitioningFactory partitioning_factory = {})
+      : search_factory_{std::move(search_factory)},
+        partitioning_factory_{std::move(partitioning_factory)} {}
 
   /// Adjacent particles.
-  template<class PV>
+  template<particle_view PV>
   constexpr auto operator[](PV a) const noexcept {
-    return std::views::all(adjacency_[a.index()]) |
+    auto& particles = a.array();
+    return adjacency_[a.index()] |
            std::views::transform(
-               [a](size_t b_index) { return a.array()[b_index]; });
+               [&particles](size_t b) { return particles[b]; });
   }
 
-  /// Adjacent fixed particles.
-  template<class PV>
+  /// Particles used for interpolation for the fixed particles.
+  template<particle_view PV>
   constexpr auto fixed_interp(PV a) const noexcept {
     TIT_ASSERT(a.has_type(ParticleType::fixed),
                "Particle must be of the fixed type!");
-    const auto i = a - *a.array().fixed().begin();
-    return std::views::all(interp_adjacency_[i]) |
+    auto& particles = a.array();
+    const size_t i = a - *particles.fixed().begin();
+    return interp_adjacency_[i] | //
            std::views::transform(
-               [a](size_t b_index) { return a.array()[b_index]; });
+               [&particles](size_t b) { return particles[b]; });
   }
 
   /// Unique pairs of the adjacent particles.
-  template<class ParticleArray>
+  template<particle_array ParticleArray>
   constexpr auto pairs(ParticleArray& particles) const noexcept {
-    return std::views::all(adjacency_.edges()) |
-           std::views::transform([&particles](auto ab_indices) {
-             const auto [a_index, b_index] = ab_indices;
-             return std::tuple{particles[a_index], particles[b_index]};
+    return adjacency_.edges() | std::views::transform([&particles](auto ab) {
+             const auto [a, b] = ab;
+             return std::pair{particles[a], particles[b]};
            });
   }
 
-  template<class ParticleArray>
+  /// Unique pairs of the adjacent particles partitioned by the block.
+  template<particle_array ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
-    return std::views::iota(0UZ, block_adjacency_.size()) |
-           std::views::transform([&](size_t block_index) {
-             return block_adjacency_[block_index] |
-                    std::views::transform([&particles](auto ab_indices) {
-                      const auto [a_index, b_index] = ab_indices;
-                      return std::tuple{particles[a_index], particles[b_index]};
+    return block_adjacency_.buckets() |
+           std::views::transform([&particles](auto block) {
+             return block | std::views::transform([&particles](auto ab) {
+                      const auto [a, b] = ab;
+                      /// @todo I have zero idea why, but using pair here
+                      /// instead of a tuple causes a massive performance hit.
+                      return std::tuple{particles[a], particles[b]};
                     });
            });
   }
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Update the adjacency graph.
+  template<particle_array ParticleArray, class SearchRadiusFunc>
+  constexpr void update(ParticleArray& particles,
+                        const SearchRadiusFunc& radius_func) {
+    TIT_PROFILE_SECTION("ParticleAdjacency::update()");
+
+    // Update the adjacency graphs.
+    search_(particles, radius_func);
+
+    // Partition the adjacency graph by the block.
+    partition_(particles);
+  }
+
 private:
 
-  EngineFactory engine_factory_;
+  template<particle_array ParticleArray, class SearchRadiusFunc>
+  constexpr void search_(ParticleArray& particles,
+                         const SearchRadiusFunc& radius_func) {
+    TIT_PROFILE_SECTION("ParticleAdjacency::search()");
+    using PV = ParticleView<ParticleArray>;
+
+    // Build the search index.
+    const auto positions = r[particles];
+    const auto search_index = search_factory_(positions);
+
+    // Search for the neighbors.
+    static std::vector<std::vector<size_t>> adjacency{};
+    adjacency.resize(particles.size());
+    par::for_each(particles.all(), [&radius_func, &search_index](PV a) {
+      const auto& search_point = r[a];
+      const auto search_radius = radius_func(a);
+      TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
+
+      // Search for the neighbors for the current particle and store the
+      // sorted results.
+      auto& search_results = adjacency[a.index()];
+      search_results.clear();
+      search_index.search(search_point,
+                          search_radius,
+                          std::back_inserter(search_results));
+      std::ranges::sort(search_results);
+    });
+
+    // Compress the adjacency graph.
+    adjacency_.clear();
+    for (const auto& x : adjacency) adjacency_.push_back(x);
+
+    // Search for the interpolation points for the fixed particles.
+    static std::vector<std::vector<size_t>> interp_adjacency{};
+    interp_adjacency.resize(particles.fixed().size());
+    par::for_each( //
+        std::views::enumerate(particles.fixed()),
+        [&radius_func, &search_index, &particles](auto ia) {
+          auto [i, a] = ia;
+          /// @todo Once we have a proper geometry library, we should use
+          ///       here and clean up the code.
+          const auto& search_point = r[a];
+          const auto search_radius = 3 * radius_func(a);
+          const auto point_on_boundary = Domain.clamp(search_point);
+          const auto interp_point = 2 * point_on_boundary - search_point;
+
+          // Search for the neighbors for the interpolation point and
+          // store the sorted results.
+          auto& search_results = interp_adjacency[i];
+          search_results.clear();
+          search_index.search(interp_point,
+                              search_radius,
+                              std::back_inserter(search_results));
+          std::erase_if(search_results, [&particles](size_t b) {
+            return particles.has_type(b, ParticleType::fixed);
+          });
+          std::ranges::sort(search_results);
+        });
+
+    // Compress the interpolation graph.
+    interp_adjacency_.clear();
+    for (const auto& x : interp_adjacency) interp_adjacency_.push_back(x);
+  }
+
+  template<particle_array ParticleArray>
+  constexpr void partition_(ParticleArray& particles) {
+    TIT_PROFILE_SECTION("ParticleAdjacency::partition()");
+
+    // Build the geometric partitioning.
+    const auto num_parts = par::num_threads();
+    const auto positions = r[particles];
+    const auto parts = parinfo[particles];
+    const auto partition = partitioning_factory_(positions, parts, num_parts);
+
+    // Assemble the block adjacency graph.
+    /// @todo Clean-up the code below!
+    block_adjacency_.assemble_wide( //
+        num_parts + 1,
+        adjacency_.edges(),
+        [parts, num_parts](auto ab) {
+          const auto [a, b] = ab;
+          return parts[a] == parts[b] ? parts[a] : num_parts;
+        });
+
+    // Report the block sizes.
+    eprint("NCOL: ");
+    for (const auto s : block_adjacency_.sizes()) eprint("{} ", s);
+    eprint("\n");
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   Graph adjacency_;
   Graph interp_adjacency_;
-  Multivector<std::tuple<size_t, size_t>> block_adjacency_;
+  Multivector<std::pair<size_t, size_t>> block_adjacency_;
+  [[no_unique_address]] SearchFactory search_factory_;
+  [[no_unique_address]] PartitioningFactory partitioning_factory_;
 
 }; // class ParticleMesh
 

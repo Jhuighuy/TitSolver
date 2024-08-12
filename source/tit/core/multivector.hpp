@@ -69,6 +69,12 @@ public:
     vals_.clear();
   }
 
+  /// Buckes of values.
+  constexpr auto buckets(this auto& self) noexcept {
+    return std::views::iota(size_t{0}, self.size()) |
+           std::views::transform([&self](size_t index) { return self[index]; });
+  }
+
   /// Range of values at index.
   /// @{
   constexpr auto operator[](size_t index) noexcept -> std::span<Val> {
@@ -94,16 +100,6 @@ public:
     TIT_ASSUME_UNIVERSAL(Vals, vals);
     std::ranges::copy(vals, std::back_inserter(vals_));
     val_ranges_.push_back(vals_.size());
-  }
-
-  /// Sort values of each index.
-  template<class Cmp = std::ranges::less, class Proj = std::identity>
-    requires std::sortable<std::ranges::iterator_t<std::vector<Val>>, Cmp, Proj>
-  constexpr void sort(Cmp cmp = {}, Proj proj = {}) noexcept {
-    par::for_each(std::views::iota(size_t{0}, size()),
-                  [cmp, proj, this](size_t index) {
-                    std::ranges::sort((*this)[index], cmp, proj);
-                  });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
