@@ -22,3 +22,12 @@
   CHECK_FALSE(__VA_ARGS__)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace tit::testing {
+
+// Prevent the compiler from evaluating the expression at compile time.
+inline void prevent_constexpr() {}
+
+} // namespace tit::testing
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

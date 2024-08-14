@@ -115,8 +115,8 @@ private:
 
 }; // class Strict
 
-template<std::floating_point Real>
-constexpr auto tiny_number_v<Strict<Real>> = Strict{tiny_number_v<Real>};
+template<std::floating_point Float>
+constexpr auto tiny_number_v<Strict<Float>> = Strict{tiny_number_v<Float>};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
