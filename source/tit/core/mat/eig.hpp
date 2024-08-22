@@ -7,6 +7,7 @@
 #pragma once
 
 #include <expected>
+#include <type_traits>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
@@ -48,7 +49,7 @@ using MatEigResult = std::expected<MatEig<Num, Dim>, MatEigError>;
 /// Only the lower-triangular part of the input matrix is accessed.
 template<class Num, size_t Dim>
 constexpr auto jacobi(Mat<Num, Dim> A,
-                      Num eps = tiny_number_v<Num>,
+                      std::type_identity_t<Num> eps = tiny_number_v<Num>,
                       size_t max_iter = Dim * 32) -> MatEigResult<Num, Dim> {
   auto V = eye(A);
   if constexpr (Dim == 1) {
@@ -104,6 +105,7 @@ constexpr auto jacobi(Mat<Num, Dim> A,
       V[q, i] = s * Vpi + c * Vqi;
     }
   }
+
   return std::unexpected{MatEigError::not_converged};
 }
 
