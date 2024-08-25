@@ -31,6 +31,7 @@ add_tit_executable(
     "integrals.test.cpp"
   DEPENDS
     tit::core
+    tit::geom
     tit::testing
 )
 
