@@ -91,6 +91,12 @@ public:
       meta::Set{h, m, rho, P, cs, r, r_0, v, dv_dt, L} |
       Kernel::required_fields | ArtificialViscosity::required_fields;
 
+  /// Set of particle fields that are modified.
+  static constexpr auto modified_fields =
+      meta::Set{parinfo} | // TODO: parinfo should not be here.
+      meta::Set{P, cs, r, r_0, v, dv_dt, L} | Kernel::modified_fields |
+      ArtificialViscosity::modified_fields;
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Initialize structure equations.
@@ -141,6 +147,17 @@ public:
       if (fact) L[a] = transpose(fact->inverse());
       else L[a] = eye(L[a]);
     });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Setup boundary particles.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  constexpr void setup_boundary(ParticleMesh& /*mesh*/,
+                                ParticleArray& /*particles*/
+  ) const {
+    // Nothing to do here.
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

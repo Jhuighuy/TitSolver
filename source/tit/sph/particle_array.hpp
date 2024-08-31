@@ -141,9 +141,13 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// Construct a particle array.
+  ///
+  /// @param space The space in which the particles are defined.
+  /// @param equations The equations that define the particle fields.
+  template<class Equations>
   constexpr explicit ParticleArray(Space /*space*/,
-                                   auto /*varyings*/,
-                                   auto /*uniforms*/) noexcept {}
+                                   Equations /*equations*/) noexcept {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -261,9 +265,12 @@ private:
 
 }; // class ParticleArray
 
-template<class Space, class AllVariables, class Uniforms>
-ParticleArray(Space, AllVariables, Uniforms)
-    -> ParticleArray<Space, Uniforms, decltype(AllVariables{} - Uniforms{})>;
+template<class Space, class Equations>
+ParticleArray(Space, Equations)
+    -> ParticleArray<
+        Space,
+        decltype(Equations::required_fields - Equations::modified_fields),
+        decltype(Equations::required_fields & Equations::modified_fields)>;
 
 /// Particle array type.
 ///
