@@ -115,8 +115,8 @@ private:
 
 }; // class Strict
 
-template<std::floating_point Real>
-constexpr auto tiny_number_v<Strict<Real>> = Strict{tiny_number_v<Real>};
+template<std::floating_point Float>
+constexpr auto tiny_number_v<Strict<Float>> = Strict{tiny_number_v<Float>};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -143,6 +143,8 @@ template<class Num>
 constexpr auto ceil(const Strict<Num>& a) -> Strict<Num> {
   return Strict{ceil(a.get())};
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Compute the square root of the number.
 template<class Num>

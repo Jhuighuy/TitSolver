@@ -6,12 +6,13 @@
 #include <concepts>
 #include <limits>
 #include <numbers>
-#include <tuple>
+#include <utility>
 
 #include "tit/core/math.hpp"
 
 #include "tit/testing/func_utils.hpp"
 #include "tit/testing/test.hpp"
+#include "tit/testing/utils.hpp"
 
 namespace tit {
 namespace {
@@ -74,12 +75,8 @@ TEST_CASE_TEMPLATE("avg", Num, NUM_TYPES) {
   CHECK(avg(Num{1}, Num{2}, Num{3}) == static_cast<Num>(2.0));
 }
 
-TEST_CASE_TEMPLATE("gavg", Num, NUM_TYPES) {
+TEST_CASE_TEMPLATE("havg", Num, NUM_TYPES) {
   CHECK(havg(Num{1.0}, Num{4.0}) == Num{1.6});
-}
-
-TEST_CASE_TEMPLATE("gavg", Num, NUM_TYPES) {
-  CHECK(gavg(Num{1.0}, Num{4.0}) == Num{2.0});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,39 +118,45 @@ TEST_CASE_TEMPLATE("approx_equal_to", Num, NUM_TYPES) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE_TEMPLATE("newton_raphson", Num, NUM_TYPES) {
-  using enum NewtonRaphsonStatus;
+TEST_CASE_TEMPLATE("newton", Num, NUM_TYPES) {
   SUBCASE("quadratic") {
+    // Ensure the solver works for basic functions.
     SUBCASE("success") {
-      // Ensure the solver works for basic functions.
-      auto x = Num{1.0};
-      const auto f = [&x] {
-        return std::tuple{pow2(x) - Num{4.0}, Num{2.0} * x};
+      constexpr auto f = [](Num x) {
+        testing::prevent_constexpr();
+        return std::pair{pow2(x) - Num{4.0}, Num{2.0} * x};
       };
+      const auto result = newton(Num{1.0}, f);
+      REQUIRE(result);
       constexpr auto root = Num{2.0};
-      CHECK(newton_raphson(x, f) == success);
-      CHECK(approx_equal_to(x, root));
+      CHECK(approx_equal_to(result.value(), root));
     }
-    SUBCASE("fail_max_iter") {
-      // Ensure the solver fails after the iteration limit is exceeded
-      // if no actual root can be found.
-      auto x = Num{1.0};
-      const auto f = [&x] {
-        return std::tuple{pow2(x) + Num{4.0}, Num{2.0} * x};
+
+    // Ensure the solver fails after the iteration limit is exceeded if no
+    // actual root can be found.
+    SUBCASE("not converged") {
+      constexpr auto f = [](Num x) {
+        testing::prevent_constexpr();
+        return std::pair{pow2(x) + Num{4.0}, Num{2.0} * x};
       };
-      CHECK(newton_raphson(x, f) == fail_max_iter);
+      const auto result = newton(Num{1.0}, f, /*eps=*/1.0e-16, /*max_iter=*/2);
+      REQUIRE(!result);
+      CHECK(result.error() == NewtonError::not_converged);
     }
   }
+
   SUBCASE("cubic") {
-    SUBCASE("failure_zero_derivative") {
-      // Ensure the solver fails if the zero derivative was reached during
-      // the computations.
-      auto x = Num{2.0};
-      const auto f = [&x] {
-        return std::tuple{pow3(x) - Num{12.0} * x + Num{2.0},
-                          Num{3.0} * pow2(x) - Num{12.0}};
+    // Ensure the solver fails if the zero derivative was reached during  the
+    // computation.
+    SUBCASE("zero derivative") {
+      constexpr auto f = [](Num x) {
+        testing::prevent_constexpr();
+        return std::pair{pow3(x) - Num{12.0} * x + Num{2.0},
+                         Num{3.0} * pow2(x) - Num{12.0}};
       };
-      CHECK(newton_raphson(x, f) == fail_zero_deriv);
+      const auto result = newton(Num{2.0}, f);
+      REQUIRE(!result);
+      CHECK(result.error() == NewtonError::zero_deriv);
     }
   }
 }
@@ -161,66 +164,76 @@ TEST_CASE_TEMPLATE("newton_raphson", Num, NUM_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
-  using enum BisectionStatus;
   SUBCASE("quadratic") {
-    constexpr auto root = Num{2.0};
-    const auto f = [](Num x) { return pow2(x) - pow2(root); };
+    constexpr Num root{2.0};
+    constexpr auto f = [](Num x) {
+      testing::prevent_constexpr();
+      return pow2(x) - pow2(root);
+    };
+
+    // Ensure the solver works for basic functions.
     SUBCASE("success") {
-      // Ensure the solver works for basic functions.
-      Num min_x{1.5};
-      Num max_x{3.5};
-      CHECK(bisection(min_x, max_x, f) == success);
-      CHECK(approx_equal_to(min_x, root));
-      CHECK(approx_equal_to(max_x, root));
+      const auto result = bisection(Num{1.5}, Num{3.5}, f);
+      REQUIRE(result);
+      CHECK(approx_equal_to(result.value(), root));
     }
-    SUBCASE("success_early_min") {
-      // Ensure the solver completes with a single function evaluation if the
-      // root is already located on the left side of the search interval.
-      Num min_x{2.0};
-      Num max_x{4.0};
+
+    // Ensure the solver completes with a single function evaluation if the root
+    // is already located on the left side of the search interval.
+    SUBCASE("early min") {
       CountedFunc counted_f{f};
-      CHECK(bisection(min_x, max_x, counted_f) == success);
-      CHECK(approx_equal_to(min_x, root));
-      CHECK(approx_equal_to(max_x, root));
+      const auto result = bisection(Num{2.0}, Num{4.0}, counted_f);
+      REQUIRE(result);
+      CHECK(approx_equal_to(result.value(), root));
       CHECK(counted_f.count() == 1);
     }
-    SUBCASE("success_early_max") {
-      // Ensure the solver completes with two function evaluations if the root
-      // is already located on the right side of the search interval.
-      Num min_x{0.0};
-      Num max_x{2.0};
+
+    // Ensure the solver completes with two function evaluations if the root is
+    // already located on the right side of the search interval.
+    SUBCASE("early max") {
       CountedFunc counted_f{f};
-      CHECK(bisection(min_x, max_x, counted_f) == success);
-      CHECK(approx_equal_to(min_x, root));
-      CHECK(approx_equal_to(max_x, root));
+      const auto result = bisection(Num{0.0}, Num{2.0}, counted_f);
+      REQUIRE(result);
+      CHECK(approx_equal_to(result.value(), root));
       CHECK(counted_f.count() == 2);
     }
-    SUBCASE("failure_sign") {
-      // Ensure the solver terminates if function values on the ends of the
-      // search interval have same signs.
-      Num min_x{2.5};
-      Num max_x{5.5};
-      CHECK(bisection(min_x, max_x, f) == failure_sign);
+
+    // Ensure the solver terminates if function values on the ends of the search
+    // interval have same signs.
+    SUBCASE("sign error") {
+      const auto result = bisection(Num{2.5}, Num{5.5}, f);
+      REQUIRE(!result);
+      CHECK(result.error() == BisectionError::sign);
     }
   }
+
   SUBCASE("sin") {
+    // Ensure the solver works for a bit more complex functions.
     SUBCASE("success") {
-      // Ensure the solver works for a bit more complex functions.
-      const auto f = [](Num x) { return sin(x) + Num{0.5}; };
+      constexpr auto f = [](Num x) {
+        testing::prevent_constexpr();
+        return sin(x) + Num{0.5};
+      };
+      const auto result = bisection(Num{1.0}, Num{4.0}, f);
+      REQUIRE(result);
       const Num root{7.0 * std::numbers::pi / 6.0};
-      Num min_x{1.0};
-      Num max_x{4.0};
-      CHECK(bisection(min_x, max_x, f) == success);
-      CHECK(approx_equal_to(min_x, root));
-      CHECK(approx_equal_to(max_x, root));
+      CHECK(approx_equal_to(result.value(), root));
     }
-    SUBCASE("fail_max_iter") {
-      // Ensure the solver fails after the iteration limit is exceeded
-      // if no actual root can be found.
-      const auto f = [](Num x) { return sin(x) - inverse(x); };
-      Num min_x{0.1};
-      Num max_x{1.2};
-      CHECK(bisection(min_x, max_x, f) == fail_max_iter);
+
+    // Ensure the solver fails after the iteration limit is exceeded if no
+    // actual root can be found.
+    SUBCASE("not converged") {
+      const auto f = [](Num x) {
+        testing::prevent_constexpr();
+        return sin(x) - inverse(x);
+      };
+      const auto result = bisection(Num{0.1},
+                                    Num{1.2},
+                                    f,
+                                    /*eps=*/1.0e-16,
+                                    /*max_iter=*/2);
+      REQUIRE(!result);
+      CHECK(result.error() == BisectionError::not_converged);
     }
   }
 }

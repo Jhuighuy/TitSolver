@@ -4,8 +4,8 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/core/checks.hpp"
+#include "tit/core/env.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/sys.hpp"
 
 namespace tit {
 namespace {
@@ -21,8 +21,16 @@ auto run_test(int /*argc*/, char** /*argv*/) -> int {
   TIT_ENSURE(get_env_int("TEST_ZERO") == 0, "");
   TIT_ENSURE(get_env_int("TEST_INT") == 123, "");
   TIT_ENSURE(get_env_int("TEST_INT", 456) == 123, "");
+  TIT_ENSURE(get_env_int("TEST_NEGATIVE") == -456, "");
   TIT_ENSURE(!get_env_int("DOES_NOT_EXIST").has_value(), "");
   TIT_ENSURE(get_env_int("DOES_NOT_EXIST", 456) == 456, "");
+
+  // Test unsigned integer variables.
+  TIT_ENSURE(get_env_uint("TEST_ZERO") == 0, "");
+  TIT_ENSURE(get_env_uint("TEST_INT") == 123, "");
+  TIT_ENSURE(get_env_uint("TEST_INT", 456) == 123, "");
+  TIT_ENSURE(!get_env_uint("DOES_NOT_EXIST").has_value(), "");
+  TIT_ENSURE(get_env_uint("DOES_NOT_EXIST", 456) == 456, "");
 
   // Test floating-point variables.
   TIT_ENSURE(get_env_float("TEST_INT") == 123.0, "");

@@ -3,8 +3,13 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// IWYU pragma: private, include "tit/core/sys.hpp"
 #pragma once
+
+#include <optional>
+
+#include <unistd.h>
+
+#include "tit/core/basic_types.hpp"
 
 namespace tit {
 
@@ -14,9 +19,7 @@ namespace tit {
 using atexit_callback_t = void (*)();
 
 /// Register a function to be called at exit.
-void safe_atexit(atexit_callback_t callback) noexcept;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void checked_atexit(atexit_callback_t callback) noexcept;
 
 /// Exit from the current process.
 [[noreturn]]
@@ -27,6 +30,17 @@ void exit(int exit_code) noexcept;
 /// @note No at-exit callbacks are triggered, except for coverage report.
 [[noreturn]]
 void fast_exit(int exit_code) noexcept;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Terminal stream type.
+enum class TTY : uint8_t {
+  Stdout = STDOUT_FILENO, ///< Standard output.
+  Stderr = STDERR_FILENO, ///< Standard error.
+};
+
+/// Query terminal width.
+auto tty_width(TTY tty) noexcept -> std::optional<size_t>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

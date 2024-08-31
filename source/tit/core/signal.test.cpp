@@ -12,7 +12,7 @@
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
 
-#include "tit/core/sys.hpp"
+#include "tit/core/signal.hpp"
 
 #include "tit/testing/test.hpp"
 
@@ -54,10 +54,10 @@ TEST_CASE("SignalHandler") {
     SignalTracker handler_2{SIGUSR2};
 
     // Raise the signal that shall be handled by the first tracker.
-    safe_raise(SIGUSR1);
+    checked_raise(SIGUSR1);
 
     // Raise the signal that it shall be handled by the second tracker.
-    safe_raise(SIGUSR2);
+    checked_raise(SIGUSR2);
 
     // Check what was handled.
     CHECK(handler_1.last() == SIGUSR1);
@@ -65,10 +65,10 @@ TEST_CASE("SignalHandler") {
   }
 
   // Raise the signal that shall be handled by the first tracker.
-  safe_raise(SIGUSR2);
+  checked_raise(SIGUSR2);
 
   // Raise the signal that shall not be handled by any trackers.
-  safe_raise(SIGCHLD);
+  checked_raise(SIGCHLD);
 
   // Check what was handled.
   CHECK(handler_1.last() == SIGUSR2);

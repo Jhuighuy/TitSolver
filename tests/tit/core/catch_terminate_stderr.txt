@@ -1,0 +1,7 @@
+func_1
+func_2
+func_3
+Creating a joinable thread...
+
+
+Terminating due to a call to std::terminate().

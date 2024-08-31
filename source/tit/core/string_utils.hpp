@@ -78,12 +78,13 @@ inline constexpr StrNocaseEqual str_nocase_equal{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// String to integer converter.
-struct StrToInt {
+/// String to value converter.
+template<class Val>
+struct StrToVal {
+  /// @todo Clang-tidy segfaults if this is a `static constexpr` function.
   constexpr auto operator()(std::string_view str) const noexcept
-      -> std::optional<int64_t> {
-    /// @todo Clang-tidy segfaults if this is a `static constexpr` function.
-    int64_t value = 0;
+      -> std::optional<Val> {
+    Val value{};
     if (const auto [ptr, ec] =
             std::from_chars(str.data(), str.data() + str.size(), value);
         ec == std::errc{} && ptr == str.data() + str.size()) {
@@ -92,41 +93,31 @@ struct StrToInt {
     return std::nullopt;
   }
 };
-
-/// Convert a string to an integer value.
-inline constexpr StrToInt str_to_int{};
-
-/// String to floating-point converter.
-struct StrToFloat {
-  constexpr auto operator()(std::string_view str) const noexcept
-      -> std::optional<float64_t> {
-    /// @todo Clang-tidy segfaults if this is a `static constexpr` function.
-    float64_t value = 0.0;
-    if (const auto [ptr, ec] =
-            std::from_chars(str.data(), str.data() + str.size(), value);
-        ec == std::errc{} && ptr == str.data() + str.size()) {
-      return value;
-    }
-    return std::nullopt;
-  }
-};
-
-/// Convert a string to a floating-point value.
-inline constexpr StrToFloat str_to_float{};
 
 /// String to boolean converter.
-struct StrToBool {
+template<>
+struct StrToVal<bool> {
   /// @todo Clang-tidy segfaults if this is a `static constexpr` function.
   constexpr auto operator()(std::string_view str) const noexcept
       -> std::optional<bool> {
     if (str_nocase_equal(str, "true")) return true;
     if (str_nocase_equal(str, "false")) return false;
-    return str_to_int(str).transform([](int64_t value) { return value != 0; });
+    return StrToVal<int64_t>{}(str).transform(
+        [](int64_t value) { return value != 0; });
   }
 };
 
+/// Convert a string to an integer value.
+inline constexpr StrToVal<int64_t> str_to_int{};
+
+/// Convert a string to an unsigned integer value.
+inline constexpr StrToVal<int64_t> str_to_uint{};
+
+/// Convert a string to a floating-point value.
+inline constexpr StrToVal<float64_t> str_to_float{};
+
 /// Convert a string to a boolean value.
-inline constexpr StrToBool str_to_bool{};
+inline constexpr StrToVal<bool> str_to_bool{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

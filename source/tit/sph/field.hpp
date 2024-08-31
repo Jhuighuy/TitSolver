@@ -70,12 +70,6 @@ public:
     return tit::avg(std::forward<PVs>(ai)[self]...);
   }
 
-  /// Weighted average of the field values over the specified particle views.
-  template<class Self, impl::has_field_<Self>... PVs>
-  constexpr auto wavg(this const Self& self, PVs&&... ai) {
-    return tit::avg(std::forward<PVs>(ai)[self]...);
-  }
-
   /// Harmonic average of the field values over the specified particle views.
   template<class Self, impl::has_field_<Self>... PVs>
   constexpr auto havg(this const Self& self, PVs&&... ai) {

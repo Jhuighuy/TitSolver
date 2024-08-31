@@ -14,7 +14,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/io.hpp"
-#include "tit/core/sys.hpp"
+#include "tit/core/sys_utils.hpp"
 
 namespace tit {
 
@@ -69,7 +69,7 @@ void report_non_std_exception_() {
 void report_terminate_call_() {
   eprintln();
   eprintln();
-  eprintln("Terminating due to a call to std::terminate.");
+  eprintln("Terminating due to a call to std::terminate().");
   eprintln();
 }
 
@@ -81,7 +81,10 @@ TerminateHandler::TerminateHandler() noexcept
     : prev_handler_{std::set_terminate(handle_terminate_)} {}
 
 TerminateHandler::~TerminateHandler() noexcept {
-  std::set_terminate(prev_handler_);
+  // Restore the previous terminate handler.
+  const auto current_handler = std::set_terminate(prev_handler_);
+  TIT_ENSURE(current_handler == handle_terminate_,
+             "Terminate handler was not registered previously!");
 }
 
 [[noreturn]]
