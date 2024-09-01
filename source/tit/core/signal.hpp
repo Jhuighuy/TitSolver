@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// IWYU pragma: private, include "tit/core/sys.hpp"
 #pragma once
 
 #include <initializer_list>
@@ -11,13 +10,13 @@
 #include <utility>
 #include <vector>
 
-namespace tit {
-
 #ifdef __APPLE__
 #include <sys/signal.h>
 #else
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
+
+namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -25,12 +24,12 @@ namespace tit {
 using sigaction_t = struct sigaction;
 
 /// Set signal action.
-void safe_sigaction(int signal_number,
-                    const sigaction_t* action,
-                    sigaction_t* prev_action = nullptr) noexcept;
+void checked_sigaction(int signal_number,
+                       const sigaction_t* action,
+                       sigaction_t* prev_action = nullptr) noexcept;
 
 /// Raise a signal.
-void safe_raise(int signal_number) noexcept;
+void checked_raise(int signal_number) noexcept;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

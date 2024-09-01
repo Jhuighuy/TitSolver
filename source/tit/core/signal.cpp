@@ -20,23 +20,23 @@
 #include <unistd.h>
 
 #include "tit/core/checks.hpp"
-#include "tit/core/sys/exit.hpp"
-#include "tit/core/sys/signal.hpp"
+#include "tit/core/signal.hpp"
+#include "tit/core/sys_utils.hpp"
 
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void safe_sigaction(int signal_number,
-                    const sigaction_t* action,
-                    sigaction_t* prev_action) noexcept {
+void checked_sigaction(int signal_number,
+                       const sigaction_t* action,
+                       sigaction_t* prev_action) noexcept {
   TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
   TIT_ASSERT(action != nullptr, "Signal actions is invalid!");
   const auto status = sigaction(signal_number, action, prev_action);
   TIT_ENSURE(status == 0, "Unable to set the signal action!");
 }
 
-void safe_raise(int signal_number) noexcept {
+void checked_raise(int signal_number) noexcept {
   TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
   const auto status = raise(signal_number);
   TIT_ENSURE(status == 0, "Failed to raise a signal.");
@@ -61,7 +61,7 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
     action.sa_handler = &handle_signal_;
     sigemptyset(&action.sa_mask);
     sigaction_t prev_action{};
-    safe_sigaction(signal_number, &action, &prev_action);
+    checked_sigaction(signal_number, &action, &prev_action);
     prev_actions_.emplace_back(signal_number, prev_action);
   }
 }
@@ -69,10 +69,10 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
 SignalHandler::~SignalHandler() noexcept {
   // Restore the old signal handlers or actions.
   for (const auto& [signal_number, prev_action] : prev_actions_) {
-    safe_sigaction(signal_number, &prev_action);
+    checked_sigaction(signal_number, &prev_action);
   }
 
-  // Unregister the current signal handler.
+  // Unregister the current handler object.
   TIT_ASSERT(handlers_.back() == this, "Signal handler was not registered!");
   handlers_.pop_back();
 }

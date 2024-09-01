@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// IWYU pragma: private, include "tit/core/sys.hpp"
 #pragma once
 
 #include <optional>
@@ -22,6 +21,12 @@ auto get_env(const char* name) noexcept -> std::optional<std::string_view>;
 /// @{
 auto get_env_int(const char* name) noexcept -> std::optional<int64_t>;
 auto get_env_int(const char* name, int64_t fallback) noexcept -> int64_t;
+/// @}
+
+/// Get the value of an environment variable as an unsigned integer.
+/// @{
+auto get_env_uint(const char* name) noexcept -> std::optional<uint64_t>;
+auto get_env_uint(const char* name, uint64_t fallback) noexcept -> uint64_t;
 /// @}
 
 /// Get the value of an environment variable as a floating-point.

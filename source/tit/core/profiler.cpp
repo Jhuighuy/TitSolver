@@ -4,7 +4,6 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
-#include <cstdio>
 #include <functional>
 #include <mutex>
 #include <ranges>
@@ -16,7 +15,7 @@
 #include "tit/core/io.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/string_utils.hpp"
-#include "tit/core/sys.hpp"
+#include "tit/core/sys_utils.hpp"
 #include "tit/core/time.hpp"
 
 namespace tit {
@@ -39,7 +38,7 @@ void Profiler::enable() noexcept {
   section(root_section_name).start();
 
   // Stop profiling and report at exit.
-  safe_atexit([] {
+  checked_atexit([] {
     section(root_section_name).stop();
     report_();
   });
@@ -56,7 +55,7 @@ void Profiler::report_() {
                     [](const auto* s) { return s->second.total_ns(); });
 
   // Print the report table.
-  const auto width = tty_width(stdout);
+  const auto width = tty_width(TTY::Stdout).value_or(80);
   constexpr std::string_view abs_time_title = "abs. time [s]";
   constexpr std::string_view rel_time_title = "rel. time [%]";
   constexpr std::string_view num_calls_title = "calls [#]";

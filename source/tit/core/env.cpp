@@ -9,8 +9,8 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/env.hpp"
 #include "tit/core/string_utils.hpp"
-#include "tit/core/sys/env.hpp"
 
 namespace tit {
 
@@ -28,6 +28,13 @@ auto get_env_int(const char* name) noexcept -> std::optional<int64_t> {
 }
 auto get_env_int(const char* name, int64_t fallback) noexcept -> int64_t {
   return get_env_int(name).value_or(fallback);
+}
+
+auto get_env_uint(const char* name) noexcept -> std::optional<uint64_t> {
+  return get_env(name).and_then(str_to_uint);
+}
+auto get_env_uint(const char* name, uint64_t fallback) noexcept -> uint64_t {
+  return get_env_uint(name).value_or(fallback);
 }
 
 auto get_env_float(const char* name) noexcept -> std::optional<float64_t> {

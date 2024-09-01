@@ -3,12 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <signal.h> // NOLINT(*-deprecated-headers)
+#include <chrono>
+#include <thread>
 
 #include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/signal.hpp"
-#include "tit/core/sys_utils.hpp"
 
 namespace tit {
 namespace {
@@ -18,8 +17,9 @@ namespace {
 [[gnu::noinline]]
 void func_3() {
   eprintln("func_3");
-  eprintln("Simulating Ctrl+C...");
-  checked_raise(SIGINT);
+  eprintln("Creating a joinable thread...");
+  std::thread(
+      [] { std::this_thread::sleep_for(std::chrono::milliseconds(100)); });
 }
 
 [[gnu::noinline]]
@@ -37,7 +37,6 @@ void func_1() {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto run_test(int /*argc*/, char** /*argv*/) -> int {
-  checked_atexit([] { eprintln("At exit..."); });
   func_1();
   eprintln("This line should not be executed.");
   return 0;

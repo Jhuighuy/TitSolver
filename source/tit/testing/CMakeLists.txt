@@ -13,9 +13,21 @@ add_tit_library(
     "strict.hpp"
     "test.hpp"
     "test_main.cpp"
+    "utils.hpp"
   DEPENDS
     tit::base
     doctest::doctest
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    testing_tests
+  SOURCES
+  DEPENDS
+    tit::core
+    tit::testing
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

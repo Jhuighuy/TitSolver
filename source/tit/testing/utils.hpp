@@ -5,13 +5,13 @@
 
 #pragma once
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// IWYU pragma: begin_exports
-#include "tit/core/sys/env.hpp"
-#include "tit/core/sys/exit.hpp"
-#include "tit/core/sys/signal.hpp"
-#include "tit/core/sys/tty.hpp"
-// IWYU pragma: end_exports
+namespace tit::testing {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Prevent the compiler from evaluating the expression at compile time.
+inline void prevent_constexpr() {}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit::testing

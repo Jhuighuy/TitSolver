@@ -56,6 +56,21 @@ add_tit_test_from_target(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
+  NAME core_catch_terminate_test
+  SOURCES "catch_terminate.cpp"
+  DEPENDS tit::core
+)
+
+add_tit_test_from_target(
+  tit::core_catch_terminate_test
+  NAME "tit/core/catch_terminate"
+  EXIT_CODE 1
+  MATCH_STDERR "catch_terminate_stderr.txt"
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
   NAME core_catch_tit_exception_test
   SOURCES "catch_tit_exception.cpp"
   DEPENDS tit::core
@@ -97,6 +112,7 @@ add_tit_test_from_target(
   ENVIRONMENT
     "TEST_ZERO=0"
     "TEST_INT=123"
+    "TEST_NEGATIVE=-456"
     "TEST_FLOAT=123.456"
     "TEST_TRUE=TRUE"
     "TEST_FALSE=false"
