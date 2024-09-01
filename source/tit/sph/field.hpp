@@ -161,8 +161,10 @@ using field_value_t = typename field_value<Field, Space>::type;
 
 TIT_DEFINE_FIELD(size_t, parinfo)
 
+namespace sph {
 /// Particle position.
 TIT_DEFINE_VECTOR_FIELD(r)
+} // namespace sph
 
 /// Particle velocity.
 TIT_DEFINE_VECTOR_FIELD(v)

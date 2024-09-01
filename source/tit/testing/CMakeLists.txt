@@ -11,6 +11,7 @@ add_tit_library(
   SOURCES
     "dual.hpp"
     "func_utils.hpp"
+    "integrals.hpp"
     "strict.hpp"
     "test.hpp"
     "test_main.cpp"
@@ -27,6 +28,7 @@ add_tit_executable(
     testing_tests
   SOURCES
     "dual.test.cpp"
+    "integrals.test.cpp"
   DEPENDS
     tit::core
     tit::testing
