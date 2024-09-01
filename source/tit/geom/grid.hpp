@@ -56,7 +56,7 @@ public:
     // Compute number of cells and cell sizes.
     const auto extents = grid_box_.extents();
     const auto num_cells_float = ceil(extents / size_hint);
-    num_cells_ = static_vec_cast<size_t>(num_cells_float);
+    num_cells_ = vec_cast<size_t>(num_cells_float);
     cell_extents_ = extents / num_cells_float;
     cell_extents_recip_ = Vec(1) / cell_extents_; // NOLINT(*member-initializer)
 
@@ -126,12 +126,12 @@ public:
 
 private:
 
-  using CellIndex_ = decltype(static_vec_cast<size_t>(std::declval<Vec>()));
+  using CellIndex_ = decltype(vec_cast<size_t>(std::declval<Vec>()));
 
   constexpr auto cell_index_(const Vec& point) const -> CellIndex_ {
     const auto index_float = (point - grid_box_.low()) * cell_extents_recip_;
-    TIT_ASSERT(all(index_float >= Vec(0)), "Point is out of range!");
-    return static_vec_cast<size_t>(index_float);
+    TIT_ASSERT(index_float >= Vec(0), "Point is out of range!");
+    return vec_cast<size_t>(index_float);
   }
 
   constexpr auto flatten_cell_index_(const CellIndex_& index) const noexcept

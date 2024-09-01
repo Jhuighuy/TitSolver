@@ -7,6 +7,7 @@
 
 #include <array>
 #include <concepts>
+#include <tuple>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
@@ -59,6 +60,28 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
     return std::array<T, Size>{get_val(Indices)...};
   }(std::make_index_sequence<Size>{});
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace Std {
+/// Simple implementation of `std::bind_back`, since Clang 18 cannot handle
+/// it's libstdc++ implementation.
+template<class Func, class... BackArgs>
+constexpr auto bind_back(Func&& func, BackArgs&&... back_arguments) {
+  return
+      [func = std::forward<Func>(func),
+       back_args_tuple = std::tuple{std::forward<BackArgs>(
+           back_arguments)...}]<class... FrontArgs>(FrontArgs&&... front_args) {
+        return std::apply(
+            [&func, &front_args...](auto&... back_args) {
+              return std::invoke(func,
+                                 std::forward<FrontArgs>(front_args)...,
+                                 back_args...);
+            },
+            back_args_tuple);
+      };
+}
+} // namespace Std
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

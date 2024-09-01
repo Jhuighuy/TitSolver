@@ -206,9 +206,38 @@ constexpr auto unit(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
   return e;
 }
 
+/// Concatenate two vectors.
+template<class Num, size_t Dim1, size_t Dim2>
+constexpr auto vec_cat(const Vec<Num, Dim1>& a,
+                       const Vec<Num, Dim2>& b) -> Vec<Num, Dim1 + Dim2> {
+  Vec<Num, Dim1 + Dim2> r;
+  for (size_t i = 0; i < Dim1; ++i) r[i] = a[i];
+  for (size_t i = 0; i < Dim2; ++i) r[i + Dim1] = b[i];
+  return r;
+}
+
+/// Extract the head part of the vector.
+template<size_t HeadDim = 1, class Num, size_t Dim>
+constexpr auto vec_head(const Vec<Num, Dim>& a) -> Vec<Num, HeadDim> {
+  static_assert(HeadDim <= Dim, "Head dimension is out of range!");
+  Vec<Num, HeadDim> r;
+  for (size_t i = 0; i < HeadDim; ++i) r[i] = a[i];
+  return r;
+}
+
+/// Extract the tail part of the vector.
+template<size_t HeadDim = 1, class Num, size_t Dim>
+constexpr auto vec_tail(const Vec<Num, Dim>& a) -> Vec<Num, Dim - HeadDim> {
+  static_assert(HeadDim <= Dim, "Head dimension is out of range!");
+  Vec<Num, Dim - HeadDim> r;
+  for (size_t i = 0; i < Dim - HeadDim; ++i) r[i] = a[i + HeadDim];
+  return r;
+}
+
 /// Element-wise vector cast.
+/// @{
 template<class To, class From, size_t Dim>
-constexpr auto static_vec_cast(const Vec<From, Dim>& a) -> Vec<To, Dim> {
+constexpr auto vec_cast(const Vec<From, Dim>& a) -> Vec<To, Dim> {
   Vec<To, Dim> r;
   TIT_IF_SIMD_CAST_AVALIABLE(From, To) {
     for (size_t i = 0; i < Vec<From, Dim>::RegCount; ++i) {
@@ -219,6 +248,12 @@ constexpr auto static_vec_cast(const Vec<From, Dim>& a) -> Vec<To, Dim> {
   for (size_t i = 0; i < Dim; ++i) r[i] = static_cast<To>(a[i]);
   return r;
 }
+template<template<class...> class To, class From, size_t Dim>
+constexpr auto vec_cast(const Vec<From, Dim>& a)
+    -> Vec<decltype(To{std::declval<From>()}), Dim> {
+  return vec_cast<decltype(To{std::declval<From>()})>(a);
+}
+/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //

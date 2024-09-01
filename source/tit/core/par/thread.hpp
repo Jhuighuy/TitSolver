@@ -52,16 +52,8 @@ struct ForEach {
   static void operator()(Range&& range, Func func) {
     /// @todo Replace with `tbb::parallel_for_each` when it supports ranges.
     TIT_ASSUME_UNIVERSAL(Range, range);
-#if !(defined(__clang__) && defined(__GLIBCXX__))
     tbb::parallel_for(tbb::blocked_range{std::begin(range), std::end(range)},
-                      std::bind_back(std::ranges::for_each, std::move(func)));
-#else // `std::bind_back` is broken in clang with libstdc++.
-    tbb::parallel_for(tbb::blocked_range{std::begin(range), std::end(range)},
-                      [func = std::move(func)]<class Block>(Block&& block) {
-                        TIT_ASSUME_UNIVERSAL(Block, block);
-                        std::ranges::for_each(block, std::ref(func));
-                      });
-#endif
+                      Std::bind_back(std::ranges::for_each, std::move(func)));
   }
 };
 
@@ -124,15 +116,8 @@ struct BlockForEach {
   static void operator()(Range&& range, Func func) {
     TIT_ASSUME_UNIVERSAL(Range, range);
     for (auto chunk : std::views::chunk(range, num_threads())) {
-#if !(defined(__clang__) && defined(__GLIBCXX__))
       for_each(std::move(chunk),
-               std::bind_back(std::ranges::for_each, std::cref(func)));
-#else // `std::bind_back` is broken in clang with libstdc++.
-      for_each(std::move(chunk), [&func]<class Subrange>(Subrange&& subrange) {
-        TIT_ASSUME_UNIVERSAL(Subrange, subrange);
-        std::ranges::for_each(subrange, func);
-      });
-#endif
+               Std::bind_back(std::ranges::for_each, std::cref(func)));
     }
   }
 };

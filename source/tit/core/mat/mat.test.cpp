@@ -6,7 +6,7 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/core/mat/mat.testing.hpp"
+#include "tit/core/mat/mat.testing.hpp" // IWYU pragma: keep
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -17,8 +17,8 @@ namespace {
 TEST_CASE("Mat") {
   SUBCASE("zero initialization") {
     Mat<double, 2> M{};
-    CHECK(all(M[0] == Vec<double, 2>{}));
-    CHECK(all(M[1] == Vec<double, 2>{}));
+    CHECK(M[0] == Vec<double, 2>{});
+    CHECK(M[1] == Vec<double, 2>{});
   }
   SUBCASE("zero assignment") {
     Mat M{
@@ -26,18 +26,18 @@ TEST_CASE("Mat") {
         {3.0, 4.0},
     };
     M = {};
-    CHECK(all(M[0] == Vec<double, 2>{}));
-    CHECK(all(M[1] == Vec<double, 2>{}));
+    CHECK(M[0] == Vec<double, 2>{});
+    CHECK(M[1] == Vec<double, 2>{});
   }
   SUBCASE("value initialization") {
     const Mat<double, 2> M(3.0);
-    CHECK(all(M[0] == Vec{3.0, 0.0}));
-    CHECK(all(M[1] == Vec{0.0, 3.0}));
+    CHECK(M[0] == Vec{3.0, 0.0});
+    CHECK(M[1] == Vec{0.0, 3.0});
   }
   SUBCASE("aggregate initialization") {
     const Mat M{{1.0, 2.0}, {3.0, 4.0}};
-    CHECK(all(M[0] == Vec{1.0, 2.0}));
-    CHECK(all(M[1] == Vec{3.0, 4.0}));
+    CHECK(M[0] == Vec{1.0, 2.0});
+    CHECK(M[1] == Vec{3.0, 4.0});
   }
   SUBCASE("aggregate assignment") {
     Mat<double, 2> M;
@@ -45,15 +45,15 @@ TEST_CASE("Mat") {
         {1.0, 2.0},
         {3.0, 4.0},
     };
-    CHECK(all(M[0] == Vec{1.0, 2.0}));
-    CHECK(all(M[1] == Vec{3.0, 4.0}));
+    CHECK(M[0] == Vec{1.0, 2.0});
+    CHECK(M[1] == Vec{3.0, 4.0});
   }
   SUBCASE("vector subscript") {
     Mat<double, 2> M;
     M[0] = {1.0, 2.0};
     M[1] = {3.0, 4.0};
-    CHECK(all(M[0] == Vec{1.0, 2.0}));
-    CHECK(all(M[1] == Vec{3.0, 4.0}));
+    CHECK(M[0] == Vec{1.0, 2.0});
+    CHECK(M[1] == Vec{3.0, 4.0});
   }
   SUBCASE("scalar subscript") {
     Mat<double, 2> M;
@@ -75,25 +75,25 @@ TEST_CASE("Mat::eye") {
       {1.0, 0.0},
       {0.0, 1.0},
   };
-  CHECK(all(eye(I) == I));
+  CHECK(eye(I) == I);
 }
 
 TEST_CASE("Mat::diag") {
   SUBCASE("to vector") {
-    CHECK(all(diag(Mat{
-                  {1.0, 1.0, 1.0},
-                  {1.0, 2.0, 1.0},
-                  {1.0, 1.0, 3.0},
-              }) == //
-              Vec{1.0, 2.0, 3.0}));
+    CHECK(diag(Mat{
+              {1.0, 1.0, 1.0},
+              {1.0, 2.0, 1.0},
+              {1.0, 1.0, 3.0},
+          }) == //
+          Vec{1.0, 2.0, 3.0});
   }
   SUBCASE("to matrix") {
-    CHECK(all(diag(Vec{1.0, 2.0, 3.0}) == //
-              Mat{
-                  {1.0, 0.0, 0.0},
-                  {0.0, 2.0, 0.0},
-                  {0.0, 0.0, 3.0},
-              }));
+    CHECK(diag(Vec{1.0, 2.0, 3.0}) == //
+          Mat{
+              {1.0, 0.0, 0.0},
+              {0.0, 2.0, 0.0},
+              {0.0, 0.0, 3.0},
+          });
   }
 }
 
@@ -101,18 +101,18 @@ TEST_CASE("Mat::diag") {
 
 TEST_CASE("Mat::operator+") {
   SUBCASE("normal") {
-    CHECK(all((Mat{
-                   {1.0, 2.0},
-                   {3.0, 4.0},
-               } +
-               Mat{
-                   {5.0, 6.0},
-                   {7.0, 8.0},
-               }) == //
-              Mat{
-                  {6.0, 8.0},
-                  {10.0, 12.0},
-              }));
+    CHECK((Mat{
+               {1.0, 2.0},
+               {3.0, 4.0},
+           } +
+           Mat{
+               {5.0, 6.0},
+               {7.0, 8.0},
+           }) == //
+          Mat{
+              {6.0, 8.0},
+              {10.0, 12.0},
+          });
   }
   SUBCASE("with assignment") {
     Mat M{
@@ -123,39 +123,39 @@ TEST_CASE("Mat::operator+") {
         {5.0, 6.0},
         {7.0, 8.0},
     };
-    CHECK(all(M == //
-              Mat{
-                  {6.0, 8.0},
-                  {10.0, 12.0},
-              }));
+    CHECK(M == //
+          Mat{
+              {6.0, 8.0},
+              {10.0, 12.0},
+          });
   }
 }
 
 TEST_CASE("Mat::operator-") {
   SUBCASE("negation") {
-    CHECK(all(-Mat{
-                  {1.0, 2.0},
-                  {3.0, 4.0},
-              } == //
-              Mat{
-                  {-1.0, -2.0},
-                  {-3.0, -4.0},
-              }));
+    CHECK(-Mat{
+              {1.0, 2.0},
+              {3.0, 4.0},
+          } == //
+          Mat{
+              {-1.0, -2.0},
+              {-3.0, -4.0},
+          });
   }
   SUBCASE("subtraction") {
     SUBCASE("normal") {
-      CHECK(all((Mat{
-                     {5.0, 6.0},
-                     {7.0, 8.0},
-                 } -
-                 Mat{
-                     {1.0, 2.0},
-                     {3.0, 4.0},
-                 }) == //
-                Mat{
-                    {4.0, 4.0},
-                    {4.0, 4.0},
-                }));
+      CHECK((Mat{
+                 {5.0, 6.0},
+                 {7.0, 8.0},
+             } -
+             Mat{
+                 {1.0, 2.0},
+                 {3.0, 4.0},
+             }) == //
+            Mat{
+                {4.0, 4.0},
+                {4.0, 4.0},
+            });
     }
     SUBCASE("with assignment") {
       Mat M{
@@ -166,11 +166,11 @@ TEST_CASE("Mat::operator-") {
           {1.0, 2.0},
           {3.0, 4.0},
       };
-      CHECK(all(M == //
-                Mat{
-                    {4.0, 4.0},
-                    {4.0, 4.0},
-                }));
+      CHECK(M == //
+            Mat{
+                {4.0, 4.0},
+                {4.0, 4.0},
+            });
     }
   }
 }
@@ -178,23 +178,23 @@ TEST_CASE("Mat::operator-") {
 TEST_CASE("Mat::operator*") {
   SUBCASE("scaling") {
     SUBCASE("normal") {
-      CHECK(all((2.0 *
-                 Mat{
-                     {1.0, 2.0},
-                     {3.0, 4.0},
-                 }) == //
-                Mat{
-                    {2.0, 4.0},
-                    {6.0, 8.0},
-                }));
-      CHECK(all(Mat{
-                    {1.0, 2.0},
-                    {3.0, 4.0},
-                } * 2.0 ==
-                Mat{
-                    {2.0, 4.0},
-                    {6.0, 8.0},
-                }));
+      CHECK((2.0 *
+             Mat{
+                 {1.0, 2.0},
+                 {3.0, 4.0},
+             }) == //
+            Mat{
+                {2.0, 4.0},
+                {6.0, 8.0},
+            });
+      CHECK(Mat{
+                {1.0, 2.0},
+                {3.0, 4.0},
+            } * 2.0 ==
+            Mat{
+                {2.0, 4.0},
+                {6.0, 8.0},
+            });
     }
     SUBCASE("with assignment") {
       Mat M{
@@ -202,54 +202,54 @@ TEST_CASE("Mat::operator*") {
           {3.0, 4.0},
       };
       M *= 2.0;
-      CHECK(all(M == //
-                Mat{
-                    {2.0, 4.0},
-                    {6.0, 8.0},
-                }));
+      CHECK(M == //
+            Mat{
+                {2.0, 4.0},
+                {6.0, 8.0},
+            });
     }
   }
   SUBCASE("matrix-vector multiplication") {
-    CHECK(all((Mat{
-                   {1.0, 2.0},
-                   {3.0, 4.0},
-               } *
-               Vec{
-                   5.0,
-                   6.0,
-               }) == //
-              Vec{
-                  17.0,
-                  39.0,
-              }));
+    CHECK((Mat{
+               {1.0, 2.0},
+               {3.0, 4.0},
+           } *
+           Vec{
+               5.0,
+               6.0,
+           }) == //
+          Vec{
+              17.0,
+              39.0,
+          });
   }
   SUBCASE("matrix-matrix multiplication") {
-    CHECK(all((Mat{
-                   {1.0, 2.0},
-                   {3.0, 4.0},
-               } *
-               Mat{
-                   {5.0, 6.0},
-                   {7.0, 8.0},
-               }) == //
-              Mat{
-                  {19.0, 22.0},
-                  {43.0, 50.0},
-              }));
+    CHECK((Mat{
+               {1.0, 2.0},
+               {3.0, 4.0},
+           } *
+           Mat{
+               {5.0, 6.0},
+               {7.0, 8.0},
+           }) == //
+          Mat{
+              {19.0, 22.0},
+              {43.0, 50.0},
+          });
   }
 }
 
 TEST_CASE("Mat::operator/") {
   SUBCASE("scaling") {
     SUBCASE("normal") {
-      CHECK(all(Mat{
-                    {2.0, 4.0},
-                    {6.0, 8.0},
-                } / 2.0 ==
-                Mat{
-                    {1.0, 2.0},
-                    {3.0, 4.0},
-                }));
+      CHECK(Mat{
+                {2.0, 4.0},
+                {6.0, 8.0},
+            } / 2.0 ==
+            Mat{
+                {1.0, 2.0},
+                {3.0, 4.0},
+            });
     }
     SUBCASE("with assignment") {
       Mat M{
@@ -257,11 +257,11 @@ TEST_CASE("Mat::operator/") {
           {6.0, 8.0},
       };
       M /= 2.0;
-      CHECK(all(M == //
-                Mat{
-                    {1.0, 2.0},
-                    {3.0, 4.0},
-                }));
+      CHECK(M == //
+            Mat{
+                {1.0, 2.0},
+                {3.0, 4.0},
+            });
     }
   }
 }
@@ -285,31 +285,31 @@ TEST_CASE("Mat::prod_diag") {
 }
 
 TEST_CASE("Vec::outer") {
-  CHECK(all(outer(
-                Vec{
-                    1.0,
-                    2.0,
-                },
-                Vec{
-                    3.0,
-                    4.0,
-                }) == //
-            Mat{
-                {3.0, 4.0},
-                {6.0, 8.0},
-            }));
+  CHECK(outer(
+            Vec{
+                1.0,
+                2.0,
+            },
+            Vec{
+                3.0,
+                4.0,
+            }) == //
+        Mat{
+            {3.0, 4.0},
+            {6.0, 8.0},
+        });
 }
 
 TEST_CASE("Vec::outer_sqr") {
-  CHECK(all(outer_sqr( //
-                Vec{
-                    1.0,
-                    2.0,
-                }) == //
-            Mat{
-                {1.0, 2.0},
-                {2.0, 4.0},
-            }));
+  CHECK(outer_sqr( //
+            Vec{
+                1.0,
+                2.0,
+            }) == //
+        Mat{
+            {1.0, 2.0},
+            {2.0, 4.0},
+        });
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
