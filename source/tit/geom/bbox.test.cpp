@@ -92,13 +92,59 @@ TEST_CASE("geom::BBox::intersect") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("geom::BBox::split") {
+TEST_CASE("geom::BBox::split(plane)") {
   const geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
   const auto [left, right] = box.split(0, 0.5);
   CHECK(all(left.low() == Vec{0.0, 0.0}));
   CHECK(all(left.high() == Vec{0.5, 2.0}));
   CHECK(all(right.low() == Vec{0.5, 0.0}));
   CHECK(all(right.high() == Vec{2.0, 2.0}));
+}
+
+TEST_CASE("geom::BBox::split(point)") {
+  SUBCASE("1D") {
+    const geom::BBox box{Vec{0.0}, Vec{2.0}};
+    const auto parts = box.split(1.0);
+    REQUIRE(parts.size() == 2);
+    CHECK(all(parts[0].low() == Vec{0.0}));
+    CHECK(all(parts[1].low() == Vec{1.0}));
+    CHECK(all(parts[0].high() == Vec{1.0}));
+    CHECK(all(parts[1].high() == Vec{2.0}));
+  }
+  SUBCASE("2D") {
+    const geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
+    const auto parts = box.split(Vec{1.0, 1.0});
+    REQUIRE(parts.size() == 4);
+    CHECK(all(parts[0].low() == Vec{0.0, 0.0}));
+    CHECK(all(parts[1].low() == Vec{0.0, 1.0}));
+    CHECK(all(parts[2].low() == Vec{1.0, 0.0}));
+    CHECK(all(parts[3].low() == Vec{1.0, 1.0}));
+    CHECK(all(parts[0].high() == Vec{1.0, 1.0}));
+    CHECK(all(parts[1].high() == Vec{1.0, 2.0}));
+    CHECK(all(parts[2].high() == Vec{2.0, 1.0}));
+    CHECK(all(parts[3].high() == Vec{2.0, 2.0}));
+  }
+  SUBCASE("3D") {
+    const geom::BBox box{Vec{0.0, 0.0, 0.0}, Vec{2.0, 2.0, 2.0}};
+    const auto parts = box.split(Vec{1.0, 1.0, 1.0});
+    REQUIRE(parts.size() == 8);
+    CHECK(all(parts[0].low() == Vec{0.0, 0.0, 0.0}));
+    CHECK(all(parts[1].low() == Vec{0.0, 0.0, 1.0}));
+    CHECK(all(parts[2].low() == Vec{0.0, 1.0, 0.0}));
+    CHECK(all(parts[3].low() == Vec{0.0, 1.0, 1.0}));
+    CHECK(all(parts[4].low() == Vec{1.0, 0.0, 0.0}));
+    CHECK(all(parts[5].low() == Vec{1.0, 0.0, 1.0}));
+    CHECK(all(parts[6].low() == Vec{1.0, 1.0, 0.0}));
+    CHECK(all(parts[7].low() == Vec{1.0, 1.0, 1.0}));
+    CHECK(all(parts[0].high() == Vec{1.0, 1.0, 1.0}));
+    CHECK(all(parts[1].high() == Vec{1.0, 1.0, 2.0}));
+    CHECK(all(parts[2].high() == Vec{1.0, 2.0, 1.0}));
+    CHECK(all(parts[3].high() == Vec{1.0, 2.0, 2.0}));
+    CHECK(all(parts[4].high() == Vec{2.0, 1.0, 1.0}));
+    CHECK(all(parts[5].high() == Vec{2.0, 1.0, 2.0}));
+    CHECK(all(parts[6].high() == Vec{2.0, 2.0, 1.0}));
+    CHECK(all(parts[7].high() == Vec{2.0, 2.0, 2.0}));
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

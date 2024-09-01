@@ -63,8 +63,30 @@ TEST_CASE_TEMPLATE("Vec::unit", Num, NUM_TYPES) {
   CHECK(all(unit<1>(Vec<Num, 2>{}) == Vec{Num{0}, Num{1}}));
 }
 
-TEST_CASE_TEMPLATE("Vec::static_vec_cast", Num, NUM_TYPES) {
-  CHECK(all(static_vec_cast<int>(Vec{Num{1}, Num{2}}) == Vec{1, 2}));
+TEST_CASE_TEMPLATE("Vec::vec_cat", Num, NUM_TYPES) {
+  CHECK(all(vec_cat(Vec{Num{1}, Num{2}}, Vec{Num{3}, Num{4}}) ==
+            Vec{Num{1}, Num{2}, Num{3}, Num{4}}));
+}
+
+TEST_CASE_TEMPLATE("Vec::vec_head", Num, NUM_TYPES) {
+  CHECK(all(vec_head(Vec{Num{1}, Num{2}, Num{3}}) == Vec{Num{1}}));
+  CHECK(all(vec_head<2>(Vec{Num{1}, Num{2}, Num{3}}) == Vec{Num{1}, Num{2}}));
+}
+
+TEST_CASE_TEMPLATE("Vec::vec_tail", Num, NUM_TYPES) {
+  CHECK(all(vec_tail(Vec{Num{1}, Num{2}, Num{3}}) == Vec{Num{2}, Num{3}}));
+  CHECK(all(vec_tail<2>(Vec{Num{1}, Num{2}, Num{3}}) == Vec{Num{3}}));
+}
+
+TEST_CASE_TEMPLATE("Vec::vec_cast<class To>", Num, NUM_TYPES) {
+  SUBCASE("<class To>") {
+    CHECK(all(vec_cast<int>(Vec{Num{1}, Num{2}}) == Vec{1, 2}));
+  }
+  SUBCASE("<template<class...> To>") {
+    using Decuded = decltype(Strict{Num{}});
+    const Vec<Decuded, 2> r = vec_cast<Strict>(Vec{Num{1}, Num{2}});
+    CHECK(all(r == Vec{Decuded{1}, Decuded{2}}));
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

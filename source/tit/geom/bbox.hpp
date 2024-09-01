@@ -5,11 +5,15 @@
 
 #pragma once
 
+#include <array>
+#include <functional>
+#include <tuple>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/type_traits.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit::geom {
@@ -98,7 +102,7 @@ public:
     return *this;
   }
 
-  /// Split the bbox into two.
+  /// Split the bounding box into two parts by the plane.
   constexpr auto split(size_t axis, const vec_num_t<Vec>& val) const
       -> std::pair<BBox, BBox> {
     TIT_ASSERT(axis < vec_dim_v<Vec>, "Split axis is out of range!");
@@ -109,6 +113,30 @@ public:
     auto right = *this;
     right.low_[axis] = val;
     return std::pair{std::move(left), std::move(right)};
+  }
+
+  /// Split the bounding box into parts by the point.
+  constexpr auto split(const Vec& point) const {
+    TIT_ASSERT(all(point >= low_ && point <= high_), "Point is out of range!");
+
+    // Recursively split the boxes along the axes.
+    auto pieces = [&point]<size_t Axis>(this auto self,
+                                        integral_constant_t<Axis> /*axis*/,
+                                        const auto&... boxes) {
+      auto split_boxes = std::tuple_cat(boxes.split(Axis, point[Axis])...);
+      if constexpr (Axis == vec_dim_v<Vec> - 1) {
+        return split_boxes;
+      } else {
+        return std::apply(
+            std::bind_front(self, integral_constant_t<Axis + 1>{}),
+            std::move(split_boxes));
+      }
+    }(integral_constant_t<size_t{0}>{}, *this);
+
+    // Convert the tuple of boxes into an array.
+    return std::apply(
+        [](auto... boxes) { return std::array{std::move(boxes)...}; },
+        std::move(pieces));
   }
 
 private:

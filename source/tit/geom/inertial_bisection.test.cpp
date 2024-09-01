@@ -46,7 +46,7 @@ TEST_CASE("geom::InertialBisection") {
     // v
     //  Y
     for (const auto& [part, point] : std::views::zip(parts, points)) {
-      const auto pi = static_vec_cast<size_t>(point);
+      const auto pi = vec_cast<size_t>(point);
       CHECK(part == pi[1] / 4 + pi[0] / 4 * 2);
     }
   }
@@ -76,7 +76,7 @@ TEST_CASE("geom::InertialBisection") {
                         rotated_point[0] - rotated_point[1]};
 
       // Ensure the partition index is correct.
-      const auto pi = static_vec_cast<size_t>(point);
+      const auto pi = vec_cast<size_t>(point);
       CHECK(part == pi[1] / 4 + pi[0] / 5 * 2);
     }
   }
