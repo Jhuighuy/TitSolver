@@ -13,13 +13,6 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// For consistency with vector comparison.
-constexpr auto all(bool b) noexcept -> bool {
-  return b;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // Matrix exact equality operator.
 template<class Num, size_t Dim>
 constexpr auto operator==(const Mat<Num, Dim>& a,

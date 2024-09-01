@@ -65,7 +65,7 @@ public:
   /// Extend on all sides by the given @p amount.
   /// @{
   constexpr auto grow(const Vec& amount) -> BBox& {
-    TIT_ASSERT(all(amount >= Vec(0)), "Grow amount must be positive!");
+    TIT_ASSERT(amount >= Vec(0), "Grow amount must be positive!");
     low_ -= amount;
     high_ += amount;
     return *this;
@@ -78,7 +78,7 @@ public:
   /// Shrink bounding box by the given @p amount.
   /// @{
   constexpr auto shrink(const Vec& amount) -> BBox& {
-    TIT_ASSERT(all(amount >= Vec(0)), "Shrink amount must be positive!");
+    TIT_ASSERT(amount >= Vec(0), "Shrink amount must be positive!");
     low_ += amount;
     high_ -= amount;
     return *this;
@@ -117,7 +117,7 @@ public:
 
   /// Split the bounding box into parts by the point.
   constexpr auto split(const Vec& point) const {
-    TIT_ASSERT(all(point >= low_ && point <= high_), "Point is out of range!");
+    TIT_ASSERT(point >= low_ && point <= high_, "Point is out of range!");
 
     // Recursively split the boxes along the axes.
     auto pieces = [&point]<size_t Axis>(this auto self,

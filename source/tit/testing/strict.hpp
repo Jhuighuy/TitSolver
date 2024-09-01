@@ -109,6 +109,15 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// Number output operator.
+  template<class Stream>
+  friend constexpr auto operator<<(Stream& stream, const Strict& a) -> Stream& {
+    stream << a.get();
+    return stream;
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 private:
 
   Num val_;

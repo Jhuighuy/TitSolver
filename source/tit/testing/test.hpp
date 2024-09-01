@@ -9,6 +9,11 @@
 // fix it is to include this header before doctest.
 #include <cstdlib> // IWYU pragma: keep
 
+// Doctest does not include `std::ostream` in its headers, but it does use
+// is in its implementation. We need to include it here to avoid compiler
+// errors.
+#include <ostream> // IWYU pragma: keep
+
 #include <doctest/doctest.h> // IWYU pragma: exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

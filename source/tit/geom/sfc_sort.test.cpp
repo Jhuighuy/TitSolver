@@ -71,10 +71,10 @@ TEST_CASE("geom::MortonCurveSort") {
 
   // Ensure the resulting permutation is correct.
   for (const auto [i, p] : std::views::enumerate(sfc.perm())) {
-    CHECK(all(points[p] == sorted_8x8_lattice_points[i]));
+    CHECK(points[p] == sorted_8x8_lattice_points[i]);
   }
   for (const auto [i, ip] : std::views::enumerate(sfc.iperm())) {
-    CHECK(all(points[i] == sorted_8x8_lattice_points[ip]));
+    CHECK(points[i] == sorted_8x8_lattice_points[ip]);
   }
 }
 

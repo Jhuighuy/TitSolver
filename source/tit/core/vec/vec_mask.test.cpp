@@ -59,19 +59,19 @@ TEST_CASE_TEMPLATE("VecMask", Num, NUM_TYPES) {
 //
 
 TEST_CASE_TEMPLATE("VecMask::operator!", Num, NUM_TYPES) {
-  CHECK(all(VecMask<Num, 2>{true, false} == !VecMask<Num, 2>{false, true}));
+  CHECK(VecMask<Num, 2>{true, false} == !VecMask<Num, 2>{false, true});
 }
 
 TEST_CASE_TEMPLATE("VecMask::operator&&", Num, NUM_TYPES) {
-  CHECK(all((VecMask<Num, 4>{true, false, true, false} &&
-             VecMask<Num, 4>{true, true, false, false}) ==
-            VecMask<Num, 4>{true, false, false, false}));
+  CHECK((VecMask<Num, 4>{true, false, true, false} &&
+         VecMask<Num, 4>{true, true, false, false}) ==
+        VecMask<Num, 4>{true, false, false, false});
 }
 
 TEST_CASE_TEMPLATE("VecMask::operator||", Num, NUM_TYPES) {
-  CHECK(all((VecMask<Num, 4>{true, false, true, false} ||
-             VecMask<Num, 4>{true, true, false, false}) ==
-            VecMask<Num, 4>{true, true, true, false}));
+  CHECK((VecMask<Num, 4>{true, false, true, false} ||
+         VecMask<Num, 4>{true, true, false, false}) ==
+        VecMask<Num, 4>{true, true, true, false});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -80,15 +80,15 @@ TEST_CASE_TEMPLATE("VecMask::operator||", Num, NUM_TYPES) {
 //
 
 TEST_CASE_TEMPLATE("VecMask::operator==", Num, NUM_TYPES) {
-  CHECK(all((VecMask<Num, 4>{true, false, true, false} ==
-             VecMask<Num, 4>{true, true, false, false}) ==
-            VecMask<Num, 4>{true, false, false, true}));
+  CHECK((VecMask<Num, 4>{true, false, true, false} ==
+         VecMask<Num, 4>{true, true, false, false}) ==
+        VecMask<Num, 4>{true, false, false, true});
 }
 
 TEST_CASE_TEMPLATE("VecMask::operator!=", Num, NUM_TYPES) {
-  CHECK(all((VecMask<Num, 4>{true, false, true, false} !=
-             VecMask<Num, 4>{true, true, false, false}) ==
-            VecMask<Num, 4>{false, true, true, false}));
+  CHECK((VecMask<Num, 4>{true, false, true, false} !=
+         VecMask<Num, 4>{true, true, false, false}) ==
+        VecMask<Num, 4>{false, true, true, false});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -130,7 +130,7 @@ private:
 
   constexpr auto cell_index_(const Vec& point) const -> CellIndex_ {
     const auto index_float = (point - grid_box_.low()) * cell_extents_recip_;
-    TIT_ASSERT(all(index_float >= Vec(0)), "Point is out of range!");
+    TIT_ASSERT(index_float >= Vec(0), "Point is out of range!");
     return vec_cast<size_t>(index_float);
   }
 

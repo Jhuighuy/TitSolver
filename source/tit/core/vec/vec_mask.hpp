@@ -52,6 +52,11 @@ public:
   }
   /// @}
 
+  /// Check if all elements are true.
+  constexpr operator bool() const noexcept {
+    return all(*this);
+  }
+
 private:
 
   std::array<bool, Dim> col_;
@@ -169,6 +174,11 @@ public:
   /// @}
 
   // NOLINTEND(*-type-union-access)
+
+  /// Check if all elements are true.
+  constexpr operator bool() const noexcept {
+    return all(*this);
+  }
 
 private:
 
