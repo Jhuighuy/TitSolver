@@ -165,7 +165,7 @@ public:
     // Get the index of the next particle of the specified type and increment
     // the range of particles for the next types.
     const size_t index = particle_ranges_[type_index + 1];
-    for (auto& r : particle_ranges_ | std::views::drop(type_index + 1)) r += 1;
+    for (auto& p : particle_ranges_ | std::views::drop(type_index + 1)) p += 1;
     // Insert the new particle.
     std::apply(
         [index](auto&... cols) { ((cols.emplace(cols.begin() + index)), ...); },
