@@ -147,7 +147,26 @@ add_tit_test_from_target(
   NAME "tit/core/profiler"
   MATCH_STDOUT "profiler_stdout.txt"
   FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
-  ENVIRONMENT "TIT_ENABLE_PROFILER=1"
+  ENVIRONMENT
+    "TIT_ENABLE_PROFILER=1"
+    "TIT_ENABLE_STATS=0"
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME core_stats_test
+  SOURCES "stats.cpp"
+  DEPENDS tit::core
+)
+
+add_tit_test_from_target(
+  tit::core_stats_test
+  NAME "tit/core/stats"
+  MATCH_STDOUT "stats_stdout.txt"
+  ENVIRONMENT
+    "TIT_ENABLE_PROFILER=0"
+    "TIT_ENABLE_STATS=1"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

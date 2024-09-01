@@ -12,6 +12,7 @@
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/signal.hpp"
+#include "tit/core/stats.hpp"
 
 namespace tit {
 
@@ -23,6 +24,9 @@ auto run_main(int argc, char** argv, const main_func_t& main_func) -> int {
 
   // Setup terminate handler.
   const TerminateHandler terminate_handler{};
+
+  // Enable statistics.
+  if (get_env_bool("TIT_ENABLE_STATS", false)) Stats::enable();
 
   // Enable profiling.
   if (get_env_bool("TIT_ENABLE_PROFILER", false)) Profiler::enable();
