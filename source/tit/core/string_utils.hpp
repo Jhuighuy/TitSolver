@@ -6,7 +6,6 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <charconv>
 #include <functional>
@@ -20,24 +19,6 @@
 #include "tit/core/basic_types.hpp"
 
 namespace tit {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Helper object to store a string literal for non-type template parameters.
-template<size_t Size>
-class StringLiteral final {
-public:
-
-  /// String data.
-  // NOLINTNEXTLINE(*-non-private-member-variables-in-classes)
-  std::array<char, Size> data;
-
-  /// Construct the string literal from a character array.
-  consteval explicit(false) StringLiteral(carr_ref_t<const char, Size> str) {
-    std::copy_n(str, Size, data.begin());
-  }
-
-}; // class StringLiteral
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

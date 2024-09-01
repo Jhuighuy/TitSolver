@@ -7,11 +7,11 @@
 
 #include <array>
 #include <concepts>
+#include <functional>
 #include <tuple>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/string_utils.hpp"
 
 namespace tit {
 
@@ -66,6 +66,7 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
 namespace Std {
 /// Simple implementation of `std::bind_back`, since Clang 18 cannot handle
 /// it's libstdc++ implementation.
+/// @todo To be removed when Clang 19 is released.
 template<class Func, class... BackArgs>
 constexpr auto bind_back(Func&& func, BackArgs&&... back_arguments) {
   return
@@ -82,81 +83,6 @@ constexpr auto bind_back(Func&& func, BackArgs&&... back_arguments) {
       };
 }
 } // namespace Std
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Save a value for the duration of the program per compilation unit.
-///
-/// Saved values are stored in static storage duration variables. The main
-/// difference between this function and a static variable is that the value is
-/// cached uniformly across all template instantiations. This is useful for
-/// avoiding multiple definitions of the same static variable across different
-/// template instantiations.
-///
-/// @tparam Key Unique identifier for the value. Calling this function with
-///             the same key and type will return the same object per
-///             compilation unit.
-///
-/// Example:
-/// @code
-/// template<class T>
-/// void foo() {
-///   // `static_vector` will be the same object for the duration of the,
-///   // program, but different for template instantiations.
-///   static std::vector<int> static_vector{};
-///
-///   // `saved_vector` will be the same object for the duration of the
-///   // program, and the same across all template instantiations.
-///   auto& saved_vector = cache_value<"saved_vector">(std::vector<int>{});
-/// }
-/// @endcode
-template<StringLiteral Key, class Val>
-  requires std::move_constructible<Val&&>
-[[gnu::always_inline]]
-constexpr auto save_value(Val&& val) -> Val& {
-  static Val saved_val{std::forward<Val>(val)};
-  return saved_val;
-}
-
-/// Helper macro to save a value for the duration of the program.
-///
-/// Example:
-/// @code
-/// template<class T>
-/// void foo() {
-///   // `static_vector` will be the same object for the duration of the,
-///   // program, but different for template instantiations.
-///   static std::vector<int> static_vector{};
-///
-///   // `saved_vector` will be the same object for the duration of the
-///   // program, and the same across all template instantiations.
-///   auto& saved_vector = TIT_SAVED_VALUE(std::vector<int>{});
-/// }
-/// @endcode
-///
-/// @see save_value
-#define TIT_SAVED_VALUE(...)                                                   \
-  tit::save_value<TIT_STR(TIT_NAME(__FILE__))>(__VA_ARGS__)
-
-/// Helper macro to save a variable for the duration of the program.
-///
-/// Example:
-/// @code
-/// template<class T>
-/// void foo() {
-///   // `static_vector` will be the same object for the duration of the,
-///   // program, but different for template instantiations.
-///   static std::vector<int> static_vector{};
-///
-///   // `saved_vector` will be the same object for the duration of the
-///   // program, and the same across all template instantiations.
-///   TIT_SAVED_VARIABLE(saved_vector, std::vector<int>{});
-/// }
-/// @endcode
-///
-/// @see save_value
-#define TIT_SAVED_VARIABLE(name, ...)                                          \
-  auto& name = TIT_SAVED_VALUE(__VA_ARGS__) /* NOLINT(*-macro-parentheses) */
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

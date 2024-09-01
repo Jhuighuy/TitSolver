@@ -170,7 +170,7 @@ public:
     // Compute value ranges.
     /// First compute how many values there are per each index per each thread.
     val_ranges_.clear(), val_ranges_.resize(count + 1);
-    TIT_SAVED_VARIABLE(val_ranges_per_thread, Mdvector<size_t, 2>{});
+    static Mdvector<size_t, 2> val_ranges_per_thread{};
     val_ranges_per_thread.assign(count + 1, par::num_threads());
     par::static_for_each(handles, [&](size_t thread_index, const auto& handle) {
       const auto index = static_cast<size_t>(index_of(handle));
