@@ -7,7 +7,7 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/core/mat/mat.testing.hpp"
+#include "tit/core/mat/mat.testing.hpp" // IWYU pragma: keep
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -22,7 +22,7 @@ TEST_CASE("Mat::jacobi") {
     REQUIRE(eig);
     const auto& [V, d] = *eig;
     CHECK(norm(V[0]) > 0.0);
-    CHECK(approx_equal_to(V * A, diag(d) * V));
+    CHECK_APPROX_EQ(V * A, diag(d) * V);
   }
   SUBCASE("2x2") {
     SUBCASE("indefinite") {
@@ -36,7 +36,7 @@ TEST_CASE("Mat::jacobi") {
       REQUIRE(eig);
       const auto& [V, d] = *eig;
       for (size_t i = 0; i < 2; ++i) CHECK(norm(V[i]) > 0.0);
-      CHECK(approx_equal_to(V * A, diag(d) * V));
+      CHECK_APPROX_EQ(V * A, diag(d) * V);
     }
   }
   SUBCASE("4x4") {
@@ -51,7 +51,7 @@ TEST_CASE("Mat::jacobi") {
       REQUIRE(eig);
       const auto& [V, d] = *eig;
       for (size_t i = 0; i < 4; ++i) CHECK(norm(V[i]) > 0.0);
-      CHECK(approx_equal_to(V * A, diag(d) * V));
+      CHECK_APPROX_EQ(V * A, diag(d) * V);
     }
   }
   SUBCASE("not converged") {

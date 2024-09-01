@@ -152,26 +152,26 @@ TEST_CASE("Mat::part_solve_inplace") {
     Vec b{2.0, 8.0, 15.0};
     REQUIRE(copy_part<diag>(A) * x == b);
     part_solve_inplace<diag>(A, b);
-    CHECK(approx_equal_to(b, x));
+    CHECK_APPROX_EQ(b, x);
   }
   SUBCASE("lower") {
     SUBCASE("unit") {
       Vec b{1.0, 0.0, -1.0};
       REQUIRE(copy_part<lower_unit>(A) * x == b);
       part_solve_inplace<lower_unit>(A, b);
-      CHECK(approx_equal_to(b, x));
+      CHECK_APPROX_EQ(b, x);
     }
     SUBCASE("diag") {
       Vec b{2.0, 6.0, 11.0};
       REQUIRE(copy_part<lower_diag>(A) * x == b);
       part_solve_inplace<lower_diag>(A, b);
-      CHECK(approx_equal_to(b, x));
+      CHECK_APPROX_EQ(b, x);
     }
     SUBCASE("transposed") {
       Vec b{2.0, 7.0, 11.0};
       REQUIRE(copy_part<lower_diag | transposed>(A) * x == b);
       part_solve_inplace<lower_diag | transposed>(A, b);
-      CHECK(approx_equal_to(b, x));
+      CHECK_APPROX_EQ(b, x);
     }
   }
   SUBCASE("upper") {
@@ -179,26 +179,26 @@ TEST_CASE("Mat::part_solve_inplace") {
       Vec b{-7.0, -1.0, 3.0};
       REQUIRE(copy_part<upper_unit>(A) * x == b);
       part_solve_inplace<upper_unit>(A, b);
-      CHECK(approx_equal_to(b, x));
+      CHECK_APPROX_EQ(b, x);
     }
     SUBCASE("diag") {
       Vec b{-6.0, 5.0, 15.0};
       REQUIRE(copy_part<upper_diag>(A) * x == b);
       part_solve_inplace<upper_diag>(A, b);
-      CHECK(approx_equal_to(b, x));
+      CHECK_APPROX_EQ(b, x);
     }
     SUBCASE("transposed") {
       Vec b{-8.0, 5.0, 15.0};
       REQUIRE(copy_part<upper_diag | transposed>(A) * x == b);
       part_solve_inplace<upper_diag | transposed>(A, b);
-      CHECK(approx_equal_to(b, x));
+      CHECK_APPROX_EQ(b, x);
     }
   }
   SUBCASE("multiple") {
     Vec b{-14.0, 10.0, 30.0};
     REQUIRE(copy_part<lower_diag>(A) * copy_part<upper_unit>(A) * x == b);
     part_solve_inplace<lower_diag, upper_unit>(A, b);
-    CHECK(approx_equal_to(b, x));
+    CHECK_APPROX_EQ(b, x);
   }
 }
 

@@ -338,21 +338,20 @@ TEST_CASE_TEMPLATE("Vec::norm2", Num, NUM_TYPES) {
 
 TEST_CASE_TEMPLATE("Vec::norm", Num, NUM_TYPES) {
   CHECK(norm(Vec{-Num{3}}) == Num{3});
-  CHECK(approx_equal_to(norm(Vec{Num{3}, Num{4}}), Num{5}));
-  CHECK(approx_equal_to(norm(Vec{Num{2}, Num{10}, Num{11}}), Num{15}));
+  CHECK_APPROX_EQ(norm(Vec{Num{3}, Num{4}}), Num{5});
+  CHECK_APPROX_EQ(norm(Vec{Num{2}, Num{10}, Num{11}}), Num{15});
 }
 
 TEST_CASE_TEMPLATE("Vec::normalize", Num, NUM_TYPES) {
   CHECK(normalize(Vec{Num{0}}) == Vec{Num{0}});
   CHECK(normalize(Vec{-Num{3}}) == Vec{-Num{1}});
   CHECK(normalize(Vec{Num{0}, Num{0}}) == Vec{Num{0}, Num{0}});
-  CHECK(approx_equal_to(normalize(Vec{Num{3}, Num{4}}), //
-                        Vec{Num{0.6}, Num{0.8}}));
+  CHECK_APPROX_EQ(normalize(Vec{Num{3}, Num{4}}), Vec{Num{0.6}, Num{0.8}});
 }
 
 TEST_CASE_TEMPLATE("Vec::approx_equal_to", Num, NUM_TYPES) {
-  CHECK(approx_equal_to(Vec{Num{1}, Num{2}}, Vec{Num{1}, Num{2}}));
-  CHECK_FALSE(approx_equal_to(Vec{Num{1}, Num{2}}, Vec{Num{1}, Num{3}}));
+  CHECK_APPROX_EQ(Vec{Num{1}, Num{2}}, Vec{Num{1}, Num{2}});
+  CHECK_APPROX_NE(Vec{Num{1}, Num{2}}, Vec{Num{1}, Num{3}});
 }
 
 TEST_CASE_TEMPLATE("Vec::cross", Num, NUM_TYPES) {

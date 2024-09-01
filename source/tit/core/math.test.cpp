@@ -106,14 +106,16 @@ TEST_CASE_TEMPLATE("is_tiny", Num, NUM_TYPES) {
 TEST_CASE_TEMPLATE("approx_equal_to", Num, NUM_TYPES) {
   // Check ordinary numbers.
   CHECK(approx_equal_to(Num{1.23}, Num{1.23}));
-  CHECK(!approx_equal_to(Num{1.23}, Num{5.67}));
+  CHECK_FALSE(approx_equal_to(Num{1.23}, Num{5.67}));
   // Check if comparisons with `tiny_number_v` work as expected.
   CHECK(approx_equal_to(Num{1.23}, Num{1.23} + tiny_number_v<Num>));
   CHECK(approx_equal_to(Num{1.23} - tiny_number_v<Num>, Num{1.23}));
   CHECK(approx_equal_to(Num{1.23}, Num{1.23} + Num{0.1} * tiny_number_v<Num>));
   CHECK(approx_equal_to(Num{1.23} - Num{0.1} * tiny_number_v<Num>, Num{1.23}));
-  CHECK(!approx_equal_to(Num{1.23}, Num{1.23} + Num{2.0} * tiny_number_v<Num>));
-  CHECK(!approx_equal_to(Num{1.23} - Num{2.0} * tiny_number_v<Num>, Num{1.23}));
+  CHECK_FALSE(approx_equal_to(Num{1.23}, //
+                              Num{1.23} + Num{2.0} * tiny_number_v<Num>));
+  CHECK_FALSE(approx_equal_to(Num{1.23} - Num{2.0} * tiny_number_v<Num>, //
+                              Num{1.23}));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -129,7 +131,7 @@ TEST_CASE_TEMPLATE("newton", Num, NUM_TYPES) {
       const auto result = newton(Num{1.0}, f);
       REQUIRE(result);
       constexpr auto root = Num{2.0};
-      CHECK(approx_equal_to(result.value(), root));
+      CHECK_APPROX_EQ(result.value(), root);
     }
 
     // Ensure the solver fails after the iteration limit is exceeded if no
@@ -175,7 +177,7 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
     SUBCASE("success") {
       const auto result = bisection(Num{1.5}, Num{3.5}, f);
       REQUIRE(result);
-      CHECK(approx_equal_to(result.value(), root));
+      CHECK_APPROX_EQ(result.value(), root);
     }
 
     // Ensure the solver completes with a single function evaluation if the root
@@ -184,7 +186,7 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
       CountedFunc counted_f{f};
       const auto result = bisection(Num{2.0}, Num{4.0}, counted_f);
       REQUIRE(result);
-      CHECK(approx_equal_to(result.value(), root));
+      CHECK_APPROX_EQ(result.value(), root);
       CHECK(counted_f.count() == 1);
     }
 
@@ -194,7 +196,7 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
       CountedFunc counted_f{f};
       const auto result = bisection(Num{0.0}, Num{2.0}, counted_f);
       REQUIRE(result);
-      CHECK(approx_equal_to(result.value(), root));
+      CHECK_APPROX_EQ(result.value(), root);
       CHECK(counted_f.count() == 2);
     }
 
@@ -217,7 +219,7 @@ TEST_CASE_TEMPLATE("bisection", Num, NUM_TYPES) {
       const auto result = bisection(Num{1.0}, Num{4.0}, f);
       REQUIRE(result);
       const Num root{7.0 * std::numbers::pi / 6.0};
-      CHECK(approx_equal_to(result.value(), root));
+      CHECK_APPROX_EQ(result.value(), root);
     }
 
     // Ensure the solver fails after the iteration limit is exceeded if no

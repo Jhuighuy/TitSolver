@@ -4,10 +4,10 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/core/mat.hpp"
-#include "tit/core/math.hpp"
+#include "tit/core/math.hpp" // IWYU pragma: keep
 #include "tit/core/vec.hpp"
 
-#include "tit/core/mat/mat.testing.hpp"
+#include "tit/core/mat/mat.testing.hpp" // IWYU pragma: keep
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -24,22 +24,22 @@ TEST_CASE("Mat::lu") {
       const Mat L{{1.0}};
       const Mat U{{2.0}};
       REQUIRE(A == L * U);
-      CHECK(approx_equal_to(fact->L(), L));
-      CHECK(approx_equal_to(fact->U(), U));
+      CHECK_APPROX_EQ(fact->L(), L);
+      CHECK_APPROX_EQ(fact->U(), U);
     }
     SUBCASE("det") {
-      CHECK(approx_equal_to(fact->det(), 2.0));
+      CHECK_APPROX_EQ(fact->det(), 2.0);
     }
     SUBCASE("solve") {
       const Vec b{6.0};
       const Vec x{3.0};
       REQUIRE(A * x == b);
-      CHECK(approx_equal_to(fact->solve(b), x));
+      CHECK_APPROX_EQ(fact->solve(b), x);
     }
     SUBCASE("inverse") {
       const Mat A_inv{{0.5}};
-      REQUIRE(approx_equal_to(A * A_inv, eye(A)));
-      CHECK(approx_equal_to(fact->inverse(), A_inv));
+      REQUIRE_APPROX_EQ(A * A_inv, eye(A));
+      CHECK_APPROX_EQ(fact->inverse(), A_inv);
     }
   }
   SUBCASE("2x2") {
@@ -61,17 +61,17 @@ TEST_CASE("Mat::lu") {
       };
       // clang-format on
       REQUIRE(A == L * U);
-      CHECK(approx_equal_to(fact->L(), L));
-      CHECK(approx_equal_to(fact->U(), U));
+      CHECK_APPROX_EQ(fact->L(), L);
+      CHECK_APPROX_EQ(fact->U(), U);
     }
     SUBCASE("det") {
-      CHECK(approx_equal_to(fact->det(), -6.0));
+      CHECK_APPROX_EQ(fact->det(), -6.0);
     }
     SUBCASE("solve") {
       const Vec b{7.0, 9.0};
       const Vec x{1.0, 1.0};
       REQUIRE(A * x == b);
-      CHECK(approx_equal_to(fact->solve(b), x));
+      CHECK_APPROX_EQ(fact->solve(b), x);
     }
     SUBCASE("inverse") {
       // clang-format off
@@ -80,8 +80,8 @@ TEST_CASE("Mat::lu") {
           { 6.0, -4.0},
       } / 6.0;
       // clang-format on
-      REQUIRE(approx_equal_to(A * A_inv, eye(A)));
-      CHECK(approx_equal_to(fact->inverse(), A_inv));
+      REQUIRE_APPROX_EQ(A * A_inv, eye(A));
+      CHECK_APPROX_EQ(fact->inverse(), A_inv);
     }
   }
   SUBCASE("3x3") {
@@ -108,17 +108,17 @@ TEST_CASE("Mat::lu") {
       };
       // clang-format on
       REQUIRE(A == L * U);
-      CHECK(approx_equal_to(fact->L(), L));
-      CHECK(approx_equal_to(fact->U(), U));
+      CHECK_APPROX_EQ(fact->L(), L);
+      CHECK_APPROX_EQ(fact->U(), U);
     }
     SUBCASE("det") {
-      CHECK(approx_equal_to(fact->det(), 24.0));
+      CHECK_APPROX_EQ(fact->det(), 24.0);
     }
     SUBCASE("solve") {
       const Vec b{24.0, 24.0, 24.0};
       const Vec x{75.0, 30.0, 48.0};
       REQUIRE(A * x == b);
-      CHECK(approx_equal_to(fact->solve(b), x));
+      CHECK_APPROX_EQ(fact->solve(b), x);
     }
     SUBCASE("inverse") {
       // clang-format off
@@ -128,8 +128,8 @@ TEST_CASE("Mat::lu") {
           { 4.0, 1.0,   1.0},
       } / 3.0;
       // clang-format on
-      REQUIRE(approx_equal_to(A * A_inv, eye(A)));
-      CHECK(approx_equal_to(fact->inverse(), A_inv));
+      REQUIRE_APPROX_EQ(A * A_inv, eye(A));
+      CHECK_APPROX_EQ(fact->inverse(), A_inv);
     }
   }
   SUBCASE("4x4 singular") {
@@ -157,21 +157,21 @@ TEST_CASE("Mat::chol") {
     SUBCASE("factors") {
       const Mat L{{2.0}};
       REQUIRE(A == L * transpose(L));
-      CHECK(approx_equal_to(fact->L(), L));
+      CHECK_APPROX_EQ(fact->L(), L);
     }
     SUBCASE("det") {
-      CHECK(approx_equal_to(fact->det(), 4.0));
+      CHECK_APPROX_EQ(fact->det(), 4.0);
     }
     SUBCASE("solve") {
       const Vec b{12.0};
       const Vec x{3.0};
       REQUIRE(A * x == b);
-      CHECK(approx_equal_to(fact->solve(b), x));
+      CHECK_APPROX_EQ(fact->solve(b), x);
     }
     SUBCASE("inverse") {
       const Mat A_inv{{0.25}};
-      REQUIRE(approx_equal_to(A * A_inv, eye(A)));
-      CHECK(approx_equal_to(fact->inverse(), A_inv));
+      REQUIRE_APPROX_EQ(A * A_inv, eye(A));
+      CHECK_APPROX_EQ(fact->inverse(), A_inv);
     }
   }
   SUBCASE("3x3") {
@@ -193,16 +193,16 @@ TEST_CASE("Mat::chol") {
       };
       // clang-format on
       REQUIRE(A == L * transpose(L));
-      CHECK(approx_equal_to(fact->L(), L));
+      CHECK_APPROX_EQ(fact->L(), L);
     }
     SUBCASE("det") {
-      CHECK(approx_equal_to(fact->det(), 36.0));
+      CHECK_APPROX_EQ(fact->det(), 36.0);
     }
     SUBCASE("solve") {
       const Vec b{9.0, 9.0, 9.0};
       const Vec x{341.25, -93.0, 15.0};
       REQUIRE(A * x == b);
-      CHECK(approx_equal_to(fact->solve(b), x));
+      CHECK_APPROX_EQ(fact->solve(b), x);
     }
     SUBCASE("inverse") {
       // clang-format off
@@ -212,8 +212,8 @@ TEST_CASE("Mat::chol") {
           {  19.0,   -5.0,  1.0},
       } / 9.0;
       // clang-format on
-      REQUIRE(approx_equal_to(A * A_inv, eye(A)));
-      CHECK(approx_equal_to(fact->inverse(), A_inv));
+      REQUIRE_APPROX_EQ(A * A_inv, eye(A));
+      CHECK_APPROX_EQ(fact->inverse(), A_inv);
     }
   }
   SUBCASE("4x4 indefinite") {
@@ -255,22 +255,22 @@ TEST_CASE("Mat::ldl") {
       const Mat L{{1.0}};
       const Mat D{{2.0}};
       REQUIRE(A == L * D * transpose(L));
-      CHECK(approx_equal_to(fact->L(), L));
-      CHECK(approx_equal_to(fact->D(), D));
+      CHECK_APPROX_EQ(fact->L(), L);
+      CHECK_APPROX_EQ(fact->D(), D);
     }
     SUBCASE("det") {
-      CHECK(approx_equal_to(fact->det(), 2.0));
+      CHECK_APPROX_EQ(fact->det(), 2.0);
     }
     SUBCASE("solve") {
       const Vec b{6.0};
       const Vec x{3.0};
       REQUIRE(A * x == b);
-      CHECK(approx_equal_to(fact->solve(b), x));
+      CHECK_APPROX_EQ(fact->solve(b), x);
     }
     SUBCASE("inverse") {
       const Mat A_inv{{0.5}};
-      REQUIRE(approx_equal_to(A * A_inv, eye(A)));
-      CHECK(approx_equal_to(fact->inverse(), A_inv));
+      REQUIRE_APPROX_EQ(A * A_inv, eye(A));
+      CHECK_APPROX_EQ(fact->inverse(), A_inv);
     }
   }
   SUBCASE("3x3") {
@@ -297,17 +297,17 @@ TEST_CASE("Mat::ldl") {
           {0.0, 0.0, 9.0},
       };
       REQUIRE(A == L * D * transpose(L));
-      CHECK(approx_equal_to(fact->L(), L));
-      CHECK(approx_equal_to(fact->D(), D));
+      CHECK_APPROX_EQ(fact->L(), L);
+      CHECK_APPROX_EQ(fact->D(), D);
     }
     SUBCASE("det") {
-      CHECK(approx_equal_to(fact->det(), 36.0));
+      CHECK_APPROX_EQ(fact->det(), 36.0);
     }
     SUBCASE("solve") {
       const Vec b{9.0, 9.0, 9.0};
       const Vec x{341.25, -93.0, 15.0};
       REQUIRE(A * x == b);
-      CHECK(approx_equal_to(fact->solve(b), x));
+      CHECK_APPROX_EQ(fact->solve(b), x);
     }
     SUBCASE("inverse") {
       // clang-format off
@@ -317,8 +317,8 @@ TEST_CASE("Mat::ldl") {
           {  19.0,   -5.0,  1.0},
       } / 9.0;
       // clang-format on
-      REQUIRE(approx_equal_to(A * A_inv, eye(A)));
-      CHECK(approx_equal_to(fact->inverse(), A_inv));
+      REQUIRE_APPROX_EQ(A * A_inv, eye(A));
+      CHECK_APPROX_EQ(fact->inverse(), A_inv);
     }
   }
   SUBCASE("4x4 indefinite") {
@@ -348,17 +348,17 @@ TEST_CASE("Mat::ldl") {
       };
       // clang-format on
       REQUIRE(A == L * D * transpose(L));
-      CHECK(approx_equal_to(fact->L(), L));
-      CHECK(approx_equal_to(fact->D(), D));
+      CHECK_APPROX_EQ(fact->L(), L);
+      CHECK_APPROX_EQ(fact->D(), D);
     }
     SUBCASE("det") {
-      CHECK(approx_equal_to(fact->det(), 36.0));
+      CHECK_APPROX_EQ(fact->det(), 36.0);
     }
     SUBCASE("solve") {
       const Vec b{9.0, 9.0, 9.0, 9.0};
       const Vec x{-27990.75, 7440.0, -1308.0, 441.0};
       REQUIRE(A * x == b);
-      CHECK(approx_equal_to(fact->solve(b), x));
+      CHECK_APPROX_EQ(fact->solve(b), x);
     }
     SUBCASE("inverse") {
       // clang-format off
@@ -369,8 +369,8 @@ TEST_CASE("Mat::ldl") {
           {    576.0,  -153.0,    27.0,   -9.0},
       } / 9.0;
       // clang-format on
-      REQUIRE(approx_equal_to(A * A_inv, eye(A)));
-      CHECK(approx_equal_to(fact->inverse(), A_inv));
+      REQUIRE_APPROX_EQ(A * A_inv, eye(A));
+      CHECK_APPROX_EQ(fact->inverse(), A_inv);
     }
   }
   SUBCASE("4x4 singular") {
