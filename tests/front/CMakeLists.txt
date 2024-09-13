@@ -3,9 +3,14 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("test_runner")
-add_subdirectory("tit")
-add_subdirectory("titwcsph")
-add_subdirectory("front")
+if(NOT NPM_EXE)
+  return()
+endif()
+
+# Run npm tests.
+add_tit_test(
+  NAME "tit/front/unit"
+  COMMAND "${BASH_EXE}" -c
+    "cd ${CMAKE_SOURCE_DIR}/front && ${NPM_EXE} run test")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
