@@ -33,10 +33,10 @@ class InertialBisection final {
 public:
 
   /// Initialize and build the partitioning.
-  InertialBisection(Points points, Parts parts, size_t num_parts)
+  InertialBisection(Points points, Parts parts, size_t num_parts, size_t ip = 0)
       : points_{std::move(points)}, parts_{std::move(parts)} {
     TIT_PROFILE_SECTION("InertialBisection::InertialBisection()");
-    build_(num_parts);
+    build_(num_parts, ip);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,14 +44,14 @@ public:
 private:
 
   // Build the partitioning recursively.
-  void build_(size_t num_parts) {
+  void build_(size_t num_parts, size_t init_part) {
     // Initialize identity permutation.
     perm_ = std::views::iota(size_t{0}, std::size(points_)) |
             std::ranges::to<std::vector>();
 
     // Build the partitioning.
     par::TaskGroup tasks{};
-    partition_(tasks, num_parts, /*part_index=*/0, perm_);
+    partition_(tasks, num_parts, init_part, perm_);
     tasks.wait();
   }
 
@@ -153,10 +153,12 @@ public:
     requires deduce_constructible_from<InertialBisection, Points, Parts, size_t>
   constexpr auto operator()(Points&& points,
                             Parts&& parts,
-                            size_t num_parts) const {
+                            size_t num_parts,
+                            size_t init_part) const {
     return InertialBisection{std::forward<Points>(points),
                              std::forward<Parts>(parts),
-                             num_parts};
+                             num_parts,
+                             init_part};
   }
 
 }; // class RecursiveInertialBisection
