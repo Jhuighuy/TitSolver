@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
@@ -36,6 +37,7 @@ public:
   InertialBisection(Points points, Parts parts, size_t num_parts)
       : points_{std::move(points)}, parts_{std::move(parts)} {
     TIT_PROFILE_SECTION("InertialBisection::InertialBisection()");
+    TIT_ASSERT(num_parts > 0, "Number of parts must be positive!");
     build_(num_parts);
   }
 
@@ -151,9 +153,10 @@ public:
   template<std::ranges::viewable_range Points,
            std::ranges::viewable_range Parts>
     requires deduce_constructible_from<InertialBisection, Points, Parts, size_t>
-  constexpr auto operator()(Points&& points,
-                            Parts&& parts,
-                            size_t num_parts) const {
+  static constexpr auto operator()(const auto& /*adjacency*/,
+                                   Points&& points,
+                                   Parts&& parts,
+                                   size_t num_parts) {
     return InertialBisection{std::forward<Points>(points),
                              std::forward<Parts>(parts),
                              num_parts};

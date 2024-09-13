@@ -5,21 +5,23 @@
 
 #pragma once
 
+#include <concepts>
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // IWYU pragma: begin_exports
 #include "tit/geom/inertial_bisection.hpp"
+#include "tit/geom/metis.hpp"
 // IWYU pragma: end_exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#include <concepts>
 
 namespace tit::geom {
 
 /// Partitioning factory type.
 template<class PF>
-concept partitioning_factory = std::same_as<PF, InertialBisectionFactory>;
+concept partitioning_factory = std::same_as<PF, InertialBisectionFactory> ||
+                               std::same_as<PF, MetisPartitionerFactory>;
 
 } // namespace tit::geom
 

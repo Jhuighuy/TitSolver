@@ -47,7 +47,7 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 /// Particle adjacency graph.
 template<geom::search_factory SearchFactory = geom::GridFactory,
          geom::partitioning_factory PartitioningFactory =
-             geom::InertialBisectionFactory>
+             geom::MetisPartitionerFactory>
 class ParticleMesh final {
 public:
 
@@ -195,7 +195,8 @@ private:
     const auto num_parts = par::num_threads();
     const auto positions = r[particles];
     const auto parts = parinfo[particles];
-    const auto partition = partitioning_factory_(positions, parts, num_parts);
+    [[maybe_unused]] const auto partitioner =
+        partitioning_factory_(adjacency_, positions, parts, num_parts);
 
     // Assemble the block adjacency graph.
     /// @todo Clean-up the code below!

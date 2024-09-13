@@ -11,11 +11,13 @@ add_tit_library(
     "grid.hpp"
     "inertial_bisection.hpp"
     "kd_tree.hpp"
+    "metis.hpp"
     "partitioning.hpp"
     "search.hpp"
     "sfc_sort.hpp"
   DEPENDS
     tit::core
+    metis
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,6 +28,7 @@ add_tit_executable(
   SOURCES
     "bbox.test.cpp"
     "inertial_bisection.test.cpp"
+    "metis.test.cpp"
     "search.test.cpp"
     "sfc_sort.test.cpp"
   DEPENDS

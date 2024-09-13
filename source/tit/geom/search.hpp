@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <concepts>
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // IWYU pragma: begin_exports
@@ -14,14 +16,12 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#include <concepts>
-
 namespace tit::geom {
 
 /// Search factory type.
 template<class SF>
-concept search_factory =
-    std::same_as<SF, GridFactory> || std::same_as<SF, KDTreeFactory>;
+concept search_factory = std::same_as<SF, GridFactory> || //
+                         std::same_as<SF, KDTreeFactory>;
 
 } // namespace tit::geom
 
