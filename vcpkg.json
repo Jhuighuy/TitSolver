@@ -3,6 +3,9 @@
   "name": "tit",
   "version-string": "0.1.0",
   "dependencies": [
+    "boost-core",
+    "boost-container",
+    "boost-stacktrace",
     "doctest",
     "hdf5",
     "highway",

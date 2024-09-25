@@ -65,6 +65,8 @@ add_tit_library(
     "vec/vec_mask.hpp"
   DEPENDS
     tit::base
+    Boost::core
+    Boost::stacktrace_addr2line
     hwy::hwy
     TBB::tbb
     TBB::tbbmalloc
