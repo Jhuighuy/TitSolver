@@ -5,3 +5,14 @@ Creating a joinable thread...
 
 
 Terminating due to a call to std::terminate().
+
+
+Stack trace:
+
+  0 0x100ab46d4 tit::TerminateHandler::handle_terminate_()
+  1 0x100e828cc __cxxabiv1::__terminate(void (*)())
+  2 0x100f97dbc std::unexpected()
+  3 0x100aab554 tit::(anonymous namespace)::func_3()
+  4 0x100aab6d4 tit::(anonymous namespace)::run_test(int, char**)
+  5 0x100ab4c70 tit::run_main(int, char**, std::function<int (int, char**)> const&)
+  6 0x100ade298 main

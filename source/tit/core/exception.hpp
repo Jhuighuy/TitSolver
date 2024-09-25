@@ -9,6 +9,9 @@
 #include <source_location>
 #include <string>
 #include <string_view>
+#include <utility>
+
+#include "tit/core/missing.hpp"
 
 namespace tit {
 
@@ -22,8 +25,10 @@ public:
   [[gnu::always_inline]]
   explicit Exception(
       std::string_view message,
-      std::source_location location = std::source_location::current())
-      : message_{message}, location_{location} {}
+      std::source_location location = std::source_location::current(),
+      Std::stacktrace stacktrace = Std::stacktrace::current())
+      : message_{message}, location_{location},
+        stacktrace_{std::move(stacktrace)} {}
 
   /// Get the exception message.
   auto what() const noexcept -> const char* override {
@@ -35,10 +40,16 @@ public:
     return location_;
   }
 
+  /// Retrieve the exception stack trace.
+  auto when() const noexcept -> const Std::stacktrace& {
+    return stacktrace_;
+  }
+
 private:
 
   std::string message_;
   std::source_location location_;
+  Std::stacktrace stacktrace_;
 
 }; // class Exception
 

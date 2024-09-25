@@ -5,3 +5,17 @@ Doing something bad...
 
 
 Terminating due to an unhandled exception.
+
+
+Stack trace:
+
+  0 0x104db4a0c tit::TerminateHandler::handle_terminate_()
+  1 0x1051828cc __cxxabiv1::__terminate(void (*)())
+  2 0x105297dbc std::unexpected()
+  3 0x105182bc0 __cxa_rethrow
+  4 0x104dac780 tit::(anonymous namespace)::func_2()
+  5 0x104dac7a4 tit::(anonymous namespace)::func_1()
+  6 0x104dac7c8 tit::(anonymous namespace)::run_test(int, char**)
+  7 0x104dac7d4 tit::(anonymous namespace)::run_test(int, char**)
+  8 0x104db4eb0 tit::run_main(int, char**, std::function<int (int, char**)> const&)
+  9 0x104dde4d8 main

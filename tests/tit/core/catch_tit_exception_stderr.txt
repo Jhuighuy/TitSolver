@@ -8,3 +8,13 @@ Throwing an exception...
 
   throw tit::Exception(...);
   ^~~~~~~~~~~~~~~~~~~~~~~~~~ Test exception.
+
+
+Stack trace:
+
+  0 0x102969e10 tit::(anonymous namespace)::func_3()
+  1 0x10293a184 tit::(anonymous namespace)::func_1()
+  2 0x10293a1a8 tit::(anonymous namespace)::run_test(int, char**)
+  3 0x10293a1b4 tit::(anonymous namespace)::run_test(int, char**)
+  4 0x102940b70 tit::run_main(int, char**, std::function<int (int, char**)> const&)
+  5 0x10296a258 main
