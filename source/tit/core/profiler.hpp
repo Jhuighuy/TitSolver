@@ -8,7 +8,7 @@
 #include <mutex>
 #include <string_view>
 
-#include "tit/core/string_utils.hpp"
+#include "tit/core/str_utils.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/utils.hpp"
 
@@ -34,7 +34,7 @@ private:
   static void report_();
 
   static std::mutex sections_mutex_;
-  static StringHashMap<Stopwatch> sections_;
+  static StrHashMap<Stopwatch> sections_;
 
 }; // class Profiler
 

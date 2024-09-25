@@ -17,7 +17,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/string_utils.hpp"
+#include "tit/core/str_utils.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -179,7 +179,7 @@ private:
 
   static bool enabled_;
   static std::mutex vars_mutex_;
-  static StringHashMap<std::unique_ptr<BaseStatsVar>> vars_;
+  static StrHashMap<std::unique_ptr<BaseStatsVar>> vars_;
 
 }; // class Stats
 

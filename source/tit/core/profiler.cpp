@@ -14,7 +14,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/string_utils.hpp"
+#include "tit/core/str_utils.hpp"
 #include "tit/core/sys_utils.hpp"
 #include "tit/core/time.hpp"
 
@@ -23,7 +23,7 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 std::mutex Profiler::sections_mutex_{};
-StringHashMap<Stopwatch> Profiler::sections_{};
+StrHashMap<Stopwatch> Profiler::sections_{};
 
 auto Profiler::section(std::string_view section_name) -> Stopwatch& {
   TIT_ASSERT(!section_name.empty(), "Section name must not be empty!");
