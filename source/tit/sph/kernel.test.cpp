@@ -6,6 +6,7 @@
 #include <numbers>
 
 #include "tit/core/math.hpp"
+#include "tit/core/missing.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 

@@ -23,6 +23,14 @@ include(tit_testing)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find the third-party libraries.
+find_package(
+  Boost
+  CONFIG REQUIRED
+  COMPONENTS
+    core
+    container
+    stacktrace_addr2line
+)
 find_package(doctest CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)

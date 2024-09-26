@@ -131,9 +131,9 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
   if (signal_number == SIGINT) {
     // Exit normally.
     dump("\n\nInterrupted by Ctrl+C.\n");
-    exit(0);
+    exit(ExitCode::success);
   } else {
-    // Dump backtrace and exit fast with an error.
+    // Dump backtrace and fast-exit with an error.
     dump("\n\nTerminated by ");
     switch (signal_number) {
       case SIGHUP:  dump("SIGHUP (hangup)"); break;
@@ -152,7 +152,7 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
     }
     dump(".\n\nStacktrace:\n");
     dump_backtrace();
-    fast_exit(1);
+    fast_exit(ExitCode::failure);
   }
 }
 

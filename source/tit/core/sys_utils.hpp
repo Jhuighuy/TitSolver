@@ -6,6 +6,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include <unistd.h>
 
@@ -21,15 +22,21 @@ using atexit_callback_t = void (*)();
 /// Register a function to be called at exit.
 void checked_atexit(atexit_callback_t callback) noexcept;
 
+/// Exit code.
+enum class ExitCode : uint8_t {
+  success = 0, ///< Success.
+  failure = 1, ///< Failure.
+};
+
 /// Exit from the current process.
 [[noreturn]]
-void exit(int exit_code) noexcept;
+void exit(ExitCode exit_code) noexcept;
 
 /// Fast-exit from the current process.
 ///
 /// @note No at-exit callbacks are triggered, except for coverage report.
 [[noreturn]]
-void fast_exit(int exit_code) noexcept;
+void fast_exit(ExitCode exit_code) noexcept;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -41,6 +48,33 @@ enum class TTY : uint8_t {
 
 /// Query terminal width.
 auto tty_width(TTY tty) noexcept -> std::optional<size_t>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Try to demangle a mangled name.
+/// @{
+auto try_demangle(const char* mangled_name) -> std::optional<std::string>;
+auto try_demangle_arg_type(const auto& arg) -> std::optional<std::string> {
+  return try_demangle(typeid(arg).name());
+}
+template<class Type>
+auto try_demangle_type() -> std::optional<std::string> {
+  return try_demangle(typeid(Type).name());
+}
+/// @}
+
+/// Try to demangle a mangled name.
+/// If demangling fails, return the original name.
+/// @{
+auto maybe_demangle(const char* mangled_name) -> std::string;
+auto maybe_demangle_arg_type(const auto& arg) -> std::string {
+  return maybe_demangle(typeid(arg).name());
+}
+template<class Type>
+auto maybe_demangle_type() -> std::string {
+  return maybe_demangle(typeid(Type).name());
+}
+/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

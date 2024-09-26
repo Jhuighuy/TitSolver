@@ -9,6 +9,7 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/io.hpp"
+#include "tit/core/sys_utils.hpp"
 
 namespace tit::impl {
 
@@ -19,7 +20,7 @@ void handle_check_failure( // NOLINT(*-exception-escape)
     std::string_view expression,
     std::string_view message,
     std::source_location location) noexcept {
-  /// @todo We should also report stacktrace once we have it.
+  // Report the check failure.
   eprintln();
   eprintln();
   eprintln("{}:{}:{}: Internal consistency check failed!",
@@ -30,8 +31,10 @@ void handle_check_failure( // NOLINT(*-exception-escape)
   eprintln("  {}", expression);
   eprintln("  ^{:~>{}} {}", "", expression.size() - 1, message);
   eprintln();
+  eprint_stacktrace();
 
-  std::abort();
+  // Fast-exit with failure.
+  fast_exit(ExitCode::failure);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

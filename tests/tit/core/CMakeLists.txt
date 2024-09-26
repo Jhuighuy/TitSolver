@@ -51,6 +51,7 @@ add_tit_test_from_target(
   NAME "tit/core/catch_std_exception"
   EXIT_CODE 1
   MATCH_STDERR "catch_std_exception_stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,6 +67,7 @@ add_tit_test_from_target(
   NAME "tit/core/catch_terminate"
   EXIT_CODE 1
   MATCH_STDERR "catch_terminate_stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,6 +83,7 @@ add_tit_test_from_target(
   NAME "tit/core/catch_tit_exception"
   EXIT_CODE 1
   MATCH_STDERR "catch_tit_exception_stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,6 +99,7 @@ add_tit_test_from_target(
   NAME "tit/core/catch_unknown_exception"
   EXIT_CODE 1
   MATCH_STDERR "catch_unknown_exception_stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

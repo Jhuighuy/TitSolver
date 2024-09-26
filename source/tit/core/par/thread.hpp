@@ -18,6 +18,7 @@
 #include <oneapi/tbb/partitioner.h>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/missing.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/type_traits.hpp"
 #include "tit/core/utils.hpp"

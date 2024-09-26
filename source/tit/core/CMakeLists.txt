@@ -17,6 +17,7 @@ add_tit_library(
     "exception.hpp"
     "graph.hpp"
     "io.hpp"
+    "io.cpp"
     "main_func.cpp"
     "main_func.hpp"
     "mat.hpp"
@@ -32,6 +33,7 @@ add_tit_library(
     "meta/range.hpp"
     "meta/set.hpp"
     "meta/type.hpp"
+    "missing.hpp"
     "multivector.hpp"
     "par.hpp"
     "par/atomic.hpp"
@@ -65,6 +67,8 @@ add_tit_library(
     "vec/vec_mask.hpp"
   DEPENDS
     tit::base
+    Boost::core
+    Boost::stacktrace_addr2line
     hwy::hwy
     TBB::tbb
     TBB::tbbmalloc

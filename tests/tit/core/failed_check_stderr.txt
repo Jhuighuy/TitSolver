@@ -9,18 +9,13 @@ Checking how floating point arithmetic works...
   0.1 + 0.2 == 0.3
   ^~~~~~~~~~~~~~~~ Right?!
 
-Terminated by SIGABRT (aborted).
 
-Stacktrace:
-0   tit_core_failed_check_test          0x0000000104539894 _ZN3tit18FatalSignalHandler9on_signalEi + 180
-1   libsystem_platform.dylib            0x00000001843b3584 _sigtramp + 56
-2   libsystem_pthread.dylib             0x0000000184382c20 pthread_kill + 288
-3   libsystem_c.dylib                   0x000000018428fa20 abort + 180
-4   tit_core_failed_check_test          0x0000000104532e18 _ZN3tit4impl21handle_check_failure_ESt17basic_string_viewIcSt11char_traitsIcEES4_St15source_location + 200
-5   tit_core_failed_check_test          0x000000010452cea0 _ZN3tit12_GLOBAL__N_16func_2Ev + 0
-6   tit_core_failed_check_test          0x000000010452cec4 _ZN3tit12_GLOBAL__N_16func_1Ev + 0
-7   tit_core_failed_check_test          0x000000010452cee8 _ZN3tit12_GLOBAL__N_18run_testEiPPc + 0
-8   tit_core_failed_check_test          0x000000010452cef4 _ZN3tit12_GLOBAL__N_18run_testEiPPc + 12
-9   tit_core_failed_check_test          0x0000000104532f00 _ZN3tit8run_mainEiPPcRKSt8functionIFiiS1_EE + 128
-10  tit_core_failed_check_test          0x000000010455c3d8 main + 56
-11  dyld                                0x0000000183ffa0e0 start + 2360
+Stack trace:
+
+  0 0x1047b473c tit::impl::handle_check_failure(std::basic_string_view<char, std::char_traits<char> >, std::basic_string_view<char, std::char_traits<char> >, std::source_location)
+  1 0x1047af580 tit::(anonymous namespace)::func_2()
+  2 0x1047af5a4 tit::(anonymous namespace)::func_1()
+  3 0x1047af5c8 tit::(anonymous namespace)::run_test(int, char**)
+  4 0x1047af5d4 tit::(anonymous namespace)::run_test(int, char**)
+  5 0x1047b6a70 tit::run_main(int, char**, std::function<int (int, char**)> const&)
+  6 0x1047e1f58 main

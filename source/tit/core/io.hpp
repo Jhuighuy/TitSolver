@@ -10,6 +10,8 @@
 #include <print>
 #include <utility>
 
+#include "tit/core/missing.hpp"
+
 namespace tit {
 
 using std::print;
@@ -40,6 +42,12 @@ inline void println() {
   std::cout << '\n';
 }
 #endif
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print the stack trace to the standard error stream.
+void eprint_stacktrace(
+    const Std::stacktrace& stacktrace = Std::stacktrace::current());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
