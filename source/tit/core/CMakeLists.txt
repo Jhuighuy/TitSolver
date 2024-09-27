@@ -20,6 +20,7 @@ add_tit_library(
     "io.cpp"
     "main_func.cpp"
     "main_func.hpp"
+    "malloc.cpp"
     "mat.hpp"
     "mat/mat.hpp"
     "mat/eig.hpp"
@@ -70,6 +71,7 @@ add_tit_library(
     Boost::core
     Boost::stacktrace_addr2line
     hwy::hwy
+    mimalloc-static
     TBB::tbb
     TBB::tbbmalloc
 )
