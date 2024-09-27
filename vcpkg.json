@@ -9,6 +9,7 @@
     "doctest",
     "hdf5",
     "highway",
+    "mimalloc",
     "nanobench",
     "tbb"
   ]

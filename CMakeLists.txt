@@ -34,6 +34,7 @@ find_package(
 find_package(doctest CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
+find_package(mimalloc CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
