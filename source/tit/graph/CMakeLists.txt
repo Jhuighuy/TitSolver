@@ -7,6 +7,7 @@ add_tit_library(
   NAME
     graph
   SOURCES
+    "graph.hpp"
   DEPENDS
     tit::core
     Boost::container

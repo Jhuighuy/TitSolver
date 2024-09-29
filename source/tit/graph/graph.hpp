@@ -11,12 +11,12 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/multivector.hpp"
 
-namespace tit {
+namespace tit::graph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Compressed sparse adjacency graph.
-class Graph : public Multivector<size_t> {
+class Graph final : public Multivector<size_t> {
 public:
 
   /// Number of graph nodes.
@@ -24,25 +24,30 @@ public:
     return size();
   }
 
+  /// Range of the graph nodes.
+  constexpr auto nodes() const noexcept {
+    return std::views::iota(size_t{0}, num_nodes());
+  }
+
   /// Range of the unique graph edges.
   constexpr auto edges() const noexcept {
-    return std::views::iota(0UZ, num_nodes()) |
-           std::views::transform([this](size_t row_index) {
-             return (*this)[row_index] |
-                    // Take only lower part of the row.
-                    std::views::take_while([row_index](size_t col_index) {
-                      return col_index < row_index;
-                    }) |
-                    // Pack row and column indices into a tuple.
-                    std::views::transform([row_index](size_t col_index) {
-                      return std::tuple{col_index, row_index};
-                    });
-           }) |
-           std::views::join;
+    return //
+        nodes() | std::views::transform([this](size_t node) {
+          return (*this)[node] |
+                 // Take only lower part of the row.
+                 std::views::take_while([node](size_t neighbor) { //
+                   return neighbor < node;
+                 }) |
+                 // Pack row and column indices into a tuple.
+                 std::views::transform([node](size_t neighbor) {
+                   return std::tuple{neighbor, node};
+                 });
+        }) |
+        std::views::join;
   }
 
 }; // class Graph
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+} // namespace tit::graph
