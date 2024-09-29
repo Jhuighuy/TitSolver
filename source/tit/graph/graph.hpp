@@ -15,6 +15,17 @@ namespace tit::graph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Node type alias.
+using node_t = size_t;
+
+/// Weight type alias.
+using weight_t = real_t;
+
+/// Part type alias.
+using part_t = size_t;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Compressed sparse adjacency graph.
 class Graph final : public Multivector<size_t> {
 public:
@@ -32,14 +43,12 @@ public:
   /// Range of the unique graph edges.
   constexpr auto edges() const noexcept {
     return //
-        nodes() | std::views::transform([this](size_t node) {
+        nodes() | std::views::transform([this](node_t node) {
           return (*this)[node] |
-                 // Take only lower part of the row.
-                 std::views::take_while([node](size_t neighbor) { //
+                 std::views::take_while([node](node_t neighbor) { //
                    return neighbor < node;
                  }) |
-                 // Pack row and column indices into a tuple.
-                 std::views::transform([node](size_t neighbor) {
+                 std::views::transform([node](node_t neighbor) {
                    return std::tuple{neighbor, node};
                  });
         }) |
@@ -47,6 +56,41 @@ public:
   }
 
 }; // class Graph
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Compressed sparse adjacency graph with edge weights.
+class WeightedGraph final : public Multivector<std::pair<size_t, weight_t>> {
+public:
+
+  /// Number of graph nodes.
+  constexpr auto num_nodes() const noexcept -> size_t {
+    return size();
+  }
+
+  /// Range of the graph nodes.
+  constexpr auto nodes() const noexcept {
+    return std::views::iota(size_t{0}, num_nodes());
+  }
+
+  /// Range of the unique graph wieghted edges.
+  constexpr auto edges() const noexcept {
+    return //
+        nodes() | std::views::transform([this](node_t node) {
+          return (*this)[node] |
+                 std::views::take_while([node](const auto& neigbor_and_weight) {
+                   const auto& neighbor = std::get<0>(neigbor_and_weight);
+                   return neighbor < node;
+                 }) |
+                 std::views::transform([node](const auto& neigbor_and_weight) {
+                   const auto& [neighbor, weight] = neigbor_and_weight;
+                   return std::tuple{neighbor, node, weight};
+                 });
+        }) |
+        std::views::join;
+  }
+
+}; // class WeightedGraph
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
