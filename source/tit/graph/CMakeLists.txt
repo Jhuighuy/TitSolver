@@ -5,33 +5,30 @@
 
 add_tit_library(
   NAME
-    geom
+    graph
   SOURCES
-    "bbox.hpp"
-    "grid.hpp"
-    "grid_graph_partitioning.hpp"
-    "inertial_bisection.hpp"
-    "kd_tree.hpp"
-    "partitioning.hpp"
-    "search.hpp"
-    "sfc_sort.hpp"
+    "coarsen.cpp"
+    "coarsen.hpp"
+    "graph.hpp"
+    "partition.cpp"
+    "partition.hpp"
+    "refine.cpp"
+    "refine.hpp"
+    "utils.hpp"
   DEPENDS
     tit::core
     Boost::container
+    metis
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
   NAME
-    geom_tests
+    graph_tests
   SOURCES
-    "bbox.test.cpp"
-    "inertial_bisection.test.cpp"
-    "search.test.cpp"
-    "sfc_sort.test.cpp"
   DEPENDS
-    tit::geom
+    tit::graph
     tit::testing
 )
 

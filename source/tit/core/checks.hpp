@@ -28,14 +28,22 @@
 #define TIT_ASSERT(expr, message) TIT_ENSURE((expr), (message))
 #endif
 
+/// Fail with the given message.
+///
+/// Use this macro to abort the entire process due a failure in the internal
+/// logic with in cases, when the actual check is done elsewhere, (e.g.,
+/// when translating a library error code to a user-friendly message).
+#define TIT_FAIL(message) tit::impl::handle_check_failure("TIT_FAIL()", message)
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace tit::impl {
 
 [[noreturn]]
-void handle_check_failure(std::string_view expression,
-                          std::string_view message,
-                          std::source_location location) noexcept;
+void handle_check_failure(
+    std::string_view expression,
+    std::string_view message,
+    std::source_location location = std::source_location::current()) noexcept;
 
 constexpr void run_check(
     bool condition,

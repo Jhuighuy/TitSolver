@@ -32,6 +32,8 @@ template<std::ranges::view Points, std::ranges::view Parts>
 class InertialBisection final {
 public:
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   /// Initialize and build the partitioning.
   InertialBisection(Points points,
                     Parts parts,

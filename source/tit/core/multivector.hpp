@@ -92,6 +92,14 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  constexpr void reserve(size_t buckets_capacity) {
+    val_ranges_.reserve(buckets_capacity + 1);
+  }
+  constexpr void resize(size_t buckets_capacity, size_t val_capacity) {
+    val_ranges_.reserve(buckets_capacity + 1);
+    vals_.reserve(val_capacity);
+  }
+
   /// Append values to the multivector.
   template<std::ranges::input_range Vals>
     requires std::indirectly_copyable<std::ranges::iterator_t<Vals>,
