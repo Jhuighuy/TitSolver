@@ -255,6 +255,29 @@ constexpr auto vec_cast(const Vec<From, Dim>& a)
 }
 /// @}
 
+/// Convert a vector into an array.
+template<class Num, size_t Dim>
+constexpr auto to_array(const Vec<Num, Dim>& a) -> std::array<Num, Dim> {
+  std::array<Num, Dim> r{};
+  for (size_t i = 0; i < Dim; ++i) r[i] = a[i];
+  return r;
+}
+
+template<size_t Axis = 0, class Num, size_t Dim, class Func>
+constexpr void vec_md_for(const Vec<Num, Dim>& first,
+                          const Vec<Num, Dim>& last,
+                          const Func& func) {
+  for (auto i = first[Axis]; i < last[Axis]; ++i) {
+    if constexpr (Axis == Dim - 1) {
+      func(Vec{i});
+    } else {
+      vec_md_for<Axis + 1>(first, last, [i, &func](auto indices) {
+        func(vec_cat(Vec{i}, indices));
+      });
+    }
+  }
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // Algorithms
