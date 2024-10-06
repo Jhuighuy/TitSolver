@@ -15,6 +15,7 @@
 
 #include "tit/geom/search.hpp"
 
+#include "tit/geom/search/kd_tree.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -65,12 +66,13 @@ auto search_grid(const std::vector<Vec3D>& points,
                  double search_radius,
                  double size_hint) -> SearchResult {
   // Construct the grid.
-  const geom::Grid grid{points, size_hint};
+  const geom::GridIndexing grid_indexing{size_hint};
+  const auto grid_index = grid_indexing(points);
 
   // Perform the nearest neighbor search.
   SearchResult result(points.size());
   for (const auto& [point, result_row] : std::views::zip(points, result)) {
-    grid.search(point, search_radius, std::back_inserter(result_row));
+    grid_index.search(point, search_radius, std::back_inserter(result_row));
   }
   return result;
 }
@@ -82,12 +84,13 @@ auto search_kd_tree(const std::vector<Vec3D>& points,
                     double search_radius,
                     size_t max_leaf_size) -> SearchResult {
   // Construct the K-dimensional tree.
-  const geom::KDTree kd_tree{points, max_leaf_size};
+  const geom::KDTreeIndexing kd_tree_indexing{max_leaf_size};
+  const auto kd_tree_index = kd_tree_indexing(points);
 
   // Perform the nearest neighbor search.
   SearchResult result(points.size());
   for (const auto& [point, result_row] : std::views::zip(points, result)) {
-    kd_tree.search(point, search_radius, std::back_inserter(result_row));
+    kd_tree_index.search(point, search_radius, std::back_inserter(result_row));
   }
   return result;
 }
@@ -109,7 +112,7 @@ TEST_CASE("geom::Search") {
   // Nearest neighbor search using a naive approach.
   constexpr double search_radius = 0.1;
   static const auto result_naive = search_naive(points, search_radius);
-  SUBCASE("naive") {
+  SUBCASE("Naive") {
     match_search_results(result_naive, result_naive);
   }
 

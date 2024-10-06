@@ -22,18 +22,18 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/bipartition.hpp"
+#include "tit/geom/utils.hpp"
 
 namespace tit::geom {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// K-dimensional tree.
+/// K-dimensional tree spatial search index.
 /// Inspired by nanoflann: https://github.com/jlblancoc/nanoflann
-template<std::ranges::view Points>
-  requires std::ranges::sized_range<Points> &&
-           std::ranges::random_access_range<Points> &&
-           is_vec_v<std::ranges::range_value_t<Points>>
-class KDTree final {
+template<point_range Points>
+  requires std::ranges::view<Points>
+class KDTreeIndex final {
 public:
 
   /// Point type.
@@ -41,21 +41,21 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Initialize and build the K-dimensional tree.
+  /// Index the points for search using a K-dimensional tree.
   ///
   /// @param max_leaf_size Maximum amount of points in the leaf node.
-  explicit KDTree(Points points, size_t max_leaf_size = 1)
+  explicit KDTreeIndex(Points points, size_t max_leaf_size = 1)
       : points_{std::move(points)}, max_leaf_size_{max_leaf_size} {
-    TIT_PROFILE_SECTION("KDTree::KDTree()");
+    TIT_PROFILE_SECTION("KDTreeIndex::KDTreeIndex()");
     TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
     build_tree_();
   }
 
   /// Find the points within the radius to the given point.
   template<std::output_iterator<size_t> OutIter>
-  constexpr auto search(const Vec& search_point,
-                        vec_num_t<Vec> search_radius,
-                        OutIter out) const -> OutIter {
+  auto search(const Vec& search_point,
+              vec_num_t<Vec> search_radius,
+              OutIter out) const -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
     search_tree_(search_point, search_radius, out);
     return out;
@@ -65,6 +65,7 @@ public:
 
 private:
 
+  // K-dimensional tree node structure.
   union KDTreeNode_ {
     std::span<const size_t> perm{};
 #pragma GCC diagnostic push
@@ -82,7 +83,7 @@ private:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   // Build the K-dimensional tree.
-  auto build_tree_() {
+  void build_tree_() {
     if (std::ranges::empty(points_)) return;
 
     // Initialize identity points permutation.
@@ -99,10 +100,7 @@ private:
   auto build_subtree_(par::TaskGroup& tasks, std::span<size_t> perm)
       -> std::pair<KDTreeNode_*, BBox<Vec>> {
     // Compute bounding box.
-    //
-    /// @todo Introduce a helper function for this computation.
-    BBox box{points_[perm.front()]};
-    for (const auto i : perm | std::views::drop(1)) box.expand(points_[i]);
+    const auto box = compute_bbox(points_, perm);
 
     // Is leaf node reached?
     const auto node = pool_.create();
@@ -116,11 +114,8 @@ private:
     // Split the points based on the "widest" bounding box dimension.
     const auto cut_axis = max_value_index(box.extents());
     const auto center_coord = box.clamp(box.center())[cut_axis];
-    const std::span right_perm = std::ranges::partition(
-        perm,
-        [center_coord](vec_num_t<Vec> coord) { return coord < center_coord; },
-        [cut_axis, this](size_t index) { return points_[index][cut_axis]; });
-    const std::span left_perm(perm.begin(), right_perm.begin());
+    const auto [left_perm, right_perm] =
+        coord_bisection(points_, perm, center_coord, cut_axis);
 
     // Build subtrees.
     node->cut_axis = cut_axis;
@@ -139,9 +134,9 @@ private:
   }
 
   // Should the building be done in parallel?
-  static constexpr auto is_async_(std::span<size_t> perm) noexcept -> bool {
-    static constexpr size_t TooSmall = 50; // Empirical value.
-    return perm.size() >= TooSmall;
+  static auto is_async_(std::span<size_t> perm) noexcept -> bool {
+    constexpr size_t too_small = 50; // Empirical value.
+    return std::size(perm) >= too_small;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -150,9 +145,9 @@ private:
   //
   /// @todo Search is slow for some reason. Investigate.
   template<std::output_iterator<size_t> OutIter>
-  constexpr void search_tree_(const Vec& search_point,
-                              vec_num_t<Vec> search_radius,
-                              OutIter out) const {
+  void search_tree_(const Vec& search_point,
+                    vec_num_t<Vec> search_radius,
+                    OutIter out) const {
     // Compute distance from the query point to the root bounding box
     // per each dimension. (By "dist" square distances are meant.)
     const auto search_dist = pow2(search_radius);
@@ -166,11 +161,11 @@ private:
   // Search for the point neighbors in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
   template<std::output_iterator<size_t> OutIter>
-  constexpr void search_subtree_(const KDTreeNode_* node,
-                                 Vec dists,
-                                 const Vec& search_point,
-                                 vec_num_t<Vec> search_dist,
-                                 OutIter& out) const {
+  void search_subtree_(const KDTreeNode_* node,
+                       Vec dists,
+                       const Vec& search_point,
+                       vec_num_t<Vec> search_dist,
+                       OutIter& out) const {
     if (node->left_subtree == nullptr) {
       TIT_ASSERT(node->right_subtree == nullptr, "Invalid leaf node!");
       // Collect points within the leaf node.
@@ -221,38 +216,41 @@ private:
   BBox<Vec> tree_box_;
   std::vector<size_t> perm_;
 
-}; // class KDTree
+}; // class KDTreeIndex
 
 // Wrap a viewable range into a view on construction.
 template<std::ranges::viewable_range Points, class... Args>
-KDTree(Points&&, Args...) -> KDTree<std::views::all_t<Points>>;
+KDTreeIndex(Points&&, Args...) -> KDTreeIndex<std::views::all_t<Points>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// K-dimensional tree factory.
-class KDTreeFactory final {
+/// K-dimensional tree based spatial search indexing function.
+class KDTreeIndexing final {
 public:
 
-  /// Construct a K-dimensional tree factory.
+  /// Construct a K-dimensional tree search indexing function.
   ///
   /// @param max_leaf_size Maximum amount of points in the leaf node.
-  constexpr explicit KDTreeFactory(size_t max_leaf_size = 1)
+  constexpr explicit KDTreeIndexing(size_t max_leaf_size = 1)
       : max_leaf_size_{max_leaf_size} {
-    TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
+    TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive!");
   }
 
-  /// Produce a K-dimensional tree for the specified set of points.
+  /// Index the points for search using a K-dimensional tree.
   template<std::ranges::viewable_range Points>
-    requires deduce_constructible_from<KDTree, Points&&, size_t>
-  constexpr auto operator()(Points&& points) const {
-    return KDTree{std::forward<Points>(points), max_leaf_size_};
+    requires deduce_constructible_from<KDTreeIndex, Points&&, size_t>
+  [[nodiscard]] auto operator()(Points&& points) const {
+    return KDTreeIndex{std::forward<Points>(points), max_leaf_size_};
   }
 
 private:
 
   size_t max_leaf_size_;
 
-}; // class KDTreeFactory
+}; // class KDTreeIndexing
+
+/// K-dimensional tree based spatial search indexing.
+inline constexpr KDTreeIndexing kd_tree_indexing{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -8,12 +8,17 @@ add_tit_library(
     geom
   SOURCES
     "bbox.hpp"
-    "grid.hpp"
-    "inertial_bisection.hpp"
-    "kd_tree.hpp"
-    "partitioning.hpp"
+    "bipartition.hpp"
+    "partition.hpp"
+    "partition/recursive_bisection.hpp"
+    "partition/sort_partition.hpp"
     "search.hpp"
-    "sfc_sort.hpp"
+    "search/grid.hpp"
+    "search/kd_tree.hpp"
+    "sort.hpp"
+    "sort/hilbert_curve_sort.hpp"
+    "sort/morton_curve_sort.hpp"
+    "utils.hpp"
   DEPENDS
     tit::core
 )
@@ -25,9 +30,12 @@ add_tit_executable(
     geom_tests
   SOURCES
     "bbox.test.cpp"
-    "inertial_bisection.test.cpp"
+    "bipartition.test.cpp"
+    "partition/recursive_bisection.test.cpp"
+    "partition/sort_partition.test.cpp"
     "search.test.cpp"
-    "sfc_sort.test.cpp"
+    "sort/hilbert_curve_sort.test.cpp"
+    "sort/morton_curve_sort.test.cpp"
   DEPENDS
     tit::geom
     tit::testing

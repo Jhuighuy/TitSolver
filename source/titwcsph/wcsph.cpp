@@ -1,3 +1,4 @@
+#include "tit/geom/partition/sort_partition.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -317,7 +318,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   });
 
   // Setup the particle mesh structure.
-  ParticleMesh mesh{geom::GridFactory{h_0}};
+  ParticleMesh mesh{geom::GridIndexing{h_0}};
 
   system("mkdir -p output/test_output/");
   system("rm -f output/test_output/*");
