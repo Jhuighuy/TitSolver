@@ -90,7 +90,7 @@ jobs:
           ## Fetch fresh packages, but do not upgrade them automatically.
           brew update -q
           ## Install the toolchain.
-          brew install -q cmake
+          brew install -q automake cmake libtool pkg-config
           brew install -q gcc@14 || true # Might fail for unknown reason.
           ## Install LLVM.
           brew install -q llvm@18
