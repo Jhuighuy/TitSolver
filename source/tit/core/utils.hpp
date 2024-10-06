@@ -5,8 +5,11 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <concepts>
+#include <iterator>
+#include <ranges>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
@@ -40,6 +43,12 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// A pair of values of the same type.
+template<class T>
+using pair_of_t = std::pair<T, T>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Pack values into a padded array of given size.
 template<size_t Size, class T, class... Ts>
   requires ((std::constructible_from<T, Ts &&> && ...) &&
@@ -57,6 +66,75 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
   return [&get_val]<size_t... Indices>(std::index_sequence<Indices...>) {
     return std::array<T, Size>{get_val(Indices)...};
   }(std::make_index_sequence<Size>{});
+}
+
+/// Concatenate arrays.
+template<size_t... Sizes, class T>
+  requires std::copy_constructible<T>
+constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
+    -> std::array<T, (Sizes + ...)> {
+  std::array<T, (Sizes + ...)> result{};
+  auto copy_array = [out_iter = result.begin()](const auto& array) mutable {
+    out_iter = std::ranges::copy(array, out_iter).out;
+  };
+  (copy_array(arrays), ...);
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Range of indices.
+template<class Indices>
+concept index_range = std::ranges::random_access_range<Indices> &&
+                      std::integral<std::ranges::range_value_t<Indices>>;
+
+/// Range of indices that can be used as output for various algorithms.
+template<class Indices>
+concept output_index_range = std::ranges::random_access_range<Indices> &&
+                             std::ranges::output_range<Indices, size_t>;
+
+/// Permuted range view.
+template<std::ranges::random_access_range Range, index_range Perm>
+  requires std::ranges::viewable_range<Range> &&
+           std::ranges::viewable_range<Perm>
+constexpr auto permuted_view(Range&& range, Perm&& perm) {
+  return std::ranges::transform_view{
+      std::forward<Perm>(perm),
+      [range_view = std::views::all(std::forward<Range>(range))](
+          size_t index) -> auto&& { return range_view[index]; }};
+}
+
+/// Initialize the permutation with the identity permutation.
+/// @{
+template<std::ranges::sized_range Range>
+[[nodiscard]] constexpr auto iota_perm(Range&& range) noexcept {
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  return std::views::iota(size_t{0}, std::size(range));
+}
+template<std::ranges::sized_range Range, output_index_range Perm>
+constexpr void iota_perm(Range&& range, Perm&& perm) {
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  TIT_ASSUME_UNIVERSAL(Perm, perm);
+  std::ranges::copy(iota_perm(range), std::begin(perm));
+}
+/// @}
+
+/// Copy the permutation into the output, filtering by the predicate that
+/// is applied to the range items.
+template<std::ranges::random_access_range Range,
+         index_range Perm,
+         std::output_iterator<size_t> OutIter,
+         std::predicate<std::ranges::range_reference_t<Range&&>> Pred>
+constexpr auto copy_perm_if(Range&& range, Perm&& perm, OutIter out, Pred pred)
+    -> OutIter {
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  TIT_ASSUME_UNIVERSAL(Perm, perm);
+  const auto result = std::ranges::copy_if( //
+      perm,
+      out,
+      pred,
+      [&range](size_t i) -> auto&& { return range[i]; });
+  return result.out;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

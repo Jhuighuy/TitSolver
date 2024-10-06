@@ -103,40 +103,37 @@ public:
   }
 
   /// Split the bounding box into two parts by the plane.
-  constexpr auto split(size_t axis, const vec_num_t<Vec>& val) const
-      -> std::pair<BBox, BBox> {
+  constexpr auto split(size_t axis,
+                       const vec_num_t<Vec>& val,
+                       bool reverse = false) const -> std::array<BBox, 2> {
     TIT_ASSERT(axis < vec_dim_v<Vec>, "Split axis is out of range!");
-    TIT_ASSERT(low_[axis] <= val && val <= high_[axis],
-               "Split value if out out range!");
+    TIT_ASSERT(val >= low_[axis], "Split value if out out range!");
+    TIT_ASSERT(val <= high_[axis], "Split value if out out range!");
     auto left = *this;
     left.high_[axis] = val;
     auto right = *this;
     right.low_[axis] = val;
-    return std::pair{std::move(left), std::move(right)};
+    if (reverse) return {std::move(right), std::move(left)};
+    return {std::move(left), std::move(right)};
   }
 
   /// Split the bounding box into parts by the point.
-  constexpr auto split(const Vec& point) const {
-    TIT_ASSERT(point >= low_ && point <= high_, "Point is out of range!");
-
-    // Recursively split the boxes along the axes.
-    auto pieces = [&point]<size_t Axis>(this auto self,
-                                        integral_constant_t<Axis> /*axis*/,
-                                        const auto&... boxes) {
-      auto split_boxes = std::tuple_cat(boxes.split(Axis, point[Axis])...);
+  constexpr auto split(const Vec& point) const
+      -> std::array<BBox, (1 << vec_dim_v<Vec>)> {
+    TIT_ASSERT(point >= low_, "Point is out of range!");
+    TIT_ASSERT(point <= high_, "Point is out of range!");
+    return [&point]<size_t Axis>(this const auto& self,
+                                 integral_constant_t<Axis> /*axis*/,
+                                 const auto&... boxes) {
+      const auto split_boxes = array_cat(boxes.split(Axis, point[Axis])...);
       if constexpr (Axis == vec_dim_v<Vec> - 1) {
         return split_boxes;
       } else {
         return std::apply(
             std::bind_front(self, integral_constant_t<Axis + 1>{}),
-            std::move(split_boxes));
+            split_boxes);
       }
     }(integral_constant_t<size_t{0}>{}, *this);
-
-    // Convert the tuple of boxes into an array.
-    return std::apply(
-        [](auto... boxes) { return std::array{std::move(boxes)...}; },
-        std::move(pieces));
   }
 
 private:
