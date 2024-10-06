@@ -7,6 +7,7 @@
 
 #include <array>
 #include <functional>
+#include <ranges>
 #include <tuple>
 #include <utility>
 
@@ -14,7 +15,10 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/type_traits.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
+
+#include "tit/geom/utils.hpp"
 
 namespace tit::geom {
 
@@ -103,40 +107,36 @@ public:
   }
 
   /// Split the bounding box into two parts by the plane.
-  constexpr auto split(size_t axis, const vec_num_t<Vec>& val) const
-      -> std::pair<BBox, BBox> {
+  constexpr auto split(size_t axis,
+                       const vec_num_t<Vec>& val,
+                       bool reverse = false) const -> std::array<BBox, 2> {
     TIT_ASSERT(axis < vec_dim_v<Vec>, "Split axis is out of range!");
-    TIT_ASSERT(low_[axis] <= val && val <= high_[axis],
-               "Split value if out out range!");
+    TIT_ASSERT(val >= low_[axis], "Split value if out out range!");
+    TIT_ASSERT(val <= high_[axis], "Split value if out out range!");
     auto left = *this;
     left.high_[axis] = val;
     auto right = *this;
     right.low_[axis] = val;
-    return std::pair{std::move(left), std::move(right)};
+    if (reverse) return {std::move(right), std::move(left)};
+    return {std::move(left), std::move(right)};
   }
 
   /// Split the bounding box into parts by the point.
-  constexpr auto split(const Vec& point) const {
-    TIT_ASSERT(point >= low_ && point <= high_, "Point is out of range!");
-
-    // Recursively split the boxes along the axes.
-    auto pieces = [&point]<size_t Axis>(this auto self,
-                                        integral_constant_t<Axis> /*axis*/,
-                                        const auto&... boxes) {
-      auto split_boxes = std::tuple_cat(boxes.split(Axis, point[Axis])...);
+  constexpr auto split(const Vec& point) const
+      -> std::array<BBox, (1 << vec_dim_v<Vec>)> {
+    TIT_ASSERT(point >= low_, "Point is out of range!");
+    TIT_ASSERT(point <= high_, "Point is out of range!");
+    return [&point]<size_t Axis>(this const auto& self,
+                                 size_t_constant<Axis> /*axis*/,
+                                 const auto&... boxes) {
+      const auto split_boxes = array_cat(boxes.split(Axis, point[Axis])...);
       if constexpr (Axis == vec_dim_v<Vec> - 1) {
         return split_boxes;
       } else {
-        return std::apply(
-            std::bind_front(self, integral_constant_t<Axis + 1>{}),
-            std::move(split_boxes));
+        return std::apply(std::bind_front(self, size_t_constant<Axis + 1>{}),
+                          split_boxes);
       }
-    }(integral_constant_t<size_t{0}>{}, *this);
-
-    // Convert the tuple of boxes into an array.
-    return std::apply(
-        [](auto... boxes) { return std::array{std::move(boxes)...}; },
-        std::move(pieces));
+    }(size_t_constant<0>{}, *this);
   }
 
 private:
@@ -145,6 +145,32 @@ private:
   Vec high_;
 
 }; // class BBox
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Point range bounding box type.
+template<point_range Points>
+using point_range_bbox_t = BBox<point_range_vec_t<Points>>;
+
+/// Compute the bounding box of the given points.
+/// @{
+template<point_range Points>
+constexpr auto compute_bbox(Points&& points) -> point_range_bbox_t<Points> {
+  TIT_ASSUME_UNIVERSAL(Points, points);
+  /// @todo Assertion below fails to compile with GCC 14 in coverage mode.
+  // TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
+  BBox box{*std::begin(points)};
+  for (const auto& point : points | std::views::drop(1)) box.expand(point);
+  return box;
+}
+template<point_range Points, index_range Perm>
+constexpr auto compute_bbox(Points&& points,
+                            Perm&& perm) -> point_range_bbox_t<Points> {
+  TIT_ASSUME_UNIVERSAL(Points, points);
+  TIT_ASSUME_UNIVERSAL(Perm, perm);
+  return compute_bbox(permuted_points(points, perm));
+}
+/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 #include <utility>
@@ -40,6 +41,12 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// A pair of values of the same type.
+template<class T>
+using pair_of_t = std::pair<T, T>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Pack values into a padded array of given size.
 template<size_t Size, class T, class... Ts>
   requires ((std::constructible_from<T, Ts &&> && ...) &&
@@ -57,6 +64,19 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
   return [&get_val]<size_t... Indices>(std::index_sequence<Indices...>) {
     return std::array<T, Size>{get_val(Indices)...};
   }(std::make_index_sequence<Size>{});
+}
+
+/// Concatenate arrays.
+template<size_t... Sizes, class T>
+  requires std::copy_constructible<T>
+constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
+    -> std::array<T, (Sizes + ...)> {
+  std::array<T, (Sizes + ...)> result{};
+  auto copy_array = [out_iter = result.begin()](const auto& array) mutable {
+    out_iter = std::ranges::copy(array, out_iter).out;
+  };
+  (copy_array(arrays), ...);
+  return result;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
