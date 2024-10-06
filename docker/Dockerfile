@@ -17,6 +17,7 @@ RUN <<EOF
   # Install packages.
   apt-get update -y
   apt-get install -y                                                           \
+    automake                                                                   \
     build-essential                                                            \
     clang-tidy-18                                                              \
     cmake                                                                      \
@@ -24,6 +25,7 @@ RUN <<EOF
     git                                                                        \
     g++-14                                                                     \
     gnupg                                                                      \
+    libtool                                                                    \
     ninja-build                                                                \
     pkg-config                                                                 \
     python3                                                                    \
