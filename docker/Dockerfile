@@ -41,7 +41,7 @@ EOF
 
 ## Install the Python tools.
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-RUN pip3 install --no-cache-dir codespell gcovr
+RUN pip3 install --no-cache-dir codespell gcovr sphinx
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

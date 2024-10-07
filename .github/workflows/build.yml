@@ -95,6 +95,9 @@ jobs:
           ## Install LLVM.
           brew install -q llvm@18
           echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
+          ## Install Sphinx.
+          brew install -q sphinx-doc
+          echo "$(brew --prefix sphinx-doc)/bin" >> $GITHUB_PATH
           ## Install miscellaneous tools.
           brew install -q gnu-sed diffutils
           pip3 install --user --upgrade codespell
