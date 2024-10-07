@@ -61,6 +61,12 @@ public:
   }
   /// @}
 
+  /// @todo Remove this when we are done!
+  constexpr void Assign(const Vec& other,
+                        bool /*copyContents*/ = true) noexcept {
+    *this = other;
+  }
+
 private:
 
   std::array<Num, Dim> col_;
@@ -179,6 +185,12 @@ public:
   /// @}
 
   // NOLINTEND(*-type-union-access)
+
+  /// @todo Remove this when we are done!
+  constexpr void Assign(const Vec& other,
+                        bool /*copyContents*/ = true) noexcept {
+    *this = other;
+  }
 
 private:
 
