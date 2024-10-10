@@ -46,8 +46,10 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 
 /// Particle adjacency graph.
 template<geom::search_factory SearchFactory = geom::GridFactory,
-         geom::partitioning_factory PartitioningFactory =
-             geom::InertialBisectionFactory>
+         geom::partitioning_factory PrimaryPartitioningFactory =
+             geom::InertialBisectionFactory,
+         geom::partitioning_factory SecondaryPartitioningFactory =
+             PrimaryPartitioningFactory>
 class ParticleMesh final {
 public:
 
@@ -57,10 +59,14 @@ public:
   ///
   /// @param search_factory Nearest-neighbors search factory.
   /// @param partitioning_factory Geometry partitioning factory.
-  constexpr explicit ParticleMesh(SearchFactory search_factory = {},
-                                  PartitioningFactory partitioning_factory = {})
+  constexpr explicit ParticleMesh(
+      SearchFactory search_factory = {},
+      PrimaryPartitioningFactory primary_partitioning_factory = {},
+      SecondaryPartitioningFactory secondary_partitioning_factory = {})
       : search_factory_{std::move(search_factory)},
-        partitioning_factory_{std::move(partitioning_factory)} {}
+        primary_partitioning_factory_{std::move(primary_partitioning_factory)},
+        secondary_partitioning_factory_{
+            std::move(secondary_partitioning_factory)} {}
 
   /// Adjacent particles.
   template<particle_view PV>
@@ -95,7 +101,7 @@ public:
   /// Unique pairs of the adjacent particles partitioned by the block.
   template<particle_array ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
-    return block_adjacency_.buckets() |
+    return block_edges_.buckets() |
            std::views::transform([&particles](auto block) {
              return block | std::views::transform([&particles](auto ab) {
                       const auto [a, b] = ab;
@@ -190,34 +196,101 @@ private:
   template<particle_array ParticleArray>
   constexpr void partition_(ParticleArray& particles) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
+    const auto& adjacency = adjacency_;
+    const auto& secondary_partitioning_factory =
+        secondary_partitioning_factory_;
 
-    // Build the geometric partitioning.
-    const auto num_parts = par::num_threads();
-    const auto positions = r[particles];
-    const auto parts = parinfo[particles];
-    const auto partition = partitioning_factory_(positions, parts, num_parts);
+    // Partition the particles adjacency graph.
+    static std::vector<std::vector<std::pair<size_t, size_t>>> block_edges{};
+    block_edges.clear();
+    const auto partition_impl = [num_threads = par::num_threads(),
+                                 positions = r[particles],
+                                 parts = parinfo[particles],
+                                 &adjacency,
+                                 &secondary_partitioning_factory](
+                                    this auto& self,
+                                    const auto& partitioning_factory,
+                                    auto&& indices,
+                                    auto&& edges,
+                                    size_t init_part) {
+      // Build the partitioning for the current partitcles.
+      [[maybe_unused]] const auto partition = partitioning_factory(
+          std::views::all(indices) |
+              std::views::transform([positions](size_t a) -> const auto& {
+                return positions[a];
+              }),
+          std::views::all(indices) |
+              std::views::transform([parts](size_t a) -> auto& { //
+                return parts[a];
+              }),
+          /*num_parts=*/num_threads,
+          init_part);
 
-    // Assemble the block adjacency graph.
-    /// @todo Clean-up the code below!
-    block_adjacency_.assemble_wide( //
-        num_parts + 1,
-        adjacency_.edges(),
-        [parts, num_parts](auto ab) {
-          const auto [a, b] = ab;
-          return parts[a] == parts[b] ? parts[a] : num_parts;
-        });
+      // Prepare the block adjacency graph: one block for each partition,
+      // plus one block for the edges that cross the partition boundaries.
+      TIT_ASSERT(init_part <= block_edges.size(), "Invalid partition index!");
+      block_edges.resize(
+          std::max(block_edges.size(), init_part + num_threads + 1));
+
+      // Collect the block adjacency graph for the current partition:
+      // edges that are within the same partition go to the corresponding block,
+      // edges that cross the partition boundaries go to the last block.
+      for (const auto& [a, b] : edges) {
+        if (const auto part = parts[a]; part == parts[b]) {
+          block_edges[part].emplace_back(a, b);
+        } else {
+          block_edges.back().emplace_back(a, b);
+        }
+      }
+
+      // Are we done?
+      if (const auto final_pass = init_part > 0; final_pass) return;
+
+      // Collect particles for the next partitioning pass: that are the
+      // particles with edges crossing the partition boundaries.
+      std::vector<size_t> next_indices;
+      for (const size_t a : indices) {
+        for (const size_t b : adjacency[a]) {
+          if (parts[a] != parts[b] && parts[b] >= init_part) {
+            next_indices.push_back(a);
+            break;
+          }
+        }
+      }
+
+      // Collect edges for the next partitioning pass.
+      const auto next_edges = std::move(block_edges.back());
+      block_edges.pop_back();
+
+      // Recurse into the next partitioning pass.
+      self(secondary_partitioning_factory,
+           next_indices,
+           next_edges,
+           init_part + num_threads);
+    };
+    partition_impl(primary_partitioning_factory_,
+                   std::views::iota(size_t{0}, particles.size()),
+                   adjacency_.edges(),
+                   /*init_part=*/0);
+
+    // Compress the block adjacency graph.
+    block_edges_.clear();
+    for (const auto& x : block_edges) block_edges_.push_back(x);
 
     // Report the block sizes.
-    TIT_STATS("ParticleMesh::block_adjacency_", block_adjacency_.sizes());
+    TIT_STATS("ParticleMesh::block_edges_", block_edges_.sizes());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Graph adjacency_;
   Graph interp_adjacency_;
-  Multivector<std::pair<size_t, size_t>> block_adjacency_;
+  Multivector<std::pair<size_t, size_t>> block_edges_;
   [[no_unique_address]] SearchFactory search_factory_;
-  [[no_unique_address]] PartitioningFactory partitioning_factory_;
+  [[no_unique_address]] PrimaryPartitioningFactory
+      primary_partitioning_factory_;
+  [[no_unique_address]] SecondaryPartitioningFactory
+      secondary_partitioning_factory_;
 
 }; // class ParticleMesh
 
