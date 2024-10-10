@@ -5,21 +5,21 @@
 
 #pragma once
 
-#include <concepts>
+#include "tit/core/type_traits.hpp"
 
 // IWYU pragma: begin_exports
-#include "tit/geom/search/grid.hpp"
-#include "tit/geom/search/kd_tree.hpp"
+#include "tit/geom/partition/recursive_bisection.hpp"
+#include "tit/geom/partition/sort_partition.hpp"
 // IWYU pragma: end_exports
 
 namespace tit::geom {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Spatial search indexing function type.
-template<class SF>
-concept search_indexing_func = std::same_as<SF, GridIndexing> || //
-                               std::same_as<SF, KDTreeIndexing>;
+/// Partition function type.
+template<class PF>
+concept partition_func = specialization_of<PF, RecursiveBisection> ||
+                         specialization_of<PF, SortPartition>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

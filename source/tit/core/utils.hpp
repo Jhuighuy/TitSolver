@@ -40,6 +40,12 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// A pair of values of the same type.
+template<class T>
+using pair_of_t = std::pair<T, T>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Pack values into a padded array of given size.
 template<size_t Size, class T, class... Ts>
   requires ((std::constructible_from<T, Ts &&> && ...) &&
