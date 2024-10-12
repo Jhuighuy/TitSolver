@@ -5,6 +5,7 @@
 
 add_subdirectory("core")
 add_subdirectory("geom")
+add_subdirectory("graph")
 add_subdirectory("sph")
 add_subdirectory("testing")
 

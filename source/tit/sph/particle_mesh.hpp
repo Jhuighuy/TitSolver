@@ -14,7 +14,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/graph.hpp"
 #include "tit/core/multivector.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
@@ -25,6 +24,8 @@
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/partitioning.hpp"
 #include "tit/geom/search.hpp"
+
+#include "tit/graph/graph.hpp"
 
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -213,8 +214,8 @@ private:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Graph adjacency_;
-  Graph interp_adjacency_;
+  graph::Graph adjacency_;
+  graph::Graph interp_adjacency_;
   Multivector<std::pair<size_t, size_t>> block_adjacency_;
   [[no_unique_address]] SearchFactory search_factory_;
   [[no_unique_address]] PartitioningFactory partitioning_factory_;

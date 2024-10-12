@@ -11,7 +11,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/multivector.hpp"
 
-namespace tit {
+namespace tit::graph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -45,4 +45,4 @@ public:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+} // namespace tit::graph

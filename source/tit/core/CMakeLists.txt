@@ -15,7 +15,6 @@ add_tit_library(
     "env.hpp"
     "exception.cpp"
     "exception.hpp"
-    "graph.hpp"
     "io.hpp"
     "io.cpp"
     "main_func.cpp"
