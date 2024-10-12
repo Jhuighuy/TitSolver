@@ -9,7 +9,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/geom/sfc_sort.hpp"
+#include "tit/geom/sort/morton_curve_sort.hpp"
 
 #include "tit/testing/test.hpp"
 
@@ -67,7 +67,7 @@ TEST_CASE("geom::MortonCurveSort") {
   for (size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
 
   // Sort points using Morton curve.
-  const geom::MortonCurveSort sfc{points};
+  const geom::MortonCurveSorter sfc{points};
 
   // Ensure the resulting permutation is correct.
   for (const auto [i, p] : std::views::enumerate(sfc.perm())) {

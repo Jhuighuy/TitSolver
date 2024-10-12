@@ -159,13 +159,13 @@ Grid(Points&&, Args...) -> Grid<std::views::all_t<Points>>;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Multidimensional grid factory.
-class GridFactory final {
+class GridSearch final {
 public:
 
   /// Construct a multidimensional grid factory.
   ///
   /// @param size_hint Grid cell size, typically 2x of the particle spacing.
-  constexpr explicit GridFactory(real_t size_hint) : size_hint_{size_hint} {
+  constexpr explicit GridSearch(real_t size_hint) : size_hint_{size_hint} {
     TIT_ASSERT(size_hint_ > 0.0, "Cell size hint must be positive!");
   }
 
@@ -180,7 +180,7 @@ private:
 
   real_t size_hint_;
 
-}; // class GridFactory
+}; // class GridSearch
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

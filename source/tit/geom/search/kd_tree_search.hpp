@@ -230,13 +230,13 @@ KDTree(Points&&, Args...) -> KDTree<std::views::all_t<Points>>;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// K-dimensional tree factory.
-class KDTreeFactory final {
+class KDTreeSearch final {
 public:
 
   /// Construct a K-dimensional tree factory.
   ///
   /// @param max_leaf_size Maximum amount of points in the leaf node.
-  constexpr explicit KDTreeFactory(size_t max_leaf_size = 1)
+  constexpr explicit KDTreeSearch(size_t max_leaf_size = 1)
       : max_leaf_size_{max_leaf_size} {
     TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
   }
@@ -252,7 +252,7 @@ private:
 
   size_t max_leaf_size_;
 
-}; // class KDTreeFactory
+}; // class KDTreeSearch
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

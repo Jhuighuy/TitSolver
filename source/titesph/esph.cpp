@@ -96,7 +96,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   h[particles] = h_0;
 
   // Setup the particle mesh structure.
-  ParticleMesh mesh{geom::KDTreeFactory{}};
+  ParticleMesh mesh{geom::KDTreeSearch{}};
 
   print_csv(particles, "output/test_output/particles-0.csv");
   my_system("ln -sf output/test_output/particles-0.csv particles.csv");

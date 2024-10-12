@@ -22,7 +22,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
-#include "tit/geom/partitioning.hpp"
+#include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
 
 #include "tit/graph/graph.hpp"
@@ -46,9 +46,8 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle adjacency graph.
-template<geom::search_factory SearchFactory = geom::GridFactory,
-         geom::partitioning_factory PartitioningFactory =
-             geom::InertialBisectionFactory>
+template<geom::search_func SearchFunc = geom::GridSearch,
+         geom::partition_func PartitionFunc = geom::RecursiveInertialBisection>
 class ParticleMesh final {
 public:
 
@@ -56,12 +55,12 @@ public:
 
   /// Construct a particle adjacency graph.
   ///
-  /// @param search_factory Nearest-neighbors search factory.
-  /// @param partitioning_factory Geometry partitioning factory.
-  constexpr explicit ParticleMesh(SearchFactory search_factory = {},
-                                  PartitioningFactory partitioning_factory = {})
-      : search_factory_{std::move(search_factory)},
-        partitioning_factory_{std::move(partitioning_factory)} {}
+  /// @param search_indexing_func Nearest-neighbors search indexing function.
+  /// @param parition_func Geometry partitioning function.
+  constexpr explicit ParticleMesh(SearchFunc search_func = {},
+                                  PartitionFunc parition_func = {}) noexcept
+      : search_func_{std::move(search_func)},
+        parition_func_{std::move(parition_func)} {}
 
   /// Adjacent particles.
   template<particle_view PV>
@@ -132,7 +131,7 @@ private:
 
     // Build the search index.
     const auto positions = r[particles];
-    const auto search_index = search_factory_(positions);
+    const auto search_index = search_func_(positions);
 
     // Search for the neighbors.
     static std::vector<std::vector<size_t>> adjacency{};
@@ -196,7 +195,7 @@ private:
     const auto num_parts = par::num_threads();
     const auto positions = r[particles];
     const auto parts = parinfo[particles];
-    const auto partition = partitioning_factory_(positions, parts, num_parts);
+    parition_func_(positions, parts, num_parts);
 
     // Assemble the block adjacency graph.
     /// @todo Clean-up the code below!
@@ -217,8 +216,8 @@ private:
   graph::Graph adjacency_;
   graph::Graph interp_adjacency_;
   Multivector<std::pair<size_t, size_t>> block_adjacency_;
-  [[no_unique_address]] SearchFactory search_factory_;
-  [[no_unique_address]] PartitioningFactory partitioning_factory_;
+  [[no_unique_address]] SearchFunc search_func_;
+  [[no_unique_address]] PartitionFunc parition_func_;
 
 }; // class ParticleMesh
 

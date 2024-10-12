@@ -27,7 +27,7 @@ template<std::ranges::view Points>
   requires std::ranges::sized_range<Points> &&
            std::ranges::random_access_range<Points> &&
            is_vec_v<std::ranges::range_value_t<Points>>
-class MortonCurveSort final {
+class MortonCurveSorter final {
 public:
 
   /// Point type.
@@ -36,7 +36,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Initialize and build Morton SFC curve ordering.
-  explicit MortonCurveSort(Points points) : points_{std::move(points)} {
+  explicit MortonCurveSorter(Points points) : points_{std::move(points)} {
     TIT_PROFILE_SECTION("MortonCurveSort::MortonCurveSort()");
     build_();
   }
@@ -114,11 +114,24 @@ private:
   Points points_;
   std::vector<size_t> perm_;
 
-}; // class MortonCurveSort
+}; // class MortonCurveSorter
 
 // Wrap a viewable range into a view on construction.
 template<std::ranges::viewable_range Points>
-MortonCurveSort(Points&&) -> MortonCurveSort<std::views::all_t<Points>>;
+MortonCurveSorter(Points&&) -> MortonCurveSorter<std::views::all_t<Points>>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+class MortonCurveSort {
+public:
+
+  template<std::ranges::viewable_range Points, std::ranges::viewable_range Perm>
+  constexpr auto operator()(Points&& points, Perm&& perm) const {
+    return MortonCurveSorter{std::forward<Points>(points),
+                             std::forward<Perm>(perm)};
+  }
+
+}; // class MortonCurveSort
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
