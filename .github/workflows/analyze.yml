@@ -23,17 +23,19 @@ jobs:
 
     strategy:
       matrix:
+        os: [ubuntu-24.04]
         compiler: [g++-14]
         configuration: [Coverage]
 
-    runs-on: ubuntu-latest
-    container:
-      image: jhuighuy/tit-solver-base:latest
+    runs-on: ${{ matrix.os }}
 
     env:
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
       CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
       SONAR_COVERAGE_REPORT_PATH: sonar_coverage.xml
+      # To be set by the steps.
+      VCPKG_ROOT:
+      VCPKG_DEFAULT_BINARY_CACHE:
 
     steps:
       - name: Checkout
@@ -42,12 +44,38 @@ jobs:
           # Fetch all history for proper analysis and coverage reports.
           fetch-depth: 0
 
+      - name: Install packages and tools
+        run: ./build/setup-ci-runner.sh
+
       - name: Install Sonar Scanner
         uses: SonarSource/sonarcloud-github-c-cpp@v2
 
-      - name: Fix repository ownership
-        run: |
-          git config --global --add safe.directory '*'
+      - name: Restore vcpkg packages cache
+        id: vcpkg-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}/installed
+            ${{ env.VCPKG_ROOT }}/buildtrees
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          # Use the run ID as the cache key, this way the cache is updated
+          # after each run.
+          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ github.run_id }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}
+
+      - name: Install vcpkg packages
+        run: $VCPKG_ROOT/vcpkg install
+        env:
+          CXX: ${{ matrix.compiler }}
+
+      - name: Update vcpkg packages cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}/installed
+            ${{ env.VCPKG_ROOT }}/buildtrees
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
 
       - name: Build
         run: |
@@ -78,7 +106,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-Coverage
+          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: output/test_output
 
       - name: Upload coverage reports to Codecov

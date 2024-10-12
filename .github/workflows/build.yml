@@ -18,88 +18,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_ubuntu:
-    name: Ubuntu
+  build:
+    name: Build
 
     strategy:
       matrix:
+        os: [ubuntu-24.04, macos-15]
         compiler: [g++-14]
         configuration: [Debug, Release]
       fail-fast: false
 
-    runs-on: ubuntu-latest
-    container:
-      image: jhuighuy/tit-solver-base:latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Fix repository ownership
-        run: |
-          git config --global --add safe.directory '*'
-
-      - name: Build
-        run: |
-          ./build/build.sh                     \
-            --compiler ${{ matrix.compiler }}  \
-            --config ${{ matrix.configuration }}
-
-      - name: Run tests
-        run: ./build/test.sh
-
-      - name: Upload test output
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
-          path: output/test_output
-
-  build_macos:
-    name: macOS
-
-    strategy:
-      matrix:
-        compiler: [g++-14]
-        configuration: [Debug, Release]
-      fail-fast: false
-
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
 
     env:
-      CXX: ${{ matrix.compiler }}
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
-      PIP_BREAK_SYSTEM_PACKAGES: 1
-      VCPKG_ROOT: /Users/Shared/vcpkg
-      VCPKG_DEFAULT_BINARY_CACHE: /Users/Shared/vcpkg_cache
+      # To be set by the steps.
+      VCPKG_ROOT:
+      VCPKG_DEFAULT_BINARY_CACHE:
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select the proper Xcode
-        run: |
-          XCODE=$(find /Applications -maxdepth 1 -name 'Xcode_15*.app' | sort -r | head -n 1)
-          echo "Selected Xcode: $XCODE"
-          sudo xcode-select --switch "$XCODE"
-
       - name: Install packages and tools
-        run: |
-          brew update -q
-          brew install -q \
-            automake      \
-            cmake         \
-            diffutils     \
-            gcc@14        \
-            gnu-sed       \
-            libtool       \
-            llvm@18       \
-            pkg-config
-          echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
-          pip3 install --user --upgrade codespell
-          git clone --depth=1 https://github.com/microsoft/vcpkg.git $VCPKG_ROOT
-          $VCPKG_ROOT/bootstrap-vcpkg.sh
+        run: ./build/setup-ci-runner.sh
 
       - name: Restore vcpkg packages cache
         id: vcpkg-cache-restore
@@ -115,9 +56,9 @@ jobs:
           restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}
 
       - name: Install vcpkg packages
-        run: |
-          mkdir -p $VCPKG_DEFAULT_BINARY_CACHE || true
-          $VCPKG_ROOT/vcpkg install
+        run: $VCPKG_ROOT/vcpkg install
+        env:
+          CXX: ${{ matrix.compiler }}
 
       - name: Update vcpkg packages cache
         uses: actions/cache/save@v4
