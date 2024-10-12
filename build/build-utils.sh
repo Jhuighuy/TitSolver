@@ -4,8 +4,18 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Common paths to the various build-related locations.
+# Various build-related utilities.
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Check if we are in the project root directory.
 SOURCE_DIR=$(pwd)
+if [ ! -f "$SOURCE_DIR/build/build-utils.sh" ]; then
+  echo "# Build script must be executed from the project root directory!"
+  exit 1
+fi
+
+# Common paths to the various build-related locations.
 export SOURCE_DIR
 export OUTPUT_DIR="$SOURCE_DIR/output/cmake_output"
 export INSTALL_DIR="$SOURCE_DIR/output/TIT_ROOT"
@@ -14,29 +24,31 @@ export TEST_OUTPUT_DIR="$SOURCE_DIR/output/test_output"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# TODO: there is a problem in Github Actions that we an error message is
-# printed:
-#
-# tput: No value for $TERM and no -T specified
-#
-# I cannot reproduce this on MacOS.
-export COLUMNS=${COLUMNS:-$([ -n "$TERM" ] && tput cols || echo 80)}
+# Terminal width.
+export COLUMNS=$((tty -s && tput cols) || echo 80)
 
-# Print banner.
-echo_banner() {
+# Print a separator.
+echo-separator() {
   CHAR=${1:-"~"}
   for _ in $(seq 1 "$COLUMNS"); do echo -n "$CHAR"; done
   echo
 }
 
 # Print thick banner.
-echo_thick_banner() {
-  echo_banner "="
+echo-thick-separator() {
+  echo-separator "="
 }
 
 # Print thin banner.
-echo_thin_banner() {
-  echo_banner "-"
+echo-thin-separator() {
+  echo-separator "-"
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Print the number of logical CPUs.
+get-num-cpus() {
+  getconf _NPROCESSORS_ONLN
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

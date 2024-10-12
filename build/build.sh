@@ -8,18 +8,22 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+DIRNAME=$(dirname "$0")
+source "$DIRNAME/build-utils.sh" || exit $?
 CONFIG="Release"
 FORCE=false
 RUN_TESTS=false
-JOBS=1
+JOBS=$(($(get-num-cpus) + 1))
 COMPILER=$CXX
 VCPKG_ROOT="${VCPKG_ROOT:-}"
 NO_VCPKG=false
 DRY=false
 EXTRA_ARGS=()
+CMAKE_EXE="${CMAKE_EXE:-cmake}"
 
 usage() {
-  echo "Usage: $(basename "$0") [options]"
+  echo "Usage: $(basename "$0") [options] -- <cmake-args>"
+  echo ""
   echo "Options:"
   echo "  -h, --help            Print this help message."
   echo "  -c, --config <config> Build configuration, default: Release."
@@ -28,109 +32,93 @@ usage() {
   echo "  -j, --jobs <num>      Number of threads to parallelize the build."
   echo ""
   echo "Advanced options:"
-  echo "  --compiler <path>     Override system's C++ compiler."
+  echo "  --compiler <path>     Override the default C++ compiler."
   echo "  --vcpkg-root <path>   Vcpkg package manager installation root path."
-  echo "  --no-vcpkg            Do not use vcpkg for building the project."
   echo "  --dry                 Perform a dry build: discard all previously built data."
-  echo "  -- <args>             Extra CMake configuration arguments."
-  exit 1
+  echo "  -- <cmake-args>       Additional CMake configuration arguments."
 }
 
-parse_args() {
+parse-args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -h | -help | --help)
-        usage;;
-      -c | --config)
-        CONFIG="$2"
-        shift 2;;
-      --config=*)
-        CONFIG="${1#*=}"
-        shift 1;;
-      -f | --force)
-        FORCE=true
-        shift;;
-      -t | --test)
-        RUN_TESTS=true
-        shift;;
-      -j | --jobs)
-        JOBS="$2"
-        shift 2;;
-      --compiler)
-        COMPILER="$2"
-        shift 2;;
-      --compiler=*)
-        COMPILER="${1#*=}"
-        shift 1;;
-      --vcpkg-root)
-        VCPKG_ROOT="$2"
-        shift 2;;
-      --vcpkg-root=*)
-        VCPKG_ROOT="${1#*=}"
-        shift 2;;
-      --no-vcpkg)
-        NO_VCPKG=true
-        shift;;
-      --dry)
-        DRY=true
-        shift;;
-      --)
-        EXTRA_ARGS=("${@:2}")
-        break;;
-      *)
-        echo "Invalid argument: $1."
-        usage;;
+      # Options.
+      -c | --config)  CONFIG="$2";           shift 2;;
+      --config=*)     CONFIG="${1#*=}";      shift 1;;
+      -f | --force)   FORCE=true;            shift;;
+      -t | --test)    RUN_TESTS=true;        shift;;
+      -j | --jobs)    JOBS="$2";             shift 2;;
+      # Advanced options.
+      --compiler)     COMPILER="$2";         shift 2;;
+      --compiler=*)   COMPILER="${1#*=}";    shift 1;;
+      --vcpkg-root)   VCPKG_ROOT="$2";       shift 2;;
+      --vcpkg-root=*) VCPKG_ROOT="${1#*=}";  shift 2;;
+      --dry)          DRY=true;              shift;;
+      --)             EXTRA_ARGS=("${@:2}"); break;;
+      # Help.
+      -h | -help | --help)             usage; exit 0;;
+      *) echo "Invalid argument: $1."; usage; exit 1;;
     esac
   done
-  # Display parsed options.
+}
+
+display-options() {
   echo "# Options:"
-  [ "$CONFIG"          ] && echo "#   CONFIG:     $CONFIG"
-  [ $FORCE = true      ] && echo "#   FORCE:      YES"
-  [ $RUN_TESTS = true  ] && echo "#   RUN_TESTS:  YES"
-  [ "$JOBS" -gt 1      ] && echo "#   JOBS:       $JOBS"
-  [ "$COMPILER"        ] && echo "#   COMPILER:   $COMPILER"
-  [ "$VCPKG_ROOT"      ] && echo "#   VCPKG_ROOT: $VCPKG_ROOT"
-  [ $NO_VCPKG = true   ] && echo "#   NO_VCPKG:   YES"
-  [ $DRY = true        ] && echo "#   DRY:        YES"
-  [ "${EXTRA_ARGS[@]}" ] && echo "#   EXTRA_ARGS: ${EXTRA_ARGS[*]}"
+  [ "$CONFIG"          ] && echo "#   CONFIG     = $CONFIG"
+  [ $FORCE = true      ] && echo "#   FORCE      = YES"
+  [ $RUN_TESTS = true  ] && echo "#   RUN_TESTS  = YES"
+  [ "$JOBS" -gt 1      ] && echo "#   JOBS       = $JOBS"
+  [ "$COMPILER"        ] && echo "#   COMPILER   = $COMPILER"
+  [ "$VCPKG_ROOT"      ] && echo "#   VCPKG_ROOT = $VCPKG_ROOT"
+  [ $DRY = true        ] && echo "#   DRY        = YES"
+  [ "${EXTRA_ARGS[@]}" ] && echo "#   EXTRA_ARGS = ${EXTRA_ARGS[*]}"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CMAKE_EXE="cmake"
-
-prepare_build_dir() {
+prepare-build-dir() {
   if [ "$DRY" = true ]; then
-    echo "# Performing a dry build."
+    echo "# Discarding previous build."
     rm -rf "$OUTPUT_DIR"
   fi
-  mkdir -p "$OUTPUT_DIR"
+  mkdir -p "$OUTPUT_DIR" || exit $?
 }
 
-find_vcpkg() {
-  VCPKG_ROOT="${VCPKG_ROOT:-$VCPKG_INSTALLATION_ROOT}"
-  VCPKG_ROOT="${VCPKG_ROOT:-$HOME/vcpkg}"
-  if [ ! -d "$VCPKG_ROOT" ]; then
-    echo "# Unable to find vcpkg!"
-    exit 1
-  fi
+find-vcpkg() {
+  VCPKG_ROOT_CANDIDATES=(
+    "$VCPKG_ROOT"
+    "$VCPKG_INSTALLATION_ROOT"
+    # Add custom paths here.
+    "$HOME/vcpkg"
+  )
+  for VCPKG_ROOT in "${VCPKG_ROOT_CANDIDATES[@]}"; do
+    if [ -f "$VCPKG_ROOT/.vcpkg-root" ]; then
+      echo "# Found vcpkg at $VCPKG_ROOT."
+      return
+    fi
+  done
+  echo "# Unable to find vcpkg!"
+  exit 1
 }
 
 configure() {
+  echo "# Configuring..."
+
+  # Setup the build directory.
+  prepare-build-dir
+
+  # Prepare the CMake arguments.
   local CMAKE_ARGS
   CMAKE_ARGS=("$CMAKE_EXE")
   CMAKE_ARGS+=("-S" "$SOURCE_DIR" "-B" "$OUTPUT_DIR")
   CMAKE_ARGS+=("-D" "CMAKE_BUILD_TYPE=$CONFIG")
-  local SKIP_ANALYSIS
+
+  # Should we run static analysis?
   if [ "$FORCE" = true ]; then
-    echo "# 'Force' build: static analysis is disabled."
-    SKIP_ANALYSIS="YES"
-  else
-    SKIP_ANALYSIS="NO"
+    CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=YES")
   fi
-  CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=$SKIP_ANALYSIS")
+
+  # Set the C++ compiler.
   if [ -n "$COMPILER" ]; then
-    echo "# Overriding system's C++ compiler: $COMPILER."
     # To override the system compiler, there are two available approaches:
     #
     # 1. Specify it using CMake's `CMAKE_CXX_COMPILER` variable.
@@ -163,85 +151,75 @@ configure() {
     # now.
     export CXX="$COMPILER"
   fi
-  if [ "$NO_VCPKG" != true ]; then
-    find_vcpkg
-    TOOLCHAIN_PATH="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
-    if [ ! -f "$TOOLCHAIN_PATH" ]; then
-      echo "- Unable to find vcpkg toolchain file!"
-      exit 1
-    fi
-    CMAKE_ARGS+=("-D" "CMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_PATH")
+
+  # Find vcpkg.
+  find-vcpkg
+  local TOOLCHAIN_PATH="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+  if [ ! -f "$TOOLCHAIN_PATH" ]; then
+    echo "# Unable to find vcpkg toolchain file! Check you installation."
+    exit 1
   fi
+  CMAKE_ARGS+=("-D" "CMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_PATH")
+
+  # Execute cmake.
   [ "${EXTRA_ARGS[@]}" ] && CMAKE_ARGS=("${CMAKE_ARGS[@]}" "${EXTRA_ARGS[@]}")
   "${CMAKE_ARGS[@]}" || exit $?
 }
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 build() {
+  echo "# Building with $JOBS threads..."
+
+  # Prepare the CMake arguments.
   local CMAKE_ARGS
-  CMAKE_ARGS=("cmake")
+  CMAKE_ARGS=("$CMAKE_EXE")
   CMAKE_ARGS+=("--build" "$OUTPUT_DIR")
   CMAKE_ARGS+=("--config" "$CONFIG")
-  if [ "$JOBS" -gt 1 ]; then
-    echo "# Building with $JOBS threads."
-    CMAKE_ARGS+=("-j" "$JOBS")
-  fi
+
+  # Parallelize the build.
+  [ "$JOBS" -gt 1 ] && CMAKE_ARGS+=("-j" "$JOBS")
+
+  # Execute cmake.
   "${CMAKE_ARGS[@]}" || exit $?
 }
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 install() {
+  echo "# Installing..."
+
   local CMAKE_ARGS
-  CMAKE_ARGS=("cmake")
+  CMAKE_ARGS=("$CMAKE_EXE")
   CMAKE_ARGS+=("--install" "$OUTPUT_DIR")
   CMAKE_ARGS+=("--prefix" "$INSTALL_DIR")
+
   "${CMAKE_ARGS[@]}" || exit $?
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CTEST_EXE="ctest"
-
-run_tests() {
-  # Setup the the test output directory.
-  rm -rf "$TEST_OUTPUT_DIR"
-  mkdir -p "$TEST_OUTPUT_DIR"
-  # Run CTest.
-  local CTEST_ARGS
-  CTEST_ARGS=("$CTEST_EXE" "--output-on-failure")
-  # Output results summary to a JUnit XML file.
-  CTEST_ARGS+=("--output-junit" "$TEST_OUTPUT_DIR/JUnit.xml")
-  if [ "$JOBS" -gt 1 ]; then
-    echo "# Running tests with $JOBS threads."
-    CTEST_ARGS+=("-j" "$JOBS")
-  fi
-  if [ ! "$TIT_LONG_TESTS" ]; then
-    # Exclude long tests.
-    CTEST_ARGS+=("--exclude-regex" "\[long\]")
-  fi
-  (cd "$TEST_DIR" && "${CTEST_ARGS[@]}") || exit $?
+# Run the build.
+TIMEFORMAT="Done. Elapsed %R seconds."
+time {
+  echo-thick-separator
+  echo "Tit Build Script"
+  echo-thick-separator
+  parse-args "$@"
+  display-options
+  echo-separator
+  configure
+  echo-separator
+  build
+  install
+  echo-separator
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-START_TIME=$(date +%s.%N)
-source "./build/build_utils.sh" || exit $?
-echo_thick_banner
-parse_args "$@"
-echo_banner
-echo "# Configuring..."
-prepare_build_dir
-configure
-echo_banner
-echo "# Building..."
-build
-install
+# Run the tests if the flag is set.
 if [ "$RUN_TESTS" = true ]; then
-  echo_banner
-  echo "# Running tests..."
-  run_tests
+  "$DIRNAME/test.sh" -j "$JOBS" || exit $?
+else
+  echo-thick-separator
 fi
-END_TIME=$(date +%s.%N)
-ELAPSED=$(echo "$END_TIME - $START_TIME" | bc -l)
-echo_thick_banner
-printf "# Done. Elapsed: %ss.\n" "$ELAPSED"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
