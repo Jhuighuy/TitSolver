@@ -39,13 +39,14 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
 
-      - name: Build and test
+      - name: Build
         run: |
-          # Build and test
-          ./build/build.sh -j 4                                                \
-            --compiler ${{ matrix.compiler }}                                  \
-            --config ${{ matrix.configuration }}                               \
-            --test
+          ./build/build.sh                     \
+            --compiler ${{ matrix.compiler }}  \
+            --config ${{ matrix.configuration }}
+
+      - name: Run tests
+        run: ./build/test.sh
 
       - name: Upload test output
         uses: actions/upload-artifact@v3
@@ -77,31 +78,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select the latest Xcode
+      - name: Select the proper Xcode
         run: |
-          # Select the latest Xcode
           XCODE=$(find /Applications -maxdepth 1 -name 'Xcode_15*.app' | sort -r | head -n 1)
           echo "Selected Xcode: $XCODE"
           sudo xcode-select --switch "$XCODE"
 
       - name: Install packages and tools
         run: |
-          # Install packages and tools
-          ## Fetch fresh packages, but do not upgrade them automatically.
           brew update -q
-          ## Install the toolchain.
-          brew install -q automake cmake libtool pkg-config
-          brew install -q gcc@14 || true # Might fail for unknown reason.
-          ## Install LLVM.
-          brew install -q llvm@18
+          brew install -q \
+            automake      \
+            cmake         \
+            diffutils     \
+            gcc@14        \
+            gnu-sed       \
+            libtool       \
+            llvm@18       \
+            pkg-config
           echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
-          ## Install miscellaneous tools.
-          brew install -q gnu-sed diffutils
           pip3 install --user --upgrade codespell
-
-      - name: Install vcpkg
-        run: |
-          # Install vcpkg
           git clone --depth=1 https://github.com/microsoft/vcpkg.git $VCPKG_ROOT
           $VCPKG_ROOT/bootstrap-vcpkg.sh
 
@@ -120,7 +116,6 @@ jobs:
 
       - name: Install vcpkg packages
         run: |
-          # Install vcpkg packages
           mkdir -p $VCPKG_DEFAULT_BINARY_CACHE || true
           $VCPKG_ROOT/vcpkg install
 
@@ -133,13 +128,14 @@ jobs:
             ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
 
-      - name: Build and test
+      - name: Build
         run: |
-          # Build and test
-          ./build/build.sh -j 3                                                \
-            --compiler ${{ matrix.compiler }}                                  \
-            --config ${{ matrix.configuration }}                               \
-            --test
+          ./build/build.sh                     \
+            --compiler ${{ matrix.compiler }}  \
+            --config ${{ matrix.configuration }}
+
+      - name: Run tests
+        run: ./build/test.sh
 
       - name: Upload test output
         uses: actions/upload-artifact@v4

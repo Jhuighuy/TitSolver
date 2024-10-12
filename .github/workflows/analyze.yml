@@ -49,31 +49,29 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
 
-      - name: Build and test
+      - name: Build
         run: |
-          # Build and test
-          build-wrapper-linux-x86-64                                           \
-            --out-dir "${{ env.BUILD_WRAPPER_OUT_DIR }}"                       \
-            ./build/build.sh -j 4                                              \
-              --compiler ${{ matrix.compiler }}                                \
-              --config ${{ matrix.configuration }}                             \
-              --force                                                          \
-              --test
+          build-wrapper-linux-x86-64                     \
+            --out-dir "${{ env.BUILD_WRAPPER_OUT_DIR }}" \
+            ./build/build.sh --force                     \
+              --compiler ${{ matrix.compiler }}          \
+              --config ${{ matrix.configuration }}
+
+      - name: Run tests
+        run: ./build/test.sh
 
       - name: Collect coverage reports
         run: |
-          # Collect coverage reports
-          ## Setup the actual `gcov` executable path.
           GCOV_EXE="${{ matrix.compiler }}"
           GCOV_EXE="${GCOV_EXE/g++/gcov}"
-          ## See rational for using `--exclude-...` below:
-          ## https://www.gcovr.com/en/stable/faq.html#why-does-c-code-have-so-many-uncovered-branches
-          gcovr                                                                \
-            --exclude "output/.*" --exclude "tests/.*" --exclude ".*\.test.*"  \
-            --gcov-executable "$GCOV_EXE"                                      \
-            --exclude-unreachable-branches                                     \
-            --exclude-throw-branches                                           \
-            --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"                    \
+          gcovr                                               \
+            --gcov-executable "$GCOV_EXE"                     \
+            --exclude "output/.*"                             \
+            --exclude "tests/.*"                              \
+            --exclude ".*\.test.*"                            \
+            --exclude-unreachable-branches                    \
+            --exclude-throw-branches                          \
+            --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"   \
             --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
 
       - name: Upload test output

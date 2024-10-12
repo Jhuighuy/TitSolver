@@ -26,13 +26,15 @@ jobs:
     steps:
       - checkout
 
-      # Build and test.
+      # Build.
       - run: |
-          ./build/build.sh -j 2                                                \
-            --compiler << parameters.compiler >>                               \
-            --config << parameters.configuration >>                            \
-            --force                                                            \
-            --test
+          ./build/build.sh --force                  \
+            --compiler << parameters.compiler >>    \
+            --config << parameters.configuration >> \
+
+      # Run tests.
+      - run: |
+          ./build/test.sh
 
       # Upload test results.
       - store_test_results:

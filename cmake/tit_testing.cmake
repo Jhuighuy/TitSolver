@@ -10,10 +10,10 @@ include_guard()
 # Enable CTest.
 enable_testing()
 
-# Find test runner executable.
+# Find test driver executable.
 find_program(
-  TEST_RUNNER_EXE
-  NAMES "test_runner.sh"
+  TEST_DRIVER_EXE
+  NAMES "test-driver.sh"
   PATHS "${CMAKE_SOURCE_DIR}/build"
   REQUIRED
 )
@@ -72,7 +72,7 @@ function(add_tit_test)
   # Register the test.
   add_test(
     NAME "${TEST_NAME}"
-    COMMAND "${TEST_RUNNER_EXE}" ${TEST_DRIVER_ARGS}
+    COMMAND "${TEST_DRIVER_EXE}" ${TEST_DRIVER_ARGS}
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   )
 
