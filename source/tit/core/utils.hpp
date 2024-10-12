@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include <functional>
+#include <ranges>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
@@ -110,6 +112,29 @@ template<std::derived_from<VirtualBase> Derived>
 constexpr auto instance_of(const VirtualBase& instance) -> bool {
   return dynamic_cast<const Derived*>(&instance) != nullptr;
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace seq {
+template<class Range,
+         class Func,
+         class Pred = std::equal_to<>,
+         class Proj = std::identity>
+void equal_subranges(Range&& range, Func func, Pred pred = {}, Proj proj = {}) {
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  auto iter = std::begin(range);
+  const auto last = std::end(range);
+  while (iter != last) {
+    const auto next = std::ranges::find_if_not( //
+        iter,
+        last,
+        std::bind_front(pred, std::invoke(proj, *iter)),
+        proj);
+    std::invoke(func, std::ranges::subrange{iter, next});
+    iter = next;
+  }
+}
+} // namespace seq
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

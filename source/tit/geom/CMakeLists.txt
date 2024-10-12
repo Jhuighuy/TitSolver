@@ -10,6 +10,7 @@ add_tit_library(
     "bbox.hpp"
     "bipartition.hpp"
     "partition.hpp"
+    "partition/grid_graph_partition.hpp"
     "partition/recursive_bisection.hpp"
     "partition/sort_partition.hpp"
     "search.hpp"
@@ -21,6 +22,8 @@ add_tit_library(
     "utils.hpp"
   DEPENDS
     tit::core
+    tit::graph
+    Boost::container
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

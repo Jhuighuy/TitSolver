@@ -48,7 +48,8 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 /// Particle adjacency graph.
 template<geom::search_func SearchFunc = geom::GridSearch,
          geom::partition_func PartitionFunc = geom::RecursiveInertialBisection,
-         geom::partition_func SecondaryPartitionFunc = PartitionFunc>
+         geom::partition_func SecondaryPartitionFunc =
+             geom::GraphBasedPartitioningFactory>
 class ParticleMesh final {
 public:
 
