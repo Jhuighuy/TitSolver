@@ -1,0 +1,87 @@
+{% extends "!basic/layout.html" %}
+
+<!-- Add scripts to the head. -->
+{% block extrahead %}
+  <script src="{{ pathto('_static/eqno.js', 1) }}"></script>
+  <script src="{{ pathto('_static/toc.js', 1) }}"></script>
+{% endblock %}
+
+<!-- Disable relation bar on top of the page. -->
+{% block relbar1 %}
+{% endblock %}
+
+<!-- Disable relation bar on bottom of the page. -->
+{% block relbar2 %}
+{% endblock %}
+
+<!-- Disable sidebar on the left side of the page. -->
+{% block sidebar1 %}
+{% endblock %}
+
+<!-- Disable sidebar on the right side of the page. -->
+{% block sidebar2 %}
+{% endblock %}
+
+<!-- Main content. -->
+{% block content %}
+<div class="content-wrapper">
+
+  <!-- Breadcrumbs. -->
+  <div class="breadcrumbs">
+    <a href="{{ pathto(root_doc) }}">
+      <span>{{ shorttitle }}</span>
+    </a>
+    {% if parents %}
+      {% for parent in parents %}
+        <img src="{{ pathto('_static/chevron-right.svg', 1) }}" alt="chevron">
+        </img>
+        <a href="{{ parent.link|e }}">
+          <span>{{ parent.title }}</span>
+        </a>
+      {% endfor %}
+    {% endif %}
+    <img src="{{ pathto('_static/chevron-right.svg', 1) }}" alt="chevron">
+    </img>
+    <span>{{ title }}</span>
+  </div>
+
+  <!-- Table of contents. -->
+  <div class="toc">
+    <p>Table of contents:</p>
+    {% if display_toc %}
+      {{ toc }}
+    {% endif %}
+  </div>
+
+  <!-- Document. -->
+  <div class="document">
+    {{ body }}
+  </div>
+
+  <!-- Previous and next page links. -->
+  <div class="prev-next">
+    {% if prev %}
+      <a class="prev-next-button" href="{{ prev.link|e }}">
+        <img src="{{ pathto('_static/chevron-left.svg', 1) }}" alt="previous">
+        </img>
+        <span>{{ prev.title }}</span>
+      </a>
+    {% endif %}
+    <div class="prev-next-spacer"></div>
+    {% if next %}
+      <a class="prev-next-button" href="{{ next.link|e }}">
+        <span>{{ next.title }}</span>
+        <img src="{{ pathto('_static/chevron-right.svg', 1) }}" alt="next">
+        </img>
+      </a>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block footer %}
+<div class="footer">
+    <p>&copy; 2024. All rights reserved.</p>
+</div>
+{% endblock %}

@@ -16,6 +16,9 @@
 !/sonar-project.properties
 !/vcpkg.json
 
+# User manual configuration files.
+!/manual/conf.py
+
 # Editor configuration files.
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
@@ -31,14 +34,19 @@
 !*.cpp
 
 # Web files.
+!*.js
+!*.html
+!*.css
+!*.svg
 # (To be replaced with the PR with the frontend.)
 /front
 
+# Documentation files.
+!*.md
+!*.rst
+
 # Scripts.
 !*.sh
-
-# Documentation.
-!*.md
 
 # CMake files.
 !CMakeLists.txt
