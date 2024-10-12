@@ -5,22 +5,20 @@
 
 #pragma once
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#include <concepts>
 
 // IWYU pragma: begin_exports
-#include "tit/geom/inertial_bisection.hpp"
+#include "tit/geom/sort/morton_curve_sort.hpp"
 // IWYU pragma: end_exports
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#include <concepts>
 
 namespace tit::geom {
 
-/// Partitioning factory type.
-template<class PF>
-concept partitioning_factory = std::same_as<PF, InertialBisectionFactory>;
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit::geom
+/// Spatial sort function type.
+template<class SF>
+concept sort_func = std::same_as<SF, MortonCurveSort>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit::geom

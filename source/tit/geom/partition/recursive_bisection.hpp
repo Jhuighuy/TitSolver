@@ -144,7 +144,7 @@ InertialBisection(Points&&, Parts&&, Args...)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Inertial bisection partitioning factory.
-class InertialBisectionFactory {
+class RecursiveInertialBisection {
 public:
 
   /// Produce an inertial bisection partitioning.
@@ -159,7 +159,7 @@ public:
                              num_parts};
   }
 
-}; // class InertialBisectionFactory
+}; // class RecursiveInertialBisection
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
