@@ -324,4 +324,15 @@ constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Find the first true value in the mask. Return `-1` if all values are false.
+template<class Num, size_t Dim>
+constexpr auto find_true(const VecMask<Num, Dim>& m) -> ssize_t {
+  for (size_t i = 0; i < Dim; ++i) {
+    if (m[i]) return static_cast<ssize_t>(i);
+  }
+  return -1;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit

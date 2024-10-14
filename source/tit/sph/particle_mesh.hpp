@@ -6,7 +6,6 @@
 #pragma once
 
 #include <algorithm>
-#include <functional>
 #include <iterator>
 #include <ranges>
 #include <tuple>
@@ -199,8 +198,12 @@ private:
     // Build the geometric partitioning.
     constexpr size_t num_levels = 2;
     const auto num_threads = par::num_threads();
+    const auto num_parts = num_levels * num_threads + 1;
     const auto positions = r[particles];
-    const auto parts = parinfo[particles];
+    // const auto parts = parinfo[particles];
+    static std::vector<Vec<uint8_t, 8>> parts;
+    parts.assign(particles.size(),
+                 Vec<uint8_t, 8>(static_cast<uint8_t>(num_parts - 1)));
     static std::vector<size_t> interface{};
     interface.clear(), interface.reserve(particles.size());
     for (size_t level = 0; level < num_levels; ++level) {
@@ -208,16 +211,21 @@ private:
       const auto last_level = level == (num_levels - 1);
       if (first_level) {
         // Do the initial partitioning for all particles.
-        parition_func_(positions, parts, num_threads);
+        parition_func_(positions,
+                       parts | //
+                           std::views::transform([level](auto& part) -> auto& {
+                             return part[level];
+                           }),
+                       num_threads);
 
         // Collect the interface particles.
         if (last_level) break;
         std::ranges::copy_if( //
             std::views::iota(size_t{0}, particles.size()),
             std::back_inserter(interface),
-            [parts, this](size_t a) { //
+            [this](size_t a) { //
               for (const auto b : adjacency_[a]) {
-                if (parts[a] != parts[b]) return true;
+                if (parts[a][0] != parts[b][0]) return true;
               }
               return false;
             });
@@ -225,12 +233,13 @@ private:
         // Do the partitioning for the interface.
         const auto init_part = level * num_threads;
         secondary_parition_func_(
-            interface | std::views::transform( //
-                            [positions](size_t a) -> const auto& {
-                              return positions[a];
-                            }),
-            interface | std::views::transform(
-                            [parts](size_t a) -> auto& { return parts[a]; }),
+            interface |
+                std::views::transform([positions](size_t a) -> const auto& {
+                  return positions[a];
+                }),
+            interface | std::views::transform([level](size_t a) -> auto& {
+              return parts[a][level];
+            }),
             num_threads,
             init_part);
 
@@ -238,10 +247,9 @@ private:
         if (last_level) break;
         const auto non_interface = std::ranges::partition( //
             interface,
-            [parts, num_threads, level, this](size_t a) { //
+            [level, this](size_t a) {
               for (const auto b : adjacency_[a]) {
-                const auto level_b = parts[b] / num_threads;
-                if (level_b < level && parts[a] != parts[b]) return true;
+                if (parts[a][level] != parts[b][level]) return true;
               }
               return false;
             });
@@ -250,26 +258,14 @@ private:
     }
 
     // Assemble the block adjacency graph.
-    const auto num_parts = num_levels * num_threads + 1;
     block_edges_.assemble_wide( //
         num_parts,
         adjacency_.edges(),
-        [parts, num_levels, num_threads, num_parts](const auto& ab) {
+        [num_levels, num_threads, num_parts](const auto& ab) {
           const auto& [a, b] = ab;
-
-          // If both particles are in the same part, return the part.
-          const auto part_a = parts[a];
-          const auto part_b = parts[b];
-          if (part_a == part_b) return part_a;
-
-          // If both particles are in the interface, return the part.
-          const auto level_a = part_a / num_threads;
-          const auto level_b = part_b / num_threads;
-          if (level_a < level_b) return part_a;
-          if (level_a > level_b) return part_b;
-          TIT_ASSERT(level_a == (num_levels - 1),
-                     "Interface edge must belong to the last level!");
-          return num_parts - 1;
+          const auto& part_a = parts[a];
+          const auto& part_b = parts[b];
+          return part_a[find_true(part_a == part_b)];
         });
 
     // Report the block sizes.
