@@ -150,11 +150,15 @@ public:
   /// Produce an inertial bisection partitioning.
   template<std::ranges::viewable_range Points,
            std::ranges::viewable_range Parts>
-    requires deduce_constructible_from<InertialBisection, Points, Parts, size_t>
+    requires deduce_constructible_from<InertialBisection,
+                                       Points,
+                                       Parts,
+                                       size_t,
+                                       size_t>
   constexpr auto operator()(Points&& points,
                             Parts&& parts,
                             size_t num_parts,
-                            size_t init_part) const {
+                            size_t init_part = 0) const {
     return InertialBisection{std::forward<Points>(points),
                              std::forward<Parts>(parts),
                              num_parts,

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <ranges>
 #include <tuple>
@@ -194,85 +195,82 @@ private:
   template<particle_array ParticleArray>
   constexpr void partition_(ParticleArray& particles) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
-    const auto& adjacency = adjacency_;
-    const auto& secondary_partition_func = secondary_parition_func_;
 
-    // Partition the particles adjacency graph.
-    static std::vector<std::vector<std::pair<size_t, size_t>>> block_edges{};
-    block_edges.clear();
-    const auto partition_impl = [num_threads = par::num_threads(),
-                                 positions = r[particles],
-                                 parts = parinfo[particles],
-                                 &adjacency,
-                                 &secondary_partition_func](
-                                    this auto& self,
-                                    const auto& partition_func,
-                                    auto&& indices,
-                                    auto&& edges,
-                                    size_t init_part) {
-      // Build the partitioning for the current partitcles.
-      partition_func(
-          std::views::all(indices) |
-              std::views::transform([positions](size_t a) -> const auto& {
-                return positions[a];
-              }),
-          std::views::all(indices) |
-              std::views::transform([parts](size_t a) -> auto& { //
-                return parts[a];
-              }),
-          /*num_parts=*/num_threads,
-          init_part);
+    // Build the geometric partitioning.
+    constexpr size_t num_levels = 2;
+    const auto num_threads = par::num_threads();
+    const auto positions = r[particles];
+    const auto parts = parinfo[particles];
+    static std::vector<size_t> interface{};
+    interface.clear(), interface.reserve(particles.size());
+    for (size_t level = 0; level < num_levels; ++level) {
+      const auto first_level = level == 0;
+      const auto last_level = level == (num_levels - 1);
+      if (first_level) {
+        // Do the initial partitioning for all particles.
+        parition_func_(positions, parts, num_threads);
 
-      // Prepare the block adjacency graph: one block for each partition,
-      // plus one block for the edges that cross the partition boundaries.
-      TIT_ASSERT(init_part <= block_edges.size(), "Invalid partition index!");
-      block_edges.resize(
-          std::max(block_edges.size(), init_part + num_threads + 1));
+        // Collect the interface particles.
+        if (last_level) break;
+        std::ranges::copy_if( //
+            std::views::iota(size_t{0}, particles.size()),
+            std::back_inserter(interface),
+            [parts, this](size_t a) { //
+              for (const auto b : adjacency_[a]) {
+                if (parts[a] != parts[b]) return true;
+              }
+              return false;
+            });
+      } else {
+        // Do the partitioning for the interface.
+        const auto init_part = level * num_threads;
+        secondary_parition_func_(
+            interface | std::views::transform( //
+                            [positions](size_t a) -> const auto& {
+                              return positions[a];
+                            }),
+            interface | std::views::transform(
+                            [parts](size_t a) -> auto& { return parts[a]; }),
+            num_threads,
+            init_part);
 
-      // Collect the block adjacency graph for the current partition:
-      // edges that are within the same partition go to the corresponding block,
-      // edges that cross the partition boundaries go to the last block.
-      for (const auto& [a, b] : edges) {
-        if (const auto part = parts[a]; part == parts[b]) {
-          block_edges[part].emplace_back(a, b);
-        } else {
-          block_edges.back().emplace_back(a, b);
-        }
+        // Update the interface particles.
+        if (last_level) break;
+        const auto non_interface = std::ranges::partition( //
+            interface,
+            [parts, num_threads, level, this](size_t a) { //
+              for (const auto b : adjacency_[a]) {
+                const auto level_b = parts[b] / num_threads;
+                if (level_b < level && parts[a] != parts[b]) return true;
+              }
+              return false;
+            });
+        interface.erase(std::begin(non_interface), std::end(non_interface));
       }
+    }
 
-      // Are we done?
-      if (const auto final_pass = init_part > 0; final_pass) return;
+    // Assemble the block adjacency graph.
+    const auto num_parts = num_levels * num_threads + 1;
+    block_edges_.assemble_wide( //
+        num_parts,
+        adjacency_.edges(),
+        [parts, num_levels, num_threads, num_parts](const auto& ab) {
+          const auto& [a, b] = ab;
 
-      // Collect particles for the next partitioning pass: that are the
-      // particles with edges crossing the partition boundaries.
-      std::vector<size_t> next_indices;
-      for (const size_t a : indices) {
-        for (const size_t b : adjacency[a]) {
-          if (parts[a] != parts[b] && parts[b] >= init_part) {
-            next_indices.push_back(a);
-            break;
-          }
-        }
-      }
+          // If both particles are in the same part, return the part.
+          const auto part_a = parts[a];
+          const auto part_b = parts[b];
+          if (part_a == part_b) return part_a;
 
-      // Collect edges for the next partitioning pass.
-      const auto next_edges = std::move(block_edges.back());
-      block_edges.pop_back();
-
-      // Recurse into the next partitioning pass.
-      self(secondary_partition_func,
-           next_indices,
-           next_edges,
-           init_part + num_threads);
-    };
-    partition_impl(parition_func_,
-                   std::views::iota(size_t{0}, particles.size()),
-                   adjacency_.edges(),
-                   /*init_part=*/0);
-
-    // Compress the block adjacency graph.
-    block_edges_.clear();
-    for (const auto& x : block_edges) block_edges_.push_back(x);
+          // If both particles are in the interface, return the part.
+          const auto level_a = part_a / num_threads;
+          const auto level_b = part_b / num_threads;
+          if (level_a < level_b) return part_a;
+          if (level_a > level_b) return part_b;
+          TIT_ASSERT(level_a == (num_levels - 1),
+                     "Interface edge must belong to the last level!");
+          return num_parts - 1;
+        });
 
     // Report the block sizes.
     TIT_STATS("ParticleMesh::block_edges_", block_edges_.sizes());
