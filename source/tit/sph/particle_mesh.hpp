@@ -47,7 +47,8 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 
 /// Particle adjacency graph.
 template<geom::search_func SearchFunc = geom::GridSearch,
-         geom::partition_func PartitionFunc = geom::RecursiveInertialBisection>
+         geom::partition_func PartitionFunc = geom::RecursiveInertialBisection,
+         geom::partition_func SecondaryPartitionFunc = PartitionFunc>
 class ParticleMesh final {
 public:
 
@@ -57,10 +58,13 @@ public:
   ///
   /// @param search_indexing_func Nearest-neighbors search indexing function.
   /// @param parition_func Geometry partitioning function.
-  constexpr explicit ParticleMesh(SearchFunc search_func = {},
-                                  PartitionFunc parition_func = {}) noexcept
+  constexpr explicit ParticleMesh(
+      SearchFunc search_func = {},
+      PartitionFunc parition_func = {},
+      SecondaryPartitionFunc secondary_parition_func = {}) noexcept
       : search_func_{std::move(search_func)},
-        parition_func_{std::move(parition_func)} {}
+        parition_func_{std::move(parition_func)},
+        secondary_parition_func_{std::move(secondary_parition_func)} {}
 
   /// Adjacent particles.
   template<particle_view PV>
@@ -95,7 +99,7 @@ public:
   /// Unique pairs of the adjacent particles partitioned by the block.
   template<particle_array ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
-    return block_adjacency_.buckets() |
+    return block_edges_.buckets() |
            std::views::transform([&particles](auto block) {
              return block | std::views::transform([&particles](auto ab) {
                       const auto [a, b] = ab;
@@ -192,32 +196,90 @@ private:
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
 
     // Build the geometric partitioning.
-    const auto num_parts = par::num_threads();
+    constexpr size_t num_levels = 2;
+    const auto num_threads = par::num_threads();
+    const auto num_parts = num_levels * num_threads + 1;
     const auto positions = r[particles];
-    const auto parts = parinfo[particles];
-    parition_func_(positions, parts, num_parts);
+    // const auto parts = parinfo[particles];
+    static std::vector<Vec<uint8_t, 8>> parts;
+    parts.assign(particles.size(),
+                 Vec<uint8_t, 8>(static_cast<uint8_t>(num_parts - 1)));
+    static std::vector<size_t> interface{};
+    interface.clear(), interface.reserve(particles.size());
+    for (size_t level = 0; level < num_levels; ++level) {
+      const auto first_level = level == 0;
+      const auto last_level = level == (num_levels - 1);
+      if (first_level) {
+        // Do the initial partitioning for all particles.
+        parition_func_(positions,
+                       parts | //
+                           std::views::transform([level](auto& part) -> auto& {
+                             return part[level];
+                           }),
+                       num_threads);
+
+        // Collect the interface particles.
+        if (last_level) break;
+        std::ranges::copy_if( //
+            std::views::iota(size_t{0}, particles.size()),
+            std::back_inserter(interface),
+            [this](size_t a) { //
+              for (const auto b : adjacency_[a]) {
+                if (parts[a][0] != parts[b][0]) return true;
+              }
+              return false;
+            });
+      } else {
+        // Do the partitioning for the interface.
+        const auto init_part = level * num_threads;
+        secondary_parition_func_(
+            interface |
+                std::views::transform([positions](size_t a) -> const auto& {
+                  return positions[a];
+                }),
+            interface | std::views::transform([level](size_t a) -> auto& {
+              return parts[a][level];
+            }),
+            num_threads,
+            init_part);
+
+        // Update the interface particles.
+        if (last_level) break;
+        const auto non_interface = std::ranges::partition( //
+            interface,
+            [level, this](size_t a) {
+              for (const auto b : adjacency_[a]) {
+                if (parts[a][level] != parts[b][level]) return true;
+              }
+              return false;
+            });
+        interface.erase(std::begin(non_interface), std::end(non_interface));
+      }
+    }
 
     // Assemble the block adjacency graph.
-    /// @todo Clean-up the code below!
-    block_adjacency_.assemble_wide( //
-        num_parts + 1,
+    block_edges_.assemble_wide( //
+        num_parts,
         adjacency_.edges(),
-        [parts, num_parts](auto ab) {
-          const auto [a, b] = ab;
-          return parts[a] == parts[b] ? parts[a] : num_parts;
+        [num_levels, num_threads, num_parts](const auto& ab) {
+          const auto& [a, b] = ab;
+          const auto& part_a = parts[a];
+          const auto& part_b = parts[b];
+          return part_a[find_true(part_a == part_b)];
         });
 
     // Report the block sizes.
-    TIT_STATS("ParticleMesh::block_adjacency_", block_adjacency_.sizes());
+    TIT_STATS("ParticleMesh::block_edges_", block_edges_.sizes());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   graph::Graph adjacency_;
   graph::Graph interp_adjacency_;
-  Multivector<std::pair<size_t, size_t>> block_adjacency_;
+  Multivector<std::pair<size_t, size_t>> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc parition_func_;
+  [[no_unique_address]] SecondaryPartitionFunc secondary_parition_func_;
 
 }; // class ParticleMesh
 
