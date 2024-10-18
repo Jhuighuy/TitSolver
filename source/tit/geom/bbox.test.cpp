@@ -94,11 +94,27 @@ TEST_CASE("geom::BBox::intersect") {
 
 TEST_CASE("geom::BBox::split(plane)") {
   const geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
-  const auto [left, right] = box.split(0, 0.5);
-  CHECK(left.low() == Vec{0.0, 0.0});
-  CHECK(left.high() == Vec{0.5, 2.0});
-  CHECK(right.low() == Vec{0.5, 0.0});
-  CHECK(right.high() == Vec{2.0, 2.0});
+  SUBCASE("default") { // same as direct.
+    const auto [left, right] = box.split(0, 0.5);
+    CHECK(left.low() == Vec{0.0, 0.0});
+    CHECK(left.high() == Vec{0.5, 2.0});
+    CHECK(right.low() == Vec{0.5, 0.0});
+    CHECK(right.high() == Vec{2.0, 2.0});
+  }
+  SUBCASE("direct") {
+    const auto [left, right] = box.split(0, 0.5, false);
+    CHECK(left.low() == Vec{0.0, 0.0});
+    CHECK(left.high() == Vec{0.5, 2.0});
+    CHECK(right.low() == Vec{0.5, 0.0});
+    CHECK(right.high() == Vec{2.0, 2.0});
+  }
+  SUBCASE("reverse") {
+    const auto [left, right] = box.split(0, 0.5, true);
+    CHECK(left.low() == Vec{0.5, 0.0});
+    CHECK(left.high() == Vec{2.0, 2.0});
+    CHECK(right.low() == Vec{0.0, 0.0});
+    CHECK(right.high() == Vec{0.5, 2.0});
+  }
 }
 
 TEST_CASE("geom::BBox::split(point)") {
