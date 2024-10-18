@@ -74,7 +74,8 @@ template<size_t... Sizes, class T>
 constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
     -> std::array<T, (Sizes + ...)> {
   std::array<T, (Sizes + ...)> result{};
-  auto copy_array = [out_iter = result.begin()](const auto& array) mutable {
+  auto out_iter = result.begin();
+  const auto copy_array = [&out_iter](const auto& array) {
     out_iter = std::ranges::copy(array, out_iter).out;
   };
   (copy_array(arrays), ...);

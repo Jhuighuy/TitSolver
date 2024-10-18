@@ -153,24 +153,27 @@ private:
 
     // Recursively search the tree.
     TIT_ASSERT(root_node_ != nullptr, "Tree was not built!");
-    search_subtree_(root_node_, init_dists, search_point, search_dist, out);
-    return out;
+    return search_subtree_(root_node_,
+                           init_dists,
+                           search_point,
+                           search_dist,
+                           out);
   }
 
   // Search for the point neighbors in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
   template<std::output_iterator<size_t> OutIter>
-  void search_subtree_(const KDTreeNode_* node,
+  auto search_subtree_(const KDTreeNode_* node,
                        Vec dists,
                        const Vec& search_point,
                        vec_num_t<Vec> search_dist,
-                       OutIter& out) const {
+                       OutIter out) const -> OutIter {
     if (node->left_subtree == nullptr) {
       TIT_ASSERT(node->right_subtree == nullptr, "Invalid leaf node!");
       // Collect points within the leaf node.
       out =
           copy_points_near(points_, node->perm, out, search_point, search_dist);
-      return;
+      return out;
     }
 
     // Determine which branch should be taken first.
@@ -192,13 +195,15 @@ private:
     }();
 
     // Search in the first subtree.
-    search_subtree_(first_node, dists, search_point, search_dist, out);
+    out = search_subtree_(first_node, dists, search_point, search_dist, out);
 
     // Search in the second subtree (if it not too far).
     dists[cut_axis] = cut_dist;
     if (const auto dist = sum(dists); dist < search_dist) {
-      search_subtree_(second_node, dists, search_point, search_dist, out);
+      out = search_subtree_(second_node, dists, search_point, search_dist, out);
     }
+
+    return out;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

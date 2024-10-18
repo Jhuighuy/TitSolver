@@ -8,7 +8,6 @@
 #include <array>
 #include <functional>
 #include <tuple>
-#include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -107,14 +106,14 @@ public:
                        const vec_num_t<Vec>& val,
                        bool reverse = false) const -> std::array<BBox, 2> {
     TIT_ASSERT(axis < vec_dim_v<Vec>, "Split axis is out of range!");
-    TIT_ASSERT(val >= low_[axis], "Split value if out out range!");
-    TIT_ASSERT(val <= high_[axis], "Split value if out out range!");
+    TIT_ASSERT(val >= low_[axis], "Split value is out of range!");
+    TIT_ASSERT(val <= high_[axis], "Split value is out of range!");
     auto left = *this;
     left.high_[axis] = val;
     auto right = *this;
     right.low_[axis] = val;
-    if (reverse) return {std::move(right), std::move(left)};
-    return {std::move(left), std::move(right)};
+    if (reverse) return {right, left};
+    return {left, right};
   }
 
   /// Split the bounding box into parts by the point.

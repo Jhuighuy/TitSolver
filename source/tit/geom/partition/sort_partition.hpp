@@ -45,7 +45,8 @@ public:
 
     // Validate the arguments.
     TIT_ASSERT(num_parts > 0, "Number of parts must be positive!");
-    TIT_ASSERT(std::size(points) >= num_parts, "Number of parts is too big!");
+    TIT_ASSERT(std::size(points) >= num_parts,
+               "Number of points cannot be less than the number of parts!");
     if constexpr (std::ranges::sized_range<Parts>) {
       TIT_ASSERT(std::size(points) == std::size(parts),
                  "Number of parts is different from the number of points!");
@@ -61,7 +62,7 @@ public:
     const auto remainder = num_points % num_parts;
     for (size_t part = 0; part < num_parts; ++part) {
       const auto first = part * part_size + std::min(part, remainder);
-      const auto last = first + part_size + (part + 1 < remainder);
+      const auto last = (part + 1) * part_size + std::min(part + 1, remainder);
       for (size_t i = first; i < last; ++i) parts[perm[i]] = init_part + part;
     }
   }

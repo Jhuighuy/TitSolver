@@ -64,7 +64,8 @@ public:
                           size_t my_num_parts,
                           size_t my_part,
                           std::span<size_t> my_perm) {
-      TIT_ASSERT(my_perm.size() >= my_num_parts, "Number of parts is too big!");
+      TIT_ASSERT(my_perm.size() >= my_num_parts,
+                 "Number of points cannot be less than the number of parts!");
       if (my_num_parts == 1) {
         // No further partitioning, assign part index to the output.
         for (const auto i : my_perm) parts[i] = my_part;

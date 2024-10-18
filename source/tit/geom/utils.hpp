@@ -56,7 +56,7 @@ constexpr auto count_points(Points&& points) -> point_range_num_t<Points> {
   return static_cast<point_range_num_t<Points>>(std::size(points));
 }
 
-/// Compute the centroid of the given points.
+/// Compute the centroid of the given non-empty point range.
 /// @{
 template<point_range Points>
 constexpr auto compute_center(Points&& points) -> point_range_vec_t<Points> {
@@ -75,13 +75,15 @@ constexpr auto compute_center(Points&& points,
 }
 /// @}
 
-/// Compute the bounding box of the given points.
+/// Compute the bounding box of the given non-empty point range.
 /// @{
 template<point_range Points>
 constexpr auto compute_bbox(Points&& points) -> point_range_bbox_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
   /// @todo Assertion below fails to compile with GCC 14 in coverage mode.
-  // TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
+#if !defined(TIT_HAVE_GCOV) || !TIT_HAVE_GCOV
+  TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
+#endif
   BBox box{*std::begin(points)};
   for (const auto& point : points | std::views::drop(1)) box.expand(point);
   return box;
@@ -95,7 +97,7 @@ constexpr auto compute_bbox(Points&& points,
 }
 /// @}
 
-/// Compute the inertia tensor of the given points.
+/// Compute the inertia tensor of the given non-empty point range.
 ///
 /// Inertia tensor is defined as ∑rᵢ⊗rᵢ, where rᵢ is the position vector of
 /// the i-th point relative to the center of mass.
@@ -124,7 +126,8 @@ constexpr auto compute_inertia_tensor(Points&& points, Perm&& perm)
 }
 /// @}
 
-/// Try to compute the "largest" principal inertia axis.
+/// Try to compute the "largest" principal inertia axis of the given non-empty
+/// point range.
 ///
 /// By "largest" we mean the axis corresponding to the largest eigenvalue.
 /// @{

@@ -130,6 +130,8 @@ private:
     const auto& origin = box_.low();
     const auto index_float = (point - origin) * cell_extents_recip_;
     TIT_ASSERT(index_float >= Vec(0), "Point is out of range!");
+    TIT_ASSERT(index_float < vec_cast<vec_num_t<Vec>>(num_cells_),
+               "Point is out of range!");
     return vec_cast<size_t>(index_float);
   }
 

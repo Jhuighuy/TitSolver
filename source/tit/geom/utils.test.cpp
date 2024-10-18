@@ -26,7 +26,7 @@ TEST_CASE("geom::count_points") {
     CHECK(geom::count_points(points) == 0.0);
   }
   SUBCASE("non-empty") {
-    constexpr std::array<Vec2D, 3> points{};
+    constexpr std::array points{Vec2D{0, 0}, Vec2D{1, 1}, Vec2D{2, 2}};
     CHECK(geom::count_points(points) == 3.0);
   }
 }
