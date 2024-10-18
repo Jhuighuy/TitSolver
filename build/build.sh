@@ -16,7 +16,6 @@ RUN_TESTS=false
 JOBS=$(($(get-num-cpus) + 1))
 COMPILER=$CXX
 VCPKG_ROOT="${VCPKG_ROOT:-}"
-NO_VCPKG=false
 DRY=false
 EXTRA_ARGS=()
 CMAKE_EXE="${CMAKE_EXE:-cmake}"
@@ -113,8 +112,13 @@ configure() {
   CMAKE_ARGS+=("-D" "CMAKE_BUILD_TYPE=$CONFIG")
 
   # Should we run static analysis?
+  #
+  # Note: We must add the configuration option on each invocation of CMake.
+  # Otherwise, CMake will remember the previous value and won't update it.
   if [ "$FORCE" = true ]; then
     CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=YES")
+  else
+    CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=NO")
   fi
 
   # Set the C++ compiler.
