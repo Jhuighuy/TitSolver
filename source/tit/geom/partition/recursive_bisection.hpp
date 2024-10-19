@@ -6,160 +6,112 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <ranges>
 #include <span>
 #include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/mat.hpp"
+#include "tit/core/checks.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/type_traits.hpp"
-#include "tit/core/vec.hpp"
+#include "tit/core/utils.hpp"
+
+#include "tit/geom/bipartition.hpp"
+#include "tit/geom/point_range.hpp"
 
 namespace tit::geom {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Inertial bisection partitioning.
-template<std::ranges::view Points, std::ranges::view Parts>
-  requires (std::ranges::sized_range<Points> &&
-            std::ranges::random_access_range<Points> &&
-            is_vec_v<std::ranges::range_value_t<Points>>) &&
-           (std::ranges::random_access_range<Parts> &&
-            std::ranges::output_range<Parts, size_t>)
-class InertialBisection final {
+/// Recursive bisection partitioning function.
+template<class Bisection>
+class RecursiveBisection final {
 public:
 
-  /// Initialize and build the partitioning.
-  InertialBisection(Points points, Parts parts, size_t num_parts)
-      : points_{std::move(points)}, parts_{std::move(parts)} {
-    TIT_PROFILE_SECTION("InertialBisection::InertialBisection()");
-    build_(num_parts);
-  }
+  /// Construct a recursive bisection partitioning function.
+  /// @{
+  constexpr RecursiveBisection() = default;
+  constexpr explicit RecursiveBisection(Bisection bisection) noexcept
+      : bisection_{std::move(bisection)} {}
+  /// @}
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  /// Partition the points recursively using the bisector function.
+  template<point_range Points, output_index_range Parts>
+  void operator()(Points&& points,
+                  Parts&& parts,
+                  size_t num_parts,
+                  size_t init_part = 0) const {
+    TIT_PROFILE_SECTION("RecursiveBisection::operator()");
+    TIT_ASSUME_UNIVERSAL(Points, points);
+    TIT_ASSUME_UNIVERSAL(Parts, parts);
 
-private:
+    // Validate the arguments.
+    TIT_ASSERT(num_parts > 0, "Number of parts must be positive!");
+    if constexpr (std::ranges::sized_range<Parts>) {
+      TIT_ASSERT(std::size(points) == std::size(parts),
+                 "Size of parts range must be equal to the number of points!");
+    }
 
-  // Build the partitioning recursively.
-  void build_(size_t num_parts) {
-    // Initialize identity permutation.
-    perm_ = std::views::iota(size_t{0}, std::size(points_)) |
-            std::ranges::to<std::vector>();
+    // Initialize the permutation.
+    auto perm = iota_perm(points) | std::ranges::to<std::vector>();
 
-    // Build the partitioning.
+    // Partition the points.
     par::TaskGroup tasks{};
-    partition_(tasks, num_parts, /*part_index=*/0, perm_);
+    const auto impl = [&points, &parts, &tasks, &bisection = this->bisection_](
+                          this const auto& self,
+                          size_t my_num_parts,
+                          size_t my_part,
+                          std::span<size_t> my_perm) {
+      TIT_ASSERT(my_perm.size() >= my_num_parts,
+                 "Number of points cannot be less than the number of parts!");
+      if (my_num_parts == 1) {
+        // No further partitioning, assign part index to the output.
+        for (const auto i : my_perm) parts[i] = my_part;
+        return;
+      }
+
+      // Split the points into the roughly equal halves.
+      const auto left_num_parts = my_num_parts / 2;
+      const auto right_num_parts = my_num_parts - left_num_parts;
+      const auto left_part = my_part;
+      const auto right_part = my_part + left_num_parts;
+      const auto median_index = left_num_parts * my_perm.size() / my_num_parts;
+      const auto median = my_perm.begin() + static_cast<ssize_t>(median_index);
+      const auto [left_perm, right_perm] = bisection(points, my_perm, median);
+
+      // Recursively partition the halves.
+      tasks.run(std::bind_front(self, left_num_parts, left_part, left_perm));
+      tasks.run(std::bind_front(self, right_num_parts, right_part, right_perm));
+    };
+    impl(num_parts, init_part, perm);
     tasks.wait();
   }
 
-  // Partition the points by bisecting the longest inertial axis.
-  void partition_(par::TaskGroup& tasks,
-                  size_t num_parts,
-                  size_t part_index,
-                  std::span<size_t> perm) {
-    if (num_parts == 1) {
-      // No further partitioning, assign part index to the output.
-      for (const auto i : perm) parts_[i] = part_index;
-      return;
-    }
+private:
 
-    // Compute the inertia tensor.
-    //
-    // Note: the true inertia tensor is ∑(rᵢ·rᵢI - rᵢ⊗rᵢ) where rᵢ is the
-    // position vector of the i-th point relative to the center of mass.
-    // Since the first term is a scalar multiple of the identity matrix, it
-    // does not affect the eigenvectors of the inertia tensor. Thus, we can
-    // simplify the computation to ∑(rᵢ⊗rᵢ) and seek for largest eigenvector
-    // of this matrix instead of the smallest eigenvector of the true inertia
-    // tensor.
-    //
-    /// @todo Introduce a helper function for this computation.
-    auto sum = points_[perm[0]];
-    auto inertia_tensor = outer_sqr(points_[perm[0]]);
-    for (const auto i : perm.subspan(1)) {
-      const auto& point = points_[i];
-      sum += point;
-      inertia_tensor += outer_sqr(point);
-    }
-    inertia_tensor -= outer(sum, sum / perm.size());
+  [[no_unique_address]] Bisection bisection_;
 
-    // Compute the inertia axis corresponding to the smallest principal inertia
-    // moment (the smallest eigenvalue of the true inertia tensor, or the
-    // largest eigenvalue of our simplified version).
-    const auto inertia_axis = //
-        jacobi(inertia_tensor)
-            // Axis of inertia is the largest eigenvector.
-            .transform([](const auto& eig) {
-              const auto& [V, d] = eig;
-              return V[max_value_index(d)];
-            })
-            // Fallback to a unit vector as an axis of inertia if
-            // the eigendecomposition fails.
-            .value_or(unit(points_[0]));
+}; // class RecursiveBisection
 
-    // Split the parts into halves.
-    const auto left_num_parts = num_parts / 2;
-    const auto right_num_parts = num_parts - left_num_parts;
-    const auto left_part_index = part_index;
-    const auto right_part_index = part_index + left_num_parts;
-
-    // Partition the permutation along the inertial axis.
-    const auto median = left_num_parts * perm.size() / num_parts;
-    std::ranges::nth_element( //
-        perm,
-        perm.begin() + static_cast<ssize_t>(median),
-        [&inertia_axis, this](size_t i, size_t j) {
-          return dot(inertia_axis, points_[i] - points_[j]) < 0;
-        });
-    const auto left_range = perm.subspan(0, median);
-    const auto right_range = perm.subspan(median);
-
-    // Recursively partition the range.
-    tasks.run([left_num_parts, left_part_index, left_range, &tasks, this] {
-      partition_(tasks, left_num_parts, left_part_index, left_range);
-    });
-    tasks.run([right_range, right_num_parts, right_part_index, &tasks, this] {
-      partition_(tasks, right_num_parts, right_part_index, right_range);
-    });
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  Points points_;
-  Parts parts_;
-  std::vector<size_t> perm_;
-
-}; // class InertialBisection
-
-// Wrap a viewable range into a view on construction.
-template<std::ranges::viewable_range Points,
-         std::ranges::viewable_range Parts,
-         class... Args>
-InertialBisection(Points&&, Parts&&, Args...)
-    -> InertialBisection<std::views::all_t<Points>, std::views::all_t<Parts>>;
+/// Recursive bisection partitioning.
+template<class Bisection>
+inline constexpr RecursiveBisection<Bisection> recursive_bisection{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Inertial bisection partitioning factory.
-class RecursiveInertialBisection {
-public:
+/// Recursive coordinate bisection partitioning function.
+using RecursiveCoordBisection = RecursiveBisection<CoordMedianSplit>;
 
-  /// Produce an inertial bisection partitioning.
-  template<std::ranges::viewable_range Points,
-           std::ranges::viewable_range Parts>
-    requires deduce_constructible_from<InertialBisection, Points, Parts, size_t>
-  constexpr auto operator()(Points&& points,
-                            Parts&& parts,
-                            size_t num_parts) const {
-    return InertialBisection{std::forward<Points>(points),
-                             std::forward<Parts>(parts),
-                             num_parts};
-  }
+/// Recursive coordinate bisection partitioning.
+inline constexpr RecursiveCoordBisection recursive_coord_bisection{};
 
-}; // class RecursiveInertialBisection
+/// Recursive inertial bisection partitioning function.
+using RecursiveInertialBisection = RecursiveBisection<InertialMedianSplit>;
+
+/// Recursive inertial bisection partitioning.
+inline constexpr RecursiveInertialBisection recursive_inertial_bisection{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
