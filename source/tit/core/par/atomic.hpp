@@ -19,7 +19,8 @@ namespace tit::par {
 template<class Val>
   requires std::integral<Val> || std::is_pointer_v<Val>
 auto fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept -> Val {
-  return __sync_fetch_and_add(&val, delta); // NOLINT(*-vararg)
+  // return __sync_fetch_and_add(&val, delta); // NOLINT(*-vararg)
+  return __atomic_fetch_add(&val, delta, __ATOMIC_RELAXED); // NOLINT(*-vararg)
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

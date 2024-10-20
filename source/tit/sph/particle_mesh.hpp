@@ -6,7 +6,9 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
+#include <limits>
 #include <ranges>
 #include <tuple>
 #include <utility>
@@ -19,6 +21,7 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/type_traits.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -47,7 +50,8 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 
 /// Particle adjacency graph.
 template<geom::search_func SearchFunc = geom::GridSearch,
-         geom::partition_func PartitionFunc = geom::RecursiveInertialBisection>
+         geom::partition_func PartitionFunc = geom::RecursiveInertialBisection,
+         geom::partition_func SecondaryPartitionFunc = PartitionFunc>
 class ParticleMesh final {
 public:
 
@@ -56,11 +60,14 @@ public:
   /// Construct a particle adjacency graph.
   ///
   /// @param search_indexing_func Nearest-neighbors search indexing function.
-  /// @param parition_func Geometry partitioning function.
-  constexpr explicit ParticleMesh(SearchFunc search_func = {},
-                                  PartitionFunc parition_func = {}) noexcept
+  /// @param partition_func Geometry partitioning function.
+  constexpr explicit ParticleMesh(
+      SearchFunc search_func = {},
+      PartitionFunc partition_func = {},
+      SecondaryPartitionFunc secondary_partition_func = {}) noexcept
       : search_func_{std::move(search_func)},
-        parition_func_{std::move(parition_func)} {}
+        partition_func_{std::move(partition_func)},
+        secondary_partition_func_{std::move(secondary_partition_func)} {}
 
   /// Adjacent particles.
   template<particle_view PV>
@@ -95,7 +102,7 @@ public:
   /// Unique pairs of the adjacent particles partitioned by the block.
   template<particle_array ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
-    return block_adjacency_.buckets() |
+    return block_edges_.buckets() |
            std::views::transform([&particles](auto block) {
              return block | std::views::transform([&particles](auto ab) {
                       const auto [a, b] = ab;
@@ -188,36 +195,84 @@ private:
   }
 
   template<particle_array ParticleArray>
-  constexpr void partition_(ParticleArray& particles) {
+  constexpr void partition_(ParticleArray& particles, size_t num_levels = 2) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
+    TIT_ASSERT(num_levels < PartVec::MaxNumLevels,
+               "Number of levels exceeds the predefined maximum!");
 
-    // Build the geometric partitioning.
-    const auto num_parts = par::num_threads();
-    const auto positions = r[particles];
+    // Initialize the partitioning.
+    const auto num_threads = par::num_threads();
+    const auto num_parts = num_levels * num_threads + 1;
+    TIT_ENSURE(num_parts <= std::numeric_limits<PartIndex>::max(),
+               "Number of parts is too large!");
     const auto parts = parinfo[particles];
-    parition_func_(positions, parts, num_parts);
+    std::ranges::fill(parts, PartVec(static_cast<PartIndex>(num_parts - 1)));
+
+    // Build the multi-level partitioning.
+    const auto positions = r[particles];
+    static std::vector<size_t> interface{};
+    for (size_t level = 0; level < num_levels; ++level) {
+      const auto level_parts =
+          parts | std::views::transform(
+                      [level](auto& part) -> auto& { return part[level]; });
+      const auto is_interface = [level_parts, this](size_t a) {
+        return std::ranges::any_of(
+            permuted_view(level_parts, adjacency_[a]),
+            std::bind_front(std::not_equal_to{}, level_parts[a]));
+      };
+
+      const auto is_first_level = level == 0;
+      const auto is_last_level = level == (num_levels - 1);
+      if (is_first_level) {
+        // Partition the particles.
+        partition_func_(positions, level_parts, num_threads);
+        if (is_last_level) break;
+
+        // Collect the interface particles.
+        interface.resize(particles.size());
+        const auto not_interface_iter = par::copy_if(iota_perm(particles.all()),
+                                                     interface.begin(),
+                                                     is_interface);
+        interface.erase(not_interface_iter, interface.end());
+      } else {
+        // Partition the interface particles.
+        secondary_partition_func_(permuted_view(positions, interface),
+                                  permuted_view(level_parts, interface),
+                                  num_threads,
+                                  /*init_part=*/level * num_threads);
+        if (is_last_level) break;
+
+        // Update the interface particles.
+        // Note: `std::ranges::partition` is faster than `std::erase_if`
+        //       because it does not preserve the order of the elements.
+        /// @todo Parallelize this loop.
+        const auto non_interface =
+            std::ranges::partition(interface, is_interface);
+        interface.erase(std::begin(non_interface), interface.end());
+      }
+    }
 
     // Assemble the block adjacency graph.
-    /// @todo Clean-up the code below!
-    block_adjacency_.assemble_wide( //
-        num_parts + 1,
+    block_edges_.assemble_wide( //
+        num_parts,
         adjacency_.edges(),
-        [parts, num_parts](auto ab) {
-          const auto [a, b] = ab;
-          return parts[a] == parts[b] ? parts[a] : num_parts;
+        [parts](const auto& ab) {
+          const auto& [a, b] = ab;
+          return PartVec::common(parts[a], parts[b]);
         });
 
     // Report the block sizes.
-    TIT_STATS("ParticleMesh::block_adjacency_", block_adjacency_.sizes());
+    TIT_STATS("ParticleMesh::block_edges_", block_edges_.sizes());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   graph::Graph adjacency_;
   graph::Graph interp_adjacency_;
-  Multivector<std::pair<size_t, size_t>> block_adjacency_;
+  Multivector<std::pair<size_t, size_t>> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
-  [[no_unique_address]] PartitionFunc parition_func_;
+  [[no_unique_address]] PartitionFunc partition_func_;
+  [[no_unique_address]] SecondaryPartitionFunc secondary_partition_func_;
 
 }; // class ParticleMesh
 

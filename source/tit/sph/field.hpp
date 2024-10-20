@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
@@ -159,7 +160,67 @@ using field_value_t = typename field_value<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TIT_DEFINE_FIELD(size_t, parinfo)
+/// Particle partition index.
+using PartIndex = uint8_t;
+
+/// Particle multilevel partition index.
+class PartVec final {
+public:
+
+  /// Number of partition levels.
+  static constexpr size_t MaxNumLevels = 8;
+
+  /// Construct a multilevel partition index.
+  /// @{
+  constexpr PartVec() = default;
+  constexpr explicit PartVec(PartIndex part) noexcept : vec_(part) {}
+  /// @}
+
+  /// Get the partition index at the specified level.
+  /// @{
+  constexpr auto operator[](size_t i) const noexcept -> PartIndex {
+    TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
+    return vec_[i];
+  }
+  constexpr auto operator[](size_t i) noexcept -> PartIndex& {
+    TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
+    return vec_[i];
+  }
+  /// @}
+
+  /// Find the last assigned partition index.
+  constexpr auto last() const noexcept -> PartIndex {
+    for (ssize_t i = (MaxNumLevels - 2); i >= 0; --i) {
+      if (vec_[i] != vec_[i + 1]) return vec_[i];
+    }
+    return vec_[0];
+  }
+
+  /// Find the first common partition index.
+  static constexpr auto common(const PartVec& a,
+                               const PartVec& b) noexcept -> PartIndex {
+    const auto i = find_true(a.vec_ == b.vec_);
+    TIT_ASSERT(i != -1, "Particles are not in the same partition!");
+    return a[i];
+  }
+
+  /// Multilevel partition index output operator.
+  template<class Stream>
+  friend auto operator<<(Stream& os, const PartVec& part) -> Stream& {
+    os << static_cast<size_t>(part.last());
+    return os;
+  }
+
+private:
+
+  Vec<PartIndex, MaxNumLevels> vec_;
+
+}; // class PartVec
+
+/// Particle partition information.
+TIT_DEFINE_FIELD(PartVec, parinfo)
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace sph {
 /// Particle position.
