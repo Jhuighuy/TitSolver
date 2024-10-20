@@ -25,7 +25,7 @@ using std::int16_t;
 using std::uint16_t;
 
 /// 32-bit signed integer type.
-using std::uint32_t;
+using std::int32_t;
 
 /// 32-bit unsigned integer type.
 using std::uint32_t;

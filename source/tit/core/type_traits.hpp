@@ -138,6 +138,12 @@ using div_result_t = decltype(std::declval<NumA>() / std::declval<NumB>());
 template<std::integral auto Val>
 using integral_constant_t = std::integral_constant<decltype(Val), Val>;
 
+/// Compile-time value constant.
+template<auto Val>
+struct value_constant {
+  static constexpr auto value = Val;
+};
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
