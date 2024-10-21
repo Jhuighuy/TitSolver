@@ -16,6 +16,7 @@
 #include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type_traits.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -57,12 +58,12 @@ public:
     cell_extents_recip_ = Vec(1) / cell_extents_;
 
     // Pack the points into a multivector.
-    cell_points_.assemble_tall( //
+    cell_points_.assign_pairs_par_tall(
         prod(num_cells_),
-        std::views::iota(size_t{0}, points_.size()),
-        [this](size_t index) {
-          return flat_cell_index_(cell_index_(points_[index]));
-        });
+        iota_perm(points_) | std::views::transform([this](size_t point) {
+          const auto cell = cell_index_(points_[point]);
+          return std::pair{flat_cell_index_(cell), point};
+        }));
 
     // NOLINTEND(*-prefer-member-initializer)
   }

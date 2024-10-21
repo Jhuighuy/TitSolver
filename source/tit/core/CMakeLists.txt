@@ -93,6 +93,7 @@ add_tit_executable(
     "meta/set.test.cpp"
     "meta/type.test.cpp"
     "mdvector.test.cpp"
+    "multivector.test.cpp"
     "par/atomic.test.cpp"
     "par/control.test.cpp"
     "par/memory_pool.test.cpp"

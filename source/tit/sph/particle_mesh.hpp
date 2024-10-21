@@ -95,7 +95,7 @@ public:
   /// Unique pairs of the adjacent particles partitioned by the block.
   template<particle_array ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
-    return block_adjacency_.buckets() |
+    return block_edges_.buckets() |
            std::views::transform([&particles](auto block) {
              return block | std::views::transform([&particles](auto ab) {
                       const auto [a, b] = ab;
@@ -153,7 +153,7 @@ private:
 
     // Compress the adjacency graph.
     adjacency_.clear();
-    for (const auto& x : adjacency) adjacency_.push_back(x);
+    for (const auto& x : adjacency) adjacency_.append_bucket(x);
 
     // Search for the interpolation points for the fixed particles.
     static std::vector<std::vector<size_t>> interp_adjacency{};
@@ -184,7 +184,7 @@ private:
 
     // Compress the interpolation graph.
     interp_adjacency_.clear();
-    for (const auto& x : interp_adjacency) interp_adjacency_.push_back(x);
+    for (const auto& x : interp_adjacency) interp_adjacency_.append_bucket(x);
   }
 
   template<particle_array ParticleArray>
@@ -198,24 +198,35 @@ private:
     parition_func_(positions, parts, num_parts);
 
     // Assemble the block adjacency graph.
-    /// @todo Clean-up the code below!
-    block_adjacency_.assemble_wide( //
+#if 0
+    block_edges_.assign_pairs_par_wide( //
+        num_parts + 1,
+        adjacency_.edges() |
+            std::views::transform([parts, num_parts](const auto& edge) {
+              const auto [a, b] = edge;
+              const auto edge_part =
+                  parts[a] == parts[b] ? parts[a] : num_parts;
+              return std::pair{edge_part, edge};
+            }));
+#else
+    block_edges_.assemble_wide( //
         num_parts + 1,
         adjacency_.edges(),
         [parts, num_parts](auto ab) {
           const auto [a, b] = ab;
           return parts[a] == parts[b] ? parts[a] : num_parts;
         });
+#endif
 
     // Report the block sizes.
-    TIT_STATS("ParticleMesh::block_adjacency_", block_adjacency_.sizes());
+    TIT_STATS("ParticleMesh::block_edges_", block_edges_.bucket_sizes());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   graph::Graph adjacency_;
   graph::Graph interp_adjacency_;
-  Multivector<std::pair<size_t, size_t>> block_adjacency_;
+  Multivector<std::pair<size_t, size_t>> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc parition_func_;
 
