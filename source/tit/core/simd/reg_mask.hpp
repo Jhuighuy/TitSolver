@@ -132,4 +132,32 @@ inline auto all(const RegMask<Num, Size>& m) noexcept -> bool {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Count the number of true values in the SIMD register mask.
+template<class Num, size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto count_true(const RegMask<Num, Size>& m) noexcept -> size_t {
+  return hn::CountTrue(typename RegMask<Num, Size>::Tag{}, m.base);
+}
+
+/// Try to find the first true value in the SIMD register mask.
+/// Return `-1` if all values are false.
+template<class Num, size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto try_find_true(const RegMask<Num, Size>& m) noexcept -> ssize_t {
+  return hn::FindFirstTrue(typename RegMask<Num, Size>::Tag{}, m.base);
+}
+
+/// Find the first true value in the SIMD register mask.
+template<class Num, size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto find_true(const RegMask<Num, Size>& m) noexcept -> size_t {
+  TIT_ASSERT(count_true(m) > 0, "No true value in the mask!");
+  return hn::FindKnownFirstTrue(typename RegMask<Num, Size>::Tag{}, m.base);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit::simd

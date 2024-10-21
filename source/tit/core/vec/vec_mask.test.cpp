@@ -3,9 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/core/vec/vec_mask.hpp"
 #include "tit/testing/strict.hpp"
 #include "tit/testing/test.hpp"
 
@@ -97,36 +97,112 @@ TEST_CASE_TEMPLATE("VecMask::operator!=", Num, NUM_TYPES) {
 //
 
 TEST_CASE_TEMPLATE("VecMask::all_and_any", Num, NUM_TYPES) {
-  // To cover all the SIMD paths, 17 element vectors are needed.
+  constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
   SUBCASE("all") {
-    const VecMask<Num, 17> m(true);
+    const VecMask<Num, Dim> m(true);
     CHECK(any(m));
     CHECK(all(m));
   }
   SUBCASE("some") {
     SUBCASE("true in registers") {
-      VecMask<Num, 17> m(false);
-      m[9] = true;
+      VecMask<Num, Dim> m(false);
+      m[Dim / 2] = true;
       CHECK(any(m));
       CHECK_FALSE(all(m));
     }
     SUBCASE("true in remainder") {
-      VecMask<Num, 17> m(false);
-      m[16] = true;
+      VecMask<Num, Dim> m(false);
+      m[Dim - 1] = true;
       CHECK(any(m));
       CHECK_FALSE(all(m));
     }
     SUBCASE("false in remainder") {
-      VecMask<Num, 17> m(true);
-      m[16] = false;
+      VecMask<Num, Dim> m(true);
+      m[Dim - 1] = false;
       CHECK(any(m));
       CHECK_FALSE(all(m));
     }
   }
   SUBCASE("none") {
-    const VecMask<Num, 17> m(false);
+    const VecMask<Num, Dim> m(false);
     CHECK_FALSE(any(m));
     CHECK_FALSE(all(m));
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Search
+//
+
+TEST_CASE_TEMPLATE("VecMask::count_true", Num, NUM_TYPES) {
+  constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
+  SUBCASE("all") {
+    const VecMask<Num, Dim> m(true);
+    CHECK(count_true(m) == Dim);
+  }
+  SUBCASE("some") {
+    SUBCASE("true in registers") {
+      VecMask<Num, Dim> m(false);
+      m[Dim / 2] = true;
+      CHECK(count_true(m) == 1);
+    }
+    SUBCASE("true in remainder") {
+      VecMask<Num, Dim> m(false);
+      m[Dim - 1] = true;
+      CHECK(count_true(m) == 1);
+    }
+    SUBCASE("false in remainder") {
+      VecMask<Num, Dim> m(true);
+      m[Dim - 1] = false;
+      CHECK(count_true(m) == Dim - 1);
+    }
+  }
+  SUBCASE("none") {
+    const VecMask<Num, 17> m(false);
+    CHECK(count_true(m) == 0);
+  }
+}
+
+TEST_CASE_TEMPLATE("VecMask::try_find_true", Num, NUM_TYPES) {
+  constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
+  SUBCASE("all") {
+    const VecMask<Num, Dim> m(true);
+    CHECK(try_find_true(m) == 0);
+  }
+  SUBCASE("some") {
+    SUBCASE("true in registers") {
+      VecMask<Num, Dim> m(false);
+      m[Dim / 2] = true;
+      CHECK(try_find_true(m) == Dim / 2);
+    }
+    SUBCASE("true in remainder") {
+      VecMask<Num, Dim> m(false);
+      m[Dim - 1] = true;
+      CHECK(try_find_true(m) == Dim - 1);
+    }
+    SUBCASE("false in remainder") {
+      VecMask<Num, Dim> m(true);
+      m[Dim - 1] = false;
+      CHECK(try_find_true(m) == 0);
+    }
+  }
+  SUBCASE("none") {
+    const VecMask<Num, Dim> m(false);
+    CHECK(try_find_true(m) == -1);
+  }
+}
+
+TEST_CASE_TEMPLATE("VecMask::find_true", Num, NUM_TYPES) {
+  constexpr auto Dim = 2 * simd::max_reg_size_v<double>;
+  SUBCASE("all") {
+    const VecMask<Num, Dim> m(true);
+    CHECK(find_true(m) == 0);
+  }
+  SUBCASE("in last register") {
+    VecMask<Num, Dim> m(false);
+    m[Dim / 2 + 1] = true;
+    CHECK(find_true(m) == Dim / 2 + 1);
   }
 }
 
