@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/core/math.hpp"
+#include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/testing/strict.hpp"
@@ -268,12 +269,16 @@ TEST_CASE_TEMPLATE("Vec::operator>=", Num, NUM_TYPES) {
 //
 
 TEST_CASE_TEMPLATE("Vec::sum", Num, NUM_TYPES) {
-  CHECK(sum(Vec{Num{1}, Num{2}}) == Num{3});
-  CHECK(sum(Vec{Num{1}, Num{2}, Num{3}}) == Num{6});
-  CHECK(sum(Vec{Num{1}, Num{2}, Num{3}, Num{4}}) == Num{10});
-  CHECK(sum(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}}) == Num{15});
-  // To cover all the SIMD paths, 17 element vectors are needed.
-  CHECK(sum(Vec<Num, 17>(Num{16})) == Num{17 * 16});
+  SUBCASE("basic") {
+    CHECK(sum(Vec{Num{1}, Num{2}}) == Num{3});
+    CHECK(sum(Vec{Num{1}, Num{2}, Num{3}}) == Num{6});
+    CHECK(sum(Vec{Num{1}, Num{2}, Num{3}, Num{4}}) == Num{10});
+    CHECK(sum(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}}) == Num{15});
+  }
+  SUBCASE("remainder") {
+    constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
+    CHECK(sum(Vec<Num, Dim>(Num{10})) == Num{Dim * 10});
+  }
 }
 
 TEST_CASE_TEMPLATE("Vec::prod", Num, NUM_TYPES) {
@@ -282,23 +287,31 @@ TEST_CASE_TEMPLATE("Vec::prod", Num, NUM_TYPES) {
 }
 
 TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
-  CHECK(min_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{2});
-  CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{3});
-  CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{2});
-  // To cover all the SIMD paths, 17 element vectors are needed.
-  Vec<Num, 17> v(Num{16});
-  v[8] = Num{1};
-  CHECK(min_value(v) == Num{1});
+  SUBCASE("basic") {
+    CHECK(min_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{2});
+    CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{3});
+    CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{2});
+  }
+  SUBCASE("remainder") {
+    constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
+    Vec<Num, Dim> v(Num{2});
+    v[Dim / 2] = Num{1};
+    CHECK(min_value(v) == Num{1});
+  }
 }
 
 TEST_CASE_TEMPLATE("Vec::max_value", Num, NUM_TYPES) {
-  CHECK(max_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{4});
-  CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{6});
-  CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{6});
-  // To cover all the SIMD paths, 17 element vectors are needed.
-  Vec<Num, 17> v(Num{16});
-  v[8] = Num{17};
-  CHECK(max_value(v) == Num{17});
+  SUBCASE("basic") {
+    CHECK(max_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{4});
+    CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{6});
+    CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{6});
+  }
+  SUBCASE("remainder") {
+    constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
+    Vec<Num, Dim> v(Num{1});
+    v[Dim / 2] = Num{2};
+    CHECK(max_value(v) == Num{2});
+  }
 }
 
 TEST_CASE_TEMPLATE("Vec::min_value_index", Num, NUM_TYPES) {
@@ -319,16 +332,21 @@ TEST_CASE_TEMPLATE("Vec::max_value_index", Num, NUM_TYPES) {
 //
 
 TEST_CASE_TEMPLATE("Vec::dot", Num, NUM_TYPES) {
-  CHECK(dot(Vec{Num{1}, Num{2}}, //
-            Vec{Num{3}, Num{4}}) == Num{11});
-  CHECK(dot(Vec{Num{1}, Num{2}, Num{3}}, //
-            Vec{Num{4}, Num{5}, Num{6}}) == Num{32});
-  CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}},
-            Vec{Num{5}, Num{6}, Num{7}, Num{8}}) == Num{70});
-  CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}},
-            Vec{Num{6}, Num{7}, Num{8}, Num{9}, Num{10}}) == Num{130});
-  // To cover all the SIMD paths, 17 element vectors are needed.
-  CHECK(dot(Vec<Num, 17>(Num{3}), Vec<Num, 17>(Num{4})) == Num{17 * 3 * 4});
+  SUBCASE("basic") {
+    CHECK(dot(Vec{Num{1}, Num{2}}, //
+              Vec{Num{3}, Num{4}}) == Num{11});
+    CHECK(dot(Vec{Num{1}, Num{2}, Num{3}}, //
+              Vec{Num{4}, Num{5}, Num{6}}) == Num{32});
+    CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}},
+              Vec{Num{5}, Num{6}, Num{7}, Num{8}}) == Num{70});
+    CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}},
+              Vec{Num{6}, Num{7}, Num{8}, Num{9}, Num{10}}) == Num{130});
+  }
+  SUBCASE("remainder") {
+    constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
+    CHECK(dot(Vec<Num, Dim>(Num{3}), Vec<Num, Dim>(Num{4})) ==
+          Num{Dim * 3 * 4});
+  }
 }
 
 TEST_CASE_TEMPLATE("Vec::norm2", Num, NUM_TYPES) {

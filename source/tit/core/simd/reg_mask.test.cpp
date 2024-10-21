@@ -107,5 +107,39 @@ TEST_CASE("simd::RegMask::any_and_all") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("simd::RegMask::count_true") {
+  SUBCASE("all") {
+    const FloatRegMask m{FloatMaskArray{true, true, true, true}};
+    CHECK(count_true(m) == 4);
+  }
+  SUBCASE("some") {
+    const FloatRegMask m{FloatMaskArray{true, false, true, false}};
+    CHECK(count_true(m) == 2);
+  }
+  SUBCASE("none") {
+    const FloatRegMask m{FloatMaskArray{false, false, false, false}};
+    CHECK(count_true(m) == 0);
+  }
+}
+
+TEST_CASE("simd::RegMask::find_true") {
+  SUBCASE("first") {
+    const FloatRegMask m{FloatMaskArray{false, true, false, false}};
+    CHECK(try_find_true(m) == 1);
+    CHECK(find_true(m) == 1);
+  }
+  SUBCASE("last") {
+    const FloatRegMask m{FloatMaskArray{false, false, false, true}};
+    CHECK(try_find_true(m) == 3);
+    CHECK(find_true(m) == 3);
+  }
+  SUBCASE("none") {
+    const FloatRegMask m{FloatMaskArray{false, false, false, false}};
+    CHECK(try_find_true(m) == -1);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace
 } // namespace tit

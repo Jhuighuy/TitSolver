@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <concepts>
 #include <functional>
+#include <iterator>
 #include <ranges>
 #include <type_traits>
 #include <utility>
@@ -19,6 +20,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/missing.hpp"
+#include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/type_traits.hpp"
 #include "tit/core/utils.hpp"
@@ -80,8 +82,7 @@ struct StaticForEach {
         /*first=*/0,
         /*last=*/thread_count,
         /*step=*/1,
-        [block_first = std::move(block_first),
-         func = std::move(func)](size_t thread_index) {
+        [&block_first, &func](size_t thread_index) {
           std::for_each(block_first(thread_index),
                         block_first(thread_index + 1),
                         std::bind_front(std::ref(func), thread_index));
@@ -95,9 +96,9 @@ struct StaticForEach {
                           std::ranges::range_reference_t<
                               std::ranges::join_view<Range>>> Func>
   static void operator()(std::ranges::join_view<Range> join_view, Func func) {
-    StaticForEach{}(
+    StaticForEach{}( //
         std::move(join_view).base(),
-        [func = std::move(func)](size_t thread_index, const auto& range) {
+        [&func](size_t thread_index, const auto& range) {
           std::ranges::for_each(range,
                                 std::bind_front(std::ref(func), thread_index));
         });
@@ -125,6 +126,33 @@ struct BlockForEach {
 
 /// @copydoc BlockForEach
 inline constexpr BlockForEach block_for_each{};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Parallel copy-if.
+/// Relative order of the elements in the output range is not preserved.
+struct CopyIf {
+  template<basic_range Range,
+           std::random_access_iterator OutIter,
+           class Proj = std::identity,
+           std::indirect_unary_predicate<
+               std::projected<std::ranges::iterator_t<Range>, Proj>> Pred>
+    requires std::indirectly_copyable<std::ranges::iterator_t<Range>, OutIter>
+  static auto operator()(Range&& range, OutIter out, Pred pred, Proj proj = {})
+      -> OutIter {
+    TIT_ASSUME_UNIVERSAL(Range, range);
+    ssize_t out_index = 0;
+    for_each(range, [&out_index, &out, &pred, &proj](const auto& item) {
+      if (std::invoke(pred, std::invoke(proj, item))) {
+        *std::next(out, fetch_and_add(out_index, 1)) = item;
+      }
+    });
+    return std::next(out, out_index);
+  }
+};
+
+/// @copydoc CopyIf
+inline constexpr CopyIf copy_if{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
