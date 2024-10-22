@@ -68,7 +68,7 @@ public:
                  "Number of points cannot be less than the number of parts!");
       if (my_num_parts == 1) {
         // No further partitioning, assign part index to the output.
-        for (const auto i : my_perm) parts[i] = my_part;
+        std::ranges::fill(permuted_view(parts, my_perm), my_part);
         return;
       }
 

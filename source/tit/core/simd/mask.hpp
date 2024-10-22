@@ -42,7 +42,7 @@ public:
 
   /// Construct a mask equivalent to boolean @p b.
   constexpr explicit(false) Mask(bool b = false) noexcept
-      : bits_{b ? ~Bits{0} : Bits{0}} {}
+      : bits_{b ? static_cast<Bits>(~Bits{0}) : Bits{0}} {}
 
   /// Cast back to the boolean.
   constexpr explicit(false) operator bool() const noexcept {
