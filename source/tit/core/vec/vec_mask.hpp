@@ -323,5 +323,78 @@ constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Search
+//
+
+/// Count the number of true values in the vector mask.
+template<class Num, size_t Dim>
+constexpr auto count_true(const VecMask<Num, Dim>& m) -> size_t {
+  TIT_IF_SIMD_AVALIABLE(Num) {
+    constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
+    constexpr auto FullRegCount = Dim / RegSize;
+    if constexpr (FullRegCount > 0) {
+      auto count = simd::count_true(m.reg(0));
+      for (size_t i = 1; i < FullRegCount; ++i) {
+        count += simd::count_true(m.reg(i));
+      }
+      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) {
+        if (m[i]) count += 1;
+      }
+      return count;
+    }
+  }
+  size_t count = 0;
+  for (size_t i = 0; i < Dim; ++i) {
+    if (m[i]) count += 1;
+  }
+  return count;
+}
+
+/// Try to find the first true value in the vector mask.
+/// Return `-1` if all values are false.
+template<class Num, size_t Dim>
+constexpr auto try_find_true(const VecMask<Num, Dim>& m) -> ssize_t {
+  TIT_IF_SIMD_AVALIABLE(Num) {
+    constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
+    constexpr auto FullRegCount = Dim / RegSize;
+    if constexpr (FullRegCount > 0) {
+      for (size_t i = 0; i < FullRegCount; ++i) {
+        const auto true_index = simd::try_find_true(m.reg(i));
+        if (true_index != -1) return true_index + i * RegSize;
+      }
+      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) {
+        if (m[i]) return static_cast<ssize_t>(i);
+      }
+      return -1;
+    }
+  }
+  for (size_t i = 0; i < Dim; ++i) {
+    if (m[i]) return static_cast<ssize_t>(i);
+  }
+  return -1;
+}
+
+/// Find the first true value in the vector mask.
+template<class Num, size_t Dim>
+constexpr auto find_true(const VecMask<Num, Dim>& m) -> size_t {
+  TIT_ASSERT(count_true(m) > 0, "No true value in the vector mask!");
+  TIT_IF_SIMD_AVALIABLE(Num) {
+    constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
+    constexpr auto FullRegCount = Dim / RegSize;
+    constexpr auto RemainderSize = Dim - RegSize * FullRegCount;
+    if constexpr (FullRegCount > 0 && RemainderSize == 0) {
+      for (size_t i = 0; i < FullRegCount - 1; ++i) {
+        const auto true_index = simd::try_find_true(m.reg(i));
+        if (true_index != -1) return true_index + i * RegSize;
+      }
+      constexpr auto LastReg = FullRegCount - 1;
+      return RegSize * LastReg + simd::find_true(m.reg(LastReg));
+    }
+  }
+  return try_find_true(m);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
