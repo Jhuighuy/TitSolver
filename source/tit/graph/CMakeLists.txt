@@ -8,6 +8,8 @@ add_tit_library(
     graph
   SOURCES
     "graph.hpp"
+    "partition.cpp"
+    "partition.hpp"
   DEPENDS
     tit::core
     metis

@@ -39,7 +39,7 @@ public:
                   Parts&& parts,
                   size_t num_parts,
                   size_t init_part = 0) const {
-    TIT_PROFILE_SECTION("SortPartitioner::operator()");
+    TIT_PROFILE_SECTION("SortPartition::operator()");
     TIT_ASSUME_UNIVERSAL(Points, points);
     TIT_ASSUME_UNIVERSAL(Parts, parts);
 

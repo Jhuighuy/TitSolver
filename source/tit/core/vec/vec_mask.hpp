@@ -40,7 +40,7 @@ public:
   constexpr VecMask(Args&&... bs) // NOSONAR
       : col_{make_array<Dim, bool>(std::forward<Args>(bs)...)} {}
 
-  /// Element at index.
+  /// Vector mask element at index.
   /// @{
   constexpr auto operator[](size_t i) noexcept -> bool& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
@@ -149,7 +149,7 @@ public:
   /// Destroy the vector mask.
   constexpr ~VecMask() = default;
 
-  /// Element at index.
+  /// Vector mask element at index.
   /// @{
   constexpr auto operator[](size_t i) noexcept -> Mask& {
     TIT_ASSERT(i < Dim, "Row index is out of range.");

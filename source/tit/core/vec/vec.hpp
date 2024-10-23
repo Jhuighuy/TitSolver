@@ -49,6 +49,16 @@ public:
     return Dim;
   }
 
+  /// Vector elements array.
+  /// @{
+  constexpr auto elems() noexcept -> std::array<Num, Dim>& {
+    return col_;
+  }
+  constexpr auto elems() const noexcept -> const std::array<Num, Dim>& {
+    return col_;
+  }
+  /// @}
+
   /// Vector element at index.
   /// @{
   constexpr auto operator[](size_t i) noexcept -> Num& {
@@ -154,7 +164,17 @@ public:
     return Dim;
   }
 
-  /// Element at index.
+  /// Vector elements array.
+  /// @{
+  constexpr auto elems() noexcept -> std::array<Num, Dim>& {
+    return col_;
+  }
+  constexpr auto elems() const noexcept -> const std::array<Num, Dim>& {
+    return col_;
+  }
+  /// @}
+
+  /// Vector element at index.
   /// @{
   constexpr auto operator[](size_t i) noexcept -> Num& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
