@@ -139,7 +139,7 @@ class Mdvector {
 public:
 
   /// Construct multidimensional vector.
-  Mdvector() noexcept = default;
+  constexpr Mdvector() noexcept = default;
 
   /// Construct multidimensional vector with specified size.
   template<class... Extents>
