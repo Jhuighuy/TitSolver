@@ -18,6 +18,7 @@
 #include "tit/core/mdvector.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/stats.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -26,6 +27,7 @@
 
 #include "tit/graph/graph.hpp"
 #include "tit/graph/partition.hpp"
+#include "tit/graph/utils.hpp"
 
 namespace tit::geom {
 
@@ -124,7 +126,9 @@ public:
 
     // Build the partitioning.
     std::vector<size_t> graph_parts(graph.num_nodes());
-    graph::partition_metis(graph, node_weights, graph_parts, num_parts);
+    graph::partition_multilevel(graph, node_weights, graph_parts, num_parts);
+    const auto ec = graph::edge_cut(graph, graph_parts);
+    TIT_STATS("edge_cut", ec);
 
     // Assign the partitions.
     par::for_each(std::views::enumerate(points), [&](const auto& ip) {
