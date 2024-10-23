@@ -17,7 +17,7 @@ fi
 
 # Common paths to the various build-related locations.
 export SOURCE_DIR
-export OUTPUT_DIR="$SOURCE_DIR/output/cmake_output"
+export OUTPUT_DIR="$SOURCE_DIR/output/cmake_output_emscripten"
 export INSTALL_DIR="$SOURCE_DIR/output/TIT_ROOT"
 export TEST_DIR="$OUTPUT_DIR/tests"
 export TEST_OUTPUT_DIR="$SOURCE_DIR/output/test_output"

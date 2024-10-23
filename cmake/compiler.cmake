@@ -44,6 +44,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 else()
   string(TOUPPER ${CMAKE_CXX_COMPILER_ID} CXX_COMPILER)
 endif()
+message(WARNING ${CMAKE_CXX_COMPILER})
 
 # Check if compiler is known...
 try_set(CXX_COMPILER_MIN_VERSION "${CXX_COMPILER}_MIN_VERSION")

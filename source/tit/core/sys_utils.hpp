@@ -7,6 +7,7 @@
 
 #include <optional>
 #include <string>
+#include <typeinfo>
 
 #include <unistd.h>
 

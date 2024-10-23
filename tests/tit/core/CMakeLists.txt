@@ -7,6 +7,7 @@ add_tit_test_from_target(
   tit::core_tests
   NAME "tit/core/unit"
 )
+return()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

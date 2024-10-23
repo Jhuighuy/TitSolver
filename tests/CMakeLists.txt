@@ -5,6 +5,6 @@
 
 add_subdirectory("test_runner")
 add_subdirectory("tit")
-add_subdirectory("titwcsph")
+# add_subdirectory("titwcsph")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

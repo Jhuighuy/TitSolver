@@ -32,10 +32,8 @@ find_package(
     stacktrace_addr2line
 )
 find_package(doctest CONFIG REQUIRED)
-find_package(HDF5 CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
-find_package(mimalloc CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,12 +67,6 @@ foreach(CONFIG ${ALL_CONFIGS})
     $<$<CONFIG:${CONFIG}>:${CXX_LINK_OPTIONS_${CONFIG_UPPER}}>
   )
 endforeach()
-
-# Link with the dependent libraries.
-target_link_libraries(
-  tit_base INTERFACE
-  hdf5::hdf5-static
-)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

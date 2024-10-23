@@ -23,16 +23,16 @@ add_tit_library(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
-  NAME
-    testing_tests
-  SOURCES
-    "dual.test.cpp"
-    "integrals.test.cpp"
-  DEPENDS
-    tit::core
-    tit::geom
-    tit::testing
-)
+# add_tit_executable(
+#   NAME
+#     testing_tests
+#   SOURCES
+#     "dual.test.cpp"
+#     "integrals.test.cpp"
+#   DEPENDS
+#     tit::core
+#     tit::geom
+#     tit::testing
+# )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

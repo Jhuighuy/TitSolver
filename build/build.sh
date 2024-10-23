@@ -153,7 +153,7 @@ configure() {
     # In my view, using custom triplets solely to switch the compiler might be
     # excessive. Therefore, I'll stick to the environment variable method for
     # now.
-    export CXX="$COMPILER"
+    echo export CXX="$COMPILER"
   fi
 
   # Find vcpkg.
@@ -164,6 +164,7 @@ configure() {
     exit 1
   fi
   CMAKE_ARGS+=("-D" "CMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_PATH")
+  CMAKE_ARGS+=("-D" "VCPKG_CHAINLOAD_TOOLCHAIN_FILE=$HOME/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
 
   # Execute cmake.
   [ "${EXTRA_ARGS[@]}" ] && CMAKE_ARGS=("${CMAKE_ARGS[@]}" "${EXTRA_ARGS[@]}")

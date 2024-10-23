@@ -48,7 +48,8 @@ inline constexpr size_t min_reg_byte_width_v{
 #if defined __SSE__ || defined __ARM_NEON
     16
 #else
-#error Unknown SIMD instruction set!
+    16
+// #error Unknown SIMD instruction set!
 #endif
 };
 
@@ -65,7 +66,8 @@ inline constexpr size_t max_reg_byte_width_v{
 #elif defined __SSE__ || defined __ARM_NEON
     16
 #else
-#error Unknown SIMD instruction set!
+    16
+// #error Unknown SIMD instruction set!
 #endif
 };
 

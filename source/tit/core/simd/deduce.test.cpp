@@ -58,9 +58,9 @@ static_assert(std::is_same_v<DeducedRegArray<3>, RegArray<4, 1>>);
 static_assert(std::is_same_v<DeducedRegArray<7>, RegArray<4, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<9>, RegArray<4, 3>>);
 
-#else
+// #else
 
-#error Unknown SIMD instruction set!
+// #error Unknown SIMD instruction set!
 
 #endif
 

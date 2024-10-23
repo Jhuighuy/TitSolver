@@ -97,6 +97,8 @@ function(add_tit_executable)
   target_link_libraries(${EXE_TARGET} PRIVATE ${EXE_DEPENDS})
 
   # Install the executable.
+  # TODO: In WASM, we need to install the `.wasm` file along with the `.js` file.
+  # cp ./output/cmake_output_emscripten/source/tit/core/tit_core_tests.wasm ./output/TIT_ROOT/bin/
   install(TARGETS ${EXE_TARGET} RUNTIME DESTINATION bin)
 
   # Enable static analysis.

@@ -7,10 +7,8 @@
     "boost-container",
     "boost-stacktrace",
     "doctest",
-    "hdf5",
     "highway",
     "metis",
-    "mimalloc",
     "nanobench",
     "tbb"
   ]

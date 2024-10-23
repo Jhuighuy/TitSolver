@@ -9,7 +9,7 @@ include_guard()
 
 # Define minimal compiler version.
 # Disabled, since we do not officially support clang yet.
-# set(CLANG_MIN_VERSION "18.1.5")
+set(CLANG_MIN_VERSION "18.1.5")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,7 +55,7 @@ set(
   # Warnings and diagnostics.
   ${CLANG_WARNINGS}
   # Generate machine code for the host system's architecture.
-  -march=native
+  # -march=native
   # `__cpp_concepts` is not updated in clang for some reason.
   -Wno-builtin-macro-redefined
   -D__cpp_concepts=202002L
@@ -113,7 +113,8 @@ set(
   # Inherit common options.
   ${CLANG_COMPILE_OPTIONS}
   # Enable aggressive optimization levels to maximize performance.
-  -Ofast
+  -O3
+  -ffast-math
   # Enables aggressive floating-point expression contraction.
   -ffp-contract=fast
   # Are these options necessary?
