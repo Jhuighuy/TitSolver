@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include "tit/core/checks.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/signal.hpp"
 #include "tit/core/sys_utils.hpp"
 
@@ -128,6 +129,7 @@ FatalSignalHandler::FatalSignalHandler()
 
 [[noreturn]]
 void FatalSignalHandler::on_signal(int signal_number) noexcept {
+  const par::GlobalLock lock{};
   if (signal_number == SIGINT) {
     // Exit normally.
     dump("\n\nInterrupted by Ctrl+C.\n");
