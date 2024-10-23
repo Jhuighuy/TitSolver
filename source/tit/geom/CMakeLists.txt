@@ -9,7 +9,9 @@ add_tit_library(
   SOURCES
     "bbox.hpp"
     "bipartition.hpp"
+    "grid.hpp"
     "partition.hpp"
+    "partition/grid_graph_partition.hpp"
     "partition/recursive_bisection.hpp"
     "partition/sort_partition.hpp"
     "point_range.hpp"
@@ -21,6 +23,8 @@ add_tit_library(
     "sort/morton_curve_sort.hpp"
   DEPENDS
     tit::core
+    tit::graph
+    Boost::container
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,6 +35,7 @@ add_tit_executable(
   SOURCES
     "bbox.test.cpp"
     "bipartition.test.cpp"
+    "grid.test.cpp"
     "point_range.test.cpp"
     "partition/recursive_bisection.test.cpp"
     "partition/sort_partition.test.cpp"

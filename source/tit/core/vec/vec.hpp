@@ -255,6 +255,14 @@ constexpr auto vec_cast(const Vec<From, Dim>& a)
 }
 /// @}
 
+/// Convert a vector into an array.
+template<class Num, size_t Dim>
+constexpr auto to_array(const Vec<Num, Dim>& a) -> std::array<Num, Dim> {
+  std::array<Num, Dim> r{};
+  for (size_t i = 0; i < Dim; ++i) r[i] = a[i];
+  return r;
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // Algorithms

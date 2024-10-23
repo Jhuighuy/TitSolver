@@ -79,6 +79,14 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  constexpr void reserve(size_t buckets_capacity) {
+    val_ranges_.reserve(buckets_capacity + 1);
+  }
+  constexpr void resize(size_t buckets_capacity, size_t val_capacity) {
+    val_ranges_.reserve(buckets_capacity + 1);
+    vals_.reserve(val_capacity);
+  }
+
   /// Clear the multivector.
   constexpr void clear() noexcept {
     TIT_ASSERT(!val_ranges_.empty(), "Value ranges must not be empty!");
