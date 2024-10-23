@@ -28,4 +28,24 @@ void partition_metis(const WeightedGraph& graph,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Multilevel graph partitioning.
+///
+/// The algorithm recursively coarsens the graph, partitions the coarsest graph,
+/// and then refines the partitioning by moving nodes between partitions.
+///
+/// @param[in]  graph     Graph.
+/// @param[in]  weights   Node weights.
+/// @param[out] parts     Node partitioning.
+/// @param[in]  num_parts Number of partitions.
+/// @param[in]  max_depth Maximum number of coarsening iterations.
+/// @param[in]  max_iter  Maximum number of refinement iterations.
+void partition_multilevel(const WeightedGraph& graph,
+                          std::vector<weight_t>& weights,
+                          std::vector<size_t>& parts,
+                          size_t num_parts,
+                          size_t max_depth = 10,
+                          size_t max_iter = 10);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit::graph
