@@ -160,7 +160,7 @@ private:
 
     // Compress the adjacency graph.
     adjacency_.clear();
-    for (const auto& x : adjacency) adjacency_.push_back(x);
+    for (const auto& x : adjacency) adjacency_.append_bucket(x);
 
     // Search for the interpolation points for the fixed particles.
     static std::vector<std::vector<size_t>> interp_adjacency{};
@@ -191,7 +191,7 @@ private:
 
     // Compress the interpolation graph.
     interp_adjacency_.clear();
-    for (const auto& x : interp_adjacency) interp_adjacency_.push_back(x);
+    for (const auto& x : interp_adjacency) interp_adjacency_.append_bucket(x);
   }
 
   template<particle_array ParticleArray>
@@ -252,16 +252,16 @@ private:
     }
 
     // Assemble the block adjacency graph.
-    block_edges_.assemble_wide( //
+    block_edges_.assign_pairs_par_wide(
         num_parts + 1,
-        adjacency_.edges(),
-        [parts](const auto& ab) {
-          const auto& [a, b] = ab;
-          return PartVec::common(parts[a], parts[b]);
-        });
+        adjacency_.transform_edges([parts](const auto& ab) {
+          const auto [a, b] = ab;
+          const auto part_ab = PartVec::common(parts[a], parts[b]);
+          return std::pair{part_ab, ab};
+        }));
 
     // Report the block sizes.
-    TIT_STATS("ParticleMesh::block_edges_", block_edges_.sizes());
+    TIT_STATS("ParticleMesh::block_edges_", block_edges_.bucket_sizes());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
