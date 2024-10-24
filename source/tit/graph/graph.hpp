@@ -9,7 +9,7 @@
 #include <tuple>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/multivector.hpp"
+#include "tit/core/containers/multivector.hpp"
 
 namespace tit::graph {
 

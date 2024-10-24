@@ -12,8 +12,8 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/containers/multivector.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/multivector.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type_traits.hpp"
 #include "tit/core/utils.hpp"
