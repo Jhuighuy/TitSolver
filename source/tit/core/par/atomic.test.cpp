@@ -24,5 +24,23 @@ TEST_CASE("par::fetch_and_add") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("par::fetch_and_add") {
+  constexpr auto expected = 10;
+  constexpr auto desired = 20;
+  SUBCASE("success") {
+    auto val = expected;
+    CHECK(par::compare_exchange(val, expected, desired));
+    CHECK(val == desired);
+  }
+  SUBCASE("failure") {
+    constexpr auto unexpected = 30;
+    auto val = unexpected;
+    CHECK_FALSE(par::compare_exchange(val, expected, desired));
+    CHECK(val == unexpected);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace
 } // namespace tit

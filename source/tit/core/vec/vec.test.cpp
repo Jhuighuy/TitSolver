@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <array>
+
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
@@ -23,34 +25,41 @@ TEST_CASE_TEMPLATE("Vec", Num, NUM_TYPES) {
     Vec<Num, 2> v{};
     CHECK(v[0] == Num{0});
     CHECK(v[1] == Num{0});
+    CHECK(v.elems() == std::array<Num, 2>{});
   }
   SUBCASE("zero assignment") {
     Vec v{Num{1}, Num{2}};
     v = {};
     CHECK(v[0] == Num{0});
     CHECK(v[1] == Num{0});
+    CHECK(v.elems() == std::array<Num, 2>{});
   }
   SUBCASE("value initialization") {
     const Vec<Num, 2> v(Num{3});
     CHECK(v[0] == Num{3});
     CHECK(v[1] == Num{3});
+    CHECK(v.elems() == std::array{Num{3}, Num{3}});
   }
   SUBCASE("aggregate initialization") {
     const Vec v{Num{1}, Num{2}};
     CHECK(v[0] == Num{1});
     CHECK(v[1] == Num{2});
+    CHECK(v.elems() == std::array{Num{1}, Num{2}});
   }
   SUBCASE("aggregate assignment") {
     Vec<Num, 2> v;
     v = {Num{3}, Num{4}};
     CHECK(v[0] == Num{3});
     CHECK(v[1] == Num{4});
+    CHECK(v.elems() == std::array{Num{3}, Num{4}});
   }
   SUBCASE("subscript") {
     Vec<Num, 2> v;
     v[0] = Num{3}, v[1] = Num{4};
     CHECK(v[0] == Num{3});
     CHECK(v[1] == Num{4});
+    v.elems() = {Num{5}, Num{6}};
+    CHECK(v.elems() == std::array{Num{5}, Num{6}});
   }
 }
 
