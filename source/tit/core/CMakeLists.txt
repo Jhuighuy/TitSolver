@@ -10,6 +10,9 @@ add_tit_library(
     "basic_types.hpp"
     "checks.cpp"
     "checks.hpp"
+    "containers/boost.hpp"
+    "containers/mdvector.hpp"
+    "containers/multivector.hpp"
     "enum_utils.hpp"
     "env.cpp"
     "env.hpp"
@@ -27,14 +30,12 @@ add_tit_library(
     "mat/part.hpp"
     "mat/traits.hpp"
     "math.hpp"
-    "mdvector.hpp"
     "meta.hpp"
     "meta/list.hpp"
     "meta/range.hpp"
     "meta/set.hpp"
     "meta/type.hpp"
     "missing.hpp"
-    "multivector.hpp"
     "par.hpp"
     "par/atomic.hpp"
     "par/control.hpp"
@@ -68,6 +69,7 @@ add_tit_library(
   DEPENDS
     tit::base
     Boost::core
+    Boost::container
     Boost::stacktrace_addr2line
     hwy::hwy
     mimalloc-static
@@ -81,6 +83,8 @@ add_tit_executable(
   NAME
     core_tests
   SOURCES
+    "containers/mdvector.test.cpp"
+    "containers/multivector.test.cpp"
     "enum_utils.test.cpp"
     "mat/eig.test.cpp"
     "mat/fact.test.cpp"
@@ -92,8 +96,6 @@ add_tit_executable(
     "meta/range.test.cpp"
     "meta/set.test.cpp"
     "meta/type.test.cpp"
-    "mdvector.test.cpp"
-    "multivector.test.cpp"
     "par/atomic.test.cpp"
     "par/control.test.cpp"
     "par/memory_pool.test.cpp"

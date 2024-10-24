@@ -10,7 +10,6 @@ add_tit_library(
     "graph.hpp"
   DEPENDS
     tit::core
-    Boost::container
     metis
 )
 

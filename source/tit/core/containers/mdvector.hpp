@@ -23,15 +23,26 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace impl {
+template<size_t Rank>
+constexpr auto size_from_shape(std::span<const size_t, Rank> shape) noexcept
+    -> size_t {
+  auto s = shape[0];
+  for (size_t i = 1; i < Rank; ++i) s *= shape[i];
+  return s;
+}
+} // namespace impl
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Compatible multidimensional shape.
 template<size_t Rank, class... Extents>
-concept mdshape = (sizeof...(Extents) <= Rank) &&
-                  (std::convertible_to<Extents, size_t> && ...);
+concept mdshape = can_pack_array<Rank, size_t, Extents...> &&
+                  (packed_array_size_v<Extents...> == Rank);
 
 /// Compatible multidimensional index.
 template<size_t Rank, class... Indices>
-concept mdindex = in_range_v<sizeof...(Indices), 1, Rank> &&
-                  (std::convertible_to<Indices, size_t> && ...);
+concept mdindex = can_pack_array<Rank, size_t, Indices...>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -52,12 +63,14 @@ public:
   template<std::contiguous_iterator ValIter>
     requires std::constructible_from<ValSpan, ValIter, ValIter>
   constexpr Mdspan(ShapeSpan shape, ValIter val_iter) noexcept
-      : shape_{shape}, vals_{val_iter, val_iter + size_from_shape_()} {}
+      : shape_{shape},
+        vals_{val_iter, val_iter + impl::size_from_shape(shape)} {}
   template<std::ranges::contiguous_range Vals>
     requires std::constructible_from<ValSpan, Vals&&>
   constexpr Mdspan(ShapeSpan shape, Vals&& vals) noexcept
       : shape_{shape}, vals_{std::forward<Vals>(vals)} {
-    TIT_ASSERT(vals_.size() == size_from_shape_(), "Data size is invalid!");
+    TIT_ASSERT(vals_.size() == impl::size_from_shape(shape_),
+               "Data size is invalid!");
   }
   /// @}
 
@@ -86,19 +99,19 @@ public:
 
   /// Reference to span element or sub-span.
   template<class... Indices>
-    requires mdindex<Rank, Indices...>
-  constexpr auto operator[](Indices... indices) const noexcept
+    requires mdindex<Rank, const Indices&...>
+  constexpr auto operator[](const Indices&... indices) const noexcept
       -> decltype(auto) {
     // Compute an offset to the data position.
     size_t offset = 0;
     for (const auto index_pack = make_array<Rank, size_t>(indices...);
-         const auto [extent, index] : std::views::zip(shape_, index_pack)) {
+         const auto& [extent, index] : std::views::zip(shape_, index_pack)) {
       TIT_ASSERT(index < extent, "Index is out of range!");
       offset = index + offset * extent;
     }
     TIT_ASSERT(offset < vals_.size(), "Offset is out of range!");
     // Return with result.
-    if constexpr (constexpr auto IndicesRank = sizeof...(Indices);
+    if constexpr (constexpr auto IndicesRank = packed_array_size_v<Indices...>;
                   IndicesRank == Rank) {
       return vals_[offset];
     } else {
@@ -108,12 +121,6 @@ public:
   }
 
 private:
-
-  constexpr auto size_from_shape_() const noexcept -> size_t {
-    auto s = shape_[0];
-    for (size_t i = 1; i < Rank; ++i) s *= shape_[i];
-    return s;
-  }
 
   ShapeSpan shape_;
   ValSpan vals_;
@@ -144,7 +151,7 @@ public:
   /// Construct multidimensional vector with specified size.
   template<class... Extents>
     requires mdshape<Rank, Extents...>
-  constexpr explicit Mdvector(Extents... extents) {
+  constexpr explicit Mdvector(const Extents&... extents) {
     assign(extents...);
   }
 
@@ -201,10 +208,11 @@ public:
 
   /// Clear and reshape the vector.
   template<class... Extents>
-    requires mdshape<Rank, Extents...>
-  constexpr void assign(Extents... extents) {
-    shape_ = {static_cast<size_t>(extents)...};
-    vals_.clear(), vals_.resize((extents * ...));
+    requires mdshape<Rank, const Extents&...>
+  constexpr void assign(const Extents&... extents) {
+    shape_ = make_array<Rank, size_t>(extents...);
+    vals_.clear();
+    vals_.resize(impl::size_from_shape(std::span<const size_t, Rank>{shape_}));
   }
 
   /// Reference to vector element or sub-vector span.

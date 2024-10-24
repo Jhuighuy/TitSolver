@@ -10,6 +10,7 @@
 #include <concepts>
 #include <iterator>
 #include <ranges>
+#include <tuple>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
@@ -49,14 +50,41 @@ using pair_of_t = std::pair<T, T>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Pack values into a padded array of given size.
-template<size_t Size, class T, class... Ts>
-  requires ((std::constructible_from<T, Ts &&> && ...) &&
-            ((sizeof...(Ts) == Size) ||
-             ((sizeof...(Ts) < Size) && std::default_initializable<T>) ))
-constexpr auto make_array(Ts&&... vals) -> std::array<T, Size> {
-  return {T(std::forward<Ts>(vals))...};
+/// Array type that is deduced from the given argument.
+/// If the argument is not an array, it is wrapped into an array of size 1.
+template<class Arg>
+using array_from_arg_t = decltype(std::array{std::declval<Arg>()});
+
+/// Size of the array that is constructed by packing the given values
+/// or arrays of values into a single array.
+template<class... Args>
+inline constexpr auto packed_array_size_v =
+    std::tuple_size_v<decltype(std::tuple_cat(array_from_arg_t<Args>{}...))>;
+
+/// Check if the given values or arrays of values can be packed into a single
+/// array of the given size and type.
+template<size_t Size, class R, class... Args>
+concept can_pack_array =
+    (... &&
+     std::constructible_from<R, typename array_from_arg_t<Args>::value_type>) &&
+    (((... + std::tuple_size_v<array_from_arg_t<Args>>) == Size) ||
+     (((... + std::tuple_size_v<array_from_arg_t<Args>>) < Size) &&
+      std::default_initializable<R>) );
+
+/// Pack values and arrays of values into an array of the given size and type.
+template<size_t Size, class R, class... Args>
+  requires can_pack_array<Size, R, Args...>
+constexpr auto make_array(Args&&... args) -> std::array<R, Size> {
+  return std::apply(
+      []<class... Elems>(Elems&&... elems) {
+        return std::array<R, Size>{R(std::forward<Elems>(elems))...};
+      },
+      std::tuple_cat(std::array{std::forward<Args>(args)}...));
 }
+
+/// Deduce array type from the given arguments.
+template<class... Ts>
+using array_from_t = decltype(make_array(std::declval<Ts>()...));
 
 /// Fill an array of the given size initialized with the given value.
 template<size_t Size, class T>
@@ -72,13 +100,12 @@ constexpr auto fill_array(const T& val) -> std::array<T, Size> {
 template<size_t... Sizes, class T>
   requires std::copy_constructible<T>
 constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
-    -> std::array<T, (Sizes + ...)> {
-  std::array<T, (Sizes + ...)> result{};
+    -> std::array<T, (... + Sizes)> {
+  std::array<T, (... + Sizes)> result{};
   auto out_iter = result.begin();
-  const auto copy_array = [&out_iter](const auto& array) {
+  (..., [&out_iter](const auto& array) {
     out_iter = std::ranges::copy(array, out_iter).out;
-  };
-  (copy_array(arrays), ...);
+  }(arrays));
   return result;
 }
 

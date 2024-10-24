@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/multivector.hpp"
+#include "tit/core/containers/multivector.hpp"
 
 #include "tit/testing/test.hpp"
 

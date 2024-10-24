@@ -11,6 +11,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/io.hpp"
+#include "tit/core/par.hpp"
 #include "tit/core/sys_utils.hpp"
 
 namespace tit {
@@ -76,6 +77,8 @@ TerminateHandler::~TerminateHandler() noexcept {
 
 [[noreturn]]
 void TerminateHandler::handle_terminate_() {
+  const par::GlobalLock lock{};
+
   // Report the incident.
   if (const auto exception_ptr = std::current_exception(); exception_ptr) {
     // We've got an unhandled exception.

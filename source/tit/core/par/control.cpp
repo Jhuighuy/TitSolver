@@ -3,6 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <mutex>
 #include <optional>
 
 #include <oneapi/tbb/global_control.h>
@@ -25,6 +26,13 @@ void set_num_threads(size_t value) {
   if (num_threads() == value) return;
   static std::optional<tbb::global_control> control{};
   control.emplace(tbb::global_control::max_allowed_parallelism, value);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto global_mutex() noexcept -> std::mutex& {
+  static std::mutex mutex{};
+  return mutex;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
