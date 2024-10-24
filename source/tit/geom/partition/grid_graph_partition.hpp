@@ -69,49 +69,70 @@ public:
     const auto box = compute_bbox(points).grow(size_hint_ / 100);
     const auto grid = Grid{box}.set_cell_extents(size_hint_).extend(1);
 
+    // Index the cells that contain the points.
     struct CountAndIndex {
       size_t count = 0;
       size_t flat_index = std::numeric_limits<size_t>::max();
     };
     static Mdvector<CountAndIndex, vec_dim_v<Vec>> cells{};
     cells.assign(grid.num_cells().elems());
-
-    // Index the cells that contain the points.
-    par::for_each(points, [&grid](const Vec& point) {
-      auto& cell = cells[grid.cell_index(point).elems()];
-      par::fetch_and_add(cell.count, 1);
-    });
-
-    // Assign flat indices to the cells that have points.
-    for (size_t cell_flat_index = 0; auto& cell : cells) {
-      if (cell.count > 0) cell.flat_index = cell_flat_index++;
+    size_t flat_cell_counter = 0;
+    {
+      TIT_PROFILE_SECTION("GridGraphPartition::operator()::index");
+#if 0
+      par::for_each(points, [&grid, &flat_cell_counter](const Vec& point) {
+        auto& [count, flat_index] = cells[grid.cell_index(point).elems()];
+        if (par::compare_exchange(count, 0, 1)) {
+          flat_index = par::fetch_and_add(flat_cell_counter, 1);
+        } else {
+          par::fetch_and_add(count, 1);
+        }
+      });
+#else
+      par::for_each(points, [&grid](const Vec& point) {
+        auto& [count, _] = cells[grid.cell_index(point).elems()];
+        par::fetch_and_add(count, 1);
+      });
+      for (auto& [count, flat_cell_index] : cells) {
+        if (count > 0) flat_cell_index = flat_cell_counter++;
+      }
+#endif
     }
 
     // Build the graph connecting the cells.
+    constexpr auto MaxNumEdges = 2 * vec_dim_v<Vec>;
     using Edge = std::pair<size_t, size_t>;
-    using EdgeMap = SmallVector<Edge, 2 * vec_dim_v<Vec>>;
-    graph::WeightedGraph graph;
-    std::vector<graph::weight_t> node_weights;
-    for (const auto& cell_index : grid.internal_cells(1)) {
-      const auto& cell = cells[cell_index.elems()];
-      if (cell.count == 0) continue;
+    using EdgeMap = SmallVector<Edge, MaxNumEdges>;
+    graph::SmallWeightedGraph<MaxNumEdges> graph;
+    graph.assign(flat_cell_counter);
+    std::vector<graph::weight_t> node_weights(flat_cell_counter);
+    {
+      TIT_PROFILE_SECTION("GridGraphPartition::operator()::assemble");
+      par::for_each(grid.internal_cells(1), [&](const auto& cell_index) {
+        const auto& [count, flat_index] = cells[cell_index.elems()];
+        if (count == 0) return;
 
-      EdgeMap edges;
-      for (size_t d = 0; d < vec_dim_v<Vec>; ++d) {
-        for (ssize_t i = -1; i <= 1; i += 2) {
-          auto neighbor_cell_index = cell_index;
-          neighbor_cell_index[d] += i;
-          const auto& neighbor_cell = cells[neighbor_cell_index.elems()];
-          if (neighbor_cell.count == 0) continue;
+        EdgeMap edges;
+        for (size_t d = 0; d < vec_dim_v<Vec>; ++d) {
+          for (ssize_t i = -1; i <= 1; i += 2) {
+            auto neighbor_cell_index = cell_index;
+            neighbor_cell_index[d] += i;
+            const auto& [neighbor_count, neighbor_flat_index] =
+                cells[neighbor_cell_index.elems()];
+            if (neighbor_count == 0) continue;
 
-          const auto edge_weight = cell.count * neighbor_cell.count;
-          edges.emplace_back(neighbor_cell.flat_index, edge_weight);
+            const auto edge_weight = count * neighbor_count;
+            TIT_ENSURE(
+                neighbor_flat_index != flat_index,
+                "Neighbor cell index is equal to the current cell index!");
+            edges.emplace_back(neighbor_flat_index, edge_weight);
+          }
         }
-      }
 
-      std::ranges::sort(edges);
-      graph.append_bucket(edges);
-      node_weights.push_back(cell.count);
+        std::ranges::sort(edges);
+        graph.set_bucket(flat_index, edges);
+        node_weights[flat_index] = count;
+      });
     }
 
     // Build the partitioning.

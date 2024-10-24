@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <concepts>
 #include <initializer_list>
+#include <iterator>
 #include <numeric>
 #include <ranges>
 #include <span>
@@ -229,6 +230,88 @@ private:
 template<class Val>
 Multivector(std::initializer_list<std::initializer_list<Val>>)
     -> Multivector<Val>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Multivector with small buckets.
+template<class Val, size_t N>
+class SmallMultivector {
+public:
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Multivector size.
+  constexpr auto size() const noexcept -> size_t {
+    return bucket_sizes_.size();
+  }
+
+  /// Is multivector empty?
+  constexpr auto empty() const noexcept -> bool {
+    return bucket_sizes_.empty();
+  }
+
+  /// Range of bucket sizes.
+  constexpr auto bucket_sizes() const noexcept -> std::span<const size_t> {
+    return bucket_sizes_;
+  }
+
+  /// Buckets of values.
+  constexpr auto buckets(this auto& self) noexcept {
+    return std::views::iota(size_t{0}, self.size()) |
+           std::views::transform([&self](size_t index) { return self[index]; });
+  }
+
+  /// Bucket of values at index.
+  /// @{
+  constexpr auto operator[](size_t index) noexcept -> std::span<Val> {
+    TIT_ASSERT(index < size(), "Bucket index is out of range!");
+    return std::span{buckets_[index]}.subspan(0, bucket_sizes_[index]);
+  }
+  constexpr auto operator[](size_t index) const noexcept
+      -> std::span<const Val> {
+    TIT_ASSERT(index < size(), "Bucket index is out of range!");
+    return std::span{buckets_[index]}.subspan(0, bucket_sizes_[index]);
+  }
+  /// @}
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Clear the multivector.
+  constexpr void clear() noexcept {
+    bucket_sizes_.clear();
+    buckets_.clear();
+  }
+
+  /// Assign the number of buckets.
+  constexpr void assign(size_t count) {
+    bucket_sizes_.clear(), bucket_sizes_.resize(count);
+    buckets_.assign(count, N);
+  }
+
+  /// Assign the bucket at index.
+  template<std::ranges::input_range Bucket>
+    requires std::constructible_from<Val,
+                                     std::ranges::range_reference_t<Bucket>>
+  constexpr void set_bucket(size_t index, Bucket&& bucket) {
+    TIT_ASSUME_UNIVERSAL(Bucket, bucket);
+    if constexpr (std::ranges::sized_range<Bucket>) {
+      TIT_ASSERT(std::size(bucket) <= N, "Bucket size is too large!");
+    }
+    const auto bucket_iter = std::begin(buckets_[index]);
+    const auto result =
+        std::ranges::copy(bucket | std::views::take(N), bucket_iter);
+    bucket_sizes_[index] =
+        static_cast<size_t>(std::ranges::distance(bucket_iter, result.out));
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+private:
+
+  std::vector<size_t> bucket_sizes_;
+  Mdvector<Val, 2> buckets_;
+
+}; // class SmallMultivector
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

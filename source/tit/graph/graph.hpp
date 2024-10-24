@@ -109,12 +109,13 @@ public:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Compressed sparse adjacency graph with edge weights.
-class WeightedGraph final : public Multivector<std::tuple<size_t, weight_t>> {
+template<class Base>
+class BaseWeightedGraph final : public Base {
 public:
 
   /// Number of graph nodes.
   constexpr auto num_nodes() const noexcept -> size_t {
-    return size();
+    return Base::size();
   }
 
   /// Range of the graph nodes.
@@ -140,6 +141,13 @@ public:
   }
 
 }; // class WeightedGraph
+
+using WeightedGraph =
+    BaseWeightedGraph<Multivector<std::tuple<size_t, weight_t>>>;
+
+template<size_t MaxNumEdges>
+using SmallWeightedGraph = BaseWeightedGraph<
+    SmallMultivector<std::tuple<size_t, weight_t>, MaxNumEdges>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
