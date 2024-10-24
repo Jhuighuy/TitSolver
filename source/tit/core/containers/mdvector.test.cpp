@@ -26,7 +26,7 @@ TEST_CASE("Mdspan") {
     CHECK(mdspan.back() == 9);
     CHECK(mdspan[0, 0] == 1);
     CHECK(mdspan[0, 1] == 2);
-    CHECK(mdspan[1, 0] == 4);
+    CHECK(mdspan[std::array{1, 0}] == 4);
     CHECK(mdspan[2, 1] == 8);
   }
   SUBCASE("subspans") {
@@ -68,7 +68,7 @@ TEST_CASE("Mdvector") {
       // Populate it with vals using the different accessors.
       mdvector.front() = 1, mdvector[0, 1] = 2, mdvector[0][2] = 2;
       mdvector[1, 0] = 4, mdvector[1][1] = 5, mdvector[1, 2] = 6;
-      mdvector[2][0] = 9, mdvector[2, 1] = 8, mdvector.back() = 9;
+      mdvector[2][0] = 9, mdvector[std::array{2, 1}] = 8, mdvector.back() = 9;
       return mdvector;
     };
 
@@ -100,15 +100,16 @@ TEST_CASE("Mdvector") {
       Mdvector<int, 3> mdvector{};
       mdvector.assign(4, 4, 4);
       std::ranges::copy(std::views::iota(1, 65), mdvector.begin());
+      std::ranges::reverse(mdvector);
       return mdvector;
     };
 
     // Retrieve const copy of our vector to play with.
     const auto mdvector = make_mdvector();
 
-    // Find `32` in vector.
-    const auto iter = std::ranges::find(mdvector, 32);
-    CHECK(iter - mdvector.begin() == 31);
+    // Find `17` in vector.
+    const auto iter = std::ranges::find(mdvector, 17);
+    CHECK(iter - mdvector.begin() == (65 - 17 - 1));
   }
 }
 
