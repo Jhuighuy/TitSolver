@@ -121,7 +121,7 @@ TEST_CASE("par::copy_if") {
     CHECK(iter == out.begin() + 5);
     const auto out_range = std::ranges::subrange(out.begin(), iter);
     std::ranges::sort(out_range);
-    CHECK(std::ranges::equal(out_range, std::vector{0, 2, 4, 6, 8}));
+    CHECK_RANGE_EQ(out_range, std::vector{0, 2, 4, 6, 8});
   }
   SUBCASE("exceptions") {
     // Ensure the exceptions from the worker threads are caught.

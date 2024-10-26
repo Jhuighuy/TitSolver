@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <algorithm>
 #include <array>
 
 #include "tit/core/basic_types.hpp"
@@ -59,7 +58,7 @@ TEST_CASE("geom::MortonCurveSort") {
       32, 33, 40, 41, 34, 35, 42, 43, 48, 49, 56, 57, 50, 51, 58, 59,
       36, 37, 44, 45, 38, 39, 46, 47, 52, 53, 60, 61, 54, 55, 62, 63,
   };
-  CHECK(std::ranges::equal(perm, expected_perm));
+  CHECK_RANGE_EQ(perm, expected_perm);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

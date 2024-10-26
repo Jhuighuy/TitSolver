@@ -48,8 +48,8 @@ TEST_CASE("geom::CoordBisection") {
     std::ranges::sort(left_perm), std::ranges::sort(right_perm);
 
     // Ensure the result is correct.
-    CHECK(std::ranges::equal(left_perm, expected_left_perm));
-    CHECK(std::ranges::equal(right_perm, expected_right_perm));
+    CHECK_RANGE_EQ(left_perm, expected_left_perm);
+    CHECK_RANGE_EQ(right_perm, expected_right_perm);
   }
 }
 
@@ -80,8 +80,8 @@ TEST_CASE("geom::DirBisection") {
     std::ranges::sort(left_perm), std::ranges::sort(right_perm);
 
     // Ensure the result is correct.
-    CHECK(std::ranges::equal(left_perm, expected_left_perm));
-    CHECK(std::ranges::equal(right_perm, expected_right_perm));
+    CHECK_RANGE_EQ(left_perm, expected_left_perm);
+    CHECK_RANGE_EQ(right_perm, expected_right_perm);
   }
 }
 
@@ -110,8 +110,8 @@ TEST_CASE("geom::CoordMedianSplit") {
         expected_left_perm{0, 1, 4, 5, 8, 9, 12, 13};
     constexpr std::array<size_t, 8>
         expected_right_perm{2, 3, 6, 7, 10, 11, 14, 15};
-    CHECK(std::ranges::equal(left_perm, expected_left_perm));
-    CHECK(std::ranges::equal(right_perm, expected_right_perm));
+    CHECK_RANGE_EQ(left_perm, expected_left_perm);
+    CHECK_RANGE_EQ(right_perm, expected_right_perm);
   }
   SUBCASE("longes axis") {
     // Create points on a 5x4 lattice.
@@ -134,8 +134,8 @@ TEST_CASE("geom::CoordMedianSplit") {
         expected_left_perm{0, 1, 2, 5, 6, 7, 10, 11, 12, 15, 16, 17};
     constexpr std::array<size_t, 8>
         expected_right_perm{3, 4, 8, 9, 13, 14, 18, 19};
-    CHECK(std::ranges::equal(left_perm, expected_left_perm));
-    CHECK(std::ranges::equal(right_perm, expected_right_perm));
+    CHECK_RANGE_EQ(left_perm, expected_left_perm);
+    CHECK_RANGE_EQ(right_perm, expected_right_perm);
   }
 }
 
@@ -162,8 +162,8 @@ TEST_CASE("geom::DirMedianSplit") {
   constexpr std::array<size_t, 6> expected_left_perm{0, 1, 2, 4, 5, 8};
   constexpr std::array<size_t, 10>
       expected_right_perm{3, 6, 7, 9, 10, 11, 12, 13, 14, 15};
-  CHECK(std::ranges::equal(left_perm, expected_left_perm));
-  CHECK(std::ranges::equal(right_perm, expected_right_perm));
+  CHECK_RANGE_EQ(left_perm, expected_left_perm);
+  CHECK_RANGE_EQ(right_perm, expected_right_perm);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -201,8 +201,8 @@ TEST_CASE("geom::InertialMedianSplit") {
       expected_left_perm{0, 1, 2, 5, 6, 7, 10, 11, 12, 15, 16, 17};
   constexpr std::array<size_t, 8>
       expected_right_perm{3, 4, 8, 9, 13, 14, 18, 19};
-  CHECK(std::ranges::equal(left_perm, expected_left_perm));
-  CHECK(std::ranges::equal(right_perm, expected_right_perm));
+  CHECK_RANGE_EQ(left_perm, expected_left_perm);
+  CHECK_RANGE_EQ(right_perm, expected_right_perm);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

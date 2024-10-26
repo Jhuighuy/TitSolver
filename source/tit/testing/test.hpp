@@ -9,6 +9,9 @@
 // include it here to avoid compiler errors.
 #include <ostream> // IWYU pragma: keep
 
+// Keep the algorithm header for range comparisons.
+#include <algorithm> // IWYU pragma: keep
+
 #include <doctest/doctest.h> // IWYU pragma: exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,10 +38,38 @@
 /// Test that the operands are not approximately equal.
 #define CHECK_APPROX_NE(...) CHECK(!approx_equal_to(__VA_ARGS__))
 
-/// Test that the operands are approximately equal.
+/// Require the operands to be approximately equal.
 #define REQUIRE_APPROX_EQ(...) REQUIRE(approx_equal_to(__VA_ARGS__))
 
-/// Test that the operands are not approximately equal.
+/// Require the operands not to be approximately equal.
 #define REQUIRE_APPROX_NE(...) REQUIRE(!approx_equal_to(__VA_ARGS__))
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Test that the range operand is empty.
+#define CHECK_RANGE_EMPTY(...) CHECK(std::ranges::empty(__VA_ARGS__))
+
+/// Test that the range operand is not empty.
+#define CHECK_RANGE_NOT_EMPTY(...) CHECK(!std::ranges::empty(__VA_ARGS__))
+
+/// Require the range operand to be empty.
+#define REQUIRE_RANGE_EMPTY(...) REQUIRE(std::ranges::empty(__VA_ARGS__))
+
+/// Require the range operand not to be empty.
+#define REQUIRE_RANGE_NOT_EMPTY(...) REQUIRE(!std::ranges::empty(__VA_ARGS__))
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Test that the range operands are equal.
+#define CHECK_RANGE_EQ(...) CHECK(std::ranges::equal(__VA_ARGS__))
+
+/// Test that the range operands are not equal.
+#define CHECK_RANGE_NE(...) CHECK_FALSE(std::ranges::equal(__VA_ARGS__))
+
+/// Require the range operands to be equal.
+#define REQUIRE_RANGE_EQ(...) REQUIRE(std::ranges::equal(__VA_ARGS__))
+
+/// Require the range operands not to be equal.
+#define REQUIRE_RANGE_NE(...) REQUIRE_FALSE(std::ranges::equal(__VA_ARGS__))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <algorithm>
 #include <array>
 
 #include "tit/core/basic_types.hpp"
@@ -63,7 +62,7 @@ TEST_CASE("geom::MortonCurvePartition") {
       10, 10, 11, 11, 14, 14, 15, 15, //
       10, 10, 11, 11, 14, 14, 15, 15,
   };
-  CHECK(std::ranges::equal(parts, expected_parts));
+  CHECK_RANGE_EQ(parts, expected_parts);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,7 +110,7 @@ TEST_CASE("geom::HilbertCurvePartition") {
       5, 5, 6, 6, 9,  9,  10, 10, //
       5, 5, 6, 6, 9,  9,  10, 10,
   };
-  CHECK(std::ranges::equal(parts, expected_parts));
+  CHECK_RANGE_EQ(parts, expected_parts);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

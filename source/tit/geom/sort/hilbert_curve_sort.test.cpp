@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <algorithm>
 #include <array>
 
 #include "tit/core/basic_types.hpp"
@@ -61,7 +60,7 @@ TEST_CASE("geom::HilbertCurveSort") {
         36, 37, 45, 44, 52, 60, 61, 53, 54, 62, 63, 55, 47, 46, 38, 39,
         31, 23, 22, 30, 29, 28, 20, 21, 13, 12, 4,  5,  6,  14, 15, 7,
     };
-    CHECK(std::ranges::equal(perm, expected_perm));
+    CHECK_RANGE_EQ(perm, expected_perm);
   }
 
   SUBCASE("3D") {
@@ -83,7 +82,7 @@ TEST_CASE("geom::HilbertCurveSort") {
         30, 14, 10, 26, 27, 11, 15, 31, 47, 46, 62, 63, 59, 58, 42, 43,
         39, 38, 54, 55, 51, 50, 34, 35, 19, 23, 22, 18, 2,  6,  7,  3,
     };
-    CHECK(std::ranges::equal(perm, expected_perm));
+    CHECK_RANGE_EQ(perm, expected_perm);
   }
 }
 

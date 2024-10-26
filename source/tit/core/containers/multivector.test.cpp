@@ -23,19 +23,19 @@ TEST_CASE("Multivector") {
     const Multivector<int> multivector{};
     CHECK(multivector.size() == 0);
     CHECK(multivector.empty());
-    CHECK(std::ranges::empty(multivector.bucket_sizes()));
-    CHECK(std::ranges::empty(multivector.buckets()));
+    CHECK_RANGE_EMPTY(multivector.bucket_sizes());
+    CHECK_RANGE_EMPTY(multivector.buckets());
   }
   SUBCASE("from initial values") {
     const Multivector multivector{{1, 2, 3, 4}, {5, 6, 7}, {8, 9}};
     CHECK(multivector.size() == 3);
     CHECK_FALSE(multivector.empty());
-    CHECK(std::ranges::equal(multivector.bucket_sizes(), std::vector{4, 3, 2}));
-    CHECK(std::ranges::equal(multivector.buckets() | std::views::join,
-                             std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9}));
-    CHECK(std::ranges::equal(multivector[0], std::vector{1, 2, 3, 4}));
-    CHECK(std::ranges::equal(multivector[1], std::vector{5, 6, 7}));
-    CHECK(std::ranges::equal(multivector[2], std::vector{8, 9}));
+    CHECK_RANGE_EQ(multivector.bucket_sizes(), std::vector{4, 3, 2});
+    CHECK_RANGE_EQ(multivector.buckets() | std::views::join,
+                   std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9});
+    CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
+    CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
+    CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
   }
 }
 
@@ -62,7 +62,7 @@ TEST_CASE("Multivector::append_bucket") {
   REQUIRE(multivector.size() == buckets.size());
   for (const auto& [bucket, expected] :
        std::views::zip(multivector.buckets(), buckets)) {
-    CHECK(std::ranges::equal(bucket, expected));
+    CHECK_RANGE_EQ(bucket, expected);
   }
 }
 
@@ -86,9 +86,9 @@ TEST_CASE("Multivector::assign_pairs_seq") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == 3);
-  CHECK(std::ranges::equal(multivector[0], std::vector{1, 2, 3, 4}));
-  CHECK(std::ranges::equal(multivector[1], std::vector{5, 6, 7}));
-  CHECK(std::ranges::equal(multivector[2], std::vector{8, 9}));
+  CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
+  CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
+  CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,9 +114,9 @@ TEST_CASE("Multivector::assign_pairs_par_tall") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == 3);
-  CHECK(std::ranges::equal(multivector[0], std::vector{1, 2, 3, 4}));
-  CHECK(std::ranges::equal(multivector[1], std::vector{5, 6, 7}));
-  CHECK(std::ranges::equal(multivector[2], std::vector{8, 9}));
+  CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
+  CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
+  CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,9 +142,9 @@ TEST_CASE("Multivector::assign_pairs_par_wide") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == 3);
-  CHECK(std::ranges::equal(multivector[0], std::vector{1, 2, 3, 4}));
-  CHECK(std::ranges::equal(multivector[1], std::vector{5, 6, 7}));
-  CHECK(std::ranges::equal(multivector[2], std::vector{8, 9}));
+  CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
+  CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
+  CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
