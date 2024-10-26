@@ -20,6 +20,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/grid.hpp"
 #include "tit/geom/point_range.hpp"
 
 namespace tit::geom {
@@ -39,33 +40,23 @@ public:
 
   /// Index the points for search using a grid.
   ///
-  /// @param size_hint Grid cell size hint, typically 2x of the particle
-  ///                  spacing.
+  /// @param size_hint Cell size hint, typically 2x of the particle spacing.
   GridIndex(Points points, vec_num_t<Vec> size_hint)
       : points_{std::move(points)} {
     TIT_ASSERT(size_hint > 0.0, "Cell size hint must be positive!");
-    // NOLINTBEGIN(*-prefer-member-initializer)
 
-    // Compute bounding box.
-    box_ = compute_bbox(points_);
-    box_.grow(size_hint / 2);
-
-    // Compute number of cells and cell sizes.
-    const auto extents = box_.extents();
-    const auto num_cells_float = maximum(ceil(extents / size_hint), Vec(1));
-    num_cells_ = vec_cast<size_t>(num_cells_float);
-    cell_extents_ = extents / num_cells_float;
-    cell_extents_recip_ = Vec(1) / cell_extents_;
+    // Compute bounding box and initialize the grid.
+    const auto box = compute_bbox(points_).grow(size_hint / 2);
+    // NOLINTNEXTLINE(*-prefer-member-initializer)
+    grid_ = Grid{box}.set_cell_extents(size_hint);
 
     // Pack the points into a multivector.
     cell_points_.assign_pairs_par_tall(
-        prod(num_cells_),
+        grid_.flat_num_cells(),
         iota_perm(points_) | std::views::transform([this](size_t point) {
-          const auto cell = cell_index_(points_[point]);
-          return std::pair{flat_cell_index_(cell), point};
+          const auto cell = grid_.flat_cell_index(points_[point]);
+          return std::pair{cell, point};
         }));
-
-    // NOLINTEND(*-prefer-member-initializer)
   }
 
   /// Find the points within the radius to the given point.
@@ -76,45 +67,18 @@ public:
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
 
     // Calculate the search box.
-    const auto half_cell_extents = cell_extents_ / 2;
-    const auto search_box = BBox{search_point}
-                                .grow(search_radius)
-                                .grow(half_cell_extents)
-                                .intersect(box_)
-                                .shrink(half_cell_extents);
-    const auto low = cell_index_(search_box.low());
-    const auto high = cell_index_(search_box.high());
+    const auto search_box = BBox{search_point}.grow(search_radius);
 
     // Collect points within the search box.
-    const auto collect_cell_points = [&out,
-                                      &search_point,
-                                      search_dist = pow2(search_radius),
-                                      this](const VecIndex_& cell_index) {
+    const auto search_dist = pow2(search_radius);
+    for (const auto& cell_index : grid_.cells_intersecting(search_box)) {
+      const auto flat_cell_index = grid_.flatten_cell_index(cell_index);
       out = copy_points_near(points_,
-                             cell_points_[flat_cell_index_(cell_index)],
+                             cell_points_[flat_cell_index],
                              out,
                              search_point,
                              search_dist);
-    };
-    if constexpr (vec_dim_v<Vec> == 1) {
-      for (size_t i = low[0]; i <= high[0]; ++i) {
-        collect_cell_points({i});
-      }
-    } else if constexpr (vec_dim_v<Vec> == 2) {
-      for (size_t i = low[0]; i <= high[0]; ++i) {
-        for (size_t j = low[1]; j <= high[1]; ++j) {
-          collect_cell_points({i, j});
-        }
-      }
-    } else if constexpr (vec_dim_v<Vec> == 3) {
-      for (size_t i = low[0]; i <= high[0]; ++i) {
-        for (size_t j = low[1]; j <= high[1]; ++j) {
-          for (size_t k = low[2]; k <= high[2]; ++k) {
-            collect_cell_points({i, j, k});
-          }
-        }
-      }
-    } else static_assert(false);
+    }
 
     return out;
   }
@@ -123,35 +87,8 @@ public:
 
 private:
 
-  // Index type.
-  using VecIndex_ = decltype(vec_cast<size_t>(std::declval<Vec>()));
-
-  // Compute the index of the cell containing the given point.
-  auto cell_index_(const Vec& point) const -> VecIndex_ {
-    const auto& origin = box_.low();
-    const auto index_float = (point - origin) * cell_extents_recip_;
-    TIT_ASSERT(index_float >= Vec(0), "Point is out of range!");
-    TIT_ASSERT(index_float < vec_cast<vec_num_t<Vec>>(num_cells_),
-               "Point is out of range!");
-    return vec_cast<size_t>(index_float);
-  }
-
-  // Compute the flat index of the cell containing the given index.
-  auto flat_cell_index_(const VecIndex_& index) const noexcept -> size_t {
-    auto flat_index = index[0];
-    for (size_t i = 1; i < vec_dim_v<Vec>; ++i) {
-      flat_index = num_cells_[i] * flat_index + index[i];
-    }
-    return flat_index;
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   Points points_;
-  BBox<Vec> box_;
-  VecIndex_ num_cells_;
-  Vec cell_extents_;
-  Vec cell_extents_recip_;
+  Grid<Vec> grid_;
   Multivector<size_t> cell_points_;
 
 }; // class GridIndex
