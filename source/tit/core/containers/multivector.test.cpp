@@ -17,6 +17,9 @@ namespace tit {
 namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Multivector class.
+//
 
 TEST_CASE("Multivector") {
   SUBCASE("empty") {
@@ -167,6 +170,61 @@ TEST_CASE("Multivector::assign_pairs_par_wide") {
   CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
   CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
   CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// CapMultivector class.
+//
+
+TEST_CASE("CapMultivector") {
+  SUBCASE("empty") {
+    const CapMultivector<int, 4> multivector{};
+    CHECK(multivector.size() == 0);
+    CHECK(multivector.empty());
+    CHECK_RANGE_EMPTY(multivector.bucket_sizes());
+    CHECK_RANGE_EMPTY(multivector.buckets());
+  }
+  SUBCASE("from initial values") {
+    const CapMultivector<int, 4> multivector{{1, 2, 3, 4}, {5, 6, 7}, {8, 9}};
+    CHECK(multivector.size() == 3);
+    CHECK_FALSE(multivector.empty());
+    CHECK_RANGE_EQ(multivector.bucket_sizes(), std::vector{4, 3, 2});
+    CHECK_RANGE_EQ(multivector.buckets() | std::views::join,
+                   std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9});
+    CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
+    CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
+    CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("CapMultivector::clear") {
+  CapMultivector<int, 4> multivector{{1, 2, 3, 4}, {5, 6, 7}, {8, 9}};
+  REQUIRE(multivector.size() == 3);
+  multivector.clear();
+  CHECK(multivector.empty());
+}
+
+TEST_CASE("CapMultivector::set_bucket") {
+  // Populate a multivector with buckets.
+  const std::vector<std::vector<int>> buckets{
+      {1, 2, 3, 4},
+      {5, 6, 7},
+      {8, 9},
+  };
+  CapMultivector<int, 4> multivector(buckets.size());
+  for (const auto& [index, bucket] : std::views::enumerate(buckets)) {
+    multivector.set_bucket(index, bucket);
+  }
+
+  // Ensure the multivector is correct.
+  REQUIRE(multivector.size() == buckets.size());
+  for (const auto& [bucket, expected] :
+       std::views::zip(multivector.buckets(), buckets)) {
+    CHECK_RANGE_EQ(bucket, expected);
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
