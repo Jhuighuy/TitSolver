@@ -253,7 +253,7 @@ private:
 
     // Assemble the block adjacency graph.
     block_edges_.assign_pairs_par_wide(
-        num_parts + 1,
+        num_parts,
         adjacency_.transform_edges([parts](const auto& ab) {
           const auto [a, b] = ab;
           const auto part_ab = PartVec::common(parts[a], parts[b]);
