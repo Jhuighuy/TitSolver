@@ -19,7 +19,7 @@
 #include <oneapi/tbb/partitioner.h>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/missing.hpp"
+#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/type_traits.hpp"
@@ -56,7 +56,7 @@ struct ForEach {
     /// @todo Replace with `tbb::parallel_for_each` when it supports ranges.
     TIT_ASSUME_UNIVERSAL(Range, range);
     tbb::parallel_for(tbb::blocked_range{std::begin(range), std::end(range)},
-                      Std::bind_back(std::ranges::for_each, std::move(func)));
+                      std::bind_back(std::ranges::for_each, std::move(func)));
   }
 };
 
@@ -119,7 +119,7 @@ struct BlockForEach {
     TIT_ASSUME_UNIVERSAL(Range, range);
     for (auto chunk : std::views::chunk(range, num_threads())) {
       for_each(std::move(chunk),
-               Std::bind_back(std::ranges::for_each, std::cref(func)));
+               std::bind_back(std::ranges::for_each, std::cref(func)));
     }
   }
 };

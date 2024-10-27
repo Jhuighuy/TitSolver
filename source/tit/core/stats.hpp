@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <format>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <ranges>
@@ -17,7 +18,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/missing.hpp"
+#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/str_utils.hpp"
 #include "tit/core/utils.hpp"
 
@@ -104,19 +105,20 @@ public:
 
   /// Get the mean value as a string.
   constexpr auto render_avg() const -> std::string override {
-    return Std::format_range(
-        sum_ | std::views::transform(
-                   [n = count_](const Val& val) { return val / n; }));
+    const auto averages =
+        sum_ |
+        std::views::transform(std::bind_back(std::divides<Val>{}, count_));
+    return std::format("{}", averages);
   }
 
   /// Get the minimum value as a string.
   constexpr auto render_min() const -> std::string override {
-    return Std::format_range(min_);
+    return std::format("{}", min_);
   }
 
   /// Get the maximum value as a string.
   constexpr auto render_max() const -> std::string override {
-    return Std::format_range(max_);
+    return std::format("{}", max_);
   }
 
   /// Update the statistics variable.

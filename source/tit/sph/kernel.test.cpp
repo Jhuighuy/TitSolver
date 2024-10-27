@@ -6,7 +6,7 @@
 #include <numbers>
 
 #include "tit/core/math.hpp"
-#include "tit/core/missing.hpp"
+#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -41,14 +41,14 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
     SUBCASE("2D") {
       for (const double h : {1.0, 0.1, 0.01}) {
         const auto r = w.radius(h);
-        const auto i = integrate_cr(Std::bind_back(w, h), r);
+        const auto i = integrate_cr(std::bind_back(w, h), r);
         CHECK(approx_equal_to(i, 1.0));
       }
     }
     SUBCASE("3D") {
       for (const double h : {1.0, 0.1, 0.01}) {
         const auto r = w.radius(h);
-        const auto i = integrate_sp(Std::bind_back(w, h), r);
+        const auto i = integrate_sp(std::bind_back(w, h), r);
         CHECK(approx_equal_to(i, 1.0));
       }
     }
@@ -62,7 +62,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
       for (const double h : {1.0, 0.1, 0.01}) {
         using Box1D = geom::BBox<Vec<double, 1>>;
         const auto r = w.radius(h);
-        const auto i = integrate(Std::bind_back(w, h), Box1D{-r, +r});
+        const auto i = integrate(std::bind_back(w, h), Box1D{-r, +r});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
@@ -71,7 +71,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
         using Box2D = geom::BBox<Vec<double, 2>>;
         const auto r = w.radius(h);
         const auto i =
-            integrate(Std::bind_back(w, h), Box2D{{-r, -r}, {+r, +r}});
+            integrate(std::bind_back(w, h), Box2D{{-r, -r}, {+r, +r}});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
@@ -80,7 +80,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
         using Box3D = geom::BBox<Vec<double, 3>>;
         const auto r = w.radius(h);
         const auto i =
-            integrate(Std::bind_back(w, h), Box3D{{-r, -r, -r}, {+r, +r, +r}});
+            integrate(std::bind_back(w, h), Box3D{{-r, -r, -r}, {+r, +r, +r}});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
