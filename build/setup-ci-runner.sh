@@ -37,7 +37,9 @@ setup-macos() {
     libtool              \
     "llvm@$LLVM_VERSION" \
     pkg-config
-  echo "$(brew --prefix llvm@$LLVM_VERSION)/bin" >> $GITHUB_PATH
+  local LLVM_PATH="$(brew --prefix llvm@$LLVM_VERSION)/bin"
+  ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
+  echo "$LLVM_PATH" >> $GITHUB_PATH
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
