@@ -10,6 +10,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -35,9 +36,8 @@ public:
   constexpr Grid() = default;
 
   /// Initialize a grid with the given bounding box and number of cells.
-  constexpr explicit Grid(const Box& box,
-                          const VecIndex& num_cells = VecIndex(1))
-      : box_{box} {
+  constexpr explicit Grid(Box box, const VecIndex& num_cells = VecIndex(1))
+      : box_{std::move(box)} {
     set_num_cells(num_cells);
   }
 

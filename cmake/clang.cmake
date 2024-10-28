@@ -8,8 +8,7 @@ include_guard()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define minimal compiler version.
-# Disabled, since we do not officially support clang yet.
-# set(CLANG_MIN_VERSION "18.1.5")
+set(CLANG_MIN_VERSION "18.1.8")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -56,17 +55,25 @@ set(
   ${CLANG_WARNINGS}
   # Generate machine code for the host system's architecture.
   -march=native
-  # `__cpp_concepts` is not updated in clang for some reason.
-  -Wno-builtin-macro-redefined
-  -D__cpp_concepts=202002L
 )
+
+# When compiling with libstdc++, ensure is is properly configured.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR NOT APPLE)
+  list(
+    APPEND
+    CLANG_COMPILE_OPTIONS
+    # `__cpp_concepts` is not updated in Clang for some reason.
+    -Wno-builtin-macro-redefined
+    -D__cpp_concepts=202002L
+  )
+endif()
 
 # When compiling with GCC, force LLVM tools to use libstdc++.
 #
 # It is generally hard to detect which standard library is used by the LLVM
 # tools, so we have to to make an assumption here. Looks like LLVM defaults to
 # libc++ on Apple platforms only, on Linux it defaults to libstdc++.
-if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND APPLE)
   # Find path to libstdc++ include directories. It should be something like
   # `<install-path>/gcc/<version>/include/c++/<version>/` and
   # `<install-path>/gcc/<version>/include/c++/<version>/<platform>/`.
@@ -105,37 +112,61 @@ if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   unset(STDCPP_SYS_INCLUDE_DIR)
 endif()
 
+# Define common link options.
+set(CLANG_LINK_OPTIONS)
+if(APPLE)
+  # Do not warn about duplicate libraries.
+  list(APPEND CLANG_LINK_OPTIONS -Wl,-no_warn_duplicate_libraries)
+endif()
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Define common optimization options.
+set(
+  CLANG_OPTIMIZE_OPTIONS
+  # Enable aggressive optimization levels.
+  -O3
+  -ffast-math
+  # Enables aggressive floating-point expression contraction.
+  -ffp-contract=fast
+)
 
 # Define compile options for "Release" configuration.
 set(
   CLANG_COMPILE_OPTIONS_RELEASE
   # Inherit common options.
   ${CLANG_COMPILE_OPTIONS}
-  # Enable aggressive optimization levels to maximize performance.
-  -Ofast
-  # Enables aggressive floating-point expression contraction.
-  -ffp-contract=fast
-  # Are these options necessary?
-  -funroll-loops
-  -finline-functions
-  -fomit-frame-pointer
-  -ffinite-loops
-  -ffinite-math-only
-  -fno-stack-protector
+  # Inherit optimization options.
+  ${CLANG_OPTIMIZE_OPTIONS}
+)
+
+# Define link options for "Release" configuration.
+set(
+  CLANG_LINK_OPTIONS_RELEASE
+  # Inherit common options.
+  ${CLANG_LINK_OPTIONS}
+  # Inherit optimization options (needed for LTO or PGO).
+  ${CLANG_OPTIMIZE_OPTIONS}
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Define common debugging options.
+set(
+  CLANG_DEBUG_OPTIONS
+  # Store debug information.
+  -g
+  # Optimize for debugging experience.
+  -Og
+)
 
 # Define compile options for "Debug" configuration.
 set(
   CLANG_COMPILE_OPTIONS_DEBUG
   # Inherit common options.
   ${CLANG_COMPILE_OPTIONS}
-  # Store debug information.
-  -g
-  # Optimize for debugging experience.
-  -Og
+  # Inherit debugging options.
+  ${CLANG_DEBUG_OPTIONS}
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

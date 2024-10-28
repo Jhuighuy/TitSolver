@@ -36,13 +36,6 @@ inline void eprintln() {
   std::cerr << '\n';
 }
 
-/// @todo Argumentless `println` is not supported by GCC 14.0.1.
-#if defined(__GLIBCXX__) && (__GLIBCXX__ < 20240507)
-inline void println() {
-  std::cout << '\n';
-}
-#endif
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Print the stack trace to the standard error stream.

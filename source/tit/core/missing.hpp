@@ -14,6 +14,9 @@
 #ifdef __GLIBCXX__
 #include "tit/core/missing.libstdc++.hpp"
 #endif
+#ifdef _LIBCPP_VERSION
+#include "tit/core/missing.libc++.hpp"
+#endif
 // IWYU pragma: end_exports
 
 namespace tit::Std {

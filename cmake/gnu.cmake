@@ -8,7 +8,7 @@ include_guard()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define minimal compiler version.
-set(GNU_MIN_VERSION "14.0.1")
+set(GNU_MIN_VERSION "14.2.0")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -161,21 +161,37 @@ set(
   GNU_LINK_OPTIONS_RELEASE
   # Inherit common options.
   ${GNU_LINK_OPTIONS}
-  # Inherit optimization options (needed for LTO or PGO).
+  # Inherit optimization options.
   ${GNU_OPTIMIZE_OPTIONS}
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Define common debugging options.
+set(
+  GNU_DEBUG_OPTIONS
+  # Store debug information.
+  -g
+  # Optimize for debugging experience.
+  -Og
+)
 
 # Define compile options for "Debug" configuration.
 set(
   GNU_COMPILE_OPTIONS_DEBUG
   # Inherit common options.
   ${GNU_COMPILE_OPTIONS}
-  # Store debug information.
-  -g
-  # Optimize for debugging experience.
-  -Og
+  # Inherit debugging options.
+  ${GNU_DEBUG_OPTIONS}
+)
+
+# Define link options for "Debug" configuration.
+set(
+  GNU_LINK_OPTIONS_DEBUG
+  # Inherit common options.
+  ${GNU_LINK_OPTIONS}
+  # Inherit debugging options.
+  ${GNU_DEBUG_OPTIONS}
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

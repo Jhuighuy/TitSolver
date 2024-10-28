@@ -47,6 +47,20 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     --use-color
   )
 
+  # Disable a few checks when compiling with Clang.
+  # TODO: All the checks must be enabled at some point!
+  if(CXX_COMPILER STREQUAL "CLANG")
+    set(
+      LIBCPP_DISABLED_CHECKS
+      # False positives with standard headers, like <format> and <expected>.
+      -misc-include-cleaner
+      # Suppress error messages from Doctest.
+      -modernize-type-traits
+    )
+    list(JOIN LIBCPP_DISABLED_CHECKS "," LIBCPP_DISABLED_CHECKS)
+    list(APPEND CLANG_TIDY_ARGS "--checks=${LIBCPP_DISABLED_CHECKS}")
+  endif()
+
   # Setup "compilation" arguments for clang-tidy call.
   get_generated_compile_options(${TARGET} CLANG_TIDY_COMPILE_ARGS)
   list(

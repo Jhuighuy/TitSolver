@@ -17,6 +17,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/mdvector.hpp"
+#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par.hpp"
 #include "tit/core/utils.hpp"
 
@@ -32,7 +33,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct an empty multivector.
-  constexpr Multivector() noexcept = default;
+  constexpr Multivector() = default;
 
   /// Construct a multivector from initial values.
   constexpr explicit Multivector(
@@ -80,7 +81,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Clear the multivector.
-  constexpr void clear() noexcept {
+  constexpr void clear() noexcept { // NOLINT(*-exception-escape)
     TIT_ASSERT(!val_ranges_.empty(), "Value ranges must not be empty!");
     val_ranges_.clear(), val_ranges_.push_back(0);
     vals_.clear();
