@@ -124,7 +124,7 @@ public:
   /// Update the statistics variable.
   void update(const Vals& range) {
     for (const auto& [i, val] :
-         range | std::views::take(sum_.size()) | std::views::enumerate) {
+         std::views::enumerate(range) | std::views::take(sum_.size())) {
       sum_[i] += val;
       min_[i] = std::min(min_[i], val);
       max_[i] = std::max(max_[i], val);

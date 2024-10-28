@@ -124,7 +124,7 @@ public:
     return [&point]<size_t Axis>(this const auto& self,
                                  integral_constant_t<Axis> /*axis*/,
                                  const auto&... boxes) {
-      const auto split_boxes = array_cat(boxes.split(Axis, point[Axis])...);
+      auto split_boxes = array_cat(boxes.split(Axis, point[Axis])...);
       if constexpr (Axis == vec_dim_v<Vec> - 1) {
         return split_boxes;
       } else {

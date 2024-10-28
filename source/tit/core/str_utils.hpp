@@ -18,6 +18,7 @@
 #include <unordered_set>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/missing.hpp" // IWYU pragma: keep
 
 namespace tit {
 

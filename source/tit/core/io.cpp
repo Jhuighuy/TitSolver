@@ -25,3 +25,17 @@ void eprint_stacktrace(const Std::stacktrace& stacktrace) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
+
+// Required on MacOS Sequoia.
+#if defined(__APPLE__) && defined(_LIBCPP_VERSION)
+// NOLINTBEGIN
+_LIBCPP_BEGIN_NAMESPACE_STD
+_LIBCPP_EXPORTED_FROM_ABI auto __is_posix_terminal(FILE* __stream) -> bool {
+  return isatty(fileno(__stream));
+}
+_LIBCPP_EXPORTED_FROM_ABI auto __get_ostream_file(ostream& /*__os*/) -> FILE* {
+  return nullptr;
+}
+_LIBCPP_END_NAMESPACE_STD
+// NOLINTEND
+#endif

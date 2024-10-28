@@ -35,6 +35,7 @@ add_tit_test_from_target(
   NAME "tit/core/catch_fatal_signal"
   EXIT_CODE 1
   MATCH_STDERR "catch_fatal_signal_stderr.txt"
+  FILTERS "s/SIG.+$/<SIGNAL>./g" # Simplify signal name.
   FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
@@ -51,6 +52,7 @@ add_tit_test_from_target(
   NAME "tit/core/catch_std_exception"
   EXIT_CODE 1
   MATCH_STDERR "catch_std_exception_stderr.txt"
+  FILTERS "/basic_string/d" # Remove platform-specific error message.
   FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
