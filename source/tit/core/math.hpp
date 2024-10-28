@@ -14,6 +14,10 @@
 #include <ranges>
 #include <type_traits>
 
+#ifdef __clang__
+#include <gcem.hpp> // IWYU pragma: keep
+#endif
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/type_traits.hpp"
@@ -21,8 +25,14 @@
 
 namespace tit {
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#ifndef __clang__
+
+// GCC already has constexpr implementations of the math functions.
 using std::abs;
 using std::atan2;
+using std::cbrt;
 using std::ceil;
 using std::cos;
 using std::exp;
@@ -31,6 +41,46 @@ using std::log;
 using std::round;
 using std::sin;
 using std::sqrt;
+
+#else
+
+// Clang does not have constexpr implementations of the math functions yet.
+#define TIT_MAKE_CONSTEXPR_MATH_FUNC(func)                                     \
+  template<std::floating_point Float>                                          \
+  constexpr auto func(Float a) noexcept -> Float {                             \
+    if consteval {                                                             \
+      return gcem::func(a);                                                    \
+    }                                                                          \
+    return std::func(a);                                                       \
+  }
+TIT_MAKE_CONSTEXPR_MATH_FUNC(abs)
+TIT_MAKE_CONSTEXPR_MATH_FUNC(ceil)
+TIT_MAKE_CONSTEXPR_MATH_FUNC(cos)
+TIT_MAKE_CONSTEXPR_MATH_FUNC(exp)
+TIT_MAKE_CONSTEXPR_MATH_FUNC(floor)
+TIT_MAKE_CONSTEXPR_MATH_FUNC(log)
+TIT_MAKE_CONSTEXPR_MATH_FUNC(round)
+TIT_MAKE_CONSTEXPR_MATH_FUNC(sin)
+TIT_MAKE_CONSTEXPR_MATH_FUNC(sqrt)
+#undef TIT_MAKE_CONSTEXPR_MATH_FUNC
+
+template<std::floating_point Float>
+constexpr auto cbrt(Float a) noexcept -> Float {
+  if consteval {
+    return gcem::pow(a, Float{1.0 / 3.0});
+  }
+  return std::cbrt(a);
+}
+
+template<std::floating_point Float>
+constexpr auto atan2(Float a, Float b) noexcept -> Float {
+  if consteval {
+    return gcem::atan2(a, b);
+  }
+  return std::atan2(a, b);
+}
+
+#endif
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -101,6 +151,11 @@ constexpr auto pow9(Num a) -> Num {
 template<std::floating_point Float>
 constexpr auto pow(Float a,
                    std::type_identity_t<Float> power) noexcept -> Float {
+#ifdef __clang__
+  if consteval {
+    return gcem::pow(a, power);
+  }
+#endif
   return std::pow(a, power);
 }
 
@@ -147,13 +202,8 @@ template<class Num>
 inline constexpr auto tiny_number_v = Num{};
 
 template<std::floating_point Float>
-inline constexpr auto tiny_number_v<Float>{
-#ifdef __clang__ // clang's `cbrt` is not constexpr yet.
-    std::numeric_limits<Float>::epsilon()
-#else
-    std::cbrt(std::numeric_limits<Float>::epsilon())
-#endif
-};
+inline constexpr auto tiny_number_v<Float> =
+    cbrt(std::numeric_limits<Float>::epsilon());
 
 /// Check if number is tiny.
 template<class Num>
