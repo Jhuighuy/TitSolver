@@ -1,15 +1,13 @@
-#include <cassert>
-#include <cmath>
-#include <cstddef>
+#define WITH_GRAVITY 1
+
 #include <cstdint>
 #include <format>
-
-#define WITH_GRAVITY 1
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/meta.hpp"
+#include "tit/core/sys_utils.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 
@@ -21,21 +19,12 @@
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-namespace {
-void my_system(const char* command) {
-  std::system(command); // NOLINT
-}
-} // namespace
+namespace tit::sph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Real>
 auto sph_main(int /*argc*/, char** /*argv*/) -> int {
-  using namespace tit;
-  using namespace sph;
-
   constexpr Real H = 0.01; // Bar height.
   constexpr Real L = 0.10; // Bar length.
 
@@ -46,8 +35,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real dt = 1.0e-5; // 0.008 * h_0 / cs_0
 
   constexpr int N_fixed = 1;
-  constexpr int BAR_M(L / dr);
-  constexpr int BAR_N(H / dr);
+  constexpr int BAR_M = int(round(L / dr));
+  constexpr int BAR_N = int(round(H / dr));
 
   constexpr Real g = 9.81;
   constexpr Real m_0 = rho_0 * pow2(dr);
@@ -99,7 +88,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   ParticleMesh mesh{geom::KDTreeSearch{}};
 
   print_csv(particles, "output/test_output/particles-0.csv");
-  my_system("ln -sf output/test_output/particles-0.csv particles.csv");
+  checked_system("ln -sf output/test_output/particles-0.csv particles.csv");
 
   Real time{};
   Stopwatch exectime{};
@@ -119,7 +108,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       const auto path =
           std::format("output/test_output/particles-{}.csv", n / 200);
       print_csv(particles, path);
-      my_system(("ln -sf ./" + path + " particles.csv").c_str());
+      checked_system(("ln -sf ./" + path + " particles.csv").c_str());
     }
     if (time * sqrt(g / H) > 6.90e+6) break;
     time += dt;
@@ -132,8 +121,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto main(int argc, char** argv) -> int {
-  return tit::run_main(argc, argv, &sph_main<tit::real_t>);
-}
+} // namespace tit::sph
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+auto main(int argc, char** argv) -> int {
+  return tit::run_main(argc, argv, &tit::sph::sph_main<tit::real_t>);
+}

@@ -40,6 +40,11 @@ void fast_exit(ExitCode exit_code) noexcept;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Execute a system command. Fail if the command fails.
+void checked_system(const char* command) noexcept;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Terminal stream type.
 enum class TTY : uint8_t {
   Stdout = STDOUT_FILENO, ///< Standard output.
