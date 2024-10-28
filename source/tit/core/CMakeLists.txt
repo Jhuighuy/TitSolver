@@ -36,6 +36,7 @@ add_tit_library(
     "meta/set.hpp"
     "meta/type.hpp"
     "missing.hpp"
+    "missing.libstdc++.hpp"
     "par.hpp"
     "par/atomic.hpp"
     "par/control.hpp"

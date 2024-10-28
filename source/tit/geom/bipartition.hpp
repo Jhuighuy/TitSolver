@@ -13,7 +13,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/missing.hpp"
+#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -42,12 +42,12 @@ public:
     if (reverse) {
       right_perm = std::ranges::partition(
           perm,
-          Std::bind_back(std::greater{}, pivot),
+          std::bind_back(std::greater{}, pivot),
           [&points, axis](size_t index) { return points[index][axis]; });
     } else {
       right_perm = std::ranges::partition(
           perm,
-          Std::bind_back(std::less{}, pivot),
+          std::bind_back(std::less{}, pivot),
           [&points, axis](size_t index) { return points[index][axis]; });
     }
     return {{std::begin(perm), std::begin(right_perm)}, std::move(right_perm)};
@@ -78,12 +78,12 @@ public:
     if (reverse) {
       right_perm = std::ranges::partition(
           perm,
-          Std::bind_back(std::greater{}, pivot),
+          std::bind_back(std::greater{}, pivot),
           [&points, &dir](size_t index) { return dot(points[index], dir); });
     } else {
       right_perm = std::ranges::partition(
           perm,
-          Std::bind_back(std::less{}, pivot),
+          std::bind_back(std::less{}, pivot),
           [&points, &dir](size_t index) { return dot(points[index], dir); });
     }
     return {{std::begin(perm), std::begin(right_perm)}, std::move(right_perm)};
