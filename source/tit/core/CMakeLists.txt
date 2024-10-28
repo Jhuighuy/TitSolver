@@ -71,6 +71,7 @@ add_tit_library(
     Boost::core
     Boost::container
     Boost::stacktrace_addr2line
+    gcem
     hwy::hwy
     mimalloc-static
     TBB::tbb

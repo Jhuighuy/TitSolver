@@ -321,6 +321,7 @@ public:
 #endif
     });
     par::for_each(particles.fluid(), [this](PV a) {
+      static_cast<void>(this); // Maybe unused.
 #if WITH_GRAVITY
       // TODO: Gravity.
       dv_dt[a][1] -= 9.81;

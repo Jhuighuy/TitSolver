@@ -32,6 +32,7 @@ find_package(
     stacktrace_addr2line
 )
 find_package(doctest CONFIG REQUIRED)
+find_package(gcem CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)

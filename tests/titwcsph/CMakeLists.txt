@@ -8,7 +8,7 @@
 # reason of not breaking anything while doing some deep refactoring in the
 # library core.
 add_tit_test_from_target(
-  tit::wcsph
+  tit::titwcsph
   NAME "titwcsph/dam_breaking[long]"
   MATCH_FILES "particles.csv.checksum"
 )

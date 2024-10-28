@@ -53,6 +53,14 @@ void fast_exit(ExitCode exit_code) noexcept {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+void checked_system(const char* command) noexcept {
+  // NOLINTNEXTLINE(concurrency-mt-unsafe,cert-env33-c)
+  const auto status = std::system(command);
+  TIT_ENSURE(status == 0, "System command failed!");
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 auto tty_width(TTY tty) noexcept -> std::optional<size_t> {
   const auto tty_fileno = static_cast<int>(tty);
   if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.

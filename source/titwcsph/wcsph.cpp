@@ -1,10 +1,3 @@
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <format>
-#include <fstream>
-#include <vector>
-
 #define COMPRESSIBLE_SOD_PROBLEM 0
 #define HARD_DAM_BREAKING 0
 #define EASY_DAM_BREAKING 1
@@ -13,16 +6,30 @@
 #define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 #define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
 
+#include <format>
+
+#include "tit/core/basic_types.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
+#include "tit/core/meta.hpp"
+#include "tit/core/sys_utils.hpp"
 #include "tit/core/time.hpp"
+#include "tit/core/vec.hpp"
 
+#include "tit/geom/search.hpp"
+
+#include "tit/sph/artificial_viscosity.hpp"
+#include "tit/sph/density_equation.hpp"
 #include "tit/sph/equation_of_state.hpp"
+#include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_array_io.hpp"
+#include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
+
+namespace tit::sph {
 
 #if 0
 
@@ -31,10 +38,7 @@
 #elif COMPRESSIBLE_SOD_PROBLEM
 
 template<class Real>
-int sph_main(int /*argc*/, char** /*argv*/) {
-  using namespace tit;
-  using namespace tit::sph;
-
+auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   auto equations = CompressibleFluidEquations{
       // Ideal gas equation of state.
       IdealGasEquationOfState{},
@@ -91,25 +95,22 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 #elif HARD_DAM_BREAKING
 
 template<class Real>
-int sph_main(int /*argc*/, char** /*argv*/) {
-  using namespace tit;
-  using namespace sph;
+auto sph_main(int /*argc*/, char** /*argv*/) -> int {
+  constexpr auto N = 100;
+  constexpr auto N_x = 4 * N;
+  constexpr auto N_y = 3 * N;
+  constexpr auto N_fixed = 4;
+  constexpr auto N_x_dam = 1 * N;
+  constexpr auto N_y_dam = 2 * N;
 
-  const auto N = 100;
-  const auto N_x = 4 * N;
-  const auto N_y = 3 * N;
-  const auto N_fixed = 4;
-  const auto N_x_dam = 1 * N;
-  const auto N_y_dam = 2 * N;
-
-  const Real length = 1.0;
-  const Real spacing = length / N;
-  const Real timestep = 5.0e-5;
-  const Real h_0 = 1.5 * spacing;
-  const Real rho_0 = 1000.0;
-  const Real m_0 = rho_0 * pow2(spacing) / 2;
-  const Real cs_0 = 120.0;
-  const Real mu_0 = 1.0e-3;
+  constexpr Real length = 1.0;
+  constexpr Real spacing = length / N;
+  constexpr Real timestep = 5.0e-5;
+  constexpr Real h_0 = 1.5 * spacing;
+  constexpr Real rho_0 = 1000.0;
+  constexpr Real m_0 = rho_0 * pow2(spacing) / 2;
+  constexpr Real cs_0 = 120.0;
+  constexpr Real mu_0 = 1.0e-3;
 
   // Setup the SPH equations:
   auto equations = FluidEquations{
@@ -169,8 +170,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   auto adjacent_particles = ParticleAdjacency{particles};
 
   particles.print("output/test_output/particles-0.csv");
-  system("ln -sf output/test_output/particles-0.csv "
-         "output/test_output/particles.csv");
+  checked_system("ln -sf output/test_output/particles-0.csv "
+                 "output/test_output/particles.csv");
 
   Real time{};
   Stopwatch exectime{}, printtime{};
@@ -189,7 +190,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       const auto path =
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
-      system(("ln -sf " + path + " output/test_output/particles.csv").c_str());
+      checked_system(
+          ("ln -sf " + path + " output/test_output/particles.csv").c_str());
     }
   }
 
@@ -203,10 +205,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 #elif EASY_DAM_BREAKING
 
 template<class Real>
-int sph_main(int /*argc*/, char** /*argv*/) {
-  using namespace tit;
-  using namespace sph;
-
+auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real H = 0.6;   // Water column height.
   constexpr Real L = 2 * H; // Water column length.
 
@@ -257,16 +256,16 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 
   // Setup the time integrator:
 #if WITH_GODUNOV
-  auto timeint = RungeKuttaIntegrator{std::move(equations)};
+  auto timeint = RungeKuttaIntegrator{equations};
 #else
-  auto timeint = EulerIntegrator{std::move(equations)};
+  auto timeint = EulerIntegrator{equations};
 #endif
 
   // Setup the particles array:
   ParticleArray particles{// 2D space.
                           Space<Real, 2>{},
                           // Fields that are required by the equations.
-                          timeint.required_fields,
+                          decltype(timeint)::required_fields,
                           // Set of whole system constants.
                           meta::Set{
                               m, // Particle mass assumed constant.
@@ -296,11 +295,12 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   h[particles] = h_0;
 
   // Density hydrostatic initialization.
-  std::ranges::for_each(particles.all(), [&]<class PV>(PV a) {
+  for (const auto a : particles.all()) {
     if (a.has_type(ParticleType::fixed)) {
       rho[a] = rho_0;
-      return;
+      continue;
     }
+
     // Compute pressure from Poisson problem.
     const auto x = r[a][0];
     const auto y = r[a][1];
@@ -314,15 +314,15 @@ int sph_main(int /*argc*/, char** /*argv*/) {
     }
     // Recalculate density from EOS.
     rho[a] = rho_0 + p[a] / pow2(cs_0);
-  });
+  }
 
   // Setup the particle mesh structure.
   ParticleMesh mesh{geom::GridSearch{h_0}};
 
-  system("mkdir -p output/test_output/");
-  system("rm -f output/test_output/*");
+  checked_system("mkdir -p output/test_output/");
+  checked_system("rm -f output/test_output/*");
   print_csv(particles, "output/test_output/particles-0.csv");
-  system("ln -sf output/test_output/particles-0.csv particles.csv");
+  checked_system("ln -sf output/test_output/particles-0.csv particles.csv");
 
   Real time{};
   Stopwatch exectime{};
@@ -342,7 +342,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       const auto path =
           std::format("output/test_output/particles-{}.csv", n / 200);
       print_csv(particles, path);
-      system(("ln -sf ./" + path + " particles.csv").c_str());
+      checked_system(("ln -sf ./" + path + " particles.csv").c_str());
     }
     if (time * sqrt(g / H) >= 6.9) break;
     time += dt;
@@ -358,7 +358,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 #elif INITIALLY_SQUARE_PATCH
 
 template<class Real>
-int sph_main(int /*argc*/, char** /*argv*/) {
+auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   using namespace tit;
   using namespace sph;
 
@@ -455,7 +455,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
   auto adjacent_particles = ParticleAdjacency{particles};
 
   particles.print("output/test_output/particles-0.csv");
-  system("ln -sf output/test_output/particles-0.csv particles.csv");
+  checked_system("ln -sf output/test_output/particles-0.csv particles.csv");
 
   Real time{};
   Stopwatch exectime{}, printtime{};
@@ -474,7 +474,7 @@ int sph_main(int /*argc*/, char** /*argv*/) {
       const auto path =
           "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
       particles.print(path);
-      system(("ln -sf ./" + path + " particles.csv").c_str());
+      checked_system(("ln -sf ./" + path + " particles.csv").c_str());
     }
   }
 
@@ -487,8 +487,8 @@ int sph_main(int /*argc*/, char** /*argv*/) {
 
 #endif
 
-int main(int argc, char** argv) {
-  return tit::run_main(argc, argv, &sph_main<tit::real_t>);
-}
+} // namespace tit::sph
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+auto main(int argc, char** argv) -> int {
+  return tit::run_main(argc, argv, &tit::sph::sph_main<tit::real_t>);
+}
