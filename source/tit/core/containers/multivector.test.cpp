@@ -93,6 +93,28 @@ TEST_CASE("Multivector::assign_pairs_seq") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("Multivector::assign_buckets_par") {
+  // Build a multivector from a sequence of buckets.
+  const std::vector<std::vector<int>> buckets{
+      {1, 2},
+      {3, 4},
+      {5, 6},
+      {7, 8},
+      {9},
+  };
+  Multivector<int> multivector{};
+  multivector.assign_buckets_par(buckets);
+
+  // Ensure the multivector is correct.
+  REQUIRE(multivector.size() == buckets.size());
+  for (const auto& [bucket, expected] :
+       std::views::zip(multivector.buckets(), buckets)) {
+    CHECK_RANGE_EQ(bucket, expected);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("Multivector::assign_pairs_par_tall") {
   // Build a multivector from a sequence of pairs.
   const std::vector<std::pair<size_t, int>> pairs{

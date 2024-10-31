@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <concepts>
 #include <expected>
 #include <iterator>
 #include <ranges>
@@ -161,19 +163,23 @@ constexpr auto compute_largest_inertia_axis(Points&& points, Perm&& perm)
 /// Copy points that are close to the given point.
 template<point_range Points,
          index_range Perm,
-         std::output_iterator<size_t> OutIter>
+         std::output_iterator<size_t> OutIter,
+         std::predicate<size_t> Pred = AlwaysTrue>
 constexpr auto copy_points_near(Points&& points,
                                 Perm&& perm,
                                 OutIter out,
-                                const point_range_vec_t<Points>& point,
-                                point_range_num_t<Points> r_sqr) -> OutIter {
+                                const point_range_vec_t<Points>& search_point,
+                                point_range_num_t<Points> r_sqr,
+                                Pred pred = {}) -> OutIter {
   TIT_ASSUME_UNIVERSAL(Points, points);
   TIT_ASSUME_UNIVERSAL(Perm, perm);
-  return copy_perm_if( //
-      points,
+  const auto result = std::ranges::copy_if(
       perm,
       out,
-      [&point, r_sqr](const auto& p) { return norm2(p - point) < r_sqr; });
+      [&points, &search_point, r_sqr, &pred](size_t i) {
+        return pred(i) && norm2(points[i] - search_point) < r_sqr;
+      });
+  return result.out;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

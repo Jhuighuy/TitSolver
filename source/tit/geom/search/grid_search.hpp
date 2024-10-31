@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <concepts>
 #include <iterator>
 #include <ranges>
 #include <utility>
@@ -60,10 +61,12 @@ public:
   }
 
   /// Find the points within the radius to the given point.
-  template<std::output_iterator<size_t> OutIter>
+  template<std::output_iterator<size_t> OutIter,
+           std::predicate<size_t> Pred = AlwaysTrue>
   auto search(const Vec& search_point,
               vec_num_t<Vec> search_radius,
-              OutIter out) const -> OutIter {
+              OutIter out,
+              Pred pred = {}) const -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
 
     // Calculate the search box.
@@ -77,7 +80,8 @@ public:
                              cell_points_[flat_cell_index],
                              out,
                              search_point,
-                             search_dist);
+                             search_dist,
+                             pred);
     }
 
     return out;

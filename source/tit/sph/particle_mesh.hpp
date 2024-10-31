@@ -142,57 +142,60 @@ private:
     const auto search_index = search_func_(positions);
 
     // Search for the neighbors.
-    static std::vector<std::vector<size_t>> adjacency{};
-    adjacency.resize(particles.size());
-    par::for_each(particles.all(), [&radius_func, &search_index](PV a) {
-      const auto& search_point = r[a];
-      const auto search_radius = radius_func(a);
-      TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
+    par::TaskGroup search_tasks{};
+    search_tasks.run([&particles, &radius_func, &search_index, this] {
+      static std::vector<std::vector<size_t>> adjacency_buckets{};
+      adjacency_buckets.resize(particles.size());
+      par::for_each(particles.all(), [&radius_func, &search_index](PV a) {
+        const auto& search_point = r[a];
+        const auto search_radius = radius_func(a);
+        TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
 
-      // Search for the neighbors for the current particle and store the
-      // sorted results.
-      auto& search_results = adjacency[a.index()];
-      search_results.clear();
-      search_index.search(search_point,
-                          search_radius,
-                          std::back_inserter(search_results));
-      std::ranges::sort(search_results);
+        // Search for the neighbors for the current particle and store the
+        // sorted results.
+        auto& search_results = adjacency_buckets[a.index()];
+        search_results.clear();
+        search_index.search(search_point,
+                            search_radius,
+                            std::back_inserter(search_results));
+        std::ranges::sort(search_results);
+      });
+      adjacency_.assign_buckets_par(adjacency_buckets);
     });
 
-    // Compress the adjacency graph.
-    adjacency_.clear();
-    for (const auto& x : adjacency) adjacency_.append_bucket(x);
-
     // Search for the interpolation points for the fixed particles.
-    static std::vector<std::vector<size_t>> interp_adjacency{};
-    interp_adjacency.resize(particles.fixed().size());
-    par::for_each( //
-        std::views::enumerate(particles.fixed()),
-        [&radius_func, &search_index, &particles](auto ia) {
-          auto [i, a] = ia;
-          /// @todo Once we have a proper geometry library, we should use
-          ///       here and clean up the code.
-          const auto& search_point = r[a];
-          const auto search_radius = 3 * radius_func(a);
-          const auto point_on_boundary = Domain.clamp(search_point);
-          const auto interp_point = 2 * point_on_boundary - search_point;
+    search_tasks.run([&particles, &radius_func, &search_index, this] {
+      static std::vector<std::vector<size_t>> interp_adjacency_buckets{};
+      interp_adjacency_buckets.resize(particles.fixed().size());
+      par::for_each( //
+          std::views::enumerate(particles.fixed()),
+          [&radius_func, &search_index, &particles](const auto& ia) {
+            const auto& [i, a] = ia;
 
-          // Search for the neighbors for the interpolation point and
-          // store the sorted results.
-          auto& search_results = interp_adjacency[i];
-          search_results.clear();
-          search_index.search(interp_point,
-                              search_radius,
-                              std::back_inserter(search_results));
-          std::erase_if(search_results, [&particles](size_t b) {
-            return particles.has_type(b, ParticleType::fixed);
+            /// @todo Once we have a proper geometry library, we should use
+            ///       here and clean up the code.
+            const auto& search_point = r[a];
+            const auto search_radius = 3 * radius_func(a);
+            const auto point_on_boundary = Domain.clamp(search_point);
+            const auto interp_point = 2 * point_on_boundary - search_point;
+
+            // Search for the neighbors for the interpolation point and
+            // store the sorted results.
+            auto& search_results = interp_adjacency_buckets[i];
+            search_results.clear();
+            search_index.search( //
+                interp_point,
+                search_radius,
+                std::back_inserter(search_results),
+                [&particles](size_t b) {
+                  return particles.has_type(b, ParticleType::fluid);
+                });
+            std::ranges::sort(search_results);
           });
-          std::ranges::sort(search_results);
-        });
+      interp_adjacency_.assign_buckets_par(interp_adjacency_buckets);
+    });
 
-    // Compress the interpolation graph.
-    interp_adjacency_.clear();
-    for (const auto& x : interp_adjacency) interp_adjacency_.append_bucket(x);
+    search_tasks.wait();
   }
 
   template<particle_array ParticleArray>
@@ -219,7 +222,7 @@ private:
       // Partition the particles.
       const auto level_parts =
           parts | std::views::transform(
-                      [level](auto& part) -> auto& { return part[level]; });
+                      [level](PartVec& part) -> auto& { return part[level]; });
       if (is_first_level) {
         partition_func_(positions, level_parts, num_threads);
       } else {

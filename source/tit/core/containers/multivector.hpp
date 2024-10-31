@@ -99,6 +99,33 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// Build the multivector from a range of buckets.
+  template<par::basic_range Buckets>
+  void assign_buckets_par(Buckets&& buckets) {
+    TIT_ASSUME_UNIVERSAL(Buckets, buckets);
+
+    // Compute the total number of values.
+    size_t num_values = 0;
+    val_ranges_.clear(), val_ranges_.resize(std::size(buckets) + 1);
+    for (const auto& [index, bucket] : std::views::enumerate(buckets)) {
+      const auto bucket_size = std::size(bucket);
+      val_ranges_[index + 1] = num_values + bucket_size;
+      num_values += bucket_size;
+    }
+
+    // Copy the values.
+    vals_.resize(num_values);
+    par::for_each( //
+        std::views::enumerate(buckets),
+        [this](const auto& index_and_bucket) {
+          const auto& [index, bucket] = index_and_bucket;
+          std::ranges::copy(bucket,
+                            std::next(vals_.begin(), val_ranges_[index]));
+        });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   /// Build the multivector from pairs of bucket indices and values.
   ///
   /// This version runs sequentially.
