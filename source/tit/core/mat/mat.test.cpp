@@ -70,12 +70,28 @@ TEST_CASE("Mat") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("zero") {
+  const Mat M{
+      {1.0, 0.0},
+      {0.0, 1.0},
+  };
+  const Mat O{
+      {0.0, 0.0},
+      {0.0, 0.0},
+  };
+  CHECK(zero(M) == O);
+}
+
 TEST_CASE("Mat::eye") {
+  const Mat M{
+      {1.0, 0.0},
+      {0.0, 1.0},
+  };
   const Mat I{
       {1.0, 0.0},
       {0.0, 1.0},
   };
-  CHECK(eye(I) == I);
+  CHECK(eye(M) == I);
 }
 
 TEST_CASE("Mat::diag") {

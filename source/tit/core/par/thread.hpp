@@ -156,4 +156,34 @@ inline constexpr CopyIf copy_if{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Parallel transform.
+struct Transform final {
+  template<basic_range Range,
+           std::random_access_iterator OutIter,
+           class Func,
+           class Proj = std::identity>
+    requires std::indirectly_writable<
+                 OutIter,
+                 std::indirect_result_t<
+                     Func&,
+                     std::projected<std::ranges::iterator_t<Range>, Proj>>>
+  static auto operator()(Range&& range, OutIter out, Func func, Proj proj = {})
+      -> OutIter {
+    TIT_ASSUME_UNIVERSAL(Range, range);
+    const auto out_end = std::next(out, std::size(range));
+    for_each(std::views::zip(range, std::ranges::subrange{out, out_end}),
+             [&func, &proj]<class Pair>(Pair&& source_and_dest) {
+               TIT_ASSUME_UNIVERSAL(Pair, source_and_dest);
+               auto&& [source, dest] = source_and_dest;
+               dest = std::invoke(func, std::invoke(proj, source));
+             });
+    return out_end;
+  }
+};
+
+/// @copydoc Transform
+inline constexpr Transform transform{};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit::par

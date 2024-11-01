@@ -52,7 +52,7 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{0.0, 0.0}};
 /// Particle adjacency graph.
 template<geom::search_func SearchFunc = geom::GridSearch,
          geom::partition_func PartitionFunc = geom::RecursiveInertialBisection,
-         geom::partition_func SecondaryPartitionFunc = PartitionFunc>
+         geom::partition_func InterfacePartitionFunc = PartitionFunc>
 class ParticleMesh final {
 public:
 
@@ -62,13 +62,14 @@ public:
   ///
   /// @param search_indexing_func Nearest-neighbors search indexing function.
   /// @param partition_func Geometry partitioning function.
+  /// @param interface_partition_func Interface partitioning function.
   constexpr explicit ParticleMesh(
       SearchFunc search_func = {},
       PartitionFunc partition_func = {},
-      SecondaryPartitionFunc secondary_partition_func = {}) noexcept
+      InterfacePartitionFunc interface_partition_func = {}) noexcept
       : search_func_{std::move(search_func)},
         partition_func_{std::move(partition_func)},
-        secondary_partition_func_{std::move(secondary_partition_func)} {}
+        interface_partition_func_{std::move(interface_partition_func)} {}
 
   /// Adjacent particles.
   template<particle_view PV>
@@ -226,7 +227,7 @@ private:
       if (is_first_level) {
         partition_func_(positions, level_parts, num_threads);
       } else {
-        secondary_partition_func_(permuted_view(positions, interface),
+        interface_partition_func_(permuted_view(positions, interface),
                                   permuted_view(level_parts, interface),
                                   num_threads,
                                   /*init_part=*/level * num_threads);
@@ -275,7 +276,7 @@ private:
   Multivector<std::pair<size_t, size_t>> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;
-  [[no_unique_address]] SecondaryPartitionFunc secondary_partition_func_;
+  [[no_unique_address]] InterfacePartitionFunc interface_partition_func_;
 
 }; // class ParticleMesh
 

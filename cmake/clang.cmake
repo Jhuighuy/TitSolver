@@ -115,8 +115,16 @@ endif()
 # Define common link options.
 set(CLANG_LINK_OPTIONS)
 if(APPLE)
-  # Do not warn about duplicate libraries.
-  list(APPEND CLANG_LINK_OPTIONS -Wl,-no_warn_duplicate_libraries)
+  list(
+    APPEND
+    CLANG_LINK_OPTIONS
+    # Do not warn about duplicate libraries.
+    -Wl,-no_warn_duplicate_libraries
+    # Link with the Homebrew LLVM libraries.
+    # TODO: Here should be a check for the Homebrew LLVM installation.
+    -L/opt/homebrew/opt/llvm/lib/c++
+    -L/opt/homebrew/opt/llvm/lib/unwind
+  )
 endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -130,6 +138,15 @@ set(
   # Enables aggressive floating-point expression contraction.
   -ffp-contract=fast
 )
+
+# Use link time optimizations?
+#
+# Note: This is experimental and may significantly decrease performance!
+set(GNU_USE_LTO FALSE)
+if(GNU_USE_LTO)
+  message(WARNING "Link-time optimizations support is experimental!")
+  list(APPEND CLANG_OPTIMIZE_OPTIONS -flto)
+endif()
 
 # Define compile options for "Release" configuration.
 set(

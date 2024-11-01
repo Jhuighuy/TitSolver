@@ -21,6 +21,10 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE_TEMPLATE("zero", Num, NUM_TYPES) {
+  CHECK(zero(Num{2}) == Num{0});
+}
+
 TEST_CASE_TEMPLATE("sign", Num, NUM_TYPES) {
   CHECK(sign(Num{0}) == Num{0});
   CHECK(sign(+Num{2}) == +Num{1});

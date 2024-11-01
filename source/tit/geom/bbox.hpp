@@ -122,17 +122,16 @@ public:
     TIT_ASSERT(point >= low_, "Split point is below lower bounds!");
     TIT_ASSERT(point <= high_, "Split point is above upper bounds!");
     return [&point]<size_t Axis>(this const auto& self,
-                                 integral_constant_t<Axis> /*axis*/,
+                                 value_constant_t<Axis> /*axis*/,
                                  const auto&... boxes) {
       auto split_boxes = array_cat(boxes.split(Axis, point[Axis])...);
       if constexpr (Axis == vec_dim_v<Vec> - 1) {
         return split_boxes;
       } else {
-        return std::apply(
-            std::bind_front(self, integral_constant_t<Axis + 1>{}),
-            split_boxes);
+        return std::apply(std::bind_front(self, value_constant_t<Axis + 1>{}),
+                          split_boxes);
       }
-    }(integral_constant_t<size_t{0}>{}, *this);
+    }(value_constant_t<size_t{0}>{}, *this);
   }
 
 private:

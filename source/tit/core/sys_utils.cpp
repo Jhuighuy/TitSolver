@@ -56,7 +56,8 @@ void fast_exit(ExitCode exit_code) noexcept {
 void checked_system(const char* command) noexcept {
   // NOLINTNEXTLINE(concurrency-mt-unsafe,cert-env33-c)
   const auto status = std::system(command);
-  TIT_ENSURE(status == 0, "System command failed!");
+  static_cast<void>(status); /// @todo Ignore the status code for now.
+  // TIT_ENSURE(status == 0, "System command failed!");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
