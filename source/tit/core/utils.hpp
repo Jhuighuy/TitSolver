@@ -48,6 +48,13 @@ namespace tit {
 template<class T>
 using pair_of_t = std::pair<T, T>;
 
+/// Predicate that is always true.
+struct AlwaysTrue {
+  constexpr auto operator()(const auto& /*arg*/) const noexcept -> bool {
+    return true;
+  }
+};
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Array type that is deduced from the given argument.
@@ -146,24 +153,6 @@ constexpr void iota_perm(Range&& range, Perm&& perm) {
   std::ranges::copy(iota_perm(range), std::begin(perm));
 }
 /// @}
-
-/// Copy the permutation into the output, filtering by the predicate that
-/// is applied to the range items.
-template<std::ranges::random_access_range Range,
-         index_range Perm,
-         std::output_iterator<size_t> OutIter,
-         std::predicate<std::ranges::range_reference_t<Range&&>> Pred>
-constexpr auto copy_perm_if(Range&& range, Perm&& perm, OutIter out, Pred pred)
-    -> OutIter {
-  TIT_ASSUME_UNIVERSAL(Range, range);
-  TIT_ASSUME_UNIVERSAL(Perm, perm);
-  const auto result = std::ranges::copy_if( //
-      perm,
-      out,
-      pred,
-      [&range](size_t i) -> auto&& { return range[i]; });
-  return result.out;
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

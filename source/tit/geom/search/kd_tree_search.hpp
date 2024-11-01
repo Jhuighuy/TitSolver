@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <concepts>
 #include <iterator>
 #include <ranges>
 #include <span>
@@ -19,6 +20,7 @@
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type_traits.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -51,13 +53,14 @@ public:
   }
 
   /// Find the points within the radius to the given point.
-  template<std::output_iterator<size_t> OutIter>
+  template<std::output_iterator<size_t> OutIter,
+           std::predicate<size_t> Pred = AlwaysTrue>
   auto search(const Vec& search_point,
               vec_num_t<Vec> search_radius,
-              OutIter out) const -> OutIter {
+              OutIter out,
+              Pred pred = {}) const -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
-    search_tree_(search_point, search_radius, out);
-    return out;
+    return search_tree_(search_point, search_radius, out, pred);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,10 +145,12 @@ private:
   // Search for the point neighbors in the K-dimensional tree.
   //
   /// @todo Search is slow for some reason. Investigate.
-  template<std::output_iterator<size_t> OutIter>
+  template<std::output_iterator<size_t> OutIter,
+           std::predicate<size_t> Pred = AlwaysTrue>
   auto search_tree_(const Vec& search_point,
                     vec_num_t<Vec> search_radius,
-                    OutIter out) const -> OutIter {
+                    OutIter out,
+                    Pred pred = {}) const -> OutIter {
     // Compute distance from the query point to the root bounding box
     // per each dimension. (By "dist" square distances are meant.)
     const auto search_dist = pow2(search_radius);
@@ -153,22 +158,33 @@ private:
 
     // Recursively search the tree.
     TIT_ASSERT(root_node_ != nullptr, "Tree was not built!");
-    return search_subtree_(root_node_, dists, search_point, search_dist, out);
+    return search_subtree_(root_node_,
+                           dists,
+                           search_point,
+                           search_dist,
+                           out,
+                           pred);
   }
 
   // Search for the point neighbors in the K-dimensional subtree.
   // Parameters are passed by references in order to minimize stack usage.
-  template<std::output_iterator<size_t> OutIter>
+  template<std::output_iterator<size_t> OutIter,
+           std::predicate<size_t> Pred = AlwaysTrue>
   auto search_subtree_(const KDTreeNode_* node,
                        Vec& dists,
                        const Vec& search_point,
                        vec_num_t<Vec> search_dist,
-                       OutIter out) const -> OutIter {
+                       OutIter out,
+                       Pred pred) const -> OutIter {
     if (node->left_subtree == nullptr) {
       TIT_ASSERT(node->right_subtree == nullptr, "Invalid leaf node!");
       // Collect points within the leaf node.
-      out =
-          copy_points_near(points_, node->perm, out, search_point, search_dist);
+      out = copy_points_near(points_,
+                             node->perm,
+                             out,
+                             search_point,
+                             search_dist,
+                             pred);
       return out;
     }
 
@@ -191,12 +207,22 @@ private:
     }();
 
     // Search in the first subtree.
-    out = search_subtree_(first_node, dists, search_point, search_dist, out);
+    out = search_subtree_(first_node,
+                          dists,
+                          search_point,
+                          search_dist,
+                          out,
+                          pred);
 
     // Search in the second subtree (if it not too far).
     if (const auto dist = sum(dists); dist < search_dist) {
       const auto old_cut_dist = std::exchange(dists[cut_axis], cut_dist);
-      out = search_subtree_(second_node, dists, search_point, search_dist, out);
+      out = search_subtree_(second_node,
+                            dists,
+                            search_point,
+                            search_dist,
+                            out,
+                            pred);
       dists[cut_axis] = old_cut_dist;
     }
 
