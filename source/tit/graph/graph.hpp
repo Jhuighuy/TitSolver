@@ -15,6 +15,14 @@ namespace tit::graph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Node type alias.
+using node_t = size_t;
+
+/// Weight type alias.
+using weight_t = ssize_t;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Compressed sparse adjacency graph.
 class Graph : public Multivector<size_t> {
 public:
@@ -61,6 +69,54 @@ public:
   }
 
 }; // class Graph
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Compressed sparse adjacency graph with edge weights.
+template<class Base>
+class BaseWeightedGraph final : public Base {
+public:
+
+  using Base::Base;
+
+  /// Number of graph nodes.
+  constexpr auto num_nodes() const noexcept -> size_t {
+    return Base::size();
+  }
+
+  /// Range of the graph nodes.
+  constexpr auto nodes() const noexcept {
+    return std::views::iota(node_t{0}, node_t{num_nodes()});
+  }
+
+  /// Range of the unique graph weighted edges.
+  constexpr auto edges() const noexcept {
+    return //
+        nodes() | std::views::transform([this](node_t node) {
+          return (*this)[node] |
+                 std::views::take_while(
+                     [node](const auto& neighbor_and_weight) {
+                       const auto& neighbor = std::get<0>(neighbor_and_weight);
+                       return neighbor < node;
+                     }) |
+                 std::views::transform([node](const auto& neighbor_and_weight) {
+                   const auto& [neighbor, weight] = neighbor_and_weight;
+                   return std::tuple{weight, neighbor, node};
+                 });
+        }) |
+        std::views::join;
+  }
+
+}; // class BaseWeightedGraph
+
+/// Alias for a weighted graph using a multivector container.
+using WeightedGraph =
+    BaseWeightedGraph<Multivector<std::tuple<node_t, weight_t>>>;
+
+/// Alias for a weighted graph with a capped number of edges.
+template<size_t MaxNumEdges>
+using CapWeightedGraph = BaseWeightedGraph<
+    CapMultivector<std::tuple<node_t, weight_t>, MaxNumEdges>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

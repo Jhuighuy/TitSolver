@@ -240,3 +240,9 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
+
+// Enable borrowed range support for Mdspan, allowing it to be used safely
+// in range expressions where the range must outlive the operation.
+template<class Val, tit::size_t Rank>
+constexpr bool std::ranges::enable_borrowed_range<tit::Mdspan<Val, Rank>> =
+    true;

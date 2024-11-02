@@ -16,6 +16,7 @@
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 
+#include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
 
 #include "tit/sph/artificial_viscosity.hpp"
@@ -320,8 +321,11 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   ParticleMesh mesh{
       // Search for the particles using the grid search.
       geom::GridSearch{h_0},
-      // Use RIB as the partitioning method.
+      // Use RIB as the primary partitioning method.
       geom::RecursiveInertialBisection{},
+      // Use graph partitioning with larger cell size as the interface
+      // partitioning method.
+      geom::GridGraphPartition{2 * h_0},
   };
 
   checked_system("mkdir -p output/test_output/");
