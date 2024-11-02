@@ -190,6 +190,12 @@ Mat(carr_ref_t<const Num, 1 + sizeof...(RestNums)>,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Make a zero matrix.
+template<class Num, size_t Dim>
+constexpr auto zero(const Mat<Num, Dim>& /*A*/) -> Mat<Num, Dim> {
+  return {};
+}
+
 /// Make a diagonal matrix.
 template<class Num, size_t Dim>
 constexpr auto eye(const Mat<Num, Dim>& /*A*/,

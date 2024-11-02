@@ -93,7 +93,14 @@ public:
                                      std::ranges::range_reference_t<Bucket>>
   constexpr void append_bucket(Bucket&& bucket) {
     TIT_ASSUME_UNIVERSAL(Bucket, bucket);
+#ifndef __clang__
     std::ranges::copy(bucket, std::back_inserter(vals_));
+#else
+    /// @todo For some reason, Clang cannot properly optimize the above code.
+    const auto old_size = vals_.size();
+    vals_.resize(old_size + bucket.size());
+    std::ranges::copy(bucket, vals_.begin() + old_size);
+#endif
     val_ranges_.push_back(vals_.size());
   }
 

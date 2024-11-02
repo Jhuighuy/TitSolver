@@ -84,6 +84,12 @@ constexpr auto atan2(Float a, Float b) noexcept -> Float {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Zero of the same type.
+template<class Num>
+constexpr auto zero(const Num& /*a*/) -> Num {
+  return Num{0};
+}
+
 /// Sign of the value.
 template<class Num>
 constexpr auto sign(Num a) -> Num {

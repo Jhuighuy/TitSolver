@@ -139,5 +139,34 @@ TEST_CASE("par::copy_if") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("par::transform") {
+  par::set_num_threads(4);
+  std::vector<int> data{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  std::vector<int> out(data.size());
+  SUBCASE("basic") {
+    // Ensure the loop is executed.
+    const auto iter = par::transform(data, out.begin(), [](int i) {
+      std::this_thread::sleep_for(std::chrono::milliseconds{10});
+      return 2 * i + 1;
+    });
+    CHECK(iter == out.end());
+    CHECK_RANGE_EQ(out, std::vector{1, 3, 5, 7, 9, 11, 13, 15, 17, 19});
+  }
+  SUBCASE("exceptions") {
+    // Ensure the exceptions from the worker threads are caught.
+    const auto algorithm = [&data, &out] {
+      par::transform(data, out.begin(), [](int i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds{10});
+        if (i == 7) throw std::runtime_error{"Algorithm failed!"};
+        return 2 * i + 1;
+      });
+      FAIL("Algorithm should have thrown an exception!");
+    };
+    CHECK_THROWS_WITH_AS(algorithm(), "Algorithm failed!", std::runtime_error);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace
 } // namespace tit

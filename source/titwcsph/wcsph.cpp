@@ -317,7 +317,12 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   }
 
   // Setup the particle mesh structure.
-  ParticleMesh mesh{geom::GridSearch{h_0}};
+  ParticleMesh mesh{
+      // Search for the particles using the grid search.
+      geom::GridSearch{h_0},
+      // Use RIB as the partitioning method.
+      geom::RecursiveInertialBisection{},
+  };
 
   checked_system("mkdir -p output/test_output/");
   checked_system("rm -f output/test_output/*");

@@ -49,6 +49,16 @@ public:
     return Dim;
   }
 
+  /// Vector elements array.
+  /// @{
+  constexpr auto elems() noexcept -> std::array<Num, Dim>& {
+    return col_;
+  }
+  constexpr auto elems() const noexcept -> const std::array<Num, Dim>& {
+    return col_;
+  }
+  /// @}
+
   /// Vector element at index.
   /// @{
   constexpr auto operator[](size_t i) noexcept -> Num& {
@@ -154,7 +164,17 @@ public:
     return Dim;
   }
 
-  /// Element at index.
+  /// Vector elements array.
+  /// @{
+  constexpr auto elems() noexcept -> std::array<Num, Dim>& {
+    return col_;
+  }
+  constexpr auto elems() const noexcept -> const std::array<Num, Dim>& {
+    return col_;
+  }
+  /// @}
+
+  /// Vector element at index.
   /// @{
   constexpr auto operator[](size_t i) noexcept -> Num& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
@@ -197,12 +217,19 @@ Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 // Casts
 //
 
-/// Create a unit vector.
+/// Make a zero vector.
+template<class Num, size_t Dim>
+constexpr auto zero(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
+  return {};
+}
+
+/// Make a unit vector.
 template<size_t Axis = 0, class Num, size_t Dim>
-constexpr auto unit(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
+constexpr auto unit(const Vec<Num, Dim>& /*a*/,
+                    const Num& n = Num{1.0}) -> Vec<Num, Dim> {
   static_assert(Axis < Dim, "Axis is out of range!");
   Vec<Num, Dim> e;
-  e[Axis] = Num{1.0};
+  e[Axis] = n;
   return e;
 }
 
