@@ -1,17 +1,8 @@
-#define COMPRESSIBLE_SOD_PROBLEM 0
-#define HARD_DAM_BREAKING 0
-#define EASY_DAM_BREAKING 1
-#define INITIALLY_SQUARE_PATCH 0
-#define WITH_GODUNOV 0
-#define WITH_WALLS (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
-#define WITH_GRAVITY (HARD_DAM_BREAKING || EASY_DAM_BREAKING)
-
 #include <format>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/meta.hpp"
 #include "tit/core/sys_utils.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
@@ -20,190 +11,23 @@
 #include "tit/geom/search.hpp"
 
 #include "tit/sph/artificial_viscosity.hpp"
-#include "tit/sph/density_equation.hpp"
+#include "tit/sph/continuity_equation.hpp"
+#include "tit/sph/energy_equation.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/kernel.hpp"
+#include "tit/sph/momentum_equation.hpp"
+#include "tit/sph/motion_equation.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_array_io.hpp"
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
+#include "tit/sph/viscosity.hpp"
 
 namespace tit::sph {
 
-#if 0
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#elif COMPRESSIBLE_SOD_PROBLEM
-
-template<class Real>
-auto sph_main(int /*argc*/, char** /*argv*/) -> int {
-  auto equations = CompressibleFluidEquations{
-      // Ideal gas equation of state.
-      IdealGasEquationOfState{},
-      // Use basic summation density.
-      GradHSummationDensity{},
-      // Cubic spline kernel.
-      GaussianKernel{},
-      // Use Rosswog's artificial viscosity switch with Balsara's limiter.
-      AlphaBetaArtificialViscosity{}};
-  EulerIntegrator timeint{std::move(equations), 1};
-
-  ParticleArray particles{
-      // 1D space.
-      Space<Real, 1>{},
-      // Fields that are required by the equations.
-      timeint.required_fields,
-  };
-  for (int i = -10; i < 1600; ++i) {
-    auto a = particles.append();
-    fixed[a] = i < 0;
-    m[a] = 1.0 / 1600;
-    rho[a] = 1.0;
-    h[a] = 0.015;
-    r[a] = (i + 0.5) / 1600.0;
-    u[a] = 1.0 / (5.0 / 3.0 - 1.0);
-  }
-  for (size_t i = 0; i < 200 + 10; ++i) {
-    auto b = particles.append();
-    fixed[b] = i >= 200;
-    rho[b] = 0.125;
-    m[b] = 1.0 / 1600;
-    h[b] = 0.015;
-    r[b] = 1.0 + (i + 0.5) / 200.0;
-    u[b] = 0.1 / ((5.0 / 3.0 - 1.0) * 0.125);
-  }
-
-  // Setup the particle adjacency structure.
-  auto adjacent_particles = ParticleAdjacency{particles, geom::KDTreeFactory{}};
-
-  for (size_t n = 0; n < 3 * 2500; ++n) {
-    println("{:>15}", n);
-    constexpr double dt = 0.00005;
-    timeint.step(dt, particles, adjacent_particles);
-  }
-
-  // particles.sort();
-  particles.print("particles-sod.csv");
-
-  return 0;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#elif HARD_DAM_BREAKING
-
-template<class Real>
-auto sph_main(int /*argc*/, char** /*argv*/) -> int {
-  constexpr auto N = 100;
-  constexpr auto N_x = 4 * N;
-  constexpr auto N_y = 3 * N;
-  constexpr auto N_fixed = 4;
-  constexpr auto N_x_dam = 1 * N;
-  constexpr auto N_y_dam = 2 * N;
-
-  constexpr Real length = 1.0;
-  constexpr Real spacing = length / N;
-  constexpr Real timestep = 5.0e-5;
-  constexpr Real h_0 = 1.5 * spacing;
-  constexpr Real rho_0 = 1000.0;
-  constexpr Real m_0 = rho_0 * pow2(spacing) / 2;
-  constexpr Real cs_0 = 120.0;
-  constexpr Real mu_0 = 1.0e-3;
-
-  // Setup the SPH equations:
-  auto equations = FluidEquations{
-      // Weakly compressible equation of state.
-      WeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-      // Continuity equation instead of density summation.
-      ContinuityEquation{},
-      // Quartic spline kernel.
-      QuarticSplineKernel{},
-      // No artificial viscosity is used.
-      // NoArtificialViscosity{}
-      // For now, we use alpha-beta viscosity. This is due to the fact that
-      // D. Violeau uses k-epsilon turbulence as some sort of stabilizer.
-      // and we do not have any turbulence at the moment.
-      AlphaBetaArtificialViscosity{0.1, 0.0}};
-
-  // Setup the time integrator:
-  auto timeint = EulerIntegrator{std::move(equations)};
-  // auto timeint = RungeKuttaIntegrator{std::move(equations)};
-
-  // Setup the particles array:
-  ParticleArray particles{
-      // 2D space.
-      Space<Real, 2>{},
-      // Fields that are required by the equations.
-      timeint.required_fields,
-      // Set of whole system constants.
-      m,  // Particle mass assumed constant.
-      h,  // Particle width assumed constant.
-      mu, // Particle molecular viscosity assumed constant.
-  };
-
-  // Generate individual particles.
-  auto num_fixed_particles = 0, num_fluid_particles = 0;
-  for (auto i = -N_fixed; i < N_x + N_fixed; ++i) {
-    for (auto j = -N_fixed; j < N_y; ++j) {
-      const bool is_fixed = (i < 0 || i >= N_x) || (j < 0);
-      const bool is_fluid = (i < N_x_dam) && (j < N_y_dam);
-      if (is_fixed) ++num_fixed_particles;
-      else if (is_fluid) ++num_fluid_particles;
-      else continue;
-      auto a = particles.append();
-      fixed[a] = is_fixed;
-      r[a] = spacing * Vec{i + 0.5, j + 0.5};
-    }
-  }
-  println("Num. fixed particles: {}", num_fixed_particles);
-  println("Num. fluid particles: {}", num_fluid_particles);
-
-  // Set global particle constants.
-  m[particles] = m_0;
-  h[particles] = h_0;
-  rho[particles] = rho_0;
-  mu[particles] = mu_0;
-
-  // Setup the particle adjacency structure.
-  auto adjacent_particles = ParticleAdjacency{particles};
-
-  particles.print("output/test_output/particles-0.csv");
-  checked_system("ln -sf output/test_output/particles-0.csv "
-                 "output/test_output/particles.csv");
-
-  Real time{};
-  Stopwatch exectime{}, printtime{};
-  for (size_t n = 0; time <= 2.7; ++n, time += timestep) {
-    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
-            n,
-            time,
-            exectime.cycle(),
-            printtime.cycle());
-    {
-      const StopwatchCycle cycle{exectime};
-      timeint.step(dt, particles, adjacent_particles);
-    }
-    if (n % 200 == 0 && n != 0) {
-      const StopwatchCycle cycle{printtime};
-      const auto path =
-          "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
-      particles.print(path);
-      checked_system(
-          ("ln -sf " + path + " output/test_output/particles.csv").c_str());
-    }
-  }
-
-  particles.print("particles-dam.csv");
-
-  return 0;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#elif EASY_DAM_BREAKING
 
 template<class Real>
 auto sph_main(int /*argc*/, char** /*argv*/) -> int {
@@ -216,7 +40,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real dt = 5.0e-5;
   constexpr Real dr = H / 80.0;
 
-  constexpr auto N_fixed = 4;
+  constexpr auto N_FIXED = 4;
   constexpr auto WATER_M = int(round(L / dr));
   constexpr auto WATER_N = int(round(H / dr));
   constexpr auto POOL_M = int(round(POOL_WIDTH / dr));
@@ -228,61 +52,56 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
 
-  // Setup the SPH equations:
-  auto equations =
-#if WITH_GODUNOV
-      GodunovFluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
-          ContinuityEquation{},
-          // C2 Wendland's spline kernel.
-          QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
-      }
-#else
-      FluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
-          ContinuityEquation{},
-          // C2 Wendland's spline kernel.
-          QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
-      }
-#endif
-  ;
+  // Parameters for the heat equation. Unused for now.
+  [[maybe_unused]] constexpr Real kappa_0 = 0.6;
+  [[maybe_unused]] constexpr Real c_v = 4184.0;
 
-  // Setup the time integrator:
-#if WITH_GODUNOV
-  auto timeint = RungeKuttaIntegrator{equations};
-#else
-  auto timeint = EulerIntegrator{equations};
-#endif
+  // Setup the SPH equations.
+  const FluidEquations equations{
+      // Standard motion equation.
+      MotionEquation{},
+      // Continuity equation with no source terms.
+      ContinuityEquation{},
+      // Momentum equation with gravity source term.
+      MomentumEquation{
+          // Inviscid flow.
+          NoViscosity{},
+          // δ-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
+          // Gravity source term.
+          GravitySource{g},
+      },
+      // No energy equation.
+      NoEnergyEquation{},
+      // Weakly compressible equation of state.
+      LinearTaitEquationOfState{cs_0, rho_0},
+      // C2 Wendland's spline kernel.
+      QuarticWendlandKernel{},
+  };
+
+  // Setup the time integrator.
+  KickDriftIntegrator time_integrator{equations};
 
   // Setup the particles array:
-  ParticleArray particles{// 2D space.
-                          Space<Real, 2>{},
-                          // Fields that are required by the equations.
-                          decltype(timeint)::required_fields,
-                          // Set of whole system constants.
-                          meta::Set{
-                              m, // Particle mass assumed constant.
-                              h, // Particle width assumed constant.
-                          }};
+  ParticleArray particles{
+      // 2D space.
+      Space<Real, 2>{},
+      // Set of fields is inferred from the equations.
+      time_integrator,
+  };
 
   // Generate individual particles.
-  auto num_fixed_particles = 0;
-  auto num_fluid_particles = 0;
-  for (auto i = -N_fixed; i < POOL_M + N_fixed; ++i) {
-    for (auto j = -N_fixed; j < POOL_N; ++j) {
+  size_t num_fixed_particles = 0;
+  size_t num_fluid_particles = 0;
+  for (auto i = -N_FIXED; i < POOL_M + N_FIXED; ++i) {
+    for (auto j = -N_FIXED; j < POOL_N; ++j) {
       const bool is_fixed = (i < 0 || i >= POOL_M) || (j < 0);
       const bool is_fluid = (i < WATER_M) && (j < WATER_N);
-      if (is_fixed) ++num_fixed_particles;
-      else if (is_fluid) ++num_fluid_particles;
+
+      if (is_fixed) num_fixed_particles += 1;
+      else if (is_fluid) num_fluid_particles += 1;
       else continue;
+
       auto a = particles.append(is_fixed ? ParticleType::fixed :
                                            ParticleType::fluid);
       r[a] = dr * Vec{i + 0.5, j + 0.5};
@@ -344,7 +163,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
             printtime.cycle());
     {
       const StopwatchCycle cycle{exectime};
-      timeint.step(dt, mesh, particles);
+      time_integrator.step(dt, mesh, particles);
     }
     if (n % 200 == 0 && n != 0) {
       const StopwatchCycle cycle{printtime};
@@ -363,138 +182,6 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#elif INITIALLY_SQUARE_PATCH
-
-template<class Real>
-auto sph_main(int /*argc*/, char** /*argv*/) -> int {
-  using namespace tit;
-  using namespace sph;
-
-  constexpr Real L = 1.0; // Square patch side length.
-
-  constexpr Real dt = 5.0e-5;
-  constexpr Real dr = L / 100.0;
-
-  constexpr auto M = int(round(L / dr));
-
-  constexpr Real omega = 1.0;
-  constexpr Real rho_0 = 1000.0;
-  constexpr Real cs_0 = 5.0 * sqrt(2.0) * omega * L;
-  constexpr Real h_0 = 2.0 * dr;
-  constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
-
-  // Setup the SPH equations:
-  auto equations =
-#if WITH_GODUNOV
-      GodunovFluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
-          ContinuityEquation{},
-          // C2 Wendland's spline kernel.
-          QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
-      }
-#else
-      FluidEquations{
-          // Weakly compressible equation of state.
-          LinearWeaklyCompressibleFluidEquationOfState{cs_0, rho_0},
-          // Continuity equation instead of density summation.
-          ContinuityEquation{},
-          // C2 Wendland's spline kernel.
-          QuarticWendlandKernel{},
-          // Use delta-SPH artificial viscosity formulation.
-          DeltaSphArtificialViscosity{cs_0, rho_0},
-      }
-#endif
-  ;
-
-  // Setup the time itegrator:
-#if WITH_GODUNOV
-  auto timeint = RungeKuttaIntegrator{std::move(equations)};
-#else
-  auto timeint = EulerIntegrator{std::move(equations)};
-#endif
-
-  // Setup the particles array:
-  ParticleArray particles{
-      // 2D space.
-      Space<Real, 2>{},
-      // Fields that are required by the equations.
-      timeint.required_fields,
-      // Set of whole system constants.
-      m, // Particle mass assumed constant.
-      h  // Particle width assumed constant.
-  };
-
-  // Generate individual particles.
-  for (auto i = -M / 2; i < M / 2; ++i) {
-    for (auto j = -M / 2; j < M / 2; ++j) {
-      auto a = particles.append();
-      r[a] = dr * Vec{i + 0.5, j + 0.5};
-      v[a] = Vec{omega * r[a][1], -omega * r[a][0]};
-    }
-  }
-
-  // Set global particle constants.
-  m[particles] = m_0;
-  h[particles] = h_0;
-
-  // Density hydrostatic initialization.
-  std::ranges::for_each(particles.all(), [&]<class PV>(PV a) {
-    // Compute pressure from Poisson problem.
-    const auto x = r[a][0] + L / 2, y = r[a][1] + L / 2;
-    p[a] = 0.0;
-    for (size_t m = 1; m < 11; ++m) {
-      for (size_t n = 1; n < 11; ++n) {
-        constexpr auto pi = std::numbers::pi_v<Real>;
-        p[a] = -32 * pow2(omega) / (m * n * pow2(pi)) /
-               (pow2(n * pi / L) + pow2(m * pi / L)) * //
-               sin(m * pi * x / L) * sin(n * pi * y / L);
-      }
-    }
-    p[a] *= rho_0;
-    // Recalculate density from EOS.
-    rho[a] = rho_0 + p[a] / pow2(cs_0);
-  });
-
-  // Setup the particle adjacency structure.
-  auto adjacent_particles = ParticleAdjacency{particles};
-
-  particles.print("output/test_output/particles-0.csv");
-  checked_system("ln -sf output/test_output/particles-0.csv particles.csv");
-
-  Real time{};
-  Stopwatch exectime{}, printtime{};
-  for (size_t n = 0; time * omega <= 9.5; ++n, time += dt) {
-    println("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
-            n,
-            time * omega,
-            exectime.cycle(),
-            printtime.cycle());
-    {
-      const StopwatchCycle cycle{exectime};
-      timeint.step(dt, particles, adjacent_particles);
-    }
-    if (n % 200 == 0 && n != 0) {
-      const StopwatchCycle cycle{printtime};
-      const auto path =
-          "output/test_output/particles-" + std::to_string(n / 200) + ".csv";
-      particles.print(path);
-      checked_system(("ln -sf ./" + path + " particles.csv").c_str());
-    }
-  }
-
-  particles.print("particles.csv");
-
-  return 0;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#endif
 
 } // namespace tit::sph
 

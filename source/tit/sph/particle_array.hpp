@@ -10,11 +10,13 @@
 #include <span>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/meta.hpp"
+#include "tit/core/vec.hpp"
 
 #include "tit/core/type_traits.hpp"
 #include "tit/sph/field.hpp"
@@ -141,9 +143,13 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// Construct a particle array.
+  ///
+  /// @param space The space in which the particles are defined.
+  /// @param equations The equations that define the particle fields.
+  template<class Equations>
   constexpr explicit ParticleArray(Space /*space*/,
-                                   auto /*varyings*/,
-                                   auto /*uniforms*/) noexcept {}
+                                   Equations /*equations*/) noexcept {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -161,7 +167,7 @@ public:
   /// Appends a new particle of the specified type @p type.
   constexpr auto append(ParticleType type) -> ParticleView<ParticleArray> {
     TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
-    const auto type_index = static_cast<size_t>(type);
+    const auto type_index = std::to_underlying(type);
     // Get the index of the next particle of the specified type and increment
     // the range of particles for the next types.
     const size_t index = particle_ranges_[type_index + 1];
@@ -184,7 +190,7 @@ public:
   /// Particles of the specified type.
   constexpr auto typed(this auto& self, ParticleType type) noexcept {
     TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
-    const auto type_index = static_cast<size_t>(type);
+    const auto type_index = std::to_underlying(type);
     return std::views::iota(self.particle_ranges_[type_index],
                             self.particle_ranges_[type_index + 1]) |
            std::views::transform([&self](size_t index) { return self[index]; });
@@ -206,7 +212,7 @@ public:
   constexpr auto has_type(size_t index,
                           ParticleType type) const noexcept -> bool {
     TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
-    const auto type_index = static_cast<size_t>(type);
+    const auto type_index = std::to_underlying(type);
     return particle_ranges_[type_index] <= index &&
            index < particle_ranges_[type_index + 1];
   }
@@ -248,22 +254,25 @@ public:
 
 private:
 
-  std::array<size_t, static_cast<size_t>(ParticleType::count) + 1>
+  std::array<size_t, std::to_underlying(ParticleType::count) + 1>
       particle_ranges_{0};
 
-  decltype(uniform_fields.apply([](auto... consts) {
-    return std::tuple<field_value_t<decltype(consts), Space>...>{};
-  })) uniform_data_;
+  decltype([]<class... Fields>(meta::Set<Fields...> /*fields*/) {
+    return std::tuple<field_value_t<Fields, Space>...>{};
+  }(uniform_fields)) uniform_data_;
 
-  decltype(varying_fields.apply([](auto... vars) {
-    return std::tuple<std::vector<field_value_t<decltype(vars), Space>>...>{};
-  })) varying_data_;
+  decltype([]<class... Fields>(meta::Set<Fields...> /*fields*/) {
+    return std::tuple<std::vector<field_value_t<Fields, Space>>...>{};
+  }(varying_fields)) varying_data_;
 
 }; // class ParticleArray
 
-template<class Space, class AllVariables, class Uniforms>
-ParticleArray(Space, AllVariables, Uniforms)
-    -> ParticleArray<Space, Uniforms, decltype(AllVariables{} - Uniforms{})>;
+template<class Space, class Equations>
+ParticleArray(Space, Equations)
+    -> ParticleArray<
+        Space,
+        decltype(Equations::required_fields - Equations::modified_fields),
+        decltype(Equations::required_fields & Equations::modified_fields)>;
 
 /// Particle array type.
 ///
@@ -271,15 +280,55 @@ ParticleArray(Space, AllVariables, Uniforms)
 template<class PA, auto... fields>
 concept particle_array =
     specialization_of<std::remove_cvref_t<PA>, ParticleArray> &&
-    ((field_set<decltype(meta::Set{fields})> &&
-      std::remove_cvref_t<PA>::fields.includes(meta::Set{fields})) &&
-     ...);
+    particle_view<ParticleView<PA>, fields...>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+template<auto field, class P>
+struct particle_field_reference;
+template<auto field, particle_view<field> PV>
+struct particle_field_reference<field, PV> {
+  using type = decltype(std::declval<PV>()[field]);
+};
+template<auto field, particle_array<r> PA>
+struct particle_field_reference<field, PA> {
+  using type = decltype(std::declval<PA&>()[0, field]);
+};
+} // namespace impl
+
+/// Particle field reference type.
+template<auto field, class P>
+  requires particle_view<P, field> || particle_array<P, field>
+using particle_field_reference_t =
+    typename impl::particle_field_reference<field, P>::type;
+
+/// Particle field type.
+template<auto field, class P>
+  requires particle_view<P, field> || particle_array<P, field>
+using particle_field_t =
+    std::remove_cvref_t<particle_field_reference_t<field, P>>;
+
+/// Particle scalar type.
+template<class P>
+  requires particle_view<P> || particle_array<P>
+using particle_num_t = particle_field_t<h, P>;
+
+/// Particle vector type.
+template<class P>
+  requires particle_view<P, r> || particle_array<P, r>
+using particle_vec_t = particle_field_t<r, P>;
+
+/// Particle space dimension.
+template<class P>
+  requires particle_view<P> || particle_array<P>
+inline constexpr auto particle_dim_v = vec_dim_v<particle_vec_t<P>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Check particle fields presence.
 template<class P>
-  requires particle_array<P> || particle_view<P>
+  requires particle_view<P> || particle_array<P>
 consteval auto has(field auto... fields) -> bool {
   constexpr auto present_fields = std::remove_cvref_t<P>::fields;
   return present_fields.includes(meta::Set{fields...});
@@ -287,7 +336,7 @@ consteval auto has(field auto... fields) -> bool {
 
 /// Check particle uniform fields presence.
 template<class P>
-  requires particle_array<P> || particle_view<P>
+  requires particle_view<P> || particle_array<P>
 consteval auto has_uniform(field auto... uniforms) -> bool {
   constexpr auto present_fields = std::remove_cvref_t<P>::uniform_fields;
   return present_fields.includes(meta::Set{uniforms...});
