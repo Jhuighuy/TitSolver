@@ -63,7 +63,7 @@ void checked_system(const char* command) noexcept {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto tty_width(TTY tty) noexcept -> std::optional<size_t> {
-  const auto tty_fileno = static_cast<int>(tty);
+  const auto tty_fileno = std::to_underlying(tty);
   if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.
 
   struct winsize window_size = {};

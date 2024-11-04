@@ -35,6 +35,19 @@ concept good_range =
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Simple implementation of `std::views::as_const`.
+struct AsConstAdaptor {
+  template<std::ranges::viewable_range Range>
+  constexpr auto operator()(Range&& range) const noexcept {
+    // Let's do nothing here.
+    return std::views::all(std::forward<Range>(range));
+  }
+};
+
+inline constexpr AsConstAdaptor as_const{};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // Simple implementation of `std::views::enumerate`.
 struct EnumerateAdaptor {
   template<good_range Range>

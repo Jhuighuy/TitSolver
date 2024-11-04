@@ -114,7 +114,8 @@ public:
     // Compute the total number of values.
     size_t num_values = 0;
     val_ranges_.clear(), val_ranges_.resize(std::size(buckets) + 1);
-    for (const auto& [index, bucket] : std::views::enumerate(buckets)) {
+    for (const auto& [index, bucket] :
+         std::views::as_const(std::views::enumerate(buckets))) {
       const auto bucket_size = std::size(bucket);
       val_ranges_[index + 1] = num_values + bucket_size;
       num_values += bucket_size;

@@ -80,7 +80,7 @@ public:
     size_t dist = 0;
     for (size_t i = 0; i < Dim; ++i) {
       const auto axis = (axis_ + i) % Dim;
-      const auto flipped = (flips & (1 << axis)) != 0;
+      const auto flipped = (flips & (1 << axis)) >> axis;
       dist |= flipped << (Dim - i - 1);
     }
     return dist;
@@ -100,10 +100,10 @@ public:
 
   // Construct a state.
   constexpr HilbertState() = default;
-  constexpr HilbertState(HilbertRotation<Dim> rot) noexcept
+  constexpr explicit HilbertState(HilbertRotation<Dim> rot) noexcept
       : init_rot_{rot}, curr_rot_{rot} {}
-  constexpr HilbertState(HilbertRotation<Dim> init_rot,
-                         HilbertRotation<Dim> curr_rot) noexcept
+  constexpr explicit HilbertState(HilbertRotation<Dim> init_rot,
+                                  HilbertRotation<Dim> curr_rot) noexcept
       : init_rot_{init_rot}, curr_rot_{curr_rot} {}
 
   // Get the current axis.
@@ -121,11 +121,13 @@ public:
     const auto next_rot = curr_rot_.shift();
     if (next_rot.axis() != init_rot_.axis()) {
       // Rotate the current state.
-      return {{init_rot_, next_rot}, {init_rot_, next_rot.flip()}};
+      return {HilbertState{init_rot_, next_rot},
+              HilbertState{init_rot_, next_rot.flip()}};
     }
     // Advance to the next state.
     const auto index = next_rot.index(init_rot_);
-    return {{init_rot_.next(2 * index)}, {init_rot_.next(2 * index + 1)}};
+    return {HilbertState{init_rot_.next(2 * index)},
+            HilbertState{init_rot_.next(2 * index + 1)}};
   }
 
 private:
