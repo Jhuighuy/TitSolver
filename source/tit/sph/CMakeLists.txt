@@ -12,7 +12,6 @@ add_tit_library(
     "equation_of_state.hpp"
     "field.hpp"
     "fluid_equations.hpp"
-    "fsi.hpp"
     "kernel.hpp"
     "particle_array.hpp"
     "particle_array_io.hpp"
