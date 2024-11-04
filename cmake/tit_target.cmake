@@ -58,7 +58,11 @@ function(add_tit_library)
   endif()
 
   # Create the library and the alias.
-  set(LIB_TARGET "${TARGET_NAME_PREFIX}_${LIB_NAME}")
+  if(LIB_NAME MATCHES "^${TARGET_NAME_PREFIX}")
+    set(LIB_TARGET "${LIB_NAME}")
+  else()
+    set(LIB_TARGET "${TARGET_NAME_PREFIX}_${LIB_NAME}")
+  endif()
   set(LIB_TARGET_ALIAS "${TARGET_NAME_PREFIX}::${LIB_NAME}")
   add_library(${LIB_TARGET} ${LIB_TYPE} ${LIB_SOURCES})
   add_library(${LIB_TARGET_ALIAS} ALIAS ${LIB_TARGET})
@@ -82,13 +86,17 @@ endfunction()
 ##
 function(add_tit_executable)
   # Parse and check arguments.
-  cmake_parse_arguments(EXE "" "NAME" "SOURCES;DEPENDS" ${ARGN})
+  cmake_parse_arguments(EXE "" "NAME;PREFIX" "SOURCES;DEPENDS" ${ARGN})
   if(NOT EXE_NAME)
     message(FATAL_ERROR "Executable name must be specified.")
   endif()
 
   # Create the executable and the alias.
-  set(EXE_TARGET "${TARGET_NAME_PREFIX}_${EXE_NAME}")
+  if(EXE_NAME MATCHES "^${TARGET_NAME_PREFIX}")
+    set(EXE_TARGET "${EXE_NAME}")
+  else()
+    set(EXE_TARGET "${TARGET_NAME_PREFIX}_${EXE_NAME}")
+  endif()
   set(EXE_TARGET_ALIAS "${TARGET_NAME_PREFIX}::${EXE_NAME}")
   add_executable(${EXE_TARGET} ${EXE_SOURCES})
   add_executable(${EXE_TARGET_ALIAS} ALIAS ${EXE_TARGET})
