@@ -69,7 +69,6 @@ add_tit_library(
     "vec/vec.hpp"
     "vec/vec_mask.hpp"
   DEPENDS
-    tit::base
     Boost::core
     Boost::container
     Boost::stacktrace_addr2line

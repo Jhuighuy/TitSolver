@@ -2,17 +2,20 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "tit",
   "version-string": "0.1.0",
+  "builtin-baseline": "9d163f0612f75a49133cfd051f0ed997a24602d5",
   "dependencies": [
     "boost-core",
     "boost-container",
-    "boost-stacktrace",
+    {
+      "name": "boost-stacktrace",
+      "default-features": false
+    },
     "doctest",
     "gcem",
-    "hdf5",
     "highway",
     "metis",
     "mimalloc",
-    "nanobench",
     "tbb"
-  ]
+  ],
+  "overrides": [{ "name": "tbb", "version": "2021.13.0" }]
 }

@@ -10,17 +10,16 @@ include(utils)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find clang-tidy (at least 18.1.3). Prefer version-suffixed executables.
-find_program_with_version(
-  CLANG_TIDY_EXE
-  NAMES "clang-tidy-18" "clang-tidy"
-  MIN_VERSION "18.1.3"
-)
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-18" "clang-tidy")
+if(NOT CLANG_TIDY_EXE)
+  message(WARNING "clang-tidy was not found!")
+endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-##
-## Analyze source code with clang-tidy.
-##
+#
+# Analyze source code with clang-tidy.
+#
 function(enable_clang_tidy TARGET_OR_ALIAS)
   # Should we skip analysis?
   if(SKIP_ANALYSIS)
@@ -53,6 +52,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     set(
       LIBCPP_DISABLED_CHECKS
       # False positives with standard headers, like <format> and <expected>.
+      # Looks like this issue is fixed in LLVM 19.
       -misc-include-cleaner
       # Suppress error messages from Doctest.
       -modernize-type-traits
@@ -68,7 +68,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     CLANG_TIDY_COMPILE_ARGS
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
-    # Enable C++23.
+    # Enable C++23, as it is not configured by the compile options.
     -std=c++23
   )
 

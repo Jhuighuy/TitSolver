@@ -57,7 +57,7 @@ set(
   -march=native
 )
 
-# When compiling with libstdc++, ensure is is properly configured.
+# When compiling with libstdc++, ensure Clang is properly configured.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR NOT APPLE)
   list(
     APPEND
@@ -106,10 +106,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND APPLE)
     -stdlib++-isystem "${STDCPP_INCLUDE_DIR}"
     -cxx-isystem "${STDCPP_SYS_INCLUDE_DIR}"
   )
-
-  # Clear variables.
-  unset(STDCPP_INCLUDE_DIR)
-  unset(STDCPP_SYS_INCLUDE_DIR)
 endif()
 
 # Define common link options.
