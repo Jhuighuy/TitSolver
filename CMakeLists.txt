@@ -16,7 +16,6 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clangd)
 include(codespell)
-include(compiler)
 include(tit_target)
 include(tit_testing)
 
@@ -26,10 +25,7 @@ include(tit_testing)
 find_package(
   Boost
   CONFIG REQUIRED
-  COMPONENTS
-    core
-    container
-    stacktrace_addr2line
+  COMPONENTS core container stacktrace_addr2line
 )
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
@@ -40,48 +36,16 @@ find_package(TBB CONFIG REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Setup C++ globally.
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED YES)
-set(CMAKE_CXX_EXTENSIONS NO)
-
-# A container library that stores all the properties.
-# Other libraries and executables should link with this library.
-add_library(tit_base INTERFACE)
-add_library(tit::base ALIAS tit_base)
-
-# Setup include directories.
-target_include_directories(tit_base INTERFACE "source")
-
-# Setup configurations.
-foreach(CONFIG ${ALL_CONFIGS})
-  string(TOUPPER ${CONFIG} CONFIG_UPPER)
-
-  # Apply compilation options.
-  target_compile_options(
-    tit_base INTERFACE
-    $<$<CONFIG:${CONFIG}>:${CXX_COMPILE_OPTIONS_${CONFIG_UPPER}}>
-  )
-
-  # Apply link options.
-  target_link_options(
-    tit_base INTERFACE
-    $<$<CONFIG:${CONFIG}>:${CXX_LINK_OPTIONS_${CONFIG_UPPER}}>
-  )
-endforeach()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 # Add the actual sources.
 add_subdirectory("source")
 add_subdirectory("tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Write "compile_flags.txt" based on the container library.
+# Write "compile_flags.txt" based on the core library.
 write_compile_flags(tit::core)
 
-# Enable global static analysis.
-check_spelling(${CMAKE_PROJECT_NAME})
+# Enable spell checking.
+check_spelling()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

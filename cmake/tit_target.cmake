@@ -5,17 +5,50 @@
 
 include_guard()
 include(clang_tidy)
+include(compiler)
 include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Common target name prefix.
 set(TARGET_NAME_PREFIX "tit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-##
-## Add a library.
-##
+#
+# Set the compile and link options for the given target.
+#
+function(configure_tit_target TARGET ACCESS)
+  # Setup include directories.
+  target_include_directories(
+    ${TARGET} ${ACCESS}
+    "${CMAKE_SOURCE_DIR}/source"
+  )
+
+  # Setup compile and link options.
+  target_compile_features(${TARGET} ${ACCESS} cxx_std_23)
+  foreach(CONFIG ${ALL_CONFIGS})
+    string(TOUPPER ${CONFIG} CONFIG_UPPER)
+
+    # Apply compilation options.
+    target_compile_options(
+      ${TARGET} ${ACCESS}
+      $<$<CONFIG:${CONFIG}>:${CXX_COMPILE_OPTIONS_${CONFIG_UPPER}}>
+    )
+
+    # Apply link options.
+    target_link_options(
+      ${TARGET} ${ACCESS}
+      $<$<CONFIG:${CONFIG}>:${CXX_LINK_OPTIONS_${CONFIG_UPPER}}>
+    )
+  endforeach()
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
+# Add a library.
+#
 function(add_tit_library)
   # Parse and check arguments.
   cmake_parse_arguments(LIB "" "NAME;TYPE" "SOURCES;DEPENDS" ${ARGN})
@@ -23,8 +56,8 @@ function(add_tit_library)
     message(FATAL_ERROR "Library name must be specified.")
   endif()
 
-  # Determine library type based on the presence of compilable sources.
   if(LIB_TYPE)
+    # Library type is specified.
     set(ALL_LIB_TYPES INTERFACE OBJECT STATIC SHARED)
     if(NOT (LIB_TYPE IN_LIST ALL_LIB_TYPES))
       list(JOIN ALL_LIB_TYPES ", " ALL_LIB_TYPES)
@@ -34,6 +67,7 @@ function(add_tit_library)
       )
     endif()
   else()
+    # Determine library type based on the presence of compilable sources.
     set(LIB_HAS_SOURCES FALSE)
     if(LIB_SOURCES)
       foreach(SOURCE ${LIB_SOURCES})
@@ -44,9 +78,9 @@ function(add_tit_library)
       endforeach()
     endif()
     if(LIB_HAS_SOURCES)
-      set(LIB_TYPE STATIC) # Out target is a static library.
+      set(LIB_TYPE STATIC)
     else()
-      set(LIB_TYPE INTERFACE) # Out target is an interface library.
+      set(LIB_TYPE INTERFACE)
     endif()
   endif()
 
@@ -67,6 +101,9 @@ function(add_tit_library)
   add_library(${LIB_TARGET} ${LIB_TYPE} ${LIB_SOURCES})
   add_library(${LIB_TARGET_ALIAS} ALIAS ${LIB_TARGET})
 
+  # Configure the target.
+  configure_tit_target(${LIB_TARGET} ${LIB_PUBLIC})
+
   # Link with the dependent libraries.
   target_link_libraries(${LIB_TARGET} ${LIB_PUBLIC} ${LIB_DEPENDS})
 
@@ -81,9 +118,9 @@ endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-##
-## Add an executable.
-##
+#
+# Add an executable.
+#
 function(add_tit_executable)
   # Parse and check arguments.
   cmake_parse_arguments(EXE "" "NAME;PREFIX" "SOURCES;DEPENDS" ${ARGN})
@@ -100,6 +137,9 @@ function(add_tit_executable)
   set(EXE_TARGET_ALIAS "${TARGET_NAME_PREFIX}::${EXE_NAME}")
   add_executable(${EXE_TARGET} ${EXE_SOURCES})
   add_executable(${EXE_TARGET_ALIAS} ALIAS ${EXE_TARGET})
+
+  # Configure the target.
+  configure_tit_target(${EXE_TARGET} PRIVATE)
 
   # Link with the dependent libraries.
   target_link_libraries(${EXE_TARGET} PRIVATE ${EXE_DEPENDS})

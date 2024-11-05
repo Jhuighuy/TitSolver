@@ -38,14 +38,14 @@ endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set compiler ID.
+# Set the compiler ID.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   set(CXX_COMPILER "CLANG")
 else()
   string(TOUPPER ${CMAKE_CXX_COMPILER_ID} CXX_COMPILER)
 endif()
 
-# Check if compiler is known...
+# Check if compiler is known and it's version is sufficient.
 try_set(CXX_COMPILER_MIN_VERSION "${CXX_COMPILER}_MIN_VERSION")
 if(NOT DEFINED CXX_COMPILER_MIN_VERSION)
   message(
@@ -53,7 +53,6 @@ if(NOT DEFINED CXX_COMPILER_MIN_VERSION)
     "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported."
   )
 endif()
-# ...and it's version is sufficient.
 if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CXX_COMPILER_MIN_VERSION})
   message(
     FATAL_ERROR
@@ -61,9 +60,6 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CXX_COMPILER_MIN_VERSION})
     "Minimum required version is ${CXX_COMPILER_MIN_VERSION}."
   )
 endif()
-
-# Setup warnings and diagnostics options.
-try_set(CXX_WARNINGS "${CXX_COMPILER}_WARNINGS")
 
 # Setup compile options.
 try_set(CXX_COMPILE_OPTIONS "${CXX_COMPILER}_COMPILE_OPTIONS")

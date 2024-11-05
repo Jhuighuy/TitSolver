@@ -70,6 +70,7 @@ install-vcpkg() {
   export VCPKG_DEFAULT_BINARY_CACHE="$HOME/vcpkg_cache"
   echo "VCPKG_ROOT=$VCPKG_ROOT" >> $GITHUB_ENV
   echo "VCPKG_DEFAULT_BINARY_CACHE=$VCPKG_DEFAULT_BINARY_CACHE" >> $GITHUB_ENV
+  # Note: we cannot use `--depth=1` here, vcpgk requires the baseline commit.
   git clone https://github.com/microsoft/vcpkg.git $VCPKG_ROOT
   "$VCPKG_ROOT/bootstrap-vcpkg.sh"
   mkdir -p $VCPKG_DEFAULT_BINARY_CACHE || true # Ignore if it already exists.

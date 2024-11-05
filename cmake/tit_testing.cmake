@@ -20,9 +20,9 @@ find_program(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-##
-## Register the test command.
-##
+#
+# Register the test command.
+#
 function(add_tit_test)
   # Parse and check arguments.
   cmake_parse_arguments(
@@ -87,9 +87,9 @@ endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-##
-## Register the test target.
-##
+#
+# Register the test target.
+#
 function(add_tit_test_from_target TARGET)
   # Parse and check arguments.
   if(NOT TARGET)
