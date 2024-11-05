@@ -33,7 +33,6 @@ find_package(
 )
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
-find_package(HDF5 CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
@@ -71,12 +70,6 @@ foreach(CONFIG ${ALL_CONFIGS})
   )
 endforeach()
 
-# Link with the dependent libraries.
-target_link_libraries(
-  tit_base INTERFACE
-  hdf5::hdf5-static
-)
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Add the actual sources.
@@ -86,7 +79,7 @@ add_subdirectory("tests")
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Write "compile_flags.txt" based on the container library.
-write_compile_flags(tit::base)
+write_compile_flags(tit::core)
 
 # Enable global static analysis.
 check_spelling(${CMAKE_PROJECT_NAME})

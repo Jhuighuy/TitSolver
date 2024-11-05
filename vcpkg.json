@@ -6,14 +6,15 @@
   "dependencies": [
     "boost-core",
     "boost-container",
-    "boost-stacktrace",
+    {
+      "name": "boost-stacktrace",
+      "default-features": false
+    },
     "doctest",
     "gcem",
-    "hdf5",
     "highway",
     "metis",
     "mimalloc",
-    "nanobench",
     "tbb"
   ],
   "overrides": [{ "name": "tbb", "version": "2021.13.0" }]
