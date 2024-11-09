@@ -37,7 +37,6 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real POOL_WIDTH = 5.366 * H;
   constexpr Real POOL_HEIGHT = 2.5 * H;
 
-  constexpr Real dt = 5.0e-5;
   constexpr Real dr = H / 80.0;
 
   constexpr auto N_FIXED = 4;
@@ -50,7 +49,10 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real rho_0 = 1000.0;
   constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
-  constexpr Real m_0 = rho_0 * pow(dr, 2) / 1001.21 * 1000.0;
+  constexpr Real m_0 = rho_0 * pow(dr, 2);
+
+  constexpr Real CFL = 0.8;
+  constexpr Real dt = std::min(CFL * h_0 / cs_0, 0.25 * sqrt(h_0 / g));
 
   // Parameters for the heat equation. Unused for now.
   [[maybe_unused]] constexpr Real kappa_0 = 0.6;
@@ -80,7 +82,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   };
 
   // Setup the time integrator.
-  KickDriftIntegrator time_integrator{equations};
+  RungeKuttaIntegrator time_integrator{equations};
 
   // Setup the particles array:
   ParticleArray particles{
@@ -165,14 +167,15 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       const StopwatchCycle cycle{exectime};
       time_integrator.step(dt, mesh, particles);
     }
-    if (n % 200 == 0 && n != 0) {
+    const auto end = time * sqrt(g / H) >= 6.9;
+    if ((n % 100 == 0 && n != 0) || end) {
       const StopwatchCycle cycle{printtime};
       const auto path =
-          std::format("output/test_output/particles-{}.csv", n / 200);
+          std::format("output/test_output/particles-{}.csv", n / 100);
       print_csv(particles, path);
       checked_system(("ln -sf ./" + path + " particles.csv").c_str());
     }
-    if (time * sqrt(g / H) >= 6.9) break;
+    if (end) break;
     time += dt;
   }
 

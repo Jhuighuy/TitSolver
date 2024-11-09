@@ -80,6 +80,12 @@ public:
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
 
+    // Apply particle shifting.
+    if constexpr (has<PV>(dr)) {
+      equations_.compute_shifts(mesh, particles);
+      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+    }
+
     // Increment step index.
     step_index_ += 1;
   }
@@ -157,6 +163,12 @@ public:
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
     });
 
+    // Apply particle shifting, if necessary.
+    if constexpr (has<PV>(dr)) {
+      equations_.compute_shifts(mesh, particles);
+      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+    }
+
     // Increment step index.
     step_index_ += 1;
   }
@@ -196,6 +208,7 @@ public:
             ParticleMesh& mesh,
             ParticleArray& particles) {
     TIT_PROFILE_SECTION("RungeKuttaIntegrator::step()");
+    using PV = ParticleView<ParticleArray>;
 
     // Initialize and index particles.
     if (step_index_ == 0) equations_.init(particles);
@@ -209,6 +222,12 @@ public:
     lincomb_(0.75, old_particles, 0.25, particles);
     substep_(dt, mesh, particles);
     lincomb_(1.0 / 3.0, old_particles, 2.0 / 3.0, particles);
+
+    // Apply particle shifting, if necessary.
+    if constexpr (has<PV>(dr)) {
+      equations_.compute_shifts(mesh, particles);
+      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+    }
 
     // Increment step index.
     step_index_ += 1;

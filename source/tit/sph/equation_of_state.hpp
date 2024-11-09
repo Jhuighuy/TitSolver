@@ -134,7 +134,7 @@ concept pressure_correction = std::same_as<PC, NoCorrection> || //
                               std::same_as<PC, HughesGrahamCorrection>;
 
 /// Tait equation equation of state (for weakly-compressible fluids).
-template<pressure_correction Correction = NoCorrection>
+template<pressure_correction Correction = HughesGrahamCorrection>
 class TaitEquationOfState final {
 public:
 
@@ -146,11 +146,11 @@ public:
 
   /// Construct an equation of state.
   ///
-  /// @param cs_0  Reference sound speed, typically 10x of the expected
-  ///              velocity.
-  /// @param rho_0 Reference density.
-  /// @param p_0   Background pressure.
-  /// @param gamma Polytropic index.
+  /// @param cs_0       Reference sound speed, typically 10x of the expected
+  ///                   velocity.
+  /// @param rho_0      Reference density.
+  /// @param p_0        Background pressure.
+  /// @param gamma      Polytropic index.
   /// @param correction Pressure correction method.
   constexpr explicit TaitEquationOfState(real_t cs_0,
                                          real_t rho_0,
@@ -190,7 +190,7 @@ private:
 }; // class TaitEquationOfState
 
 /// Linear Tait equation equation of state (for weakly-compressible fluids).
-template<pressure_correction Correction = NoCorrection>
+template<pressure_correction Correction = HughesGrahamCorrection>
 class LinearTaitEquationOfState final {
 public:
 
@@ -202,10 +202,11 @@ public:
 
   /// Construct an equation of state.
   ///
-  /// @param cs_0  Reference sound speed, typically 10x of the expected
-  ///              velocity.
-  /// @param rho_0 Reference density.
-  /// @param p_0   Background pressure.
+  /// @param cs_0       Reference sound speed, typically 10x of the expected
+  ///                   velocity.
+  /// @param rho_0      Reference density.
+  /// @param p_0        Background pressure.
+  /// @param correction Pressure correction method.
   constexpr LinearTaitEquationOfState(real_t cs_0,
                                       real_t rho_0,
                                       real_t p_0 = 0.0,

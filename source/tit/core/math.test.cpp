@@ -122,6 +122,17 @@ TEST_CASE_TEMPLATE("approx_equal_to", Num, NUM_TYPES) {
                               Num{1.23}));
 }
 
+TEST_CASE_TEMPLATE("bitwise_equal", Num, NUM_TYPES) {
+  // Check ordinary numbers.
+  CHECK(bitwise_equal(Num{1.23}, Num{1.23}));
+  CHECK_FALSE(bitwise_equal(Num{1.23}, Num{1.24}));
+  // NaNs are equal due to bitwise comparison.
+  CHECK(bitwise_equal(std::numeric_limits<Num>::quiet_NaN(),
+                      std::numeric_limits<Num>::quiet_NaN()));
+  // Zeros with different signs are not equal due to bitwise comparison.
+  CHECK_FALSE(bitwise_equal(Num{+0.0}, Num{-0.0}));
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("newton", Num, NUM_TYPES) {
