@@ -38,9 +38,8 @@ inline constexpr bool is_flags_enum_v<MatPart> = true;
 template<MatPart Part>
 struct MatPartAt {
   template<class Num, size_t Dim>
-  static constexpr auto operator()(const Mat<Num, Dim>& A,
-                                   size_t i,
-                                   size_t j) -> Num {
+  static constexpr auto operator()(const Mat<Num, Dim>& A, size_t i, size_t j)
+      -> Num {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
     using enum MatPart;
@@ -78,7 +77,7 @@ constexpr auto copy_part(const Mat<Num, Dim>& A) -> Mat<Num, Dim> {
 template<class Mat>
 constexpr auto transpose(const Mat& A) -> Mat {
   using enum MatPart;
-  return copy_part<lower | diag | upper | transposed>(A);
+  return copy_part<(lower | diag | upper | transposed)>(A);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

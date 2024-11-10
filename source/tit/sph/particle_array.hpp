@@ -219,8 +219,8 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Check if the particle has the specified type.
-  constexpr auto has_type(size_t index,
-                          ParticleType type) const noexcept -> bool {
+  constexpr auto has_type(size_t index, ParticleType type) const noexcept
+      -> bool {
     TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
     const auto type_index = std::to_underlying(type);
     return particle_ranges_[type_index] <= index &&
@@ -249,8 +249,8 @@ public:
 
   /// Values for the specified field.
   template<field Field>
-  constexpr auto operator[](this auto& self,
-                            Field /*field*/) noexcept -> decltype(auto) {
+  constexpr auto operator[](this auto& self, Field /*field*/) noexcept
+      -> decltype(auto) {
     static_assert(fields.contains(Field{}));
     if constexpr (uniform_fields.contains(Field{})) {
       return std::get<uniform_fields.find(Field{})>(self.uniform_data_);
@@ -278,11 +278,10 @@ private:
 }; // class ParticleArray
 
 template<class Space, class Equations>
-ParticleArray(Space, Equations)
-    -> ParticleArray<
-        Space,
-        decltype(Equations::required_fields - Equations::modified_fields),
-        decltype(Equations::required_fields & Equations::modified_fields)>;
+ParticleArray(Space, Equations) -> ParticleArray<
+    Space,
+    decltype(Equations::required_fields - Equations::modified_fields),
+    decltype(Equations::required_fields & Equations::modified_fields)>;
 
 /// Particle array type.
 ///

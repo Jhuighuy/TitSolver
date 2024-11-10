@@ -8,7 +8,7 @@ include_guard()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define minimal compiler version.
-set(CLANG_MIN_VERSION "18.1.8")
+set(CLANG_MIN_VERSION "19.1.5")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -60,17 +60,6 @@ set(
   # Position independent code.
   -fPIC
 )
-
-# When compiling with libstdc++, ensure Clang is properly configured.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR NOT APPLE)
-  list(
-    APPEND
-    CLANG_COMPILE_OPTIONS
-    # `__cpp_concepts` is not updated in Clang for some reason.
-    -Wno-builtin-macro-redefined
-    -D__cpp_concepts=202002L
-  )
-endif()
 
 # When compiling with GCC, force LLVM tools to use libstdc++.
 #

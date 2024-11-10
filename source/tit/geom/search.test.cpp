@@ -42,8 +42,8 @@ void match_search_results(const SearchResult& expected_result,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Naive O(N^2) implementation of a nearest neighbor search.
-auto search_naive(const std::vector<Vec3D>& points,
-                  double search_radius) -> SearchResult {
+auto search_naive(const std::vector<Vec3D>& points, double search_radius)
+    -> SearchResult {
   const auto search_radius_sqr = pow2(search_radius);
   SearchResult result(points.size());
   for (size_t i = 0; i < points.size(); ++i) {

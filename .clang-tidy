@@ -31,15 +31,12 @@
 #   We have a few, I would like to re-enable this check in the future.
 #
 # * cppcoreguidelines-avoid-non-const-global-variables
-#   We have a few of those, and I do not want to wrap them into `//NOLINT`
+#   We have a few of those, and I do not want to wrap them into `// NOLINT`
 #   everytime. Also this check does not recognize `thread_local` variables,
 #   that are also considered global.
 #
 # * cppcoreguidelines-macro-usage:
 #   Macros are part of the language, I am not feeling bad about using them.
-#
-# * cppcoreguidelines-misleading-capture-default-by-value:
-#   Maybe reconsider this one.
 #
 # * cppcoreguidelines-pro-bounds-constant-array-index:
 #   This check does not works correctly with our asserts.
@@ -52,10 +49,6 @@
 #   like `size()`. I want to use `[[nodiscard]]` only when it is really needed,
 #   like memory allocation functions or system calls.
 #
-# * readability-avoid-unconditional-preprocessor-if:
-#   In my opinion, using `#if 0/#endif` is more readable and convenient than
-#   using `/*` and `*/`.
-#
 # * readability-braces-around-statements:
 #   I do not like braces around short single-line statements.
 #
@@ -64,6 +57,10 @@
 #
 # * readability-identifier-length:
 #   We have a lot of short identifiers, since we are doing a lot of math.
+#
+# * readability-math-missing-parentheses:
+#   I do not like to put parentheses around everything, especially when we have
+#   a lot of math.
 Checks: |
   bugprone-*
   -bugprone-easily-swappable-parameters
@@ -78,7 +75,6 @@ Checks: |
   -cppcoreguidelines-avoid-magic-numbers
   -cppcoreguidelines-avoid-non-const-global-variables
   -cppcoreguidelines-macro-usage
-  -cppcoreguidelines-misleading-capture-default-by-value
   -cppcoreguidelines-pro-bounds-constant-array-index
   misc-*
   -misc-no-recursion
@@ -86,11 +82,11 @@ Checks: |
   -modernize-use-nodiscard
   performance-*
   readability-*
-  -readability-avoid-unconditional-preprocessor-if
   -readability-braces-around-statements
   -readability-function-cognitive-complexity
   -readability-identifier-length
   -readability-magic-numbers
+  -readability-math-missing-parentheses
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

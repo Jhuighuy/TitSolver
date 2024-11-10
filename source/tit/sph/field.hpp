@@ -44,8 +44,8 @@ public:
 
   /// Field value for the specified particle view.
   template<class Self, impl::has_field_<Self> PV>
-  constexpr auto operator[](this const Self& self,
-                            PV&& a) noexcept -> decltype(auto) {
+  constexpr auto operator[](this const Self& self, PV&& a) noexcept
+      -> decltype(auto) {
     return std::forward<PV>(a)[self];
   }
 
@@ -196,8 +196,8 @@ public:
   }
 
   /// Find the first common partition index.
-  static constexpr auto common(const PartVec& a,
-                               const PartVec& b) noexcept -> PartIndex {
+  static constexpr auto common(const PartVec& a, const PartVec& b) noexcept
+      -> PartIndex {
     const auto level = find_true(a.vec_ == b.vec_);
     return a[level];
   }

@@ -71,8 +71,8 @@ constexpr auto compute_center(Points&& points) -> point_range_vec_t<Points> {
   return sum / count_points(points);
 }
 template<point_range Points, index_range Perm>
-constexpr auto compute_center(Points&& points,
-                              Perm&& perm) -> point_range_vec_t<Points> {
+constexpr auto compute_center(Points&& points, Perm&& perm)
+    -> point_range_vec_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
   TIT_ASSUME_UNIVERSAL(Perm, perm);
   return compute_center(permuted_view(points, perm));
@@ -95,8 +95,8 @@ constexpr auto compute_bbox(Points&& points) -> point_range_bbox_t<Points> {
   return box;
 }
 template<point_range Points, index_range Perm>
-constexpr auto compute_bbox(Points&& points,
-                            Perm&& perm) -> point_range_bbox_t<Points> {
+constexpr auto compute_bbox(Points&& points, Perm&& perm)
+    -> point_range_bbox_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
   TIT_ASSUME_UNIVERSAL(Perm, perm);
   return compute_bbox(permuted_view(points, perm));

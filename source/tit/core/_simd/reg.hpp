@@ -74,7 +74,7 @@ public:
 
   /// SIMD unary plus operation.
   [[gnu::always_inline]]
-  friend auto operator+(const Reg& a) noexcept -> const Reg& {
+  friend auto operator+(const Reg& a) noexcept -> Reg {
     return a;
   }
 
@@ -190,8 +190,8 @@ inline auto reg_cast(const Reg<From, Size>& a) noexcept -> Reg<To, Size> {
 template<class Num, size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto min(const Reg<Num, Size>& a,
-                const Reg<Num, Size>& b) noexcept -> Reg<Num, Size> {
+inline auto min(const Reg<Num, Size>& a, const Reg<Num, Size>& b) noexcept
+    -> Reg<Num, Size> {
   return hn::Min(a.base, b.base);
 }
 
@@ -199,8 +199,8 @@ inline auto min(const Reg<Num, Size>& a,
 template<class Num, size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto max(const Reg<Num, Size>& a,
-                const Reg<Num, Size>& b) noexcept -> Reg<Num, Size> {
+inline auto max(const Reg<Num, Size>& a, const Reg<Num, Size>& b) noexcept
+    -> Reg<Num, Size> {
   return hn::Max(a.base, b.base);
 }
 

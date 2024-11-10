@@ -9,6 +9,7 @@
 #include <fstream>
 #include <print>
 #include <string>
+#include <string_view>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/mat.hpp"
@@ -23,26 +24,26 @@ namespace tit::sph {
 
 namespace impl {
 template<class Num>
-constexpr auto format_field_name(const std::string& prefix,
-                                 meta::ID<Num> /*scal*/) -> const std::string& {
-  return prefix;
+constexpr auto format_field_name(std::string_view prefix,
+                                 meta::ID<Num> /*scal*/) -> std::string {
+  return std::string{prefix};
 }
 
 template<class Num, size_t Dim>
-constexpr auto format_field_name(const std::string& prefix,
+constexpr auto format_field_name(std::string_view prefix,
                                  meta::ID<Vec<Num, Dim>> /*vec*/)
     -> std::string {
-  if constexpr (Dim == 1) return prefix;
+  if constexpr (Dim == 1) return std::string{prefix};
   else if constexpr (Dim == 2) return std::format("{0}_x {0}_y", prefix);
   else if constexpr (Dim == 3) return std::format("{0}_x {0}_y {0}_z", prefix);
   else static_assert(false);
 }
 
 template<class Num, size_t Dim>
-constexpr auto format_field_name(const std::string& prefix,
+constexpr auto format_field_name(std::string_view prefix,
                                  meta::ID<Mat<Num, Dim>> /*mat*/)
     -> std::string {
-  if constexpr (Dim == 1) return prefix;
+  if constexpr (Dim == 1) return std::string{prefix};
   else if constexpr (Dim == 2) {
     return std::format("{0}_xx {0}_xy "
                        "{0}_yx {0}_yy",

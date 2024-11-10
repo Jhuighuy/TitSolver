@@ -76,7 +76,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Matrix unary plus.
-  friend constexpr auto operator+(const Mat& A) noexcept -> const Mat& {
+  friend constexpr auto operator+(const Mat& A) noexcept -> Mat {
     return A;
   }
 
@@ -166,8 +166,8 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Matrix exact equality operator.
-  friend constexpr auto operator==(const Mat& A,
-                                   const Mat& B) noexcept -> bool {
+  friend constexpr auto operator==(const Mat& A, const Mat& B) noexcept
+      -> bool {
     for (size_t i = 0; i < Dim; ++i) {
       if (any(A[i] != B[i])) return false;
     }
@@ -200,8 +200,8 @@ constexpr auto zero(const Mat<Num, Dim>& /*A*/) -> Mat<Num, Dim> {
 
 /// Make a diagonal matrix.
 template<class Num, size_t Dim>
-constexpr auto eye(const Mat<Num, Dim>& /*A*/,
-                   const Num& q = Num{1.0}) -> Mat<Num, Dim> {
+constexpr auto eye(const Mat<Num, Dim>& /*A*/, const Num& q = Num{1.0})
+    -> Mat<Num, Dim> {
   return Mat<Num, Dim>(q);
 }
 
@@ -242,8 +242,8 @@ constexpr auto prod_diag(const Mat<Num, Dim>& A) -> Num {
 /// Vector outer product.
 /// @{
 template<class Num, size_t Dim>
-constexpr auto outer(const Vec<Num, Dim>& a,
-                     const Vec<Num, Dim>& b) -> Mat<Num, Dim> {
+constexpr auto outer(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Mat<Num, Dim> {
   Mat<Num, Dim> R;
   for (size_t i = 0; i < Dim; ++i) R[i] = a[i] * b;
   return R;
