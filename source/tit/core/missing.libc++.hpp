@@ -149,15 +149,6 @@ inline void println() {
   std::cout << '\n';
 }
 
-#if _LIBCPP_VERSION < 190100
-// `std::bind_back` is a private implementation detail before libc++ 19.1.
-template<class Func, class... BackArgs>
-constexpr auto bind_back(Func&& func, BackArgs&&... back_arguments) {
-  return __bind_back(std::forward<Func>(func),
-                     std::forward<BackArgs>(back_arguments)...);
-}
-#endif
-
 // `std::from_chars` does not support floating-point types.
 template<std::floating_point Float>
 auto from_chars(const char* first, // NOLINT(*-exception-escape)
@@ -167,7 +158,7 @@ auto from_chars(const char* first, // NOLINT(*-exception-escape)
     -> std::from_chars_result {
   std::istringstream stream{std::string{first, last}};
   stream >> result;
-  if (stream.fail()) return {first, std::errc::invalid_argument};
+  if (stream.fail()) return {.ptr = first, .ec = std::errc::invalid_argument};
   return {last, std::errc{}}; // NOLINT
 }
 

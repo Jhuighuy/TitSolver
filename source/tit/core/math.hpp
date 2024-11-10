@@ -156,8 +156,8 @@ constexpr auto pow9(Num a) -> Num {
 
 /// Raise to the power.
 template<std::floating_point Float>
-constexpr auto pow(Float a,
-                   std::type_identity_t<Float> power) noexcept -> Float {
+constexpr auto pow(Float a, std::type_identity_t<Float> power) noexcept
+    -> Float {
 #ifdef __clang__
   if consteval {
     return gcem::pow(a, power);

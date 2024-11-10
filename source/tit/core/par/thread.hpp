@@ -163,10 +163,10 @@ struct Transform final {
            class Func,
            class Proj = std::identity>
     requires std::indirectly_writable<
-                 OutIter,
-                 std::indirect_result_t<
-                     Func&,
-                     std::projected<std::ranges::iterator_t<Range>, Proj>>>
+        OutIter,
+        std::indirect_result_t<
+            Func&,
+            std::projected<std::ranges::iterator_t<Range>, Proj>>>
   static auto operator()(Range&& range, OutIter out, Func func, Proj proj = {})
       -> OutIter {
     TIT_ASSUME_UNIVERSAL(Range, range);

@@ -225,8 +225,8 @@ constexpr auto zero(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
 
 /// Make a unit vector.
 template<size_t Axis = 0, class Num, size_t Dim>
-constexpr auto unit(const Vec<Num, Dim>& /*a*/,
-                    const Num& n = Num{1.0}) -> Vec<Num, Dim> {
+constexpr auto unit(const Vec<Num, Dim>& /*a*/, const Num& n = Num{1.0})
+    -> Vec<Num, Dim> {
   static_assert(Axis < Dim, "Axis is out of range!");
   Vec<Num, Dim> e;
   e[Axis] = n;
@@ -235,8 +235,8 @@ constexpr auto unit(const Vec<Num, Dim>& /*a*/,
 
 /// Concatenate two vectors.
 template<class Num, size_t Dim1, size_t Dim2>
-constexpr auto vec_cat(const Vec<Num, Dim1>& a,
-                       const Vec<Num, Dim2>& b) -> Vec<Num, Dim1 + Dim2> {
+constexpr auto vec_cat(const Vec<Num, Dim1>& a, const Vec<Num, Dim2>& b)
+    -> Vec<Num, Dim1 + Dim2> {
   Vec<Num, Dim1 + Dim2> r;
   for (size_t i = 0; i < Dim1; ++i) r[i] = a[i];
   for (size_t i = 0; i < Dim2; ++i) r[i + Dim1] = b[i];
@@ -289,8 +289,8 @@ constexpr auto vec_cast(const Vec<From, Dim>& a)
 
 /// Element-wise minimum of two vectors.
 template<class Num, size_t Dim>
-constexpr auto minimum(const Vec<Num, Dim>& a,
-                       const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+constexpr auto minimum(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -304,8 +304,8 @@ constexpr auto minimum(const Vec<Num, Dim>& a,
 
 /// Element-wise maximum of two vectors.
 template<class Num, size_t Dim>
-constexpr auto maximum(const Vec<Num, Dim>& a,
-                       const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+constexpr auto maximum(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -319,8 +319,8 @@ constexpr auto maximum(const Vec<Num, Dim>& a,
 
 /// Filter a vector with a boolean mask.
 template<class Num, size_t Dim>
-constexpr auto filter(const VecMask<Num, Dim>& m,
-                      const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
+constexpr auto filter(const VecMask<Num, Dim>& m, const Vec<Num, Dim>& a)
+    -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -355,15 +355,14 @@ constexpr auto select(const VecMask<Num, Dim>& m,
 
 /// Vector unary plus operation.
 template<class Num, size_t Dim>
-constexpr auto operator+(const Vec<Num, Dim>& a) noexcept
-    -> const Vec<Num, Dim>& {
+constexpr auto operator+(const Vec<Num, Dim>& a) noexcept -> Vec<Num, Dim> {
   return a;
 }
 
 /// Vector element-wise addition operation.
 template<class Num, size_t Dim>
-constexpr auto operator+(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+constexpr auto operator+(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -377,8 +376,8 @@ constexpr auto operator+(const Vec<Num, Dim>& a,
 
 /// Vector element-wise addition with assignment operation.
 template<class Num, size_t Dim>
-constexpr auto operator+=(Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> Vec<Num, Dim>& {
+constexpr auto operator+=(Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim>& {
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) += b.reg(i);
     return a;
@@ -401,8 +400,8 @@ constexpr auto operator-(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
 
 /// Vector element-wise subtraction operation.
 template<class Num, size_t Dim>
-constexpr auto operator-(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+constexpr auto operator-(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -416,8 +415,8 @@ constexpr auto operator-(const Vec<Num, Dim>& a,
 
 /// Vector element-wise subtraction with assignment operation.
 template<class Num, size_t Dim>
-constexpr auto operator-=(Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> Vec<Num, Dim>& {
+constexpr auto operator-=(Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim>& {
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) -= b.reg(i);
     return a;
@@ -464,8 +463,8 @@ constexpr auto operator*=(Vec<Num, Dim>& a, const std::type_identity_t<Num>& b)
 
 /// Vector element-wise multiplication operation.
 template<class Num, size_t Dim>
-constexpr auto operator*(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+constexpr auto operator*(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -479,8 +478,8 @@ constexpr auto operator*(const Vec<Num, Dim>& a,
 
 /// Vector element-wise multiplication with assignment operation.
 template<class Num, size_t Dim>
-constexpr auto operator*=(Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> Vec<Num, Dim>& {
+constexpr auto operator*=(Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim>& {
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) *= b.reg(i);
     return a;
@@ -508,8 +507,8 @@ constexpr auto operator/=(Vec<Num, Dim>& a, const std::type_identity_t<Num>& b)
 
 /// Vector element-wise division operation.
 template<class Num, size_t Dim>
-constexpr auto operator/(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
+constexpr auto operator/(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim> {
   Vec<Num, Dim> r;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -523,8 +522,8 @@ constexpr auto operator/(const Vec<Num, Dim>& a,
 
 /// Vector element-wise division with assignment operation.
 template<class Num, size_t Dim>
-constexpr auto operator/=(Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> Vec<Num, Dim>& {
+constexpr auto operator/=(Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, Dim>& {
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) /= b.reg(i);
     return a;
@@ -587,8 +586,8 @@ constexpr auto ceil(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
 
 /// Vector element-wise "equal to" comparison operation.
 template<class Num, size_t Dim>
-constexpr auto operator==(const Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+constexpr auto operator==(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -602,8 +601,8 @@ constexpr auto operator==(const Vec<Num, Dim>& a,
 
 /// Vector element-wise "not equal to" comparison operation.
 template<class Num, size_t Dim>
-constexpr auto operator!=(const Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+constexpr auto operator!=(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -617,8 +616,8 @@ constexpr auto operator!=(const Vec<Num, Dim>& a,
 
 /// Vector element-wise "less than" comparison operation.
 template<class Num, size_t Dim>
-constexpr auto operator<(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+constexpr auto operator<(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -632,8 +631,8 @@ constexpr auto operator<(const Vec<Num, Dim>& a,
 
 /// Vector element-wise "less than or equal to" comparison operation.
 template<class Num, size_t Dim>
-constexpr auto operator<=(const Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+constexpr auto operator<=(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> VecMask<Num, Dim> {
   VecMask<Num, Dim> m;
   TIT_IF_SIMD_AVALIABLE(Num) {
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
@@ -647,15 +646,15 @@ constexpr auto operator<=(const Vec<Num, Dim>& a,
 
 /// Vector element-wise "greater than" comparison operation.
 template<class Num, size_t Dim>
-constexpr auto operator>(const Vec<Num, Dim>& a,
-                         const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+constexpr auto operator>(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> VecMask<Num, Dim> {
   return b < a;
 }
 
 /// Vector element-wise "greater than or equal to" comparison operation.
 template<class Num, size_t Dim>
-constexpr auto operator>=(const Vec<Num, Dim>& a,
-                          const Vec<Num, Dim>& b) -> VecMask<Num, Dim> {
+constexpr auto operator>=(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> VecMask<Num, Dim> {
   return b <= a;
 }
 
@@ -821,8 +820,8 @@ constexpr auto normalize(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
 
 /// Is a vector approximately equal to another vector?
 template<class Num, size_t Dim>
-constexpr auto approx_equal_to(const Vec<Num, Dim>& a,
-                               const Vec<Num, Dim>& b) -> bool {
+constexpr auto approx_equal_to(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> bool {
   return norm2(a - b) <= pow2(tiny_number_v<Num>);
 }
 
@@ -831,8 +830,8 @@ constexpr auto approx_equal_to(const Vec<Num, Dim>& a,
 /// @returns 3D vector with a result of cross product.
 template<class Num, size_t Dim>
   requires in_range_v<Dim, 1, 3>
-constexpr auto cross(const Vec<Num, Dim>& a,
-                     const Vec<Num, Dim>& b) -> Vec<Num, 3> {
+constexpr auto cross(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+    -> Vec<Num, 3> {
   Vec<Num, 3> r{};
   if constexpr (Dim == 3) r[0] = a[1] * b[2] - a[2] * b[1];
   if constexpr (Dim == 3) r[1] = a[2] * b[0] - a[0] * b[2];

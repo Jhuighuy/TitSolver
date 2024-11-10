@@ -34,8 +34,8 @@ public:
 
 /// Check that @p lhs and @p rhs contain same elements.
 template<type... Ts, type... Us>
-constexpr auto operator==(List<Ts...> /*lhs*/,
-                          List<Us...> /*rhs*/) noexcept -> bool {
+constexpr auto operator==(List<Ts...> /*lhs*/, List<Us...> /*rhs*/) noexcept
+    -> bool {
   return std::is_same_v<List<Ts...>, List<Us...>>;
 }
 
