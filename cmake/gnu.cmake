@@ -65,8 +65,6 @@ set(
   -Wwrite-strings
   # Violations of pointer safety annotations (disabled).
   -Wno-psabi
-  # TODO: enable this warning later.
-  -Wno-unused-result
 )
 
 # Define common compile options.

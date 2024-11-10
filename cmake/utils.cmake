@@ -106,7 +106,7 @@ macro(try_set VAR VAR_NAME)
   if(DEFINED ${VAR_NAME})
     set(${VAR} ${${VAR_NAME}})
   elseif(ARGN)
-    set(${VAR} ${ARGN})
+    set(${VAR} ${${ARGN}})
   endif()
 endmacro()
 

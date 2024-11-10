@@ -3,7 +3,7 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("test_runner")
+add_subdirectory("test_driver")
 add_subdirectory("tit")
 add_subdirectory("titwcsph")
 

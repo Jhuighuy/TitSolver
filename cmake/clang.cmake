@@ -182,4 +182,13 @@ set(
   ${CLANG_DEBUG_OPTIONS}
 )
 
+# Define link options for "Debug" configuration.
+set(
+  CLANG_LINK_OPTIONS_DEBUG
+  # Inherit common options.
+  ${CLANG_LINK_OPTIONS}
+  # Inherit debugging options.
+  ${CLANG_DEBUG_OPTIONS}
+)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
