@@ -22,15 +22,15 @@ void set_num_threads(size_t value);
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Get the global mutex.
-auto global_mutex() noexcept -> std::mutex&;
+auto global_mutex() noexcept -> std::recursive_mutex&;
 
 /// Global mutex lock.
-class GlobalLock final : public std::unique_lock<std::mutex> {
+class GlobalLock final : public std::unique_lock<std::recursive_mutex> {
 public:
 
   /// Acquire the global mutex.
   explicit GlobalLock() noexcept
-      : std::unique_lock<std::mutex>{global_mutex()} {}
+      : std::unique_lock<std::recursive_mutex>{global_mutex()} {}
 
 }; // class GlobalLock
 
