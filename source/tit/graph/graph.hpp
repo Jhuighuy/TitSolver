@@ -5,8 +5,11 @@
 
 #pragma once
 
+#include <functional>
+#include <limits>
 #include <ranges>
 #include <tuple>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/multivector.hpp"
@@ -18,13 +21,41 @@ namespace tit::graph {
 /// Node type alias.
 using node_t = size_t;
 
+/// Part type alias.
+using part_t = size_t;
+
 /// Weight type alias.
 using weight_t = ssize_t;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Node index that is not present in the graph.
+constexpr auto npos_node = std::numeric_limits<node_t>::max();
+
+/// Part index that is not present in the graph.
+constexpr auto npos_part = std::numeric_limits<part_t>::max();
+
+/// Weight index that is not present in the graph.
+constexpr auto npos_weight = std::numeric_limits<weight_t>::min();
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Node mapping type alias.
+using NodeMapping = std::vector<node_t>;
+
+/// Inverse node mapping type alias.
+using InverseNodeMapping = std::vector<node_t>;
+
+/// Part array type alias.
+using PartArray = std::vector<part_t>;
+
+/// Weight array type alias.
+using WeightArray = std::vector<weight_t>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Compressed sparse adjacency graph.
-class Graph : public Multivector<size_t> {
+class Graph final : public Multivector<size_t> {
 public:
 
   /// Number of graph nodes.
@@ -32,41 +63,46 @@ public:
     return size();
   }
 
+  /// Range of the graph nodes.
+  /// @{
+  constexpr auto nodes() const noexcept {
+    return std::views::iota(node_t{0}, node_t{num_nodes()});
+  }
+  template<class Func>
+  constexpr auto transform_nodes(Func func) const {
+    return nodes() | std::views::transform(std::move(func));
+  }
+  /// @}
+
   /// Range of the unique graph edges.
+  /// @{
   constexpr auto edges() const noexcept {
-    return std::views::iota(0UZ, num_nodes()) |
-           std::views::transform([this](size_t row_index) {
-             return (*this)[row_index] |
-                    // Take only lower part of the row.
-                    std::views::take_while([row_index](size_t col_index) {
-                      return col_index < row_index;
+    return transform_nodes([this](node_t node) {
+             return (*this)[node] |
+                    std::views::take_while([node](node_t neighbor) { //
+                      return neighbor < node;
                     }) |
-                    // Pack row and column indices into a tuple.
-                    std::views::transform([row_index](size_t col_index) {
-                      return std::tuple{col_index, row_index};
+                    std::views::transform([node](node_t neighbor) {
+                      return std::tuple{neighbor, node};
                     });
            }) |
            std::views::join;
   }
-
   template<class Func>
-  constexpr auto transform_edges(Func fn) const noexcept {
-    return std::views::iota(0UZ, num_nodes()) |
-           std::views::transform([this, fn](size_t row_index) {
-             return (*this)[row_index] |
-                    // Take only lower part of the row.
-                    std::views::take_while([row_index](size_t col_index) {
-                      return col_index < row_index;
+  constexpr auto transform_edges(Func func) const {
+    return transform_nodes([func = std::move(func), this](node_t node) {
+             return (*this)[node] |
+                    std::views::take_while([node](node_t neighbor) { //
+                      return neighbor < node;
                     }) |
-                    // Pack row and column indices into a tuple.
-                    std::views::transform([row_index](size_t col_index) {
-                      return std::tuple{col_index, row_index};
+                    std::views::transform([node](node_t neighbor) {
+                      return std::tuple{neighbor, node};
                     }) |
-                    // Apply the transformation function.
-                    std::views::transform(fn);
+                    std::views::transform(std::ref(func));
            }) |
            std::views::join;
   }
+  /// @}
 
 }; // class Graph
 
@@ -117,6 +153,20 @@ using WeightedGraph =
 template<size_t MaxNumEdges>
 using CapWeightedGraph = BaseWeightedGraph<
     CapMultivector<std::tuple<node_t, weight_t>, MaxNumEdges>>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+template<class WG>
+concept weighted_graph = true;
+
+template<class GW, class WG>
+concept node_weights = true;
+
+template<class GW, class WG>
+concept node_parts = true;
+
+template<class M, class SourceG, class TargetG>
+concept node_mapping = true;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

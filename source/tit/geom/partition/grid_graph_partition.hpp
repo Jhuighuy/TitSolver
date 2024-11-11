@@ -20,7 +20,7 @@
 #include "tit/geom/point_range.hpp"
 
 #include "tit/graph/graph.hpp"
-#include "tit/graph/simple_partition.hpp"
+#include "tit/graph/partition.hpp"
 
 namespace tit::geom {
 
@@ -28,7 +28,7 @@ namespace tit::geom {
 
 /// Partitioning based on a graph partitioning of a grid cell connectivity.
 /// @todo Replace `UniformPartition` with a proper graph partitioning function.
-template<graph::partition_func GraphPartition = graph::UniformPartition>
+template<graph::partition_func GraphPartition = graph::MultilevelPartition>
 class GridGraphPartition final {
 public:
 
