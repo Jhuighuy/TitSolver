@@ -17,40 +17,6 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Check if the first argument is smaller than the second one.
-/// If the arguments are equal, return the third argument.
-template<std::totally_ordered Arg>
-constexpr auto less_or(Arg a, Arg b, bool otherwise) noexcept -> bool {
-  return (a < b) || ((a == b) && otherwise);
-}
-
-/// Check if the first argument is smaller than the second one.
-/// If the arguments are equal, return random boolean value.
-template<std::totally_ordered Arg, class RNG>
-  requires std::uniform_random_bit_generator<std::remove_reference_t<RNG>>
-constexpr auto less_or(Arg a, Arg b, RNG&& rng) noexcept -> bool {
-  TIT_ASSUME_UNIVERSAL(RNG, rng);
-  return less_or(a, b, rng() % 2 == 1);
-}
-
-/// Check if the first argument is larger than the second one.
-/// If the arguments are equal, return the third argument.
-template<std::totally_ordered Arg>
-constexpr auto greater_or(Arg a, Arg b, bool otherwise) noexcept -> bool {
-  return (a > b) || ((a == b) && otherwise);
-}
-
-/// Check if the first argument is larger than the second one.
-/// If the arguments are equal, return random boolean value.
-template<std::totally_ordered Arg, class RNG>
-  requires std::uniform_random_bit_generator<std::remove_reference_t<RNG>>
-constexpr auto greater_or(Arg a, Arg b, RNG&& rng) noexcept -> bool {
-  TIT_ASSUME_UNIVERSAL(RNG, rng);
-  return greater_or(a, b, rng() % 2 == 1);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Fast pseudo-random number generator based on the SplitMix64 algorithm.
 class SplitMix64 final {
 public:
@@ -85,6 +51,50 @@ private:
   uint64_t seed_;
 
 }; // class SplitMix64
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Check if the first argument is smaller than the second one.
+/// If the arguments are equal, return the third argument.
+template<std::totally_ordered Arg>
+constexpr auto less_or(Arg a, Arg b, bool otherwise) noexcept -> bool {
+  return (a < b) || ((a == b) && otherwise);
+}
+
+/// Check if the first argument is smaller than the second one.
+/// If the arguments are equal, return random boolean value.
+template<std::totally_ordered Arg, class RNG>
+  requires std::uniform_random_bit_generator<std::remove_reference_t<RNG>>
+constexpr auto less_or(Arg a, Arg b, RNG&& rng) noexcept -> bool {
+  TIT_ASSUME_UNIVERSAL(RNG, rng);
+  return less_or(a, b, rng() % 2 == 1);
+}
+
+/// Check if the first argument is larger than the second one.
+/// If the arguments are equal, return the third argument.
+template<std::totally_ordered Arg>
+constexpr auto greater_or(Arg a, Arg b, bool otherwise) noexcept -> bool {
+  return (a > b) || ((a == b) && otherwise);
+}
+
+/// Check if the first argument is larger than the second one.
+/// If the arguments are equal, return random boolean value.
+template<std::totally_ordered Arg, class RNG>
+  requires std::uniform_random_bit_generator<std::remove_reference_t<RNG>>
+constexpr auto greater_or(Arg a, Arg b, RNG&& rng) noexcept -> bool {
+  TIT_ASSUME_UNIVERSAL(RNG, rng);
+  return greater_or(a, b, rng() % 2 == 1);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Get a randomized hash for the given integral arguments.
+/// Randomized hash does not depend on the order of the arguments.
+template<std::uniform_random_bit_generator RNG = SplitMix64,
+         std::integral... Vals>
+constexpr auto randomized_hash(Vals... vals) noexcept -> RNG::result_type {
+  return (RNG{static_cast<RNG::result_type>(vals)}() ^ ...);
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

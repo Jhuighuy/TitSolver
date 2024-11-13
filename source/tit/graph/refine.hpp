@@ -58,7 +58,7 @@ public:
   void operator()(const Graph& graph,
                   const Weights& weights,
                   Parts& parts,
-                  size_t num_parts) {
+                  size_t num_parts) const {
     TIT_PROFILE_SECTION("Graph::RefinePartsFM::operator()");
     TIT_ASSERT(graph.num_nodes() == weights.size(), "Invalid graph weights!");
     TIT_ASSERT(graph.num_nodes() == parts.size(), "Invalid graph parts!");
@@ -152,7 +152,7 @@ public:
       std::ranges::fill(moved, false);
       undo_moves.clear();
       SplitMix64 rng{/*seed=*/graph.num_nodes()};
-      while (!gain_queue.empty() /*&& total_gain >= 0*/) {
+      while (!gain_queue.empty()) {
         const auto& [node, _] = gain_queue.pop();
 
         // Find the available partitions to move the node to.

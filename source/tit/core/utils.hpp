@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <array>
-#include <bits/ranges_algo.h>
 #include <concepts>
 #include <functional>
 #include <iterator>
@@ -180,35 +179,6 @@ constexpr void equality_ranges(Range&& range,
         iter,
         last,
         std::bind_front(std::ref(pred), std::invoke(proj, *iter)),
-        proj);
-    std::invoke(func, std::ranges::subrange{iter, next});
-    iter = next;
-  }
-}
-
-/// Find the equality ranges in the given sorted range.
-template<
-    std::ranges::input_range Range,
-    std::invocable<std::ranges::subrange<std::ranges::iterator_t<Range>>> Func,
-    std::regular_invocable<std::ranges::range_reference_t<Range>> Proj =
-        std::identity,
-    std::indirect_binary_predicate<
-        std::projected<std::ranges::iterator_t<Range>, Proj>,
-        std::projected<std::ranges::iterator_t<Range>, Proj>> Compare =
-        std::less<>>
-constexpr void sorted_equality_ranges(Range&& range,
-                                      Func func,
-                                      Compare compare = {},
-                                      Proj proj = {}) {
-  TIT_ASSUME_UNIVERSAL(Range, range);
-  auto iter = std::ranges::begin(range);
-  const auto last = std::ranges::end(range);
-  while (iter != last) {
-    const auto next = std::ranges::upper_bound( //
-        iter,
-        last,
-        std::invoke(proj, *iter),
-        std::ref(compare),
         proj);
     std::invoke(func, std::ranges::subrange{iter, next});
     iter = next;

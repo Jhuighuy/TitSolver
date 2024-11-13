@@ -81,7 +81,7 @@ private:
     Val val;
     friend constexpr auto operator<=>(const Elem_& a, const Elem_& b) noexcept {
       if (const auto cmp = a.val <=> b.val; cmp != 0) return cmp;
-      return SplitMix64{a.key}() <=> SplitMix64{b.key}();
+      return randomized_hash(a.key) <=> randomized_hash(b.key);
     }
   };
 

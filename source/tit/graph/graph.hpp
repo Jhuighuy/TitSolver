@@ -156,6 +156,9 @@ using CapWeightedGraph = BaseWeightedGraph<
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+template<class C>
+concept container = true;
+
 template<class WG>
 concept weighted_graph = true;
 
