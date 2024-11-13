@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 #include <numbers>
 #include <ranges>
 
@@ -393,23 +394,25 @@ public:
     static constexpr Num CFL{0.8};
 
     // Initialize the free surface flag values and clear the particle shifts.
-    //
-    // A positive value `FS_FAR` means that the particle is far from the free
-    // surface, any positive value that is less than `FS_FAR` means that the
-    // particle is near the free surface (has at least one neighbor that is on
-    // the free surface), and a zero value `FS_ON` means that the particle is
-    // on the free surface.
+    // - Positive value `FS_FAR` means that the particle is far from the free
+    //   surface.
+    // - Any positive value in the range `(FS_FAR, FS_ON)` means that the
+    //   particle is near the free surface (has at least one neighbor that is on
+    //   the free surface).
+    // - Value `FS_ON` means that the particle is on the free surface. It is
+    //   essentially zero, but we use a very small number to avoid spurious
+    //   comparisons.
     const auto a_0 = particles[0];
     const auto FS_FAR = 2 * CFL * Ma * pow2(h[a_0]);
-    static constexpr Num FS_ON{0};
+    static constexpr auto FS_ON = std::numeric_limits<Num>::min();
     par::for_each(particles.fluid(), [](PV a) { FS[a] = FS_ON, dr[a] = {}; });
     par::for_each(particles.fixed(), [FS_FAR](PV a) { FS[a] = FS_FAR; });
 
-    // Classify the particles into the free surface and non-free surface.
+    // Classify the particles into free surface and non-free surface.
     //
     // Here we are reading and writing the same field `FS` in the parallel loop.
-    // There is no race condition because the we read the neighbor to compare it
-    // with `FS_ON`, and now on-free-surface particles are updated in the loop.
+    // There is no race condition because we read the neighbor to compare it
+    // with `FS_ON`, and non-free-surface particles are updated in the loop.
     par::block_for_each(mesh.block_pairs(particles), [FS_FAR](auto ab) {
       const auto [a, b] = ab;
 
@@ -432,7 +435,18 @@ public:
       }
     });
 
-    // Classify the non-free surface particles into the near and far.
+    // Classify the non-free surface particles into near and far categories.
+    //
+    // Here we are reading and writing the same field `FS` in the parallel loop.
+    // There is no race condition because we update the field only when
+    // the particle has `FS_ON`, and read the field only to compare it with
+    // `FS_ON`.
+    //
+    // A distinct non-zero bit pattern of `FS_ON` is essential for
+    // correctness. We may read a garbage value while memory is being updated by
+    // some other thread, and the chances of a false positive comparison with
+    // distinct bits are very small, at least orders of magnitude smaller than
+    // if we used zero.
     par::for_each(particles.fluid(), [FS_FAR, &mesh, this](PV a) {
       if (!bitwise_equal(FS[a], FS_FAR)) return;
 
