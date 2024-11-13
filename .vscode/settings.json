@@ -6,13 +6,26 @@
   "[cpp]": {
     "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
   },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
-  "editor.rulers": [
-    80
-  ],
+  "editor.rulers": [80],
   "explorer.sortOrderLexicographicOptions": "unicode",
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
@@ -149,6 +162,6 @@
     "valarray": "cpp",
     "variant": "cpp",
     "vector": "cpp",
-    "version": "cpp",
-  },
+    "version": "cpp"
+  }
 }

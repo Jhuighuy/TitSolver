@@ -4,17 +4,13 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 {
   "env": {
-    "includePath": [
-      "${workspaceFolder}/source"
-    ],
+    "includePath": ["${workspaceFolder}/source"],
     "brewIncludePath": [
       "/opt/homebrew/include",
       "/opt/homebrew/Frameworks/*.framework/Headers"
     ],
     "vcpkgPackagesPath": "${workspaceFolder}/output/cmake_output/vcpkg_installed",
-    "defines": [
-      "__INTELLISENSE__"
-    ]
+    "defines": ["__INTELLISENSE__"]
   },
   "configurations": [
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -25,9 +21,7 @@
         "${brewIncludePath}",
         "${vcpkgPackagesPath}/arm64-osx/include"
       ],
-      "defines": [
-        "${defines}"
-      ],
+      "defines": ["${defines}"],
       "compilerPath": "/opt/homebrew/bin/gcc-14",
       "cStandard": "c11",
       "cppStandard": "c++23",
@@ -41,9 +35,7 @@
         "${brewIncludePath}",
         "${vcpkgPackagesPath}/x64-osx/include"
       ],
-      "defines": [
-        "${defines}"
-      ],
+      "defines": ["${defines}"],
       "compilerPath": "/opt/homebrew/bin/gcc-14",
       "cStandard": "c11",
       "cppStandard": "c++23",
@@ -57,11 +49,7 @@
         "${workspaceFolder}/source/**",
         "${workspaceFolder}/output/cmake_output/vcpkg_installed/x64-osx/include"
       ],
-      "defines": [
-        "${defines}",
-        "__AVX__",
-        "__AVX512F__"
-      ],
+      "defines": ["${defines}", "__AVX__", "__AVX512F__"],
       "compilerPath": "C:/msys64/mingw64/bin/g++.exe",
       "cStandard": "c11",
       "cppStandard": "c++23",
