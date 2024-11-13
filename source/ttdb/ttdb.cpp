@@ -80,7 +80,7 @@ void ttdb_array_iter__close(ttdb_array_iter_t* iter) {
 }
 
 ttdb_array_t* ttdb_array_iter__next(ttdb_array_iter_t* iter) {
-  std::pair<std::string, DataArrayID> name_and_id{std::string{}, 0};
+  std::pair<std::string, DataArrayID> name_and_id{};
   if (iter->array_ids->read({&name_and_id, 1}) != 1) return nullptr;
   return new ttdb_array{
       .storage = iter->storage,

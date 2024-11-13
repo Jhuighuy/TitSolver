@@ -238,8 +238,9 @@ private:
       if (is_first_level) {
         interface.resize(particles.size());
         const auto all_particles = iota_perm(particles.all());
-        const auto not_interface_iter =
-            par::copy_if(all_particles, interface.begin(), is_interface);
+        const auto not_interface_iter = par::unstable_copy_if(all_particles,
+                                                              interface.begin(),
+                                                              is_interface);
         interface.erase(not_interface_iter, interface.end());
       } else {
         // Note: `std::ranges::partition` is faster than `std::erase_if`

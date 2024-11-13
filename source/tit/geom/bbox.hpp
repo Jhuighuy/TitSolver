@@ -101,6 +101,13 @@ public:
     return *this;
   }
 
+  /// Join the bounding box with another @p bbox.
+  constexpr auto join(const BBox& bbox) -> BBox& {
+    low_ = minimum(low_, bbox.low());
+    high_ = maximum(high_, bbox.high());
+    return *this;
+  }
+
   /// Split the bounding box into two parts by the plane.
   constexpr auto split(size_t axis,
                        const vec_num_t<Vec>& val,
