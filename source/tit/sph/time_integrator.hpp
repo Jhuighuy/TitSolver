@@ -67,13 +67,14 @@ public:
     // Update particle density.
     equations_.compute_density(mesh, particles);
     if constexpr (has<PV>(drho_dt)) {
-      par::for_each(particles.fluid(),
-                    [dt](PV a) { rho[a] += dt * drho_dt[a]; });
+      par::for_each(par::static_, particles.fluid(), [dt](PV a) {
+        rho[a] += dt * drho_dt[a];
+      });
     }
 
     // Update particle velocty, internal energy, etc.
     equations_.compute_forces(mesh, particles);
-    par::for_each(particles.fluid(), [dt](PV a) {
+    par::for_each(par::static_, particles.fluid(), [dt](PV a) {
       v[a] += dt * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
       if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
@@ -83,7 +84,9 @@ public:
     // Apply particle shifting.
     if constexpr (has<PV>(dr)) {
       equations_.compute_shifts(mesh, particles);
-      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+      par::for_each(par::static_, particles.fluid(), [](PV a) {
+        r[a] += dr[a];
+      });
     }
 
     // Increment step index.
@@ -141,7 +144,7 @@ public:
     // step.
     const auto dt_2 = dt / 2;
     equations_.compute_forces(mesh, particles);
-    par::for_each(particles.fluid(), [dt, dt_2](PV a) {
+    par::for_each(par::static_, particles.fluid(), [dt, dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
       if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
@@ -151,22 +154,25 @@ public:
     // Update particle velocity to the full step.
     equations_.compute_density(mesh, particles);
     if constexpr (has<PV>(drho_dt)) {
-      par::for_each(particles.fluid(),
-                    [dt](PV a) { rho[a] += dt * drho_dt[a]; });
+      par::for_each(par::static_, particles.fluid(), [dt](PV a) {
+        rho[a] += dt * drho_dt[a];
+      });
     }
 
     // Update particle velocity to the full step.
     equations_.compute_forces(mesh, particles);
-    par::for_each(particles.fluid(), [dt_2](PV a) {
+    par::for_each(par::static_, particles.fluid(), [dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a]; // Kick.
       if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
     });
 
-    // Apply particle shifting, if necessary.
+    // Apply particle shifting.
     if constexpr (has<PV>(dr)) {
       equations_.compute_shifts(mesh, particles);
-      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+      par::for_each(par::static_, particles.fluid(), [](PV a) {
+        r[a] += dr[a];
+      });
     }
 
     // Increment step index.
@@ -223,10 +229,12 @@ public:
     substep_(dt, mesh, particles);
     lincomb_(1.0 / 3.0, old_particles, 2.0 / 3.0, particles);
 
-    // Apply particle shifting, if necessary.
+    // Apply particle shifting.
     if constexpr (has<PV>(dr)) {
       equations_.compute_shifts(mesh, particles);
-      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+      par::for_each(par::static_, particles.fluid(), [](PV a) {
+        r[a] += dr[a];
+      });
     }
 
     // Increment step index.
@@ -249,7 +257,7 @@ private:
     equations_.compute_forces(mesh, particles);
 
     // Integrate.
-    par::for_each(particles.fluid(), [dt](PV a) {
+    par::for_each(par::static_, particles.fluid(), [dt](PV a) {
       r[a] += dt * v[a]; // Drift-Kick: position is updated before velocity.
       v[a] += dt * dv_dt[a];
       if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
@@ -260,12 +268,13 @@ private:
 
   // Compute the linear combination of the two substeps.
   template<particle_array<required_fields> ParticleArray>
-  void lincomb_(particle_num_t<ParticleArray> weight,
-                const ParticleArray& particles,
-                particle_num_t<ParticleArray> out_weight,
-                ParticleArray& out_particles) {
+  static void lincomb_(particle_num_t<ParticleArray> weight,
+                       const ParticleArray& particles,
+                       particle_num_t<ParticleArray> out_weight,
+                       ParticleArray& out_particles) {
     using PV = ParticleView<ParticleArray>;
     par::for_each( //
+        par::static_,
         out_particles.fluid(),
         [out_weight, weight, &particles](PV out_a) {
           const auto a = particles[out_a.index()];
