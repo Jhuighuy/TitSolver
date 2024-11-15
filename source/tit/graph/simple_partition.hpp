@@ -159,12 +159,15 @@ struct SimplePartition final {
 
         weight_t gain = 0;
         for (const auto& [neighbor, edge_weight] : graph[node]) {
+          TIT_ENSURE(parts[neighbor] != part, "???");
           if (parts[neighbor] == npos) gain -= 1;
-          else gain += 1;
+          else {
+            gain += 1;
+          }
         }
 
         const auto weight = weights[node];
-        if (greater_or(gain, seed_gain, greater_or(weight, seed_weight, rng))) {
+        if (greater_or(gain, seed_gain, less_or(weight, seed_weight, rng))) {
           seed_gain = gain;
           seed_node = node;
           seed_weight = weight;
@@ -176,7 +179,7 @@ struct SimplePartition final {
       parts[seed_node] = part;
       part_weights[part] += seed_weight;
       std::vector<node_t> frontier{seed_node};
-      while (!frontier.empty() && part_weights[part] <= part_weight_cap) {
+      while (!frontier.empty() && part_weights[part] < part_weight_cap) {
         const auto node = frontier.front();
         frontier.erase(frontier.begin());
         const auto frontier_old_size = frontier.size();
@@ -192,7 +195,7 @@ struct SimplePartition final {
             frontier.begin() + static_cast<ssize_t>(frontier_old_size),
             frontier.end(),
             std::greater{},
-            [part, &graph, &parts](node_t nn) {
+            [part, &graph, &weights, &parts](node_t nn) {
               weight_t internal_degree = 0;
               weight_t external_degree = 0;
               for (const auto& [neighbor, edge_weight] : graph[nn]) {
@@ -200,10 +203,19 @@ struct SimplePartition final {
                 if (neighbor_part == part) internal_degree += edge_weight;
                 else external_degree += edge_weight;
               }
-              return internal_degree - external_degree;
+              return std::tuple{
+                  // Differential Graph.
+                  internal_degree - external_degree,
+                  // Prioritize the nodes with the smallest weight.
+                  -weights[nn],
+              };
             });
       }
     }
+
+    RefinePartsFM refine{};
+    refine(graph, weights, parts, num_parts);
+    TIT_STATS("edge_cut", edge_cut(graph, parts));
 
     std::ranges::sort(part_weights);
     TIT_STATS("disbalance",
