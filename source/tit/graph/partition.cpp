@@ -122,7 +122,7 @@ void partition_multilevel(const WeightedGraph& graph,
                "Invalid fine graph parts!");
 
     // Coarsen the graph.
-    const CoarsenGEM coarsen{};
+    const CoarsenHEM coarsen{};
     WeightedGraph coarse_graph{};
     std::vector<weight_t> coarse_weights{};
     std::vector<node_t> coarse_to_fine{};
@@ -149,9 +149,8 @@ void partition_multilevel(const WeightedGraph& graph,
     std::vector<size_t> coarse_parts(coarse_graph.num_nodes());
     if (stop_coarsening) {
       // either partition the coarse graph directly (using Metis), ...
-      // UniformPartition{}(coarse_graph, coarse_weights, coarse_parts,
-      // num_parts);
-      partition_metis(coarse_graph, coarse_weights, coarse_parts, num_parts);
+      SimplePartition{}(coarse_graph, coarse_weights, coarse_parts, num_parts);
+      // partition_metis(coarse_graph, coarse_weights, coarse_parts, num_parts);
       // refiner(coarse_graph, coarse_weights, coarse_parts, num_parts);
     } else {
       // ... or coarsen the graph further.
