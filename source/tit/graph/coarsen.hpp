@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/containers/boost.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
@@ -29,46 +28,32 @@ namespace impl {
 
 // Build the coarse graph from the fine graph and coarse to fine mapping.
 template<weighted_graph FineGraph,
-         node_weights<FineGraph> FineWeights,
          weighted_graph CoarseGraph,
-         node_weights<FineGraph> CoarseWeights,
          node_mapping<CoarseGraph, FineGraph> CoarseToFine,
          node_mapping<FineGraph, CoarseGraph> FineToCoarse>
-  requires container<CoarseWeights>
 void build_coarse_graph(const FineGraph& fine_graph,
-                        const FineWeights& fine_weights,
                         CoarseGraph& coarse_graph,
-                        CoarseWeights& coarse_weights,
                         const CoarseToFine& coarse_to_fine,
-                        const FineToCoarse& fine_to_coarse,
-                        size_t num_coarse_nodes) {
-  // Reserve space for the coarse graph.
+                        const FineToCoarse& fine_to_coarse) {
   coarse_graph.clear();
-  coarse_weights.clear(), coarse_weights.reserve(num_coarse_nodes);
-
-  // Build the coarse graph.
   equality_ranges(
       coarse_to_fine,
-      [&fine_graph,
-       &fine_weights,
-       &fine_to_coarse,
-       &coarse_graph,
-       &coarse_weights](std::ranges::view auto fine_nodes) {
-        SmallFlatMap<size_t, weight_t, 32> coarse_neighbors{};
+      [&fine_graph, &fine_to_coarse, &coarse_graph](
+          range_of<node_t> auto fine_nodes) {
         weight_t coarse_weight = 0;
+        SmallFlatMap<size_t, weight_t, 32> coarse_neighbors{};
         for (const auto fine_node : fine_nodes) {
-          for (const auto& [fine_neighbor, //
-                            fine_edge_weight] : fine_graph[fine_node]) {
+          coarse_weight += fine_graph.weight(fine_node);
+          for (const auto& [fine_neighbor, fine_edge_weight] :
+               fine_graph.wedges(fine_node)) {
             const auto coarse_neighbor = fine_to_coarse[fine_neighbor];
             coarse_neighbors[coarse_neighbor] += fine_edge_weight;
           }
-          coarse_weight += fine_weights[fine_node];
         }
-        coarse_graph.append_bucket(coarse_neighbors);
-        coarse_weights.push_back(coarse_weight);
+        coarse_graph.append_node(coarse_weight, coarse_neighbors);
       },
       /*pred=*/{},
-      /*proj=*/[&fine_to_coarse](size_t fn) { return fine_to_coarse[fn]; });
+      /*proj=*/[&fine_to_coarse](node_t fn) { return fine_to_coarse[fn]; });
 }
 
 } // namespace impl
@@ -89,28 +74,19 @@ public:
   /// Construct the coarse graph from the fine graph and weights.
   ///
   /// @param fine_graph     Fine graph.
-  /// @param fine_weights   Fine graph node weights.
   /// @param coarse_graph   Coarse graph.
-  /// @param coarse_weights Coarse graph node weights.
   /// @param coarse_to_fine Coarse-to-fine mapping.
   /// @param fine_to_coarse Fine-to-coarse mapping.
   template<weighted_graph FineGraph,
-           node_weights<FineGraph> FineWeights,
            weighted_graph CoarseGraph,
-           node_weights<FineGraph> CoarseWeights,
            node_mapping<CoarseGraph, FineGraph> CoarseToFine,
            node_mapping<FineGraph, CoarseGraph> FineToCoarse>
-    requires container<CoarseWeights> && //
-             container<CoarseToFine> && container<FineToCoarse>
+    requires container<CoarseToFine> && container<FineToCoarse>
   static void operator()(const FineGraph& fine_graph,
-                         const FineWeights& fine_weights,
                          CoarseGraph& coarse_graph,
-                         CoarseWeights& coarse_weights,
                          CoarseToFine& coarse_to_fine,
                          FineToCoarse& fine_to_coarse) {
     TIT_PROFILE_SECTION("Graph::CoarsenHEM::operator()");
-    TIT_ASSERT(fine_graph.num_nodes() == fine_weights.size(),
-               "Invalid number of the fine graph weights!");
 
     SplitMix64 rng{fine_graph.num_nodes()};
 
@@ -122,16 +98,17 @@ public:
     //
     // Equally weighted nodes will be randomly shuffled to avoid biasing.
     auto fine_nodes = fine_graph.nodes() | std::ranges::to<std::vector>();
-    par::sort(fine_nodes, std::less{}, [&fine_weights](size_t fine_node) {
-      return std::tuple{fine_weights[fine_node], randomized_hash(fine_node)};
+    par::sort(fine_nodes, std::less{}, [&fine_graph](size_t fine_node) {
+      return std::tuple{fine_graph.weight(fine_node),
+                        randomized_hash(fine_node)};
     });
 
     // Build the fine to coarse mapping.
     size_t num_coarse_nodes = 0;
-    fine_to_coarse.assign(fine_graph.num_nodes(), npos_node);
+    fine_to_coarse.assign(fine_graph.num_nodes(), npos);
     coarse_to_fine.clear(), coarse_to_fine.reserve(fine_graph.num_nodes());
     for (const auto fine_node : fine_nodes) {
-      if (fine_to_coarse[fine_node] != npos_node) continue;
+      if (fine_to_coarse[fine_node] != npos) continue;
 
       // Map the fine node to a new coarse node.
       const auto coarse_node = num_coarse_nodes++;
@@ -147,21 +124,22 @@ public:
       // the node weight distribution is as uniform as possible. By removing the
       // heaviest edges, we will hopefully reduce the edge cut at the coarsest
       // level of the graph partitioning.
-      size_t best_neighbor = npos_node;
+      size_t best_neighbor = npos;
       weight_t best_edge_weight = 0;
-      for (const auto& [fine_neighbor, edge_weight] : fine_graph[fine_node]) {
-        if (fine_to_coarse[fine_neighbor] != npos_node) continue;
+      for (const auto& [fine_neighbor, edge_weight] :
+           fine_graph.wedges(fine_node)) {
+        if (fine_to_coarse[fine_neighbor] != npos) continue;
 
         if (greater_or(edge_weight,
                        best_edge_weight,
-                       less_or(fine_weights[fine_neighbor],
-                               fine_weights[best_neighbor],
+                       less_or(fine_graph.weight(fine_neighbor),
+                               fine_graph.weight(best_neighbor),
                                rng))) {
           best_neighbor = fine_neighbor;
           best_edge_weight = edge_weight;
         }
       }
-      if (best_neighbor != npos_node) {
+      if (best_neighbor != npos) {
         fine_to_coarse[best_neighbor] = coarse_node;
         coarse_to_fine.push_back(best_neighbor);
       }
@@ -169,12 +147,9 @@ public:
 
     // Build the coarse graph.
     impl::build_coarse_graph(fine_graph,
-                             fine_weights,
                              coarse_graph,
-                             coarse_weights,
                              coarse_to_fine,
-                             fine_to_coarse,
-                             num_coarse_nodes);
+                             fine_to_coarse);
   }
 
 }; // class CoarsenHEM
@@ -198,28 +173,19 @@ public:
   /// Construct the coarse graph from the fine graph and weights.
   ///
   /// @param fine_graph     Fine graph.
-  /// @param fine_weights   Fine graph node weights.
   /// @param coarse_graph   Coarse graph.
-  /// @param coarse_weights Coarse graph node weights.
   /// @param coarse_to_fine Coarse-to-fine mapping.
   /// @param fine_to_coarse Fine-to-coarse mapping.
   template<weighted_graph FineGraph,
-           node_weights<FineGraph> FineWeights,
            weighted_graph CoarseGraph,
-           node_weights<FineGraph> CoarseWeights,
            node_mapping<CoarseGraph, FineGraph> CoarseToFine,
            node_mapping<FineGraph, CoarseGraph> FineToCoarse>
-    requires container<CoarseWeights> && //
-             container<CoarseToFine> && container<FineToCoarse>
+    requires container<CoarseToFine> && container<FineToCoarse>
   static void operator()(const FineGraph& fine_graph,
-                         const FineWeights& fine_weights,
                          CoarseGraph& coarse_graph,
-                         CoarseWeights& coarse_weights,
                          CoarseToFine& coarse_to_fine,
                          FineToCoarse& fine_to_coarse) {
     TIT_PROFILE_SECTION("Graph::CoarsenGEM::operator()");
-    TIT_ASSERT(fine_graph.num_nodes() == fine_weights.size(),
-               "Invalid number of the fine graph weights!");
 
     // Construct permutation of the fine graph edges.
     //
@@ -233,13 +199,15 @@ public:
     // uniform.
     //
     // Equally weighted edges will be randomly shuffled to avoid biasing.
-    auto fine_edges = fine_graph.edges() | std::ranges::to<std::vector>();
-    par::sort(fine_edges, std::greater{}, [&fine_weights](const auto& fe) {
-      const auto& [edge_weight, fine_neighbor, fine_node] = fe;
+    auto fine_edges = fine_graph.wedges() | std::ranges::to<std::vector>();
+    par::sort(fine_edges, std::greater{}, [&fine_graph](const wedge_t& fe) {
+      const auto& [fine_node, fine_neighbor, edge_weight] = fe;
       return std::tuple{
           edge_weight,
-          std::min(fine_weights[fine_neighbor], fine_weights[fine_node]),
-          randomized_hash(fine_neighbor, fine_node)};
+          std::min(fine_graph.weight(fine_neighbor),
+                   fine_graph.weight(fine_node)),
+          randomized_hash(fine_neighbor, fine_node),
+      };
     });
 
     // Build the fine to coarse mapping.
@@ -248,11 +216,11 @@ public:
     // not already mapped to a coarse node. After merging the edges, keep the
     // unmerged nodes as they are.
     size_t num_coarse_nodes = 0;
-    fine_to_coarse.assign(fine_graph.num_nodes(), npos_node);
+    fine_to_coarse.assign(fine_graph.num_nodes(), npos);
     coarse_to_fine.clear(), coarse_to_fine.reserve(fine_graph.num_nodes());
     for (const auto& [_, fine_node, fine_neighbor] : fine_edges) {
-      if (fine_to_coarse[fine_node] != npos_node) continue;
-      if (fine_to_coarse[fine_neighbor] != npos_node) continue;
+      if (fine_to_coarse[fine_node] != npos) continue;
+      if (fine_to_coarse[fine_neighbor] != npos) continue;
 
       const auto coarse_node = num_coarse_nodes++;
       fine_to_coarse[fine_node] = coarse_node;
@@ -261,7 +229,7 @@ public:
       coarse_to_fine.push_back(fine_neighbor);
     }
     for (const auto fine_node : fine_graph.nodes()) {
-      if (fine_to_coarse[fine_node] != npos_node) continue;
+      if (fine_to_coarse[fine_node] != npos) continue;
 
       const auto coarse_node = num_coarse_nodes++;
       fine_to_coarse[fine_node] = coarse_node;
@@ -270,12 +238,9 @@ public:
 
     // Build the coarse graph.
     impl::build_coarse_graph(fine_graph,
-                             fine_weights,
                              coarse_graph,
-                             coarse_weights,
                              coarse_to_fine,
-                             fine_to_coarse,
-                             num_coarse_nodes);
+                             fine_to_coarse);
   }
 
 }; // class CoarsenGEM

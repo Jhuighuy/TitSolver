@@ -20,11 +20,10 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/rand_utils.hpp"
 #include "tit/core/stats.hpp"
-#include "tit/core/uint_utils.hpp"
-#include "tit/core/utils.hpp"
 
 #include "tit/graph/graph.hpp"
 #include "tit/graph/refine.hpp"
+#include "tit/graph/utils.hpp"
 
 namespace tit::graph {
 
@@ -32,10 +31,7 @@ namespace tit::graph {
 
 /// Dummy uniform partitioning function.
 struct UniformPartition final {
-  static void operator()(const auto& graph,
-                         const auto& /*weights*/,
-                         auto& parts,
-                         size_t num_parts) {
+  static void operator()(const auto& graph, auto& parts, size_t num_parts) {
     const auto num_nodes = graph.num_nodes();
     const auto part_size = num_nodes / num_parts;
     const auto remainder = num_nodes % num_parts;
@@ -49,58 +45,14 @@ struct UniformPartition final {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-template<class Filter = AlwaysTrue>
-auto connected_components(const auto& graph,
-                          auto& components,
-                          Filter filter = {}) -> size_t {
-  components.assign(graph.num_nodes(), npos);
-  size_t num_components = 0;
-  for (size_t done = 0; done < graph.num_nodes();) {
-    // Find the first node with the unassigned component.
-    const auto iter = std::ranges::find_if( //
-        graph.nodes(),
-        [&filter, &components](node_t node) {
-          return filter(node) && components[node] == npos;
-        });
-    if (iter == graph.nodes().end()) break;
-    const auto first_node = *iter;
-    const auto component = num_components++;
-    components[first_node] = component;
-    done += 1;
-
-    // Breadth-first search to find the connected component.
-    while (true) {
-      bool any_change = false;
-      for (const auto node : graph.nodes()) {
-        if (!filter(node)) continue;
-        if (components[node] != component) continue;
-        for (const auto& [neighbor, _] : graph[node]) {
-          if (!filter(neighbor)) continue;
-          auto& neighbor_component = components[neighbor];
-          if (neighbor_component == component) continue;
-          TIT_ENSURE(neighbor_component == npos,
-                     "Neighbor component is already assigned!");
-          neighbor_component = component;
-          any_change = true;
-          done += 1;
-        }
-      }
-      if (!any_change) break;
-    }
-  }
-  return num_components;
-}
-
 struct SimplePartition final {
-  static void operator()(const auto& graph,
-                         const auto& weights,
-                         auto& parts,
-                         size_t num_parts) {
+  static void operator()(const auto& graph, auto& parts, size_t num_parts) {
     TIT_PROFILE_SECTION("SimplePartition::operator()");
     std::mt19937_64 rng{/*seed=*/graph.num_nodes()};
 
     // Calculate the total weight of the graph end the maximum part weight.
-    auto total_weight = std::reduce(weights.begin(), weights.end());
+    auto total_weight =
+        std::reduce(graph.weights().begin(), graph.weights().end());
     size_t num_full_parts = 0;
     auto average_part_weight = total_weight / static_cast<weight_t>(num_parts);
     auto part_weight_cap = average_part_weight;
@@ -112,9 +64,9 @@ struct SimplePartition final {
     size_t part = 0;
     while (true) {
       // Identify the connected components.
-      std::vector<part_t> components{};
+      std::vector<part_t> components(graph.num_nodes());
       const size_t num_components =
-          connected_components(graph, components, [&parts](node_t node) {
+          components(graph, components, [&parts](node_t node) {
             return parts[node] == npos;
           });
       std::cout << "num_components = " << num_components << std::endl;
@@ -122,10 +74,10 @@ struct SimplePartition final {
 
       // Calculate the component weights.
       std::vector<weight_t> component_weights(num_components, 0);
-      for (const auto node : graph.nodes()) {
+      for (const auto& [node, weight] : graph.wnodes()) {
         const auto component = components[node];
         if (component == npos) continue;
-        component_weights[component] += weights[node];
+        component_weights[component] += weight;
       }
 
       // Find the component with the smallest weight.
@@ -158,7 +110,7 @@ struct SimplePartition final {
         if (parts[node] != npos) continue;
 
         weight_t gain = 0;
-        for (const auto& [neighbor, edge_weight] : graph[node]) {
+        for (const auto& [neighbor, edge_weight] : graph.wedges(node)) {
           TIT_ENSURE(parts[neighbor] != part, "???");
           if (parts[neighbor] == npos) gain -= 1;
           else {
@@ -166,7 +118,7 @@ struct SimplePartition final {
           }
         }
 
-        const auto weight = weights[node];
+        const auto weight = graph.weight(node);
         if (greater_or(gain, seed_gain, less_or(weight, seed_weight, rng))) {
           seed_gain = gain;
           seed_node = node;
@@ -183,22 +135,22 @@ struct SimplePartition final {
         const auto node = frontier.front();
         frontier.erase(frontier.begin());
         const auto frontier_old_size = frontier.size();
-        for (const auto& [neighbor, _] : graph[node]) {
+        for (const auto& neighbor : graph.edges(node)) {
           if (parts[neighbor] != npos) continue;
           frontier.push_back(neighbor);
 
           parts[neighbor] = part;
-          part_weights[part] += weights[neighbor];
+          part_weights[part] += graph.weight(neighbor);
           if (part_weights[part] >= part_weight_cap) break;
         }
         std::ranges::sort( //
             frontier.begin() + static_cast<ssize_t>(frontier_old_size),
             frontier.end(),
             std::greater{},
-            [part, &graph, &weights, &parts](node_t nn) {
+            [part, &graph, &parts](node_t nn) {
               weight_t internal_degree = 0;
               weight_t external_degree = 0;
-              for (const auto& [neighbor, edge_weight] : graph[nn]) {
+              for (const auto& [neighbor, edge_weight] : graph.wedges(nn)) {
                 const auto neighbor_part = parts[neighbor];
                 if (neighbor_part == part) internal_degree += edge_weight;
                 else external_degree += edge_weight;
@@ -207,14 +159,14 @@ struct SimplePartition final {
                   // Differential Graph.
                   internal_degree - external_degree,
                   // Prioritize the nodes with the smallest weight.
-                  -weights[nn],
+                  -graph.weight(nn),
               };
             });
       }
     }
 
     RefinePartsFM refine{};
-    refine(graph, weights, parts, num_parts);
+    refine(graph, parts, num_parts);
     TIT_STATS("edge_cut", edge_cut(graph, parts));
 
     std::ranges::sort(part_weights);

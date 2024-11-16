@@ -12,6 +12,7 @@
 #include <iterator>
 #include <ranges>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
@@ -56,7 +57,20 @@ struct AlwaysTrue {
   }
 };
 
+template<class T, class U>
+concept different_from =
+    !std::same_as<std::remove_cv_t<T>, std::remove_cv_t<U>>;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Tuple-like type.
+template<class Tuple, class... Items>
+concept tuple_like = requires(Tuple& tuple, std::function<void(Items...)> f) {
+  {
+    std::tuple_size_v<std::remove_cvref_t<Tuple>>
+  } -> std::convertible_to<std::size_t>;
+  { std::apply(f, tuple) } -> std::same_as<void>;
+};
 
 /// Array type that is deduced from the given argument.
 /// If the argument is not an array, it is wrapped into an array of size 1.
@@ -156,6 +170,22 @@ constexpr void iota_perm(Range&& range, Perm&& perm) {
 /// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Container type.
+template<class Container>
+concept container = //
+    std::ranges::range<Container> &&
+    requires(std::remove_cvref_t<Container>& container,
+             size_t n,
+             std::ranges::range_value_t<Container> value) {
+      { container.assign(n, value) } -> std::same_as<void>;
+    };
+
+/// Range with value type.
+template<class Range, class Val>
+concept range_of = //
+    std::ranges::range<Range> &&
+    std::same_as<std::ranges::range_value_t<Range>, Val>;
 
 /// Find the equality ranges in the given range.
 template<

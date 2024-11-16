@@ -49,23 +49,16 @@ public:
   /// Refine the partitioning of the given graph.
   ///
   /// @param graph     Graph.
-  /// @param weights   Node weights.
   /// @param parts     Node part numbers.
   /// @param num_parts Number of parts.
-  template<weighted_graph Graph,
-           node_weights<Graph> Weights,
-           node_parts<Graph> Parts>
-  void operator()(const Graph& graph,
-                  const Weights& weights,
-                  Parts& parts,
-                  size_t num_parts) const {
+  template<weighted_graph Graph, node_parts<Graph> Parts>
+  void operator()(const Graph& graph, Parts& parts, size_t num_parts) const {
     TIT_PROFILE_SECTION("Graph::RefinePartsFM::operator()");
-    TIT_ASSERT(graph.num_nodes() == weights.size(), "Invalid graph weights!");
     TIT_ASSERT(graph.num_nodes() == parts.size(), "Invalid graph parts!");
 
     // Check if the node is internal to it's current partition.
     const auto is_internal = [&graph, &parts](size_t node) -> bool {
-      for (const auto& [neighbor, _] : graph[node]) {
+      for (const auto& neighbor : graph.edges(node)) {
         if (parts[neighbor] != parts[node]) return false;
       }
       return true;
@@ -77,7 +70,7 @@ public:
     // partition).
     const auto compute_priority = [&graph, &parts, num_parts](size_t node) {
       SmallVector<weight_t, 32> external_degrees(num_parts);
-      for (const auto& [neighbor, edge_weight] : graph[node]) {
+      for (const auto& [neighbor, edge_weight] : graph.wedges(node)) {
         const auto neighbor_part = parts[neighbor];
         external_degrees[neighbor_part] += edge_weight;
       }
@@ -97,11 +90,11 @@ public:
     //
     // Here, as before, we approximate the edge weights by the product of the
     // weights of the nodes that are connected by the edge.
-    const auto compute_gain = [&graph, &parts](size_t node,
-                                               size_t to_part) -> weight_t {
+    const auto compute_gain = [&graph, &parts](node_t node,
+                                               part_t to_part) -> weight_t {
       weight_t gain = 0;
       const auto from_part = parts[node];
-      for (const auto& [neighbor, edge_weight] : graph[node]) {
+      for (const auto& [neighbor, edge_weight] : graph.wedges(node)) {
         if (parts[neighbor] == from_part) gain -= edge_weight;
         else if (parts[neighbor] == to_part) gain += edge_weight;
       }
@@ -112,9 +105,9 @@ public:
     // weight disbalance between partitions (~3% of the average part weight).
     weight_t total_weight = 0;
     SmallVector<weight_t, 32> part_weights(num_parts, 0);
-    for (const auto& [node, weight] : std::views::zip(graph.nodes(), weights)) {
+    for (const auto& [node, weight] : graph.wnodes()) {
       total_weight += weight;
-      part_weights[parts[node]] += weights[node];
+      part_weights[parts[node]] += weight;
     }
     const auto average_weight =
         divide_up(total_weight, static_cast<weight_t>(num_parts));
@@ -157,7 +150,7 @@ public:
 
         // Find the available partitions to move the node to.
         std::ranges::fill(available_parts, false);
-        for (const auto& [neighbor, _] : graph[node]) {
+        for (const auto& neighbor : graph.edges(node)) {
           if (parts[neighbor] == parts[node]) continue;
           available_parts[parts[neighbor]] = true;
         }
@@ -167,33 +160,32 @@ public:
         // disbalance. If no such partition exists, skip the node, it may be
         // revisited later by it's neighbor updates.
         weight_t best_gain = 0;
-        size_t best_part = npos_node;
+        part_t best_part = npos;
         const auto from_part = parts[node];
         for (size_t test_part = 0; test_part < num_parts; ++test_part) {
           if (!available_parts[test_part]) continue;
 
           // Check the weight constraints.
-          const auto weight = weights[node];
+          const auto weight = graph.weight(node);
           if (part_weights[test_part] + weight > max_part_weight) continue;
 
           // Select the best partition to move the node to.
           const auto test_gain = compute_gain(node, test_part);
-          if (best_part == npos_node || //
-              greater_or(test_gain,
-                         best_gain,
-                         less_or(part_weights[test_part],
-                                 part_weights[best_part],
-                                 rng))) {
+          if (best_part == npos || greater_or(test_gain,
+                                              best_gain,
+                                              less_or(part_weights[test_part],
+                                                      part_weights[best_part],
+                                                      rng))) {
             best_gain = test_gain;
             best_part = test_part;
           }
         }
-        if (best_part == npos_node) continue;
+        if (best_part == npos) continue;
 
         // Move the node to the new partition.
         const size_t to_part = best_part;
-        part_weights[from_part] -= weights[node];
-        part_weights[to_part] += weights[node];
+        part_weights[from_part] -= graph.weight(node);
+        part_weights[to_part] += graph.weight(node);
         parts[node] = to_part;
         moved[node] = true;
 
@@ -207,7 +199,7 @@ public:
         }
 
         // Recompute gains for the neighbors.
-        for (const auto& [neighbor, _] : graph[node]) {
+        for (const auto& neighbor : graph.edges(node)) {
           if (moved[neighbor]) continue;
           gain_queue.erase(neighbor);
           if (is_internal(neighbor)) continue;
@@ -218,8 +210,8 @@ public:
       // Rollback to the best total gain achieved during the iteration.
       for (const auto& [node, from_part, to_part] :
            undo_moves | std::views::reverse) {
-        part_weights[to_part] -= weights[node];
-        part_weights[from_part] += weights[node];
+        part_weights[to_part] -= graph.weight(node);
+        part_weights[from_part] += graph.weight(node);
         parts[node] = from_part;
       }
 

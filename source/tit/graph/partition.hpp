@@ -26,7 +26,6 @@ namespace tit::graph {
 /// @param[out] parts     Node partitioning.
 /// @param[in]  num_parts Number of partitions.
 void partition_metis(const WeightedGraph& graph,
-                     const std::vector<weight_t>& weights,
                      std::vector<size_t>& parts,
                      size_t num_parts);
 
@@ -44,7 +43,6 @@ void partition_metis(const WeightedGraph& graph,
 /// @param[in]  max_depth Maximum number of coarsening iterations.
 /// @param[in]  max_iter  Maximum number of refinement iterations.
 void partition_multilevel(const WeightedGraph& graph,
-                          const std::vector<weight_t>& weights,
                           std::vector<size_t>& parts,
                           size_t num_parts,
                           size_t max_depth = 10,
@@ -57,7 +55,7 @@ struct MultilevelPartition {
                          size_t num_parts) {
     graph::WeightedGraph swg;
     for (const auto& edges : graph.buckets()) {
-      swg.append_bucket(edges);
+      swg.append_node(edges);
     }
     partition_multilevel(swg, weights, parts, num_parts);
     TIT_STATS("edge_cut", edge_cut(swg, parts));

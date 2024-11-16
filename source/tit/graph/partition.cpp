@@ -16,7 +16,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/containers/multivector.hpp"
 #include "tit/core/profiler.hpp"
 
 #include "tit/graph/coarsen.hpp"
@@ -31,7 +30,6 @@ namespace tit::graph {
 
 /// Graph partitioning using the Metis library.
 void partition_metis(const WeightedGraph& graph,
-                     const std::vector<weight_t>& weights,
                      std::vector<size_t>& parts,
                      size_t num_parts) {
   TIT_PROFILE_SECTION("Graph::partition_metis()");
@@ -48,13 +46,15 @@ void partition_metis(const WeightedGraph& graph,
   std::vector<idx_t> adjncy;
   std::vector<idx_t> vwgt;
   std::vector<idx_t> adjwgt;
-  for (const auto node : graph.nodes()) {
-    std::ranges::copy(graph[node] | std::views::keys,
-                      std::back_inserter(adjncy));
+  for (const auto& [node, weight] : graph.wnodes()) {
+    std::ranges::copy(graph.edges(node), std::back_inserter(adjncy));
     xadj.emplace_back(adjncy.size());
-    vwgt.emplace_back(weights[node]);
-    std::ranges::copy(graph[node] | std::views::values,
-                      std::back_inserter(adjwgt));
+    vwgt.emplace_back(weight);
+    std::ranges::copy( //
+        graph.wedges(node) | std::views::transform([](const auto& wconn) {
+          return wconn.edge_weight;
+        }),
+        std::back_inserter(adjwgt));
   }
 
   // Partition the graph.
@@ -100,7 +100,6 @@ void partition_metis(const WeightedGraph& graph,
 /// @param[in]  max_depth Maximum number of coarsening iterations.
 /// @param[in]  max_iter  Maximum number of refinement iterations.
 void partition_multilevel(const WeightedGraph& graph,
-                          const std::vector<weight_t>& weights,
                           std::vector<size_t>& parts,
                           size_t num_parts,
                           size_t max_depth,
@@ -114,25 +113,16 @@ void partition_multilevel(const WeightedGraph& graph,
                         this const auto& self,
                         size_t depth,
                         const WeightedGraph& fine_graph,
-                        const std::vector<weight_t>& fine_weights,
                         std::vector<size_t>& fine_parts) -> void {
-    TIT_ASSERT(fine_graph.num_nodes() == fine_weights.size(),
-               "Invalid fine graph weights!");
     TIT_ASSERT(fine_graph.num_nodes() == fine_parts.size(),
                "Invalid fine graph parts!");
 
     // Coarsen the graph.
     const CoarsenHEM coarsen{};
     WeightedGraph coarse_graph{};
-    std::vector<weight_t> coarse_weights{};
     std::vector<node_t> coarse_to_fine{};
     std::vector<node_t> fine_to_coarse{};
-    coarsen(fine_graph,
-            fine_weights,
-            coarse_graph,
-            coarse_weights,
-            coarse_to_fine,
-            fine_to_coarse);
+    coarsen(fine_graph, coarse_graph, coarse_to_fine, fine_to_coarse);
 
     // Should we stop coarsening?
     //
@@ -149,12 +139,12 @@ void partition_multilevel(const WeightedGraph& graph,
     std::vector<size_t> coarse_parts(coarse_graph.num_nodes());
     if (stop_coarsening) {
       // either partition the coarse graph directly (using Metis), ...
-      SimplePartition{}(coarse_graph, coarse_weights, coarse_parts, num_parts);
-      // partition_metis(coarse_graph, coarse_weights, coarse_parts, num_parts);
-      // refiner(coarse_graph, coarse_weights, coarse_parts, num_parts);
+      // SimplePartition{}(coarse_graph, coarse_parts, num_parts);
+      partition_metis(coarse_graph, coarse_parts, num_parts);
+      // refiner(coarse_graph,  coarse_parts, num_parts);
     } else {
       // ... or coarsen the graph further.
-      self(depth + 1, coarse_graph, coarse_weights, coarse_parts);
+      self(depth + 1, coarse_graph, coarse_parts);
     }
 
     // Project the partitioning back to the fine graph.
@@ -163,11 +153,11 @@ void partition_multilevel(const WeightedGraph& graph,
     }
 
     // Refine the partitioning.
-    refine(fine_graph, fine_weights, fine_parts, num_parts);
+    refine(fine_graph, fine_parts, num_parts);
   };
 
   // Run the multilevel partitioning.
-  impl(/*depth=*/0, graph, weights, parts);
+  impl(/*depth=*/0, graph, parts);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
