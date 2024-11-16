@@ -9,16 +9,14 @@ add_tit_library(
   SOURCES
     "coarsen.hpp"
     "graph.hpp"
-    "partition.cpp"
     "partition.hpp"
-    "partition/metis.cpp"
-    "partition/metis.hpp"
+    "partition/greedy.hpp"
+    "partition/multilevel.hpp"
+    "partition/simple.hpp"
     "refine.hpp"
-    "simple_partition.hpp"
     "utils.hpp"
   DEPENDS
     tit::core
-    metis
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,6 +25,13 @@ add_tit_executable(
   NAME
     graph_tests
   SOURCES
+    "coarsen.test.cpp"
+    "graph.test.cpp"
+    "partition/greedy.test.cpp"
+    "partition/multilevel.test.cpp"
+    "partition/simple.test.cpp"
+    "refine.test.cpp"
+    "utils.test.cpp"
   DEPENDS
     tit::graph
     tit::testing

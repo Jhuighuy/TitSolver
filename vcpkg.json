@@ -13,7 +13,6 @@
     "doctest",
     "gcem",
     "highway",
-    "metis",
     "mimalloc",
     "tbb"
   ],
