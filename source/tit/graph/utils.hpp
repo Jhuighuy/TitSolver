@@ -9,9 +9,9 @@
 #include <concepts>
 #include <deque>
 #include <functional>
-// #include <ranges>
+#include <ranges>
 #include <type_traits>
-// #include <utility>
+#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -25,6 +25,12 @@ namespace tit::graph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Breadth-first search.
+///
+/// @param graph     Graph to search in.
+/// @param seed_node Starting node.
+/// @param pred      Node predicate.
+/// @param func      Visited node callback. Once the callback returns `false`,
+///                  the search is stopped.
 template<graph Graph,
          node_predicate Pred = AlwaysTrue,
          std::invocable<node_t> Func>
@@ -50,7 +56,6 @@ constexpr auto bfs(const Graph& graph, node_t seed_node, Pred pred, Func func) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Find connected components of the given graph.
-#if 0
 template<graph Graph,
          node_parts<Graph> Components,
          node_predicate Pred = AlwaysTrue>
@@ -62,7 +67,11 @@ constexpr auto connected_components(const Graph& graph,
     TIT_ASSERT(std::size(components) == graph.num_nodes(),
                "Invalid number of components!");
   }
+
+  // Initialize the components.
   std::ranges::fill(components, npos);
+
+  // Find the connected components.
   for (part_t component = 0;; ++component) {
     // Find the seed node with the unassigned component.
     const auto iter = std::ranges::find_if( //
@@ -70,9 +79,9 @@ constexpr auto connected_components(const Graph& graph,
         [&pred, &components](node_t node) {
           return std::invoke(pred, node) && components[node] == npos;
         });
-    if (iter == std::end(graph.nodes())) return component + 1;
+    if (iter == std::end(graph.nodes())) return component;
 
-    // Breadth-first search to find the connected component.
+    // Walk through the nodes in a BFS fashion and assign the component.
     bfs(graph, *iter, std::ref(pred), [&components, component](node_t node) {
       TIT_ASSERT(components[node] == npos || components[node] == component,
                  "Component of the node is already assigned!");
@@ -82,49 +91,6 @@ constexpr auto connected_components(const Graph& graph,
   }
   std::unreachable();
 }
-#else
-template<class Filter = AlwaysTrue>
-auto connected_components(const auto& graph,
-                          auto& components,
-                          Filter filter = {}) -> size_t {
-  components.assign(graph.num_nodes(), npos);
-  size_t num_components = 0;
-  for (size_t done = 0; done < graph.num_nodes();) {
-    // Find the first node with the unassigned component.
-    const auto iter = std::ranges::find_if( //
-        graph.nodes(),
-        [&filter, &components](node_t node) {
-          return filter(node) && components[node] == npos;
-        });
-    if (iter == graph.nodes().end()) break;
-    const auto first_node = *iter;
-    const auto component = num_components++;
-    components[first_node] = component;
-    done += 1;
-
-    // Breadth-first search to find the connected component.
-    while (true) {
-      bool any_change = false;
-      for (const auto node : graph.nodes()) {
-        if (!filter(node)) continue;
-        if (components[node] != component) continue;
-        for (const auto& neighbor : graph.edges(node)) {
-          if (!filter(neighbor)) continue;
-          auto& neighbor_component = components[neighbor];
-          if (neighbor_component == component) continue;
-          TIT_ENSURE(neighbor_component == npos,
-                     "Neighbor component is already assigned!");
-          neighbor_component = component;
-          any_change = true;
-          done += 1;
-        }
-      }
-      if (!any_change) break;
-    }
-  }
-  return num_components;
-}
-#endif
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -133,7 +99,8 @@ auto connected_components(const auto& graph,
 /// The edge cut is the sum of the weights of the edges that connect nodes from
 /// different partitions.
 template<graph Graph, node_parts<Graph> Parts>
-constexpr auto edge_cut(const Graph& graph, Parts&& parts) -> weight_t {
+constexpr auto edge_cut(const Graph& graph,
+                        Parts&& parts) noexcept -> weight_t {
   TIT_ASSUME_UNIVERSAL(Parts, parts);
   weight_t edge_cut = 0;
   for (const auto& [node, neighbor, edge_weight] : graph.wedges()) {

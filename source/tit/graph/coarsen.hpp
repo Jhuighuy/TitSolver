@@ -27,15 +27,17 @@ namespace tit::graph {
 
 namespace impl {
 
-// Build the coarse graph from the fine graph and coarse to fine mapping.
+// Build the coarse graph from the fine graph and coarse-fine mapping.
 template<weighted_graph FineGraph,
          weighted_graph CoarseGraph,
          node_mapping<CoarseGraph, FineGraph> CoarseToFine,
          node_mapping<FineGraph, CoarseGraph> FineToCoarse>
 void build_coarse_graph(const FineGraph& fine_graph,
                         CoarseGraph& coarse_graph,
-                        const CoarseToFine& coarse_to_fine,
-                        const FineToCoarse& fine_to_coarse) {
+                        CoarseToFine&& coarse_to_fine,
+                        FineToCoarse&& fine_to_coarse) {
+  TIT_ASSUME_UNIVERSAL(CoarseToFine, coarse_to_fine);
+  TIT_ASSUME_UNIVERSAL(FineToCoarse, fine_to_coarse);
   coarse_graph.clear();
   equality_ranges(
       coarse_to_fine,
@@ -61,7 +63,7 @@ void build_coarse_graph(const FineGraph& fine_graph,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Coarse the graph using Sorted Heavy Edge Matching (HEM) algorithm.
+/// Coarsen the graph using Sorted Heavy Edge Matching (HEM) algorithm.
 ///
 /// Nodes are traversed from the lightest to the heaviest edge. For each
 /// node, the node is matched to it's previously unmatched neighbor with the
@@ -125,6 +127,8 @@ public:
       // the node weight distribution is as uniform as possible. By removing the
       // heaviest edges, we will hopefully reduce the edge cut at the coarsest
       // level of the graph partitioning.
+      //
+      /// @todo Rewrite using `std::ranges::max_element`.
       size_t best_neighbor = npos;
       weight_t best_edge_weight = 0;
       for (const auto& [fine_neighbor, edge_weight] :
@@ -160,7 +164,7 @@ inline constexpr CoarsenHEM coarsen_hem{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Coarse the graph using Sorted Heavy Edge Matching (HEM) algorithm.
+/// Coarsen the graph using Sorted Heavy Edge Matching (HEM) algorithm.
 ///
 /// Edges are traversed from the heaviest to the lightest. Edges with the
 /// same weight are traversed in from the lightest to the heaviest node.
@@ -201,8 +205,8 @@ public:
     //
     // Equally weighted edges will be randomly shuffled to avoid biasing.
     auto fine_edges = fine_graph.wedges() | std::ranges::to<std::vector>();
-    par::sort(fine_edges, std::greater{}, [&fine_graph](const wedge_t& fe) {
-      const auto& [fine_node, fine_neighbor, edge_weight] = fe;
+    par::sort(fine_edges, std::greater{}, [&fine_graph](const wedge_t& we) {
+      const auto& [fine_node, fine_neighbor, edge_weight] = we;
       return std::tuple{
           edge_weight,
           std::min(fine_graph.weight(fine_neighbor),

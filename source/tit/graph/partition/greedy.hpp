@@ -7,10 +7,8 @@
 
 #include <algorithm>
 #include <functional>
-#include <iostream>
 #include <limits>
 #include <numeric>
-#include <random>
 #include <ranges>
 #include <tuple>
 #include <vector>
@@ -20,6 +18,7 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/rand_utils.hpp"
 #include "tit/core/stats.hpp"
+#include "tit/core/utils.hpp"
 
 #include "tit/graph/graph.hpp"
 #include "tit/graph/refine.hpp"
@@ -29,10 +28,28 @@ namespace tit::graph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-struct GreedyPartition final {
-  static void operator()(const auto& graph, auto& parts, size_t num_parts) {
-    TIT_PROFILE_SECTION("SimplePartition::operator()");
-    std::mt19937_64 rng{/*seed=*/graph.num_nodes()};
+/// Greedy graph partitioning function.
+///
+/// @todo Write an explanation of what is going on here.
+class GreedyPartition final {
+public:
+
+  /// Partition the graph using the greedy partitioning algorithm.
+  template<weighted_graph Graph, node_parts<Graph> Parts>
+  void operator()(const Graph& graph, Parts&& parts, size_t num_parts) const {
+    TIT_PROFILE_SECTION("Graph::GreedyPartition::operator()");
+    TIT_ASSUME_UNIVERSAL(Parts, parts);
+
+    // Validate the arguments.
+    TIT_ASSERT(num_parts > 0, "Number of parts must be positive!");
+    TIT_ASSERT(num_parts <= graph.num_nodes(),
+               "Number of nodes cannot be less than the number of parts!");
+    if constexpr (std::ranges::sized_range<Parts>) {
+      TIT_ASSERT(std::size(parts) == graph.num_nodes(),
+                 "Size of parts range must be equal to the number of nodes!");
+    }
+
+    SplitMix64 rng{graph.num_nodes()};
 
     // Calculate the total weight of the graph end the maximum part weight.
     auto total_weight =
@@ -47,13 +64,12 @@ struct GreedyPartition final {
 
     size_t part = 0;
     while (true) {
-      // Identify the connected components.
+      // Identify the connected components. If there are no components, break.
       std::vector<part_t> components(graph.num_nodes());
-      const size_t num_components =
-          connected_components(graph, components, [&parts](node_t node) {
-            return parts[node] == npos;
-          });
-      std::cout << "num_components = " << num_components << '\n';
+      const size_t num_components = connected_components( //
+          graph,
+          components,
+          [&parts](node_t node) { return parts[node] == npos; });
       if (num_components == 0) break;
 
       // Calculate the component weights.
@@ -95,11 +111,8 @@ struct GreedyPartition final {
 
         weight_t gain = 0;
         for (const auto& [neighbor, edge_weight] : graph.wedges(node)) {
-          TIT_ENSURE(parts[neighbor] != part, "???");
           if (parts[neighbor] == npos) gain -= 1;
-          else {
-            gain += 1;
-          }
+          else gain += 1;
         }
 
         const auto weight = graph.weight(node);
@@ -158,7 +171,8 @@ struct GreedyPartition final {
               static_cast<double>(part_weights.back() - part_weights.front()) /
                   static_cast<double>(part_weights.back()));
   }
-};
+
+}; // class GreedyPartition
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
