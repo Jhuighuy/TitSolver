@@ -66,10 +66,10 @@ struct SimplePartition final {
       // Identify the connected components.
       std::vector<part_t> components(graph.num_nodes());
       const size_t num_components =
-          components(graph, components, [&parts](node_t node) {
+          connected_components(graph, components, [&parts](node_t node) {
             return parts[node] == npos;
           });
-      std::cout << "num_components = " << num_components << std::endl;
+      std::cout << "num_components = " << num_components << '\n';
       if (num_components == 0) break;
 
       // Calculate the component weights.
@@ -165,7 +165,7 @@ struct SimplePartition final {
       }
     }
 
-    RefinePartsFM refine{};
+    const RefinePartsFM refine{};
     refine(graph, parts, num_parts);
     TIT_STATS("edge_cut", edge_cut(graph, parts));
 

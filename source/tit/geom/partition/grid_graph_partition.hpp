@@ -12,6 +12,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/boost.hpp"
 #include "tit/core/containers/mdvector.hpp"
+#include "tit/core/containers/multivector.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/utils.hpp"
@@ -21,6 +22,7 @@
 
 #include "tit/graph/graph.hpp"
 #include "tit/graph/partition.hpp"
+#include "tit/graph/simple_partition.hpp"
 
 namespace tit::geom {
 

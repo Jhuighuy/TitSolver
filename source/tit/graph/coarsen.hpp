@@ -17,6 +17,7 @@
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/rand_utils.hpp"
+#include "tit/core/utils.hpp"
 
 #include "tit/graph/graph.hpp"
 
@@ -218,7 +219,7 @@ public:
     size_t num_coarse_nodes = 0;
     fine_to_coarse.assign(fine_graph.num_nodes(), npos);
     coarse_to_fine.clear(), coarse_to_fine.reserve(fine_graph.num_nodes());
-    for (const auto& [_, fine_node, fine_neighbor] : fine_edges) {
+    for (const auto& [fine_node, fine_neighbor, _] : fine_edges) {
       if (fine_to_coarse[fine_node] != npos) continue;
       if (fine_to_coarse[fine_neighbor] != npos) continue;
 

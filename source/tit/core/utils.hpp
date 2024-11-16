@@ -68,7 +68,7 @@ template<class Tuple, class... Items>
 concept tuple_like = requires(Tuple& tuple, std::function<void(Items...)> f) {
   {
     std::tuple_size_v<std::remove_cvref_t<Tuple>>
-  } -> std::convertible_to<std::size_t>;
+  } -> std::convertible_to<size_t>;
   { std::apply(f, tuple) } -> std::same_as<void>;
 };
 

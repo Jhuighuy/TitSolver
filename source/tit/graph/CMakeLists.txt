@@ -11,6 +11,8 @@ add_tit_library(
     "graph.hpp"
     "partition.cpp"
     "partition.hpp"
+    "partition/metis.cpp"
+    "partition/metis.hpp"
     "refine.hpp"
     "simple_partition.hpp"
     "utils.hpp"
