@@ -36,10 +36,13 @@ setup-macos() {
     gnu-sed              \
     libtool              \
     "llvm@$LLVM_VERSION" \
-    pkg-config
+    pkg-config           \
+    sphinx-doc
   local LLVM_PATH="$(brew --prefix llvm@$LLVM_VERSION)/bin"
   ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
   echo "$LLVM_PATH" >> $GITHUB_PATH
+  local SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
+  echo "$SPHINX_PATH" >> $GITHUB_PATH
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,7 +56,8 @@ setup-ubuntu() {
     "clang-$LLVM_VERSION"      \
     "clang-tidy-$LLVM_VERSION" \
     cmake                      \
-    "g++-$GCC_VERSION"
+    "g++-$GCC_VERSION"         \
+    sphinx-doc
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,7 +66,8 @@ install-python-tools() {
   export PIP_BREAK_SYSTEM_PACKAGES=1
   pip3 install --upgrade --user \
     codespell                   \
-    gcovr
+    gcovr                       \
+    sphinx
 }
 
 install-vcpkg() {

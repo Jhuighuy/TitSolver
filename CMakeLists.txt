@@ -37,6 +37,7 @@ find_package(TBB CONFIG REQUIRED)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Add the actual sources.
+add_subdirectory("manual")
 add_subdirectory("source")
 add_subdirectory("tests")
 

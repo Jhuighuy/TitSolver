@@ -1,0 +1,84 @@
+{# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ # Part of the Tit Solver project, under the MIT License.
+ # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+ # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <title>{{ title }} | {{ shorttitle }}</title>
+  <link
+   rel="icon"
+   type="image/x-icon"
+   href="{{ pathto('_static/favicon.svg', 1) }}" />
+  <link
+   rel="stylesheet"
+   href="{{ pathto('_static/styles.css', 1) }}" />
+  <script
+   type="text/javascript"
+   src="{{ pathto('_static/beautify.js', 1) }}">
+  </script>
+  <script
+   type="text/javascript"
+   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+   integrity="sha384-Wuix6BuhrWbjDBs24bXrjf4ZQ5aFeFWBuKkFekO2t8xFU0iNaLQfp2K6/1Nxveei"
+   crossorigin="anonymous">
+  </script>
+</head>
+
+<body>
+  <div class="content-wrapper">
+    <nav class="breadcrumbs" aria-label="Breadcrumbs">
+      <a href="{{ pathto(root_doc) }}" rel="start">
+        <span>{{ shorttitle }}</span>
+      </a>
+      {% if parents %}
+        {% for parent in parents %}
+          <div class="chevron-right"></div>
+          <a href="{{ parent.link|e }}" rel="up">
+            <span>{{ parent.title }}</span>
+          </a>
+        {% endfor %}
+      {% endif %}
+      <div class="chevron-right"></div>
+      <span>{{ title }}</span>
+    </nav>
+
+    {% if display_toc %}
+      <nav class="toc" aria-label="Table of Contents">
+        <p>Table of contents:</p>
+        {{ toc }}
+      </nav>
+    {% endif %}
+
+    <main class="content">
+      {{ body }}
+    </main>
+
+    {# Previous and next page links. #}
+    <nav class="prev-next" aria-label="Previous and next page links">
+      {% if prev %}
+        <a class="prev-next-button" href="{{ prev.link|e }}" rel="prev">
+          <div class="chevron-left"></div>
+          <span>{{ prev.title }}</span>
+        </a>
+      {% endif %}
+      <div class="prev-next-spacer"></div>
+      {% if next %}
+        <a class="prev-next-button" href="{{ next.link|e }}" rel="next">
+          <span>{{ next.title }}</span>
+          <div class="chevron-right"></div>
+        </a>
+      {% endif %}
+    </nav>
+  </div>
+
+  <div class="footer">
+    <p>&copy; {{ copyright }}. All rights reserved.</p>
+  </div>
+</body>
+
+</html>

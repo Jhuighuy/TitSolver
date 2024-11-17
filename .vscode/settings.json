@@ -6,6 +6,9 @@
   "[cpp]": {
     "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
   },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
@@ -41,9 +44,10 @@
     "**/compile_flags.txt": true
   },
   "files.associations": {
-    ".vscode/c_cpp_properties.json": "jsonc",
     ".clang-tidy": "yaml",
     ".clangd": "yaml",
+    "**/.vscode/c_cpp_properties.json": "jsonc",
+    "**/_templates/**.html": "jinja-html",
     "*.ipp": "cpp",
     "*.tcc": "cpp",
     "__availability": "cpp",

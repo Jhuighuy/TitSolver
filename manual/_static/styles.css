@@ -1,0 +1,349 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/*
+ * CSS for the Sphinx documentation.
+ */
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+:root {
+  /* Colors. */
+  --accent-color: #0056b3;
+  --accent-color-orange: #c87f00;
+  --background-color-darker: #f8f8f8;
+  --background-color: #fff;
+  --border-color: #ddd;
+  --text-color-darker: #555;
+  --text-color: #333;
+
+  /* Sizes. */
+  --border-outline-offset: 2px;
+  --border-size-thicker: 2px;
+  --border-size: 1px;
+  --border-radius: 5px;
+  --content-width: 960px;
+  --font-size: 16px;
+  --font-size-smaller: 14px;
+  --font-size-tiny: 10px;
+  --font-size-huge: 36px;
+  --icon-size: 1.5em;
+  --line-height: 1.5;
+  --spacing: 20px;
+
+  /* Feather Icons (https://feathericons.com/). */
+  --chevron-left-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-left"><polyline points="15 18 9 12 15 6"></polyline></svg>');
+  --chevron-right-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>');
+  --info-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-info"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>');
+  --table-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-table"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"></path></svg>');
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100vh;
+  margin: 0;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  /* Same fonts that are used by the frontend. */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+}
+
+/* Content is centered on the page. */
+.content-wrapper {
+  max-width: var(--content-width);
+  margin: 0 auto;
+}
+
+/* Breadcrumbs are placed above the content, with a smaller font size. */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: calc(2 * var(--spacing));
+  font-size: var(--font-size-smaller);
+  font-style: italic;
+}
+
+/* Previous and next page buttons section is above the footer. */
+.prev-next {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  margin: var(--spacing) 0;
+}
+
+/* Previous and next page links are styled like buttons. */
+.prev-next a {
+  display: flex;
+  align-items: center;
+  width: 30%;
+  padding: calc(var(--spacing) / 2);
+  border: var(--border-size) solid var(--border-color);
+  border-radius: var(--border-radius);
+  text-align: center;
+  font-weight: bold;
+}
+.prev-next a:hover {
+  background-color: var(--background-color-darker);
+  text-decoration: none;
+}
+
+.prev-next a span {
+  width: 100%;
+}
+
+/* Footer is placed at the bottom of the page. */
+.footer {
+  width: 100%;
+  margin-top: var(--spacing);
+  padding: calc(var(--spacing) / 2) 0;
+  color: var(--text-color-darker);
+  background-color: var(--background-color-darker);
+  border-top: var(--border-size) solid var(--border-color);
+  text-align: center;
+  font-size: var(--font-size-smaller);
+}
+
+/* Disable the width limit, previous and next page link on print. */
+@media print {
+  body {
+    height: auto;
+  }
+  .prev-next,
+  .footer {
+    display: none;
+  }
+  .content-wrapper {
+    max-width: none;
+  }
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/* Headings are bold and have accent color. */
+h1,
+h2,
+h3 {
+  margin-top: var(--spacing);
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+/* H1 is bigger and has a thick bottom border. */
+h1 {
+  margin-bottom: calc(var(--spacing) / 2);
+  font-size: var(--font-size-huge);
+}
+h1::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: var(--border-size-thicker);
+  background-color: var(--border-color);
+}
+
+/* H2 has thin bottom border. */
+h2::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: var(--border-size);
+  background-color: var(--border-color);
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/* Links have accent color. */
+a,
+a:visited {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+a:focus {
+  outline: var(--border-size-thicker) solid var(--accent-color);
+  outline-offset: var(--border-outline-offset);
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/* Unordered lists have a left padding, bullets are disabled. */
+ul {
+  padding-left: var(--icon-size);
+  list-style-type: none;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Caption is placed above the table, with an icon. */
+table caption {
+  margin: 5px 0 5px 0.1em;
+  height: var(--icon-size);
+  vertical-align: middle;
+  text-align: left;
+}
+table caption::before {
+  content: "";
+  display: inline-block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin-right: calc(var(--spacing) / 5);
+  background-size: cover;
+  background-image: var(--table-icon);
+  vertical-align: middle;
+}
+
+/* Caption number is bold. */
+table caption .caption-number {
+  font-weight: bold;
+}
+
+/* Caption text is centered vertically. */
+table caption span {
+  vertical-align: middle;
+}
+
+/* Table header and data cells have padding and a bottom border. */
+table th,
+table td {
+  padding: calc(2 * var(--spacing) / 5);
+  border-bottom: var(--border-size) solid var(--border-color);
+  text-align: center;
+}
+
+/* Alternating rows have a darker background. */
+table tr.row-odd {
+  background-color: var(--background-color-darker);
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/* Admonitions titles are bold and have an icon. */
+.admonition-title {
+  font-weight: bold;
+}
+.admonition-title::before {
+  content: "";
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: 5px;
+  background-size: cover;
+  background-image: var(--info-icon);
+  vertical-align: middle;
+}
+
+/* Admonitions are placed in a colored box with a border and rounded corners. */
+.admonition {
+  padding: calc(var(--spacing) / 4);
+  background-color: var(--background-color-darker);
+  border: var(--border-size) solid;
+  border-radius: var(--border-radius);
+}
+
+/* Various colors for different admonition types. */
+.admonition.tip,
+.admonition.note {
+  border-color: var(--accent-color);
+}
+.admonition.tip .admonition-title,
+.admonition.note .admonition-title {
+  color: var(--accent-color);
+}
+
+.admonition.warning,
+.admonition.error {
+  border-color: var(--accent-color-orange);
+}
+.admonition.warning .admonition-title,
+.admonition.error .admonition-title {
+  color: var(--accent-color-orange);
+}
+
+/* Decrease the margins for the admonition content. */
+.admonition p {
+  margin: calc(var(--spacing) / 4);
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/* Equation numbers are displayed in circles. */
+.eqno-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  border-radius: 100%;
+  border: var(--border-size) solid var(--border-color);
+  font-weight: bold;
+}
+
+/* Equation number's font size depends on the number of digits. */
+.eqno-circle.digits-1,
+.eqno-circle.digits-2 {
+  font-size: var(--font-size-smaller);
+}
+.eqno-circle.digits-3 {
+  font-size: var(--font-size-tiny);
+}
+
+/* Highlight the equation number on hover. */
+a .eqno-circle:hover {
+  background-color: var(--background-color-darker);
+}
+
+/* Center-align for the equation number in text. */
+p .eqno-circle {
+  vertical-align: middle;
+}
+
+/* Position the equation number in the equations to the right of the equation,
+ * and center them vertically. */
+.math {
+  position: relative;
+}
+.math .eqno {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/* Chevrons are simple icons. */
+.chevron-left,
+.chevron-right {
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  background-size: cover;
+}
+
+.chevron-left {
+  background-image: var(--chevron-left-icon);
+}
+
+.chevron-right {
+  background-image: var(--chevron-right-icon);
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
