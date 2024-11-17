@@ -14,7 +14,6 @@
     "doctest",
     "gcem",
     "highway",
-    "metis",
     "mimalloc",
     "python3",
     "sqlite3",
