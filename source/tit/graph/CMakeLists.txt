@@ -15,6 +15,7 @@ add_tit_library(
     "partition.hpp"
     "partition/greedy.hpp"
     "partition/metis.hpp"
+    "partition/multilevel.hpp"
     "partition/uniform.hpp"
     "refine.hpp"
     "refine/fm.hpp"
