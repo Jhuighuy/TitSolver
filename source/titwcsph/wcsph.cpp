@@ -145,7 +145,7 @@ auto sph_main(CmdArgs /*args*/) -> int {
       geom::RecursiveInertialBisection{},
       // Use graph partitioning with larger cell size as the interface
       // partitioning method.
-      geom::GridGraphPartition{2 * h_0},
+      geom::GridGraphPartition{/* 2* */ h_0},
   };
 
   // Create a data storage to store the particles.  We'll store only one last
