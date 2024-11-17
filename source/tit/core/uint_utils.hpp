@@ -6,20 +6,23 @@
 #pragma once
 
 #include <concepts>
+#include <type_traits>
 
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Divide two unsigned integers and round up the result.
-template<std::unsigned_integral UInt>
-constexpr auto divide_up(UInt n, UInt d) noexcept -> UInt {
-  return (n + d - UInt{1}) / d;
+/// Divide two positive integers and round up the result.
+template<std::integral Int>
+constexpr auto divide_up(Int n, std::type_identity_t<Int> divisor) noexcept
+    -> Int {
+  return (n + divisor - Int{1}) / divisor;
 }
 
-/// Align up to an unsigned integer.
-template<std::unsigned_integral UInt>
-constexpr auto align_up(UInt n, UInt alignment) noexcept -> UInt {
+/// Align up to a positive integer.
+template<std::integral Int>
+constexpr auto align_up(Int n, std::type_identity_t<Int> alignment) noexcept
+    -> Int {
   return divide_up(n, alignment) * alignment;
 }
 
