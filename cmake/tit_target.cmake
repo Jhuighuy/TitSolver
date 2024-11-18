@@ -52,7 +52,13 @@ endfunction()
 #
 function(add_tit_library)
   # Parse and check arguments.
-  cmake_parse_arguments(LIB "" "NAME;TYPE" "SOURCES;DEPENDS" ${ARGN})
+  cmake_parse_arguments(
+    LIB
+    ""
+    "NAME;TYPE;DESTINATION"
+    "SOURCES;DEPENDS"
+    ${ARGN}
+  )
   if(NOT LIB_NAME)
     message(FATAL_ERROR "Library name must be specified.")
   endif()
@@ -109,8 +115,12 @@ function(add_tit_library)
   target_link_libraries(${LIB_TARGET} ${LIB_PUBLIC} ${LIB_DEPENDS})
 
   # Install the library.
-  if(LIB_TYPE STREQUAL "SHARED")
-    install(TARGETS ${LIB_TARGET} LIBRARY DESTINATION lib)
+  if(LIB_DESTINATION)
+    set(INSTALLABLE_LIB_TYPES STATIC SHARED)
+    if(NOT LIB_TYPE IN_LIST INSTALLABLE_LIB_TYPES)
+      message(FATAL_ERROR "Cannot install library of type: ${LIB_TYPE}!")
+    endif()
+    install(TARGETS ${LIB_TARGET} LIBRARY DESTINATION "${LIB_DESTINATION}")
   endif()
 
   # Enable static analysis.
@@ -124,7 +134,13 @@ endfunction()
 #
 function(add_tit_executable)
   # Parse and check arguments.
-  cmake_parse_arguments(EXE "" "NAME;PREFIX" "SOURCES;DEPENDS" ${ARGN})
+  cmake_parse_arguments(
+    EXE
+    ""
+    "NAME;PREFIX;DESTINATION"
+    "SOURCES;DEPENDS"
+    ${ARGN}
+  )
   if(NOT EXE_NAME)
     message(FATAL_ERROR "Executable name must be specified.")
   endif()
@@ -146,7 +162,9 @@ function(add_tit_executable)
   target_link_libraries(${EXE_TARGET} PRIVATE ${EXE_DEPENDS})
 
   # Install the executable.
-  install(TARGETS ${EXE_TARGET} RUNTIME DESTINATION bin)
+  if(EXE_DESTINATION)
+    install(TARGETS ${EXE_TARGET} RUNTIME DESTINATION "${EXE_DESTINATION}")
+  endif()
 
   # Enable static analysis.
   enable_clang_tidy(${EXE_TARGET})
@@ -159,17 +177,19 @@ endfunction()
 #
 function(add_tit_documentation)
   # Parse and check arguments.
-  cmake_parse_arguments(MAN "" "NAME" "" ${ARGN})
-  if(NOT MAN_NAME)
-    message(FATAL_ERROR "Manual target name must be specified.")
+  cmake_parse_arguments(DOC "" "NAME;DESTINATION" "" ${ARGN})
+  if(NOT DOC_NAME)
+    message(FATAL_ERROR "Documentation name must be specified.")
   endif()
 
   # Create the target.
-  set(MAN_TARGET "${TARGET_NAME_PREFIX}_${MAN_NAME}")
-  add_sphinx_target(${MAN_TARGET})
+  set(DOC_TARGET "${TARGET_NAME_PREFIX}_${MAN_NAME}")
+  add_sphinx_target(${DOC_TARGET})
 
   # Install the target.
-  install_sphinx_target(TARGET ${MAN_TARGET} DESTINATION manual)
+  if(DOC_DESTINATION)
+    install_sphinx_target(TARGET ${DOC_TARGET} DESTINATION "${DOC_DESTINATION}")
+  endif()
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

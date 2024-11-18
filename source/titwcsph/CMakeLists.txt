@@ -6,6 +6,8 @@
 add_tit_executable(
   NAME
     titwcsph
+  DESTINATION
+    bin
   SOURCES
     "wcsph.cpp"
   DEPENDS
