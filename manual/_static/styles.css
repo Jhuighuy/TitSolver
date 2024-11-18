@@ -3,7 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-/*
+/**
  * CSS for the Sphinx documentation.
  */
 
@@ -13,16 +13,16 @@
   /* Colors. */
   --accent-color: #0056b3;
   --accent-color-orange: #c87f00;
-  --background-color-darker: #f8f8f8;
   --background-color: #fff;
+  --background-color-darker: #f8f8f8;
   --border-color: #ddd;
-  --text-color-darker: #555;
   --text-color: #333;
+  --text-color-darker: #555;
 
   /* Sizes. */
   --border-outline-offset: 2px;
-  --border-size-thicker: 2px;
   --border-size: 1px;
+  --border-size-thicker: 2px;
   --border-radius: 5px;
   --content-width: 960px;
   --font-size: 16px;
