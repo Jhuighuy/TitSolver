@@ -20,6 +20,9 @@
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
 
+# User manual configuration files.
+!/manual/conf.py
+
 # Output.
 .cache/
 /output/
@@ -31,25 +34,24 @@
 !*.cpp
 
 # Web files.
-# (To be replaced with the PR with the frontend.)
-/front
+!*.js
+!*.html
+!*.css
+!*.svg
+
+# Documentation files.
+!*.md
+!*.rst
 
 # Scripts.
 !*.sh
-
-# Documentation.
-!*.md
 
 # CMake files.
 !CMakeLists.txt
 !*.cmake
 !/cmake/codespell.txt
 
-# Docker files.
-!/docker/*Dockerfile
-
 # Pipelines.
-!/.circleci/config.yml
 !/.github/workflows/*.yml
 
 # Test input and output files.
