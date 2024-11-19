@@ -23,10 +23,10 @@ function(add_sphinx_target TARGET)
   # Find all the source files.
   set(TARGET_SOURCES)
   set(TARGET_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/conf.py")
-  list(APPEND TARGET_SOURCES "${TARGET_CONFIG}")
   if(NOT EXISTS "${TARGET_CONFIG}")
     message(FATAL_ERROR "Sphinx configuration file does not exist!")
   endif()
+  list(APPEND TARGET_SOURCES "${TARGET_CONFIG}")
   file(GLOB_RECURSE TARGET_PAGES "${CMAKE_CURRENT_SOURCE_DIR}/*.rst")
   list(APPEND TARGET_SOURCES ${TARGET_PAGES})
   file(GLOB_RECURSE TARGET_STATIC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/_static/*")
@@ -72,7 +72,7 @@ function(add_sphinx_target TARGET)
 
   # Run sphinx-build.
   add_custom_command(
-    COMMENT "Building Sphinx target ${TARGET}"
+    COMMENT "Building Sphinx target ${CMAKE_CURRENT_SOURCE_DIR}"
     OUTPUT ${TARGET_OUTPUT}
     COMMAND
       "${CMAKE_COMMAND}"
@@ -106,18 +106,14 @@ function(install_sphinx_target)
      message(FATAL_ERROR "Sphinx target name must be specified.")
   endif()
   if(NOT INSTALL_DESTINATION)
-    message(FATAL_ERROR "Sphinx destination must be specified.")
+    message(FATAL_ERROR "Install destination must be specified.")
   endif()
 
   # Get the output files.
   get_target_property(TARGET_OUTPUT "${INSTALL_TARGET}" "SPHINX_OUTPUT")
   get_target_property(TARGET_OUTPUT_DIR "${INSTALL_TARGET}" "SPHINX_OUTPUT_DIR")
   if(NOT TARGET_OUTPUT OR NOT TARGET_OUTPUT_DIR)
-    message(
-      FATAL_ERROR
-      "No output files is set for the target ${INSTALL_TARGET}. "
-      "Is it a Sphinx target?"
-    )
+    message(FATAL_ERROR "Target ${INSTALL_TARGET} is not a Sphinx target.")
   endif()
 
   # Install the documentation.

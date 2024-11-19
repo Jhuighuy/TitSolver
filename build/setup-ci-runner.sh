@@ -36,8 +36,11 @@ setup-macos() {
     gnu-sed              \
     libtool              \
     "llvm@$LLVM_VERSION" \
+    node                 \
     pkg-config           \
-    sphinx-doc
+    pnpm                 \
+    sphinx-doc           \
+    || true # Linking may fail if the package is already installed.
   local LLVM_PATH="$(brew --prefix llvm@$LLVM_VERSION)/bin"
   ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
   echo "$LLVM_PATH" >> $GITHUB_PATH
@@ -57,7 +60,10 @@ setup-ubuntu() {
     "clang-tidy-$LLVM_VERSION" \
     cmake                      \
     "g++-$GCC_VERSION"         \
+    nodejs                     \
+    npm                        \
     sphinx-doc
+  sudo npm install -g pnpm
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

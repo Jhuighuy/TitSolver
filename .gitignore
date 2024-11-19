@@ -23,9 +23,15 @@
 # User manual configuration files.
 !/manual/conf.py
 
+# Frontend configuration files.
+!package.json
+!*.config.json
+!tsconfig*.json
+
 # Output.
 .cache/
 /output/
+**/node_modules/
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -35,6 +41,9 @@
 
 # Web files.
 !*.js
+!*.jsx
+!*.ts
+!*.tsx
 !*.html
 !*.css
 !*.svg

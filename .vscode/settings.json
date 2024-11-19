@@ -34,22 +34,24 @@
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
   "files.exclude": {
-    ".cache": true,
-    "output": true,
-    "compile_flags.txt": true
+    "**/.cache": true,
+    "**/node_modules/**": true,
+    "compile_flags.txt": true,
+    "output": true
   },
   "files.watcherExclude": {
     "**/.cache/**": true,
     "**/output/**": true,
-    "**/compile_flags.txt": true
+    "**/compile_flags.txt": true,
+    "**/node_modules/**": true
   },
   "files.associations": {
     ".clang-tidy": "yaml",
     ".clangd": "yaml",
-    "**/.vscode/c_cpp_properties.json": "jsonc",
-    "**/_templates/**.html": "jinja-html",
     "*.ipp": "cpp",
     "*.tcc": "cpp",
+    "**/_templates/**.html": "jinja-html",
+    "**/.vscode/c_cpp_properties.json": "jsonc",
     "__availability": "cpp",
     "__bit_reference": "cpp",
     "__bits": "cpp",

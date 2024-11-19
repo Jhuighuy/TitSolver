@@ -6,6 +6,7 @@
 include_guard()
 include(clang_tidy)
 include(compiler)
+include(pnpm)
 include(sphinx)
 include(utils)
 
@@ -168,6 +169,34 @@ function(add_tit_executable)
 
   # Enable static analysis.
   enable_clang_tidy(${EXE_TARGET})
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
+# Add a web application target.
+#
+function(add_tit_webapp)
+  # Parse and check arguments.
+  cmake_parse_arguments(WEBAPP "" "NAME;DESTINATION" "" ${ARGN})
+  if(NOT WEBAPP_NAME)
+    message(FATAL_ERROR "Web target name must be specified.")
+  endif()
+
+  # Create the target.
+  set(WEBAPP_TARGET "${TARGET_NAME_PREFIX}_${WEBAPP_NAME}")
+  add_pnpm_target(${WEBAPP_TARGET})
+
+  # Install the target.
+  if(WEBAPP_DESTINATION)
+    install_pnpm_target(
+      TARGET ${WEBAPP_TARGET}
+      DESTINATION "${WEBAPP_DESTINATION}"
+    )
+  endif()
+
+  # Enable static analysis.
+  lint_pnpm_target(${WEBAPP_TARGET})
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
