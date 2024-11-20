@@ -30,7 +30,7 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Real>
-auto sph_main(int /*argc*/, char** /*argv*/) -> int {
+auto sph_main(CmdArgs /*args*/) -> int {
   constexpr Real H = 0.6;   // Water column height.
   constexpr Real L = 2 * H; // Water column length.
 
@@ -188,6 +188,4 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
 } // namespace tit::sph
 
-auto main(int argc, char** argv) -> int {
-  return tit::run_main(argc, argv, &tit::sph::sph_main<tit::real_t>);
-}
+TIT_IMPLEMENT_MAIN(sph::sph_main<tit::real_t>)

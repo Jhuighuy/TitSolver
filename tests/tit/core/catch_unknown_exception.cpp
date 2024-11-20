@@ -32,7 +32,7 @@ void func_1() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_test(int /*argc*/, char** /*argv*/) -> int {
+auto run_test(CmdArgs /*args*/) -> int {
   func_1();
   eprintln("This line should not be executed.");
   return 0;
@@ -43,7 +43,4 @@ auto run_test(int /*argc*/, char** /*argv*/) -> int {
 } // namespace
 } // namespace tit
 
-auto main(int argc, char** argv) -> int {
-  using namespace tit;
-  run_main(argc, argv, &run_test);
-}
+TIT_IMPLEMENT_MAIN(run_test)

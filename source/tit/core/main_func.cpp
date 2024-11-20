@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
@@ -18,7 +19,7 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_main(int argc, char** argv, const main_func_t& main_func) -> int {
+auto run_main(int argc, char** argv, const MainFunc& main_func) -> int {
   // Setup signal handler.
   const FatalSignalHandler handler{};
 
@@ -36,7 +37,9 @@ auto run_main(int argc, char** argv, const main_func_t& main_func) -> int {
 
   // Run the main function.
   TIT_ENSURE(main_func != nullptr, "Main function must be specified!");
-  return main_func(argc, argv);
+  TIT_ENSURE(argc > 0, "Invalid number of command line arguments!");
+  TIT_ENSURE(argv != nullptr, "Invalid command line arguments!");
+  return main_func({const_cast<const char**>(argv), static_cast<size_t>(argc)});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
