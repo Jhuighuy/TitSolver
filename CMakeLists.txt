@@ -27,6 +27,7 @@ find_package(
   CONFIG REQUIRED
   COMPONENTS core container stacktrace_addr2line
 )
+find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)

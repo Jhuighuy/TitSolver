@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <typeinfo>
@@ -43,6 +44,11 @@ void fast_exit(ExitCode exit_code) noexcept;
 
 /// Execute a system command. Fail if the command fails.
 void checked_system(const char* command) noexcept;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Path to the current executable.
+auto exe_path() -> std::filesystem::path;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

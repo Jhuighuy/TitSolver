@@ -3,15 +3,21 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#ifdef __APPLE__
+#include <array>
+#endif
 #include <cstdlib>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <utility>
 
-#include <sys/ioctl.h>
 #ifdef __APPLE__
+#include <libproc.h>
+#include <sys/proc_info.h>
 #include <sys/ttycom.h>
 #endif
+#include <sys/ioctl.h>
 #include <unistd.h>
 
 #include <boost/core/demangle.hpp>
@@ -58,6 +64,21 @@ void checked_system(const char* command) noexcept {
   const auto status = std::system(command);
   static_cast<void>(status); /// @todo Ignore the status code for now.
   // TIT_ENSURE(status == 0, "System command failed!");
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto exe_path() -> std::filesystem::path {
+#ifdef __APPLE__
+  std::array<char, PROC_PIDPATHINFO_MAXSIZE> buffer{};
+  const auto status = proc_pidpath(getpid(), buffer.data(), sizeof(buffer));
+  TIT_ENSURE(status > 0, "Unable to query executable path!");
+  return buffer.data();
+#elifdef __linux__
+  return std::filesystem::canonical("/proc/self/exe");
+#else
+#error Unsupported platform!
+#endif
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
