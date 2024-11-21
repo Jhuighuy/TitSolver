@@ -1,0 +1,229 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *|
+ * Part of the Tit Solver project, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+// IWYU pragma: private, include "tit/view/gl.hpp"
+#pragma once
+
+#include <concepts>
+
+#include <GL/glew.h>
+#include <glm/glm.hpp> // IWYU pragma: keep
+
+#include "tit/core/basic_types.hpp"
+
+#include "tit/view/gl/buffer.hpp"
+
+namespace tit::view::gl {
+
+/// OpenGL texture binding target.
+enum class TextureTarget : GLenum { // NOLINT(*-enum-size)
+  texture2D = GL_TEXTURE_2D,
+  texture_buffer = GL_TEXTURE_BUFFER,
+}; // enum class TextureTarget
+
+/// OpenGL pixel description type.
+struct pixel_desc_t {
+  /// Pixel integral format.
+  GLenum internal_format;
+  /// Pixel format.
+  GLenum format;
+  /// Pixel component type.
+  GLenum type;
+}; // struct pixel_desc_t
+
+/// OpenGL default pixel description.
+/// Copied straightly from the OpenGL ES 3.0's `glTexImage2D`
+/// sized internal format table.
+template<class Pixel>
+inline constexpr auto pixel_desc_v = []() -> pixel_desc_t {
+  // NOLINTBEGIN(*-use-designated-initializers)
+  if constexpr (std::same_as<Pixel, GLbyte>)
+    return {GL_R8I, GL_RED_INTEGER, GL_BYTE};
+  if constexpr (std::same_as<Pixel, GLubyte>)
+    return {GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE};
+  if constexpr (std::same_as<Pixel, GLshort>)
+    return {GL_R16I, GL_RED_INTEGER, GL_SHORT};
+  if constexpr (std::same_as<Pixel, GLushort>)
+    return {GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT};
+  if constexpr (std::same_as<Pixel, GLint>)
+    return {GL_R32I, GL_RED_INTEGER, GL_INT};
+  if constexpr (std::same_as<Pixel, GLuint>)
+    return {GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT};
+  if constexpr (std::same_as<Pixel, GLfloat>)
+    return {GL_R32F, GL_RED, GL_FLOAT};
+
+  if constexpr (std::same_as<Pixel, glm::tvec2<GLbyte, glm::packed>>) // NOLINT
+    return {GL_RG8I, GL_RG_INTEGER, GL_BYTE};
+  if constexpr (std::same_as<Pixel, glm::tvec2<GLubyte, glm::packed>>)
+    return {GL_RG8UI, GL_RG_INTEGER, GL_UNSIGNED_BYTE};
+  if constexpr (std::same_as<Pixel, glm::tvec2<GLshort, glm::packed>>)
+    return {GL_RG16I, GL_RG_INTEGER, GL_SHORT};
+  if constexpr (std::same_as<Pixel, glm::tvec2<GLushort, glm::packed>>)
+    return {GL_RG16UI, GL_RG_INTEGER, GL_UNSIGNED_SHORT};
+  if constexpr (std::same_as<Pixel, glm::tvec2<GLint, glm::packed>>)
+    return {GL_RG32I, GL_RG_INTEGER, GL_INT};
+  if constexpr (std::same_as<Pixel, glm::tvec2<GLuint, glm::packed>>)
+    return {GL_RG32UI, GL_RG_INTEGER, GL_UNSIGNED_INT};
+  if constexpr (std::same_as<Pixel, glm::tvec2<GLfloat, glm::packed>>)
+    return {GL_RG32F, GL_RG, GL_FLOAT};
+
+  if constexpr (std::same_as<Pixel, glm::tvec3<GLbyte, glm::packed>>) // NOLINT
+    return {GL_RGB8I, GL_RGB_INTEGER, GL_BYTE};
+  if constexpr (std::same_as<Pixel, glm::tvec3<GLubyte, glm::packed>>)
+    return {GL_RGB8UI, GL_RGB_INTEGER, GL_UNSIGNED_BYTE};
+  if constexpr (std::same_as<Pixel, glm::tvec3<GLshort, glm::packed>>)
+    return {GL_RGB16I, GL_RGB_INTEGER, GL_SHORT};
+  if constexpr (std::same_as<Pixel, glm::tvec3<GLushort, glm::packed>>)
+    return {GL_RGB16UI, GL_RGB_INTEGER, GL_UNSIGNED_SHORT};
+  if constexpr (std::same_as<Pixel, glm::tvec3<GLint, glm::packed>>)
+    return {GL_RGB32I, GL_RGB_INTEGER, GL_INT};
+  if constexpr (std::same_as<Pixel, glm::tvec3<GLuint, glm::packed>>)
+    return {GL_RGB32UI, GL_RGB_INTEGER, GL_UNSIGNED_INT};
+  if constexpr (std::same_as<Pixel, glm::tvec3<GLfloat, glm::packed>>)
+    return {GL_RGB32F, GL_RGB, GL_FLOAT};
+
+  if constexpr (std::same_as<Pixel, glm::tvec4<GLbyte, glm::packed>>) // NOLINT
+    return {GL_RGBA8I, GL_RGBA_INTEGER, GL_BYTE};
+  if constexpr (std::same_as<Pixel, glm::tvec4<GLubyte, glm::packed>>)
+    return {GL_RGBA8UI, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE};
+  if constexpr (std::same_as<Pixel, glm::tvec4<GLshort, glm::packed>>)
+    return {GL_RGBA16I, GL_RGBA_INTEGER, GL_SHORT};
+  if constexpr (std::same_as<Pixel, glm::tvec4<GLushort, glm::packed>>)
+    return {GL_RGBA16UI, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT};
+  if constexpr (std::same_as<Pixel, glm::tvec4<GLint, glm::packed>>)
+    return {GL_RGBA32I, GL_RGBA_INTEGER, GL_INT};
+  if constexpr (std::same_as<Pixel, glm::tvec4<GLuint, glm::packed>>)
+    return {GL_RGBA32UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT};
+  if constexpr (std::same_as<Pixel, glm::tvec4<GLfloat, glm::packed>>)
+    return {GL_RGBA32F, GL_RGBA, GL_FLOAT};
+
+  return {};
+  // NOLINTEND(*-use-designated-initializers)
+}();
+
+/// Pixel type.
+template<class Pixel>
+concept pixel = (pixel_desc_v<Pixel>.internal_format != 0);
+
+/// OpenGL texture.
+class Texture {
+private:
+
+  GLuint texture_id_{};
+
+public:
+
+  /// Construct a texture.
+  Texture() {
+    glGenTextures(1, &texture_id_);
+  }
+
+  /// Move-construct a texture.
+  Texture(Texture&&) = default;
+  /// Move-assign the texture.
+  auto operator=(Texture&&) -> Texture& = default;
+
+  Texture(const Texture&) = delete;
+  auto operator=(const Texture&) -> Texture& = delete;
+
+  /// Destruct the texture.
+  ~Texture() {
+    glDeleteTextures(1, &texture_id_);
+  }
+
+  /// Cast to texture ID.
+  [[nodiscard]] constexpr operator GLuint() const noexcept {
+    return texture_id_;
+  }
+
+protected:
+
+  void bind_(TextureTarget target) const {
+    glBindTexture(static_cast<GLenum>(target), texture_id_);
+  }
+  void bind_(TextureTarget target, size_t slot) const {
+    glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + slot));
+    bind_(target);
+  }
+
+}; // class Texture
+
+/// OpenGL 2D texture.
+template<pixel Pixel>
+class Texture2D : public Texture {
+public:
+
+  /// Construct a 2D texture.
+  Texture2D() = default;
+
+  /// Construct a 2D texture with @p width and @p height;
+  Texture2D(GLsizei width, GLsizei height, const Pixel* /*data*/ = nullptr)
+      : Texture2D{} {
+    assign(width, height);
+  }
+
+  /// Bind the texture buffer to @p slot.
+  void bind(size_t slot) const {
+    bind_(TextureTarget::texture2D, slot);
+  }
+
+  /// Assign the texture @p width, @p height and @p data.
+  void assign(GLsizei width, GLsizei height, const Pixel* data = nullptr) {
+    bind_(TextureTarget::texture2D);
+    glTexImage2D(GL_TEXTURE_2D,
+                 /*level*/ 0,
+                 pixel_desc_v<Pixel>.internal_format, //
+                 width,
+                 height,
+                 /*border*/ 0,
+                 pixel_desc_v<Pixel>.format,
+                 pixel_desc_v<Pixel>.type,
+                 data);
+    /// @todo Sampling properties!
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+  }
+
+  /// Read the texture into the pixel buffer object.
+  /// @see https://riptutorial.com/opengl/example/28872/using-pbos
+  void read_pixels(Buffer<Pixel>& buffer) {
+    buffer.bind(BufferTarget::pixel_pack_buffer);
+    bind_(TextureTarget::texture2D);
+    glGetTexImage(GL_TEXTURE_2D,
+                  /*level*/ 0,
+                  pixel_desc_v<Pixel>.format,
+                  pixel_desc_v<Pixel>.type,
+                  /*data*/ nullptr);
+  }
+
+}; // class Texture2D
+
+/// OpenGL texture buffer.
+class TextureBuffer : public Texture {
+public:
+
+  /// Construct a texture.
+  template<pixel Pixel>
+  TextureBuffer(const Buffer<Pixel>& buffer) {
+    assign(buffer);
+  }
+
+  /// Bind the texture buffer to @p slot.
+  void bind(size_t slot) const {
+    bind_(TextureTarget::texture_buffer, slot);
+  }
+
+  /// Assign the texture buffer underlying @p buffer.
+  template<pixel Pixel>
+  void assign(const Buffer<Pixel>& buffer) {
+    bind_(TextureTarget::texture_buffer);
+    glTexBuffer(GL_TEXTURE_BUFFER, pixel_desc_v<Pixel>.internal_format, buffer);
+  }
+
+}; // class TextureBuffer
+
+} // namespace tit::view::gl
