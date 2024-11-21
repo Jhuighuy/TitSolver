@@ -25,6 +25,8 @@
 #include "tit/sph/time_integrator.hpp"
 #include "tit/sph/viscosity.hpp"
 
+#include "tit/view/visualizer.hpp"
+
 namespace tit::sph {
 namespace {
 
@@ -138,6 +140,9 @@ auto sph_main(CmdArgs /*args*/) -> int {
     // Recalculate density from EOS.
     rho[a] = rho_0 + p[a] / pow2(cs_0);
   }
+
+  // Visualize the mesh.
+  view::visualize_mesh(particles);
 
   // Setup the particle mesh structure.
   ParticleMesh mesh{
