@@ -4,17 +4,17 @@ func_3
 Throwing an exception...
 
 
-/Users/jhuighuy/TitSolver/tests/tit/core/catch_tit_exception.cpp:19:36: Terminating due to an unhandled exception.
+/Users/jhuighuy/TitSolver/tests/tit/core/catch_tit_exception.cpp:19:3: Terminating due to an unhandled exception.
 
   throw tit::Exception(...);
-  ^~~~~~~~~~~~~~~~~~~~~~~~~~ Test exception.
+  ^~~~~~~~~~~~~~~~~~~~~~~~~~ Test exception, Some arguments: 13, hello.
 
 
 Stack trace:
 
-  0 0x102969e10 tit::(anonymous namespace)::func_3()
-  1 0x10293a184 tit::(anonymous namespace)::func_1()
-  2 0x10293a1a8 tit::(anonymous namespace)::run_test(int, char**)
-  3 0x10293a1b4 tit::(anonymous namespace)::run_test(int, char**)
-  4 0x102940b70 tit::run_main(int, char**, std::function<int (int, char**)> const&)
-  5 0x10296a258 main
+  0 0x1047ad644 tit::(anonymous namespace)::func_3()
+  1 0x1047ad78c tit::(anonymous namespace)::func_1()
+  2 0x1047ad7b0 tit::(anonymous namespace)::run_test(std::span<char const*, 18446744073709551615ul>)
+  3 0x1047ad7bc tit::(anonymous namespace)::run_test(std::span<char const*, 18446744073709551615ul>)
+  4 0x1047b6b44 tit::run_main(int, char**, std::function<int (std::span<char const*, 18446744073709551615ul>)> const&)
+  5 0x1047fae18 main

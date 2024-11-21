@@ -20,6 +20,7 @@ add_tit_library(
     "exception.hpp"
     "io.hpp"
     "io.cpp"
+    "log.hpp"
     "main_func.cpp"
     "main_func.hpp"
     "malloc.cpp"

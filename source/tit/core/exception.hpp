@@ -6,9 +6,9 @@
 #pragma once
 
 #include <exception>
+#include <format> // IWYU pragma: keep
 #include <source_location>
 #include <string>
-#include <string_view>
 #include <utility>
 
 #include "tit/core/missing.hpp"
@@ -24,10 +24,10 @@ public:
   /// Initialize exception. Source location and stack trace are recorded.
   [[gnu::always_inline]]
   explicit Exception(
-      std::string_view message,
+      std::string message,
       std::source_location location = std::source_location::current(),
       Std::stacktrace stacktrace = Std::stacktrace::current())
-      : message_{message}, location_{location},
+      : message_{std::move(message)}, location_{location},
         stacktrace_{std::move(stacktrace)} {}
 
   /// Get the exception message.
@@ -89,3 +89,7 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
+
+/// Throw an exception.
+#define TIT_THROW(message, ...)                                                \
+  throw tit::Exception(std::format((message) __VA_OPT__(, __VA_ARGS__)))

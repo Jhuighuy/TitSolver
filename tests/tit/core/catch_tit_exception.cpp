@@ -16,7 +16,7 @@ namespace {
 void func_3() {
   eprintln("func_3");
   eprintln("Throwing an exception...");
-  throw Exception("Test exception.");
+  TIT_THROW("Test exception, Some arguments: {}, {}.", 13, "hello");
 }
 
 [[gnu::noinline]]
