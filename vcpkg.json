@@ -10,6 +10,7 @@
       "name": "boost-stacktrace",
       "default-features": false
     },
+    "crow",
     "doctest",
     "gcem",
     "highway",
