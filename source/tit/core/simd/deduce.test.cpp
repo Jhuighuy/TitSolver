@@ -50,7 +50,7 @@ static_assert(std::is_same_v<DeducedRegArray<8>, RegArray<8, 1>>);
 static_assert(std::is_same_v<DeducedRegArray<10>, RegArray<8, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<18>, RegArray<8, 3>>);
 
-#elif defined __SSE__ || defined __ARM_NEON
+#elif defined __SSE__ || defined __ARM_NEON || defined __wasm32__
 
 // Should be a 128 bit register.
 static_assert(std::is_same_v<DeducedRegArray<2>, RegArray<4, 1>>);
