@@ -15,6 +15,17 @@ include(utils)
 # Common target name prefix.
 set(TARGET_NAME_PREFIX "tit")
 
+#
+# Make a target name.
+#
+function(make_target_name NAME RESULT_VAR)
+  if(NAME MATCHES "^${TARGET_NAME_PREFIX}")
+    set(${RESULT_VAR} "${NAME}" PARENT_SCOPE)
+  else()
+    set(${RESULT_VAR} "${TARGET_NAME_PREFIX}_${NAME}" PARENT_SCOPE)
+  endif()
+endfunction()
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #
@@ -100,11 +111,7 @@ function(add_tit_library)
   endif()
 
   # Create the library and the alias.
-  if(LIB_NAME MATCHES "^${TARGET_NAME_PREFIX}")
-    set(LIB_TARGET "${LIB_NAME}")
-  else()
-    set(LIB_TARGET "${TARGET_NAME_PREFIX}_${LIB_NAME}")
-  endif()
+  make_target_name(${LIB_NAME} LIB_TARGET)
   set(LIB_TARGET_ALIAS "${TARGET_NAME_PREFIX}::${LIB_NAME}")
   add_library(${LIB_TARGET} ${LIB_TYPE} ${LIB_SOURCES})
   add_library(${LIB_TARGET_ALIAS} ALIAS ${LIB_TARGET})
@@ -147,11 +154,7 @@ function(add_tit_executable)
   endif()
 
   # Create the executable and the alias.
-  if(EXE_NAME MATCHES "^${TARGET_NAME_PREFIX}")
-    set(EXE_TARGET "${EXE_NAME}")
-  else()
-    set(EXE_TARGET "${TARGET_NAME_PREFIX}_${EXE_NAME}")
-  endif()
+  make_target_name(${EXE_NAME} EXE_TARGET)
   set(EXE_TARGET_ALIAS "${TARGET_NAME_PREFIX}::${EXE_NAME}")
   add_executable(${EXE_TARGET} ${EXE_SOURCES})
   add_executable(${EXE_TARGET_ALIAS} ALIAS ${EXE_TARGET})
@@ -184,7 +187,7 @@ function(add_tit_webapp)
   endif()
 
   # Create the target.
-  set(WEBAPP_TARGET "${TARGET_NAME_PREFIX}_${WEBAPP_NAME}")
+  make_target_name(${WEBAPP_NAME} WEBAPP_TARGET)
   add_pnpm_target(${WEBAPP_TARGET})
 
   # Install the target.
@@ -212,7 +215,7 @@ function(add_tit_documentation)
   endif()
 
   # Create the target.
-  set(DOC_TARGET "${TARGET_NAME_PREFIX}_${MAN_NAME}")
+  make_target_name(${DOC_NAME} DOC_TARGET)
   add_sphinx_target(${DOC_TARGET})
 
   # Install the target.

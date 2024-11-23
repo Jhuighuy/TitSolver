@@ -15,6 +15,8 @@ set(CLANG_MIN_VERSION "18.1.8")
 # Define warnings and diagnostics options.
 set(
   CLANG_WARNINGS
+  # Treat warnings as errors.
+  -Werror
   # Enable most of the commonly used warning options.
   -Wall
   -Wextra
@@ -138,8 +140,8 @@ set(
 # Use link time optimizations?
 #
 # Note: This is experimental and may significantly decrease performance!
-set(GNU_USE_LTO FALSE)
-if(GNU_USE_LTO)
+set(CLANG_USE_LTO FALSE)
+if(CLANG_USE_LTO)
   message(WARNING "Link-time optimizations support is experimental!")
   list(APPEND CLANG_OPTIMIZE_OPTIONS -flto)
 endif()

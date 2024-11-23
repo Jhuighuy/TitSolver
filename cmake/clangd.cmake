@@ -26,6 +26,9 @@ function(write_compile_flags SAMPLE_TARGET)
     -std=c++23
   )
 
+  # Remove `-Werror` from the compile flags, as it breaks clangd.
+  list(REMOVE_ITEM CLANG_COMPILE_ARGS "-Werror")
+
   # Write the compile flags to a file, each on a new line.
   add_custom_target(
     "${CMAKE_PROJECT_NAME}_clangd_compile_flags"

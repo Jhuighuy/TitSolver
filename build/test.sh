@@ -10,6 +10,7 @@
 
 source "$(dirname "$0")/build-utils.sh" || exit $?
 JOBS=$(($(get-num-cpus) + 1))
+EXTRA_ARGS=()
 CTEST_EXE="${CTEST_EXE:-ctest}"
 
 usage() {
@@ -64,6 +65,7 @@ run-tests() {
   # Exclude long tests if the flag is not set.
   [ ! "$TIT_LONG_TESTS" ] && CTEST_ARGS+=("--exclude-regex" "\[long\]")
 
+  [ "${EXTRA_ARGS[@]}" ] && CTEST_ARGS=("${CTEST_ARGS[@]}" "${EXTRA_ARGS[@]}")
   (cd "$TEST_DIR" && "${CTEST_ARGS[@]}") || exit $?
 }
 

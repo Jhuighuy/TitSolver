@@ -41,6 +41,7 @@
   },
   "files.watcherExclude": {
     "**/.cache/**": true,
+    "**/dist/**": true,
     "**/output/**": true,
     "**/compile_flags.txt": true,
     "**/node_modules/**": true

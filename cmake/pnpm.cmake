@@ -4,7 +4,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
-include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -39,9 +38,14 @@ function(add_pnpm_target TARGET)
 
   # Run PNPM install.
   set(TARGET_NODE_MODULES "${CMAKE_CURRENT_SOURCE_DIR}/node_modules")
+  cmake_path(
+    RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR
+    BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE RELATIVE_SOURCE_DIR
+  )
   add_custom_command(
     COMMENT
-      "Installing dependencies for PNPM package ${CMAKE_CURRENT_SOURCE_DIR}"
+      "Installing dependencies for PNPM package ${RELATIVE_SOURCE_DIR}"
     COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" install
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS "${TARGET_PACKAGE}"
@@ -64,7 +68,7 @@ function(add_pnpm_target TARGET)
 
   # Run PNPM build.
   add_custom_command(
-    COMMENT "Building PNPM package ${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Building PNPM package ${RELATIVE_SOURCE_DIR}"
     COMMAND
       "${CMAKE_COMMAND}" -E env "PNPM_OUTPUT_DIR=${TARGET_OUTPUT_DIR}"
         "${CHRONIC_EXE}" "${PNPM_EXE}" run build
@@ -136,8 +140,13 @@ function(lint_pnpm_target TARGET)
 
   # Run the PNPM lint.
   set(STAMP "${TARGET_BINARY_DIR}/${TARGET}.pnpm_lint_stamp")
+  cmake_path(
+    RELATIVE_PATH TARGET_SOURCE_DIR
+    BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE RELATIVE_SOURCE_DIR
+  )
   add_custom_command(
-    COMMENT "Linting PNPM package ${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Linting PNPM package ${RELATIVE_SOURCE_DIR}"
     COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" run lint
     COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
     WORKING_DIRECTORY "${TARGET_SOURCE_DIR}"

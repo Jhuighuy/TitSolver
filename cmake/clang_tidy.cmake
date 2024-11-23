@@ -72,8 +72,8 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     -std=c++23
   )
 
-  # Get the source directory and sources of the target.
-  set(ALL_STAMPS)
+  # Get the binary, source directory and sources of the target.
+  get_target_property(TARGET_BINARY_DIR ${TARGET} BINARY_DIR)
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
   if(NOT TARGET_SOURCES)
@@ -82,28 +82,36 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   endif()
 
   # Loop through the target sources and call clang-tidy.
+  set(ALL_STAMPS)
   foreach(SOURCE ${TARGET_SOURCES})
     # Skip non-C/C++ files.
     is_cpp_file("${SOURCE}" SOURCE_IS_CPP)
     if(NOT SOURCE_IS_CPP)
-      message(WARNING "clang-tidy: a skipping non C/C++ file: '${SOURCE}'.")
+      message(WARNING "clang-tidy: skipping a non C/C++ file: '${SOURCE}'.")
       continue()
     endif()
 
     # Create a stamp.
     string(REPLACE "/" "_" STAMP "${SOURCE}.tidy_stamp")
+    set(STAMP "${TARGET_BINARY_DIR}/${STAMP}")
     list(APPEND ALL_STAMPS "${STAMP}")
 
     # Execute clang-tidy and update a stamp file on success.
     # (wrapped with chronic to avoid annoying `N warnings generated` messages).
     set(SOURCE_PATH "${TARGET_SOURCE_DIR}/${SOURCE}")
+    cmake_path(
+      RELATIVE_PATH SOURCE_PATH
+      BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+      OUTPUT_VARIABLE RELATIVE_SOURCE_PATH
+    )
     add_custom_command(
-      COMMENT "Analyzing ${SOURCE_PATH}"
+      COMMENT "Analyzing ${RELATIVE_SOURCE_PATH}"
       OUTPUT "${STAMP}"
       COMMAND
         "${CHRONIC_EXE}"
-        "${CLANG_TIDY_EXE}" "${SOURCE_PATH}"
-        ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_ARGS}
+          "${CLANG_TIDY_EXE}"
+            "${SOURCE_PATH}"
+            ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_ARGS}
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
       DEPENDS "${SOURCE_PATH}"

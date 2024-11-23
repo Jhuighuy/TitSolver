@@ -50,7 +50,7 @@ parse-args() {
       --compiler)     COMPILER="$2";         shift 2;;
       --compiler=*)   COMPILER="${1#*=}";    shift 1;;
       --vcpkg-root)   VCPKG_ROOT="$2";       shift 2;;
-      --vcpkg-root=*) VCPKG_ROOT="${1#*=}";  shift 2;;
+      --vcpkg-root=*) VCPKG_ROOT="${1#*=}";  shift 1;;
       --dry)          DRY=true;              shift;;
       --)             EXTRA_ARGS=("${@:2}"); break;;
       # Help.

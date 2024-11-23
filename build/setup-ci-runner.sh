@@ -14,7 +14,7 @@ LLVM_VERSION=${LLVM_VERSION:-18}
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 enforce-ci() {
-  [[ ! -z "$GITHUB_RUN_ID" ]] && return
+  [[ -n "$GITHUB_RUN_ID" ]] && return
   echo "This script must be run in a GitHub CI environment!"
   exit 1
 }
@@ -41,11 +41,13 @@ setup-macos() {
     pnpm                 \
     sphinx-doc           \
     || true # Linking may fail if the package is already installed.
-  local LLVM_PATH="$(brew --prefix llvm@$LLVM_VERSION)/bin"
+  local LLVM_PATH
+  LLVM_PATH="$(brew --prefix "llvm@$LLVM_VERSION")/bin"
   ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
-  echo "$LLVM_PATH" >> $GITHUB_PATH
-  local SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
-  echo "$SPHINX_PATH" >> $GITHUB_PATH
+  echo "$LLVM_PATH" >> "$GITHUB_PATH"
+  local SPHINX_PATH
+  SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
+  echo "$SPHINX_PATH" >> "$GITHUB_PATH"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,7 +56,7 @@ setup-ubuntu() {
   sudo apt -qq update
   wget https://apt.llvm.org/llvm.sh
   chmod +x llvm.sh
-  sudo ./llvm.sh $LLVM_VERSION
+  sudo ./llvm.sh "$LLVM_VERSION"
   sudo apt -qq install         \
     "clang-$LLVM_VERSION"      \
     "clang-tidy-$LLVM_VERSION" \
@@ -79,12 +81,12 @@ install-python-tools() {
 install-vcpkg() {
   export VCPKG_ROOT="$HOME/vcpkg"
   export VCPKG_DEFAULT_BINARY_CACHE="$HOME/vcpkg_cache"
-  echo "VCPKG_ROOT=$VCPKG_ROOT" >> $GITHUB_ENV
-  echo "VCPKG_DEFAULT_BINARY_CACHE=$VCPKG_DEFAULT_BINARY_CACHE" >> $GITHUB_ENV
+  echo "VCPKG_ROOT=$VCPKG_ROOT" >> "$GITHUB_ENV"
+  echo "VCPKG_DEFAULT_BINARY_CACHE=$VCPKG_DEFAULT_BINARY_CACHE" >> "$GITHUB_ENV"
   # Note: we cannot use `--depth=1` here, vcpgk requires the baseline commit.
-  git clone https://github.com/microsoft/vcpkg.git $VCPKG_ROOT
+  git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
   "$VCPKG_ROOT/bootstrap-vcpkg.sh"
-  mkdir -p $VCPKG_DEFAULT_BINARY_CACHE || true # Ignore if it already exists.
+  mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" || true # Ignore if it already exists.
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -25,7 +25,8 @@ export TEST_OUTPUT_DIR="$SOURCE_DIR/output/test_output"
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Terminal width.
-export COLUMNS=$((tty -s && tput cols) || echo 80)
+COLUMNS=$( (tty -s && tput cols) || echo 80)
+export COLUMNS
 
 # Print a separator.
 echo-separator() {

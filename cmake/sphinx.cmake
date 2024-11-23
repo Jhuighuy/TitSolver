@@ -71,8 +71,13 @@ function(add_sphinx_target TARGET)
   )
 
   # Run sphinx-build.
+  cmake_path(
+    RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR
+    BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE RELATIVE_SOURCE_DIR
+  )
   add_custom_command(
-    COMMENT "Building Sphinx target ${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Building Sphinx target ${RELATIVE_SOURCE_DIR}"
     OUTPUT ${TARGET_OUTPUT}
     COMMAND
       "${CMAKE_COMMAND}"
@@ -119,7 +124,9 @@ function(install_sphinx_target)
   # Install the documentation.
   foreach(FILE ${TARGET_OUTPUT})
     # Get the directory of the file relative to the output directory,
-    # and prepend the installation destination.
+    # and append it to the installation destination. This is needed to
+    # properly handle the hierarchy of the files, otherwise CMake will
+    # install all the files in the destination directory in a flat manner.
     get_filename_component(FILE_DIR "${FILE}" DIRECTORY)
     cmake_path(
       RELATIVE_PATH
