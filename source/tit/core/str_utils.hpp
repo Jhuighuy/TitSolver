@@ -72,8 +72,7 @@ inline constexpr StrToVal<Val> str_to_val{};
 template<class Val>
   requires std::integral<Val> || std::floating_point<Val>
 struct StrToVal<Val> {
-  /// @todo Clang-tidy segfaults if this is a `static constexpr` function.
-  constexpr auto operator()(std::string_view str) const noexcept
+  static constexpr auto operator()(std::string_view str) noexcept
       -> std::optional<Val> {
     Val value{};
     if (const auto [ptr, ec] =
@@ -97,8 +96,7 @@ inline constexpr StrToVal<float64_t> str_to_float{};
 /// String to boolean converter.
 template<>
 struct StrToVal<bool> {
-  /// @todo Clang-tidy segfaults if this is a `static constexpr` function.
-  constexpr auto operator()(std::string_view str) const noexcept
+  static constexpr auto operator()(std::string_view str) noexcept
       -> std::optional<bool> {
     if (str_nocase_equal(str, "true")) return true;
     if (str_nocase_equal(str, "false")) return false;

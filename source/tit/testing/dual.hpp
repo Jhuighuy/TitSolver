@@ -39,7 +39,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Dual number unary plus operator.
-  friend constexpr auto operator+(const Dual& f) -> const Dual& {
+  friend constexpr auto operator+(const Dual& f) -> Dual {
     return f;
   }
 
@@ -162,13 +162,13 @@ constexpr auto rsqrt(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
 /// Raise a dual number to a power.
 /// @{
 template<class Num, class Deriv>
-constexpr auto pow(const Dual<Num, Deriv>& f,
-                   std::type_identity_t<Num> a) -> Dual<Num, Deriv> {
+constexpr auto pow(const Dual<Num, Deriv>& f, std::type_identity_t<Num> a)
+    -> Dual<Num, Deriv> {
   return Dual{pow(f.val(), a), a * pow(f.val(), a - Num{1.0}) * f.deriv()};
 }
 template<class Num, class Deriv>
-constexpr auto pow(const Dual<Num, Deriv>& f,
-                   const Dual<Num, Deriv>& g) -> Dual<Num, Deriv> {
+constexpr auto pow(const Dual<Num, Deriv>& f, const Dual<Num, Deriv>& g)
+    -> Dual<Num, Deriv> {
   return Dual{pow(f.val(), g.val()),
               pow(f.val(), g.val() - Num{1.0}) *
                   (g.val() * f.deriv() + f.val() * log(f.val()) * g.deriv())};

@@ -47,12 +47,12 @@ TEST_CASE("integrate") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("integrate_cr") {
-  CHECK_APPROX_EQ(integrate_cr([](auto x) { return norm2(x); }, 1.0),
+  CHECK_APPROX_EQ(integrate_cr([](const auto& x) { return norm2(x); }, 1.0),
                   std::numbers::pi / 2.0);
 }
 
 TEST_CASE("integrate_sp") {
-  CHECK_APPROX_EQ(integrate_sp([](auto x) { return norm2(x); }, 1.0),
+  CHECK_APPROX_EQ(integrate_sp([](const auto& x) { return norm2(x); }, 1.0),
                   4.0 * std::numbers::pi / 5.0);
 }
 

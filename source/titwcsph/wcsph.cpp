@@ -26,6 +26,7 @@
 #include "tit/sph/viscosity.hpp"
 
 namespace tit::sph {
+namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -186,6 +187,7 @@ auto sph_main(CmdArgs /*args*/) -> int {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+} // namespace
 } // namespace tit::sph
 
 TIT_IMPLEMENT_MAIN(sph::sph_main<tit::real_t>)
