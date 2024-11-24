@@ -89,6 +89,15 @@ install-vcpkg() {
   mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" || true # Ignore if it already exists.
 }
 
+install-emsdk() {
+  export EMSDK_ROOT="$HOME/emsdk"
+  echo "EMSDK_ROOT=$EMSDK_ROOT" >> "$GITHUB_ENV"
+  git clone --depth=1 https://github.com/emscripten-core/emsdk.git "$EMSDK_ROOT"
+  "$EMSDK_ROOT/emsdk" install latest
+  "$EMSDK_ROOT/emsdk" activate latest
+  source "$EMSDK_ROOT/emsdk_env.sh"
+}
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 setup-ci() {
@@ -105,6 +114,7 @@ setup-ci() {
   # Install common dependencies.
   install-python-tools
   install-vcpkg
+  install-emsdk
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

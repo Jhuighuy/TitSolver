@@ -3,11 +3,24 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("core")
-add_subdirectory("geom")
-add_subdirectory("graph")
-add_subdirectory("sph")
-add_subdirectory("testing")
-add_subdirectory("view")
+add_tit_library(
+  NAME
+    view
+  SOURCES
+    "test.cpp"
+  DEPENDS
+    tit::core
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_wasm_binary(
+  NAME
+    view_wasm
+  DESTINATION
+    frontend/assets
+  NATIVE_TARGET
+    tit::view
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
