@@ -73,3 +73,15 @@
 #define REQUIRE_RANGE_NE(...) REQUIRE_FALSE(std::ranges::equal(__VA_ARGS__))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Test that the expression throws an exception, whose message contains the
+/// expected substring.
+#define CHECK_THROWS_MSG(expr, Exception, substring)                           \
+  CHECK_THROWS_WITH_AS(expr, doctest::Contains(substring), Exception)
+
+/// Require the expression throws an exception, whose message contains the
+/// expected substring.
+#define REQUIRE_THROWS_MSG(expr, Exception, substring)                         \
+  REQUIRE_THROWS_WITH_AS(expr, doctest::Contains(substring), Exception)
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
