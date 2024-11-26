@@ -15,7 +15,12 @@ namespace tit {
 
 /// Wrapper for the numerical type. Use is to prevent explicit specializations
 /// for the built-in numerical types.
-template<class Num>
+///
+/// @tparam Num Underlying numerical type.
+/// @tparam Tag Tag type. Strict numbers with different tags considered
+///             different types, operations between such numbers are not
+///             defined.
+template<class Num, class Tag = void>
 class Strict final {
 public:
 

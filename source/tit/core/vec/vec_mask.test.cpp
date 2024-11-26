@@ -3,10 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include "tit/core/numbers/strict.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/testing/strict.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {

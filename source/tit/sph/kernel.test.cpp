@@ -7,6 +7,7 @@
 
 #include "tit/core/math.hpp"
 #include "tit/core/missing.hpp" // IWYU pragma: keep
+#include "tit/core/numbers/dual.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -14,7 +15,6 @@
 
 #include "tit/sph/kernel.hpp"
 
-#include "tit/testing/dual.hpp"
 #include "tit/testing/integrals.hpp"
 #include "tit/testing/test.hpp"
 

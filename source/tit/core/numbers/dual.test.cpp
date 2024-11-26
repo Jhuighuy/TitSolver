@@ -5,9 +5,8 @@
 
 #include <numbers>
 
-#include "tit/core/math.hpp" // IWYU pragma: keep
+#include "tit/core/numbers/dual.hpp"
 
-#include "tit/testing/dual.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
