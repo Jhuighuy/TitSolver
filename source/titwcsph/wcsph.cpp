@@ -146,7 +146,7 @@ auto sph_main(CmdArgs /*args*/) -> int {
       geom::RecursiveInertialBisection{},
       // Use graph partitioning with larger cell size as the interface
       // partitioning method.
-      geom::GridGraphPartition{2 * h_0},
+      geom::GridGraphPartition{/* 2* */ h_0},
   };
 
   checked_system("mkdir -p output/test_output/");
