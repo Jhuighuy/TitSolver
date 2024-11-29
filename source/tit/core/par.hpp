@@ -11,6 +11,8 @@
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/par/memory_pool.hpp"
+#include "tit/core/par/partitioner.hpp"
+#include "tit/core/par/range.hpp"
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/par/thread.hpp"
 // IWYU pragma: end_exports
