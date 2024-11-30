@@ -15,10 +15,10 @@
 
 /// Print warning message.
 #define TIT_WARN(message, ...)                                                 \
-  tit::eprintln("WARN: ", message __VA_OPT__(, __VA_ARGS__))
+  tit::eprintln("WARN: " message __VA_OPT__(, __VA_ARGS__))
 
 /// Print error message.
 #define TIT_ERROR(message, ...)                                                \
-  tit::eprintln("ERROR: ", message __VA_OPT__(, __VA_ARGS__))
+  tit::eprintln("ERROR: " message __VA_OPT__(, __VA_ARGS__))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
