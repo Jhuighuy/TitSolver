@@ -3,6 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#define TIT_ENABLE_ASSERTS
 #include "tit/core/checks.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/main_func.hpp"
@@ -16,7 +17,7 @@ namespace {
 void func_3() {
   eprintln("func_3");
   eprintln("Checking how floating point arithmetic works...");
-  TIT_ENSURE(0.1 + 0.2 == 0.3, "Right?!");
+  TIT_ASSERT(0.1 + 0.2 == 0.3, "Right?!");
 }
 
 [[gnu::noinline]]

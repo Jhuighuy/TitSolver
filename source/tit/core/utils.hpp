@@ -68,6 +68,12 @@ constexpr auto in_range(T x,
   return a <= x && x <= b;
 }
 
+/// Check that the value is equal to any of the given values.
+template<class T, std::same_as<T>... Us>
+constexpr auto is_any_of(T x, Us... us) noexcept -> bool {
+  return (... || (x == us));
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Array type that is deduced from the given argument.

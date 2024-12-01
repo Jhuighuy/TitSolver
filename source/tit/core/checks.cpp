@@ -17,7 +17,7 @@ namespace tit::impl {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [[noreturn]]
-void handle_check_failure( // NOLINT(*-exception-escape)
+void report_check_failure( // NOLINT(*-exception-escape)
     std::string_view expression,
     std::string_view message,
     std::source_location location) noexcept {

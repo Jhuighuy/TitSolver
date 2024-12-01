@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include "tit/core/checks.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/signal.hpp"
 #include "tit/core/sys_utils.hpp"
@@ -28,19 +29,10 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void checked_sigaction(int signal_number,
-                       const sigaction_t* action,
-                       sigaction_t* prev_action) noexcept {
-  TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
-  TIT_ASSERT(action != nullptr, "Signal actions is invalid!");
-  const auto status = sigaction(signal_number, action, prev_action);
-  TIT_ENSURE(status == 0, "Unable to set the signal action!");
-}
-
-void checked_raise(int signal_number) noexcept {
+void checked_raise(int signal_number) {
   TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
   const auto status = raise(signal_number);
-  TIT_ENSURE(status == 0, "Failed to raise a signal.");
+  if (status != 0) TIT_THROW("Failed to raise the signal {}!", signal_number);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,12 +49,15 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
     TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
 
     // Register the new action and store the previous one.
-    sigaction_t action{};
+    struct sigaction action {};
     action.sa_flags = 0;
     action.sa_handler = &handle_signal_;
     sigemptyset(&action.sa_mask);
-    sigaction_t prev_action{};
-    checked_sigaction(signal_number, &action, &prev_action);
+    struct sigaction prev_action {};
+    const auto status = sigaction(signal_number, &action, &prev_action);
+    if (status != 0) {
+      TIT_THROW("Unable to set the action for signal {}!", signal_number);
+    }
     prev_actions_.emplace_back(signal_number, prev_action);
   }
 }
@@ -70,7 +65,7 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
 SignalHandler::~SignalHandler() noexcept {
   // Restore the old signal handlers or actions.
   for (const auto& [signal_number, prev_action] : prev_actions_) {
-    checked_sigaction(signal_number, &prev_action);
+    sigaction(signal_number, &prev_action, nullptr);
   }
 
   // Unregister the current handler object.

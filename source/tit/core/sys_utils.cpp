@@ -24,13 +24,10 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/sys_utils.hpp"
 
-#ifndef TIT_HAVE_GCOV
-#define TIT_HAVE_GCOV 0
-#endif
-
-#if TIT_HAVE_GCOV
+#ifdef TIT_HAVE_GCOV
 extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
 #endif
 
@@ -38,10 +35,10 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void checked_atexit(atexit_callback_t callback) noexcept {
+void checked_atexit(atexit_callback_t callback) {
   TIT_ASSERT(callback != nullptr, "At-exit callback is invalid!");
   const auto status = std::atexit(callback);
-  TIT_ENSURE(status == 0, "Unable to register at-exit callback!");
+  if (status != 0) TIT_THROW("Unable to register at-exit callback!");
 }
 
 [[noreturn]]
@@ -51,7 +48,7 @@ void exit(ExitCode exit_code) noexcept {
 
 [[noreturn]]
 void fast_exit(ExitCode exit_code) noexcept {
-#if TIT_HAVE_GCOV
+#ifdef TIT_HAVE_GCOV
   __gcov_dump();
 #endif
   std::_Exit(std::to_underlying(exit_code));
@@ -59,11 +56,11 @@ void fast_exit(ExitCode exit_code) noexcept {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void checked_system(const char* command) noexcept {
+void checked_system(const char* command) {
   // NOLINTNEXTLINE(concurrency-mt-unsafe,cert-env33-c)
   const auto status = std::system(command);
   static_cast<void>(status); /// @todo Ignore the status code for now.
-  // TIT_ENSURE(status == 0, "System command failed!");
+  // if (status != 0) TIT_THROW("System command '{}' failed!", command);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,7 +69,7 @@ auto exe_path() -> std::filesystem::path {
 #ifdef __APPLE__
   std::array<char, PROC_PIDPATHINFO_MAXSIZE> buffer{};
   const auto status = proc_pidpath(getpid(), buffer.data(), sizeof(buffer));
-  TIT_ENSURE(status > 0, "Unable to query executable path!");
+  if (status <= 0) TIT_THROW("Unable to query the current executable path!");
   return buffer.data();
 #elifdef __linux__
   return std::filesystem::canonical("/proc/self/exe");
@@ -83,14 +80,17 @@ auto exe_path() -> std::filesystem::path {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto tty_width(TTY tty) noexcept -> std::optional<size_t> {
+auto tty_width(TTY tty) -> std::optional<size_t> {
   const auto tty_fileno = std::to_underlying(tty);
   if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.
 
   struct winsize window_size = {};
   // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
   const auto status = ioctl(tty_fileno, TIOCGWINSZ, &window_size);
-  TIT_ENSURE(status == 0, "Unable to query terminal window size!");
+  if (status != 0) {
+    TIT_THROW("Unable to query terminal window size with fileno {}!",
+              tty_fileno);
+  }
   return window_size.ws_col;
 }
 

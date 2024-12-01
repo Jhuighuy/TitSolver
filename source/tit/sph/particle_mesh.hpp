@@ -17,6 +17,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/multivector.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
@@ -199,8 +200,10 @@ private:
     // Initialize the partitioning.
     const auto num_threads = par::num_threads();
     const auto num_parts = num_levels * num_threads + 1;
-    TIT_ENSURE(num_parts <= std::numeric_limits<PartIndex>::max(),
-               "Number of parts is too large!");
+    if (auto max_num_parts = std::numeric_limits<PartIndex>::max();
+        num_parts >= max_num_parts) {
+      TIT_THROW("Number of parts exceeded the limit of {}.", max_num_parts);
+    }
     const auto parts = parinfo[particles];
     std::ranges::fill(parts, PartVec(static_cast<PartIndex>(num_parts - 1)));
 

@@ -20,16 +20,8 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Signal action entry.
-using sigaction_t = struct sigaction;
-
-/// Set signal action.
-void checked_sigaction(int signal_number,
-                       const sigaction_t* action,
-                       sigaction_t* prev_action = nullptr) noexcept;
-
 /// Raise a signal.
-void checked_raise(int signal_number) noexcept;
+void checked_raise(int signal_number);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -69,7 +61,7 @@ protected:
 
 private:
 
-  std::vector<std::pair<int, sigaction_t>> prev_actions_;
+  std::vector<std::pair<int, struct sigaction>> prev_actions_;
 
   static std::vector<SignalHandler*> handlers_;
   static void handle_signal_(int signal_number) noexcept;

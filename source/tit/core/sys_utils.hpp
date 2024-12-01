@@ -22,7 +22,7 @@ namespace tit {
 using atexit_callback_t = void (*)();
 
 /// Register a function to be called at exit.
-void checked_atexit(atexit_callback_t callback) noexcept;
+void checked_atexit(atexit_callback_t callback);
 
 /// Exit code.
 enum class ExitCode : uint8_t {
@@ -43,7 +43,7 @@ void fast_exit(ExitCode exit_code) noexcept;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Execute a system command. Fail if the command fails.
-void checked_system(const char* command) noexcept;
+void checked_system(const char* command);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -59,7 +59,7 @@ enum class TTY : uint8_t {
 };
 
 /// Query terminal width.
-auto tty_width(TTY tty) noexcept -> std::optional<size_t>;
+auto tty_width(TTY tty) -> std::optional<size_t>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
