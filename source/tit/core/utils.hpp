@@ -8,12 +8,17 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include <cstddef>
 #include <iterator>
 #include <ranges>
+#include <span>
 #include <tuple>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 
 namespace tit {
 
@@ -54,6 +59,14 @@ struct AlwaysTrue {
     return true;
   }
 };
+
+/// Check if the given value is in the range [ @p a, @p b ].
+template<class T>
+constexpr auto in_range(T x,
+                        std::type_identity_t<T> a,
+                        std::type_identity_t<T> b) noexcept -> bool {
+  return a <= x && x <= b;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -114,6 +127,43 @@ constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
     out_iter = std::ranges::copy(array, out_iter).out;
   }(arrays));
   return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Byte vector.
+using Bytes = std::vector<std::byte>;
+
+/// Immutable byte span.
+using ByteSpan = std::span<const std::byte>;
+
+/// Byte array.
+template<size_t Size>
+using ByteArray = std::array<std::byte, Size>;
+
+/// Convert a value to a byte array.
+template<class T>
+  requires std::is_trivially_copyable_v<T>
+constexpr auto to_byte_array(const T& value) -> ByteArray<sizeof(T)> {
+  return std::bit_cast<ByteArray<sizeof(T)>>(value);
+}
+
+/// Convert a value to a byte vector.
+template<class T>
+  requires std::is_trivially_copyable_v<T>
+constexpr auto to_bytes(const T& value) -> Bytes {
+  const auto bytes_array = to_byte_array(value);
+  return {bytes_array.begin(), bytes_array.end()};
+}
+
+/// Convert a byte array to a value.
+template<class T>
+  requires std::is_trivially_copyable_v<T>
+constexpr auto from_bytes(ByteSpan bytes) -> T {
+  TIT_ASSERT(bytes.size() >= sizeof(T), "Invalid byte array size!");
+  ByteArray<sizeof(T)> bytes_array{};
+  std::ranges::copy(bytes, bytes_array.begin());
+  return std::bit_cast<T>(bytes_array);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
