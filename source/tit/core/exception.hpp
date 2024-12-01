@@ -88,8 +88,10 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
-
 /// Throw an exception.
 #define TIT_THROW(message, ...)                                                \
   throw tit::Exception(std::format((message) __VA_OPT__(, __VA_ARGS__)))
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit

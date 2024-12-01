@@ -71,7 +71,7 @@ TerminateHandler::TerminateHandler() noexcept
 TerminateHandler::~TerminateHandler() noexcept {
   // Restore the previous terminate handler.
   const auto current_handler = std::set_terminate(prev_handler_);
-  TIT_ENSURE(current_handler == handle_terminate_,
+  TIT_ASSERT(current_handler == handle_terminate_,
              "Terminate handler was not registered previously!");
 }
 

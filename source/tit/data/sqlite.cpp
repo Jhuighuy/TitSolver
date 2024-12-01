@@ -72,11 +72,9 @@ auto Database::base() const noexcept -> sqlite3* {
 }
 
 auto Database::path() const -> std::filesystem::path {
-  // Should never return nullptr, but it's better to check anyway.
   const auto* const path = sqlite3_db_filename(base(), "main");
-  TIT_ENSURE(path != nullptr, "Could not get database path!");
-
-  return path;
+  if (path != nullptr) return path;
+  TIT_THROW("Could not get database path!");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -183,7 +181,7 @@ void Statement::bind_(size_t index, float64_t value) const {
 void Statement::bind_(size_t index, std::string_view value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
-  TIT_ENSURE(value.size() <= std::numeric_limits<int>::max(),
+  TIT_ASSERT(value.size() <= std::numeric_limits<int>::max(),
              "Statement string argument is too large!");
 
   const auto status = sqlite3_bind_text(base(),
@@ -202,7 +200,7 @@ void Statement::bind_(size_t index, std::string_view value) const {
 void Statement::bind_(size_t index, ByteSpan value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
-  TIT_ENSURE(value.size() <= std::numeric_limits<int>::max(),
+  TIT_ASSERT(value.size() <= std::numeric_limits<int>::max(),
              "Statement blob argument is too large!");
 
   const auto status = sqlite3_bind_blob(base(),
@@ -221,7 +219,7 @@ void Statement::bind_(size_t index, ByteSpan value) const {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto Statement::step() -> bool {
-  TIT_ASSERT(state_ == State_::prepared || state_ == State_::executing,
+  TIT_ASSERT(is_any_of(state_, State_::prepared, State_::executing),
              "Statement was already executed!");
 
   const auto status = sqlite3_step(base());
@@ -247,11 +245,11 @@ void Statement::reset() {
 }
 
 void Statement::run() {
-  TIT_ASSERT(state_ == State_::prepared || state_ == State_::finished,
+  TIT_ASSERT(is_any_of(state_, State_::prepared, State_::finished),
              "Statement must be either prepared or finished!");
 
   const auto more_rows = step();
-  TIT_ENSURE(!more_rows, "Statement must finish in a single step!");
+  TIT_ASSERT(!more_rows, "Statement must finish in a single step!");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

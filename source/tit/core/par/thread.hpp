@@ -52,7 +52,7 @@ concept range =
 struct ForEach {
   template<basic_range Range,
            std::regular_invocable<std::ranges::range_reference_t<Range&&>> Func>
-  static void operator()(Range&& range, Func func) {
+  void operator()(Range&& range, Func func) const {
     /// @todo Replace with `tbb::parallel_for_each` when it supports ranges.
     TIT_ASSUME_UNIVERSAL(Range, range);
     tbb::parallel_for(tbb::blocked_range{std::begin(range), std::end(range)},
@@ -69,7 +69,7 @@ inline constexpr ForEach for_each{};
 struct StaticForEach {
   template<basic_range Range,
            std::invocable<size_t, std::ranges::range_reference_t<Range&&>> Func>
-  static void operator()(Range&& range, Func func) {
+  void operator()(Range&& range, Func func) const {
     TIT_ASSUME_UNIVERSAL(Range, range);
     const auto thread_count = num_threads();
     auto block_first = [quotient = std::size(range) / thread_count,
@@ -95,7 +95,7 @@ struct StaticForEach {
            std::invocable<size_t,
                           std::ranges::range_reference_t<
                               std::ranges::join_view<Range>>> Func>
-  static void operator()(std::ranges::join_view<Range> join_view, Func func) {
+  void operator()(std::ranges::join_view<Range> join_view, Func func) const {
     StaticForEach{}( //
         std::move(join_view).base(),
         [&func](size_t thread_index, const auto& range) {
@@ -115,7 +115,7 @@ struct BlockForEach {
   template<range Range,
            std::invocable<std::ranges::range_reference_t<
                std::ranges::range_value_t<Range>>> Func>
-  static void operator()(Range&& range, Func func) {
+  void operator()(Range&& range, Func func) const {
     TIT_ASSUME_UNIVERSAL(Range, range);
     for (auto chunk : std::views::chunk(range, num_threads())) {
       for_each(std::move(chunk),
@@ -138,7 +138,7 @@ struct CopyIf {
            std::indirect_unary_predicate<
                std::projected<std::ranges::iterator_t<Range>, Proj>> Pred>
     requires std::indirectly_copyable<std::ranges::iterator_t<Range>, OutIter>
-  static auto operator()(Range&& range, OutIter out, Pred pred, Proj proj = {})
+  auto operator()(Range&& range, OutIter out, Pred pred, Proj proj = {}) const
       -> OutIter {
     TIT_ASSUME_UNIVERSAL(Range, range);
     ssize_t out_index = 0;
@@ -167,7 +167,7 @@ struct Transform final {
                  std::indirect_result_t<
                      Func&,
                      std::projected<std::ranges::iterator_t<Range>, Proj>>>
-  static auto operator()(Range&& range, OutIter out, Func func, Proj proj = {})
+  auto operator()(Range&& range, OutIter out, Func func, Proj proj = {}) const
       -> OutIter {
     TIT_ASSUME_UNIVERSAL(Range, range);
     const auto out_end = std::next(out, std::size(range));
