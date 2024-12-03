@@ -12,6 +12,9 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Byte type.
+using byte_t = std::byte;
+
 /// 8-bit signed integer type.
 using std::int8_t;
 

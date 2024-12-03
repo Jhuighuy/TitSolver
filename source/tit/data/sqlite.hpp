@@ -9,12 +9,12 @@
 #include <filesystem>
 #include <memory>
 #include <ranges>
+#include <span>
 #include <string_view>
 #include <tuple>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/utils.hpp"
 
 struct sqlite3;
 struct sqlite3_stmt;
@@ -75,7 +75,7 @@ concept text_arg = std::constructible_from<std::string_view, Text>;
 
 /// Blob argument type.
 template<class Blob>
-concept blob_arg = std::constructible_from<ByteSpan, Blob>;
+concept blob_arg = std::constructible_from<std::span<const byte_t>, Blob>;
 
 /// Statement argument type.
 template<class Value>
@@ -87,13 +87,22 @@ template<class Text>
 concept text_column =
     std::is_object_v<Text> && std::constructible_from<Text, std::string_view>;
 
+/// Blob view column type.
+template<class BlobView>
+concept blob_view_column =
+    std::is_object_v<BlobView> &&
+    std::constructible_from<BlobView, std::span<const byte_t>>;
+
+/// Blob container column type.
+template<class BlobContainer>
+concept blob_container_column =
+    std::is_object_v<BlobContainer> && requires(std::span<const byte_t> b) {
+      { b | std::ranges::to<BlobContainer>() } -> std::same_as<BlobContainer>;
+    };
+
 /// Blob column type.
 template<class Blob>
-concept blob_column =
-    std::is_object_v<Blob> &&
-    (std::constructible_from<Blob, ByteSpan> || requires(ByteSpan b) {
-      { b | std::ranges::to<Blob>() } -> std::same_as<Blob>;
-    });
+concept blob_column = blob_view_column<Blob> || blob_container_column<Blob>;
 
 /// Column type.
 template<class Value>
@@ -190,10 +199,10 @@ public:
           return static_cast<Column>(column_real_(index));
         } else if constexpr (text_column<Column>) {
           return Column{column_text_(index)};
-        } else if constexpr (blob_column<Column>) {
-          const auto blob = column_blob_(index);
-          if constexpr (std::constructible_from<Column, ByteSpan>) return blob;
-          else return blob | std::ranges::to<Column>();
+        } else if constexpr (blob_view_column<Column>) {
+          return column_blob_(index);
+        } else if constexpr (blob_container_column<Column>) {
+          return column_blob_(index) | std::ranges::to<Column>();
         } else static_assert(false);
       }.template operator()<Columns>()...
     };
@@ -225,7 +234,7 @@ private:
   void bind_(size_t index, int64_t value) const;
   void bind_(size_t index, float64_t value) const;
   void bind_(size_t index, std::string_view value) const;
-  void bind_(size_t index, ByteSpan value) const;
+  void bind_(size_t index, std::span<const byte_t> value) const;
 
   // Get the statement columns.
   auto num_columns_() const -> size_t;
@@ -233,7 +242,7 @@ private:
   auto column_int_(size_t index) const -> int64_t;
   auto column_real_(size_t index) const -> float64_t;
   auto column_text_(size_t index) const -> std::string_view;
-  auto column_blob_(size_t index) const -> ByteSpan;
+  auto column_blob_(size_t index) const -> std::span<const byte_t>;
 
   Database* db_;
   std::unique_ptr<sqlite3_stmt, Finalizer_> stmt_;
