@@ -16,6 +16,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/log.hpp"
+#include "tit/core/serialization.hpp"
 #include "tit/core/utils.hpp"
 
 #include "tit/data/sqlite.hpp"
@@ -197,7 +198,7 @@ void Statement::bind_(size_t index, std::string_view value) const {
             error_message(status, db_->base()));
 }
 
-void Statement::bind_(size_t index, ByteSpan value) const {
+void Statement::bind_(size_t index, BlobView value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
   TIT_ASSERT(value.size() <= std::numeric_limits<int>::max(),
@@ -316,7 +317,7 @@ auto Statement::column_text_(size_t index) const -> std::string_view {
           static_cast<size_t>(num_bytes_int)};
 }
 
-auto Statement::column_blob_(size_t index) const -> ByteSpan {
+auto Statement::column_blob_(size_t index) const -> BlobView {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
   TIT_ASSERT(index < num_columns_(), "Column index is out of range!");
   TIT_ASSERT(column_type_(index) == SQLITE_BLOB, "Column type mismatch!");

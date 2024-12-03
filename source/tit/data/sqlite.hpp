@@ -14,7 +14,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/serialization.hpp"
 
 struct sqlite3;
 struct sqlite3_stmt;
@@ -75,7 +75,7 @@ concept text_arg = std::constructible_from<std::string_view, Text>;
 
 /// Blob argument type.
 template<class Blob>
-concept blob_arg = std::constructible_from<ByteSpan, Blob>;
+concept blob_arg = std::constructible_from<BlobView, Blob>;
 
 /// Statement argument type.
 template<class Value>
@@ -91,7 +91,7 @@ concept text_column =
 template<class Blob>
 concept blob_column =
     std::is_object_v<Blob> &&
-    (std::constructible_from<Blob, ByteSpan> || requires(ByteSpan b) {
+    (std::constructible_from<Blob, BlobView> || requires(BlobView b) {
       { b | std::ranges::to<Blob>() } -> std::same_as<Blob>;
     });
 
@@ -192,7 +192,7 @@ public:
           return Column{column_text_(index)};
         } else if constexpr (blob_column<Column>) {
           const auto blob = column_blob_(index);
-          if constexpr (std::constructible_from<Column, ByteSpan>) return blob;
+          if constexpr (std::constructible_from<Column, BlobView>) return blob;
           else return blob | std::ranges::to<Column>();
         } else static_assert(false);
       }.template operator()<Columns>()...
@@ -225,7 +225,7 @@ private:
   void bind_(size_t index, int64_t value) const;
   void bind_(size_t index, float64_t value) const;
   void bind_(size_t index, std::string_view value) const;
-  void bind_(size_t index, ByteSpan value) const;
+  void bind_(size_t index, BlobView value) const;
 
   // Get the statement columns.
   auto num_columns_() const -> size_t;
@@ -233,7 +233,7 @@ private:
   auto column_int_(size_t index) const -> int64_t;
   auto column_real_(size_t index) const -> float64_t;
   auto column_text_(size_t index) const -> std::string_view;
-  auto column_blob_(size_t index) const -> ByteSpan;
+  auto column_blob_(size_t index) const -> BlobView;
 
   Database* db_;
   std::unique_ptr<sqlite3_stmt, Finalizer_> stmt_;

@@ -14,6 +14,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/serialization.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit {
@@ -46,6 +47,16 @@ public:
     TIT_ASSERT(rows.size() == Dim, "Invalid amount of rows!");
     std::ranges::copy(rows, rows_.begin());
   }
+
+  /// Matrix rows.
+  /// @{
+  constexpr auto rows() noexcept -> std::array<Row, Dim>& {
+    return rows_;
+  }
+  constexpr auto rows() const noexcept -> const std::array<Row, Dim>& {
+    return rows_;
+  }
+  /// @}
 
   /// Matrix row at index.
   /// @{
@@ -286,5 +297,23 @@ struct std::formatter<tit::Mat<Num, Dim>> {
     return out;
   }
 };
+
+// Matrix serializer.
+namespace tit {
+template<serializable Num, size_t Dim>
+struct Serializer<Mat<Num, Dim>> final {
+  template<serialization_iterator OutIter>
+  constexpr auto operator()(const Mat<Num, Dim>& mat,
+                            OutIter out) const -> OutIter {
+    return serialize(mat.rows(), out);
+  }
+  template<deserialization_iterator InIter>
+  constexpr auto operator()(Mat<Num, Dim>& mat,
+                            InIter& iter,
+                            InIter last) const -> bool {
+    return deserialize(mat.rows(), iter, last);
+  }
+};
+} // namespace tit
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
