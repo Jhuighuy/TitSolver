@@ -10,7 +10,8 @@
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/par.hpp"
+#include "tit/core/par/algorithms.hpp"
+#include "tit/core/par/control.hpp"
 
 #include "tit/testing/test.hpp"
 

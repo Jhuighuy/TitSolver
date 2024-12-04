@@ -19,7 +19,9 @@
 #include "tit/core/containers/multivector.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/missing.hpp" // IWYU pragma: keep
-#include "tit/core/par.hpp"
+#include "tit/core/par/algorithms.hpp"
+#include "tit/core/par/control.hpp"
+#include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/type_traits.hpp"

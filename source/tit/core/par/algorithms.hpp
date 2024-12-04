@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// IWYU pragma: private, include "tit/core/par.hpp"
 #pragma once
 
 #include <algorithm>

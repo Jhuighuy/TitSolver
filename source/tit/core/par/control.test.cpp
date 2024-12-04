@@ -3,7 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/par.hpp"
+#include "tit/core/par/control.hpp"
 
 #include "tit/testing/test.hpp"
 

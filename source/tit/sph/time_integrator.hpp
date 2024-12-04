@@ -9,7 +9,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/meta/set.hpp"
-#include "tit/core/par.hpp"
+#include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
 
 #include "tit/core/type_traits.hpp"

@@ -9,7 +9,7 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/io.hpp"
-#include "tit/core/par.hpp"
+#include "tit/core/par/control.hpp"
 #include "tit/core/sys/utils.hpp"
 
 namespace tit::impl {

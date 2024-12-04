@@ -12,7 +12,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/boost.hpp"
 #include "tit/core/containers/mdvector.hpp"
-#include "tit/core/par.hpp"
+#include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/utils.hpp"
 

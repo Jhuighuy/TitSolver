@@ -14,7 +14,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/par.hpp"
+#include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/utils.hpp"
 
