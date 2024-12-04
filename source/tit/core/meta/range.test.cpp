@@ -5,7 +5,8 @@
 
 #include <functional>
 
-#include "tit/core/meta.hpp"
+#include "tit/core/meta/range.hpp"
+#include "tit/core/meta/type.hpp"
 
 #include "tit/testing/func_utils.hpp"
 #include "tit/testing/test.hpp"
@@ -19,6 +20,8 @@ struct C {};
 struct D {};
 struct E {};
 struct F {};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<meta::type... Ts>
 class TestRange final : public meta::Range<Ts...> {
@@ -61,10 +64,10 @@ TEST_CASE("meta::Range::contains") {
 TEST_CASE("meta::Range::includes") {
   constexpr TestRange<A, B, C, D> r{};
   STATIC_CHECK(r.includes(r));
-  STATIC_CHECK(r.includes(meta::Set<A, B, C, D>{}));
-  STATIC_CHECK(r.includes(meta::Set<A, B, C>{}));
-  STATIC_CHECK_FALSE(r.includes(meta::Set<E, F>{}));
-  STATIC_CHECK_FALSE(r.includes(meta::Set<A, F>{}));
+  STATIC_CHECK(r.includes(TestRange<A, B, C, D>{}));
+  STATIC_CHECK(r.includes(TestRange<A, B, C>{}));
+  STATIC_CHECK_FALSE(r.includes(TestRange<E, F>{}));
+  STATIC_CHECK_FALSE(r.includes(TestRange<A, F>{}));
 }
 
 TEST_CASE("meta::Range::find") {

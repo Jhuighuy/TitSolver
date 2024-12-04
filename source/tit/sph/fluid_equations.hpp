@@ -12,7 +12,7 @@
 
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta.hpp"
+#include "tit/core/meta/set.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"

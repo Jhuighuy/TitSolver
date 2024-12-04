@@ -11,7 +11,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/mat.hpp"
-#include "tit/core/meta.hpp"
+#include "tit/core/meta/type.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"

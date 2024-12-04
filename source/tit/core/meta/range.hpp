@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// IWYU pragma: private, include "tit/core/meta.hpp"
 #pragma once
 
 #include <concepts>
@@ -51,7 +50,7 @@ public:
     return (contains_v<Us, Ts...> && ...);
   }
 
-  /// Index of the type in the set.
+  /// Index of the type in the range.
   template<type U>
     requires contains_v<U, Ts...>
   constexpr auto find(U /*elem*/) const noexcept -> size_t {

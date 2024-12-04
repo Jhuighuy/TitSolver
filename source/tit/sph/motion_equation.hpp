@@ -7,7 +7,7 @@
 
 #include <concepts>
 
-#include "tit/core/meta.hpp"
+#include "tit/core/meta/set.hpp"
 
 #include "tit/sph/field.hpp"
 

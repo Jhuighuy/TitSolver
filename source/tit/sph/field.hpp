@@ -13,7 +13,8 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta.hpp"
+#include "tit/core/meta/set.hpp"
+#include "tit/core/meta/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 

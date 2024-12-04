@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// IWYU pragma: private, include "tit/core/meta.hpp"
 #pragma once
 
 #include <type_traits>
@@ -28,27 +27,23 @@ public:
   {}
   /// @}
 
+  /// Concatenate the lists.
+  ///
+  /// @returns A list that contains all the elements of @p lhs followed by the
+  ///          elements of @p rhs that are not already present in @p lhs.
+  template<type... Us>
+  friend constexpr auto operator+(List /*lhs*/, List<Us...> /*rhs*/) noexcept {
+    return List<Ts..., Us...>{};
+  }
+
+  /// Check that @p lhs and @p rhs contain same elements.
+  template<type... Us>
+  friend constexpr auto operator==(List /*lhs*/,
+                                   List<Us...> /*rhs*/) noexcept -> bool {
+    return std::is_same_v<List<Ts...>, List<Us...>>;
+  }
+
 }; // class List
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Check that @p lhs and @p rhs contain same elements.
-template<type... Ts, type... Us>
-constexpr auto operator==(List<Ts...> /*lhs*/,
-                          List<Us...> /*rhs*/) noexcept -> bool {
-  return std::is_same_v<List<Ts...>, List<Us...>>;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Concatenate the lists.
-///
-/// @returns A list that contains all the elements of @p lhs followed by the
-///          elements of @p rhs that are not already present in @p lhs.
-template<type... Ts, type... Us>
-constexpr auto operator+(List<Ts...> /*lhs*/, List<Us...> /*rhs*/) noexcept {
-  return List<Ts..., Us...>{};
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

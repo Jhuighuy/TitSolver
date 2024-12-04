@@ -28,7 +28,6 @@ add_tit_library(
     "mat/part.hpp"
     "mat/traits.hpp"
     "math.hpp"
-    "meta.hpp"
     "meta/list.hpp"
     "meta/range.hpp"
     "meta/set.hpp"

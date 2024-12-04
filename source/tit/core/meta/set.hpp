@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// IWYU pragma: private, include "tit/core/meta.hpp"
 #pragma once
 
 #include "tit/core/meta/range.hpp"
@@ -28,44 +27,42 @@ public:
   {}
   /// @}
 
+  /// Check that @p lhs and @p rhs contain same elements, in any order.
+  template<type... Us>
+  friend constexpr auto operator==(Set lhs, Set<Us...> rhs) noexcept -> bool {
+    return rhs.includes(lhs) && lhs.includes(rhs);
+  }
+
+  /// Check that @p lhs is a @b strict subset of RHS.
+  template<type... Us>
+  friend constexpr auto operator<(Set lhs, Set<Us...> rhs) noexcept -> bool {
+    return rhs.includes(lhs) && (sizeof...(Ts) < sizeof...(Us));
+  }
+
+  /// Check that @p lhs is a subset of @p rhs.
+  template<type... Us>
+  friend constexpr auto operator<=(Set lhs, Set<Us...> rhs) noexcept -> bool {
+    return rhs.includes(lhs);
+  }
+
+  /// Check that @p lhs is a @b strict superset of @p rhs.
+  template<type... Us>
+  friend constexpr auto operator>(Set lhs, Set<Us...> rhs) noexcept -> bool {
+    return rhs < lhs;
+  }
+
+  /// Check that @p lhs is a superset of @p rhs.
+  template<type... Us>
+  friend constexpr auto operator>=(Set lhs, Set<Us...> rhs) noexcept -> bool {
+    return rhs <= lhs;
+  }
+
 }; // class Set
 
 template<class T>
 inline constexpr bool is_set_v = false;
 template<class... Ts>
 inline constexpr bool is_set_v<Set<Ts...>> = true;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Check that @p lhs and @p rhs contain same elements.
-template<type... Ts, type... Us>
-constexpr auto operator==(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
-  return rhs.includes(lhs) && lhs.includes(rhs);
-}
-
-/// Check that @p lhs is a @b strict subset of RHS.
-template<type... Ts, type... Us>
-constexpr auto operator<(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
-  return rhs.includes(lhs) && (sizeof...(Ts) < sizeof...(Us));
-}
-
-/// Check that @p lhs is a subset of @p rhs.
-template<type... Ts, type... Us>
-constexpr auto operator<=(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
-  return rhs.includes(lhs);
-}
-
-/// Check that @p lhs is a @b strict superset of @p rhs.
-template<type... Ts, type... Us>
-constexpr auto operator>(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
-  return rhs < lhs;
-}
-
-/// Check that @p lhs is a superset of @p rhs.
-template<type... Ts, type... Us>
-constexpr auto operator>=(Set<Ts...> lhs, Set<Us...> rhs) noexcept -> bool {
-  return rhs <= lhs;
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -118,7 +115,8 @@ constexpr auto operator|(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
 /// Set intersection.
 ///
 /// @returns A set that contains the elements of @p lhs that are also present
-///          in @p rhs. The relative order of the elements in LHS is preserved.
+///          in @p rhs. The relative order of the elements in LHS is
+///          preserved.
 template<type... Ts, type... Us>
 constexpr auto operator&(Set<Ts...> lhs, Set<Us...> rhs) noexcept {
   return impl::set_and(lhs, rhs);
