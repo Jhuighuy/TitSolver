@@ -62,9 +62,17 @@ setup-ubuntu() {
     "clang-tidy-$LLVM_VERSION" \
     cmake                      \
     "g++-$GCC_VERSION"         \
+    libgl-dev                  \
+    libglu1-mesa-dev           \
+    libxcursor-dev             \
+    libxi-dev                  \
+    libxinerama-dev            \
+    libxmu-dev                 \
     nodejs                     \
     npm                        \
-    sphinx-doc
+    pkg-config                 \
+    sphinx-doc                 \
+    xorg-dev
   sudo npm install -g pnpm
 }
 

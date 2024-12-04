@@ -7,9 +7,23 @@ add_tit_library(
   NAME
     view
   SOURCES
+    "gl.hpp"
+    "gl/buffer.hpp"
+    "gl/debug.hpp"
+    "gl/framebuffer.hpp"
+    "gl/shader.hpp"
+    "gl/texture.hpp"
+    "gl/vertex_array.hpp"
+    "gl/window.hpp"
+    "gl/window.cpp"
+    "Scene.hpp"
+    "Visualizer.hpp"
     "test.cpp"
   DEPENDS
     tit::core
+    GLEW::GLEW
+    glfw
+    glm::glm
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
