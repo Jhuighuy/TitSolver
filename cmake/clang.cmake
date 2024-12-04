@@ -57,6 +57,8 @@ set(
   ${CLANG_WARNINGS}
   # Generate machine code for the host system's architecture.
   -march=native
+  # Position independent code.
+  -fPIC
 )
 
 # When compiling with libstdc++, ensure Clang is properly configured.

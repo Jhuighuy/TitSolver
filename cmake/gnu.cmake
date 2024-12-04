@@ -74,6 +74,8 @@ set(
   ${GNU_WARNINGS}
   # Generate machine code for the host system's architecture.
   -march=native
+  # Position independent code.
+  -fPIC
 )
 
 # Define common link options.
