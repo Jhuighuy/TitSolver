@@ -10,8 +10,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "tit/core/_mat/mat.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/mat/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
 

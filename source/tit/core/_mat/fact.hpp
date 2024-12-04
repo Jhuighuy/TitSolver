@@ -9,10 +9,10 @@
 #include <expected>
 #include <utility>
 
+#include "tit/core/_mat/mat.hpp"
+#include "tit/core/_mat/part.hpp"
+#include "tit/core/_mat/traits.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/mat/mat.hpp"
-#include "tit/core/mat/part.hpp"
-#include "tit/core/mat/traits.hpp"
 #include "tit/core/math.hpp"
 
 namespace tit {

@@ -7,7 +7,6 @@
 #include "tit/core/math.hpp" // IWYU pragma: keep
 #include "tit/core/vec.hpp"
 
-#include "tit/core/mat/mat.testing.hpp" // IWYU pragma: keep
 #include "tit/testing/test.hpp"
 
 namespace tit {

@@ -8,11 +8,11 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // IWYU pragma: begin_exports
-#include "tit/core/mat/eig.hpp"
-#include "tit/core/mat/fact.hpp"
-#include "tit/core/mat/mat.hpp"
-#include "tit/core/mat/part.hpp"
-#include "tit/core/mat/traits.hpp"
+#include "tit/core/_mat/eig.hpp"
+#include "tit/core/_mat/fact.hpp"
+#include "tit/core/_mat/mat.hpp"
+#include "tit/core/_mat/part.hpp"
+#include "tit/core/_mat/traits.hpp"
 // IWYU pragma: end_exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

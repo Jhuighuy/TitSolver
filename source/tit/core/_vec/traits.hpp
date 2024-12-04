@@ -8,8 +8,8 @@
 
 #include <type_traits>
 
+#include "tit/core/_vec/vec.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/vec/vec.hpp"
 
 namespace tit {
 

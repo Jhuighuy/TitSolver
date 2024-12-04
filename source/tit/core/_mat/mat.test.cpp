@@ -6,7 +6,6 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/core/mat/mat.testing.hpp" // IWYU pragma: keep
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -326,6 +325,51 @@ TEST_CASE("Vec::outer_sqr") {
             {1.0, 2.0},
             {2.0, 4.0},
         });
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("Mat::operator==") {
+  CHECK(Mat{
+            {1.0, 2.0},
+            {3.0, 4.0},
+        } == //
+        Mat{
+            {1.0, 2.0},
+            {3.0, 4.0},
+        });
+}
+
+TEST_CASE("Mat::operator!=") {
+  CHECK(Mat{
+            {1.0, 2.0},
+            {3.0, 4.0},
+        } != //
+        Mat{
+            {1.0, 1.0},
+            {3.0, 4.0},
+        });
+}
+
+TEST_CASE("Mat::approx_equal_to") {
+  CHECK(approx_equal_to(
+      Mat{
+          {1.0, 2.0},
+          {3.0, 4.0},
+      },
+      Mat{
+          {1.0, 2.0},
+          {3.0, 4.0},
+      }));
+  CHECK_FALSE(approx_equal_to(
+      Mat{
+          {1.0, 2.0},
+          {3.0, 4.0},
+      },
+      Mat{
+          {1.0, 3.0},
+          {3.0, 4.0},
+      }));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -9,8 +9,8 @@
 #include <concepts>
 #include <type_traits>
 
+#include "tit/core/_simd/traits.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/simd/traits.hpp"
 
 namespace tit::simd {
 

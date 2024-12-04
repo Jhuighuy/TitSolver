@@ -14,7 +14,6 @@
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/point_range.hpp"
 
-#include "tit/core/mat/mat.testing.hpp" // IWYU pragma: keep
 #include "tit/testing/test.hpp"
 
 namespace tit {

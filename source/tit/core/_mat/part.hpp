@@ -6,11 +6,11 @@
 // IWYU pragma: private, include "tit/core/mat.hpp"
 #pragma once
 
+#include "tit/core/_mat/mat.hpp"
+#include "tit/core/_mat/traits.hpp"
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/enum_utils.hpp"
-#include "tit/core/mat/mat.hpp"
-#include "tit/core/mat/traits.hpp"
 
 namespace tit {
 

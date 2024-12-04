@@ -8,11 +8,11 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // IWYU pragma: begin_exports
-#include "tit/core/simd/deduce.hpp"
-#include "tit/core/simd/mask.hpp"
-#include "tit/core/simd/reg.hpp"
-#include "tit/core/simd/reg_mask.hpp"
-#include "tit/core/simd/traits.hpp"
+#include "tit/core/_simd/deduce.hpp"
+#include "tit/core/_simd/mask.hpp"
+#include "tit/core/_simd/reg.hpp"
+#include "tit/core/_simd/reg_mask.hpp"
+#include "tit/core/_simd/traits.hpp"
 // IWYU pragma: end_exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

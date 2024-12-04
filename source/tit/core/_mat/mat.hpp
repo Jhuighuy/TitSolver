@@ -164,6 +164,17 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// Matrix exact equality operator.
+  friend constexpr auto operator==(const Mat& A,
+                                   const Mat& B) noexcept -> bool {
+    for (size_t i = 0; i < Dim; ++i) {
+      if (any(A[i] != B[i])) return false;
+    }
+    return true;
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   /// Matrix output operator.
   template<class Stream>
   friend constexpr auto operator<<(Stream& stream, const Mat& A) -> Stream& {
@@ -251,6 +262,18 @@ constexpr auto outer_sqr(const Vec<Num, Dim>& a) -> Mat<Num, Dim> {
   return outer(a, a);
 }
 /// @}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Matrix approximate equality operator.
+template<class Num, size_t Dim>
+constexpr auto approx_equal_to(const Mat<Num, Dim>& A,
+                               const Mat<Num, Dim>& B) noexcept -> bool {
+  for (size_t i = 0; i < Dim; ++i) {
+    if (!approx_equal_to(A[i], B[i])) return false;
+  }
+  return true;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

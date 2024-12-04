@@ -9,8 +9,8 @@
 #include <concepts>
 #include <type_traits>
 
+#include "tit/core/_mat/mat.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/mat/mat.hpp"
 
 namespace tit {
 

@@ -6,10 +6,10 @@
 // IWYU pragma: private, include "tit/core/simd.hpp"
 #pragma once
 
+#include "tit/core/_simd/reg.hpp"
+#include "tit/core/_simd/reg_mask.hpp"
+#include "tit/core/_simd/traits.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/simd/reg.hpp"
-#include "tit/core/simd/reg_mask.hpp"
-#include "tit/core/simd/traits.hpp"
 #include "tit/core/uint_utils.hpp"
 
 namespace tit::simd {
