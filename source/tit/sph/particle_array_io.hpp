@@ -7,6 +7,7 @@
 
 #include <format>
 #include <fstream>
+#include <print>
 #include <string>
 
 #include "tit/core/basic_types.hpp"
@@ -73,9 +74,8 @@ void print_csv(const ParticleArray& array, const std::string& path) {
   output << '\n';
   // Print field columns.
   for (const auto a : array.all()) {
-    ParticleArray::fields.for_each([&output, a](auto field) {
-      output << a[field] << " "; //
-    });
+    ParticleArray::fields.for_each(
+        [&output, a](auto field) { std::print(output, "{} ", a[field]); });
     output << '\n';
   }
 }

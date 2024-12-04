@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include <format>
 #include <type_traits>
 #include <utility>
 
@@ -841,18 +842,24 @@ constexpr auto cross(const Vec<Num, Dim>& a,
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// IO operations.
-//
 
-/// Vector output operator.
-template<class Stream, class Num, size_t Dim>
-constexpr auto operator<<(Stream& stream, const Vec<Num, Dim>& a) -> Stream& {
-  stream << a[0];
-  for (size_t i = 1; i < Dim; ++i) stream << " " << a[i];
-  return stream;
-}
+} // namespace tit
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+// Vector formatter.
+template<class Num, tit::size_t Dim>
+struct std::formatter<tit::Vec<Num, Dim>> {
+  constexpr auto parse(auto& context) {
+    return context.begin();
+  }
+  constexpr auto format(const tit::Vec<Num, Dim>& a, auto& context) const {
+    auto out = std::format_to(context.out(), "{}", a[0]);
+    for (tit::size_t i = 1; i < Dim; ++i) {
+      out = std::format_to(out, " {}", a[i]);
+    }
+    return out;
+  }
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

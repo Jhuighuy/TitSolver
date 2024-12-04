@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <format>
+
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 
@@ -370,6 +372,12 @@ TEST_CASE("Mat::approx_equal_to") {
           {1.0, 3.0},
           {3.0, 4.0},
       }));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("Mat::formatter") {
+  CHECK(std::format("{}", Mat{{1, 2}, {3, 4}}) == "1 2 3 4");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

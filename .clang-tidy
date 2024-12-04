@@ -11,6 +11,10 @@
 #   There are many easily-swappable parameters in the solver code, we cannot
 #   avoid that without introducing structures almost for any function.
 #
+# * cert-dcl58-cpp:
+#   This checks threats specializations of `std::` classes as modifying the
+#   standard library.
+#
 # * cert-msc32-c, cert-msc51-cpp:
 #   Those are crypography-related. We are not doing anything that requires
 #   any level of sequerity right now.
@@ -64,6 +68,7 @@ Checks: |
   bugprone-*
   -bugprone-easily-swappable-parameters
   cert-*
+  -cert-dcl58-cpp
   -cert-msc32-c
   -cert-msc51-cpp
   -clang-analyzer-optin.core.EnumCastOutOfRange

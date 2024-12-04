@@ -10,6 +10,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/sys/stacktrace.hpp"
 #include "tit/core/sys/utils.hpp"
 
 namespace tit::impl {
@@ -34,7 +35,7 @@ void report_check_failure( // NOLINT(*-exception-escape)
   eprintln("  {}", expression);
   eprintln("  ^{:~>{}} {}", "", expression.size() - 1, message);
   eprintln();
-  eprint_stacktrace();
+  eprintln("{}", Stacktrace::current());
 
   // Fast-exit with failure.
   fast_exit(ExitCode::failure);

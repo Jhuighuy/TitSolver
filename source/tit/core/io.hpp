@@ -10,7 +10,7 @@
 #include <print>
 #include <utility>
 
-#include "tit/core/missing.hpp"
+#include "tit/core/missing.hpp" // IWYU pragma: keep
 
 namespace tit {
 
@@ -35,12 +35,6 @@ void eprintln(std::format_string<Args...> fmt, Args&&... args) {
 inline void eprintln() {
   std::cerr << '\n';
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Print the stack trace to the standard error stream.
-void eprint_stacktrace(
-    const Std::stacktrace& stacktrace = Std::stacktrace::current());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

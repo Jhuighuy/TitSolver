@@ -12,6 +12,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/sys/stacktrace.hpp"
 #include "tit/core/sys/utils.hpp"
 
 namespace tit {
@@ -37,8 +38,7 @@ inline void report_std_exception_(const std::exception& e) {
   eprintln("  {}", throw_expression);
   eprintln("  ^{:~>{}} {}", "", throw_expression.size() - 1, e.what());
   eprintln();
-  eprint_stacktrace( //
-      tit_e != nullptr ? tit_e->when() : Std::stacktrace::current());
+  eprintln("{}", tit_e != nullptr ? tit_e->when() : Stacktrace::current());
 }
 
 // Report unhandled exception that does not derive from `std::exception`.
@@ -48,7 +48,7 @@ inline void report_non_std_exception_() {
   eprintln();
   eprintln("Terminating due to an unhandled exception.");
   eprintln();
-  eprint_stacktrace();
+  eprintln("{}", Stacktrace::current());
 }
 
 // Report call to `std::terminate`.
@@ -58,7 +58,7 @@ inline void report_terminate_call_() {
   eprintln();
   eprintln("Terminating due to a call to std::terminate().");
   eprintln();
-  eprint_stacktrace();
+  eprintln("{}", Stacktrace::current());
 }
 
 } // namespace

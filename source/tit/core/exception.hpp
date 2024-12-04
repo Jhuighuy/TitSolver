@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 
-#include "tit/core/missing.hpp"
+#include "tit/core/sys/stacktrace.hpp"
 
 namespace tit {
 
@@ -26,7 +26,7 @@ public:
   explicit Exception(
       std::string message,
       std::source_location location = std::source_location::current(),
-      Std::stacktrace stacktrace = Std::stacktrace::current())
+      Stacktrace stacktrace = Stacktrace::current())
       : message_{std::move(message)}, location_{location},
         stacktrace_{std::move(stacktrace)} {}
 
@@ -41,7 +41,7 @@ public:
   }
 
   /// Retrieve the exception stack trace.
-  auto when() const noexcept -> const Std::stacktrace& {
+  auto when() const noexcept -> const Stacktrace& {
     return stacktrace_;
   }
 
@@ -49,7 +49,7 @@ private:
 
   std::string message_;
   std::source_location location_;
-  Std::stacktrace stacktrace_;
+  Stacktrace stacktrace_;
 
 }; // class Exception
 

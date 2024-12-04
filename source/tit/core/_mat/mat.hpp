@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <format>
 #include <initializer_list>
 
 #include "tit/core/basic_types.hpp"
@@ -175,16 +176,6 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Matrix output operator.
-  template<class Stream>
-  friend constexpr auto operator<<(Stream& stream, const Mat& A) -> Stream& {
-    stream << A[0];
-    for (size_t i = 1; i < Dim; ++i) stream << " " << A[i];
-    return stream;
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 private:
 
   std::array<Row, Dim> rows_;
@@ -278,3 +269,22 @@ constexpr auto approx_equal_to(const Mat<Num, Dim>& A,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Matrix formatter.
+template<class Num, tit::size_t Dim>
+struct std::formatter<tit::Mat<Num, Dim>> {
+  constexpr auto parse(auto& context) {
+    return context.begin();
+  }
+  constexpr auto format(const tit::Mat<Num, Dim>& A, auto& context) const {
+    auto out = std::format_to(context.out(), "{}", A[0]);
+    for (tit::size_t i = 1; i < Dim; ++i) {
+      out = std::format_to(out, " {}", A[i]);
+    }
+    return out;
+  }
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

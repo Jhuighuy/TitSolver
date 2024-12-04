@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <format>
 
 #include "tit/core/math.hpp"
 #include "tit/core/numbers/strict.hpp"
@@ -392,6 +393,15 @@ TEST_CASE_TEMPLATE("Vec::cross", Num, NUM_TYPES) {
   CHECK(cross(Vec{Num{1}, Num{2}, Num{3}},    //
               Vec{Num{4}, Num{5}, Num{6}}) == //
         Vec{-Num{3}, Num{6}, -Num{3}});
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Miscellaneous
+//
+
+TEST_CASE("Vec::formatter") {
+  CHECK(std::format("{}", Vec{1, 2, 3}) == "1 2 3");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
