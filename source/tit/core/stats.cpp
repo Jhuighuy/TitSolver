@@ -13,7 +13,7 @@
 #include "tit/core/io.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/str_utils.hpp"
-#include "tit/core/sys_utils.hpp"
+#include "tit/core/sys/utils.hpp"
 
 namespace tit {
 

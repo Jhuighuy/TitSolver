@@ -22,8 +22,8 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par.hpp"
-#include "tit/core/signal.hpp"
-#include "tit/core/sys_utils.hpp"
+#include "tit/core/sys/signal.hpp"
+#include "tit/core/sys/utils.hpp"
 
 namespace tit {
 

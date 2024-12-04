@@ -7,13 +7,13 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/par.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/signal.hpp"
 #include "tit/core/stats.hpp"
+#include "tit/core/sys/env.hpp"
+#include "tit/core/sys/signal.hpp"
 
 namespace tit {
 

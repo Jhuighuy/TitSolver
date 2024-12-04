@@ -11,7 +11,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/math.hpp" // IWYU pragma: keep
-#include "tit/core/sys_utils.hpp"
+#include "tit/core/sys/utils.hpp"
 
 #include "tit/core/utils.hpp"
 #include "tit/data/sqlite.hpp"

@@ -12,7 +12,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/par.hpp"
-#include "tit/core/sys_utils.hpp"
+#include "tit/core/sys/utils.hpp"
 
 namespace tit {
 
