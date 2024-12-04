@@ -10,20 +10,21 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Configuration files.
+# Project configuration files.
 !.git*
-!/.clang-*
+!/.github/workflows/*.yml
 !/sonar-project.properties
-!/vcpkg.json
 
 # Editor configuration files.
 !/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
 
-# User manual configuration files.
-!/manual/conf.py
+# C++ configuration files.
+!/.clang-format
+!/.clang-tidy
+!/vcpkg.json
 
-# Frontend configuration files.
+# Web configuration files.
 !package.json
 !*.config.json
 !tsconfig*.json
@@ -48,6 +49,9 @@
 !*.css
 !*.svg
 
+# Python files.
+!*.py
+
 # Documentation files.
 !*.md
 !*.rst
@@ -60,8 +64,7 @@
 !*.cmake
 !/cmake/codespell.txt
 
-# Pipelines.
-!/.github/workflows/*.yml
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Test input and output files.
 !/tests/**/*stdin*

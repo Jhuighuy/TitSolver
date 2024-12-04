@@ -35,12 +35,16 @@
   "files.trimTrailingWhitespace": true,
   "files.exclude": {
     "**/.cache": true,
+    "**/.mypy_cache": true,
+    "**/__pycache__": true,
     "**/node_modules/**": true,
     "compile_flags.txt": true,
     "output": true
   },
   "files.watcherExclude": {
     "**/.cache/**": true,
+    "**/.mypy_cache/**": true,
+    "**/__pycache__/**": true,
     "**/dist/**": true,
     "**/output/**": true,
     "**/compile_flags.txt": true,
