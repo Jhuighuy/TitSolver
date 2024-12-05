@@ -663,7 +663,9 @@ class _IDs:
 class _Lib:
 
     _lib = cdll.LoadLibrary(
-        os.path.join(os.path.dirname(__file__), "libtitdata.dylib"),
+        os.path.join(os.path.dirname(__file__), "libtitdata.dylib")
+        if os.path.exists(os.path.join(os.path.dirname(__file__), "libtitdata.dylib"))
+        else os.path.join(os.path.dirname(__file__), "libtitdata.so")
     )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -966,7 +968,7 @@ class _Lib:
 
 
 def _main():
-    ds = DataStorage("./particles.ttdb")
+    ds = DataStorage("./input.ttdb")
     print(f"Path: {ds.path}", flush=True)
     print(f"Num. series: {ds.num_series}", flush=True)
 
@@ -978,7 +980,7 @@ def _main():
     v = arrays["v"].read_data()
     rho = arrays["rho"].read_data()
 
-    with open("./particles_tdb.csv", "w") as csv_file:
+    with open("./output.csv", "w") as csv_file:
         csv_file.write("r_x,r_y,v_x,v_y,rho\n")
         for i in range(len(r)):
             csv_file.write(f"{r[i][0]},{r[i][1]},{v[i][0]},{v[i][1]},{rho[i]}\n")
