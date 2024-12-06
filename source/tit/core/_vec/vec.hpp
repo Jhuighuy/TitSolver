@@ -17,6 +17,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/serialization.hpp"
+#include "tit/core/serialization/tuple.hpp" // IWYU pragma: keep
 #include "tit/core/simd.hpp"
 #include "tit/core/utils.hpp"
 
@@ -861,5 +863,23 @@ struct std::formatter<tit::Vec<Num, Dim>> {
     return out;
   }
 };
+
+// Vector serializer.
+namespace tit {
+template<serializable Num, size_t Dim>
+struct Serializer<Vec<Num, Dim>> final {
+  template<serialization_iterator OutIter>
+  constexpr auto operator()(const Vec<Num, Dim>& vec,
+                            OutIter out) const -> OutIter {
+    return serialize(vec.elems(), out);
+  }
+  template<deserialization_iterator InIter>
+  constexpr auto operator()(Vec<Num, Dim>& vec,
+                            InIter& iter,
+                            InIter last) const -> bool {
+    return deserialize(vec.elems(), iter, last);
+  }
+};
+} // namespace tit
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
