@@ -89,6 +89,7 @@ add_tit_executable(
   NAME
     core_tests
   SOURCES
+    "io.test.cpp"
     "_mat/eig.test.cpp"
     "_mat/fact.test.cpp"
     "_mat/mat.test.cpp"
