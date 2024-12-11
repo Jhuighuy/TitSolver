@@ -5,21 +5,25 @@
 
 #include <filesystem>
 #include <numbers>
+#include <span>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/math.hpp" // IWYU pragma: keep
+#include "tit/core/serialization.hpp"
 #include "tit/core/sys/utils.hpp"
 
-#include "tit/core/utils.hpp"
 #include "tit/data/sqlite.hpp"
 
 #include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
+
+using Blob = std::vector<byte_t>;
+using BlobView = std::span<const byte_t>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -228,28 +232,28 @@ TEST_CASE("data::sqlite::Statement::column") {
     data::sqlite::Statement statement{db, R"SQL(
       INSERT INTO Constants (id, name, approx, exact) VALUES (?, ?, ?, ?)
     )SQL"};
-    statement.run(1, "pi", 3.14, to_byte_array(std::numbers::pi_v<float>));
-    statement.run(2, "e", 2.71, to_byte_array(std::numbers::e_v<long double>));
-    statement.run(3, "phi", 1.61, to_byte_array(std::numbers::phi_v<double>));
+    statement.run(1, "pi", 3.14, serialize(std::numbers::pi_v<float>));
+    statement.run(2, "e", 2.71, serialize(std::numbers::e_v<long double>));
+    statement.run(3, "phi", 1.61, serialize(std::numbers::phi_v<double>));
   }
   { // Select and check the values.
     data::sqlite::Statement statement{db, R"SQL(
       SELECT * FROM Constants
     )SQL"};
     REQUIRE(statement.step());
-    CHECK(statement.columns<size_t, std::string, real_t, Bytes>() ==
-          std::tuple{1, "pi", 3.14, to_bytes(std::numbers::pi_v<float>)});
+    CHECK(statement.columns<size_t, std::string, real_t, Blob>() ==
+          std::tuple{1, "pi", 3.14, serialize(std::numbers::pi_v<float>)});
     REQUIRE(statement.step());
-    CHECK(statement.columns<size_t, std::string_view, real_t, Bytes>() ==
-          std::tuple{2, "e", 2.71, to_bytes(std::numbers::e_v<long double>)});
+    CHECK(statement.columns<size_t, std::string_view, real_t, Blob>() ==
+          std::tuple{2, "e", 2.71, serialize(std::numbers::e_v<long double>)});
     REQUIRE(statement.step());
     {
       const auto [id, name, approx, exact] =
-          statement.columns<size_t, std::string, real_t, ByteSpan>();
+          statement.columns<size_t, std::string, real_t, BlobView>();
       CHECK(id == 3);
       CHECK(name == "phi");
       CHECK(approx == 1.61);
-      CHECK_RANGE_EQ(exact, to_byte_array(std::numbers::phi_v<double>));
+      CHECK_RANGE_EQ(exact, serialize(std::numbers::phi_v<double>));
     }
     CHECK_FALSE(statement.step());
   }

@@ -9,9 +9,15 @@ add_tit_library(
   SOURCES
     "sqlite.cpp"
     "sqlite.hpp"
+    "storage.hpp"
+    "storage.cpp"
+    "type.hpp"
+    "zstd.cpp"
+    "zstd.hpp"
   DEPENDS
     tit::core
     unofficial::sqlite3::sqlite3
+    zstd::libzstd
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -21,6 +27,7 @@ add_tit_executable(
     data_tests
   SOURCES
     "sqlite.test.cpp"
+    "zstd.test.cpp"
   DEPENDS
     tit::data
     tit::testing

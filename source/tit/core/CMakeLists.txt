@@ -52,6 +52,9 @@ add_tit_library(
     "par/task_group.hpp"
     "profiler.cpp"
     "profiler.hpp"
+    "serialization.hpp"
+    "serialization/source_sink.hpp"
+    "serialization/tuple.hpp"
     "simd.hpp"
     "stats.cpp"
     "stats.hpp"
@@ -86,6 +89,7 @@ add_tit_executable(
   NAME
     core_tests
   SOURCES
+    "io.test.cpp"
     "_mat/eig.test.cpp"
     "_mat/fact.test.cpp"
     "_mat/mat.test.cpp"

@@ -56,15 +56,6 @@ void fast_exit(ExitCode exit_code) noexcept {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void checked_system(const char* command) {
-  // NOLINTNEXTLINE(concurrency-mt-unsafe,cert-env33-c)
-  const auto status = std::system(command);
-  static_cast<void>(status); /// @todo Ignore the status code for now.
-  // if (status != 0) TIT_THROW("System command '{}' failed!", command);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 auto exe_path() -> std::filesystem::path {
 #ifdef __APPLE__
   std::array<char, PROC_PIDPATHINFO_MAXSIZE> buffer{};
