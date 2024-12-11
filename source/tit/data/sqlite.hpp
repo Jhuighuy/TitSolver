@@ -10,14 +10,18 @@
 #include <memory>
 #include <ranges>
 #include <span>
+#include <string>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/stream.hpp"
 
 struct sqlite3;
 struct sqlite3_stmt;
+struct sqlite3_blob;
 
 namespace tit::data::sqlite {
 
@@ -234,6 +238,81 @@ private:
   State_ state_ = State_::invalid;
 
 }; // class Statement
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// SQLite blob reader.
+class BlobReader final : public InputStream<byte_t> {
+public:
+
+  /// Open a blob from a database.
+  BlobReader(const Database& db,
+             const char* table_name,
+             const char* column_name,
+             RowID row_id);
+
+  /// SQLite blob object.
+  auto base() const noexcept -> sqlite3_blob*;
+
+  /// Read the next bytes from the blob.
+  auto read(std::span<byte_t> data) -> size_t override;
+
+private:
+
+  struct Finalizer_ final {
+    static void operator()(sqlite3_blob* blob);
+  };
+
+  const Database* db_;
+  std::unique_ptr<sqlite3_blob, Finalizer_> blob_;
+  size_t size_ = 0;
+  size_t offset_ = 0;
+
+}; // class BlobReader
+
+/// Make a blob reader.
+constexpr auto make_blob_reader(const Database& db,
+                                const char* table_name,
+                                const char* column_name,
+                                RowID row_id) -> InputStreamPtr<byte_t> {
+  return std::make_unique<BlobReader>(db, table_name, column_name, row_id);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// SQLite blob writer.
+class BlobWriter final : public OutputStream<byte_t> {
+public:
+
+  /// Open a blob in a database.
+  BlobWriter(Database& db,
+             std::string_view table_name,
+             std::string_view column_name,
+             RowID row_id);
+
+  /// Write the next bytes to the blob.
+  void write(std::span<const byte_t> data) override;
+
+  /// Flush the stream.
+  void flush() override;
+
+private:
+
+  Database* db_;
+  std::string table_name_;
+  std::string column_name_;
+  RowID row_id_;
+  std::vector<byte_t> buffer_;
+
+}; // class BlobWriter
+
+/// Make a blob writer.
+constexpr auto make_blob_writer(Database& db,
+                                std::string_view table_name,
+                                std::string_view column_name,
+                                RowID row_id) -> OutputStreamPtr<byte_t> {
+  return make_flushable<BlobWriter>(db, table_name, column_name, row_id);
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

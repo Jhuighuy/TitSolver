@@ -56,6 +56,7 @@ add_tit_library(
     "stats.cpp"
     "stats.hpp"
     "str_utils.hpp"
+    "stream.hpp"
     "sys/env.cpp"
     "sys/env.hpp"
     "sys/malloc.cpp"
