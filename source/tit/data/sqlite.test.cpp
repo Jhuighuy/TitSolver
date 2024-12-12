@@ -10,10 +10,9 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/math.hpp" // IWYU pragma: keep
 #include "tit/core/sys/utils.hpp"
-
 #include "tit/core/utils.hpp"
+
 #include "tit/data/sqlite.hpp"
 
 #include "tit/testing/test.hpp"
@@ -28,7 +27,7 @@ TEST_CASE("data::sqlite::Database") {
   const std::filesystem::path invalid_file_name{"/invalid/path/to/file.db"};
   SUBCASE("success") {
     SUBCASE("create in-memory") {
-      const data::sqlite::Database db{};
+      const data::sqlite::Database db{":memory:"};
       CHECK(db.base() != nullptr);
       CHECK(db.path().empty());
     }
@@ -64,17 +63,17 @@ TEST_CASE("data::sqlite::Database") {
 
 TEST_CASE("data::sqlite::Database::execute") {
   SUBCASE("success") {
-    const data::sqlite::Database db{};
+    const data::sqlite::Database db{":memory:"};
     db.execute("CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY)");
     db.execute("SELECT * FROM test");
   }
   SUBCASE("failure") {
     SUBCASE("invalid SQL") {
-      const data::sqlite::Database db{};
+      const data::sqlite::Database db{":memory:"};
       CHECK_THROWS_MSG(db.execute("INVALID SQL"), Exception, "syntax error");
     }
     SUBCASE("invalid operation") {
-      const data::sqlite::Database db{};
+      const data::sqlite::Database db{":memory:"};
       CHECK_THROWS_MSG( //
           db.execute(R"SQL(
             CREATE TABLE test (id INTEGER PRIMARY KEY);
@@ -94,7 +93,7 @@ TEST_CASE("data::sqlite::Database::execute") {
 }
 
 TEST_CASE("data::sqlite::Database::last_insert_row_id") {
-  const data::sqlite::Database db{};
+  const data::sqlite::Database db{":memory:"};
   db.execute(R"SQL(
     CREATE TABLE IF NOT EXISTS test (
       id    INTEGER PRIMARY KEY,
@@ -103,18 +102,18 @@ TEST_CASE("data::sqlite::Database::last_insert_row_id") {
     INSERT INTO test (value) VALUES ("first");
     INSERT INTO test (value) VALUES ("second");
   )SQL");
-  CHECK(db.last_insert_row_id<uint64_t>() == 2);
+  CHECK(db.last_insert_row_id() == 2);
   db.execute(R"SQL(
     DELETE FROM test WHERE id = 1;
     INSERT INTO test (value) VALUES ("third");
   )SQL");
-  CHECK(db.last_insert_row_id<uint64_t>() == 3);
+  CHECK(db.last_insert_row_id() == 3);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("data::sqlite::Statement") {
-  data::sqlite::Database db{};
+  data::sqlite::Database db{":memory:"};
   db.execute("CREATE TABLE test (id INTEGER PRIMARY KEY)");
   SUBCASE("success") {
     const data::sqlite::Statement s{db, "INSERT INTO test (id) VALUES (?)"};
@@ -135,7 +134,7 @@ TEST_CASE("data::sqlite::Statement") {
 }
 
 TEST_CASE("data::sqlite::Statement::step") {
-  data::sqlite::Database db{};
+  data::sqlite::Database db{":memory:"};
   db.execute(R"SQL(
     CREATE TABLE IF NOT EXISTS Constants (
       id    INTEGER PRIMARY KEY,
@@ -175,7 +174,7 @@ TEST_CASE("data::sqlite::Statement::step") {
 }
 
 TEST_CASE("data::sqlite::Statement::run") {
-  data::sqlite::Database db{};
+  data::sqlite::Database db{":memory:"};
   db.execute(R"SQL(
     CREATE TABLE IF NOT EXISTS Constants (
       id    INTEGER PRIMARY KEY,
@@ -215,7 +214,7 @@ TEST_CASE("data::sqlite::Statement::run") {
 }
 
 TEST_CASE("data::sqlite::Statement::column") {
-  data::sqlite::Database db{};
+  data::sqlite::Database db{":memory:"};
   db.execute(R"SQL(
     CREATE TABLE IF NOT EXISTS Constants (
       id     INTEGER PRIMARY KEY,
