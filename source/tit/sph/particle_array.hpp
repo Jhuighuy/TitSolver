@@ -16,9 +16,11 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/meta/set.hpp"
+#include "tit/core/type_traits.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/core/type_traits.hpp"
+#include "tit/data/storage.hpp"
+
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {
@@ -96,8 +98,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compare particle views.
-  friend constexpr auto operator==(ParticleView<ParticleArray> a,
-                                   ParticleView<ParticleArray> b) noexcept
+  friend constexpr auto operator==(ParticleView a, ParticleView b) noexcept
       -> bool {
     TIT_ASSERT(a.array().size() == b.array().size(),
                "Particle arrays must be of the same size!");
@@ -105,8 +106,7 @@ public:
   }
 
   /// Distance between particle view indices.
-  friend constexpr auto operator-(ParticleView<ParticleArray> a,
-                                  ParticleView<ParticleArray> b) noexcept
+  friend constexpr auto operator-(ParticleView a, ParticleView b) noexcept
       -> ssize_t {
     TIT_ASSERT(a.array().size() == b.array().size(),
                "Particle arrays must be of the same size!");
@@ -160,6 +160,20 @@ public:
   template<class Equations>
   constexpr explicit ParticleArray(Space /*space*/,
                                    Equations /*equations*/) noexcept {}
+
+  /// Write a particle array into a data series.
+  void write(real_t time,
+             data::DataSeriesView<data::DataStorage> series) const {
+    auto time_step = series.create_time_step(time);
+    auto uniforms = time_step.uniforms();
+    ParticleArray::uniform_fields.for_each([&uniforms, this](auto field) {
+      uniforms.create_array(field.field_name, std::span{&field[*this], 1});
+    });
+    auto varyings = time_step.varyings();
+    ParticleArray::varying_fields.for_each([&varyings, this](auto field) {
+      varyings.create_array(field.field_name, field[*this]);
+    });
+  }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

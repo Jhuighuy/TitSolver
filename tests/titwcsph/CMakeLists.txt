@@ -10,7 +10,7 @@
 add_tit_test_from_target(
   tit::titwcsph
   NAME "titwcsph/dam_breaking[long]"
-  MATCH_FILES "particles.csv.checksum"
+  MATCH_FILES "particles.ttdb.checksum"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

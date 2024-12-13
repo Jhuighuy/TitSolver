@@ -18,7 +18,6 @@ add_tit_library(
     "momentum_equation.hpp"
     "motion_equation.hpp"
     "particle_array.hpp"
-    "particle_array_io.hpp"
     "particle_mesh.hpp"
     "time_integrator.hpp"
     "viscosity.hpp"

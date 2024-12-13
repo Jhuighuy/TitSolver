@@ -6,7 +6,6 @@
 #pragma once
 
 #include <concepts>
-#include <format>
 #include <type_traits>
 #include <utility>
 
@@ -18,6 +17,8 @@
 #include "tit/core/meta/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
+
+#include "tit/data/type.hpp"
 
 namespace tit {
 
@@ -208,6 +209,15 @@ private:
 
 }; // class PartVec
 
+template<>
+inline constexpr auto data::data_type_of<PartVec> =
+    data::data_type_of<uint64_t>;
+
+template<class Stream>
+constexpr void serialize(Stream& out, const PartVec& pvec) {
+  serialize(out, static_cast<uint64_t>(pvec.last()));
+}
+
 /// Particle partition information.
 TIT_DEFINE_FIELD(PartVec, parinfo)
 
@@ -276,19 +286,5 @@ TIT_DEFINE_SCALAR_FIELD(FS)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// Particle multilevel partition index formatter.
-template<>
-struct std::formatter<tit::PartVec> {
-  constexpr auto parse(auto& context) {
-    return context.begin();
-  }
-  constexpr auto format(const tit::PartVec& part, auto& context) const {
-    const auto last = static_cast<tit::size_t>(part.last());
-    return std::format_to(context.out(), "{}", last);
-  }
-};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
