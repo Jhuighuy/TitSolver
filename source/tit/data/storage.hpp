@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <concepts>
 #include <filesystem>
-#include <iterator>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -19,10 +18,9 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/mat.hpp"
+#include "tit/core/containers/packed_array.hpp"
 #include "tit/core/numbers/strict.hpp"
 #include "tit/core/utils.hpp"
-#include "tit/core/vec.hpp"
 
 #include "tit/data/sqlite.hpp"
 #include "tit/data/type.hpp"
@@ -97,9 +95,15 @@ public:
   }
 
   /// Get the data of the data array.
-  auto data() const -> Bytes {
-    return storage().array_data(array_id_);
+  /// @{
+  auto packed_data() const -> Bytes {
+    return storage().array_packed_data(array_id_);
   }
+  template<data_type Val>
+  auto packed_data() const -> PackedArray<Val> {
+    return storage().template array_packed_data<Val>(array_id_);
+  }
+  /// @}
 
 private:
 
@@ -470,33 +474,23 @@ public:
   auto create_array_id(DataSetID dataset_id,
                        std::string_view name,
                        DataType type,
-                       ByteSpan bytes) -> DataArrayID;
+                       ByteSpan packed_bytes) -> DataArrayID;
+  template<data_type Val>
+  auto create_array_id(DataSetID dataset_id,
+                       std::string_view name,
+                       const PackedArray<Val>& packed_data) -> DataArrayID {
+    return create_array_id(dataset_id,
+                           name,
+                           data_type_of<Val>,
+                           packed_data.bytes());
+  }
   template<data_range Data>
   auto create_array_id(DataSetID dataset_id, std::string_view name, Data&& data)
       -> DataArrayID {
-    TIT_ASSUME_UNIVERSAL(Data, data);
-    Bytes bytes{};
-    using Item = std::ranges::range_value_t<Data>;
-    if constexpr (is_vec_v<Item>) {
-      for (const auto& vec : data) {
-        for (const auto& elem : vec.elems()) {
-          std::ranges::copy(to_bytes(elem), std::back_inserter(bytes));
-        }
-      }
-    } else if constexpr (is_mat_v<Item>) {
-      for (const auto& mat : data) {
-        for (const auto& row : mat.rows()) {
-          for (const auto& elem : row.elems()) {
-            std::ranges::copy(to_bytes(elem), std::back_inserter(bytes));
-          }
-        }
-      }
-    } else {
-      for (const auto& elem : data) {
-        std::ranges::copy(to_bytes(elem), std::back_inserter(bytes));
-      }
-    }
-    return create_array_id(dataset_id, name, data_type_of<Item>, bytes);
+    /// @todo We should implement proper streaming of data, instead of
+    ///       packing it into a temporary array.
+    const PackedArray packed_data{std::views::all(std::forward<Data>(data))};
+    return create_array_id(dataset_id, name, packed_data);
   }
   template<class... Args>
   auto create_array(DataSetID dataset_id, std::string_view name, Args&&... args)
@@ -519,7 +513,20 @@ public:
   auto array_type(DataArrayID array_id) const -> DataType;
 
   /// Get the data of a data array.
-  auto array_data(DataArrayID array_id) const -> Bytes;
+  /// @{
+  auto array_packed_data(DataArrayID array_id) const -> Bytes;
+  template<data_type Val>
+  auto array_packed_data(DataArrayID array_id) const -> PackedArray<Val> {
+    if (const auto type = array_type(array_id); type != data_type_of<Val>) {
+      /// @todo Add formatting support to `DataType`.
+      TIT_THROW(
+          "Data array type '{}' does not match the requested data type '{}'.",
+          type.id(),
+          data_type_of<Val>.id());
+    }
+    return PackedArray<Val>{std::views::all(array_packed_data(array_id))};
+  }
+  /// @}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

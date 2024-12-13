@@ -342,7 +342,7 @@ auto DataStorage::find_array_id(DataSetID dataset_id,
 auto DataStorage::create_array_id(DataSetID dataset_id,
                                   std::string_view name,
                                   DataType type,
-                                  ByteSpan bytes) -> DataArrayID {
+                                  ByteSpan packed_bytes) -> DataArrayID {
   TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
   TIT_ASSERT(!name.empty(), "Array name must not be empty!");
   TIT_ASSERT(!find_array_id(dataset_id, name), "Array already exists!");
@@ -350,7 +350,7 @@ auto DataStorage::create_array_id(DataSetID dataset_id,
   sqlite::Statement statement{db_, R"SQL(
     INSERT INTO DataArrays (data_set_id, name, type, data) VALUES (?, ?, ?, ?)
   )SQL"};
-  statement.run(dataset_id.get(), name, type.id(), bytes);
+  statement.run(dataset_id.get(), name, type.id(), packed_bytes);
   return DataArrayID{db_.last_insert_row_id()};
 }
 
@@ -382,7 +382,7 @@ auto DataStorage::array_type(DataArrayID array_id) const -> DataType {
   TIT_THROW("Unable to get data array data type!");
 }
 
-auto DataStorage::array_data(DataArrayID array_id) const -> Bytes {
+auto DataStorage::array_packed_data(DataArrayID array_id) const -> Bytes {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
   sqlite::Statement statement{db_, R"SQL(
     SELECT data FROM DataArrays WHERE id = ?
