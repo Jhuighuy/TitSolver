@@ -87,11 +87,10 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
   # Append compile definitions.
   foreach(PROP COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
     set(TARGET_DEFS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
-    set(TARGET_VALID_DEFS "$<FILTER:${TARGET_DEFS},INCLUDE,\\w+(=\\w+)?>")
     list(
       APPEND
       ${OPTIONS_VAR}
-      "$<LIST:TRANSFORM,${TARGET_VALID_DEFS},PREPEND,-D>"
+      "$<LIST:TRANSFORM,${TARGET_DEFS},PREPEND,-D>"
     )
   endforeach()
 endmacro()
