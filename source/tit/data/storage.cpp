@@ -71,7 +71,7 @@ auto DataStorage::path() const -> std::filesystem::path {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto DataStorage::max_series() -> size_t {
+auto DataStorage::max_series() const -> size_t {
   sqlite::Statement statement{db_, R"SQL(
     SELECT max_series FROM Settings
   )SQL"};

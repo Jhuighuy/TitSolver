@@ -61,31 +61,40 @@ public:
   /// Construct a data array view.
   constexpr explicit DataArrayView(Storage& storage, DataArrayID array_id)
       : storage_{&storage}, array_id_{array_id} {
-    TIT_ASSERT(storage_->check_array(array_id_), "Invalid data array ID!");
+    TIT_ASSERT(storage.check_array(array_id_), "Invalid data array ID!");
+  }
+
+  /// Get the data storage.
+  constexpr auto storage() const noexcept -> Storage& {
+    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    return *storage_;
   }
 
   /// Get the data array ID.
-  constexpr explicit(false) operator DataArrayID() const noexcept {
+  /// @{
+  constexpr auto id() const noexcept -> DataArrayID {
     return array_id_;
   }
+  constexpr explicit(false) operator DataArrayID() const noexcept {
+    return id();
+  }
+  /// @}
 
   /// Compare data array views by ID.
   friend constexpr auto operator==(DataArrayView lhs,
                                    DataArrayView rhs) noexcept -> bool {
-    TIT_ASSERT(lhs.storage_ == rhs.storage_, "Incompatible data storages!");
+    TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
     return lhs.array_id_ == rhs.array_id_;
   }
 
   /// Get the data type of the data array.
   auto type() const -> DataType {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->array_type(array_id_);
+    return storage().array_type(array_id_);
   }
 
   /// Get the data of the data array.
   auto data() const -> Bytes {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->array_data(array_id_);
+    return storage().array_data(array_id_);
   }
 
 private:
@@ -105,37 +114,45 @@ public:
   /// Construct a dataset view.
   constexpr explicit DataSetView(Storage& storage, DataSetID dataset_id)
       : storage_{&storage}, dataset_id_{dataset_id} {
-    TIT_ASSERT(storage_->check_dataset(dataset_id_), "Invalid dataset ID!");
+    TIT_ASSERT(storage.check_dataset(dataset_id_), "Invalid dataset ID!");
+  }
+
+  /// Get the data storage.
+  constexpr auto storage() const noexcept -> Storage& {
+    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    return *storage_;
   }
 
   /// Get the dataset ID.
-  constexpr explicit(false) operator DataSetID() const noexcept {
+  /// @{
+  constexpr auto id() const noexcept -> DataSetID {
     return dataset_id_;
   }
+  constexpr explicit(false) operator DataSetID() const noexcept {
+    return id();
+  }
+  /// @}
 
   /// Compare dataset views by ID.
   friend constexpr auto operator==(DataSetView lhs,
                                    DataSetView rhs) noexcept -> bool {
-    TIT_ASSERT(lhs.storage_ == rhs.storage_, "Incompatible data storages!");
+    TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
     return lhs.dataset_id_ == rhs.dataset_id_;
   }
 
   /// Get the number of data arrays in the dataset.
   auto num_arrays() const -> size_t {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->dataset_num_arrays(dataset_id_);
+    return storage().dataset_num_arrays(dataset_id_);
   }
 
   /// Enumerate all data arrays in the dataset.
   auto arrays() const {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->dataset_arrays(dataset_id_);
+    return storage().dataset_arrays(dataset_id_);
   }
 
   /// Find the data array with the given name.
   auto find_array(std::string_view name) const {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->find_array(dataset_id_, name);
+    return storage().find_array(dataset_id_, name);
   }
 
   /// Create a new data array in the dataset.
@@ -144,8 +161,7 @@ public:
                     Args&&... args) const -> DataArrayView<Storage>
     requires (!std::is_const_v<Storage>)
   {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->create_array(dataset_id_,
+    return storage().create_array(dataset_id_,
                                   name,
                                   std::forward<Args>(args)...);
   }
@@ -168,38 +184,45 @@ public:
   constexpr explicit DataTimeStepView(Storage& storage,
                                       DataTimeStepID time_step_id)
       : storage_{&storage}, time_step_id_{time_step_id} {
-    TIT_ASSERT(storage_->check_time_step(time_step_id_),
-               "Invalid time step ID!");
+    TIT_ASSERT(storage.check_time_step(time_step_id_), "Invalid time step ID!");
+  }
+
+  /// Get the data storage.
+  constexpr auto storage() const noexcept -> Storage& {
+    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    return *storage_;
   }
 
   /// Get the data time step ID.
-  constexpr explicit(false) operator DataTimeStepID() const noexcept {
+  /// @{
+  constexpr auto id() const noexcept -> DataTimeStepID {
     return time_step_id_;
   }
+  constexpr explicit(false) operator DataTimeStepID() const noexcept {
+    return id();
+  }
+  /// @}
 
   /// Compare data time step views by ID.
   friend constexpr auto operator==(DataTimeStepView lhs,
                                    DataTimeStepView rhs) noexcept -> bool {
-    TIT_ASSERT(lhs.storage_ == rhs.storage_, "Incompatible data storages!");
+    TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
     return lhs.time_step_id_ == rhs.time_step_id_;
   }
 
   /// Get the time of the data time step.
   auto time() const -> real_t {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->time_step_time(time_step_id_);
+    return storage().time_step_time(time_step_id_);
   }
 
   /// Get the uniform dataset of the data time step.
   auto uniforms() const -> DataSetView<Storage> {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->time_step_uniforms(time_step_id_);
+    return storage().time_step_uniforms(time_step_id_);
   }
 
   /// Get the varying dataset of the data time step.
   auto varyings() const -> DataSetView<Storage> {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->time_step_varyings(time_step_id_);
+    return storage().time_step_varyings(time_step_id_);
   }
 
 private:
@@ -222,40 +245,47 @@ public:
     TIT_ASSERT(storage.check_series(series_id_), "Invalid series ID!");
   }
 
+  /// Get the data storage.
+  constexpr auto storage() const noexcept -> Storage& {
+    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    return *storage_;
+  }
+
   /// Get the data series ID.
-  constexpr explicit(false) operator DataSeriesID() const noexcept {
+  /// @{
+  constexpr auto id() const noexcept -> DataSeriesID {
     return series_id_;
   }
+  constexpr explicit(false) operator DataSeriesID() const noexcept {
+    return id();
+  }
+  /// @}
 
   /// Compare data series views by ID.
   friend constexpr auto operator==(DataSeriesView lhs,
                                    DataSeriesView rhs) noexcept {
-    TIT_ASSERT(lhs.storage_ == rhs.storage_, "Incompatible data storages!");
+    TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
     return lhs.series_id_ == rhs.series_id_;
   }
 
   /// Get the parameters of the data series.
   auto parameters() const -> std::string {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->series_parameters(series_id_);
+    return storage().series_parameters(series_id_);
   }
 
   /// Get the number of time steps in the data series.
   auto num_time_steps() const -> size_t {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->series_num_time_steps(series_id_);
+    return storage().series_num_time_steps(series_id_);
   }
 
   /// Enumerate all time steps in the data series.
   auto time_steps() const {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->series_time_steps(series_id_);
+    return storage().series_time_steps(series_id_);
   }
 
   /// Get the last time step in the series.
   auto last_time_step() const {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->series_last_time_step(series_id_);
+    return storage().series_last_time_step(series_id_);
   }
 
   /// Create a new time step in the data series.
@@ -263,7 +293,7 @@ public:
     requires (!std::is_const_v<Storage>)
   {
     TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
-    return storage_->create_time_step(series_id_, time);
+    return storage().create_time_step(series_id_, time);
   }
 
 private:
@@ -290,7 +320,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Get the maximum number of data series.
-  auto max_series() -> size_t;
+  auto max_series() const -> size_t;
 
   /// Set the maximum number of data series. If the number of series exceeds the
   /// maximum, the oldest series will be deleted.
