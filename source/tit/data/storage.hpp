@@ -5,8 +5,10 @@
 
 #pragma once
 
+#include <algorithm>
 #include <concepts>
 #include <filesystem>
+#include <iterator>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -17,8 +19,10 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/mat.hpp"
 #include "tit/core/numbers/strict.hpp"
 #include "tit/core/utils.hpp"
+#include "tit/core/vec.hpp"
 
 #include "tit/data/sqlite.hpp"
 #include "tit/data/type.hpp"
@@ -466,7 +470,34 @@ public:
   auto create_array_id(DataSetID dataset_id,
                        std::string_view name,
                        DataType type,
-                       ByteSpan data) -> DataArrayID;
+                       ByteSpan bytes) -> DataArrayID;
+  template<data_range Data>
+  auto create_array_id(DataSetID dataset_id, std::string_view name, Data&& data)
+      -> DataArrayID {
+    TIT_ASSUME_UNIVERSAL(Data, data);
+    Bytes bytes{};
+    using Item = std::ranges::range_value_t<Data>;
+    if constexpr (is_vec_v<Item>) {
+      for (const auto& vec : data) {
+        for (const auto& elem : vec.elems()) {
+          std::ranges::copy(to_bytes(elem), std::back_inserter(bytes));
+        }
+      }
+    } else if constexpr (is_mat_v<Item>) {
+      for (const auto& mat : data) {
+        for (const auto& row : mat.rows()) {
+          for (const auto& elem : row.elems()) {
+            std::ranges::copy(to_bytes(elem), std::back_inserter(bytes));
+          }
+        }
+      }
+    } else {
+      for (const auto& elem : data) {
+        std::ranges::copy(to_bytes(elem), std::back_inserter(bytes));
+      }
+    }
+    return create_array_id(dataset_id, name, data_type_of<Item>, bytes);
+  }
   template<class... Args>
   auto create_array(DataSetID dataset_id, std::string_view name, Args&&... args)
       -> DataArrayView<DataStorage> {

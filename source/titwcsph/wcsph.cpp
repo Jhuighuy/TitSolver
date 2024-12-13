@@ -1,14 +1,13 @@
-#include <format>
-
 #include "tit/core/basic_types.hpp"
 #include "tit/core/log.hpp"
 #include "tit/core/main_func.hpp"
-#include "tit/core/sys/utils.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
+
+#include "tit/data/storage.hpp"
 
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/continuity_equation.hpp"
@@ -20,7 +19,6 @@
 #include "tit/sph/momentum_equation.hpp"
 #include "tit/sph/motion_equation.hpp"
 #include "tit/sph/particle_array.hpp"
-#include "tit/sph/particle_array_io.hpp"
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
 #include "tit/sph/viscosity.hpp"
@@ -150,10 +148,12 @@ auto sph_main(CmdArgs /*args*/) -> int {
       geom::GridGraphPartition{2 * h_0},
   };
 
-  checked_system("mkdir -p output/test_output/");
-  checked_system("rm -f output/test_output/*");
-  print_csv(particles, "output/test_output/particles-0.csv");
-  checked_system("ln -sf output/test_output/particles-0.csv particles.csv");
+  // Create a data storage to store the particles.  We'll store only one last
+  // run result, all the previous runs will be discarded.
+  data::DataStorage storage{"./particles.ttdb"};
+  storage.set_max_series(1);
+  const auto series = storage.create_series();
+  particles.write(0.0, series);
 
   Real time{};
   Stopwatch exectime{};
@@ -171,16 +171,11 @@ auto sph_main(CmdArgs /*args*/) -> int {
     const auto end = time * sqrt(g / H) >= 6.9;
     if ((n % 100 == 0 && n != 0) || end) {
       const StopwatchCycle cycle{printtime};
-      const auto path =
-          std::format("output/test_output/particles-{}.csv", n / 100);
-      print_csv(particles, path);
-      checked_system(("ln -sf ./" + path + " particles.csv").c_str());
+      particles.write(time * sqrt(g / H), series);
     }
     if (end) break;
     time += dt;
   }
-
-  print_csv(particles, "particles-dam.csv");
 
   return 0;
 }

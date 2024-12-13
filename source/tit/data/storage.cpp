@@ -342,7 +342,7 @@ auto DataStorage::find_array_id(DataSetID dataset_id,
 auto DataStorage::create_array_id(DataSetID dataset_id,
                                   std::string_view name,
                                   DataType type,
-                                  ByteSpan data) -> DataArrayID {
+                                  ByteSpan bytes) -> DataArrayID {
   TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
   TIT_ASSERT(!name.empty(), "Array name must not be empty!");
   TIT_ASSERT(!find_array_id(dataset_id, name), "Array already exists!");
@@ -350,7 +350,7 @@ auto DataStorage::create_array_id(DataSetID dataset_id,
   sqlite::Statement statement{db_, R"SQL(
     INSERT INTO DataArrays (data_set_id, name, type, data) VALUES (?, ?, ?, ?)
   )SQL"};
-  statement.run(dataset_id.get(), name, type.id(), data);
+  statement.run(dataset_id.get(), name, type.id(), bytes);
   return DataArrayID{db_.last_insert_row_id()};
 }
 

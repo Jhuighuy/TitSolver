@@ -42,11 +42,6 @@ void fast_exit(ExitCode exit_code) noexcept;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Execute a system command. Fail if the command fails.
-void checked_system(const char* command);
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Path to the current executable.
 auto exe_path() -> std::filesystem::path;
 

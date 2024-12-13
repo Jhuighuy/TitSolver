@@ -47,6 +47,16 @@ public:
     std::ranges::copy(rows, rows_.begin());
   }
 
+  /// Matrix rows.
+  /// @{
+  constexpr auto rows() noexcept -> std::array<Row, Dim>& {
+    return rows_;
+  }
+  constexpr auto rows() const noexcept -> const std::array<Row, Dim>& {
+    return rows_;
+  }
+  /// @}
+
   /// Matrix row at index.
   /// @{
   constexpr auto operator[](size_t i) noexcept -> Row& {

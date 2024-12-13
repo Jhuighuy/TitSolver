@@ -176,9 +176,9 @@ template<class Val>
 concept data_type = (data_type_of<std::remove_cv_t<Val>>.known());
 
 /// Data range type.
-template<class Val>
-concept data_range =
-    std::ranges::range<Val> && data_type<std::ranges::range_value_t<Val>>;
+template<class Range>
+concept data_range = std::ranges::input_range<Range> &&
+                     data_type<std::ranges::range_value_t<Range>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
