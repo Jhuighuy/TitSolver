@@ -49,11 +49,11 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
     TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
 
     // Register the new action and store the previous one.
-    struct sigaction action {};
+    struct sigaction action{};
     action.sa_flags = 0;
     action.sa_handler = &handle_signal_;
     sigemptyset(&action.sa_mask);
-    struct sigaction prev_action {};
+    struct sigaction prev_action{};
     const auto status = sigaction(signal_number, &action, &prev_action);
     if (status != 0) {
       TIT_THROW("Unable to set the action for signal {}!", signal_number);

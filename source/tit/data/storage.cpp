@@ -208,8 +208,8 @@ auto DataStorage::series_last_time_step_id(DataSeriesID series_id) const
   TIT_THROW("Unable to get last time step!");
 }
 
-auto DataStorage::create_time_step_id(DataSeriesID series_id,
-                                      real_t time) -> DataTimeStepID {
+auto DataStorage::create_time_step_id(DataSeriesID series_id, real_t time)
+    -> DataTimeStepID {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
   TIT_ASSERT((series_num_time_steps(series_id) == 0 ||
               time > series_last_time_step(series_id).time()),
@@ -327,8 +327,9 @@ auto DataStorage::dataset_array_ids(DataSetID dataset_id) const
   return result;
 }
 
-auto DataStorage::find_array_id(DataSetID dataset_id, std::string_view name)
-    const -> std::optional<DataArrayID> {
+auto DataStorage::find_array_id(DataSetID dataset_id,
+                                std::string_view name) const
+    -> std::optional<DataArrayID> {
   TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
   sqlite::Statement statement{db_, R"SQL(
     SELECT id FROM DataArrays WHERE data_set_id = ? AND name = ?

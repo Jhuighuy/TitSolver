@@ -9,8 +9,8 @@ include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find clang-tidy (at least 18.1.3). Prefer version-suffixed executables.
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy-18" "clang-tidy")
+# Find clang-tidy (at least 19.1.3). Prefer version-suffixed executables.
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-19" "clang-tidy")
 if(NOT CLANG_TIDY_EXE)
   message(WARNING "clang-tidy was not found!")
 endif()
@@ -52,7 +52,6 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     set(
       LIBCPP_DISABLED_CHECKS
       # False positives with standard headers, like <format> and <expected>.
-      # Looks like this issue is fixed in LLVM 19.
       -misc-include-cleaner
       # Suppress error messages from Doctest.
       -modernize-type-traits

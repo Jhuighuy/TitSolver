@@ -117,6 +117,7 @@ using array_from_t = decltype(make_array(std::declval<Ts>()...));
 template<size_t Size, class T>
   requires std::copy_constructible<T>
 constexpr auto fill_array(const T& val) -> std::array<T, Size> {
+  // NOLINTNEXTLINE(*-return-const-ref-from-parameter)
   const auto get_val = [&val](auto /*arg*/) -> const T& { return val; };
   return [&get_val]<size_t... Indices>(std::index_sequence<Indices...>) {
     return std::array<T, Size>{get_val(Indices)...};
@@ -190,6 +191,7 @@ template<std::ranges::random_access_range Range, index_range Perm>
   requires std::ranges::viewable_range<Range> &&
            std::ranges::viewable_range<Perm>
 constexpr auto permuted_view(Range&& range, Perm&& perm) {
+  TIT_ASSUME_UNIVERSAL(Range, range); /// @todo Clang 19 does not like this.
   return std::ranges::transform_view{
       std::forward<Perm>(perm),
       [range_view = std::views::all(std::forward<Range>(range))](

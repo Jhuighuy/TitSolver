@@ -29,24 +29,24 @@ TEST_CASE("Mat::part_at") {
     CHECK(part_at<lower>(A, 1, 0) == 4.0);
     CHECK(part_at<lower>(A, 0, 1) == 0.0);
     CHECK(part_at<lower>(A, 1, 1) == 0.0);
-    CHECK(part_at<lower | diag>(A, 1, 1) == 5.0);
-    CHECK(part_at<lower | unit>(A, 1, 1) == 1.0);
-    CHECK(part_at<lower | transposed>(A, 1, 0) == 2.0);
-    CHECK(part_at<lower | transposed>(A, 0, 1) == 0.0);
+    CHECK(part_at<(lower | diag)>(A, 1, 1) == 5.0);
+    CHECK(part_at<(lower | unit)>(A, 1, 1) == 1.0);
+    CHECK(part_at<(lower | transposed)>(A, 1, 0) == 2.0);
+    CHECK(part_at<(lower | transposed)>(A, 0, 1) == 0.0);
   }
   SUBCASE("upper") {
     CHECK(part_at<upper>(A, 0, 1) == 2.0);
     CHECK(part_at<upper>(A, 1, 0) == 0.0);
     CHECK(part_at<upper>(A, 1, 1) == 0.0);
-    CHECK(part_at<upper | diag>(A, 1, 1) == 5.0);
-    CHECK(part_at<upper | unit>(A, 1, 1) == 1.0);
-    CHECK(part_at<upper | transposed>(A, 0, 1) == 4.0);
-    CHECK(part_at<upper | transposed>(A, 1, 0) == 0.0);
+    CHECK(part_at<(upper | diag)>(A, 1, 1) == 5.0);
+    CHECK(part_at<(upper | unit)>(A, 1, 1) == 1.0);
+    CHECK(part_at<(upper | transposed)>(A, 0, 1) == 4.0);
+    CHECK(part_at<(upper | transposed)>(A, 1, 0) == 0.0);
   }
   SUBCASE("weird") {
-    CHECK(part_at<lower | upper>(A, 1, 1) == 0.0);
-    CHECK(part_at<lower | upper>(A, 0, 1) == 2.0);
-    CHECK(part_at<lower | upper>(A, 1, 0) == 4.0);
+    CHECK(part_at<(lower | upper)>(A, 1, 1) == 0.0);
+    CHECK(part_at<(lower | upper)>(A, 0, 1) == 2.0);
+    CHECK(part_at<(lower | upper)>(A, 1, 0) == 4.0);
   }
 }
 
@@ -68,19 +68,19 @@ TEST_CASE("Mat::copy_part") {
           });
   }
   SUBCASE("lower") {
-    CHECK(copy_part<lower | unit>(A) == //
+    CHECK(copy_part<(lower | unit)>(A) == //
           Mat{
               {1.0, 0.0, 0.0},
               {4.0, 1.0, 0.0},
               {7.0, 8.0, 1.0},
           });
-    CHECK(copy_part<lower | diag>(A) == //
+    CHECK(copy_part<(lower | diag)>(A) == //
           Mat{
               {1.0, 0.0, 0.0},
               {4.0, 5.0, 0.0},
               {7.0, 8.0, 9.0},
           });
-    CHECK(copy_part<lower | diag | transposed>(A) == //
+    CHECK(copy_part<(lower | diag | transposed)>(A) == //
           Mat{
               {1.0, 0.0, 0.0},
               {2.0, 5.0, 0.0},
@@ -88,19 +88,19 @@ TEST_CASE("Mat::copy_part") {
           });
   }
   SUBCASE("upper") {
-    CHECK(copy_part<upper | unit>(A) == //
+    CHECK(copy_part<(upper | unit)>(A) == //
           Mat{
               {1.0, 2.0, 3.0},
               {0.0, 1.0, 6.0},
               {0.0, 0.0, 1.0},
           });
-    CHECK(copy_part<upper | diag>(A) == //
+    CHECK(copy_part<(upper | diag)>(A) == //
           Mat{
               {1.0, 2.0, 3.0},
               {0.0, 5.0, 6.0},
               {0.0, 0.0, 9.0},
           });
-    CHECK(copy_part<upper | diag | transposed>(A) == //
+    CHECK(copy_part<(upper | diag | transposed)>(A) == //
           Mat{
               {1.0, 4.0, 7.0},
               {0.0, 5.0, 8.0},
@@ -108,19 +108,19 @@ TEST_CASE("Mat::copy_part") {
           });
   }
   SUBCASE("weird") {
-    CHECK(copy_part<lower | upper>(A) == //
+    CHECK(copy_part<(lower | upper)>(A) == //
           Mat{
               {0.0, 2.0, 3.0},
               {4.0, 0.0, 6.0},
               {7.0, 8.0, 0.0},
           });
-    CHECK(copy_part<lower | unit | upper>(A) == //
+    CHECK(copy_part<(lower | unit | upper)>(A) == //
           Mat{
               {1.0, 2.0, 3.0},
               {4.0, 1.0, 6.0},
               {7.0, 8.0, 1.0},
           });
-    CHECK(copy_part<lower | diag | upper>(A) == A);
+    CHECK(copy_part<(lower | diag | upper)>(A) == A);
   }
 }
 
@@ -168,7 +168,7 @@ TEST_CASE("Mat::part_solve_inplace") {
     }
     SUBCASE("transposed") {
       Vec b{2.0, 7.0, 11.0};
-      REQUIRE(copy_part<lower_diag | transposed>(A) * x == b);
+      REQUIRE(copy_part<(lower_diag | transposed)>(A) * x == b);
       part_solve_inplace<lower_diag | transposed>(A, b);
       CHECK_APPROX_EQ(b, x);
     }
@@ -188,7 +188,7 @@ TEST_CASE("Mat::part_solve_inplace") {
     }
     SUBCASE("transposed") {
       Vec b{-8.0, 5.0, 15.0};
-      REQUIRE(copy_part<upper_diag | transposed>(A) * x == b);
+      REQUIRE(copy_part<(upper_diag | transposed)>(A) * x == b);
       part_solve_inplace<upper_diag | transposed>(A, b);
       CHECK_APPROX_EQ(b, x);
     }

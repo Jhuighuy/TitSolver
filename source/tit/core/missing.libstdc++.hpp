@@ -22,7 +22,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #ifdef __clang__
-// Simple implementation of `std::bind_back`, since Clang 18 cannot handle
+// Simple implementation of `std::bind_back`, since Clang 19 cannot handle
 // the libstdc++ implementation.
 template<class Func, class... BackArgs>
 constexpr auto bind_back(Func&& func, BackArgs&&... back_arguments) {

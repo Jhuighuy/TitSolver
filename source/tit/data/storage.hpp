@@ -134,8 +134,8 @@ public:
   /// @}
 
   /// Compare dataset views by ID.
-  friend constexpr auto operator==(DataSetView lhs,
-                                   DataSetView rhs) noexcept -> bool {
+  friend constexpr auto operator==(DataSetView lhs, DataSetView rhs) noexcept
+      -> bool {
     TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
     return lhs.dataset_id_ == rhs.dataset_id_;
   }
@@ -157,8 +157,8 @@ public:
 
   /// Create a new data array in the dataset.
   template<class... Args>
-  auto create_array(std::string_view name,
-                    Args&&... args) const -> DataArrayView<Storage>
+  auto create_array(std::string_view name, Args&&... args) const
+      -> DataArrayView<Storage>
     requires (!std::is_const_v<Storage>)
   {
     return storage().create_array(dataset_id_,
@@ -392,10 +392,10 @@ public:
 
   /// Create a new time step in the series.
   /// @{
-  auto create_time_step_id(DataSeriesID series_id,
-                           real_t time) -> DataTimeStepID;
-  auto create_time_step(DataSeriesID series_id,
-                        real_t time) -> DataTimeStepView<DataStorage> {
+  auto create_time_step_id(DataSeriesID series_id, real_t time)
+      -> DataTimeStepID;
+  auto create_time_step(DataSeriesID series_id, real_t time)
+      -> DataTimeStepView<DataStorage> {
     return DataTimeStepView{*this, create_time_step_id(series_id, time)};
   }
   /// @}
@@ -450,8 +450,8 @@ public:
 
   /// Find the data array with the given name.
   /// @{
-  auto find_array_id(DataSetID dataset_id,
-                     std::string_view name) const -> std::optional<DataArrayID>;
+  auto find_array_id(DataSetID dataset_id, std::string_view name) const
+      -> std::optional<DataArrayID>;
   auto find_array(this auto& self,
                   DataSetID dataset_id,
                   std::string_view name) {
@@ -468,9 +468,8 @@ public:
                        DataType type,
                        ByteSpan data) -> DataArrayID;
   template<class... Args>
-  auto create_array(DataSetID dataset_id,
-                    std::string_view name,
-                    Args&&... args) -> DataArrayView<DataStorage> {
+  auto create_array(DataSetID dataset_id, std::string_view name, Args&&... args)
+      -> DataArrayView<DataStorage> {
     return DataArrayView{
         *this,
         create_array_id(dataset_id, name, std::forward<Args>(args)...)};
