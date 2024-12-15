@@ -10,6 +10,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -75,7 +76,7 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Scoped stopwatch cycle.
-class StopwatchCycle final {
+class StopwatchCycle final : public NonCopyableBase {
 public:
 
   /// Start the new stopwatch cycle.
@@ -98,12 +99,6 @@ public:
     if (this != &other) stopwatch_ = std::exchange(other.stopwatch_, nullptr);
     return *this;
   }
-
-  /// Stopwatch cycle is not copy-constructible.
-  StopwatchCycle(const StopwatchCycle&) = delete;
-
-  /// Stopwatch cycle is not copyable.
-  auto operator=(const StopwatchCycle&) -> StopwatchCycle& = delete;
 
 private:
 

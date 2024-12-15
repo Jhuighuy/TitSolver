@@ -16,6 +16,8 @@
 #include <signal.h> // NOLINT(*-deprecated-headers)
 #endif
 
+#include "tit/core/utils.hpp"
+
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,26 +28,14 @@ void checked_raise(int signal_number);
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Scoped signal handler.
-class SignalHandler {
+class SignalHandler : public VirtualBase {
 public:
 
   /// Initialize handling for the specified signals.
   explicit SignalHandler(std::initializer_list<int> signal_numbers);
 
-  /// Signal handler is not move-constructible.
-  SignalHandler(SignalHandler&&) = delete;
-
-  /// Signal handler is not movable.
-  auto operator=(SignalHandler&&) -> SignalHandler& = delete;
-
-  /// Signal handler is not copy-constructible.
-  SignalHandler(const SignalHandler&) = delete;
-
-  /// Signal handler is not copyable.
-  auto operator=(const SignalHandler&) -> SignalHandler& = delete;
-
   /// Reset signal handling.
-  virtual ~SignalHandler() noexcept;
+  ~SignalHandler() noexcept override;
 
   /// A range of handled signals.
   constexpr auto signals() const noexcept {

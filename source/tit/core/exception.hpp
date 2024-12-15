@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "tit/core/sys/stacktrace.hpp"
+#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -56,23 +57,11 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Terminate handler that catches exceptions and exits the process.
-class TerminateHandler {
+class TerminateHandler : public NonMovableBase {
 public:
 
   /// Initialize the terminate handler.
   TerminateHandler() noexcept;
-
-  /// Terminate handler is not move-constructible.
-  TerminateHandler(TerminateHandler&&) = delete;
-
-  /// Terminate handler is not movable.
-  auto operator=(TerminateHandler&&) -> TerminateHandler& = delete;
-
-  /// Terminate handler is not copy-constructible.
-  TerminateHandler(const TerminateHandler&) = delete;
-
-  /// Terminate handler is not copyable.
-  auto operator=(const TerminateHandler&) -> TerminateHandler& = delete;
 
   /// Reset terminate handling.
   ~TerminateHandler() noexcept;

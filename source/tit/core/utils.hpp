@@ -215,24 +215,57 @@ constexpr void iota_perm(Range&& range, Perm&& perm) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Virtual base class.
-class VirtualBase {
+/// Non-copyable base class.
+class NonCopyableBase {
 public:
 
-  /// Construct the virtual class instance.
-  VirtualBase() = default;
+  /// Construct the non-copyable class instance.
+  NonCopyableBase() = default;
 
-  /// Virtual class instance is not move-constructible.
-  VirtualBase(VirtualBase&&) = delete;
+  /// Non-copyable class instance is move-constructible.
+  NonCopyableBase(NonCopyableBase&&) = default;
 
-  /// Virtual class instance is not copy-constructible.
-  VirtualBase(const VirtualBase&) = delete;
+  /// Non-copyable class instance is movable.
+  auto operator=(NonCopyableBase&&) -> NonCopyableBase& = default;
 
-  /// Virtual class instance is not movable.
-  auto operator=(VirtualBase&&) -> VirtualBase& = delete;
+  /// Non-copyable class instance is not copy-constructible.
+  NonCopyableBase(const NonCopyableBase&) = delete;
 
-  /// Virtual class instance is not copyable.
-  auto operator=(const VirtualBase&) -> VirtualBase& = delete;
+  /// Non-copyable class instance is not copyable.
+  auto operator=(const NonCopyableBase&) -> NonCopyableBase& = delete;
+
+  /// Destruct the non-copyable class instance.
+  ~NonCopyableBase() = default;
+
+}; // class NonCopyableBase
+
+/// Non-movable base class.
+class NonMovableBase {
+public:
+
+  /// Construct the non-movable class instance.
+  NonMovableBase() = default;
+
+  /// Non-movable class instance is not move-constructible.
+  NonMovableBase(NonMovableBase&&) = delete;
+
+  /// Non-movable class instance is not movable.
+  auto operator=(NonMovableBase&&) -> NonMovableBase& = delete;
+
+  /// Non-movable class instance is not copy-constructible.
+  NonMovableBase(const NonMovableBase&) = delete;
+
+  /// Non-movable class instance is not copyable.
+  auto operator=(const NonMovableBase&) -> NonMovableBase& = delete;
+
+  /// Destruct the non-movable class instance.
+  ~NonMovableBase() = default;
+
+}; // class NonMovableBase
+
+/// Virtual base class.
+class VirtualBase : public NonMovableBase {
+public:
 
   /// Virtual destructor.
   virtual ~VirtualBase() = default;
