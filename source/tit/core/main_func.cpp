@@ -19,7 +19,7 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_main(int argc, char** argv, const MainFunc& main_func) -> int {
+auto run_main(int argc, char** argv, MainFunc main_func) -> int {
   // Setup error handlers.
   const TerminateHandler terminate_handler{};
   const FatalSignalHandler signal_handler{};

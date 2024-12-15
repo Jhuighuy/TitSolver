@@ -8,6 +8,8 @@
 #include <functional>
 #include <span>
 
+#include "tit/core/missing.hpp" // IWYU pragma: keep
+
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,11 +18,11 @@ namespace tit {
 using CmdArgs = std::span<const char*>;
 
 /// `main`-like function pointer.
-using MainFunc = std::function<int(CmdArgs)>;
+using MainFunc = std::move_only_function<int(CmdArgs)>;
 
 /// Wrapper for the main function that should run sets up the
 /// environment: initialized threading, error handlers, etc.
-auto run_main(int argc, char** argv, const MainFunc& main_func) -> int;
+auto run_main(int argc, char** argv, MainFunc main_func) -> int;
 
 /// Implement the actual `main` function.
 #define TIT_IMPLEMENT_MAIN(main_func)                                          \

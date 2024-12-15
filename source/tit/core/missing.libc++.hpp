@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "tit/core/uint_utils.hpp"
+#include "tit/core/utils.hpp"
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
@@ -144,10 +145,21 @@ inline constexpr CartesianProductAdaptor cartesian_product{};
 // Miscellaneous.
 //
 
-// Argumentless `println` is not implemented in libc++.
+// Argumentless `std::println` is not implemented in libc++.
 inline void println() {
   std::cout << '\n';
 }
+
+// `std::move_only_function` is not implemented in libc++.
+template<class... Ts>
+struct move_only_function :
+    public std::function<Ts...>,
+    public tit::NonCopyableBase {
+  using std::function<Ts...>::function;
+  using std::function<Ts...>::operator=;
+  using std::function<Ts...>::operator bool;
+  using std::function<Ts...>::operator();
+};
 
 // `std::from_chars` does not support floating-point types.
 template<std::floating_point Float>
