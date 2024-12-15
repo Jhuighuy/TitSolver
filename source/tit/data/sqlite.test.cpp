@@ -7,6 +7,7 @@
 #include <numbers>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
@@ -214,6 +215,8 @@ TEST_CASE("data::sqlite::Statement::run") {
 }
 
 TEST_CASE("data::sqlite::Statement::column") {
+  using data::sqlite::BlobView;
+  using Blob = std::vector<byte_t>;
   data::sqlite::Database db{":memory:"};
   db.execute(R"SQL(
     CREATE TABLE IF NOT EXISTS Constants (
@@ -236,15 +239,15 @@ TEST_CASE("data::sqlite::Statement::column") {
       SELECT * FROM Constants
     )SQL"};
     REQUIRE(statement.step());
-    CHECK(statement.columns<size_t, std::string, real_t, Bytes>() ==
+    CHECK(statement.columns<size_t, std::string, real_t, Blob>() ==
           std::tuple{1, "pi", 3.14, to_bytes(std::numbers::pi_v<float>)});
     REQUIRE(statement.step());
-    CHECK(statement.columns<size_t, std::string_view, real_t, Bytes>() ==
+    CHECK(statement.columns<size_t, std::string_view, real_t, Blob>() ==
           std::tuple{2, "e", 2.71, to_bytes(std::numbers::e_v<long double>)});
     REQUIRE(statement.step());
     {
       const auto [id, name, approx, exact] =
-          statement.columns<size_t, std::string, real_t, ByteSpan>();
+          statement.columns<size_t, std::string, real_t, BlobView>();
       CHECK(id == 3);
       CHECK(name == "phi");
       CHECK(approx == 1.61);

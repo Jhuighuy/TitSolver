@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -13,7 +14,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/utils.hpp"
 
 #include "tit/data/sqlite.hpp"
 #include "tit/data/storage.hpp"
@@ -342,7 +342,7 @@ auto DataStorage::find_array_id(DataSetID dataset_id,
 auto DataStorage::create_array_id(DataSetID dataset_id,
                                   std::string_view name,
                                   DataType type,
-                                  ByteSpan data) -> DataArrayID {
+                                  std::span<const byte_t> data) -> DataArrayID {
   TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
   TIT_ASSERT(!name.empty(), "Array name must not be empty!");
   TIT_ASSERT(!find_array_id(dataset_id, name), "Array already exists!");
@@ -382,13 +382,14 @@ auto DataStorage::array_type(DataArrayID array_id) const -> DataType {
   TIT_THROW("Unable to get data array data type!");
 }
 
-auto DataStorage::array_data(DataArrayID array_id) const -> Bytes {
+auto DataStorage::array_data(DataArrayID array_id) const
+    -> std::vector<byte_t> {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
   sqlite::Statement statement{db_, R"SQL(
     SELECT data FROM DataArrays WHERE id = ?
   )SQL"};
   statement.bind(array_id.get());
-  if (statement.step()) return statement.column<Bytes>();
+  if (statement.step()) return statement.column<std::vector<byte_t>>();
   TIT_THROW("Unable to get data array data!");
 }
 

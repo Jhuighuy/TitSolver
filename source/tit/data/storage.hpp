@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <optional>
 #include <ranges>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -18,7 +19,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/numbers/strict.hpp"
-#include "tit/core/utils.hpp"
 
 #include "tit/data/sqlite.hpp"
 #include "tit/data/type.hpp"
@@ -93,7 +93,7 @@ public:
   }
 
   /// Get the data of the data array.
-  auto data() const -> Bytes {
+  auto data() const -> std::vector<byte_t> {
     return storage().array_data(array_id_);
   }
 
@@ -466,7 +466,7 @@ public:
   auto create_array_id(DataSetID dataset_id,
                        std::string_view name,
                        DataType type,
-                       ByteSpan data) -> DataArrayID;
+                       std::span<const byte_t> data) -> DataArrayID;
   template<class... Args>
   auto create_array(DataSetID dataset_id, std::string_view name, Args&&... args)
       -> DataArrayView<DataStorage> {
@@ -488,7 +488,7 @@ public:
   auto array_type(DataArrayID array_id) const -> DataType;
 
   /// Get the data of a data array.
-  auto array_data(DataArrayID array_id) const -> Bytes;
+  auto array_data(DataArrayID array_id) const -> std::vector<byte_t>;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

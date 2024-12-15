@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
-#include <cstddef>
 #include <iterator>
 #include <ranges>
 #include <span>
@@ -139,27 +138,17 @@ constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Byte vector.
-using Bytes = std::vector<std::byte>;
-
-/// Immutable byte span.
-using ByteSpan = std::span<const std::byte>;
-
-/// Byte array.
-template<size_t Size>
-using ByteArray = std::array<std::byte, Size>;
-
 /// Convert a value to a byte array.
 template<class T>
   requires std::is_trivially_copyable_v<T>
-constexpr auto to_byte_array(const T& value) -> ByteArray<sizeof(T)> {
-  return std::bit_cast<ByteArray<sizeof(T)>>(value);
+constexpr auto to_byte_array(const T& value) -> std::array<byte_t, sizeof(T)> {
+  return std::bit_cast<std::array<byte_t, sizeof(T)>>(value);
 }
 
 /// Convert a value to a byte vector.
 template<class T>
   requires std::is_trivially_copyable_v<T>
-constexpr auto to_bytes(const T& value) -> Bytes {
+constexpr auto to_bytes(const T& value) -> std::vector<byte_t> {
   const auto bytes_array = to_byte_array(value);
   return {bytes_array.begin(), bytes_array.end()};
 }
@@ -167,9 +156,9 @@ constexpr auto to_bytes(const T& value) -> Bytes {
 /// Convert a byte array to a value.
 template<class T>
   requires std::is_trivially_copyable_v<T>
-constexpr auto from_bytes(ByteSpan bytes) -> T {
+constexpr auto from_bytes(std::span<const byte_t> bytes) -> T {
   TIT_ASSERT(bytes.size() >= sizeof(T), "Invalid byte array size!");
-  ByteArray<sizeof(T)> bytes_array{};
+  std::array<byte_t, sizeof(T)> bytes_array{};
   std::ranges::copy(bytes, bytes_array.begin());
   return std::bit_cast<T>(bytes_array);
 }
