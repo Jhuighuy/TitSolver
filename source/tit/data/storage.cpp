@@ -14,6 +14,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/stream.hpp"
 
 #include "tit/data/sqlite.hpp"
 #include "tit/data/storage.hpp"
@@ -58,7 +59,7 @@ DataStorage::DataStorage(const std::filesystem::path& path) : db_{path} {
       data_set_id INTEGER NOT NULL,
       name        TEXT NOT NULL,
       type        INTEGER NOT NULL,
-      data        BLOB NOT NULL,
+      data        BLOB,
       FOREIGN KEY (data_set_id) REFERENCES DataSets(id) ON DELETE CASCADE
     ) STRICT;
   )SQL");
@@ -341,17 +342,25 @@ auto DataStorage::find_array_id(DataSetID dataset_id,
 
 auto DataStorage::create_array_id(DataSetID dataset_id,
                                   std::string_view name,
-                                  DataType type,
-                                  std::span<const byte_t> data) -> DataArrayID {
+                                  DataType type) -> DataArrayID {
   TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
   TIT_ASSERT(!name.empty(), "Array name must not be empty!");
   TIT_ASSERT(!find_array_id(dataset_id, name), "Array already exists!");
   TIT_ASSERT(type.known(), "Invalid data type!");
   sqlite::Statement statement{db_, R"SQL(
-    INSERT INTO DataArrays (data_set_id, name, type, data) VALUES (?, ?, ?, ?)
+    INSERT INTO DataArrays (data_set_id, name, type) VALUES (?, ?, ?)
   )SQL"};
-  statement.run(dataset_id.get(), name, type.id(), data);
+  statement.run(dataset_id.get(), name, type.id());
   return DataArrayID{db_.last_insert_row_id()};
+}
+
+auto DataStorage::create_array_id(DataSetID dataset_id,
+                                  std::string_view name,
+                                  DataType type,
+                                  std::span<const byte_t> data) -> DataArrayID {
+  const auto array_id = create_array_id(dataset_id, name, type);
+  array_data_open_write(array_id)->write(data);
+  return array_id;
 }
 
 void DataStorage::delete_array(DataArrayID array_id) {
@@ -382,15 +391,24 @@ auto DataStorage::array_type(DataArrayID array_id) const -> DataType {
   TIT_THROW("Unable to get data array data type!");
 }
 
+auto DataStorage::array_data_open_write(DataArrayID array_id)
+    -> OutputStreamPtr<byte_t> {
+  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  return sqlite::make_blob_writer(db_, "DataArrays", "data", array_id.get());
+}
+
+auto DataStorage::array_data_open_read(DataArrayID array_id) const
+    -> InputStreamPtr<byte_t> {
+  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  return sqlite::make_blob_reader(db_, "DataArrays", "data", array_id.get());
+}
+
 auto DataStorage::array_data(DataArrayID array_id) const
     -> std::vector<byte_t> {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
-  sqlite::Statement statement{db_, R"SQL(
-    SELECT data FROM DataArrays WHERE id = ?
-  )SQL"};
-  statement.bind(array_id.get());
-  if (statement.step()) return statement.column<std::vector<byte_t>>();
-  TIT_THROW("Unable to get data array data!");
+  std::vector<byte_t> data;
+  read_from(array_data_open_read(array_id), data, /*chunk_size=*/(64 * 1024UZ));
+  return data;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

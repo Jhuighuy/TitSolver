@@ -3,9 +3,13 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <algorithm>
 #include <bit>
+#include <cctype>
 #include <filesystem>
+#include <format>
 #include <limits>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -316,6 +320,7 @@ auto Statement::column_text_(size_t index) const -> std::string_view {
 auto Statement::column_blob_(size_t index) const -> BlobView {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
   TIT_ASSERT(index < num_columns_(), "Column index is out of range!");
+  if (column_type_(index) == SQLITE_NULL) return {};
   TIT_ASSERT(column_type_(index) == SQLITE_BLOB, "Column type mismatch!");
 
   const auto index_int = static_cast<int>(index);
@@ -335,6 +340,105 @@ auto Statement::column_blob_(size_t index) const -> BlobView {
 
   return {static_cast<const byte_t*>(value_void_ptr),
           static_cast<size_t>(num_bytes_int)};
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BlobReader::BlobReader(const Database& db,
+                       const char* table_name,
+                       const char* column_name,
+                       RowID row_id)
+    : db_{&db} {
+  TIT_ASSERT(table_name != nullptr, "Table name is null!");
+  TIT_ASSERT(column_name != nullptr, "Column name is null!");
+
+  sqlite3_blob* blob = nullptr;
+  const auto status = sqlite3_blob_open(db.base(),
+                                        "main",
+                                        table_name,
+                                        column_name,
+                                        row_id,
+                                        SQLITE_OPEN_READONLY,
+                                        &blob);
+  if (status == SQLITE_OK) {
+    blob_.reset(blob);
+    size_ = sqlite3_blob_bytes(blob);
+    return;
+  }
+
+  TIT_THROW("SQLite blob open failed ({}): {}",
+            status,
+            error_message(status, db.base()));
+}
+
+void BlobReader::Finalizer_::operator()(sqlite3_blob* blob) {
+  const auto status = sqlite3_blob_close(blob);
+  if (status == SQLITE_OK) return;
+
+  // Let's not throw in destructors.
+  TIT_ERROR("SQLite blob close failed ({}): {}", status, error_message(status));
+}
+
+auto BlobReader::base() const noexcept -> sqlite3_blob* {
+  TIT_ASSERT(blob_.get() != nullptr, "Blob was moved away!");
+  return blob_.get();
+}
+
+auto BlobReader::read(std::span<byte_t> data) -> size_t {
+  TIT_ASSERT(data.size() <= std::numeric_limits<int>::max(),
+             "Data size is too large!");
+
+  TIT_ASSERT(offset_ <= size_, "Offset is out of range!");
+  const auto count = std::min(data.size(), size_ - offset_);
+  const auto status = sqlite3_blob_read(base(),
+                                        data.data(),
+                                        static_cast<int>(count),
+                                        static_cast<int>(offset_));
+  if (status == SQLITE_OK) {
+    offset_ += count;
+    return count;
+  }
+
+  TIT_THROW("SQLite blob read failed ({}): {}",
+            status,
+            error_message(status, db_->base()));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BlobWriter::BlobWriter(Database& db,
+                       std::string_view table_name,
+                       std::string_view column_name,
+                       RowID row_id)
+    : db_{&db}, //
+      table_name_{table_name}, column_name_{column_name}, row_id_{row_id} {
+  TIT_ASSERT(!table_name.empty(), "Table name is empty!");
+  TIT_ASSERT(!column_name.empty(), "Column name is empty!");
+
+  // Validate the table and column names to avoid SQL injection.
+  constexpr auto is_valid_char = [](char c) {
+    return std::isalnum(c) || c == '_';
+  };
+  if (!std::ranges::all_of(table_name, is_valid_char)) {
+    TIT_THROW("Invalid table name: '{}'.", table_name);
+  }
+  if (!std::ranges::all_of(column_name, is_valid_char)) {
+    TIT_THROW("Invalid column name: '{}'.", column_name);
+  }
+}
+
+void BlobWriter::write(std::span<const byte_t> data) {
+  buffer_.insert(buffer_.end(), data.begin(), data.end());
+}
+
+void BlobWriter::flush() {
+  // Note: we cannot set table and column names as arguments, so we have to
+  //       construct the SQL statement code manually.
+  const auto sql = std::format("UPDATE {} SET {} = ? WHERE rowid = ?",
+                               table_name_,
+                               column_name_);
+  Statement statement{*db_, sql};
+  statement.run(buffer_, row_id_);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

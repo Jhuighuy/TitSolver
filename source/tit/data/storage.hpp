@@ -19,6 +19,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/numbers/strict.hpp"
+#include "tit/core/stream.hpp"
 
 #include "tit/data/sqlite.hpp"
 #include "tit/data/type.hpp"
@@ -465,6 +466,9 @@ public:
   /// @{
   auto create_array_id(DataSetID dataset_id,
                        std::string_view name,
+                       DataType type) -> DataArrayID;
+  auto create_array_id(DataSetID dataset_id,
+                       std::string_view name,
                        DataType type,
                        std::span<const byte_t> data) -> DataArrayID;
   template<class... Args>
@@ -486,6 +490,13 @@ public:
 
   /// Get the data type of a data array.
   auto array_type(DataArrayID array_id) const -> DataType;
+
+  /// Open an output stream to the data of a data array.
+  auto array_data_open_write(DataArrayID array_id) -> OutputStreamPtr<byte_t>;
+
+  /// Open an input stream to the data of a data array.
+  auto array_data_open_read(DataArrayID array_id) const
+      -> InputStreamPtr<byte_t>;
 
   /// Get the data of a data array.
   auto array_data(DataArrayID array_id) const -> std::vector<byte_t>;

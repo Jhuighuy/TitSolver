@@ -3,8 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <array>
 #include <filesystem>
 #include <numbers>
+#include <ranges>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -20,6 +22,8 @@
 
 namespace tit {
 namespace {
+
+using Blob = std::vector<byte_t>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -216,7 +220,6 @@ TEST_CASE("data::sqlite::Statement::run") {
 
 TEST_CASE("data::sqlite::Statement::column") {
   using data::sqlite::BlobView;
-  using Blob = std::vector<byte_t>;
   data::sqlite::Database db{":memory:"};
   db.execute(R"SQL(
     CREATE TABLE IF NOT EXISTS Constants (
@@ -254,6 +257,153 @@ TEST_CASE("data::sqlite::Statement::column") {
       CHECK_RANGE_EQ(exact, to_byte_array(std::numbers::phi_v<double>));
     }
     CHECK_FALSE(statement.step());
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("data::sqlite::BlobReader") {
+  data::sqlite::Database db{":memory:"};
+  db.execute(R"SQL(
+    CREATE TABLE IF NOT EXISTS Constants (
+      id    INTEGER PRIMARY KEY,
+      value BLOB
+    ) STRICT;
+  )SQL");
+  data::sqlite::Statement statement{db, R"SQL(
+    INSERT INTO Constants (id, value) VALUES (?, ?)
+  )SQL"};
+  statement.run(1, to_byte_array(std::numbers::pi_v<float>));
+  statement.run(2, to_byte_array(std::numbers::e_v<long double>));
+  statement.run(3, to_byte_array(std::numbers::phi_v<double>));
+  SUBCASE("success") {
+    SUBCASE("exact size") {
+      auto reader = data::sqlite::make_blob_reader(db, "Constants", "value", 1);
+      std::vector<byte_t> result(sizeof(float));
+      REQUIRE(reader->read(result) == sizeof(float));
+      CHECK(result == to_bytes(std::numbers::pi_v<float>));
+      CHECK(reader->read(result) == 0);
+    }
+    SUBCASE("smaller size") {
+      auto reader = data::sqlite::make_blob_reader(db, "Constants", "value", 2);
+      std::vector<byte_t> result(sizeof(long double) / 2);
+      REQUIRE(reader->read(result) == sizeof(long double) / 2);
+      CHECK(result <= to_bytes(std::numbers::e_v<long double>));
+      CHECK(reader->read(result) == sizeof(long double) / 2);
+      CHECK(reader->read(result) == 0);
+    }
+    SUBCASE("larger size") {
+      auto reader = data::sqlite::make_blob_reader(db, "Constants", "value", 3);
+      std::vector<byte_t> result(sizeof(double) * 2);
+      REQUIRE(reader->read(result) == sizeof(double));
+      CHECK(result >= to_bytes(std::numbers::phi_v<double>));
+      CHECK(reader->read(result) == 0);
+    }
+  }
+  SUBCASE("failure") {
+    SUBCASE("invalid table name") {
+      CHECK_THROWS_MSG(
+          data::sqlite::make_blob_reader(db, "invalid", "value", 1),
+          Exception,
+          "no such table");
+    }
+    SUBCASE("invalid column name") {
+      CHECK_THROWS_MSG(
+          data::sqlite::make_blob_reader(db, "Constants", "invalid", 1),
+          Exception,
+          "no such column");
+    }
+    SUBCASE("invalid row ID") {
+      CHECK_THROWS_MSG(
+          data::sqlite::make_blob_reader(db, "Constants", "value", 100),
+          Exception,
+          "no such row");
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("data::sqlite::BlobWriter") {
+  data::sqlite::Database db{":memory:"};
+  db.execute(R"SQL(
+    CREATE TABLE IF NOT EXISTS Constants (
+      id    INTEGER PRIMARY KEY,
+      value BLOB
+    ) STRICT;
+    INSERT INTO Constants (id) VALUES (1);
+  )SQL");
+  SUBCASE("success") {
+    SUBCASE("single write") {
+      const auto run_writer = [&db](auto value) {
+        data::sqlite::make_blob_writer(db, "Constants", "value", 1)
+            ->write(to_byte_array(value));
+
+        data::sqlite::Statement statement{db, R"SQL(
+          SELECT value FROM Constants WHERE id = 1
+        )SQL"};
+        REQUIRE(statement.step());
+        CHECK(statement.column<Blob>() == to_bytes(value));
+      };
+      SUBCASE("write") {
+        run_writer(std::numbers::pi);
+      }
+      SUBCASE("overwrite") {
+        run_writer(std::numbers::pi);
+        run_writer(std::numbers::e_v<float>);
+        run_writer(std::array{std::numbers::phi, std::numbers::sqrt2});
+      }
+    }
+    SUBCASE("empty") {
+      data::sqlite::make_blob_writer(db, "Constants", "value", 1)->flush();
+      data::sqlite::Statement statement{db, R"SQL(
+        SELECT value FROM Constants WHERE id = 1
+      )SQL"};
+      REQUIRE(statement.step());
+      CHECK(statement.column<Blob>().empty());
+    }
+    SUBCASE("multiple writes") {
+      auto writer = data::sqlite::make_blob_writer(db, "Constants", "value", 1);
+      writer->write(to_byte_array(std::numbers::pi_v<float>));
+      writer->flush();
+      writer->write(to_byte_array(std::numbers::e_v<long double>));
+      writer->write(to_byte_array(std::numbers::phi_v<double>));
+      writer->flush();
+      data::sqlite::Statement statement{db, R"SQL(
+        SELECT value FROM Constants WHERE id = 1
+      )SQL"};
+      REQUIRE(statement.step());
+      CHECK_RANGE_EQ(statement.column<Blob>(),
+                     std::vector{to_bytes(std::numbers::pi_v<float>),
+                                 to_bytes(std::numbers::e_v<long double>),
+                                 to_bytes(std::numbers::phi_v<double>)} |
+                         std::views::join);
+    }
+  }
+  SUBCASE("failure") {
+    SUBCASE("SQL injection") {
+      CHECK_THROWS_MSG(
+          data::sqlite::make_blob_writer(db, "DROP TABLE", "value", 1),
+          Exception,
+          "Invalid table name");
+      CHECK_THROWS_MSG(
+          data::sqlite::make_blob_writer(db, "Constants", "DROP COLUMN", 1),
+          Exception,
+          "Invalid column name");
+    }
+    SUBCASE("invalid table name") {
+      CHECK_THROWS_MSG(
+          data::sqlite::make_blob_writer(db, "invalid", "value", 1)->flush(),
+          Exception,
+          "no such table");
+    }
+    SUBCASE("invalid column name") {
+      CHECK_THROWS_MSG(
+          data::sqlite::make_blob_writer(db, "Constants", "invalid", 1)
+              ->flush(),
+          Exception,
+          "no such column");
+    }
   }
 }
 
