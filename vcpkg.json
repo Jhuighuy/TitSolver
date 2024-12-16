@@ -17,7 +17,8 @@
     "metis",
     "mimalloc",
     "sqlite3",
-    "tbb"
+    "tbb",
+    "zstd"
   ],
   "overrides": [{ "name": "tbb", "version": "2021.13.0" }]
 }

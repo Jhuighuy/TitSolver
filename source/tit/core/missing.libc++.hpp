@@ -82,6 +82,9 @@ struct ChunkAdaptor {
                  return std::ranges::subrange(iter + first, iter + last);
                });
   }
+  constexpr auto operator()(size_t chunk_size) const {
+    return __range_adaptor_closure_t(std::__bind_back(*this, chunk_size));
+  }
 };
 
 inline constexpr ChunkAdaptor chunk{};

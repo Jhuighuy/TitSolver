@@ -19,6 +19,7 @@
 #include "tit/data/sqlite.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"
+#include "tit/data/zstd.hpp"
 
 namespace tit::data {
 
@@ -394,13 +395,15 @@ auto DataStorage::array_type(DataArrayID array_id) const -> DataType {
 auto DataStorage::array_data_open_write(DataArrayID array_id)
     -> OutputStreamPtr<byte_t> {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
-  return sqlite::make_blob_writer(db_, "DataArrays", "data", array_id.get());
+  return zstd::make_stream_compressor(
+      sqlite::make_blob_writer(db_, "DataArrays", "data", array_id.get()));
 }
 
 auto DataStorage::array_data_open_read(DataArrayID array_id) const
     -> InputStreamPtr<byte_t> {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
-  return sqlite::make_blob_reader(db_, "DataArrays", "data", array_id.get());
+  return zstd::make_stream_decompressor(
+      sqlite::make_blob_reader(db_, "DataArrays", "data", array_id.get()));
 }
 
 auto DataStorage::array_data(DataArrayID array_id) const
