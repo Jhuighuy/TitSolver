@@ -204,6 +204,21 @@ constexpr auto read_from(InputStreamPtr<Item> stream,
   return container;
 }
 
+/// Write the items to the output stream.
+template<std::ranges::input_range Items>
+constexpr void write_to(
+    OutputStreamPtr<std::ranges::range_value_t<Items>> stream,
+    Items&& items) {
+  TIT_ASSUME_UNIVERSAL(Items, items);
+  if constexpr (std::ranges::sized_range<Items> &&
+                std::ranges::contiguous_range<Items>) {
+    stream->write(
+        std::span{std::ranges::data(items), std::ranges::size(items)});
+  } else {
+    for (const auto& item : items) stream->write({&item, 1});
+  }
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

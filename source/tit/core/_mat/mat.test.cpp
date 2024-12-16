@@ -3,11 +3,14 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <array>
 #include <format>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 
+#include "tit/core/serialization.testing.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -66,6 +69,17 @@ TEST_CASE("Mat") {
     CHECK(M[0, 1] == 2.0);
     CHECK(M[1, 0] == 3.0);
     CHECK(M[1, 1] == 4.0);
+  }
+  SUBCASE("rows access") {
+    Mat<double, 2> M;
+    M.rows() = {
+        Vec{1.0, 2.0},
+        Vec{3.0, 4.0},
+    };
+    CHECK(M.rows() == std::array{
+                          Vec{1.0, 2.0},
+                          Vec{3.0, 4.0},
+                      });
   }
 }
 
@@ -376,7 +390,16 @@ TEST_CASE("Mat::approx_equal_to") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("Mat::formatter") {
+TEST_CASE("Mat::serialize") {
+  const Mat<float32_t, 3> mat{
+      {1.0, 2.0, 3.0},
+      {4.0, 5.0, 6.0},
+      {7.0, 8.0, 9.0},
+  };
+  testing::test_serialization(mat, 9 * sizeof(float32_t));
+}
+
+TEST_CASE("Mat::format") {
   CHECK(std::format("{}", Mat{{1, 2}, {3, 4}}) == "1 2 3 4");
 }
 

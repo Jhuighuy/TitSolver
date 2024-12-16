@@ -399,12 +399,11 @@ TEST_CASE("data::DataArrayView") {
 
     const auto array_1 = dataset.create_array( //
         "array_1",
-        data::data_type_of<float64_t>,
-        to_byte_array(std::numbers::pi));
+        std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
     CHECK(array_1 == data::DataArrayID{1});
     CHECK(array_1.type() == data::data_type_of<float64_t>);
-    CHECK_RANGE_EQ(array_1.data(), to_byte_array(std::numbers::pi));
+    CHECK(array_1.template data<float64_t>() == std::vector{std::numbers::pi});
     CHECK(dataset.num_arrays() == 1);
     CHECK_RANGE_EQ(dataset.arrays(), NamedArrays{{"array_1", array_1}});
 
@@ -426,16 +425,12 @@ TEST_CASE("data::DataArrayView") {
     const auto step = series.create_time_step(0.0);
     const auto dataset = step.uniforms();
 
-    const auto array_1 = dataset.create_array( //
-        "array_1",
-        data::data_type_of<float64_t>,
-        to_byte_array(std::numbers::pi));
+    const auto array_1 =
+        dataset.create_array("array_1", std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
 
-    const auto array_2 = dataset.create_array( //
-        "array_2",
-        data::data_type_of<float32_t>,
-        to_byte_array(std::numbers::e_v<float32_t>));
+    const auto array_2 =
+        dataset.create_array("array_2", std::vector{std::numbers::e});
     REQUIRE(storage.check_array(array_2));
 
     // Find the arrays by name.
@@ -449,16 +444,12 @@ TEST_CASE("data::DataArrayView") {
     const auto step = series.create_time_step(0.0);
     const auto dataset = step.uniforms();
 
-    const auto array_1 = dataset.create_array( //
-        "array_1",
-        data::data_type_of<float64_t>,
-        to_byte_array(std::numbers::pi));
+    const auto array_1 =
+        dataset.create_array("array_1", std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
 
-    const auto array_2 = dataset.create_array( //
-        "array_2",
-        data::data_type_of<float32_t>,
-        to_byte_array(std::numbers::e_v<float32_t>));
+    const auto array_2 =
+        dataset.create_array("array_2", std::vector{std::numbers::e});
     REQUIRE(storage.check_array(array_2));
 
     // Delete the arrays.
@@ -467,10 +458,8 @@ TEST_CASE("data::DataArrayView") {
     CHECK_RANGE_EQ(dataset.arrays(), NamedArrays{{"array_2", array_2}});
 
     // Create more arrays. Make sure the ID of the removed array is not reused.
-    const auto array_3 = dataset.create_array( //
-        "array_3",
-        data::data_type_of<float64_t>,
-        to_byte_array(std::numbers::phi));
+    const auto array_3 =
+        dataset.create_array("array_3", std::vector{std::numbers::phi});
     CHECK(storage.check_array(array_3));
     CHECK(array_3 == data::DataArrayID{3});
     CHECK_RANGE_EQ(dataset.arrays(),
@@ -482,16 +471,12 @@ TEST_CASE("data::DataArrayView") {
     const auto step = series.create_time_step(0.0);
     const auto dataset = step.uniforms();
 
-    const auto array_1 = dataset.create_array( //
-        "array_1",
-        data::data_type_of<float64_t>,
-        to_byte_array(std::numbers::pi));
+    const auto array_1 =
+        dataset.create_array("array_1", std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
 
-    const auto array_2 = dataset.create_array( //
-        "array_2",
-        data::data_type_of<float32_t>,
-        to_byte_array(std::numbers::e_v<float32_t>));
+    const auto array_2 =
+        dataset.create_array("array_2", std::vector{std::numbers::e});
     REQUIRE(storage.check_array(array_2));
 
     // Delete the time step.

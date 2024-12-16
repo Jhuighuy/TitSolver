@@ -47,6 +47,16 @@ public:
     std::ranges::copy(rows, rows_.begin());
   }
 
+  /// Matrix rows array.
+  /// @{
+  constexpr auto rows() noexcept -> std::array<Row, Dim>& {
+    return rows_;
+  }
+  constexpr auto rows() const noexcept -> const std::array<Row, Dim>& {
+    return rows_;
+  }
+  /// @}
+
   /// Matrix row at index.
   /// @{
   constexpr auto operator[](size_t i) noexcept -> Row& {
@@ -268,9 +278,21 @@ constexpr auto approx_equal_to(const Mat<Num, Dim>& A,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+/// Serialize a matrix into the output stream.
+template<class Stream, class Num, size_t Dim>
+constexpr void serialize(Stream& out, const Mat<Num, Dim>& mat) {
+  serialize(out, mat.rows());
+}
+
+/// Deserialize a matrix from the input stream.
+template<class Stream, class Num, size_t Dim>
+constexpr auto deserialize(Stream& in, Mat<Num, Dim>& mat) -> bool {
+  return deserialize(in, mat.rows());
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit
 
 // Matrix formatter.
 template<class Num, tit::size_t Dim>

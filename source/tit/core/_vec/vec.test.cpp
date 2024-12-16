@@ -6,11 +6,13 @@
 #include <array>
 #include <format>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/numbers/strict.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 
+#include "tit/core/serialization.testing.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -61,6 +63,11 @@ TEST_CASE_TEMPLATE("Vec", Num, NUM_TYPES) {
     CHECK(v[1] == Num{4});
     v.elems() = {Num{5}, Num{6}};
     CHECK(v.elems() == std::array{Num{5}, Num{6}});
+  }
+  SUBCASE("elements") {
+    Vec<Num, 2> v;
+    v.elems() = {Num{3}, Num{4}};
+    CHECK(v.elems() == std::array{Num{3}, Num{4}});
   }
 }
 
@@ -400,7 +407,12 @@ TEST_CASE_TEMPLATE("Vec::cross", Num, NUM_TYPES) {
 // Miscellaneous
 //
 
-TEST_CASE("Vec::formatter") {
+TEST_CASE("Vec::serialize") {
+  const Vec<float32_t, 3> vec{1.0, 2.0, 3.0};
+  testing::test_serialization(vec, 3 * sizeof(float32_t));
+}
+
+TEST_CASE("Vec::format") {
   CHECK(std::format("{}", Vec{1, 2, 3}) == "1 2 3");
 }
 
