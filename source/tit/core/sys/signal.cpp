@@ -5,7 +5,7 @@
 
 #include <algorithm>
 #include <array>
-#include <cstdio>
+#include <csignal>
 #include <cstdlib>
 #include <initializer_list>
 #include <ranges>
@@ -13,14 +13,11 @@
 #include <vector>
 
 #include <execinfo.h>
-#include <signal.h> // NOLINT(*-deprecated-headers)
-#ifdef __APPLE__
-#include <sys/signal.h>
-#endif
 #include <unistd.h>
 
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/log.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/sys/signal.hpp"
 #include "tit/core/sys/utils.hpp"
@@ -30,8 +27,7 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void checked_raise(int signal_number) {
-  TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
-  const auto status = raise(signal_number);
+  const auto status = std::raise(signal_number);
   if (status != 0) TIT_THROW("Failed to raise the signal {}!", signal_number);
 }
 
@@ -44,28 +40,24 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
   handlers_.push_back(this);
 
   // Register the new signal actions (or handlers).
-  prev_actions_.reserve(signal_numbers.size());
+  prev_handlers_.reserve(signal_numbers.size());
   for (const auto signal_number : signal_numbers) {
-    TIT_ASSERT(signal_number < NSIG, "Signal number is out of range!");
-
     // Register the new action and store the previous one.
-    struct sigaction action{};
-    action.sa_flags = 0;
-    action.sa_handler = &handle_signal_;
-    sigemptyset(&action.sa_mask);
-    struct sigaction prev_action{};
-    const auto status = sigaction(signal_number, &action, &prev_action);
-    if (status != 0) {
+    const auto prev_handler = std::signal(signal_number, &handle_signal_);
+    if (prev_handler == SIG_ERR) {
       TIT_THROW("Unable to set the action for signal {}!", signal_number);
     }
-    prev_actions_.emplace_back(signal_number, prev_action);
+    prev_handlers_.emplace_back(signal_number, prev_handler);
   }
 }
 
-SignalHandler::~SignalHandler() noexcept {
+SignalHandler::~SignalHandler() noexcept { // NOLINT(*-exception-escape)
   // Restore the old signal handlers or actions.
-  for (const auto& [signal_number, prev_action] : prev_actions_) {
-    sigaction(signal_number, &prev_action, nullptr);
+  for (const auto& [signal_number, prev_handler] : prev_handlers_) {
+    if (std::signal(signal_number, prev_handler) == SIG_ERR) {
+      TIT_ERROR("Unable to restore the previous handler for signal {}!",
+                signal_number);
+    }
   }
 
   // Unregister the current handler object.
@@ -98,8 +90,7 @@ void dump(std::string_view message) noexcept {
 }
 
 // Dump backtrace in the "async-signal-safe" way.
-[[gnu::always_inline]]
-inline void dump_backtrace() noexcept {
+[[gnu::always_inline]] inline void dump_backtrace() noexcept {
   constexpr int max_stack_depth = 100;
   std::array<void*, max_stack_depth> stack_trace{};
   const auto stack_depth = backtrace(stack_trace.data(), max_stack_depth);
@@ -110,21 +101,14 @@ inline void dump_backtrace() noexcept {
 
 FatalSignalHandler::FatalSignalHandler()
     : SignalHandler{SIGINT,
-                    SIGHUP,
-                    SIGQUIT,
                     SIGILL,
-                    SIGTRAP,
                     SIGABRT,
                     SIGFPE,
-                    SIGBUS,
                     SIGSEGV,
-                    SIGSYS,
-                    SIGPIPE,
-                    SIGALRM,
+                    SIGTRAP, // NOLINT(*-include-cleaner)
                     SIGTERM} {}
 
-[[noreturn]]
-void FatalSignalHandler::on_signal(int signal_number) noexcept {
+[[noreturn]] void FatalSignalHandler::on_signal(int signal_number) noexcept {
   const par::GlobalLock lock{};
   if (signal_number == SIGINT) {
     // Exit normally.
@@ -134,17 +118,11 @@ void FatalSignalHandler::on_signal(int signal_number) noexcept {
     // Dump backtrace and fast-exit with an error.
     dump("\n\nTerminated by ");
     switch (signal_number) {
-      case SIGHUP:  dump("SIGHUP (hangup)"); break;
-      case SIGQUIT: dump("SIGQUIT (quit)"); break;
       case SIGILL:  dump("SIGILL (illegal instruction)"); break;
-      case SIGTRAP: dump("SIGTRAP (trace trap)"); break;
       case SIGABRT: dump("SIGABRT (aborted)"); break;
       case SIGFPE:  dump("SIGFPE (floating-point exception)"); break;
-      case SIGBUS:  dump("SIGBUS (bus error)"); break;
       case SIGSEGV: dump("SIGSEGV (segmentation fault)"); break;
-      case SIGSYS:  dump("SIGSYS (bad system call)"); break;
-      case SIGPIPE: dump("SIGPIPE (broken pipe)"); break;
-      case SIGALRM: dump("SIGALRM (alarm clock)"); break;
+      case SIGTRAP: dump("SIGTRAP (trace/breakpoint trap)"); break;
       case SIGTERM: dump("SIGTERM"); break;
       default:      dump("unknown signal"); break;
     }

@@ -49,7 +49,7 @@ using MatEigResult = std::expected<MatEig<Num, Dim>, MatEigError>;
 /// Only the lower-triangular part of the input matrix is accessed.
 template<class Num, size_t Dim>
 constexpr auto jacobi(Mat<Num, Dim> A,
-                      std::type_identity_t<Num> eps = tiny_number_v<Num>,
+                      std::type_identity_t<Num> eps = tiny_v<Num>,
                       size_t max_iter = Dim * 32) -> MatEigResult<Num, Dim> {
   auto V = eye(A);
   if constexpr (Dim == 1) {

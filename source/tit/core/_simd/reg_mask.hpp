@@ -145,17 +145,8 @@ inline auto count_true(const RegMask<Num, Size>& m) noexcept -> size_t {
 template<class Num, size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto try_find_true(const RegMask<Num, Size>& m) noexcept -> ssize_t {
+inline auto find_true(const RegMask<Num, Size>& m) noexcept -> ssize_t {
   return hn::FindFirstTrue(typename RegMask<Num, Size>::Tag{}, m.base);
-}
-
-/// Find the first true value in the SIMD register mask.
-template<class Num, size_t Size>
-  requires supported<Num, Size>
-[[gnu::always_inline]]
-inline auto find_true(const RegMask<Num, Size>& m) noexcept -> size_t {
-  TIT_ASSERT(count_true(m) > 0, "No true value in the mask!");
-  return hn::FindKnownFirstTrue(typename RegMask<Num, Size>::Tag{}, m.base);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

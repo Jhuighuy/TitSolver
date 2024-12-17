@@ -60,66 +60,57 @@ TEST_CASE("Mat::copy_part") {
   };
   using enum MatPart;
   SUBCASE("diag") {
-    CHECK(copy_part<diag>(A) == //
-          Mat{
-              {1.0, 0.0, 0.0},
-              {0.0, 5.0, 0.0},
-              {0.0, 0.0, 9.0},
-          });
+    CHECK(copy_part<diag>(A) == Mat{
+                                    {1.0, 0.0, 0.0},
+                                    {0.0, 5.0, 0.0},
+                                    {0.0, 0.0, 9.0},
+                                });
   }
   SUBCASE("lower") {
-    CHECK(copy_part<(lower | unit)>(A) == //
-          Mat{
-              {1.0, 0.0, 0.0},
-              {4.0, 1.0, 0.0},
-              {7.0, 8.0, 1.0},
-          });
-    CHECK(copy_part<(lower | diag)>(A) == //
-          Mat{
-              {1.0, 0.0, 0.0},
-              {4.0, 5.0, 0.0},
-              {7.0, 8.0, 9.0},
-          });
-    CHECK(copy_part<(lower | diag | transposed)>(A) == //
-          Mat{
-              {1.0, 0.0, 0.0},
-              {2.0, 5.0, 0.0},
-              {3.0, 6.0, 9.0},
-          });
+    CHECK(copy_part<(lower | unit)>(A) == Mat{
+                                              {1.0, 0.0, 0.0},
+                                              {4.0, 1.0, 0.0},
+                                              {7.0, 8.0, 1.0},
+                                          });
+    CHECK(copy_part<(lower | diag)>(A) == Mat{
+                                              {1.0, 0.0, 0.0},
+                                              {4.0, 5.0, 0.0},
+                                              {7.0, 8.0, 9.0},
+                                          });
+    CHECK(copy_part<(lower | diag | transposed)>(A) == Mat{
+                                                           {1.0, 0.0, 0.0},
+                                                           {2.0, 5.0, 0.0},
+                                                           {3.0, 6.0, 9.0},
+                                                       });
   }
   SUBCASE("upper") {
-    CHECK(copy_part<(upper | unit)>(A) == //
-          Mat{
-              {1.0, 2.0, 3.0},
-              {0.0, 1.0, 6.0},
-              {0.0, 0.0, 1.0},
-          });
-    CHECK(copy_part<(upper | diag)>(A) == //
-          Mat{
-              {1.0, 2.0, 3.0},
-              {0.0, 5.0, 6.0},
-              {0.0, 0.0, 9.0},
-          });
-    CHECK(copy_part<(upper | diag | transposed)>(A) == //
-          Mat{
-              {1.0, 4.0, 7.0},
-              {0.0, 5.0, 8.0},
-              {0.0, 0.0, 9.0},
-          });
+    CHECK(copy_part<(upper | unit)>(A) == Mat{
+                                              {1.0, 2.0, 3.0},
+                                              {0.0, 1.0, 6.0},
+                                              {0.0, 0.0, 1.0},
+                                          });
+    CHECK(copy_part<(upper | diag)>(A) == Mat{
+                                              {1.0, 2.0, 3.0},
+                                              {0.0, 5.0, 6.0},
+                                              {0.0, 0.0, 9.0},
+                                          });
+    CHECK(copy_part<(upper | diag | transposed)>(A) == Mat{
+                                                           {1.0, 4.0, 7.0},
+                                                           {0.0, 5.0, 8.0},
+                                                           {0.0, 0.0, 9.0},
+                                                       });
   }
   SUBCASE("weird") {
-    CHECK(copy_part<(lower | upper)>(A) == //
-          Mat{
-              {0.0, 2.0, 3.0},
-              {4.0, 0.0, 6.0},
-              {7.0, 8.0, 0.0},
-          });
-    CHECK(copy_part<(lower | unit | upper)>(A) == //
-          Mat{
-              {1.0, 2.0, 3.0},
-              {4.0, 1.0, 6.0},
-              {7.0, 8.0, 1.0},
-          });
+    CHECK(copy_part<(lower | upper)>(A) == Mat{
+                                               {0.0, 2.0, 3.0},
+                                               {4.0, 0.0, 6.0},
+                                               {7.0, 8.0, 0.0},
+                                           });
+    CHECK(copy_part<(lower | unit | upper)>(A) == Mat{
+                                                      {1.0, 2.0, 3.0},
+                                                      {4.0, 1.0, 6.0},
+                                                      {7.0, 8.0, 1.0},
+                                                  });
     CHECK(copy_part<(lower | diag | upper)>(A) == A);
   }
 }
@@ -128,11 +119,10 @@ TEST_CASE("Mat::transpose") {
   CHECK(transpose(Mat{
             {1.0, 2.0},
             {3.0, 4.0},
-        }) == //
-        Mat{
-            {1.0, 3.0},
-            {2.0, 4.0},
-        });
+        }) == Mat{
+                  {1.0, 3.0},
+                  {2.0, 4.0},
+              });
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

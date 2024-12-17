@@ -41,13 +41,11 @@ void checked_atexit(atexit_callback_t callback) {
   if (status != 0) TIT_THROW("Unable to register at-exit callback!");
 }
 
-[[noreturn]]
-void exit(ExitCode exit_code) noexcept {
+[[noreturn]] void exit(ExitCode exit_code) noexcept {
   std::exit(std::to_underlying(exit_code)); // NOLINT(concurrency-mt-unsafe)
 }
 
-[[noreturn]]
-void fast_exit(ExitCode exit_code) noexcept {
+[[noreturn]] void fast_exit(ExitCode exit_code) noexcept {
 #ifdef TIT_HAVE_GCOV
   __gcov_dump();
 #endif
@@ -67,6 +65,15 @@ auto exe_path() -> std::filesystem::path {
 #else
 #error Unsupported platform!
 #endif
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto get_env(const char* name) noexcept -> std::optional<std::string_view> {
+  TIT_ASSERT(name != nullptr, "Environment variable name must not be null!");
+  const auto* const value = std::getenv(name); // NOLINT(*-mt-unsafe)
+  if (value == nullptr) return std::nullopt;
+  return std::string_view{value};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

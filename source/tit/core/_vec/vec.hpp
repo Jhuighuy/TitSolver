@@ -801,29 +801,27 @@ constexpr auto norm(const Vec<Num, Dim>& a) -> Num {
 /// Normalize a vector.
 template<class Num, size_t Dim>
 constexpr auto normalize(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
-  if constexpr (Dim == 1) return is_tiny(a[0]) ? Num{0} : sign(a[0]);
   const auto norm_sqr = norm2(a);
-  constexpr auto eps_sqr = pow2(tiny_number_v<Num>);
+  constexpr auto eps_sqr = pow2(tiny_v<Num>);
   TIT_IF_SIMD_AVALIABLE(Num) {
-    // Use blending since we are most likely deal with a non-zero vector.
+    // Use filtering since we are most likely deal with a non-zero vector.
     using Reg = typename Vec<Num, Dim>::Reg;
-    const auto has_dir_reg = Reg(norm_sqr) >= Reg(eps_sqr);
-    const Reg norm_recip_reg(rsqrt(norm_sqr));
+    const auto norm_recip_reg = simd::filter(Reg(norm_sqr) >= Reg(eps_sqr),
+                                             Reg(inverse(sqrt(norm_sqr))));
     Vec<Num, Dim> r;
     for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      r.reg(i) = simd::filter(has_dir_reg, a.reg(i) * norm_recip_reg);
+      r.reg(i) = a.reg(i) * norm_recip_reg;
     }
     return r;
   }
-  const auto has_dir = norm_sqr >= pow2(eps_sqr);
-  return has_dir ? a * rsqrt(norm_sqr) : Vec<Num, Dim>{};
+  return (norm_sqr >= eps_sqr) ? a / sqrt(norm_sqr) : Vec<Num, Dim>{};
 }
 
 /// Is a vector approximately equal to another vector?
 template<class Num, size_t Dim>
 constexpr auto approx_equal_to(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
     -> bool {
-  return norm2(a - b) <= pow2(tiny_number_v<Num>);
+  return norm2(a - b) <= pow2(tiny_v<Num>);
 }
 
 /// Vector cross product.

@@ -3,7 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/meta/set.hpp"
+#include "tit/core/basic_types.hpp"
+#include "tit/core/meta.hpp"
 
 #include "tit/testing/test.hpp"
 
@@ -26,6 +27,53 @@ TEST_CASE("meta::Set") {
   STATIC_CHECK(s2.includes(s1));
   STATIC_CHECK_FALSE(s1.contains(E{}));
   STATIC_CHECK_FALSE(s1.includes(s2));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("meta::Set::apply") {
+  constexpr meta::Set<A, B, C, D> s{};
+  size_t count = 0;
+  s.apply([&count](A /*a*/, B /*b*/, C /*c*/, D /*d*/) { count += 1; });
+  CHECK(count == 1);
+}
+
+TEST_CASE("meta::Set::for_each") {
+  constexpr meta::Set<A, B, C, D> s{};
+  size_t count = 0;
+  s.for_each([s, &count](auto elem) {
+    count += 1;
+    CHECK(s.contains(elem));
+  });
+  CHECK(count == 4);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("meta::Range::contains") {
+  constexpr meta::Set<A, B, C, D> s{};
+  STATIC_CHECK(s.contains(A{}));
+  STATIC_CHECK(s.contains(B{}));
+  STATIC_CHECK(s.contains(C{}));
+  STATIC_CHECK(s.contains(D{}));
+  STATIC_CHECK_FALSE(s.contains(E{}));
+}
+
+TEST_CASE("meta::Range::includes") {
+  constexpr meta::Set<A, B, C, D> s{};
+  STATIC_CHECK(s.includes(s));
+  STATIC_CHECK(s.includes(meta::Set<A, B, C, D>{}));
+  STATIC_CHECK(s.includes(meta::Set<A, B, C>{}));
+  STATIC_CHECK_FALSE(s.includes(meta::Set<E, F>{}));
+  STATIC_CHECK_FALSE(s.includes(meta::Set<A, F>{}));
+}
+
+TEST_CASE("meta::Range::find") {
+  constexpr meta::Set<A, B, C, D> s{};
+  STATIC_CHECK(s.find(A{}) == 0);
+  STATIC_CHECK(s.find(B{}) == 1);
+  STATIC_CHECK(s.find(C{}) == 2);
+  STATIC_CHECK(s.find(D{}) == 3);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -12,7 +12,7 @@
 
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta/set.hpp"
+#include "tit/core/meta.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/vec.hpp"
@@ -476,7 +476,7 @@ public:
           const auto grad_W_ab = kernel_.grad(a, b);
 
           // Update the particle shifts.
-          const auto Chi_ab = R * pow4(W_ab * inv_W_0);
+          const auto Chi_ab = R * pow<4>(W_ab * inv_W_0);
           const auto Xi_a = static_cast<Num>(bitwise_equal(FS[a], FS_FAR));
           const auto Xi_b = static_cast<Num>(bitwise_equal(FS[b], FS_FAR));
           dr[a] -= (Xi_a + Chi_ab) * FS[a] * m[b] / rho[b] * grad_W_ab;

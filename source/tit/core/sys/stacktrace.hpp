@@ -24,8 +24,7 @@ public:
   using boost::stacktrace::stacktrace::stacktrace;
 
   /// Retrieve the current stack trace.
-  [[gnu::always_inline]]
-  static auto current() noexcept -> Stacktrace {
+  [[gnu::always_inline]] static auto current() noexcept -> Stacktrace {
     return {};
   }
 
@@ -44,8 +43,7 @@ struct std::formatter<tit::Stacktrace> {
   constexpr auto format(const tit::Stacktrace& stacktrace,
                         auto& context) const {
     auto out = context.out();
-    out = std::format_to(out, "\n");
-    out = std::format_to(out, "Stack trace:\n");
+    out = std::format_to(out, "\nStack trace:\n");
     for (const auto& [index, frame] : std::views::enumerate(stacktrace)) {
       out = std::format_to(out,
                            "\n{:>3} {} {}",

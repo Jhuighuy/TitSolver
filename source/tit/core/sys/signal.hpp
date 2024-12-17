@@ -5,16 +5,11 @@
 
 #pragma once
 
+#include <csignal>
 #include <initializer_list>
 #include <ranges>
 #include <utility>
 #include <vector>
-
-#ifdef __APPLE__
-#include <sys/signal.h>
-#else
-#include <signal.h> // NOLINT(*-deprecated-headers)
-#endif
 
 #include "tit/core/utils.hpp"
 
@@ -39,7 +34,7 @@ public:
 
   /// A range of handled signals.
   constexpr auto signals() const noexcept {
-    return prev_actions_ | std::views::keys;
+    return prev_handlers_ | std::views::keys;
   }
 
 protected:
@@ -51,7 +46,7 @@ protected:
 
 private:
 
-  std::vector<std::pair<int, struct sigaction>> prev_actions_;
+  std::vector<std::pair<int, decltype(SIG_DFL)>> prev_handlers_;
 
   static std::vector<SignalHandler*> handlers_;
   static void handle_signal_(int signal_number) noexcept;
@@ -69,8 +64,7 @@ public:
 
 protected:
 
-  [[noreturn]]
-  void on_signal(int signal_number) noexcept override;
+  [[noreturn]] void on_signal(int signal_number) noexcept override;
 
 }; // class FatalSignalHandler
 

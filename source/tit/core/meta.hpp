@@ -5,18 +5,28 @@
 
 #pragma once
 
-#include "tit/core/meta/range.hpp"
-#include "tit/core/meta/type.hpp"
+#include <concepts>
+#include <functional>
+#include <type_traits>
+
+#include "tit/core/basic_types.hpp"
 #include "tit/core/type_traits.hpp"
 
 namespace tit::meta {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// An empty and trivial object.
+template<class T>
+concept type =
+    std::is_object_v<T> && std::is_empty_v<T> && std::is_trivial_v<T>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Set of meta types, with no duplicates.
 template<type... Ts>
   requires all_unique_v<Ts...>
-class Set final : public Range<Ts...> {
+class Set final {
 public:
 
   /// Construct a set.
@@ -26,6 +36,38 @@ public:
     requires (sizeof...(Ts) != 0)
   {}
   /// @}
+
+  /// Call a function to all elements.
+  template<std::invocable<Ts...> Func>
+  constexpr auto apply(Func func) const -> decltype(auto) {
+    return std::invoke(func, Ts{}...);
+  }
+
+  /// Call a function for each element.
+  template<class Func>
+    requires (std::invocable<Func, Ts> && ...)
+  constexpr void for_each(Func func) const {
+    (std::invoke(func, Ts{}), ...);
+  }
+
+  /// Check if the set contains a type `U`.
+  template<type U>
+  constexpr auto contains(U /*elem*/) const noexcept -> bool {
+    return contains_v<U, Ts...>;
+  }
+
+  /// Check if the set includes a set of types `Us...`.
+  template<type... Us>
+  constexpr auto includes(const Set<Us...>& /*other*/) const noexcept -> bool {
+    return (contains_v<Us, Ts...> && ...);
+  }
+
+  /// Index of the type in the range.
+  template<type U>
+    requires contains_v<U, Ts...>
+  constexpr auto find(U /*elem*/) const noexcept -> size_t {
+    return index_of_v<U, Ts...>;
+  }
 
   /// Check that @p lhs and @p rhs contain same elements, in any order.
   template<type... Us>
