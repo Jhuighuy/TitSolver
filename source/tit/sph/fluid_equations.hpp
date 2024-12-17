@@ -200,7 +200,7 @@ public:
     using PV = ParticleView<ParticleArray>;
 
     // Clean-up continuity equation fields and apply source terms.
-    par::for_each(particles.all(), [this](PV a) {
+    par::for_each(par::static_, particles.all(), [this](PV a) {
       // Clean-up continuity equation fields.
       drho_dt[a] = {};
       if constexpr (has<PV>(grad_rho)) grad_rho[a] = {};
@@ -252,7 +252,7 @@ public:
       });
 
       // Renormalize fields.
-      par::for_each(particles.all(), [](PV a) {
+      par::for_each(par::static_, particles.all(), [](PV a) {
         // Renormalize density, if possible.
         if constexpr (has<PV>(C)) {
           if (!is_tiny(C[a])) rho[a] /= C[a];
@@ -296,7 +296,7 @@ public:
 
     // Clean-up momentum and energy equation fields, compute pressure,
     // sound speed and apply source terms.
-    par::for_each(particles.all(), [this](PV a) {
+    par::for_each(par::static_, particles.all(), [this](PV a) {
       // Clean-up momentum and energy equation fields.
       dv_dt[a] = {};
       if constexpr (has<PV>(div_v)) div_v[a] = {};
@@ -370,7 +370,7 @@ public:
 
     // Compute artificial viscosity switch.
     if constexpr (has<PV>(dalpha_dt)) {
-      par::for_each(particles.fluid(), [this](PV a) {
+      par::for_each(par::static_, particles.fluid(), [this](PV a) {
         dalpha_dt[a] =
             momentum_equation_.artificial_viscosity().switch_source(a);
       });
@@ -405,8 +405,13 @@ public:
     const auto a_0 = particles[0];
     const auto FS_FAR = 2 * CFL * Ma * pow2(h[a_0]);
     static constexpr auto FS_ON = std::numeric_limits<Num>::min();
-    par::for_each(particles.fluid(), [](PV a) { FS[a] = FS_ON, dr[a] = {}; });
-    par::for_each(particles.fixed(), [FS_FAR](PV a) { FS[a] = FS_FAR; });
+    par::for_each(par::static_, particles.fluid(), [](PV a) {
+      FS[a] = FS_ON;
+      dr[a] = {};
+    });
+    par::for_each(par::static_, particles.fixed(), [FS_FAR](PV a) {
+      FS[a] = FS_FAR;
+    });
 
     // Classify the particles into free surface and non-free surface.
     //
