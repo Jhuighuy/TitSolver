@@ -12,8 +12,8 @@
 #include "tit/core/par/control.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
-#include "tit/core/sys/env.hpp"
 #include "tit/core/sys/signal.hpp"
+#include "tit/core/sys/utils.hpp"
 
 namespace tit {
 
@@ -25,13 +25,13 @@ auto run_main(int argc, char** argv, MainFunc main_func) -> int {
   const FatalSignalHandler signal_handler{};
 
   // Enable statistics.
-  if (get_env_bool("TIT_ENABLE_STATS", false)) Stats::enable();
+  if (get_env("TIT_ENABLE_STATS", false)) Stats::enable();
 
   // Enable profiling.
-  if (get_env_bool("TIT_ENABLE_PROFILER", false)) Profiler::enable();
+  if (get_env("TIT_ENABLE_PROFILER", false)) Profiler::enable();
 
   // Setup parallelism.
-  par::set_num_threads(get_env_uint("TIT_NUM_THREADS", 8));
+  par::set_num_threads(get_env("TIT_NUM_THREADS", 8UZ));
 
   // Run the main function.
   TIT_ASSERT(main_func != nullptr, "Main function must be specified!");

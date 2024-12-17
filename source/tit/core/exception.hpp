@@ -23,8 +23,7 @@ class Exception : public std::exception {
 public:
 
   /// Initialize exception. Source location and stack trace are recorded.
-  [[gnu::always_inline]]
-  explicit Exception(
+  [[gnu::always_inline]] explicit Exception(
       std::string message,
       std::source_location location = std::source_location::current(),
       Stacktrace stacktrace = Stacktrace::current())
@@ -68,8 +67,7 @@ public:
 
 private:
 
-  [[noreturn]]
-  static void handle_terminate_();
+  [[noreturn]] static void handle_terminate_();
 
   std::terminate_handler prev_handler_;
 

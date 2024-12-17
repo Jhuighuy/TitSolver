@@ -3,14 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <csignal>
 #include <initializer_list>
 #include <utility>
-
-#ifdef __APPLE__
-#include <sys/signal.h>
-#else
-#include <signal.h> // NOLINT(*-deprecated-headers)
-#endif
 
 #include "tit/core/sys/signal.hpp"
 
@@ -30,8 +25,7 @@ public:
       : SignalHandler(signal_numbers) {}
 
   // Retrieve the last handled signal number.
-  [[nodiscard]]
-  auto last() noexcept -> int {
+  [[nodiscard]] auto last() noexcept -> int {
     return std::exchange(last_signal_number_, {});
   }
 
@@ -48,30 +42,29 @@ private:
 
 }; // class SignalTracker
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("SignalHandler") {
-  SignalTracker handler_1{SIGUSR1, SIGUSR2};
+  SignalTracker handler_1{SIGABRT, SIGTERM};
   {
-    SignalTracker handler_2{SIGUSR2};
+    SignalTracker handler_2{SIGTERM};
 
     // Raise the signal that shall be handled by the first tracker.
-    checked_raise(SIGUSR1);
+    checked_raise(SIGABRT);
 
     // Raise the signal that it shall be handled by the second tracker.
-    checked_raise(SIGUSR2);
+    checked_raise(SIGTERM);
 
     // Check what was handled.
-    CHECK(handler_1.last() == SIGUSR1);
-    CHECK(handler_2.last() == SIGUSR2);
+    CHECK(handler_1.last() == SIGABRT);
+    CHECK(handler_2.last() == SIGTERM);
   }
 
   // Raise the signal that shall be handled by the first tracker.
-  checked_raise(SIGUSR2);
-
-  // Raise the signal that shall not be handled by any trackers.
-  checked_raise(SIGCHLD);
+  checked_raise(SIGTERM);
 
   // Check what was handled.
-  CHECK(handler_1.last() == SIGUSR2);
+  CHECK(handler_1.last() == SIGTERM);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

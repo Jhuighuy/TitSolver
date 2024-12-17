@@ -60,7 +60,7 @@ constexpr auto integrate_piece(Func&& f, const geom::BBox<Vec<Num, Dim>>& box) {
 template<class Func, class Num, size_t Dim>
 constexpr auto integrate(Func&& f,
                          const geom::BBox<Vec<Num, Dim>>& box,
-                         std::type_identity_t<Num> eps = tiny_number_v<Num>) {
+                         std::type_identity_t<Num> eps = tiny_v<Num>) {
   TIT_ASSUME_UNIVERSAL(Func, f);
   return [&f](this auto self,
               const geom::BBox<Vec<Num, Dim>>& my_box,
@@ -96,10 +96,9 @@ constexpr auto integrate(Func&& f,
 
 /// Integrate a function over a circle.
 template<class Func, class Num>
-constexpr auto integrate_cr(
-    Func&& f,
-    const Num& radius,
-    std::type_identity_t<Num> eps = tiny_number_v<Num>) {
+constexpr auto integrate_cr(Func&& f,
+                            const Num& radius,
+                            std::type_identity_t<Num> eps = tiny_v<Num>) {
   TIT_ASSUME_UNIVERSAL(Func, f);
   const auto from_polar = [&f](const Vec<Num, 2>& point) {
     const auto& r = point[0];
@@ -115,10 +114,9 @@ constexpr auto integrate_cr(
 
 /// Integrate a function over a sphere.
 template<class Func, class Num>
-constexpr auto integrate_sp(
-    Func&& f,
-    const Num& radius,
-    std::type_identity_t<Num> eps = tiny_number_v<Num>) {
+constexpr auto integrate_sp(Func&& f,
+                            const Num& radius,
+                            std::type_identity_t<Num> eps = tiny_v<Num>) {
   TIT_ASSUME_UNIVERSAL(Func, f);
   const auto from_spherical = [&f](const Vec<Num, 3>& point) {
     const auto& r = point[0];

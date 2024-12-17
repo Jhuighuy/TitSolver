@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <mutex>
 #include <ranges>
 #include <vector>
 
@@ -20,7 +19,6 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 bool Stats::enabled_ = false;
-std::mutex Stats::vars_mutex_;
 StrHashMap<std::unique_ptr<BaseStatsVar>> Stats::vars_;
 
 void Stats::enable() noexcept {
