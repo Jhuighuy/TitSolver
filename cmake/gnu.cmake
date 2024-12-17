@@ -58,7 +58,7 @@ set(
   # Potential arithmetic overflows during shifts.
   -Wshift-overflow
   # `switch` statement does not have a `default` case.
-  -Wswitch-enum
+  # -Wswitch-enum
   # Use of uninitialized variables.
   -Wuninitialized
   # String constants are passed to non-`const char*` parameters.
