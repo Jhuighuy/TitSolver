@@ -73,17 +73,9 @@ TEST_CASE("data::zstd::small_data") {
 
 TEST_CASE("data::zstd::large_data") {
   constexpr auto run_test = [](size_t size_multiplier) {
-#if (__GNUC__ == 14) && defined(__gnu_linux__) && defined(NDEBUG)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-    /// @todo ^^^ False-positive on Linux Release GCC 14 build.
     const auto large_data =
         std::views::repeat(to_byte_array(std::numbers::pi), size_multiplier) |
         std::views::join | std::ranges::to<std::vector>();
-#if (__GNUC__ == 14) && defined(__gnu_linux__) && defined(NDEBUG)
-#pragma GCC diagnostic pop
-#endif
 
     // Note: ZSTD's preferred chunk size is around 128 KiB.
     constexpr size_t small_chunk_size = 8;

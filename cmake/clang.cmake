@@ -4,11 +4,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Define minimal compiler version.
-set(CLANG_MIN_VERSION "19.1.5")
+include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -17,35 +13,12 @@ set(
   CLANG_WARNINGS
   # Treat warnings as errors.
   -Werror
-  # Enable most of the commonly used warning options.
+  # Enable all the commonly used warning options.
   -Wall
   -Wextra
   -Wextra-semi
   -Wpedantic
-  # Redeclaration of class members.
-  -Wredeclared-class-member
-  # Redundant declarations.
-  -Wredundant-decls
-  # Redundant move operations.
-  -Wredundant-move
-  # Redundant parentheses.
-  -Wredundant-parens
-  # Everything should be used.
-  -Wunused-comparison
-  -Wunused-const-variable
-  -Wunused-exception-parameter
-  -Wunused-function
-  -Wunused-label
-  -Wunused-lambda-capture
-  -Wunused-local-typedef
-  -Wunused-parameter
-  -Wunused-private-field
-  -Wunused-template
-  -Wunused-value
-  -Wunused-variable
-  -Wunused-volatile-lvalue
-  # No warnings for unknown pragmas.
-  -Wno-unknown-pragmas
+  -Wgnu
   # No warnings for unknown warning options.
   -Wno-unknown-warning-option
 )
@@ -109,10 +82,6 @@ if(APPLE)
     CLANG_LINK_OPTIONS
     # Do not warn about duplicate libraries.
     -Wl,-no_warn_duplicate_libraries
-    # Link with the Homebrew LLVM libraries.
-    # TODO: Here should be a check for the Homebrew LLVM installation.
-    -L/opt/homebrew/opt/llvm/lib/c++
-    -L/opt/homebrew/opt/llvm/lib/unwind
   )
 endif()
 
@@ -124,36 +93,18 @@ set(
   # Enable aggressive optimization levels.
   -O3
   -ffast-math
-  # Enables aggressive floating-point expression contraction.
+  # Enable aggressive floating-point expression contraction.
   -ffp-contract=fast
 )
 
-# Use link time optimizations?
-#
-# Note: This is experimental and may significantly decrease performance!
-set(CLANG_USE_LTO FALSE)
-if(CLANG_USE_LTO)
-  message(WARNING "Link-time optimizations support is experimental!")
-  list(APPEND CLANG_OPTIMIZE_OPTIONS -flto)
-endif()
-
 # Define compile options for "Release" configuration.
-set(
-  CLANG_COMPILE_OPTIONS_RELEASE
-  # Inherit common options.
+set(CLANG_COMPILE_OPTIONS_RELEASE
   ${CLANG_COMPILE_OPTIONS}
-  # Inherit optimization options.
   ${CLANG_OPTIMIZE_OPTIONS}
 )
 
 # Define link options for "Release" configuration.
-set(
-  CLANG_LINK_OPTIONS_RELEASE
-  # Inherit common options.
-  ${CLANG_LINK_OPTIONS}
-  # Inherit optimization options (needed for LTO or PGO).
-  ${CLANG_OPTIMIZE_OPTIONS}
-)
+set(CLANG_LINK_OPTIONS_RELEASE ${CLANG_LINK_OPTIONS} ${CLANG_OPTIMIZE_OPTIONS})
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -167,21 +118,159 @@ set(
 )
 
 # Define compile options for "Debug" configuration.
-set(
-  CLANG_COMPILE_OPTIONS_DEBUG
-  # Inherit common options.
-  ${CLANG_COMPILE_OPTIONS}
-  # Inherit debugging options.
-  ${CLANG_DEBUG_OPTIONS}
-)
+set(CLANG_COMPILE_OPTIONS_DEBUG ${CLANG_COMPILE_OPTIONS} ${CLANG_DEBUG_OPTIONS})
 
 # Define link options for "Debug" configuration.
-set(
-  CLANG_LINK_OPTIONS_DEBUG
-  # Inherit common options.
-  ${CLANG_LINK_OPTIONS}
-  # Inherit debugging options.
-  ${CLANG_DEBUG_OPTIONS}
-)
+set(CLANG_LINK_OPTIONS_DEBUG ${CLANG_LINK_OPTIONS} ${CLANG_DEBUG_OPTIONS})
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Find clang-tidy. Prefer version-suffixed executables.
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-19" "clang-tidy")
+if(NOT CLANG_TIDY_EXE)
+  message(WARNING "clang-tidy was not found!")
+endif()
+
+#
+# Analyze source files of a target with clang-tidy.
+#
+function(enable_clang_tidy TARGET_OR_ALIAS)
+  # Should we skip analysis?
+  if(SKIP_ANALYSIS)
+    return()
+  endif()
+
+  # Exit early in case sufficient clang-tidy was not found.
+  if(NOT CLANG_TIDY_EXE)
+    return()
+  endif()
+
+  # Get the original target name if it is an alias.
+  get_target_property(TARGET ${TARGET_OR_ALIAS} ALIASED_TARGET)
+  if(NOT TARGET ${TARGET})
+    set(TARGET ${TARGET_OR_ALIAS})
+  endif()
+
+  # Setup common arguments for clang-tidy call.
+  set(
+    CLANG_TIDY_ARGS
+    # No annoying output.
+    --quiet
+    # Enable colors during piping through chronic.
+    --use-color
+  )
+
+  # Disable a few checks when compiling with libc++.
+  # TODO: As soon as we'll be able to run all required checks, we should start
+  #       exporting compile commands and run clang-tidy using CMake.
+  if(CXX_COMPILER STREQUAL "CLANG")
+    set(
+      LIBCPP_DISABLED_CHECKS
+      # False positives with standard headers, like <format> and <expected>.
+      -misc-include-cleaner
+      # Suppress error messages from Doctest.
+      -modernize-type-traits
+    )
+    list(JOIN LIBCPP_DISABLED_CHECKS "," LIBCPP_DISABLED_CHECKS)
+    list(APPEND CLANG_TIDY_ARGS "--checks=${LIBCPP_DISABLED_CHECKS}")
+  endif()
+
+  # Setup "compilation" arguments for clang-tidy call.
+  get_generated_compile_options(${TARGET} CLANG_TIDY_COMPILE_OPTIONS)
+  list(
+    APPEND
+    CLANG_TIDY_COMPILE_OPTIONS
+    # Inherit compile options we would use for compilation.
+    ${CLANG_COMPILE_OPTIONS}
+    # Enable C++23, as it is not configured by the compile options.
+    -std=c++23
+  )
+
+  # Get the binary, source directory and sources of the target.
+  get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
+  if(NOT TARGET_SOURCES)
+    message(WARNING "clang-tidy: no sources found for target ${TARGET}!")
+    return()
+  endif()
+  get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
+  get_target_property(TARGET_BINARY_DIR ${TARGET} BINARY_DIR)
+
+  # Loop through the target sources and call clang-tidy.
+  set(ALL_STAMPS)
+  foreach(SOURCE ${TARGET_SOURCES})
+    # Skip non-C/C++ files.
+    is_cpp_file("${SOURCE}" SOURCE_IS_CPP)
+    if(NOT SOURCE_IS_CPP)
+      message(WARNING "clang-tidy: skipping a non C/C++ file: '${SOURCE}'.")
+      continue()
+    endif()
+
+    # Execute clang-tidy and update a stamp file on success.
+    # (wrapped with chronic to avoid annoying `N warnings generated` messages).
+    string(REPLACE "/" "_" STAMP "${SOURCE}.tidy_stamp")
+    set(STAMP "${TARGET_BINARY_DIR}/${STAMP}")
+    list(APPEND ALL_STAMPS "${STAMP}")
+    set(SOURCE_PATH "${TARGET_SOURCE_DIR}/${SOURCE}")
+    cmake_path(
+      RELATIVE_PATH SOURCE_PATH
+      BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+      OUTPUT_VARIABLE RELATIVE_SOURCE_PATH
+    )
+    add_custom_command(
+      COMMENT "Analyzing ${RELATIVE_SOURCE_PATH}"
+      OUTPUT "${STAMP}"
+      COMMAND
+        "${CHRONIC_EXE}"
+          "${CLANG_TIDY_EXE}"
+            "${SOURCE_PATH}"
+              ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_OPTIONS}
+      COMMAND
+        "${CMAKE_COMMAND}" -E touch "${STAMP}"
+      DEPENDS "${SOURCE_PATH}"
+      IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
+      COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
+      VERBATIM
+    )
+  endforeach()
+
+  # Create a custom target that should "build" once all checks succeed.
+  add_custom_target("${TARGET}_tidy" ALL DEPENDS ${TARGET} ${ALL_STAMPS})
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
+# Write the `compile_flags.txt` for the clangd language server.
+#
+# TODO: In a better world, we would simply use `CMAKE_EXPORT_COMPILE_COMMANDS`.
+#
+function(write_compile_flags SAMPLE_TARGET)
+  # Setup "compilation" arguments for hypothetical "clang" call.
+  set(CLANG_COMPILE_ARGS)
+  get_generated_compile_options(${SAMPLE_TARGET} CLANG_COMPILE_ARGS)
+  list(
+    APPEND
+    CLANG_COMPILE_ARGS
+    # Inherit compile options we would use for compilation.
+    ${CLANG_COMPILE_OPTIONS}
+    # Enable C++23, as it is not configured by the compile options.
+    -std=c++23
+  )
+
+  # Remove `-Werror` from the compile flags, as it breaks clangd.
+  list(REMOVE_ITEM CLANG_COMPILE_ARGS "-Werror")
+
+  # Write the compile flags to a file, each on a new line.
+  add_custom_target(
+    "${CMAKE_PROJECT_NAME}_clangd_compile_flags"
+    ALL # Execute on every build.
+    COMMAND
+      "${CMAKE_COMMAND}" -E echo ${CLANG_COMPILE_ARGS} |
+      xargs -n 1 > "${CMAKE_SOURCE_DIR}/compile_flags.txt"
+    COMMENT "Writing compile_flags.txt"
+    COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
+    VERBATIM
+  )
+endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

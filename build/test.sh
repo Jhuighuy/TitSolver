@@ -9,8 +9,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 source "$(dirname "$0")/build-utils.sh" || exit $?
-JOBS=$(($(get-num-cpus) + 1))
-EXTRA_ARGS=()
+JOBS="${JOBS:-$(get-num-cpus)}"
 CTEST_EXE="${CTEST_EXE:-ctest}"
 
 usage() {
@@ -25,8 +24,7 @@ parse-args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       # Options.
-      -j | --jobs)    JOBS="$2";             shift 2;;
-      --)             EXTRA_ARGS=("${@:2}"); break;;
+      -j | --jobs) JOBS="$2"; shift 2;;
       # Help.
       -h | -help | --help)             usage; exit 0;;
       *) echo "Invalid argument: $1."; usage; exit 1;;
@@ -56,16 +54,13 @@ run-tests() {
   local CTEST_ARGS
   CTEST_ARGS=("$CTEST_EXE" "--output-on-failure")
 
-  # Output results summary to a JUnit XML file.
-  CTEST_ARGS+=("--output-junit" "$TEST_OUTPUT_DIR/JUnit.xml")
-
   # Parallelize the test execution.
   [ "$JOBS" -gt 1 ] && CTEST_ARGS+=("-j" "$JOBS")
 
   # Exclude long tests if the flag is not set.
   [ ! "$TIT_LONG_TESTS" ] && CTEST_ARGS+=("--exclude-regex" "\[long\]")
 
-  [ "${EXTRA_ARGS[@]}" ] && CTEST_ARGS=("${CTEST_ARGS[@]}" "${EXTRA_ARGS[@]}")
+  # Run CTest.
   (cd "$TEST_DIR" && "${CTEST_ARGS[@]}") || exit $?
 }
 
