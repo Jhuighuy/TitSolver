@@ -33,16 +33,9 @@ public:
   constexpr explicit Strict(Num val) : val_{val} {}
 
   /// Get the underlying value.
-  /// @{
-  constexpr auto get() noexcept -> Num& {
-    return val_;
+  constexpr auto get(this auto& self) noexcept -> auto& {
+    return self.val_;
   }
-  constexpr auto get() const noexcept -> const Num& {
-    return val_;
-  }
-  /// @}
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Cast number to a different type.
   template<class To>
@@ -114,15 +107,6 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Number output operator.
-  template<class Stream>
-  friend constexpr auto operator<<(Stream& stream, const Strict& a) -> Stream& {
-    stream << a.get();
-    return stream;
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 private:
 
   Num val_;
@@ -130,7 +114,7 @@ private:
 }; // class Strict
 
 template<std::floating_point Float>
-constexpr auto tiny_number_v<Strict<Float>> = Strict{tiny_number_v<Float>};
+constexpr auto tiny_v<Strict<Float>> = Strict{tiny_v<Float>};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -164,12 +148,6 @@ constexpr auto ceil(const Strict<Num>& a) -> Strict<Num> {
 template<class Num>
 constexpr auto sqrt(const Strict<Num>& a) -> Strict<Num> {
   return Strict{sqrt(a.get())};
-}
-
-/// Compute the reciprocal square root of the number.
-template<class Num>
-constexpr auto rsqrt(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{rsqrt(a.get())};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

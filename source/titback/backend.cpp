@@ -34,9 +34,7 @@ auto run_backend(CmdArgs /*args*/) -> int {
                crow::response& response,
                const std::filesystem::path& file_name) {
     auto file_path = root_dir / "frontend" / file_name;
-    if (std::filesystem::is_directory(file_path)) {
-      file_path /= "index.html";
-    }
+    if (std::filesystem::is_directory(file_path)) file_path /= "index.html";
     response.set_static_file_info_unsafe(file_path.native());
     response.end();
   });

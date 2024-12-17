@@ -6,6 +6,12 @@
 add_tit_test_from_target(
   tit::core_tests
   NAME "tit/core/unit"
+  ENVIRONMENT
+    "TEST_ZERO=0"
+    "TEST_POS_INT=123"
+    "TEST_NEG_INT=-456"
+    "TEST_TRUE=TRUE"
+    "TEST_FALSE=false"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,26 +108,6 @@ add_tit_test_from_target(
   EXIT_CODE 1
   MATCH_STDERR "catch_unknown_exception_stderr.txt"
   FILTERS "/0x*/d" # Remove everything related to the stack trace.
-)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_tit_executable(
-  NAME core_env_test
-  SOURCES "env.cpp"
-  DEPENDS tit::core
-)
-
-add_tit_test_from_target(
-  tit::core_env_test
-  NAME "tit/core/env"
-  ENVIRONMENT
-    "TEST_ZERO=0"
-    "TEST_INT=123"
-    "TEST_NEGATIVE=-456"
-    "TEST_FLOAT=123.456"
-    "TEST_TRUE=TRUE"
-    "TEST_FALSE=false"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

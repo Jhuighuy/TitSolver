@@ -151,12 +151,6 @@ TEST_CASE("Dual::sqrt") {
   CHECK(d.deriv() == 0.25);
 }
 
-TEST_CASE("Dual::rsqrt") {
-  const auto d = rsqrt(Dual{4.0, 2.0});
-  CHECK(d.val() == 0.5);
-  CHECK(d.deriv() == -0.125);
-}
-
 TEST_CASE("Dual::pow") {
   SUBCASE("dual ** real") {
     const auto d = pow(Dual{2.0, 1.0}, 3.0);
@@ -185,22 +179,6 @@ TEST_CASE("Dual::log") {
   const auto d = log(Dual{e, 2.0});
   CHECK(d.val() == 1.0);
   CHECK_APPROX_EQ(d.deriv(), 2.0 / e);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("Dual::sin") {
-  using std::numbers::pi;
-  const auto d = sin(Dual{pi / 2.0, 1.0});
-  CHECK_APPROX_EQ(d.val(), 1.0);
-  CHECK_APPROX_EQ(d.deriv(), 0.0);
-}
-
-TEST_CASE("Dual::cos") {
-  using std::numbers::pi;
-  const auto d = cos(Dual{pi / 2.0, 1.0});
-  CHECK_APPROX_EQ(d.val(), 0.0);
-  CHECK_APPROX_EQ(d.deriv(), -1.0);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

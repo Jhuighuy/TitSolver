@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <mutex>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -22,12 +21,10 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-std::mutex Profiler::sections_mutex_{};
 StrHashMap<Stopwatch> Profiler::sections_{};
 
 auto Profiler::section(std::string_view section_name) -> Stopwatch& {
   TIT_ASSERT(!section_name.empty(), "Section name must not be empty!");
-  const std::scoped_lock lock{sections_mutex_};
   /// @todo In C++26 there would be no need for `std::string{...}`.
   return sections_[std::string{section_name}];
 }
@@ -50,9 +47,9 @@ void Profiler::report_() {
       sections_ |
       std::views::transform([](auto& section) { return &section; }) |
       std::ranges::to<std::vector>();
-  std::ranges::sort(sorted_sections, //
-                    std::greater{},
-                    [](const auto* s) { return s->second.total_ns(); });
+  std::ranges::sort(sorted_sections, std::greater{}, [](const auto* s) {
+    return s->second.total_ns();
+  });
 
   // Print the report table.
   const auto width = tty_width(TTY::Stdout).value_or(80);

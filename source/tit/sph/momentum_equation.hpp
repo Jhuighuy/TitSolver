@@ -9,7 +9,7 @@
 #include <tuple>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/meta/set.hpp"
+#include "tit/core/meta.hpp"
 #include "tit/core/type_traits.hpp"
 
 #include "tit/sph/artificial_viscosity.hpp"
