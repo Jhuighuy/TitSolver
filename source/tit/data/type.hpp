@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <ranges>
 #include <type_traits>
 #include <utility>
 
@@ -116,7 +115,7 @@ private:
 
 namespace impl {
 
-template<class Val>
+template<class Type>
 inline constexpr auto data_kind_of = DataType::Kind::unknown;
 
 template<>
@@ -167,18 +166,13 @@ inline constexpr DataType data_type_of<Mat<Num, Dim>>{data_kind_of<Num>,
 } // namespace impl
 
 /// Data type specification of a type.
-template<class Val>
-  requires std::is_object_v<Val>
-inline constexpr DataType data_type_of = impl::data_type_of<Val>;
+template<class Type>
+  requires std::is_object_v<Type>
+inline constexpr DataType data_type_of = impl::data_type_of<Type>;
 
-/// Data type.
-template<class Val>
-concept data_type = (data_type_of<std::remove_cv_t<Val>>.known());
-
-/// Data range type.
-template<class Val>
-concept data_range =
-    std::ranges::range<Val> && data_type<std::ranges::range_value_t<Val>>;
+/// Known data type.
+template<class Type>
+concept known_type = (data_type_of<Type>.known());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

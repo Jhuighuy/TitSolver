@@ -35,8 +35,6 @@ public:
 
 } // namespace tit
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // Stack trace formatter.
 template<>
 struct std::formatter<tit::Stacktrace> {

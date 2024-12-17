@@ -408,10 +408,11 @@ auto DataStorage::array_data_open_read(DataArrayID array_id) const
 
 auto DataStorage::array_data(DataArrayID array_id) const
     -> std::vector<byte_t> {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
-  std::vector<byte_t> data;
-  read_from(array_data_open_read(array_id), data, /*chunk_size=*/(64 * 1024UZ));
-  return data;
+  std::vector<byte_t> result;
+  read_from(array_data_open_read(array_id),
+            result,
+            /*chunk_size=*/(64 * 1024UZ));
+  return result;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
