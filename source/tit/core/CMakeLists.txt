@@ -71,8 +71,8 @@ add_tit_library(
     "utils.hpp"
     "vec.hpp"
   DEPENDS
-    Boost::core
     Boost::container
+    Boost::core
     Boost::stacktrace_addr2line
     gcem
     hwy::hwy

@@ -12,7 +12,7 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Setup path to CMake scripts and include them.
+# Setup path to CMake modules and include them.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clangd)
 include(codespell)
@@ -46,8 +46,31 @@ add_subdirectory("tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Write "compile_flags.txt" based on the core library.
-write_compile_flags(tit::core)
+# Create a meta target we would use to get all the compile flags.
+# This target must depend on all the third-party libraries, and therefore has
+# all the needed compile flags: include directories, compile definitions, etc.
+add_tit_library(
+  NAME
+    all_flags
+  DEPENDS
+    Boost::container
+    Boost::core
+    Boost::stacktrace_addr2line
+    doctest::doctest
+    gcem
+    hwy::hwy
+    metis
+    mimalloc-static
+    TBB::tbb
+    TBB::tbbmalloc
+    unofficial::sqlite3::sqlite3
+    zstd::libzstd
+)
+
+# Write "compile_flags.txt" based on the meta library.
+write_compile_flags(tit::all_flags)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Enable spell checking.
 check_spelling()

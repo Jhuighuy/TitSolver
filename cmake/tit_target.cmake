@@ -133,7 +133,9 @@ function(add_tit_library)
   endif()
 
   # Enable static analysis.
-  enable_clang_tidy(${LIB_TARGET})
+  if(LIB_SOURCES)
+    enable_clang_tidy(${LIB_TARGET})
+  endif()
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -172,7 +174,9 @@ function(add_tit_executable)
   endif()
 
   # Enable static analysis.
-  enable_clang_tidy(${EXE_TARGET})
+  if(EXE_SOURCES)
+    enable_clang_tidy(${EXE_TARGET})
+  endif()
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -4,8 +4,8 @@
   "version-string": "0.1.0",
   "builtin-baseline": "9d163f0612f75a49133cfd051f0ed997a24602d5",
   "dependencies": [
-    "boost-core",
     "boost-container",
+    "boost-core",
     {
       "name": "boost-stacktrace",
       "default-features": false
