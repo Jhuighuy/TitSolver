@@ -42,8 +42,7 @@ inline void report_std_exception_(const std::exception& e) {
 }
 
 // Report unhandled exception that does not derive from `std::exception`.
-[[gnu::always_inline]]
-inline void report_non_std_exception_() {
+[[gnu::always_inline]] inline void report_non_std_exception_() {
   eprintln();
   eprintln();
   eprintln("Terminating due to an unhandled exception.");
@@ -52,8 +51,7 @@ inline void report_non_std_exception_() {
 }
 
 // Report call to `std::terminate`.
-[[gnu::always_inline]]
-inline void report_terminate_call_() {
+[[gnu::always_inline]] inline void report_terminate_call_() {
   eprintln();
   eprintln();
   eprintln("Terminating due to a call to std::terminate().");
@@ -75,8 +73,7 @@ TerminateHandler::~TerminateHandler() noexcept {
              "Terminate handler was not registered previously!");
 }
 
-[[noreturn]]
-void TerminateHandler::handle_terminate_() {
+[[noreturn]] void TerminateHandler::handle_terminate_() {
   const par::GlobalLock lock{};
 
   // Report the incident.

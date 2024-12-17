@@ -125,17 +125,15 @@ TEST_CASE("simd::RegMask::count_true") {
 TEST_CASE("simd::RegMask::find_true") {
   SUBCASE("first") {
     const FloatRegMask m{FloatMaskArray{false, true, false, false}};
-    CHECK(try_find_true(m) == 1);
     CHECK(find_true(m) == 1);
   }
   SUBCASE("last") {
     const FloatRegMask m{FloatMaskArray{false, false, false, true}};
-    CHECK(try_find_true(m) == 3);
     CHECK(find_true(m) == 3);
   }
   SUBCASE("none") {
     const FloatRegMask m{FloatMaskArray{false, false, false, false}};
-    CHECK(try_find_true(m) == -1);
+    CHECK(find_true(m) == -1);
   }
 }
 

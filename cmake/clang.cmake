@@ -73,6 +73,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND APPLE)
     -cxx-isystem "${STDCPP_SYS_INCLUDE_DIR}"
   )
 endif()
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR NOT APPLE)
+  # Needed for `std::bind_back` to be available.
+  list(APPEND CLANG_COMPILE_OPTIONS -D__cpp_explicit_this_parameter=1)
+endif()
 
 # Define common link options.
 set(CLANG_LINK_OPTIONS)

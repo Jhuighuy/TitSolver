@@ -9,11 +9,9 @@ add_tit_library(
   TYPE
     OBJECT
   SOURCES
-    "func_utils.hpp"
     "integrals.hpp"
     "test.hpp"
     "test_main.cpp"
-    "utils.hpp"
   DEPENDS
     doctest::doctest
 )

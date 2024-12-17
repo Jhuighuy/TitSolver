@@ -31,8 +31,7 @@ public:
   /// Allocate and initialize the new value from @p args.
   template<class... Args>
     requires std::constructible_from<Val, Args&&...>
-  [[nodiscard]]
-  auto create(Args&&... args) -> Val* {
+  [[nodiscard]] auto create(Args&&... args) -> Val* {
     TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
     auto* const ptr = static_cast<Val*>(pool_->malloc(sizeof(Val)));
     if (ptr == nullptr) {

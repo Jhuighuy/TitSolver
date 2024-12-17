@@ -31,10 +31,6 @@ namespace tit {
 #define TIT_CAT(a, b) TIT_CAT_IMPL(a, b)
 #define TIT_CAT_IMPL(a, b) a##b
 
-/// Convert macro argument into a string literal.
-#define TIT_STR(a) TIT_STR_IMPL(a)
-#define TIT_STR_IMPL(a) #a
-
 /// Generate a unique identifier
 #define TIT_NAME(prefix) TIT_CAT(TIT_CAT(prefix, _), __LINE__)
 
@@ -42,10 +38,7 @@ namespace tit {
 
 /// Use this function to assume forwarding references as universal references
 /// to avoid false alarms from analysis tools.
-/// @{
 #define TIT_ASSUME_UNIVERSAL(T, ref) static_cast<void>(std::forward<T>(ref))
-#define TIT_ASSUME_UNIVERSALS(Ts, refs) (TIT_ASSUME_UNIVERSAL(Ts, refs), ...)
-/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -107,10 +100,6 @@ constexpr auto make_array(Args&&... args) -> std::array<R, Size> {
       },
       std::tuple_cat(std::array{std::forward<Args>(args)}...));
 }
-
-/// Deduce array type from the given arguments.
-template<class... Ts>
-using array_from_t = decltype(make_array(std::declval<Ts>()...));
 
 /// Fill an array of the given size initialized with the given value.
 template<size_t Size, class T>
@@ -180,7 +169,7 @@ template<std::ranges::random_access_range Range, index_range Perm>
   requires std::ranges::viewable_range<Range> &&
            std::ranges::viewable_range<Perm>
 constexpr auto permuted_view(Range&& range, Perm&& perm) {
-  TIT_ASSUME_UNIVERSAL(Range, range); /// @todo Clang 19 does not like this.
+  TIT_ASSUME_UNIVERSAL(Range, range);
   return std::ranges::transform_view{
       std::forward<Perm>(perm),
       [range_view = std::views::all(std::forward<Range>(range))](
@@ -211,44 +200,38 @@ public:
   /// Construct the non-copyable class instance.
   NonCopyableBase() = default;
 
+  /// Destruct the non-copyable class instance.
+  ~NonCopyableBase() = default;
+
   /// Non-copyable class instance is move-constructible.
   NonCopyableBase(NonCopyableBase&&) = default;
-
-  /// Non-copyable class instance is movable.
-  auto operator=(NonCopyableBase&&) -> NonCopyableBase& = default;
 
   /// Non-copyable class instance is not copy-constructible.
   NonCopyableBase(const NonCopyableBase&) = delete;
 
+  /// Non-copyable class instance is movable.
+  auto operator=(NonCopyableBase&&) -> NonCopyableBase& = default;
+
   /// Non-copyable class instance is not copyable.
   auto operator=(const NonCopyableBase&) -> NonCopyableBase& = delete;
-
-  /// Destruct the non-copyable class instance.
-  ~NonCopyableBase() = default;
 
 }; // class NonCopyableBase
 
 /// Non-movable base class.
-class NonMovableBase {
+class NonMovableBase : public NonCopyableBase {
 public:
 
   /// Construct the non-movable class instance.
   NonMovableBase() = default;
+
+  /// Destruct the non-movable class instance.
+  ~NonMovableBase() = default;
 
   /// Non-movable class instance is not move-constructible.
   NonMovableBase(NonMovableBase&&) = delete;
 
   /// Non-movable class instance is not movable.
   auto operator=(NonMovableBase&&) -> NonMovableBase& = delete;
-
-  /// Non-movable class instance is not copy-constructible.
-  NonMovableBase(const NonMovableBase&) = delete;
-
-  /// Non-movable class instance is not copyable.
-  auto operator=(const NonMovableBase&) -> NonMovableBase& = delete;
-
-  /// Destruct the non-movable class instance.
-  ~NonMovableBase() = default;
 
 }; // class NonMovableBase
 
@@ -260,12 +243,6 @@ public:
   virtual ~VirtualBase() = default;
 
 }; // class VirtualBase
-
-/// Is a virtual class instance of the given type?
-template<std::derived_from<VirtualBase> Derived>
-constexpr auto instance_of(const VirtualBase& instance) -> bool {
-  return dynamic_cast<const Derived*>(&instance) != nullptr;
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

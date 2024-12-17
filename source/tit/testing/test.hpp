@@ -5,10 +5,6 @@
 
 #pragma once
 
-// Doctest does not include `std::ostream`, but it does use it. We need to
-// include it here to avoid compiler errors.
-#include <ostream> // IWYU pragma: keep
-
 // Keep the algorithm header for range comparisons.
 #include <algorithm> // IWYU pragma: keep
 

@@ -164,45 +164,32 @@ TEST_CASE_TEMPLATE("VecMask::count_true", Num, NUM_TYPES) {
   }
 }
 
-TEST_CASE_TEMPLATE("VecMask::try_find_true", Num, NUM_TYPES) {
+TEST_CASE_TEMPLATE("VecMask::find_true", Num, NUM_TYPES) {
   constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
   SUBCASE("all") {
     const VecMask<Num, Dim> m(true);
-    CHECK(try_find_true(m) == 0);
+    CHECK(find_true(m) == 0);
   }
   SUBCASE("some") {
     SUBCASE("true in registers") {
       VecMask<Num, Dim> m(false);
       m[Dim / 2] = true;
-      CHECK(try_find_true(m) == Dim / 2);
+      CHECK(find_true(m) == Dim / 2);
     }
     SUBCASE("true in remainder") {
       VecMask<Num, Dim> m(false);
       m[Dim - 1] = true;
-      CHECK(try_find_true(m) == Dim - 1);
+      CHECK(find_true(m) == Dim - 1);
     }
     SUBCASE("false in remainder") {
       VecMask<Num, Dim> m(true);
       m[Dim - 1] = false;
-      CHECK(try_find_true(m) == 0);
+      CHECK(find_true(m) == 0);
     }
   }
   SUBCASE("none") {
     const VecMask<Num, Dim> m(false);
-    CHECK(try_find_true(m) == -1);
-  }
-}
-
-TEST_CASE_TEMPLATE("VecMask::find_true", Num, NUM_TYPES) {
-  constexpr auto Dim = 2 * simd::max_reg_size_v<double>;
-  SUBCASE("all") {
-    const VecMask<Num, Dim> m(true);
-    CHECK(find_true(m) == 0);
-  }
-  SUBCASE("in last register") {
-    VecMask<Num, Dim> m(false);
-    m[Dim / 2 + 1] = true;
-    CHECK(find_true(m) == Dim / 2 + 1);
+    CHECK(find_true(m) == -1);
   }
 }
 

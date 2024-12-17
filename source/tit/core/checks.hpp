@@ -32,10 +32,9 @@
 
 namespace tit::impl {
 
-[[noreturn]]
-void report_check_failure(std::string_view expression,
-                          std::string_view message,
-                          std::source_location location) noexcept;
+[[noreturn]] void report_check_failure(std::string_view expression,
+                                       std::string_view message,
+                                       std::source_location location) noexcept;
 
 constexpr void check(
     bool condition,
