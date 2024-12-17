@@ -53,10 +53,10 @@ function(add_wasm_binary TARGET NATIVE_TARGET_OR_ALIAS)
   endif()
 
   # Compile options for the emcc.
-  get_generated_compile_options(${NATIVE_TARGET} EMCC_COMPILE_ARGS)
+  get_generated_compile_options(${NATIVE_TARGET} EMCC_COMPILE_OPTIONS)
   list(
     APPEND
-    EMCC_COMPILE_ARGS
+    EMCC_COMPILE_OPTIONS
     # Warnings and diagnostics.
     ${CLANG_WARNINGS}
     # Enable C++23, as it is not configured by the compile options.
@@ -69,9 +69,9 @@ function(add_wasm_binary TARGET NATIVE_TARGET_OR_ALIAS)
 
   # Link options for the emcc.
   set(
-    EMCC_LINK_ARGS
+    EMCC_LINK_OPTIONS
     # Inherit compile options.
-    ${EMCC_COMPILE_ARGS}
+    ${EMCC_COMPILE_OPTIONS}
     # Increase the default stack size and initial memory, allow memory growth.
     -sSTACK_SIZE=32mb
     -sINITIAL_MEMORY=64mb
@@ -85,18 +85,18 @@ function(add_wasm_binary TARGET NATIVE_TARGET_OR_ALIAS)
     -sFULL_ES3=1
     # A few libraries.
     -lembind
-    -sUSE_GLFW=3
     -lglfw
+    -sUSE_GLFW=3
   )
 
   # Get the binary, source directory and sources of the target.
-  get_target_property(TARGET_BINARY_DIR ${NATIVE_TARGET} BINARY_DIR)
-  get_target_property(TARGET_SOURCE_DIR ${NATIVE_TARGET} SOURCE_DIR)
   get_target_property(TARGET_SOURCES ${NATIVE_TARGET} SOURCES)
   if(NOT TARGET_SOURCES)
     message(WARNING "emcc: no sources found for target ${NATIVE_TARGET}!")
     return()
   endif()
+  get_target_property(TARGET_SOURCE_DIR ${NATIVE_TARGET} SOURCE_DIR)
+  get_target_property(TARGET_BINARY_DIR ${NATIVE_TARGET} BINARY_DIR)
 
   # Loop through the target sources and call emcc.
   set(WASM_OBJECT_FILES)
@@ -134,7 +134,7 @@ function(add_wasm_binary TARGET NATIVE_TARGET_OR_ALIAS)
       COMMAND
         "${CHRONIC_EXE}"
           "${EMCC_EXE}"
-            ${EMCC_COMPILE_ARGS}
+            ${EMCC_COMPILE_OPTIONS}
             -c "${SOURCE_PATH}"
             -o "${WASM_OBJECT_FILE}"
       DEPENDS "${NATIVE_OBJECT_FILE}"
@@ -153,7 +153,7 @@ function(add_wasm_binary TARGET NATIVE_TARGET_OR_ALIAS)
     COMMAND
       "${CHRONIC_EXE}"
         "${EMCC_EXE}"
-          ${EMCC_LINK_ARGS}
+          ${EMCC_LINK_OPTIONS}
           ${WASM_OBJECT_FILES}
           -o "${TARGET_OUTPUT_JS}"
     DEPENDS ${WASM_OBJECT_FILES}

@@ -13,16 +13,14 @@ source "$DIRNAME/build-utils.sh" || exit $?
 CONFIG="Release"
 FORCE=false
 RUN_TESTS=false
-JOBS=$(($(get-num-cpus) + 1))
+JOBS="${JOBS:-$(get-num-cpus)}"
 COMPILER=$CXX
 VCPKG_ROOT="${VCPKG_ROOT:-}"
 EMSDK_ROOT="${EMSDK_ROOT:-}"
-DRY=false
-EXTRA_ARGS=()
 CMAKE_EXE="${CMAKE_EXE:-cmake}"
 
 usage() {
-  echo "Usage: $(basename "$0") [options] -- <cmake-args>"
+  echo "Usage: $(basename "$0") [options]"
   echo ""
   echo "Options:"
   echo "  -h, --help            Print this help message."
@@ -35,8 +33,6 @@ usage() {
   echo "  --compiler <path>     Override the default C++ compiler."
   echo "  --vcpkg-root <path>   Vcpkg package manager installation root path."
   echo "  --emsdk-root <path>   Emscripten SDK installation root path."
-  echo "  --dry                 Perform a dry build: discard all previously built data."
-  echo "  -- <cmake-args>       Additional CMake configuration arguments."
 }
 
 parse-args() {
@@ -55,8 +51,6 @@ parse-args() {
       --vcpkg-root=*) VCPKG_ROOT="${1#*=}";  shift 1;;
       --emsdk-root)   EMSDK_ROOT="$2";       shift 2;;
       --emsdk-root=*) EMSDK_ROOT="${1#*=}";  shift 1;;
-      --dry)          DRY=true;              shift;;
-      --)             EXTRA_ARGS=("${@:2}"); break;;
       # Help.
       -h | -help | --help)             usage; exit 0;;
       *) echo "Invalid argument: $1."; usage; exit 1;;
@@ -73,17 +67,11 @@ display-options() {
   [ "$COMPILER"        ] && echo "#   COMPILER   = $COMPILER"
   [ "$VCPKG_ROOT"      ] && echo "#   VCPKG_ROOT = $VCPKG_ROOT"
   [ "$EMSDK_ROOT"      ] && echo "#   EMSDK_ROOT = $EMSDK_ROOT"
-  [ $DRY = true        ] && echo "#   DRY        = YES"
-  [ "${EXTRA_ARGS[@]}" ] && echo "#   EXTRA_ARGS = ${EXTRA_ARGS[*]}"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 prepare-build-dir() {
-  if [ "$DRY" = true ]; then
-    echo "# Discarding previous build."
-    rm -rf "$OUTPUT_DIR"
-  fi
   mkdir -p "$OUTPUT_DIR" || exit $?
 }
 
@@ -136,11 +124,9 @@ configure() {
   #
   # Note: We must add the configuration option on each invocation of CMake.
   # Otherwise, CMake will remember the previous value and won't update it.
-  if [ "$FORCE" = true ]; then
-    CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=YES")
-  else
-    CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=NO")
-  fi
+  local SKIP_ANALYSIS
+  SKIP_ANALYSIS=$([ "$FORCE" = true ] && echo "YES" || echo "NO")
+  CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=$SKIP_ANALYSIS")
 
   # Set the C++ compiler.
   if [ -n "$COMPILER" ]; then
@@ -195,8 +181,7 @@ configure() {
   fi
   EMSDK_QUIET=1 source "$EMSDK_ENV_PATH"
 
-  # Execute cmake.
-  [ "${EXTRA_ARGS[@]}" ] && CMAKE_ARGS=("${CMAKE_ARGS[@]}" "${EXTRA_ARGS[@]}")
+  # Run CMake.
   "${CMAKE_ARGS[@]}" || exit $?
 }
 
@@ -214,7 +199,7 @@ build() {
   # Parallelize the build.
   [ "$JOBS" -gt 1 ] && CMAKE_ARGS+=("-j" "$JOBS")
 
-  # Execute cmake.
+  # Run CMake.
   "${CMAKE_ARGS[@]}" || exit $?
 }
 
@@ -228,6 +213,7 @@ install() {
   CMAKE_ARGS+=("--install" "$OUTPUT_DIR")
   CMAKE_ARGS+=("--prefix" "$INSTALL_DIR")
 
+  # Run CMake.
   "${CMAKE_ARGS[@]}" || exit $?
 }
 
