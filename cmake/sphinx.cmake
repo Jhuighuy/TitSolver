@@ -129,8 +129,7 @@ function(install_sphinx_target)
     # install all the files in the destination directory in a flat manner.
     get_filename_component(FILE_DIR "${FILE}" DIRECTORY)
     cmake_path(
-      RELATIVE_PATH
-      FILE_DIR
+      RELATIVE_PATH FILE_DIR
       BASE_DIRECTORY "${TARGET_OUTPUT_DIR}"
       OUTPUT_VARIABLE FILE_DESTINATION_DIR
     )

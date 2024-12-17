@@ -6,12 +6,9 @@
 #include <filesystem>
 #include <string>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #include <crow/app.h>
 #include <crow/http_request.h>
 #include <crow/http_response.h>
-#pragma GCC diagnostic pop
 
 #include "tit/core/main_func.hpp"
 #include "tit/core/sys/utils.hpp"

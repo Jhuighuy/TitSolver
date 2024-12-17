@@ -4,7 +4,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
-include(clang_tidy)
+include(clang)
 include(compiler)
 include(emscripten)
 include(pnpm)

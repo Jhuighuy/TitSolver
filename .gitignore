@@ -16,7 +16,6 @@
 !/sonar-project.properties
 
 # Editor configuration files.
-!/.vscode/c_cpp_properties.json
 !/.vscode/settings.json
 
 # C++ configuration files.
