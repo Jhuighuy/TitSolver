@@ -21,65 +21,37 @@ set(
   "Coverage"
 )
 
-if(CMAKE_BUILD_TYPE)
-  # Single-configuration generator is used. Check the current configuration.
-  if(NOT CMAKE_BUILD_TYPE IN_LIST ALL_CONFIGS)
-    list(JOIN ALL_CONFIGS ", " ALL_CONFIGS)
-    message(
-      FATAL_ERROR
-      "Unknown build configuration ${CMAKE_BUILD_TYPE}. "
-      "Choose from: ${ALL_CONFIGS}."
-    )
-  endif()
-else()
-  # Multi-configuration generator is used. Tell CMake about our configurations.
-  set(CMAKE_CONFIGURATION_TYPES ${ALL_CONFIGS})
+# Check the current configuration.
+if(NOT CMAKE_BUILD_TYPE IN_LIST ALL_CONFIGS)
+  list(JOIN ALL_CONFIGS ", " ALL_CONFIGS)
+  message(
+    FATAL_ERROR
+    "Build configuration must be one of the following: ${ALL_CONFIGS}."
+  )
 endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set the compiler ID.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-  set(CXX_COMPILER "CLANG")
-else()
-  string(TOUPPER ${CMAKE_CXX_COMPILER_ID} CXX_COMPILER)
-endif()
-
-# Check if compiler is known and it's version is sufficient.
-try_set(CXX_COMPILER_MIN_VERSION "${CXX_COMPILER}_MIN_VERSION")
-if(NOT DEFINED CXX_COMPILER_MIN_VERSION)
-  message(
-    FATAL_ERROR
-    "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported."
-  )
-endif()
-if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CXX_COMPILER_MIN_VERSION})
-  message(
-    FATAL_ERROR
-    "Insufficient version of compiler ${CMAKE_CXX_COMPILER_ID} is used. "
-    "Minimum required version is ${CXX_COMPILER_MIN_VERSION}."
-  )
-endif()
+# Setup the compiler ID.
+string(TOUPPER ${CMAKE_CXX_COMPILER_ID} CXX_COMPILER)
 
 # Setup compile options.
-try_set(CXX_COMPILE_OPTIONS "${CXX_COMPILER}_COMPILE_OPTIONS")
+set(CXX_COMPILE_OPTIONS "${${CXX_COMPILER}_COMPILE_OPTIONS}")
 foreach(CONFIG ${ALL_CONFIGS})
   string(TOUPPER ${CONFIG} CONFIG)
-  try_set(
+  set(
     "CXX_COMPILE_OPTIONS_${CONFIG}"
-    "${CXX_COMPILER}_COMPILE_OPTIONS_${CONFIG}"
-    ${CXX_COMPILE_OPTIONS}
+    "${${CXX_COMPILER}_COMPILE_OPTIONS_${CONFIG}}"
   )
 endforeach()
 
 # Setup link options.
-try_set(CXX_LINK_OPTIONS "${CXX_COMPILER}_LINK_OPTIONS")
+set(CXX_LINK_OPTIONS "${CXX_COMPILER}_LINK_OPTIONS")
 foreach(CONFIG ${ALL_CONFIGS})
   string(TOUPPER ${CONFIG} CONFIG)
-  try_set(
+  set(
     "CXX_LINK_OPTIONS_${CONFIG}"
-    "${CXX_COMPILER}_LINK_OPTIONS_${CONFIG}"
-    ${CXX_LINK_OPTIONS}
+    "${${CXX_COMPILER}_LINK_OPTIONS_${CONFIG}}"
   )
 endforeach()
 

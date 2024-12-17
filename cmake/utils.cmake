@@ -96,17 +96,3 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
 endmacro()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#
-# Read value from the variable by it's name, if it is defined.
-# If it is undefined and default values are provided, those are set.
-#
-macro(try_set VAR VAR_NAME)
-  if(DEFINED ${VAR_NAME})
-    set(${VAR} ${${VAR_NAME}})
-  elseif(ARGN)
-    set(${VAR} ${${ARGN}})
-  endif()
-endmacro()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
