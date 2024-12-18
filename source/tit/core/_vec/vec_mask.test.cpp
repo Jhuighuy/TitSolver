@@ -54,9 +54,6 @@ TEST_CASE_TEMPLATE("VecMask", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Logical operations
-//
 
 TEST_CASE_TEMPLATE("VecMask::operator!", Num, NUM_TYPES) {
   CHECK(VecMask<Num, 2>{true, false} == !VecMask<Num, 2>{false, true});
@@ -75,9 +72,6 @@ TEST_CASE_TEMPLATE("VecMask::operator||", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Comparison operations
-//
 
 TEST_CASE_TEMPLATE("VecMask::operator==", Num, NUM_TYPES) {
   CHECK((VecMask<Num, 4>{true, false, true, false} ==
@@ -92,9 +86,6 @@ TEST_CASE_TEMPLATE("VecMask::operator!=", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Reduction
-//
 
 TEST_CASE_TEMPLATE("VecMask::all_and_any", Num, NUM_TYPES) {
   constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
@@ -131,9 +122,6 @@ TEST_CASE_TEMPLATE("VecMask::all_and_any", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Search
-//
 
 TEST_CASE_TEMPLATE("VecMask::count_true", Num, NUM_TYPES) {
   constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;

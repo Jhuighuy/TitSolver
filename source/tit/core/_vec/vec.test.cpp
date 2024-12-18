@@ -72,9 +72,114 @@ TEST_CASE_TEMPLATE("Vec", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Casts
-//
+
+TEST_CASE_TEMPLATE("Vec::operator+", Num, NUM_TYPES) {
+  SUBCASE("normal") {
+    CHECK(Vec{Num{1}, Num{2}} + Vec{Num{3}, Num{4}} == Vec{Num{4}, Num{6}});
+  }
+  SUBCASE("with assignment") {
+    Vec v{Num{1}, Num{2}};
+    v += Vec{Num{3}, Num{4}};
+    CHECK(v == Vec{Num{4}, Num{6}});
+  }
+}
+
+TEST_CASE_TEMPLATE("Vec::operator-", Num, NUM_TYPES) {
+  SUBCASE("negation") {
+    CHECK(-Vec{Num{1}, Num{2}} == Vec{-Num{1}, -Num{2}});
+  }
+  SUBCASE("subtraction") {
+    SUBCASE("normal") {
+      CHECK(Vec{Num{3}, Num{4}} - Vec{Num{1}, Num{2}} == Vec{Num{2}, Num{2}});
+    }
+    SUBCASE("with assignment") {
+      Vec v{Num{3}, Num{4}};
+      v -= Vec{Num{1}, Num{2}};
+      CHECK(v == Vec{Num{2}, Num{2}});
+    }
+  }
+}
+
+TEST_CASE_TEMPLATE("Vec::operator*", Num, NUM_TYPES) {
+  SUBCASE("scaling") {
+    SUBCASE("normal") {
+      CHECK(Num{4} * Vec{Num{2}, Num{3}} == Vec{Num{8}, Num{12}});
+      CHECK(Vec{Num{2}, Num{3}} * Num{4} == Vec{Num{8}, Num{12}});
+    }
+    SUBCASE("with assignment") {
+      Vec v{Num{2}, Num{3}};
+      v *= Num{4};
+      CHECK(v == Vec{Num{8}, Num{12}});
+    }
+  }
+  SUBCASE("multiplication") {
+    SUBCASE("normal") {
+      CHECK(Vec{Num{2}, Num{3}} * Vec{Num{4}, Num{5}} == Vec{Num{8}, Num{15}});
+    }
+    SUBCASE("with assignment") {
+      Vec v{Num{2}, Num{3}};
+      v *= Vec{Num{4}, Num{5}};
+      CHECK(v == Vec{Num{8}, Num{15}});
+    }
+  }
+}
+
+TEST_CASE_TEMPLATE("Vec::operator/", Num, NUM_TYPES) {
+  SUBCASE("scaling") {
+    SUBCASE("normal") {
+      CHECK(Vec{Num{8}, Num{12}} / Num{4} == Vec{Num{2}, Num{3}});
+    }
+    SUBCASE("with assignment") {
+      Vec v{Num{8}, Num{12}};
+      v /= Num{4};
+      CHECK(v == Vec{Num{2}, Num{3}});
+    }
+  }
+  SUBCASE("division") {
+    SUBCASE("normal") {
+      CHECK(Vec{Num{8}, Num{15}} / Vec{Num{2}, Num{3}} == Vec{Num{4}, Num{5}});
+    }
+    SUBCASE("with assignment") {
+      Vec v{Num{8}, Num{15}};
+      v /= Vec{Num{2}, Num{3}};
+      CHECK(v == Vec{Num{4}, Num{5}});
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE_TEMPLATE("Vec::operator==", Num, NUM_TYPES) {
+  CHECK((Vec{Num{1}, Num{2}} == Vec{Num{1}, Num{3}}) ==
+        VecMask<Num, 2>{true, false});
+}
+
+TEST_CASE_TEMPLATE("Vec::operator!=", Num, NUM_TYPES) {
+  CHECK((Vec{Num{1}, Num{2}} != Vec{Num{1}, Num{3}}) ==
+        VecMask<Num, 2>{false, true});
+}
+
+TEST_CASE_TEMPLATE("Vec::operator<", Num, NUM_TYPES) {
+  CHECK((Vec{Num{1}, Num{2}, Num{3}} < Vec{Num{1}, Num{2}, Num{4}}) ==
+        VecMask<Num, 3>{false, false, true});
+}
+
+TEST_CASE_TEMPLATE("Vec::operator<=", Num, NUM_TYPES) {
+  CHECK((Vec{Num{1}, Num{2}, Num{4}} <= Vec{Num{1}, Num{2}, Num{3}}) ==
+        VecMask<Num, 3>{true, true, false});
+}
+
+TEST_CASE_TEMPLATE("Vec::operator>", Num, NUM_TYPES) {
+  CHECK((Vec{Num{1}, Num{2}, Num{4}} > Vec{Num{1}, Num{2}, Num{3}}) ==
+        VecMask<Num, 3>{false, false, true});
+}
+
+TEST_CASE_TEMPLATE("Vec::operator>=", Num, NUM_TYPES) {
+  CHECK((Vec{Num{1}, Num{2}, Num{3}} >= Vec{Num{1}, Num{2}, Num{4}}) ==
+        VecMask<Num, 3>{true, true, false});
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("Vec::zero", Num, NUM_TYPES) {
   CHECK(zero(Vec{Num{1}, Num{2}}) == Vec{Num{0}, Num{0}});
@@ -112,19 +217,14 @@ TEST_CASE_TEMPLATE("Vec::vec_cast<class To>", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Algorithms
-//
 
 TEST_CASE_TEMPLATE("Vec::minimum", Num, NUM_TYPES) {
-  CHECK(minimum(Vec{-Num{3}, +Num{4}},    //
-                Vec{+Num{3}, +Num{2}}) == //
+  CHECK(minimum(Vec{-Num{3}, +Num{4}}, Vec{+Num{3}, +Num{2}}) ==
         Vec{-Num{3}, +Num{2}});
 }
 
 TEST_CASE_TEMPLATE("Vec::maximum", Num, NUM_TYPES) {
-  CHECK(maximum(Vec{-Num{3}, +Num{4}},    //
-                Vec{+Num{3}, +Num{2}}) == //
+  CHECK(maximum(Vec{-Num{3}, +Num{4}}, Vec{+Num{3}, +Num{2}}) ==
         Vec{+Num{3}, +Num{4}});
 }
 
@@ -140,96 +240,6 @@ TEST_CASE_TEMPLATE("VecMask::select", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Arithmetic operations
-//
-
-TEST_CASE_TEMPLATE("Vec::operator+", Num, NUM_TYPES) {
-  SUBCASE("normal") {
-    CHECK((Vec{Num{1}, Num{2}} +   //
-           Vec{Num{3}, Num{4}}) == //
-          Vec{Num{4}, Num{6}});
-  }
-  SUBCASE("with assignment") {
-    Vec v{Num{1}, Num{2}};
-    v += Vec{Num{3}, Num{4}};
-    CHECK(v == Vec{Num{4}, Num{6}});
-  }
-}
-
-TEST_CASE_TEMPLATE("Vec::operator-", Num, NUM_TYPES) {
-  SUBCASE("negation") {
-    CHECK(-Vec{Num{1}, Num{2}} == Vec{-Num{1}, -Num{2}});
-  }
-  SUBCASE("subtraction") {
-    SUBCASE("normal") {
-      CHECK((Vec{Num{3}, Num{4}} -   //
-             Vec{Num{1}, Num{2}}) == //
-            Vec{Num{2}, Num{2}});
-    }
-    SUBCASE("with assignment") {
-      Vec v{Num{3}, Num{4}};
-      v -= Vec{Num{1}, Num{2}};
-      CHECK(v == Vec{Num{2}, Num{2}});
-    }
-  }
-}
-
-TEST_CASE_TEMPLATE("Vec::operator*", Num, NUM_TYPES) {
-  SUBCASE("scaling") {
-    SUBCASE("normal") {
-      CHECK(Num{4} * Vec{Num{2}, Num{3}} == Vec{Num{8}, Num{12}});
-      CHECK(Vec{Num{2}, Num{3}} * Num{4} == Vec{Num{8}, Num{12}});
-    }
-    SUBCASE("with assignment") {
-      Vec v{Num{2}, Num{3}};
-      v *= Num{4};
-      CHECK(v == Vec{Num{8}, Num{12}});
-    }
-  }
-  SUBCASE("multiplication") {
-    SUBCASE("normal") {
-      CHECK((Vec{Num{2}, Num{3}} *   //
-             Vec{Num{4}, Num{5}}) == //
-            Vec{Num{8}, Num{15}});
-    }
-    SUBCASE("with assignment") {
-      Vec v{Num{2}, Num{3}};
-      v *= Vec{Num{4}, Num{5}};
-      CHECK(v == Vec{Num{8}, Num{15}});
-    }
-  }
-}
-
-TEST_CASE_TEMPLATE("Vec::operator/", Num, NUM_TYPES) {
-  SUBCASE("scaling") {
-    SUBCASE("normal") {
-      CHECK(Vec{Num{8}, Num{12}} / Num{4} == Vec{Num{2}, Num{3}});
-    }
-    SUBCASE("with assignment") {
-      Vec v{Num{8}, Num{12}};
-      v /= Num{4};
-      CHECK(v == Vec{Num{2}, Num{3}});
-    }
-  }
-  SUBCASE("division") {
-    SUBCASE("normal") {
-      CHECK((Vec{Num{8}, Num{15}} /  //
-             Vec{Num{2}, Num{3}}) == //
-            Vec{Num{4}, Num{5}});
-    }
-    SUBCASE("with assignment") {
-      Vec v{Num{8}, Num{15}};
-      v /= Vec{Num{2}, Num{3}};
-      CHECK(v == Vec{Num{4}, Num{5}});
-    }
-  }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Mathematical functions
-//
 
 TEST_CASE_TEMPLATE("Vec::floor", Num, NUM_TYPES) {
   CHECK(floor(Vec{Num{1.5}, Num{2.7}}) == Vec{Num{1}, Num{2}});
@@ -244,50 +254,6 @@ TEST_CASE_TEMPLATE("Vec::ceil", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Comparison operations
-//
-
-TEST_CASE_TEMPLATE("Vec::operator==", Num, NUM_TYPES) {
-  CHECK((Vec{Num{1}, Num{2}} ==  //
-         Vec{Num{1}, Num{3}}) == //
-        VecMask<Num, 2>{true, false});
-}
-
-TEST_CASE_TEMPLATE("Vec::operator!=", Num, NUM_TYPES) {
-  CHECK((Vec{Num{1}, Num{2}} !=  //
-         Vec{Num{1}, Num{3}}) == //
-        VecMask<Num, 2>{false, true});
-}
-
-TEST_CASE_TEMPLATE("Vec::operator<", Num, NUM_TYPES) {
-  CHECK((Vec{Num{1}, Num{2}, Num{3}} <   //
-         Vec{Num{1}, Num{2}, Num{4}}) == //
-        VecMask<Num, 3>{false, false, true});
-}
-
-TEST_CASE_TEMPLATE("Vec::operator<=", Num, NUM_TYPES) {
-  CHECK((Vec{Num{1}, Num{2}, Num{4}} <=  //
-         Vec{Num{1}, Num{2}, Num{3}}) == //
-        VecMask<Num, 3>{true, true, false});
-}
-
-TEST_CASE_TEMPLATE("Vec::operator>", Num, NUM_TYPES) {
-  CHECK((Vec{Num{1}, Num{2}, Num{4}} >   //
-         Vec{Num{1}, Num{2}, Num{3}}) == //
-        VecMask<Num, 3>{false, false, true});
-}
-
-TEST_CASE_TEMPLATE("Vec::operator>=", Num, NUM_TYPES) {
-  CHECK((Vec{Num{1}, Num{2}, Num{3}} >=  //
-         Vec{Num{1}, Num{2}, Num{4}}) == //
-        VecMask<Num, 3>{true, true, false});
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Reductions
-//
 
 TEST_CASE_TEMPLATE("Vec::sum", Num, NUM_TYPES) {
   SUBCASE("basic") {
@@ -348,16 +314,12 @@ TEST_CASE_TEMPLATE("Vec::max_value_index", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Linear algebra
-//
 
 TEST_CASE_TEMPLATE("Vec::dot", Num, NUM_TYPES) {
   SUBCASE("basic") {
-    CHECK(dot(Vec{Num{1}, Num{2}}, //
-              Vec{Num{3}, Num{4}}) == Num{11});
-    CHECK(dot(Vec{Num{1}, Num{2}, Num{3}}, //
-              Vec{Num{4}, Num{5}, Num{6}}) == Num{32});
+    CHECK(dot(Vec{Num{1}, Num{2}}, Vec{Num{3}, Num{4}}) == Num{11});
+    CHECK(dot(Vec{Num{1}, Num{2}, Num{3}}, Vec{Num{4}, Num{5}, Num{6}}) ==
+          Num{32});
     CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}},
               Vec{Num{5}, Num{6}, Num{7}, Num{8}}) == Num{70});
     CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}},
@@ -394,18 +356,13 @@ TEST_CASE_TEMPLATE("Vec::approx_equal_to", Num, NUM_TYPES) {
 }
 
 TEST_CASE_TEMPLATE("Vec::cross", Num, NUM_TYPES) {
-  CHECK(cross(Vec{Num{1}, Num{0}, Num{0}},    //
-              Vec{Num{0}, Num{1}, Num{0}}) == //
+  CHECK(cross(Vec{Num{1}, Num{0}, Num{0}}, Vec{Num{0}, Num{1}, Num{0}}) ==
         Vec{Num{0}, Num{0}, Num{1}});
-  CHECK(cross(Vec{Num{1}, Num{2}, Num{3}},    //
-              Vec{Num{4}, Num{5}, Num{6}}) == //
+  CHECK(cross(Vec{Num{1}, Num{2}, Num{3}}, Vec{Num{4}, Num{5}, Num{6}}) ==
         Vec{-Num{3}, Num{6}, -Num{3}});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Miscellaneous
-//
 
 TEST_CASE("Vec::serialize") {
   const Vec<float32_t, 3> vec{1.0, 2.0, 3.0};

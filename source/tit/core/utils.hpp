@@ -101,17 +101,6 @@ constexpr auto make_array(Args&&... args) -> std::array<R, Size> {
       std::tuple_cat(std::array{std::forward<Args>(args)}...));
 }
 
-/// Fill an array of the given size initialized with the given value.
-template<size_t Size, class T>
-  requires std::copy_constructible<T>
-constexpr auto fill_array(const T& val) -> std::array<T, Size> {
-  // NOLINTNEXTLINE(*-return-const-ref-from-parameter)
-  const auto get_val = [&val](auto /*arg*/) -> const T& { return val; };
-  return [&get_val]<size_t... Indices>(std::index_sequence<Indices...>) {
-    return std::array<T, Size>{get_val(Indices)...};
-  }(std::make_index_sequence<Size>{});
-}
-
 /// Concatenate arrays.
 template<size_t... Sizes, class T>
   requires std::copy_constructible<T>
