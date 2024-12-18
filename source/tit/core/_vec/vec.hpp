@@ -10,7 +10,6 @@
 #include <array>
 #include <concepts>
 #include <format>
-#include <type_traits>
 #include <utility>
 
 #include "tit/core/_vec/vec_mask.hpp"
@@ -23,82 +22,64 @@
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Vector class.
-//
+
+namespace impl {
+
+// Register specification for generic vectors.
+template<class Num, size_t Dim>
+struct VecSIMD {
+  using Reg = Num;
+  static constexpr auto RegSize = 1;
+  static constexpr auto RegCount = Dim;
+};
+
+// Register specification for SIMD vectors.
+template<simd::supported_type Num, size_t Dim>
+struct VecSIMD<Num, Dim> {
+  using Reg = simd::deduce_reg_t<Num, Dim>;
+  static constexpr auto RegSize = simd::deduce_size_v<Num, Dim>;
+  static constexpr auto RegCount = simd::deduce_count_v<Num, Dim>;
+};
+
+} // namespace impl
 
 /// Column vector.
 template<class Num, size_t Dim>
 class Vec final {
 public:
 
-  /// Fill-initialize the vector with zeroes.
-  constexpr Vec() : Vec(Num{0}) {}
-
-  /// Fill-initialize the vector with the value @p q.
-  constexpr explicit(Dim > 1) Vec(const Num& q) : col_{fill_array<Dim>(q)} {}
-
-  /// Construct a vector with elements @p qs.
-  template<class... Args>
-    requires (Dim > 1) && (sizeof...(Args) == Dim) &&
-             (std::constructible_from<Num, Args &&> && ...)
-  constexpr Vec(Args&&... qs) // NOSONAR
-      : col_{make_array<Dim, Num>(std::forward<Args>(qs)...)} {}
-
-  /// Vector dimensionality.
-  constexpr auto dim() const -> ssize_t {
-    return Dim;
-  }
-
-  /// Vector elements array.
-  constexpr auto elems(this auto&& self) noexcept -> auto&& {
-    return std::forward_like<decltype(self)>(self.col_);
-  }
-
-  /// Vector element at index.
-  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
-    TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return std::forward_like<decltype(self)>(self.col_[i]);
-  }
-
-private:
-
-  std::array<Num, Dim> col_;
-
-}; // class Vec
-
-/// Column vector with SIMD support.
-template<simd::supported_type Num, size_t Dim>
-class Vec<Num, Dim> final {
-public:
-
   /// Type of the underlying register that is used.
-  using Reg = simd::deduce_reg_t<Num, Dim>;
+  using Reg = impl::VecSIMD<Num, Dim>::Reg;
 
   /// Size of the underlying register that is used.
-  static constexpr auto RegSize = simd::deduce_size_v<Num, Dim>;
+  static constexpr auto RegSize = impl::VecSIMD<Num, Dim>::RegSize;
 
   /// Amount of the underlying registers stored.
-  static constexpr auto RegCount = simd::deduce_count_v<Num, Dim>;
+  static constexpr auto RegCount = impl::VecSIMD<Num, Dim>::RegCount;
+
+  /// Vector mask type.
+  using VecMask = tit::VecMask<Num, Dim>;
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   // NOLINTBEGIN(*-type-union-access)
 
   /// Fill-initialize the vector with zeroes.
   constexpr Vec() noexcept {
-    if consteval {
-      col_ = fill_array<Dim>(Num{0});
-    } else {
-      regs_ = fill_array<RegCount>(Reg{});
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      regs_ = {}, regs_.fill(Reg{}); // mark as active union member.
+      return;
     }
+    col_.fill(Num{0});
   }
 
   /// Fill-initialize the vector with the value @p q.
   constexpr explicit(Dim > 1) Vec(Num q) noexcept {
-    if consteval {
-      col_ = fill_array<Dim>(q);
-    } else {
-      regs_ = fill_array<RegCount>(Reg(q));
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      regs_ = {}, regs_.fill(Reg(q)); // mark as active union member.
+      return;
     }
+    col_.fill(q);
   }
 
   /// Construct a vector with elements @p qs.
@@ -107,47 +88,6 @@ public:
              (std::constructible_from<Num, Args &&> && ...)
   constexpr Vec(Args&&... qs) // NOSONAR
       : col_{make_array<Dim, Num>(std::forward<Args>(qs)...)} {}
-
-  /// Move-construct the vector.
-  constexpr Vec(Vec&& other) noexcept {
-    if consteval {
-      col_ = std::move(other.col_);
-    } else {
-      regs_ = std::move(other.regs_);
-    }
-  }
-
-  /// Move-assign the vector.
-  constexpr auto operator=(Vec&& other) noexcept -> Vec& {
-    if consteval {
-      col_ = std::move(other.col_);
-    } else {
-      regs_ = std::move(other.regs_);
-    }
-    return *this;
-  }
-
-  /// Copy-construct the vector.
-  constexpr Vec(const Vec& other) {
-    if consteval {
-      col_ = other.col_;
-    } else {
-      regs_ = other.regs_;
-    }
-  }
-
-  /// Copy-assign the vector.
-  constexpr auto operator=(const Vec& other) -> Vec& { // NOLINT(cert-oop54-cpp)
-    if consteval {
-      col_ = other.col_;
-    } else {
-      regs_ = other.regs_;
-    }
-    return *this;
-  }
-
-  /// Destroy the vector.
-  constexpr ~Vec() = default;
 
   /// Vector dimensionality.
   constexpr auto dim() const -> ssize_t {
@@ -173,10 +113,211 @@ public:
 
   // NOLINTEND(*-type-union-access)
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Vector unary plus operation.
+  friend constexpr auto operator+(const Vec& a) noexcept -> Vec {
+    return a;
+  }
+
+  /// Vector element-wise addition operation.
+  friend constexpr auto operator+(const Vec& a, const Vec& b) -> Vec {
+    Vec r;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = a.reg(i) + b.reg(i);
+      return r;
+    }
+    for (size_t i = 0; i < Dim; ++i) r[i] = a[i] + b[i];
+    return r;
+  }
+
+  /// Vector element-wise addition with assignment operation.
+  friend constexpr auto operator+=(Vec& a, const Vec& b) -> Vec& {
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) a.reg(i) += b.reg(i);
+      return a;
+    }
+    for (size_t i = 0; i < Dim; ++i) a[i] += b[i];
+    return a;
+  }
+
+  /// Vector element-wise negation operation.
+  friend constexpr auto operator-(const Vec& a) -> Vec {
+    Vec r;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = -a.reg(i);
+      return r;
+    }
+    for (size_t i = 0; i < Dim; ++i) r[i] = -a[i];
+    return r;
+  }
+
+  /// Vector element-wise subtraction operation.
+  friend constexpr auto operator-(const Vec& a, const Vec& b) -> Vec {
+    Vec r;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = a.reg(i) - b.reg(i);
+      return r;
+    }
+    for (size_t i = 0; i < Dim; ++i) r[i] = a[i] - b[i];
+    return r;
+  }
+
+  /// Vector element-wise subtraction with assignment operation.
+  friend constexpr auto operator-=(Vec& a, const Vec& b) -> Vec& {
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) a.reg(i) -= b.reg(i);
+      return a;
+    }
+    for (size_t i = 0; i < Dim; ++i) a[i] -= b[i];
+    return a;
+  }
+
+  /// Vector-scalar element-wise multiplication operation.
+  /// @{
+  friend constexpr auto operator*(const Num& a, const Vec& b) -> Vec {
+    return b * a;
+  }
+  friend constexpr auto operator*(const Vec& a, const Num& b) -> Vec {
+    Vec r;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      const Reg b_reg(b);
+      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = a.reg(i) * b_reg;
+      return r;
+    }
+    for (size_t i = 0; i < Dim; ++i) r[i] = a[i] * b;
+    return r;
+  }
+  /// @}
+
+  /// Vector-scalar element-wise multiplication with assignment operation.
+  friend constexpr auto operator*=(Vec& a, const Num& b) -> Vec& {
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      const Reg b_reg(b);
+      for (size_t i = 0; i < RegCount; ++i) a.reg(i) *= b_reg;
+      return a;
+    }
+    for (size_t i = 0; i < Dim; ++i) a[i] *= b;
+    return a;
+  }
+
+  /// Vector element-wise multiplication operation.
+  friend constexpr auto operator*(const Vec& a, const Vec& b) -> Vec {
+    Vec r;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = a.reg(i) * b.reg(i);
+      return r;
+    }
+    for (size_t i = 0; i < Dim; ++i) r[i] = a[i] * b[i];
+    return r;
+  }
+
+  /// Vector element-wise multiplication with assignment operation.
+  friend constexpr auto operator*=(Vec& a, const Vec& b) -> Vec& {
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) a.reg(i) *= b.reg(i);
+      return a;
+    }
+    for (size_t i = 0; i < Dim; ++i) a[i] *= b[i];
+    return a;
+  }
+
+  /// Vector-scalar element-wise division operation.
+  friend constexpr auto operator/(const Vec& a, const Num& b) -> Vec {
+    if constexpr (Dim == 1) return a[0] / b;
+    return a * inverse(b);
+  }
+
+  /// Vector-scalar element-wise division with assignment operation.
+  friend constexpr auto operator/=(Vec& a, const Num& b) -> Vec& {
+    if constexpr (Dim == 1) a[0] /= b;
+    else a *= inverse(b);
+    return a;
+  }
+
+  /// Vector element-wise division operation.
+  friend constexpr auto operator/(const Vec& a, const Vec& b) -> Vec {
+    Vec r;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = a.reg(i) / b.reg(i);
+      return r;
+    }
+    for (size_t i = 0; i < Dim; ++i) r[i] = a[i] / b[i];
+    return r;
+  }
+
+  /// Vector element-wise division with assignment operation.
+  friend constexpr auto operator/=(Vec& a, const Vec& b) -> Vec& {
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) a.reg(i) /= b.reg(i);
+      return a;
+    }
+    for (size_t i = 0; i < Dim; ++i) a[i] /= b[i];
+    return a;
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Vector element-wise "equal to" comparison operation.
+  friend constexpr auto operator==(const Vec& a, const Vec& b) -> VecMask {
+    VecMask m;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) m.reg(i) = a.reg(i) == b.reg(i);
+      return m;
+    }
+    for (size_t i = 0; i < Dim; ++i) m[i] = a[i] == b[i];
+    return m;
+  }
+
+  /// Vector element-wise "not equal to" comparison operation.
+  friend constexpr auto operator!=(const Vec& a, const Vec& b) -> VecMask {
+    VecMask m;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) m.reg(i) = a.reg(i) != b.reg(i);
+      return m;
+    }
+    for (size_t i = 0; i < Dim; ++i) m[i] = a[i] != b[i];
+    return m;
+  }
+
+  /// Vector element-wise "less than" comparison operation.
+  friend constexpr auto operator<(const Vec& a, const Vec& b) -> VecMask {
+    VecMask m;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) m.reg(i) = a.reg(i) < b.reg(i);
+      return m;
+    }
+    for (size_t i = 0; i < Dim; ++i) m[i] = a[i] < b[i];
+    return m;
+  }
+
+  /// Vector element-wise "less than or equal to" comparison operation.
+  friend constexpr auto operator<=(const Vec& a, const Vec& b) -> VecMask {
+    VecMask m;
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      for (size_t i = 0; i < RegCount; ++i) m.reg(i) = a.reg(i) <= b.reg(i);
+      return m;
+    }
+    for (size_t i = 0; i < Dim; ++i) m[i] = a[i] <= b[i];
+    return m;
+  }
+
+  /// Vector element-wise "greater than" comparison operation.
+  friend constexpr auto operator>(const Vec& a, const Vec& b) -> VecMask {
+    return b < a;
+  }
+
+  /// Vector element-wise "greater than or equal to" comparison operation.
+  friend constexpr auto operator>=(const Vec& a, const Vec& b) -> VecMask {
+    return b <= a;
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 private:
 
   union {
-    std::array<Num, Dim> col_{};
+    std::array<Num, Dim> col_{}; // mark as active union member.
     std::array<Reg, RegCount> regs_;
   };
 
@@ -186,9 +327,6 @@ template<class Num, class... RestNums>
 Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Casts
-//
 
 /// Make a zero vector.
 template<class Num, size_t Dim>
@@ -256,9 +394,6 @@ constexpr auto vec_cast(const Vec<From, Dim>& a)
 /// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Algorithms
-//
 
 /// Element-wise minimum of two vectors.
 template<class Num, size_t Dim>
@@ -322,193 +457,6 @@ constexpr auto select(const VecMask<Num, Dim>& m,
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Arithmetic operations
-//
-
-/// Vector unary plus operation.
-template<class Num, size_t Dim>
-constexpr auto operator+(const Vec<Num, Dim>& a) noexcept -> Vec<Num, Dim> {
-  return a;
-}
-
-/// Vector element-wise addition operation.
-template<class Num, size_t Dim>
-constexpr auto operator+(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      r.reg(i) = a.reg(i) + b.reg(i);
-    }
-    return r;
-  }
-  for (size_t i = 0; i < Dim; ++i) r[i] = a[i] + b[i];
-  return r;
-}
-
-/// Vector element-wise addition with assignment operation.
-template<class Num, size_t Dim>
-constexpr auto operator+=(Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> Vec<Num, Dim>& {
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) += b.reg(i);
-    return a;
-  }
-  for (size_t i = 0; i < Dim; ++i) a[i] += b[i];
-  return a;
-}
-
-/// Vector element-wise negation operation.
-template<class Num, size_t Dim>
-constexpr auto operator-(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) r.reg(i) = -a.reg(i);
-    return r;
-  }
-  for (size_t i = 0; i < Dim; ++i) r[i] = -a[i];
-  return r;
-}
-
-/// Vector element-wise subtraction operation.
-template<class Num, size_t Dim>
-constexpr auto operator-(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      r.reg(i) = a.reg(i) - b.reg(i);
-    }
-    return r;
-  }
-  for (size_t i = 0; i < Dim; ++i) r[i] = a[i] - b[i];
-  return r;
-}
-
-/// Vector element-wise subtraction with assignment operation.
-template<class Num, size_t Dim>
-constexpr auto operator-=(Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> Vec<Num, Dim>& {
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) -= b.reg(i);
-    return a;
-  }
-  for (size_t i = 0; i < Dim; ++i) a[i] -= b[i];
-  return a;
-}
-
-/// Vector-scalar element-wise multiplication operation.
-/// @{
-template<class Num, size_t Dim>
-constexpr auto operator*(const std::type_identity_t<Num>& a,
-                         const Vec<Num, Dim>& b) -> Vec<Num, Dim> {
-  return b * a;
-}
-template<class Num, size_t Dim>
-constexpr auto operator*(const Vec<Num, Dim>& a,
-                         const std::type_identity_t<Num>& b) -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    const typename Vec<Num, Dim>::Reg b_reg(b);
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      r.reg(i) = a.reg(i) * b_reg;
-    }
-    return r;
-  }
-  for (size_t i = 0; i < Dim; ++i) r[i] = a[i] * b;
-  return r;
-}
-/// @}
-
-/// Vector-scalar element-wise multiplication with assignment operation.
-template<class Num, size_t Dim>
-constexpr auto operator*=(Vec<Num, Dim>& a, const std::type_identity_t<Num>& b)
-    -> Vec<Num, Dim>& {
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    const typename Vec<Num, Dim>::Reg b_reg(b);
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) *= b_reg;
-    return a;
-  }
-  for (size_t i = 0; i < Dim; ++i) a[i] *= b;
-  return a;
-}
-
-/// Vector element-wise multiplication operation.
-template<class Num, size_t Dim>
-constexpr auto operator*(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      r.reg(i) = a.reg(i) * b.reg(i);
-    }
-    return r;
-  }
-  for (size_t i = 0; i < Dim; ++i) r[i] = a[i] * b[i];
-  return r;
-}
-
-/// Vector element-wise multiplication with assignment operation.
-template<class Num, size_t Dim>
-constexpr auto operator*=(Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> Vec<Num, Dim>& {
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) *= b.reg(i);
-    return a;
-  }
-  for (size_t i = 0; i < Dim; ++i) a[i] *= b[i];
-  return a;
-}
-
-/// Vector-scalar element-wise division operation.
-template<class Num, size_t Dim>
-constexpr auto operator/(const Vec<Num, Dim>& a,
-                         const std::type_identity_t<Num>& b) -> Vec<Num, Dim> {
-  if constexpr (Dim == 1) return a[0] / b;
-  return a * inverse(b);
-}
-
-/// Vector-scalar element-wise division with assignment operation.
-template<class Num, size_t Dim>
-constexpr auto operator/=(Vec<Num, Dim>& a, const std::type_identity_t<Num>& b)
-    -> Vec<Num, Dim>& {
-  if constexpr (Dim == 1) a[0] /= b;
-  else a *= inverse(b);
-  return a;
-}
-
-/// Vector element-wise division operation.
-template<class Num, size_t Dim>
-constexpr auto operator/(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> Vec<Num, Dim> {
-  Vec<Num, Dim> r;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      r.reg(i) = a.reg(i) / b.reg(i);
-    }
-    return r;
-  }
-  for (size_t i = 0; i < Dim; ++i) r[i] = a[i] / b[i];
-  return r;
-}
-
-/// Vector element-wise division with assignment operation.
-template<class Num, size_t Dim>
-constexpr auto operator/=(Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> Vec<Num, Dim>& {
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) a.reg(i) /= b.reg(i);
-    return a;
-  }
-  for (size_t i = 0; i < Dim; ++i) a[i] /= b[i];
-  return a;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Mathematical functions
-//
 
 /// Compute the largest integer value not greater than vector element.
 template<class Num, size_t Dim>
@@ -553,88 +501,6 @@ constexpr auto ceil(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Comparison operations
-//
-
-/// Vector element-wise "equal to" comparison operation.
-template<class Num, size_t Dim>
-constexpr auto operator==(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      m.reg(i) = a.reg(i) == b.reg(i);
-    }
-    return m;
-  }
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] == b[i];
-  return m;
-}
-
-/// Vector element-wise "not equal to" comparison operation.
-template<class Num, size_t Dim>
-constexpr auto operator!=(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      m.reg(i) = a.reg(i) != b.reg(i);
-    }
-    return m;
-  }
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] != b[i];
-  return m;
-}
-
-/// Vector element-wise "less than" comparison operation.
-template<class Num, size_t Dim>
-constexpr auto operator<(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      m.reg(i) = a.reg(i) < b.reg(i);
-    }
-    return m;
-  }
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] < b[i];
-  return m;
-}
-
-/// Vector element-wise "less than or equal to" comparison operation.
-template<class Num, size_t Dim>
-constexpr auto operator<=(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> VecMask<Num, Dim> {
-  VecMask<Num, Dim> m;
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    for (size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
-      m.reg(i) = a.reg(i) <= b.reg(i);
-    }
-    return m;
-  }
-  for (size_t i = 0; i < Dim; ++i) m[i] = a[i] <= b[i];
-  return m;
-}
-
-/// Vector element-wise "greater than" comparison operation.
-template<class Num, size_t Dim>
-constexpr auto operator>(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> VecMask<Num, Dim> {
-  return b < a;
-}
-
-/// Vector element-wise "greater than or equal to" comparison operation.
-template<class Num, size_t Dim>
-constexpr auto operator>=(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> VecMask<Num, Dim> {
-  return b <= a;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Reductions
-//
 
 /// Sum of the vector elements.
 template<class Num, size_t Dim>
@@ -732,9 +598,6 @@ constexpr auto max_value_index(const Vec<Num, Dim>& a) -> size_t {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Linear algebra
-//
 
 /// Vector dot product.
 template<class Num, size_t Dim>
@@ -811,9 +674,6 @@ constexpr auto cross(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Miscellaneous
-//
 
 /// Serialize a vector into the output stream.
 template<class Stream, class Num, size_t Dim>

@@ -23,8 +23,12 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct a dual number.
-  constexpr explicit Dual(Num val = {}, Deriv deriv = {}) noexcept
+  /// @{
+  constexpr Dual() = default;
+  constexpr explicit Dual(Num val) noexcept : val_{std::move(val)} {}
+  constexpr Dual(Num val, Deriv deriv) noexcept
       : val_{std::move(val)}, deriv_{std::move(deriv)} {}
+  /// @}
 
   /// Get the value part.
   constexpr auto val() const noexcept -> const Num& {
@@ -135,8 +139,8 @@ public:
 
 private:
 
-  Num val_;
-  Deriv deriv_;
+  Num val_{0};
+  Deriv deriv_{0};
 
 }; // class Dual
 
