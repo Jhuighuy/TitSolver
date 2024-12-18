@@ -8,6 +8,7 @@
 
 #include <array>
 #include <concepts>
+#include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -41,16 +42,10 @@ public:
       : col_{make_array<Dim, bool>(std::forward<Args>(bs)...)} {}
 
   /// Vector mask element at index.
-  /// @{
-  constexpr auto operator[](size_t i) noexcept -> bool& {
+  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return col_[i];
+    return std::forward_like<decltype(self)>(self.col_[i]);
   }
-  constexpr auto operator[](size_t i) const noexcept -> bool {
-    TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return col_[i];
-  }
-  /// @}
 
   /// Check if all elements are true.
   constexpr operator bool() const noexcept {
@@ -150,28 +145,16 @@ public:
   constexpr ~VecMask() = default;
 
   /// Vector mask element at index.
-  /// @{
-  constexpr auto operator[](size_t i) noexcept -> Mask& {
-    TIT_ASSERT(i < Dim, "Row index is out of range.");
-    return col_[i];
+  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
+    TIT_ASSERT(i < Dim, "Row index is out of range!");
+    return std::forward_like<decltype(self)>(self.col_[i]);
   }
-  constexpr auto operator[](size_t i) const noexcept -> const Mask& {
-    TIT_ASSERT(i < Dim, "Row index is out of range.");
-    return col_[i];
-  }
-  /// @}
 
   /// Underlying register at index.
-  /// @{
-  auto reg(size_t i) noexcept -> RegMask& {
+  auto reg(this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < RegCount, "Register index is out of range.");
-    return regs_[i];
+    return std::forward_like<decltype(self)>(self.regs_[i]);
   }
-  auto reg(size_t i) const noexcept -> const RegMask& {
-    TIT_ASSERT(i < RegCount, "Register index is out of range.");
-    return regs_[i];
-  }
-  /// @}
 
   // NOLINTEND(*-type-union-access)
 

@@ -161,44 +161,24 @@ public:
   }
 
   /// Iterator pointing to the first vector element.
-  /// @{
-  constexpr auto begin() noexcept {
-    return vals_.begin();
+  constexpr auto begin(this auto& self) noexcept {
+    return self.vals_.begin();
   }
-  constexpr auto begin() const noexcept {
-    return vals_.begin();
-  }
-  /// @}
 
   /// Iterator pointing to the element after the last vector element.
-  /// @{
-  constexpr auto end() noexcept {
-    return vals_.end();
+  constexpr auto end(this auto& self) noexcept {
+    return self.vals_.end();
   }
-  constexpr auto end() const noexcept {
-    return vals_.end();
-  }
-  /// @}
 
   /// Reference to the first span element.
-  /// @{
-  constexpr auto front() noexcept -> Val& {
-    return vals_.front();
+  constexpr auto front(this auto&& self) noexcept -> auto&& {
+    return std::forward_like<decltype(self)>(self.vals_.front());
   }
-  constexpr auto front() const noexcept -> const Val& {
-    return vals_.front();
-  }
-  /// @}
 
   /// Reference to the last span element.
-  /// @{
-  constexpr auto back() noexcept -> Val& {
-    return vals_.back();
+  constexpr auto back(this auto&& self) noexcept -> auto&& {
+    return std::forward_like<decltype(self)>(self.vals_.back());
   }
-  constexpr auto back() const noexcept -> const Val& {
-    return vals_.back();
-  }
-  /// @}
 
   /// Clear the vector.
   constexpr void clear() noexcept {
@@ -216,19 +196,12 @@ public:
   }
 
   /// Reference to vector element or sub-vector span.
-  /// @{
   template<class... Indices>
     requires mdindex<Rank, Indices...>
-  constexpr auto operator[](Indices... indices) noexcept -> decltype(auto) {
-    return Mdspan{shape_, vals_}[indices...];
-  }
-  template<class... Indices>
-    requires mdindex<Rank, Indices...>
-  constexpr auto operator[](Indices... indices) const noexcept
+  constexpr auto operator[](this auto& self, Indices... indices) noexcept
       -> decltype(auto) {
-    return Mdspan{shape_, vals_}[indices...];
+    return Mdspan{self.shape_, self.vals_}[indices...];
   }
-  /// @}
 
 private:
 

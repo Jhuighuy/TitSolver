@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <utility>
 
 #include "tit/core/math.hpp"
 
@@ -33,8 +34,8 @@ public:
   constexpr explicit Strict(Num val) : val_{val} {}
 
   /// Get the underlying value.
-  constexpr auto get(this auto& self) noexcept -> auto& {
-    return self.val_;
+  constexpr auto get(this auto&& self) noexcept -> auto&& {
+    return std::forward<decltype(self)>(self).val_;
   }
 
   /// Cast number to a different type.

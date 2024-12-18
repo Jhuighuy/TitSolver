@@ -51,26 +51,15 @@ public:
   }
 
   /// Vector elements array.
-  /// @{
-  constexpr auto elems() noexcept -> std::array<Num, Dim>& {
-    return col_;
+  constexpr auto elems(this auto&& self) noexcept -> auto&& {
+    return std::forward_like<decltype(self)>(self.col_);
   }
-  constexpr auto elems() const noexcept -> const std::array<Num, Dim>& {
-    return col_;
-  }
-  /// @}
 
   /// Vector element at index.
-  /// @{
-  constexpr auto operator[](size_t i) noexcept -> Num& {
+  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return col_[i];
+    return std::forward_like<decltype(self)>(self.col_[i]);
   }
-  constexpr auto operator[](size_t i) const noexcept -> const Num& {
-    TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return col_[i];
-  }
-  /// @}
 
 private:
 
@@ -166,38 +155,21 @@ public:
   }
 
   /// Vector elements array.
-  /// @{
-  constexpr auto elems() noexcept -> std::array<Num, Dim>& {
-    return col_;
+  constexpr auto elems(this auto&& self) noexcept -> auto&& {
+    return std::forward_like<decltype(self)>(self.col_);
   }
-  constexpr auto elems() const noexcept -> const std::array<Num, Dim>& {
-    return col_;
-  }
-  /// @}
 
   /// Vector element at index.
-  /// @{
-  constexpr auto operator[](size_t i) noexcept -> Num& {
+  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return col_[i];
+    return std::forward_like<decltype(self)>(self.col_[i]);
   }
-  constexpr auto operator[](size_t i) const noexcept -> const Num& {
-    TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return col_[i];
-  }
-  /// @}
 
-  /// Underlying register at index.
-  /// @{
-  auto reg(size_t i) noexcept -> Reg& {
+  /// Vector register at index.
+  auto reg(this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < RegCount, "Register index is out of range!");
-    return regs_[i];
+    return std::forward_like<decltype(self)>(self.regs_[i]);
   }
-  auto reg(size_t i) const noexcept -> const Reg& {
-    TIT_ASSERT(i < RegCount, "Register index is out of range!");
-    return regs_[i];
-  }
-  /// @}
 
   // NOLINTEND(*-type-union-access)
 

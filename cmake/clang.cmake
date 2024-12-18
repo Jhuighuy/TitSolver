@@ -32,6 +32,8 @@ set(
   -march=native
   # Position independent code.
   -fPIC
+  # Bug in LLVM.
+  -fno-builtin-std-forward_like
 )
 
 # When compiling with GCC, force LLVM tools to use libstdc++.
