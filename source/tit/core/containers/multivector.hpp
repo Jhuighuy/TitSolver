@@ -66,19 +66,11 @@ public:
   }
 
   /// Bucket of values at index.
-  /// @{
-  constexpr auto operator[](size_t index) noexcept -> std::span<Val> {
-    TIT_ASSERT(index < size(), "Bucket index is out of range!");
-    return {vals_.begin() + val_ranges_[index],
-            vals_.begin() + val_ranges_[index + 1]};
+  constexpr auto operator[](this auto& self, size_t index) noexcept {
+    TIT_ASSERT(index < self.size(), "Bucket index is out of range!");
+    return std::span{self.vals_.begin() + self.val_ranges_[index],
+                     self.vals_.begin() + self.val_ranges_[index + 1]};
   }
-  constexpr auto operator[](size_t index) const noexcept
-      -> std::span<const Val> {
-    TIT_ASSERT(index < size(), "Bucket index is out of range!");
-    return {vals_.begin() + val_ranges_[index],
-            vals_.begin() + val_ranges_[index + 1]};
-  }
-  /// @}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -95,14 +87,7 @@ public:
                                      std::ranges::range_reference_t<Bucket>>
   constexpr void append_bucket(Bucket&& bucket) {
     TIT_ASSUME_UNIVERSAL(Bucket, bucket);
-#ifndef __clang__
     std::ranges::copy(bucket, std::back_inserter(vals_));
-#else
-    /// @todo For some reason, Clang cannot properly optimize the above code.
-    const auto old_size = vals_.size();
-    vals_.resize(old_size + bucket.size());
-    std::ranges::copy(bucket, vals_.begin() + old_size);
-#endif
     val_ranges_.push_back(vals_.size());
   }
 
@@ -318,17 +303,11 @@ public:
   }
 
   /// Bucket of values at index.
-  /// @{
-  constexpr auto operator[](size_t index) noexcept -> std::span<Val> {
-    TIT_ASSERT(index < size(), "Bucket index is out of range!");
-    return std::span{buckets_[index]}.subspan(0, bucket_sizes_[index]);
+  constexpr auto operator[](this auto& self, size_t index) noexcept {
+    TIT_ASSERT(index < self.size(), "Bucket index is out of range!");
+    return std::span{self.buckets_[index]} //
+        .subspan(0, self.bucket_sizes_[index]);
   }
-  constexpr auto operator[](size_t index) const noexcept
-      -> std::span<const Val> {
-    TIT_ASSERT(index < size(), "Bucket index is out of range!");
-    return std::span{buckets_[index]}.subspan(0, bucket_sizes_[index]);
-  }
-  /// @}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

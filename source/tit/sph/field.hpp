@@ -176,16 +176,10 @@ public:
   /// @}
 
   /// Get the partition index at the specified level.
-  /// @{
-  constexpr auto operator[](size_t i) const noexcept -> PartIndex {
+  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
-    return vec_[i];
+    return std::forward_like<decltype(self)>(self.vec_[i]);
   }
-  constexpr auto operator[](size_t i) noexcept -> PartIndex& {
-    TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
-    return vec_[i];
-  }
-  /// @}
 
   /// Find the last assigned partition index.
   constexpr auto last() const noexcept -> PartIndex {
