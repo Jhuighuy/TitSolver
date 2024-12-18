@@ -4,68 +4,40 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 BasedOnStyle: LLVM
-AccessModifierOffset: -2
-EmptyLineAfterAccessModifier: Always
-EmptyLineBeforeAccessModifier: LogicalBlock
+
 AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: None
-AlignConsecutiveShortCaseStatements:
-  Enabled: true
 AlignOperands: Align
-AllowAllArgumentsOnNextLine: false
-AllowAllConstructorInitializersOnNextLine: false
-AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: Empty
-AllowShortCaseLabelsOnASingleLine: true
+AllowAllArgumentsOnNextLine: No
+AlignConsecutiveShortCaseStatements:
+  Enabled: Yes
+AllowAllConstructorInitializersOnNextLine: No
+AllowAllParametersOfDeclarationOnNextLine: No
+AllowShortCaseLabelsOnASingleLine: Yes
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: AllIfsAndElse
-AllowShortLambdasOnASingleLine: All
-AllowShortLoopsOnASingleLine: true
-AlwaysBreakAfterReturnType: None
+AllowShortLoopsOnASingleLine: Yes
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: No
 BinPackParameters: No
 BreakAfterAttributes: Leave
-BreakBeforeBraces: Attach
-BreakBeforeBinaryOperators: None
-BreakBeforeTernaryOperators: false
-BreakConstructorInitializers: BeforeColon
+BreakBeforeTernaryOperators: No
 BreakInheritanceList: AfterColon
-ColumnLimit: 80
-CompactNamespaces: false
-ContinuationIndentWidth: 4
-IncludeIsMainRegex: "_never_matches_"
-IndentCaseLabels: true
-IndentRequiresClause: true
-PenaltyReturnTypeOnItsOwnLine: 1000 # Never.
-RequiresClausePosition: OwnLine
-IndentWidth: 2
-KeepEmptyLinesAtTheStartOfBlocks: false
+CompactNamespaces: No
+EmptyLineAfterAccessModifier: Always
+EmptyLineBeforeAccessModifier: LogicalBlock
+IncludeIsMainRegex: "__NEVER__"
+IndentCaseLabels: Yes
+IndentRequiresClause: Yes
+KeepEmptyLinesAtTheStartOfBlocks: No
 MaxEmptyLinesToKeep: 1
-NamespaceIndentation: None
+PenaltyReturnTypeOnItsOwnLine: 1000 # Never.
 PointerAlignment: Left
 QualifierAlignment: Left
-ReflowComments: true
-SpaceAfterCStyleCast: true
-SpaceAfterLogicalNot: false
-SpaceAfterTemplateKeyword: false
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeCpp11BracedList: false
-SpaceBeforeCtorInitializerColon: true
-SpaceBeforeInheritanceColon: true
+ReflowComments: Yes
+RequiresClausePosition: OwnLine
+SpaceAfterCStyleCast: Yes # Needed for __VA_OPT__ to work.
+SpaceAfterTemplateKeyword: No
 SpaceBeforeParens: Custom
 SpaceBeforeParensOptions:
-  AfterControlStatements: true
-  AfterRequiresInClause: true
-  AfterRequiresInExpression: false
-SpaceBeforeRangeBasedForLoopColon: true
-SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 1
-SpacesInAngles: false
-SpacesInCStyleCastParentheses: false
-SpacesInContainerLiterals: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-TabWidth: 2
-UseTab: Never
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  AfterRequiresInClause: Yes
+  AfterRequiresInExpression: No
