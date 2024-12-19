@@ -64,7 +64,7 @@ function(add_wasm_binary TARGET NATIVE_TARGET_OR_ALIAS)
     # Optimization level.
     -O3
     # Disable exceptions, as they make the code significantly slower.
-    -fno-exceptions
+    #-fno-exceptions
   )
 
   # Link options for the emcc.
