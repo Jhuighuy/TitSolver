@@ -23,8 +23,12 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct a dual number.
-  constexpr explicit Dual(Num val = {}, Deriv deriv = {}) noexcept
+  /// @{
+  constexpr Dual() = default;
+  constexpr explicit Dual(Num val) noexcept : val_{std::move(val)} {}
+  constexpr Dual(Num val, Deriv deriv) noexcept
       : val_{std::move(val)}, deriv_{std::move(deriv)} {}
+  /// @}
 
   /// Get the value part.
   constexpr auto val() const noexcept -> const Num& {
@@ -135,14 +139,13 @@ public:
 
 private:
 
-  Num val_;
-  Deriv deriv_;
+  Num val_{0};
+  Deriv deriv_{0};
 
 }; // class Dual
 
 template<std::floating_point Float, class Deriv>
-constexpr auto tiny_number_v<Dual<Float, Deriv>> =
-    Dual{tiny_number_v<Float>, Deriv{}};
+constexpr auto tiny_v<Dual<Float, Deriv>> = Dual{tiny_v<Float>, Deriv{}};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -150,13 +153,6 @@ constexpr auto tiny_number_v<Dual<Float, Deriv>> =
 template<class Num, class Deriv>
 constexpr auto sqrt(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
   return Dual{sqrt(f.val()), f.deriv() / (Num{2.0} * sqrt(f.val()))};
-}
-
-/// Reciprocal square root of a dual number.
-template<class Num, class Deriv>
-constexpr auto rsqrt(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
-  return Dual{rsqrt(f.val()),
-              -f.deriv() / (Num{2.0} * rsqrt(f.val()) * pow2(f.val()))};
 }
 
 /// Raise a dual number to a power.
@@ -187,20 +183,6 @@ constexpr auto exp(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
 template<class Num, class Deriv>
 constexpr auto log(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
   return Dual{log(f.val()), f.deriv() / f.val()};
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Sine of a dual number.
-template<class Num, class Deriv>
-constexpr auto sin(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
-  return Dual{sin(f.val()), cos(f.val()) * f.deriv()};
-}
-
-/// Cosine of a dual number.
-template<class Num, class Deriv>
-constexpr auto cos(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
-  return Dual{cos(f.val()), -sin(f.val()) * f.deriv()};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -85,18 +85,18 @@ function(add_wasm_binary TARGET NATIVE_TARGET_OR_ALIAS)
     -sFULL_ES3=1
     # A few libraries.
     -lembind
-    -sUSE_GLFW=3
     -lglfw
+    -sUSE_GLFW=3
   )
 
   # Get the binary, source directory and sources of the target.
-  get_target_property(TARGET_BINARY_DIR ${NATIVE_TARGET} BINARY_DIR)
-  get_target_property(TARGET_SOURCE_DIR ${NATIVE_TARGET} SOURCE_DIR)
   get_target_property(TARGET_SOURCES ${NATIVE_TARGET} SOURCES)
   if(NOT TARGET_SOURCES)
     message(WARNING "emcc: no sources found for target ${NATIVE_TARGET}!")
     return()
   endif()
+  get_target_property(TARGET_SOURCE_DIR ${NATIVE_TARGET} SOURCE_DIR)
+  get_target_property(TARGET_BINARY_DIR ${NATIVE_TARGET} BINARY_DIR)
 
   # Loop through the target sources and call emcc.
   set(WASM_OBJECT_FILES)

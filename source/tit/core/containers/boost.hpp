@@ -16,33 +16,33 @@
 
 namespace tit {
 
+namespace bc = boost::container;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Boost small vector.
 template<class T, size_t N>
-using SmallVector = boost::container::small_vector<T, N>;
+using SmallVector = bc::small_vector<T, N>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Boost inplace vector.
 template<class T, size_t N>
-using InplaceVector = boost::container::static_vector<T, N>;
+using InplaceVector = bc::static_vector<T, N>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Boost flat map.
-template<class Key, class T, class Compare = std::less<Key>>
-using FlatMap = boost::container::flat_map<Key, T, Compare>;
+template<class K, class V, class Compare = std::less<K>>
+using FlatMap = bc::flat_map<K, V, Compare>;
 
 /// Boost small flat map.
-template<class Key, class T, size_t N, class Compare = std::less<Key>>
-using SmallFlatMap = boost::container::
-    flat_map<Key, T, Compare, SmallVector<std::pair<Key, T>, N>>;
+template<class K, class V, size_t N, class C = std::less<K>>
+using SmallFlatMap = bc::flat_map<K, V, C, SmallVector<std::pair<K, V>, N>>;
 
 /// Boost inplace flat map.
-template<class Key, class T, size_t N, class Compare = std::less<Key>>
-using InplaceFlatMap = boost::container::
-    flat_map<Key, T, Compare, InplaceVector<std::pair<Key, T>, N>>;
+template<class K, class V, size_t N, class C = std::less<K>>
+using InplaceFlatMap = bc::flat_map<K, V, C, InplaceVector<std::pair<K, V>, N>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

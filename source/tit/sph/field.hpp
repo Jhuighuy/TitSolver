@@ -13,8 +13,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta/set.hpp"
-#include "tit/core/meta/type.hpp"
+#include "tit/core/meta.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -177,16 +176,10 @@ public:
   /// @}
 
   /// Get the partition index at the specified level.
-  /// @{
-  constexpr auto operator[](size_t i) const noexcept -> PartIndex {
+  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
-    return vec_[i];
+    return std::forward_like<decltype(self)>(self.vec_[i]);
   }
-  constexpr auto operator[](size_t i) noexcept -> PartIndex& {
-    TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
-    return vec_[i];
-  }
-  /// @}
 
   /// Find the last assigned partition index.
   constexpr auto last() const noexcept -> PartIndex {
@@ -200,6 +193,7 @@ public:
   static constexpr auto common(const PartVec& a, const PartVec& b) noexcept
       -> PartIndex {
     const auto level = find_true(a.vec_ == b.vec_);
+    TIT_ASSERT(level >= 0, "No common partition index!");
     return a[level];
   }
 

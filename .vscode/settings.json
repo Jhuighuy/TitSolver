@@ -9,6 +9,9 @@
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
@@ -56,7 +59,6 @@
     "*.ipp": "cpp",
     "*.tcc": "cpp",
     "**/_templates/**.html": "jinja-html",
-    "**/.vscode/c_cpp_properties.json": "jsonc",
     "__availability": "cpp",
     "__bit_reference": "cpp",
     "__bits": "cpp",
@@ -133,8 +135,8 @@
     "list": "cpp",
     "locale": "cpp",
     "map": "cpp",
-    "memory": "cpp",
     "memory_resource": "cpp",
+    "memory": "cpp",
     "mutex": "cpp",
     "new": "cpp",
     "numbers": "cpp",
@@ -158,8 +160,8 @@
     "stdfloat": "cpp",
     "stop_token": "cpp",
     "streambuf": "cpp",
-    "string": "cpp",
     "string_view": "cpp",
+    "string": "cpp",
     "strstream": "cpp",
     "system_error": "cpp",
     "thread": "cpp",

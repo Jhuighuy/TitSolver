@@ -26,7 +26,6 @@ release = "0.1"
 # General configuration.
 #
 
-extensions = []
 exclude_patterns = ["Thumbs.db", ".DS_Store", "README.md"]
 templates_path = ["_templates"]
 numfig = True

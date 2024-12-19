@@ -25,12 +25,10 @@ TEST_CASE("Mat::jacobi") {
   }
   SUBCASE("2x2") {
     SUBCASE("indefinite") {
-      // clang-format off
       const Mat A{
-          { 1.0, -2.0},
-          {-2.0,  1.0},
+          {1.0, -2.0},
+          {-2.0, 1.0},
       };
-      // clang-format on
       const auto eig = jacobi(A);
       REQUIRE(eig);
       const auto& [V, d] = *eig;

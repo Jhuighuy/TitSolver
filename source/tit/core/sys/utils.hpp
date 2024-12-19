@@ -8,11 +8,13 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 
 #include <unistd.h>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/str_utils.hpp"
 
 namespace tit {
 
@@ -31,14 +33,12 @@ enum class ExitCode : uint8_t {
 };
 
 /// Exit from the current process.
-[[noreturn]]
-void exit(ExitCode exit_code) noexcept;
+[[noreturn]] void exit(ExitCode exit_code) noexcept;
 
 /// Fast-exit from the current process.
 ///
 /// @note No at-exit callbacks are triggered, except for coverage report.
-[[noreturn]]
-void fast_exit(ExitCode exit_code) noexcept;
+[[noreturn]] void fast_exit(ExitCode exit_code) noexcept;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,6 +55,19 @@ enum class TTY : uint8_t {
 
 /// Query terminal width.
 auto tty_width(TTY tty) -> std::optional<size_t>;
+
+/// Get the value of an environment variable.
+/// @{
+auto get_env(const char* name) noexcept -> std::optional<std::string_view>;
+template<class Val>
+auto get_env(const char* name) -> std::optional<Val> {
+  return get_env(name).and_then(str_to<Val>);
+}
+template<class Val>
+auto get_env(const char* name, Val fallback) -> Val {
+  return get_env<Val>(name).value_or(fallback);
+}
+/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

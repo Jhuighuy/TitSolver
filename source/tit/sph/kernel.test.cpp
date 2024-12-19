@@ -6,7 +6,6 @@
 #include <numbers>
 
 #include "tit/core/math.hpp"
-#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/numbers/dual.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"

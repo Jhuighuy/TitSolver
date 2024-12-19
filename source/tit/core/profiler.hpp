@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <mutex>
 #include <string_view>
 
 #include "tit/core/str_utils.hpp"
@@ -33,7 +32,6 @@ private:
 
   static void report_();
 
-  static std::mutex sections_mutex_;
   static StrHashMap<Stopwatch> sections_;
 
 }; // class Profiler

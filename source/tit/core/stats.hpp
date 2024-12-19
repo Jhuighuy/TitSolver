@@ -9,7 +9,6 @@
 #include <format>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -45,16 +44,15 @@ public:
 
 /// Valid underlying types for statistics variables.
 template<class Val>
-concept stattable = //
-    std::is_object_v<Val> && std::semiregular<Val> &&
-    std::formattable<Val, char> && requires(Val val, size_t n) {
-      // Can compute the average value.
-      { val += val } -> std::convertible_to<Val&>;
-      { val / n } -> std::convertible_to<Val>;
-      // Can compute the minimum and maximum values.
-      { std::min(val, val) } -> std::convertible_to<Val>;
-      { std::max(val, val) } -> std::convertible_to<Val>;
-    };
+concept stattable = std::is_object_v<Val> && std::semiregular<Val> &&
+                    std::formattable<Val, char> && requires(Val val, size_t n) {
+                      // Can compute the average value.
+                      { val += val } -> std::convertible_to<Val&>;
+                      { val / n } -> std::convertible_to<Val>;
+                      // Can compute the minimum and maximum values.
+                      { std::min(val, val) } -> std::convertible_to<Val>;
+                      { std::max(val, val) } -> std::convertible_to<Val>;
+                    };
 
 /// Statistics variable.
 template<class Val>
@@ -159,13 +157,12 @@ public:
   template<class Type>
     requires std::is_object_v<Type>
   static auto var(std::string_view var_name) -> StatsVar<Type>& {
-    const std::scoped_lock lock{vars_mutex_};
     /// @todo In C++26 there would be no need for `std::string{...}`.
     auto& var = vars_[std::string{var_name}];
-    if (!var) var = std::make_unique<StatsVar<Type>>();
-    TIT_ASSERT(instance_of<StatsVar<Type>>(*var.get()),
-               "Variable was already initialized with a different type!");
-    return static_cast<StatsVar<Type>&>(*var.get());
+    if (var == nullptr) var = std::make_unique<StatsVar<Type>>();
+    auto* const result = dynamic_cast<StatsVar<Type>*>(var.get());
+    TIT_ASSERT(result != nullptr, "Type mismatch!");
+    return *result;
   }
 
   /// Enable statistics. Report will be printed at exit.
@@ -181,7 +178,6 @@ private:
   static void report_();
 
   static bool enabled_;
-  static std::mutex vars_mutex_;
   static StrHashMap<std::unique_ptr<BaseStatsVar>> vars_;
 
 }; // class Stats
