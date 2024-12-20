@@ -10,6 +10,9 @@
 #include <crow/http_request.h>
 #include <crow/http_response.h>
 
+#include <Python.h>
+
+#include "cpython/initconfig.h"
 #include "tit/core/main_func.hpp"
 #include "tit/core/sys/utils.hpp"
 
@@ -21,6 +24,23 @@ namespace {
 auto run_backend(CmdArgs /*args*/) -> int {
   const auto exe_dir = exe_path().parent_path();
   const auto root_dir = exe_dir.parent_path();
+
+  PyConfig config;
+  config.verbose = 1;
+  PyConfig_InitIsolatedConfig(&config);
+  PyConfig_SetString(&config, &config.program_name, L"tit_backend");
+  const auto python_home = root_dir / "python";
+  PyConfig_SetBytesString(&config, &config.home, python_home.c_str());
+
+  auto status = Py_InitializeFromConfig(&config);
+  if (PyStatus_IsError(status)) {
+    std::cerr << "Failed to initialize Python interpreter! " << status.func
+              << " " << status.err_msg << std::endl;
+    return 1;
+  }
+
+  // Print the path to the `collections` module.
+  PyRun_SimpleString("import numpy; print(numpy.__file__)");
 
   crow::SimpleApp app;
   CROW_ROUTE(app, "/")
@@ -41,6 +61,7 @@ auto run_backend(CmdArgs /*args*/) -> int {
 
   app.port(18080).run();
 
+  Py_Finalize();
   return 0;
 }
 
