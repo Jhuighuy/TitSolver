@@ -3,9 +3,17 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("test_driver")
-add_subdirectory("tit")
-add_subdirectory("titparaviewplugin")
-add_subdirectory("titwcsph")
+find_program(COVERAGE_PY_EXE NAMES "coverage")
+
+add_tit_test(
+  NAME "titparaviewplugin/export_csv"
+  INPUT_FILES "input.ttdb"
+  MATCH_FILES "output.csv.checksum"
+  COMMAND
+    "${COVERAGE_PY_EXE}"
+    run
+    "--data-file=${CMAKE_SOURCE_DIR}/.coverage"
+    "${CMAKE_SOURCE_DIR}/output/TIT_ROOT/paraview_plugin/titdata.py"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
