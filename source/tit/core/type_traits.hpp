@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <functional>
 #include <span>
 #include <tuple>
 #include <type_traits>
@@ -39,6 +40,12 @@ concept contiguous_fixed_size_range =
 template<contiguous_fixed_size_range Range>
 inline constexpr auto range_fixed_size_v =
     decltype(std::span{std::declval<Range&>()})::extent;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+template<class T, class U>
+concept different_from =
+    !std::same_as<std::remove_cv_t<T>, std::remove_cv_t<U>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -80,6 +87,15 @@ concept tuple_like = !std::is_reference_v<Type> && requires(Type t) {
 } && []<size_t... I>(std::index_sequence<I...>) {
   return (impl::has_tuple_element<Type, I> && ...);
 }(std::make_index_sequence<std::tuple_size_v<Type>>());
+
+/// Tuple-like type.
+template<class Tuple, class... Items>
+concept tuple_like2 = requires(Tuple& tuple, std::function<void(Items...)> f) {
+  {
+    std::tuple_size_v<std::remove_cvref_t<Tuple>>
+  } -> std::convertible_to<size_t>;
+  { std::apply(f, tuple) } -> std::same_as<void>;
+};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
