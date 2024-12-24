@@ -35,6 +35,10 @@ set(
   # Bug in LLVM.
   -fno-builtin-std-forward_like
 )
+if(APPLE)
+  # Set the minimum macOS version to 15.20.
+  list(APPEND CLANG_COMPILE_OPTIONS -mmacosx-version-min=15.20)
+endif()
 
 # When compiling with GCC, force LLVM tools to use libstdc++.
 #

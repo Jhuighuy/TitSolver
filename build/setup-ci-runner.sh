@@ -22,6 +22,12 @@ enforce-ci() {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 setup-macos() {
+  # Select the correct Xcode version.
+  sudo xcode-select -s /Library/Developer/CommandLineTools
+  # sudo xcode-select -s /Applications/Xcode_16.2.app
+
+  # Install Homebrew packages.
+  #
   # Upon installation, Homebrew will automatically update itself and upgrade
   # all installed packages that depend on those we are installing or upgrading.
   # The below variables will prevent Homebrew from doing this.
@@ -31,6 +37,7 @@ setup-macos() {
   brew install -q        \
     automake             \
     cmake                \
+    codespell            \
     diffutils            \
     "gcc@$GCC_VERSION"   \
     gnu-sed              \
@@ -41,10 +48,14 @@ setup-macos() {
     pnpm                 \
     sphinx-doc           \
     || true # Linking may fail if the package is already installed.
+
+  # Add LLVM tools to the path and create a versioned symlink for clang++.
   local LLVM_PATH
   LLVM_PATH="$(brew --prefix "llvm@$LLVM_VERSION")/bin"
   ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
   echo "$LLVM_PATH" >> "$GITHUB_PATH"
+
+  # Add Sphinx to the path.
   local SPHINX_PATH
   SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
   echo "$SPHINX_PATH" >> "$GITHUB_PATH"
@@ -53,6 +64,7 @@ setup-macos() {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 setup-ubuntu() {
+  # Install packages.
   sudo apt -qq update
   wget https://apt.llvm.org/llvm.sh
   chmod +x llvm.sh
@@ -65,18 +77,19 @@ setup-ubuntu() {
     nodejs                     \
     npm                        \
     sphinx-doc
-  sudo npm install -g pnpm
-}
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-install-python-tools() {
+  # Some packages are installed via pip.
   export PIP_BREAK_SYSTEM_PACKAGES=1
   pip3 install --upgrade --user \
     codespell                   \
     gcovr                       \
     sphinx
+
+  # Some packages are installed via npm.
+  sudo npm install -g pnpm
 }
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 install-vcpkg() {
   export VCPKG_ROOT="$HOME/vcpkg"
@@ -112,7 +125,6 @@ setup-ci() {
   fi
 
   # Install common dependencies.
-  install-python-tools
   install-vcpkg
   install-emsdk
 }

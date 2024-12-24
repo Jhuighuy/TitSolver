@@ -40,7 +40,7 @@ set(
   -Wshadow
   # Potential arithmetic overflows during shifts.
   -Wshift-overflow
-  # Do not warn about potentially changes in ABI.
+  # Do not warn about potential ABI changes.
   -Wno-psabi
 )
 
@@ -56,14 +56,18 @@ set(
 )
 if(APPLE)
   # Set the minimum macOS version to 15.20.
-  list(APPEND GNU_COMPILE_OPTIONS "-mmacosx-version-min=15.20")
+  list(APPEND GNU_COMPILE_OPTIONS -mmacosx-version-min=15.20)
 endif()
 
 # Define common link options.
 set(GNU_LINK_OPTIONS ${GNU_COMPILE_OPTIONS})
 if(APPLE)
-  # Do not warn about duplicate libraries.
-  list(APPEND GNU_LINK_OPTIONS -Wl,-no_warn_duplicate_libraries)
+  list(
+    APPEND
+    GNU_LINK_OPTIONS
+    # Do not warn about duplicate libraries.
+    -Wl,-no_warn_duplicate_libraries
+  )
 endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
