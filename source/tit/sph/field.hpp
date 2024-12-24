@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -103,7 +104,7 @@ concept field_set = impl::is_field_set_v<FieldSet>;
   public:                                                                      \
                                                                                \
     /** Field name. */                                                         \
-    static constexpr const char* field_name = #name;                           \
+    static constexpr std::string_view field_name = #name;                      \
                                                                                \
     /** Field type. */                                                         \
     template<class Real, size_t Dim>                                           \

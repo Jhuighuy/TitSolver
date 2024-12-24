@@ -17,6 +17,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/str_utils.hpp"
 #include "tit/core/stream.hpp"
 
 struct sqlite3;
@@ -48,7 +49,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Execute a SQL statement.
-  void execute(const char* sql) const;
+  void execute(CStrView sql) const;
 
   /// Get the last insert row ID.
   auto last_insert_row_id() const -> RowID;
@@ -247,8 +248,8 @@ public:
 
   /// Open a blob from a database.
   BlobReader(const Database& db,
-             const char* table_name,
-             const char* column_name,
+             CStrView table_name,
+             CStrView column_name,
              RowID row_id);
 
   /// SQLite blob object.
@@ -272,8 +273,8 @@ private:
 
 /// Make a blob reader.
 constexpr auto make_blob_reader(const Database& db,
-                                const char* table_name,
-                                const char* column_name,
+                                CStrView table_name,
+                                CStrView column_name,
                                 RowID row_id) -> InputStreamPtr<byte_t> {
   return std::make_unique<BlobReader>(db, table_name, column_name, row_id);
 }

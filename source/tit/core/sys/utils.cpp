@@ -25,6 +25,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/str_utils.hpp"
 #include "tit/core/sys/utils.hpp"
 
 #ifdef TIT_HAVE_GCOV
@@ -69,9 +70,8 @@ auto exe_path() -> std::filesystem::path {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto get_env(const char* name) noexcept -> std::optional<std::string_view> {
-  TIT_ASSERT(name != nullptr, "Environment variable name must not be null!");
-  const auto* const value = std::getenv(name); // NOLINT(*-mt-unsafe)
+auto get_env(CStrView name) noexcept -> std::optional<std::string_view> {
+  const auto* const value = std::getenv(name.c_str()); // NOLINT(*-mt-unsafe)
   if (value == nullptr) return std::nullopt;
   return std::string_view{value};
 }
@@ -94,14 +94,14 @@ auto tty_width(TTY tty) -> std::optional<size_t> {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto try_demangle(const char* mangled_name) -> std::optional<std::string> {
-  const boost::core::scoped_demangled_name demangled_name{mangled_name};
+auto try_demangle(CStrView mangled_name) -> std::optional<std::string> {
+  const boost::core::scoped_demangled_name demangled_name{mangled_name.c_str()};
   if (const auto* p = demangled_name.get(); p != nullptr) return p;
   return std::nullopt;
 }
 
-auto maybe_demangle(const char* mangled_name) -> std::string {
-  return try_demangle(mangled_name).value_or(mangled_name);
+auto maybe_demangle(CStrView mangled_name) -> std::string {
+  return try_demangle(mangled_name).value_or(mangled_name.c_str());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

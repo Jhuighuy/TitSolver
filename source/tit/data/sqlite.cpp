@@ -19,6 +19,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/log.hpp"
+#include "tit/core/str_utils.hpp"
 #include "tit/core/utils.hpp"
 
 #include "tit/data/sqlite.hpp"
@@ -30,10 +31,10 @@ namespace tit::data::sqlite {
 namespace {
 
 auto error_message(int status, sqlite3* db = nullptr) -> std::string {
-  const char* error_message = nullptr;
+  CStrView error_message;
   if (db != nullptr) error_message = sqlite3_errmsg(db);
   if (error_message == nullptr) error_message = sqlite3_errstr(status);
-  return error_message;
+  return std::string{error_message};
 }
 
 } // namespace
@@ -80,12 +81,10 @@ auto Database::path() const -> std::filesystem::path {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void Database::execute(const char* sql) const {
-  TIT_ASSERT(sql != nullptr, "SQL statement is null!");
-
+void Database::execute(CStrView sql) const {
   char* error_message = nullptr;
   const auto status = sqlite3_exec(base(),
-                                   sql,
+                                   sql.c_str(),
                                    /*callback=*/nullptr,
                                    /*callback_arg=*/nullptr,
                                    &error_message);
@@ -345,18 +344,15 @@ auto Statement::column_blob_(size_t index) const -> BlobView {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 BlobReader::BlobReader(const Database& db,
-                       const char* table_name,
-                       const char* column_name,
+                       CStrView table_name,
+                       CStrView column_name,
                        RowID row_id)
     : db_{&db} {
-  TIT_ASSERT(table_name != nullptr, "Table name is null!");
-  TIT_ASSERT(column_name != nullptr, "Column name is null!");
-
   sqlite3_blob* blob = nullptr;
   const auto status = sqlite3_blob_open(db.base(),
                                         "main",
-                                        table_name,
-                                        column_name,
+                                        table_name.c_str(),
+                                        column_name.c_str(),
                                         row_id,
                                         SQLITE_OPEN_READONLY,
                                         &blob);
