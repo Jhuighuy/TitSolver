@@ -58,13 +58,13 @@ auto tty_width(TTY tty) -> std::optional<size_t>;
 
 /// Get the value of an environment variable.
 /// @{
-auto get_env(const char* name) noexcept -> std::optional<std::string_view>;
+auto get_env(CStrView name) noexcept -> std::optional<std::string_view>;
 template<class Val>
-auto get_env(const char* name) -> std::optional<Val> {
+auto get_env(CStrView name) noexcept -> std::optional<Val> {
   return get_env(name).and_then(str_to<Val>);
 }
 template<class Val>
-auto get_env(const char* name, Val fallback) -> Val {
+auto get_env(CStrView name, Val fallback) noexcept -> Val {
   return get_env<Val>(name).value_or(fallback);
 }
 /// @}
@@ -73,7 +73,7 @@ auto get_env(const char* name, Val fallback) -> Val {
 
 /// Try to demangle a mangled name.
 /// @{
-auto try_demangle(const char* mangled_name) -> std::optional<std::string>;
+auto try_demangle(CStrView mangled_name) -> std::optional<std::string>;
 auto try_demangle_arg_type(const auto& arg) -> std::optional<std::string> {
   return try_demangle(typeid(arg).name());
 }
@@ -86,7 +86,7 @@ auto try_demangle_type() -> std::optional<std::string> {
 /// Try to demangle a mangled name.
 /// If demangling fails, return the original name.
 /// @{
-auto maybe_demangle(const char* mangled_name) -> std::string;
+auto maybe_demangle(CStrView mangled_name) -> std::string;
 auto maybe_demangle_arg_type(const auto& arg) -> std::string {
   return maybe_demangle(typeid(arg).name());
 }

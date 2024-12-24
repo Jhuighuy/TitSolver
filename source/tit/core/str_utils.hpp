@@ -9,6 +9,8 @@
 #include <cctype>
 #include <charconv>
 #include <concepts>
+#include <cstring>
+#include <format>
 #include <functional>
 #include <optional>
 #include <string>
@@ -18,8 +20,68 @@
 #include <unordered_set>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 
 namespace tit {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Zero-terminated string view.
+class CStrView final {
+public:
+
+  /// Construct a zero-terminated string view.
+  /// @{
+  constexpr CStrView() noexcept : str_{""} {}
+  constexpr explicit(false) CStrView(const char* str) noexcept
+      : str_{str != nullptr ? str : ""} {}
+  constexpr explicit(false) CStrView(const std::string& str) noexcept
+      : str_{str.c_str()} {}
+  /// @}
+
+  /// Cast to `std::string`.
+  constexpr explicit operator std::string() const {
+    return std::string{c_str()};
+  }
+
+  /// Cast to `std::string_view`.
+  constexpr explicit(false) operator std::string_view() const noexcept {
+    return std::string_view{c_str()};
+  }
+
+  /// Get the underlying string.
+  constexpr auto c_str() const noexcept -> const char* {
+    TIT_ASSERT(str_ != nullptr, "String is null!");
+    return str_;
+  }
+
+  /// Check if the string is empty.
+  constexpr auto empty() const noexcept -> bool {
+    return *c_str() == '\0';
+  }
+
+  /// Size of the string.
+  constexpr auto size() const noexcept -> size_t {
+    return std::strlen(c_str());
+  }
+
+  /// Get the character at the given index.
+  constexpr auto operator[](size_t i) const noexcept -> char {
+    TIT_ASSERT(i < size(), "Index is out of range!");
+    return c_str()[i]; // NOLINT(*-bounds-pointer-arithmetic)
+  }
+
+  /// Compare two strings by value.
+  friend constexpr auto operator==(CStrView lhs, CStrView rhs) noexcept
+      -> bool {
+    return std::strcmp(lhs.c_str(), rhs.c_str()) == 0;
+  }
+
+private:
+
+  const char* str_;
+
+}; // class CStrView
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -97,3 +159,13 @@ struct StrTo<bool> final {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
+
+// Formatter for `CStrView`.
+template<>
+struct std::formatter<tit::CStrView> : std::formatter<std::string_view> {
+  constexpr auto format(const tit::CStrView& str, auto& context) const {
+    return std::formatter<std::string_view>::format(str.c_str(), context);
+  }
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
