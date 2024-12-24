@@ -94,7 +94,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Build the multivector from a range of buckets.
-  template<par::basic_range Buckets>
+  template<par::parallelizable_range Buckets>
   void assign_buckets_par(Buckets&& buckets) {
     TIT_ASSUME_UNIVERSAL(Buckets, buckets);
 
@@ -164,7 +164,7 @@ public:
   ///
   /// @param count Amount of the value buckets to be added.
   /// @param pairs Range of the pairs of bucket indices and values.
-  template<par::basic_range Pairs>
+  template<par::parallelizable_range Pairs>
   constexpr void assign_pairs_par_tall(size_t count, Pairs&& pairs) {
     TIT_ASSUME_UNIVERSAL(Pairs, pairs);
 
@@ -201,7 +201,7 @@ public:
   ///
   /// @param count Amount of the value buckets to be added.
   /// @param pairs Range of the pairs of bucket indices and values.
-  template<par::range Pairs>
+  template<par::parallelizable_range Pairs>
   constexpr void assign_pairs_par_wide(size_t count, Pairs&& pairs) {
     TIT_ASSUME_UNIVERSAL(Pairs, pairs);
 
@@ -209,14 +209,13 @@ public:
     static Mdvector<size_t, 2> per_thread_ranges{};
     const auto num_threads = par::num_threads();
     per_thread_ranges.assign(num_threads, count + 1);
-    // Note: here we cannot use `std::views::keys` because
-    //       `par::static_for_each` requires either a sized random access range
-    //       or a join view over a sized random access range of ranges.
-    par::static_for_each(pairs, [count](size_t thread, const auto& pair) {
-      const auto index = std::get<0>(pair);
-      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      per_thread_ranges[thread, index] += 1;
-    });
+    par::deterministic_for_each(
+        pairs | std::views::keys,
+        [count](size_t index, size_t thread_index) {
+          TIT_ASSERT(index < count,
+                     "Index of the value is out of expected range!");
+          per_thread_ranges[thread_index, index] += 1;
+        });
 
     // Compute the bucket ranges from the bucket sizes.
     val_ranges_.clear(), val_ranges_.resize(count + 1);
@@ -231,13 +230,16 @@ public:
     // Place each value into position of the first element of it's index
     // range, then increment the position.
     vals_.resize(val_ranges_.back());
-    par::static_for_each(pairs, [count, this](size_t thread, const auto& pair) {
-      const auto& [index, value] = pair;
-      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      auto& position = per_thread_ranges[thread, index];
-      vals_[position] = value;
-      position += 1;
-    });
+    par::deterministic_for_each(
+        pairs,
+        [count, this](const auto& pair, size_t thread_index) {
+          const auto& [index, value] = pair;
+          TIT_ASSERT(index < count,
+                     "Index of the value is out of expected range!");
+          auto& position = per_thread_ranges[thread_index, index];
+          vals_[position] = value;
+          position += 1;
+        });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
