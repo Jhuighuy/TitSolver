@@ -10,9 +10,18 @@ add_tit_executable(
     bin
   SOURCES
     "backend.cpp"
+    "interpreter.cpp"
+    "interpreter.hpp"
   DEPENDS
     tit::core
     Crow::Crow
+    cxxopts::cxxopts
+    Python3::Python
 )
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+setup_python_requirements()
+install_python_stdlib(python)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
