@@ -9,6 +9,7 @@
 #include <cctype>
 #include <charconv>
 #include <concepts>
+#include <format>
 #include <functional>
 #include <optional>
 #include <string>
@@ -18,8 +19,30 @@
 #include <unordered_set>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 
 namespace tit {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Zero-terminated string view.
+class CStrView final : public std::string_view {
+public:
+
+  /// Construct a zero-terminated string view.
+  /// @{
+  constexpr CStrView(const std::string& str) noexcept : std::string_view{str} {}
+  constexpr CStrView(const char* str) noexcept : std::string_view{str} {
+    TIT_ASSERT(str != nullptr, "String is null!");
+  }
+  /// @}
+
+  /// Get the underlying zero-terminated string.
+  constexpr auto c_str() const noexcept -> const char* {
+    return data();
+  }
+
+}; // class CStrView
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -97,3 +120,13 @@ struct StrTo<bool> final {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
+
+// Formatter for `CStrView`.
+template<>
+struct std::formatter<tit::CStrView> : std::formatter<std::string_view> {
+  constexpr auto format(const tit::CStrView& str, auto& context) const {
+    return std::formatter<std::string_view>::format(str.c_str(), context);
+  }
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
