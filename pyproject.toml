@@ -1,0 +1,5 @@
+[tool.coverage.paths]
+source = [
+    "source/titparaviewplugin",
+    "output/TIT_ROOT/paraview_plugin",
+    ]
