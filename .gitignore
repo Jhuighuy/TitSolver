@@ -28,6 +28,9 @@
 !*.config.json
 !tsconfig*.json
 
+# Python configuration files.
+!/requirements.txt
+
 # Output.
 .cache/
 /output/

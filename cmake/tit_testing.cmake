@@ -77,12 +77,15 @@ function(add_tit_test)
   )
 
   # Set test environment.
-  if(TEST_ENVIRONMENT)
-    set_tests_properties(
-      "${TEST_NAME}"
-      PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}"
-    )
-  endif()
+  list(
+    APPEND
+    TEST_ENVIRONMENT
+    "PATH=${CMAKE_SOURCE_DIR}/output/TIT_ROOT/bin:$ENV{PATH}"
+  )
+  set_tests_properties(
+    "${TEST_NAME}"
+    PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}"
+  )
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -93,6 +93,13 @@ if(APPLE)
     # Do not warn about duplicate libraries.
     -Wl,-no_warn_duplicate_libraries
   )
+else()
+  list(
+    APPEND
+    CLANG_LINK_OPTIONS
+    # Allow shared libraries to resolve symbols at runtime.
+    -Wl,--export-dynamic
+  )
 endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

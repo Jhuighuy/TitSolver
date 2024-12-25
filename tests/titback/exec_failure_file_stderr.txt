@@ -1,0 +1,4 @@
+  File "invalid.py", line 1
+    invalid Python code
+            ^^^^^^
+SyntaxError: invalid syntax
