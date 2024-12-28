@@ -16,6 +16,7 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang)
 include(codespell)
+include(python)
 include(tit_target)
 include(tit_testing)
 
@@ -32,10 +33,19 @@ find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
-find_package(mimalloc CONFIG REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
+
+# Install the third-party Python packages.
+install_python(
+  DESTINATION
+    python
+  PACKAGES
+    "coverage[toml]"
+    "numpy"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -56,11 +66,12 @@ add_tit_library(
     Boost::container
     Boost::core
     Boost::stacktrace_addr2line
+    Crow::Crow
     doctest::doctest
     gcem
     hwy::hwy
     metis
-    mimalloc-static
+    Python3::Python
     TBB::tbb
     TBB::tbbmalloc
     unofficial::sqlite3::sqlite3

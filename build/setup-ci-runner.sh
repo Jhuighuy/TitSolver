@@ -35,6 +35,8 @@ setup-macos() {
   export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
   brew update -q
   brew install -q        \
+    autoconf             \
+    autoconf-archive     \
     automake             \
     cmake                \
     codespell            \
@@ -70,6 +72,9 @@ setup-ubuntu() {
   chmod +x llvm.sh
   sudo ./llvm.sh "$LLVM_VERSION"
   sudo apt -qq install         \
+    autoconf                   \
+    autoconf-archive           \
+    automake                   \
     "clang-$LLVM_VERSION"      \
     "clang-tidy-$LLVM_VERSION" \
     cmake                      \
@@ -82,6 +87,7 @@ setup-ubuntu() {
   export PIP_BREAK_SYSTEM_PACKAGES=1
   pip3 install --upgrade --user \
     codespell                   \
+    coverage                    \
     gcovr                       \
     sphinx
 

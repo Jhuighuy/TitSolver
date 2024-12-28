@@ -6,6 +6,7 @@
 #ifdef __APPLE__
 #include <array>
 #endif
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
@@ -25,6 +26,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/log.hpp"
 #include "tit/core/str_utils.hpp"
 #include "tit/core/sys/utils.hpp"
 
@@ -75,6 +77,20 @@ auto get_env(CStrView name) noexcept -> std::optional<std::string_view> {
   const auto* const value = std::getenv(name.c_str()); // NOLINT(*-mt-unsafe)
   if (value == nullptr) return std::nullopt;
   return std::string_view{value};
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// NOLINTNEXTLINE(*-exception-escape)
+void FileCloser::operator()(std::FILE* file) const noexcept {
+  if (file == nullptr) return; // NOLINTNEXTLINE(*-owning-memory)
+  if (std::fclose(file) != 0) TIT_ERROR("Failed to close file.");
+}
+
+auto open_file(CStrView file_name, CStrView mode) -> FilePtr {
+  FilePtr file{std::fopen(file_name.c_str(), mode.c_str())};
+  if (file == nullptr) TIT_THROW("Failed to open file '{}'.", file_name);
+  return file;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
