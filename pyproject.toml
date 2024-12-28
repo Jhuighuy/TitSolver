@@ -1,0 +1,39 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+# Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.black]
+line-length = 80
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.coverage.paths]
+pytit = ["source", "output/TIT_ROOT/python"]
+
+[tool.coverage.run]
+omit = ["*/tests/*", "*/test_output/*"]
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.flake8]
+ignore = [
+  "E704", # Multiple statements on one line (def).
+]
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.pylint.main]
+disable = [
+  "fixme",
+  "import-error",
+  "missing-module-docstring",
+  "missing-class-docstring",
+  "missing-function-docstring",
+  "no-member",
+  "no-name-in-module",
+  "too-few-public-methods",
+  "too-many-public-methods",
+]
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

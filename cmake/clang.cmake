@@ -37,6 +37,8 @@ set(
   -fvisibility=hidden
   # Bug in LLVM.
   -fno-builtin-std-forward_like
+  # Allow shared libraries to resolve symbols at runtime.
+  -Wl,--export-dynamic
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
