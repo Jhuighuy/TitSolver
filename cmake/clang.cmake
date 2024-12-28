@@ -36,6 +36,10 @@ set(
   # As of LLVM 20.1.3, builtin for `std::forward_like` is bogus.
   -fno-builtin-std-forward_like
 )
+if(NOT APPLE)
+  # Allow shared libraries to resolve symbols at runtime.
+  list(APPEND CLANG_COMPILE_OPTIONS -Wl,--export-dynamic)
+endif()
 
 # On macOS LLVM tools use libc++ by default. When compiling with GCC, I want
 # the LLVM tools to use libstdc++ (during analysis and especially for clangd).

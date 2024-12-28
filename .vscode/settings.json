@@ -176,5 +176,8 @@
     "variant": "cpp",
     "vector": "cpp",
     "version": "cpp"
-  }
+  },
+  "python.languageServer": "Pylance",
+  "python.analysis.extraPaths": ["${workspaceFolder}/source"],
+  "flake8.args": ["--config", "${workspaceFolder}/pyptoject.toml"]
 }

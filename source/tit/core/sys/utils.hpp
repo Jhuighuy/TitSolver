@@ -5,7 +5,9 @@
 
 #pragma once
 
+#include <cstdio>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -47,15 +49,6 @@ auto exe_path() -> std::filesystem::path;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Terminal stream type.
-enum class TTY : uint8_t {
-  Stdout = STDOUT_FILENO, ///< Standard output.
-  Stderr = STDERR_FILENO, ///< Standard error.
-};
-
-/// Query terminal width.
-auto tty_width(TTY tty) -> std::optional<size_t>;
-
 /// Get the value of an environment variable.
 /// @{
 auto get_env(CStrView name) noexcept -> std::optional<std::string_view>;
@@ -68,6 +61,30 @@ auto get_env(CStrView name, Val fallback) noexcept -> Val {
   return get_env<Val>(name).value_or(fallback);
 }
 /// @}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// File closer function.
+struct FileCloser final {
+  void operator()(std::FILE* file) const noexcept;
+};
+
+/// File pointer type.
+using FilePtr = std::unique_ptr<std::FILE, FileCloser>;
+
+/// Open a file.
+auto open_file(CStrView file_name, CStrView mode) -> FilePtr;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Terminal stream type.
+enum class TTY : uint8_t {
+  Stdout = STDOUT_FILENO, ///< Standard output.
+  Stderr = STDERR_FILENO, ///< Standard error.
+};
+
+/// Query terminal width.
+auto tty_width(TTY tty) -> std::optional<size_t>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

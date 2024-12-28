@@ -3,10 +3,11 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstring>
 #include <filesystem>
+#include <span>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include <crow/app.h>
 #include <crow/http_request.h>
@@ -19,9 +20,11 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/cmd.hpp"
 #include "tit/core/sys/utils.hpp"
-
 #include "tit/core/type_utils.hpp"
+
 #include "tit/data/storage.hpp"
+
+#include "tit/py/interpreter.hpp"
 
 namespace tit::back {
 namespace {
@@ -30,12 +33,35 @@ namespace json = nlohmann;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_backend(CmdArgs /*args*/) -> int {
+auto run_backend(CmdArgs args) -> int {
+  // Setup paths.
   const auto exe_dir = exe_path().parent_path();
   const auto root_dir = exe_dir.parent_path();
 
   // Load the storage.
   const data::DataStorage storage{"particles.ttdb"};
+
+  // Setup the Python interpreter.
+  /// @todo We should check for presence of the home directory.
+  const auto home_dir = root_dir / "python";
+  py::embed::Config config;
+  config.set_home(home_dir.c_str());
+  config.set_prog_name("titback");
+  config.set_cmd_args(args);
+  const py::embed::Interpreter interpreter{std::move(config)};
+  interpreter.append_path(home_dir.c_str());
+
+  // Execute the Python statement or file.
+  /// @todo Proper command line parsing.
+  const std::span argspan{args.argv(), static_cast<size_t>(args.argc())};
+  if (argspan.size() >= 3 && std::strcmp(argspan[1], "-c") == 0) {
+    const auto* const statement = argspan[2];
+    return interpreter.exec(statement) ? 0 : 1;
+  }
+  if (argspan.size() >= 2) {
+    const auto* const file_name = argspan[1];
+    return interpreter.exec_file(file_name) ? 0 : 1;
+  }
 
   crow::SimpleApp app;
 

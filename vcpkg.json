@@ -16,6 +16,7 @@
     "metis",
     "mimalloc",
     "nlohmann-json",
+    "python3",
     "sqlite3",
     "tbb",
     "zstd"

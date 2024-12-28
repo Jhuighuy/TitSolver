@@ -35,6 +35,7 @@ jobs:
       CXX_COVERAGE_REPORT_PATH_CODECOV: cxx_coverage_codecov.xml
       CXX_COVERAGE_REPORT_PATH_SONAR: cxx_coverage_sonar.xml
       JS_COVERAGE_REPORT_PATH: source/titfront/coverage/lcov.info
+      PYTHON_COVERAGE_REPORT_PATH: python_coverage.xml
       # To be set by the steps.
       VCPKG_ROOT:
       VCPKG_DEFAULT_BINARY_CACHE:
@@ -107,6 +108,10 @@ jobs:
             --xml "${{ env.CXX_COVERAGE_REPORT_PATH_CODECOV }}"                \
             --sonarqube "${{ env.CXX_COVERAGE_REPORT_PATH_SONAR }}"
 
+          # Generate Python coverage report.
+          find output/test_output -name ".coverage" | xargs coverage combine
+          coverage xml -o "${{ env.PYTHON_COVERAGE_REPORT_PATH }}"
+
       - name: Upload test output
         uses: actions/upload-artifact@v4
         if: always()
@@ -119,7 +124,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: Jhuighuy/TitSolver
-          files: ${{ env.CXX_COVERAGE_REPORT_PATH_CODECOV }},${{ env.JS_COVERAGE_REPORT_PATH }}
+          files: ${{ env.CXX_COVERAGE_REPORT_PATH_CODECOV }},${{ env.JS_COVERAGE_REPORT_PATH }},${{ env.PYTHON_COVERAGE_REPORT_PATH }}
           disable_search: true
 
       - name: Run Sonar Scanner
@@ -127,7 +132,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          sonar-scanner                                                                    \
-            --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
-            --define sonar.coverageReportPaths="${{ env.CXX_COVERAGE_REPORT_PATH_SONAR }}" \
-            --define sonar.javascript.lcov.reportPaths="${{ env.JS_COVERAGE_REPORT_PATH }}"
+          sonar-scanner                                                                     \
+            --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"  \
+            --define sonar.coverageReportPaths="${{ env.CXX_COVERAGE_REPORT_PATH_SONAR }}"  \
+            --define sonar.javascript.lcov.reportPaths="${{ env.JS_COVERAGE_REPORT_PATH }}" \
+            --define sonar.python.coverage.reportPaths="${{ env.PYTHON_COVERAGE_REPORT_PATH }}"

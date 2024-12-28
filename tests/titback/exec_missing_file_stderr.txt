@@ -1,0 +1,15 @@
+
+
+/Users/jhuighuy/TitSolver/source/tit/core/sys/utils.cpp:92:24: Terminating due to an unhandled exception.
+
+  throw tit::Exception(...);
+  ^~~~~~~~~~~~~~~~~~~~~~~~~~ Failed to open file 'does_not_exist.py'.
+
+
+Stack trace:
+
+  0 0x102e47688 tit::open_file(tit::CStrView, tit::CStrView)
+  1 0x102e48844 tit::py::Interpreter::exec_file(tit::CStrView) const
+  2 0x102e0bc08 tit::back::(anonymous namespace)::run_backend(std::span<char const*, 18446744073709551615ul>)
+  3 0x102e3bae0 tit::run_main(int, char**, std::move_only_function<int (std::span<char const*, 18446744073709551615ul>)>)
+  4 0x10305e6b8 main
