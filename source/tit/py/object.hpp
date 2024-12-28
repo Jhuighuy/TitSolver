@@ -10,6 +10,7 @@
 #include <bit>
 #include <concepts>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -572,6 +573,21 @@ struct Converter<Value> final {
   }
   static auto extract(const Object& obj) -> Value {
     return Value{Converter<std::string_view>::extract(obj)};
+  }
+};
+
+// Optional value converter.
+template<class T>
+struct Converter<std::optional<T>> final {
+  template<class Ref>
+  static auto object(Ref&& optional) -> Object {
+    return optional.has_value() ?
+               Converter<T>::object(std::forward<Ref>(optional).value()) :
+               None();
+  }
+  static auto extract(const Object& obj) -> std::optional<T> {
+    if (obj.is(None())) return std::nullopt;
+    return extract<T>(obj);
   }
 };
 
