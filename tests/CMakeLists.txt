@@ -3,8 +3,10 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+add_subdirectory("pytit")
 add_subdirectory("test_driver")
 add_subdirectory("tit")
+add_subdirectory("titback")
 add_subdirectory("titfront")
 add_subdirectory("titwcsph")
 

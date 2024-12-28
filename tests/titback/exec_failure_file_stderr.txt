@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "invalid.py", line 1, in <module>
+    import does_not_exist
+ModuleNotFoundError: No module named 'does_not_exist'

@@ -52,7 +52,6 @@ add_tit_library(
     "stats.hpp"
     "str_utils.hpp"
     "stream.hpp"
-    "sys/malloc.cpp"
     "sys/signal.cpp"
     "sys/signal.hpp"
     "sys/stacktrace.hpp"
@@ -70,7 +69,6 @@ add_tit_library(
     Boost::stacktrace_addr2line
     gcem
     hwy::hwy
-    mimalloc-static
     TBB::tbb
     TBB::tbbmalloc
 )

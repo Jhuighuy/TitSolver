@@ -3,18 +3,7 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
-  PUBLIC
-  NAME
-    titback
-  SOURCES
-    "backend.cpp"
-  DEPENDS
-    tit::core
-    tit::data
-    tit::py_embed
-    Crow::Crow
-    nlohmann_json::nlohmann_json
-)
+# TODO: Proper Python module building and installation.
+install(FILES "__init__.py" DESTINATION "python/pytit")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
