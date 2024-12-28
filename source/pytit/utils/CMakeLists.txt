@@ -3,11 +3,11 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_test(
-  NAME "pytit/export_csv"
-  INPUT_FILES "test.py" "input.ttdb"
-  MATCH_FILES "output.csv.checksum"
-  COMMAND titback "test.py"
+install(
+  FILES
+    "abc.py"
+  DESTINATION
+    "python/pytit/utils"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

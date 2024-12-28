@@ -60,8 +60,13 @@ public:
 
 /// Construct a tuple object a memory view and a capsule owning the data.
 inline auto make_memory(std::vector<byte_t> data) {
-  const std::span data_span{data};
-  return make_tuple(MemoryView{data_span}, Capsule{std::move(data)});
+  // const std::span data_span{data};
+  // return make_tuple(MemoryView{data_span}, Capsule{std::move(data)});
+  return make_tuple(
+      MemoryView{
+          *(new std::vector<byte_t>(std::move(data))),
+      },
+      None());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
