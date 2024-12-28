@@ -43,6 +43,7 @@ find_package(
     Development
     Development.SABIModule
 )
+find_package(nanobind REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
@@ -73,6 +74,8 @@ add_tit_library(
     hwy::hwy
     metis
     mimalloc-static
+    # TODO: should be `nanobind-static-abi3` once we upgrade to Python 3.12.
+    nanobind-static
     Python::Python
     TBB::tbb
     TBB::tbbmalloc

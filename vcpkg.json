@@ -17,6 +17,7 @@
     "highway",
     "metis",
     "mimalloc",
+    "nanobind",
     "python3",
     "sqlite3",
     "tbb",

@@ -3,13 +3,8 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# TODO: Proper Python module building and installation.
+# Copy Python files to the ParaView plugin directory.
 file(GLOB PYTHON_SOURCES "*.py")
-install(FILES ${PYTHON_SOURCES} DESTINATION "python/pytit")
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_subdirectory("data")
-add_subdirectory("paraview")
+install(FILES ${PYTHON_SOURCES} DESTINATION "python/pytit/paraview")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

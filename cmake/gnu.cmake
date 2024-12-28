@@ -40,6 +40,8 @@ set(
   -Wshadow
   # Potential arithmetic overflows during shifts.
   -Wshift-overflow
+  # No warnings for unknown warning options.
+  -Wno-pragmas
   # Do not warn about potential ABI changes.
   -Wno-psabi
 )
