@@ -28,6 +28,10 @@
 !*.config.json
 !tsconfig*.json
 
+# Python configuration files.
+!/pyproject.toml
+!/requirements.txt
+
 # Output.
 .cache/
 /output/
@@ -50,6 +54,7 @@
 
 # Python files.
 !*.py
+!*.pyi
 
 # Documentation files.
 !*.md

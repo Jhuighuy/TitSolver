@@ -1,0 +1,31 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part of the Tit Solver project, under the MIT License.
+# See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.black]
+line-length = 80
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.flake8]
+ignore = [
+  "E704", # Multiple statements on one line (def).
+]
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.pylint.main]
+disable = [
+  "fixme",
+  "import-error",
+  "missing-module-docstring",
+  "missing-class-docstring",
+  "missing-function-docstring",
+  "no-member",
+  "no-name-in-module",
+  "too-few-public-methods",
+  "too-many-public-methods",
+]
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
