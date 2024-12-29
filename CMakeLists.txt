@@ -16,6 +16,7 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang)
 include(codespell)
+include(python)
 include(tit_target)
 include(tit_testing)
 
@@ -28,11 +29,20 @@ find_package(
   COMPONENTS core container stacktrace_addr2line
 )
 find_package(Crow CONFIG REQUIRED)
+find_package(cxxopts CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
+find_package(
+  Python
+  REQUIRED
+  COMPONENTS
+    Interpreter
+    Development
+    Development.SABIModule
+)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
@@ -56,11 +66,14 @@ add_tit_library(
     Boost::container
     Boost::core
     Boost::stacktrace_addr2line
+    Crow::Crow
+    cxxopts::cxxopts
     doctest::doctest
     gcem
     hwy::hwy
     metis
     mimalloc-static
+    Python::Python
     TBB::tbb
     TBB::tbbmalloc
     unofficial::sqlite3::sqlite3

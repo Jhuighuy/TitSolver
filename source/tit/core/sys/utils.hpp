@@ -5,7 +5,9 @@
 
 #pragma once
 
+#include <cstdio>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -59,6 +61,19 @@ auto get_env(CStrView name, Val fallback) noexcept -> Val {
   return get_env<Val>(name).value_or(fallback);
 }
 /// @}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// File closer function.
+struct FileCloser final {
+  void operator()(std::FILE* file) const noexcept;
+};
+
+/// File pointer type.
+using FilePtr = std::unique_ptr<std::FILE, FileCloser>;
+
+/// Open a file.
+auto open_file(CStrView file_name, CStrView mode) -> FilePtr;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

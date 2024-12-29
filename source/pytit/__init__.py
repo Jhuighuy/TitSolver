@@ -3,8 +3,7 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# TODO: Proper Python module building and installation.
-file(GLOB PYTHON_SOURCES "*.py")
-install(FILES ${PYTHON_SOURCES} DESTINATION "python/pytit")
+import numpy
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# This is a test code, it should be removed in the future.
+print(numpy)

@@ -9,9 +9,18 @@ add_tit_executable(
     titback
   SOURCES
     "backend.cpp"
+    "interpreter.cpp"
+    "interpreter.hpp"
   DEPENDS
     tit::core
     Crow::Crow
+    cxxopts::cxxopts
+    Python::Python
 )
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+setup_python_requirements()
+install_python_stdlib(python)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

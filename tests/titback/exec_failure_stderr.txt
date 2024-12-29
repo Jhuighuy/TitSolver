@@ -1,0 +1,4 @@
+  File "<string>", line 1
+    invalid Python code
+            ^^^^^^
+SyntaxError: invalid syntax
