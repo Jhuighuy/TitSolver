@@ -9,6 +9,5 @@ add_subdirectory("geom")
 add_subdirectory("graph")
 add_subdirectory("sph")
 add_subdirectory("testing")
-add_subdirectory("view")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
