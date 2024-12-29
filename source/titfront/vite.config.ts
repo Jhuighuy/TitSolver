@@ -3,6 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+/// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -15,6 +16,11 @@ export default defineConfig({
   build: {
     outDir: process.env.PNPM_OUTPUT_DIR ?? "dist",
     emptyOutDir: true,
+  },
+  test: {
+    coverage: {
+      reporter: ["lcov"],
+    },
   },
 });
 

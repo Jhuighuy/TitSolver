@@ -1,3 +1,3 @@
 # `tests/titback`
 
-This directory contains tests for `titback` executable.
+This directory contains tests for the `titback` executable.

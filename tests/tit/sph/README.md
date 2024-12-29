@@ -1,3 +1,3 @@
 # `tests/tit/sph`
 
-This directory contains tests for `tit::sph` library.
+This directory contains tests for the `tit::sph` library.

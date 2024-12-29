@@ -5,7 +5,7 @@
 
 add_tit_webapp(
   NAME
-    front
+    titfront
   DESTINATION
     frontend
 )

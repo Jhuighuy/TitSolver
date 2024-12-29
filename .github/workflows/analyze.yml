@@ -31,8 +31,9 @@ jobs:
 
     env:
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
-      CODECOV_COVERAGE_REPORT_PATH: codecov_coverage.xml
-      SONAR_COVERAGE_REPORT_PATH: sonar_coverage.xml
+      CXX_COVERAGE_REPORT_PATH_CODECOV: cxx_coverage_codecov.xml
+      CXX_COVERAGE_REPORT_PATH_SONAR: cxx_coverage_sonar.xml
+      JS_COVERAGE_REPORT_PATH: source/titfront/coverage/lcov.info
       # To be set by the steps.
       VCPKG_ROOT:
       VCPKG_DEFAULT_BINARY_CACHE:
@@ -90,17 +91,18 @@ jobs:
 
       - name: Collect coverage reports
         run: |
+          # Generate C++ coverage report.
           GCOV_EXE="${{ matrix.compiler }}"
           GCOV_EXE="${GCOV_EXE/g++/gcov}"
-          gcovr                                               \
-            --gcov-executable "$GCOV_EXE"                     \
-            --exclude "output/.*"                             \
-            --exclude "tests/.*"                              \
-            --exclude ".*\.test.*"                            \
-            --exclude-unreachable-branches                    \
-            --exclude-throw-branches                          \
-            --xml "${{ env.CODECOV_COVERAGE_REPORT_PATH }}"   \
-            --sonarqube "${{ env.SONAR_COVERAGE_REPORT_PATH }}"
+          gcovr                                                 \
+            --gcov-executable "$GCOV_EXE"                       \
+            --exclude "output/.*"                               \
+            --exclude "tests/.*"                                \
+            --exclude ".*\.test.*"                              \
+            --exclude-unreachable-branches                      \
+            --exclude-throw-branches                            \
+            --xml "${{ env.CXX_COVERAGE_REPORT_PATH_CODECOV }}" \
+            --sonarqube "${{ env.CXX_COVERAGE_REPORT_PATH_SONAR }}"
 
       - name: Upload test output
         uses: actions/upload-artifact@v4
@@ -113,7 +115,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{ env.CODECOV_COVERAGE_REPORT_PATH }}
+          files: ${{ env.CXX_COVERAGE_REPORT_PATH_CODECOV }},${{ env.JS_COVERAGE_REPORT_PATH }}
           disable_search: true
 
       - name: Run Sonar Scanner
@@ -123,4 +125,5 @@ jobs:
         run: |
           sonar-scanner                                                                    \
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
-            --define sonar.coverageReportPaths="${{ env.SONAR_COVERAGE_REPORT_PATH }}"
+            --define sonar.coverageReportPaths="${{ env.CXX_COVERAGE_REPORT_PATH_SONAR }}" \
+            --define sonar.javascript.lcov.reportPaths="${{ env.JS_COVERAGE_REPORT_PATH }}"
