@@ -40,6 +40,8 @@ set(
   -Wshadow
   # Potential arithmetic overflows during shifts.
   -Wshift-overflow
+  # No warnings for unknown warning options.
+  -Wno-pragmas
   # Do not warn about potential ABI changes.
   -Wno-psabi
 )
@@ -67,6 +69,13 @@ if(APPLE)
     GNU_LINK_OPTIONS
     # Do not warn about duplicate libraries.
     -Wl,-no_warn_duplicate_libraries
+  )
+else()
+  list(
+    APPEND
+    GNU_LINK_OPTIONS
+    # Allow shared libraries to resolve symbols at runtime.
+    -Wl,--export-dynamic
   )
 endif()
 
