@@ -5,6 +5,7 @@
 
 add_subdirectory("test_driver")
 add_subdirectory("tit")
+add_subdirectory("titfront")
 add_subdirectory("titwcsph")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -10,6 +10,7 @@
 #include <crow/http_request.h>
 #include <crow/http_response.h>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/main_func.hpp"
 #include "tit/core/sys/utils.hpp"
 
@@ -39,7 +40,8 @@ auto run_backend(CmdArgs /*args*/) -> int {
     response.end();
   });
 
-  app.port(18080).run();
+  /// @todo Pass port as a command line argument.
+  app.port(get_env<uint16_t>("TIT_BACKEND_PORT", 18080)).run();
 
   return 0;
 }
