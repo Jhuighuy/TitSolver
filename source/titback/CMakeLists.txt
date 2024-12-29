@@ -4,10 +4,9 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
+  PUBLIC
   NAME
     titback
-  DESTINATION
-    bin
   SOURCES
     "backend.cpp"
   DEPENDS

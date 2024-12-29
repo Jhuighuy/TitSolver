@@ -3,9 +3,9 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_test_from_target(
-  tit::core_tests
+add_tit_test(
   NAME "tit/core/unit"
+  COMMAND "tit_core_tests"
   ENVIRONMENT
     "TEST_ZERO=0"
     "TEST_POS_INT=123"
@@ -22,9 +22,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_catch_ctrl_c_test
+add_tit_test(
   NAME "tit/core/catch_ctrl_c"
+  COMMAND "tit_core_catch_ctrl_c_test"
   MATCH_STDERR "catch_ctrl_c_stderr.txt"
 )
 
@@ -36,9 +36,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_catch_fatal_signal_test
+add_tit_test(
   NAME "tit/core/catch_fatal_signal"
+  COMMAND "tit_core_catch_fatal_signal_test"
   EXIT_CODE 1
   MATCH_STDERR "catch_fatal_signal_stderr.txt"
   FILTERS "s/SIG.+$/<SIGNAL>./g" # Simplify signal name.
@@ -53,9 +53,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_catch_std_exception_test
+add_tit_test(
   NAME "tit/core/catch_std_exception"
+  COMMAND "tit_core_catch_std_exception_test"
   EXIT_CODE 1
   MATCH_STDERR "catch_std_exception_stderr.txt"
   FILTERS "/basic_string/d" # Remove platform-specific error message.
@@ -70,9 +70,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_catch_terminate_test
+add_tit_test(
   NAME "tit/core/catch_terminate"
+  COMMAND "tit_core_catch_terminate_test"
   EXIT_CODE 1
   MATCH_STDERR "catch_terminate_stderr.txt"
   FILTERS "/0x*/d" # Remove everything related to the stack trace.
@@ -86,9 +86,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_catch_tit_exception_test
+add_tit_test(
   NAME "tit/core/catch_tit_exception"
+  COMMAND "tit_core_catch_tit_exception_test"
   EXIT_CODE 1
   MATCH_STDERR "catch_tit_exception_stderr.txt"
   FILTERS "/0x*/d" # Remove everything related to the stack trace.
@@ -102,9 +102,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_catch_unknown_exception_test
+add_tit_test(
   NAME "tit/core/catch_unknown_exception"
+  COMMAND "tit_core_catch_unknown_exception_test"
   EXIT_CODE 1
   MATCH_STDERR "catch_unknown_exception_stderr.txt"
   FILTERS "/0x*/d" # Remove everything related to the stack trace.
@@ -118,9 +118,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_failed_check_test
+add_tit_test(
   NAME "tit/core/failed_check"
+  COMMAND "tit_core_failed_check_test"
   EXIT_CODE 1
   MATCH_STDERR "failed_check_stderr.txt"
   FILTERS "/0x*/d" # Remove everything related to the stack trace.
@@ -134,9 +134,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_profiler_tests
+add_tit_test(
   NAME "tit/core/profiler"
+  COMMAND "tit_core_profiler_tests"
   MATCH_STDOUT "profiler_stdout.txt"
   FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
   ENVIRONMENT
@@ -152,9 +152,9 @@ add_tit_executable(
   DEPENDS tit::core
 )
 
-add_tit_test_from_target(
-  tit::core_stats_test
+add_tit_test(
   NAME "tit/core/stats"
+  COMMAND "tit_core_stats_test"
   MATCH_STDOUT "stats_stdout.txt"
   ENVIRONMENT
     "TIT_ENABLE_PROFILER=0"

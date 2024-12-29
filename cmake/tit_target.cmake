@@ -66,8 +66,8 @@ function(add_tit_library)
   # Parse and check arguments.
   cmake_parse_arguments(
     LIB
-    ""
-    "NAME;TYPE;DESTINATION"
+    "PUBLIC"
+    "NAME;TYPE"
     "SOURCES;DEPENDS"
     ${ARGN}
   )
@@ -77,7 +77,7 @@ function(add_tit_library)
 
   if(LIB_TYPE)
     # Library type is specified.
-    set(ALL_LIB_TYPES INTERFACE OBJECT STATIC SHARED)
+    set(ALL_LIB_TYPES INTERFACE OBJECT STATIC SHARED MODULE)
     if(NOT (LIB_TYPE IN_LIST ALL_LIB_TYPES))
       list(JOIN ALL_LIB_TYPES ", " ALL_LIB_TYPES)
       message(
@@ -123,10 +123,12 @@ function(add_tit_library)
   target_link_libraries(${LIB_TARGET} ${LIB_PUBLIC} ${LIB_DEPENDS})
 
   # Install the library.
-  if(LIB_DESTINATION)
-    set(INSTALLABLE_LIB_TYPES STATIC SHARED)
-    if(NOT LIB_TYPE IN_LIST INSTALLABLE_LIB_TYPES)
-      message(FATAL_ERROR "Cannot install library of type: ${LIB_TYPE}!")
+  set(INSTALLABLE_LIB_TYPES SHARED MODULE)
+  if(LIB_TYPE IN_LIST INSTALLABLE_LIB_TYPES)
+    if(LIB_PUBLIC)
+      set(LIB_DESTINATION "lib")
+    else()
+      set(LIB_DESTINATION "private/lib")
     endif()
     install(TARGETS ${LIB_TARGET} LIBRARY DESTINATION "${LIB_DESTINATION}")
   endif()
@@ -146,8 +148,8 @@ function(add_tit_executable)
   # Parse and check arguments.
   cmake_parse_arguments(
     EXE
-    ""
-    "NAME;PREFIX;DESTINATION"
+    "PUBLIC"
+    "NAME;PREFIX"
     "SOURCES;DEPENDS"
     ${ARGN}
   )
@@ -168,9 +170,12 @@ function(add_tit_executable)
   target_link_libraries(${EXE_TARGET} PRIVATE ${EXE_DEPENDS})
 
   # Install the executable.
-  if(EXE_DESTINATION)
-    install(TARGETS ${EXE_TARGET} RUNTIME DESTINATION "${EXE_DESTINATION}")
+  if(EXE_PUBLIC)
+    set(EXE_DESTINATION "bin")
+  else()
+    set(EXE_DESTINATION "private/bin")
   endif()
+  install(TARGETS ${EXE_TARGET} RUNTIME DESTINATION "${EXE_DESTINATION}")
 
   # Enable static analysis.
   if(EXE_SOURCES)

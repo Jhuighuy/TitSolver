@@ -7,9 +7,9 @@
 # actual stage is nothing more than a test itself. This test exists with a sole
 # reason of not breaking anything while doing some deep refactoring in the
 # library core.
-add_tit_test_from_target(
-  tit::titwcsph
+add_tit_test(
   NAME "titwcsph/dam_breaking[long]"
+  COMMAND "titwcsph"
   MATCH_FILES "particles.ttdb.checksum"
 )
 
