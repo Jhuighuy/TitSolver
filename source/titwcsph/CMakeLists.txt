@@ -4,10 +4,9 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
+  PUBLIC
   NAME
     titwcsph
-  DESTINATION
-    bin
   SOURCES
     "wcsph.cpp"
   DEPENDS

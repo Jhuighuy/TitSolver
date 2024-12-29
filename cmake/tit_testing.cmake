@@ -86,36 +86,3 @@ function(add_tit_test)
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#
-# Register the test target.
-#
-function(add_tit_test_from_target TARGET)
-  # Parse and check arguments.
-  if(NOT TARGET)
-    message(FATAL_ERROR "Target must be specified.")
-  endif()
-  cmake_parse_arguments(
-    TEST
-    ""
-    "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
-    "ARGS;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
-    ${ARGN}
-  )
-
-  # Add the test for this executable.
-  add_tit_test(
-    NAME ${TEST_NAME}
-    COMMAND "$<TARGET_FILE:${TARGET}>" ${TEST_ARGS}
-    EXIT_CODE ${TEST_EXIT_CODE}
-    STDIN ${TEST_STDIN}
-    ENVIRONMENT ${TEST_ENVIRONMENT}
-    INPUT_FILES ${TEST_INPUT_FILES}
-    MATCH_STDOUT ${TEST_MATCH_STDOUT}
-    MATCH_STDERR ${TEST_MATCH_STDERR}
-    MATCH_FILES ${TEST_MATCH_FILES}
-    FILTERS ${TEST_FILTERS}
-  )
-endfunction()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

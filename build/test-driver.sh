@@ -80,6 +80,11 @@ parse-args() {
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+setup-path() {
+  echo "# Setting up the PATH..."
+  export PATH="$INSTALL_DIR/bin:$INSTALL_DIR/private/bin:$PATH"
+}
+
 setup-work-dir() {
   echo "# Setting up the test directory..."
   # Transform the test name into a directory name: append the output directory
@@ -272,6 +277,7 @@ match() {
 
 echo-thin-separator
 parse-args "$@"
+setup-path
 setup-work-dir; cd "$WORK_DIR" || exit $?
 setup-input
 setup-output
