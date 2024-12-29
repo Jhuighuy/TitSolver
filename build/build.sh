@@ -16,7 +16,6 @@ RUN_TESTS=false
 JOBS="${JOBS:-$(get-num-cpus)}"
 COMPILER=$CXX
 VCPKG_ROOT="${VCPKG_ROOT:-}"
-EMSDK_ROOT="${EMSDK_ROOT:-}"
 CMAKE_EXE="${CMAKE_EXE:-cmake}"
 
 usage() {
@@ -32,7 +31,6 @@ usage() {
   echo "Advanced options:"
   echo "  --compiler <path>     Override the default C++ compiler."
   echo "  --vcpkg-root <path>   Vcpkg package manager installation root path."
-  echo "  --emsdk-root <path>   Emscripten SDK installation root path."
 }
 
 parse-args() {
@@ -49,8 +47,6 @@ parse-args() {
       --compiler=*)   COMPILER="${1#*=}";    shift 1;;
       --vcpkg-root)   VCPKG_ROOT="$2";       shift 2;;
       --vcpkg-root=*) VCPKG_ROOT="${1#*=}";  shift 1;;
-      --emsdk-root)   EMSDK_ROOT="$2";       shift 2;;
-      --emsdk-root=*) EMSDK_ROOT="${1#*=}";  shift 1;;
       # Help.
       -h | -help | --help)             usage; exit 0;;
       *) echo "Invalid argument: $1."; usage; exit 1;;
@@ -66,7 +62,6 @@ display-options() {
   [ "$JOBS" -gt 1      ] && echo "#   JOBS       = $JOBS"
   [ "$COMPILER"        ] && echo "#   COMPILER   = $COMPILER"
   [ "$VCPKG_ROOT"      ] && echo "#   VCPKG_ROOT = $VCPKG_ROOT"
-  [ "$EMSDK_ROOT"      ] && echo "#   EMSDK_ROOT = $EMSDK_ROOT"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,22 +84,6 @@ find-vcpkg() {
     fi
   done
   echo "# Unable to find vcpkg!"
-  exit 1
-}
-
-find-emsdk() {
-  EMSDK_ROOT_CANDIDATES=(
-    "$EMSDK_ROOT"
-    # Add custom paths here.
-    "$HOME/emsdk"
-  )
-  for EMSDK_ROOT in "${EMSDK_ROOT_CANDIDATES[@]}"; do
-    if [ -f "$EMSDK_ROOT/.emscripten" ]; then
-      echo "# Found EMSDK at $EMSDK_ROOT."
-      return
-    fi
-  done
-  echo "# Unable to find EMSDK!"
   exit 1
 }
 
@@ -175,15 +154,6 @@ configure() {
     exit 1
   fi
   CMAKE_ARGS+=("-D" "CMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_PATH")
-
-  # Find EMSDK.
-  find-emsdk
-  local EMSDK_ENV_PATH="$EMSDK_ROOT/emsdk_env.sh"
-  if [ ! -f "$EMSDK_ENV_PATH" ]; then
-    echo "# Unable to find emsdk environment script! Check your installation."
-    exit 1
-  fi
-  EMSDK_QUIET=1 source "$EMSDK_ENV_PATH"
 
   # Run CMake.
   "${CMAKE_ARGS[@]}" || exit $?

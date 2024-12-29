@@ -10,6 +10,5 @@ add_subdirectory("graph")
 add_subdirectory("python")
 add_subdirectory("sph")
 add_subdirectory("testing")
-add_subdirectory("view")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

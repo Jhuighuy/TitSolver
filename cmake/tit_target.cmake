@@ -6,7 +6,6 @@
 include_guard()
 include(clang)
 include(compiler)
-include(emscripten)
 include(pnpm)
 include(sphinx)
 include(utils)
@@ -176,34 +175,6 @@ function(add_tit_executable)
   # Enable static analysis.
   if(EXE_SOURCES)
     enable_clang_tidy(${EXE_TARGET})
-  endif()
-endfunction()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#
-# Add a WASM binary.
-#
-function(add_tit_wasm_binary)
-  # Parse and check arguments.
-  cmake_parse_arguments(WASM "" "NAME;NATIVE_TARGET;DESTINATION" "" ${ARGN})
-  if(NOT WASM_NAME)
-    message(FATAL_ERROR "WASM binary name must be specified.")
-  endif()
-  if(NOT WASM_NATIVE_TARGET)
-    message(FATAL_ERROR "Native target name must be specified.")
-  endif()
-
-  # Create the target.
-  make_target_name(${WASM_NAME} WASM_TARGET)
-  add_wasm_binary(${WASM_TARGET} ${WASM_NATIVE_TARGET})
-
-  # Install the target.
-  if(WASM_DESTINATION)
-    install_wasm_binary(
-      TARGET ${WASM_TARGET}
-      DESTINATION "${WASM_DESTINATION}"
-    )
   endif()
 endfunction()
 
