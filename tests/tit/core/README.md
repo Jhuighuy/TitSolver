@@ -1,3 +1,3 @@
 # `tests/tit/core`
 
-This directory contains tests for `tit::core` library.
+This directory contains tests for the `tit::core` library.

@@ -1,3 +1,3 @@
 # `tests/titwcsph`
 
-This directory contains tests for `titwcsph` executable.
+This directory contains tests for the `titwcsph` executable.
