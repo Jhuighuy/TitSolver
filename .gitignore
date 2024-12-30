@@ -30,7 +30,6 @@
 
 # Python configuration files.
 !/pyproject.toml
-!/requirements.txt
 
 # Output.
 .cache/
