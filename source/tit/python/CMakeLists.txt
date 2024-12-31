@@ -23,6 +23,7 @@ add_tit_library(
   NAME python
   SOURCES
     "nb_config.hpp"
+    "nb_utils.hpp"
   DEPENDS
     nanobind::nanobind
 )

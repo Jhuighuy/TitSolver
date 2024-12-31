@@ -3,11 +3,24 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_test(
-  NAME "pytit/export_csv"
-  INPUT_FILES "test.py" "input.ttdb"
-  MATCH_FILES "output.csv.checksum"
-  COMMAND titback "test.py"
+from ._data import (
+    DataRank,
+    DataKind,
+    DataType,
+    DataArray,
+    DataSet,
+    TimeStep,
+    Series,
+    Storage,
 )
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+__all__ = (
+    "DataRank",
+    "DataKind",
+    "DataType",
+    "DataArray",
+    "DataSet",
+    "TimeStep",
+    "Series",
+    "Storage",
+)
