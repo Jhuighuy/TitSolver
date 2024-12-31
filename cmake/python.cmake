@@ -30,22 +30,22 @@ function(install_python)
 
   # Install pip and packages. Packages would be installed into `site-packages`
   # directory of the Python standard library.
+  message(STATUS "Running pip install")
   execute_process(
-    COMMAND "${CHRONIC_EXE}" "${Python_EXECUTABLE}" -m ensurepip --upgrade
+    COMMAND "${Python_EXECUTABLE}" -m ensurepip --upgrade
     RESULT_VARIABLE ENSURE_PIP_RESULT
   )
   if(NOT ENSURE_PIP_RESULT EQUAL 0)
     message(FATAL_ERROR "Failed to install Pip!")
   endif()
   execute_process(
-    COMMAND
-      "${CHRONIC_EXE}"
-        "${Python_EXECUTABLE}" -m pip install ${INSTALL_PACKAGES}
+    COMMAND "${Python_EXECUTABLE}" -m pip install ${INSTALL_PACKAGES}
     RESULT_VARIABLE PIP_RESULT
   )
   if(NOT PIP_RESULT EQUAL 0)
     message(FATAL_ERROR "Failed to install Python packages!")
   endif()
+  message(STATUS "Running pip install - done")
 
   # Find the standard library files.
   file(
