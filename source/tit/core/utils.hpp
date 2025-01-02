@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include <functional>
 #include <iterator>
 #include <ranges>
 #include <span>
@@ -179,6 +180,52 @@ constexpr void iota_perm(Range&& range, Perm&& perm) {
   std::ranges::copy(iota_perm(range), std::begin(perm));
 }
 /// @}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Container type.
+template<class Container>
+concept container = //
+    std::ranges::range<Container> &&
+    requires(std::remove_cvref_t<Container>& container,
+             size_t n,
+             std::ranges::range_value_t<Container> value) {
+      { container.assign(n, value) } -> std::same_as<void>;
+    };
+
+/// Range with value type.
+template<class Range, class Val>
+concept range_of = //
+    std::ranges::range<Range> &&
+    std::same_as<std::ranges::range_value_t<Range>, Val>;
+
+/// Find the equality ranges in the given range.
+template<
+    std::ranges::input_range Range,
+    std::invocable<std::ranges::subrange<std::ranges::iterator_t<Range>>> Func,
+    std::regular_invocable<std::ranges::range_reference_t<Range>> Proj =
+        std::identity,
+    std::indirect_binary_predicate<
+        std::projected<std::ranges::iterator_t<Range>, Proj>,
+        std::projected<std::ranges::iterator_t<Range>, Proj>> Pred =
+        std::equal_to<>>
+constexpr void equality_ranges(Range&& range,
+                               Func func,
+                               Pred pred = {},
+                               Proj proj = {}) {
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  auto iter = std::begin(range);
+  const auto last = std::end(range);
+  while (iter != last) {
+    const auto next = std::ranges::find_if_not( //
+        iter,
+        last,
+        std::bind_front(std::ref(pred), std::invoke(proj, *iter)),
+        proj);
+    std::invoke(func, std::ranges::subrange{iter, next});
+    iter = next;
+  }
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

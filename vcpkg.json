@@ -14,7 +14,6 @@
     "doctest",
     "gcem",
     "highway",
-    "metis",
     "mimalloc",
     "nanobind",
     "python3",
