@@ -239,8 +239,9 @@ private:
       if (is_first_level) {
         interface.resize(particles.size());
         const auto all_particles = iota_perm(particles.all());
-        const auto not_interface_iter =
-            par::copy_if(all_particles, interface.begin(), is_interface);
+        const auto not_interface_iter = par::unstable_copy_if(all_particles,
+                                                              interface.begin(),
+                                                              is_interface);
         interface.erase(not_interface_iter, interface.end());
       } else {
         // Note: `std::ranges::partition` is faster than `std::erase_if`
@@ -255,7 +256,7 @@ private:
     // Assemble the block adjacency graph.
     block_edges_.assign_pairs_par_wide(
         num_parts,
-        adjacency_.transform_edges([parts](const auto& ab) {
+        adjacency_.edges() | std::views::transform([parts](const auto& ab) {
           const auto [a, b] = ab;
           const auto part_ab = PartVec::common(parts[a], parts[b]);
           return std::pair{part_ab, ab};
