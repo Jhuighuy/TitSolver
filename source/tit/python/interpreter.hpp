@@ -13,8 +13,11 @@
 
 struct PyConfig;
 using PyObject = struct _object; // NOLINT(*-reserved-identifier, cert-*)
+namespace tit::py {
+class Dict;
+}
 
-namespace tit::python {
+namespace tit::py::embed {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -49,24 +52,46 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Embedded Python interpreter.
-class Interpreter final : public NonCopyableBase {
+/// Basic embedded Python interpreter.
+class BasicInterpreter : public NonCopyableBase {
 public:
 
   /// Construct the interpreter.
-  explicit Interpreter(Config config);
+  explicit BasicInterpreter(Config config = {});
+
+  /// Destroy the interpreter.
+  ~BasicInterpreter();
+
+private:
+
+  static bool initialized_;
+  Config config_;
+
+}; // class BasicInterpreter
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Embedded Python interpreter.
+class Interpreter final : public BasicInterpreter {
+public:
+
+  /// Construct the interpreter.
+  explicit Interpreter(Config config = {});
 
   /// Destruct the interpreter.
   ~Interpreter();
 
   /// Append a search path to the Python path.
-  void append_path(CStrView path) const;
+  void append_path(CStrView path);
+
+  /// Get the global variables.
+  auto globals() const -> Dict;
 
   /// Execute the Python statement.
-  auto exec(CStrView statement) const -> bool;
+  auto exec(CStrView statement) -> bool;
 
   /// Execute the Python file.
-  auto exec_file(CStrView file_name) const -> bool;
+  auto exec_file(CStrView file_name) -> bool;
 
 private:
 
@@ -76,12 +101,10 @@ private:
   // Stop the coverage report.
   void stop_coverage_report_() const;
 
-  static bool initialized_;
-  Config config_;
   PyObject* globals_ = nullptr;
 
 }; // class Interpreter
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit::python
+} // namespace tit::py::embed

@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include "tit/python/python_h.hpp" // must be first.
+
 #include <cstring>
 #include <filesystem>
 #include <string>
@@ -30,11 +32,11 @@ auto run_backend(CmdArgs args) -> int {
   // Setup the Python interpreter.
   /// @todo We should check for presence of the home directory.
   const auto home_dir = root_dir / "python";
-  python::Config config;
+  py::embed::Config config;
   config.set_home(home_dir.c_str());
   config.set_prog_name("titback");
   config.set_cmd_args(args);
-  const python::Interpreter interpreter{std::move(config)};
+  py::embed::Interpreter interpreter{std::move(config)};
   interpreter.append_path(home_dir.c_str());
 
   // Execute the Python statement or file.

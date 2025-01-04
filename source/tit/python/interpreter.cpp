@@ -3,6 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#define TIT_PYTHON_INTERPRETER
+#include "tit/python/python_h.hpp" // must be first.
+
 #include <memory>
 #include <string>
 #include <string_view>
@@ -15,22 +18,16 @@
 #include "tit/core/sys/utils.hpp"
 
 #include "tit/python/interpreter.hpp"
-#include "tit/python/nb_config.hpp"
+#include "tit/python/objects.hpp"
 
-TIT_NANOBIND_INCLUDE_BEGIN
-#include <nanobind/nanobind.h>
-TIT_NANOBIND_INCLUDE_END
-
-namespace tit::python {
-
-namespace nb = nanobind;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+namespace tit::py::embed {
 
 // NOLINTBEGIN(*-include-cleaner)
 
-Config::Config() : config_{new PyConfig{}} {  // NOLINT(*-include-cleaner)
-  PyConfig_InitIsolatedConfig(config_.get()); // NOLINT(*-include-cleaner)
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Config::Config() : config_{new PyConfig{}} {
+  PyConfig_InitIsolatedConfig(config_.get());
 }
 
 void Config::Cleaner_::operator()(PyConfig* config) const {
@@ -79,15 +76,11 @@ void Config::set_cmd_args(CmdArgs args) const {
             status.err_msg);
 }
 
-// NOLINTEND(*-include-cleaner)
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-bool Interpreter::initialized_ = false;
+bool BasicInterpreter::initialized_ = false;
 
-// NOLINTBEGIN(*-include-cleaner)
-
-Interpreter::Interpreter(Config config) : config_{std::move(config)} {
+BasicInterpreter::BasicInterpreter(Config config) : config_{std::move(config)} {
   TIT_ASSERT(!initialized_, "Python interpreter was already initialized!");
   initialized_ = true;
 
@@ -98,63 +91,66 @@ Interpreter::Interpreter(Config config) : config_{std::move(config)} {
               status.func,
               status.err_msg);
   }
+}
 
-  // Get the globals of the main module.
-  const auto main_module = nb::module_::import_("__main__");
-  const auto globals = main_module.attr("__dict__");
-  globals_ = globals.ptr();
+BasicInterpreter::~BasicInterpreter() {
+  Py_Finalize();
+  initialized_ = false;
+}
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Interpreter::Interpreter(Config config)
+    : BasicInterpreter{std::move(config)},
+      globals_{import_("__main__").dict().release()} {
 #ifdef TIT_HAVE_GCOV
-  // Start the coverage report.
   start_coverage_report_();
 #endif
 }
 
 Interpreter::~Interpreter() {
 #ifdef TIT_HAVE_GCOV
-  // Finalize the coverage report.
   stop_coverage_report_();
 #endif
-
-  // Finalize the Python interpreter.
-  Py_Finalize();
-  initialized_ = false;
 }
 
-void Interpreter::append_path(CStrView path) const {
+void Interpreter::append_path(CStrView path) {
   static_cast<void>(this);
-  const auto sys = nb::module_::import_("sys");
-  auto sys_path = nb::cast<nb::list>(sys.attr("path"));
-  sys_path.append(path.c_str());
+  const auto sys = import_("sys");
+  const auto sys_path = cast<List>(sys.attr("path"));
+  sys_path.append(Str(path));
 }
 
-auto Interpreter::exec(CStrView statement) const -> bool {
-  const auto result = nb::steal(PyRun_String(statement.c_str(),
-                                             /*start=*/Py_file_input,
-                                             /*globals=*/globals_,
-                                             /*locals=*/globals_));
-  if (!result.is_valid()) {
+auto Interpreter::globals() const -> Dict {
+  return cast<Dict>(Object{Py_XNewRef(globals_)});
+}
+
+auto Interpreter::exec(CStrView statement) -> bool {
+  const auto* str = statement.c_str();
+  const ObjectPtr result(PyRun_String(str,
+                                      /*start=*/Py_file_input,
+                                      /*globals=*/globals_,
+                                      /*locals=*/globals_));
+  if (!result.valid()) {
     PyErr_Print();
     return false;
   }
   return true;
 }
 
-auto Interpreter::exec_file(CStrView file_name) const -> bool {
+auto Interpreter::exec_file(CStrView file_name) -> bool {
   const auto file = open_file(file_name, "r");
-  const auto result = nb::steal(PyRun_File(/*fp=*/file.get(),
-                                           /*filename=*/file_name.c_str(),
-                                           /*start=*/Py_file_input,
-                                           /*globals=*/globals_,
-                                           /*locals=*/globals_));
-  if (!result.is_valid()) {
+  const ObjectPtr result(PyRun_File(/*fp=*/file.get(),
+                                    /*filename=*/file_name.c_str(),
+                                    /*start=*/Py_file_input,
+                                    /*globals=*/globals_,
+                                    /*locals=*/globals_));
+  if (!result.valid()) {
     PyErr_Print();
     return false;
   }
   return true;
 }
-
-// NOLINTEND(*-include-cleaner)
 
 void Interpreter::start_coverage_report_() const {
   // Locate the configuration file.
@@ -166,27 +162,29 @@ void Interpreter::start_coverage_report_() const {
   const auto config_file = std::string{*source_dir} + "/pyproject.toml";
 
   // Create the coverage report and start it.
-  const auto coverage = nb::module_::import_("coverage");
-  const auto coverage_report = coverage.attr("Coverage")( //
-      nb::arg("branch") = true,
-      nb::arg("config_file") = config_file.c_str());
+  const auto coverage = import_("coverage");
+  const Dict kwargs;
+  kwargs["branch"] = true;
+  kwargs["config_file"] = config_file;
+  const auto coverage_report =
+      coverage.attr("Coverage").tp_call(Tuple{}, kwargs);
   coverage_report.attr("start")();
-  const auto globals = nb::cast<nb::dict>(nb::borrow(globals_));
-  globals["__coverage_report"] = coverage_report;
+  globals()["__coverage_report"] = coverage_report;
 }
 
 void Interpreter::stop_coverage_report_() const {
   // Some of our tests emit warnings for missing coverage data, ignore them.
-  const auto warnings = nb::module_::import_("warnings");
-  warnings.attr("filterwarnings")("ignore");
+  const auto warnings = import_("warnings");
+  warnings.attr("filterwarnings").tp_call(py::make_tuple("ignore"));
 
   // Stop the coverage report and save it.
-  const auto globals = nb::cast<nb::dict>(nb::borrow(globals_));
-  const auto coverage_report = globals["__coverage_report"];
+  const Object coverage_report = globals()["__coverage_report"];
   coverage_report.attr("stop")();
   coverage_report.attr("save")();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit::python
+// NOLINTEND(*-include-cleaner)
+
+} // namespace tit::py::embed
