@@ -15,7 +15,7 @@
 #include "tit/core/main_func.hpp"
 #include "tit/core/sys/utils.hpp"
 
-#include "tit/py/interpreter.hpp"
+#include "tit/py/embed.hpp"
 
 namespace tit::back {
 namespace {
