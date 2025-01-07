@@ -14,14 +14,14 @@
 #include "tit/core/str_utils.hpp"
 #include "tit/core/sys/utils.hpp"
 
-#include "tit/python/interpreter.hpp"
-#include "tit/python/nb_config.hpp"
+#include "tit/py/interpreter.hpp"
+#include "tit/py/nb_config.hpp"
 
 TIT_NANOBIND_INCLUDE_BEGIN
 #include <nanobind/nanobind.h>
 TIT_NANOBIND_INCLUDE_END
 
-namespace tit::python {
+namespace tit::py::embed {
 
 namespace nb = nanobind;
 
@@ -189,4 +189,4 @@ void Interpreter::stop_coverage_report_() const {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit::python
+} // namespace tit::py::embed
