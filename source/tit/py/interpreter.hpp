@@ -14,7 +14,7 @@
 struct PyConfig;
 using PyObject = struct _object; // NOLINT(*-reserved-identifier, cert-*)
 
-namespace tit::python {
+namespace tit::py::embed {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -84,4 +84,4 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit::python
+} // namespace tit::py::embed
