@@ -15,7 +15,7 @@
 #include "tit/core/main_func.hpp"
 #include "tit/core/sys/utils.hpp"
 
-#include "tit/python/interpreter.hpp"
+#include "tit/py/interpreter.hpp"
 
 namespace tit::back {
 namespace {
@@ -30,11 +30,11 @@ auto run_backend(CmdArgs args) -> int {
   // Setup the Python interpreter.
   /// @todo We should check for presence of the home directory.
   const auto home_dir = root_dir / "python";
-  python::Config config;
+  py::embed::Config config;
   config.set_home(home_dir.c_str());
   config.set_prog_name("titback");
   config.set_cmd_args(args);
-  const python::Interpreter interpreter{std::move(config)};
+  const py::embed::Interpreter interpreter{std::move(config)};
   interpreter.append_path(home_dir.c_str());
 
   // Execute the Python statement or file.
