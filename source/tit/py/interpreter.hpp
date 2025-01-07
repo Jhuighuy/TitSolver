@@ -11,8 +11,9 @@
 #include "tit/core/str_utils.hpp"
 #include "tit/core/utils.hpp"
 
-struct PyConfig;
-using PyObject = struct _object; // NOLINT(*-reserved-identifier, cert-*)
+#include "tit/py/_python.hpp" // IWYU pragma: keep
+
+struct PyConfig; // Not available under limited API.
 
 namespace tit::py::embed {
 
@@ -26,7 +27,7 @@ public:
   Config();
 
   /// Get the underlying configuration object.
-  auto base() const noexcept -> PyConfig*;
+  auto get() const noexcept -> PyConfig*;
 
   /// Set the Python home directory.
   void set_home(CStrView home) const;
@@ -49,12 +50,30 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Embedded Python interpreter.
-class Interpreter final : public NonCopyableBase {
+/// Basic embedded Python interpreter.
+class BasicInterpreter : public NonMovableBase {
 public:
 
   /// Construct the interpreter.
-  explicit Interpreter(Config config);
+  explicit BasicInterpreter(Config config = {});
+
+  /// Destroy the interpreter.
+  ~BasicInterpreter();
+
+private:
+
+  Config config_;
+
+}; // class BasicInterpreter
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Embedded Python interpreter.
+class Interpreter final : public BasicInterpreter {
+public:
+
+  /// Construct the interpreter.
+  explicit Interpreter(Config config = {});
 
   /// Destruct the interpreter.
   ~Interpreter();
@@ -63,9 +82,11 @@ public:
   void append_path(CStrView path) const;
 
   /// Execute the Python statement.
-  auto exec(CStrView statement) const -> bool;
+  /// If execution fails, an error is printed and `false` is returned.
+  auto exec(CStrView stmt) const -> bool;
 
   /// Execute the Python file.
+  /// If execution fails, an error is printed and `false` is returned.
   auto exec_file(CStrView file_name) const -> bool;
 
 private:
@@ -76,9 +97,7 @@ private:
   // Stop the coverage report.
   void stop_coverage_report_() const;
 
-  static bool initialized_;
-  Config config_;
-  PyObject* globals_ = nullptr;
+  PyObject* globals_ = nullptr; // NOLINT(*-include-cleaner)
 
 }; // class Interpreter
 

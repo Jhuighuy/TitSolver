@@ -34,18 +34,19 @@ find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
-find_package(
-  Python
-  REQUIRED
-  COMPONENTS
-    Interpreter
-    Development
-    Development.SABIModule
-)
-find_package(nanobind REQUIRED) # Should be after Python.
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
+
+# Install the third-party Python packages.
+install_python(
+  DESTINATION
+    python
+  PACKAGES
+    "coverage[toml]"
+    "numpy"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -72,8 +73,7 @@ add_tit_library(
     hwy::hwy
     metis
     mimalloc-static
-    nanobind::nanobind
-    Python::Python
+    Python3::Python
     TBB::tbb
     TBB::tbbmalloc
     unofficial::sqlite3::sqlite3
