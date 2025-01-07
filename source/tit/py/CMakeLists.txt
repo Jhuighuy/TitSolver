@@ -20,7 +20,8 @@ install_python(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_library(
-  NAME python
+  NAME
+    py
   SOURCES
     "nb_config.hpp"
   DEPENDS
@@ -31,14 +32,25 @@ add_tit_library(
 
 add_tit_library(
   NAME
-    python_interpreter
+    py_embed
   SOURCES
     "interpreter.cpp"
     "interpreter.hpp"
   DEPENDS
     tit::core
-    tit::python
+    tit::py
     Python::Python
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    py_tests
+  SOURCES
+  DEPENDS
+    tit::py_embed
+    tit::testing
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
