@@ -12,6 +12,8 @@ add_tit_library(
     "cast.hpp"
     "error.cpp"
     "error.hpp"
+    "func.cpp"
+    "func.hpp"
     "gil.cpp"
     "gil.hpp"
     "iterator.cpp"
@@ -78,6 +80,7 @@ add_tit_executable(
   SOURCES
     "cast.test.cpp"
     "error.test.cpp"
+    "func.test.cpp"
     "gil.test.cpp"
     "interpreter.test.cpp"
     "interpreter.testing.cpp"
