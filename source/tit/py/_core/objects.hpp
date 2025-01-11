@@ -283,6 +283,11 @@ inline auto hash(const Object& obj) -> size_t {
   return ensure<size_t>(PyObject_Hash(obj.get()));
 }
 
+/// Type of the object, similar to `type(obj)`.
+inline auto type(const Object& obj) -> Object {
+  return Object{PyObject_Type(obj.get())};
+}
+
 /// Absolute value of the object, similar to `abs(obj)`.
 inline auto abs(const Object& obj) -> Object {
   return steal(PyNumber_Absolute(obj.get()));

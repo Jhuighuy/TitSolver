@@ -17,8 +17,12 @@ add_tit_library(
   NAME
     py
   SOURCES
+    "_bind/class.hpp"
+    "_bind/func.hpp"
+    "_bind/module.hpp"
     "_core/_python.hpp"
     "_core/errors.hpp"
+    "_core/memory.hpp"
     "_core/modules.hpp"
     "_core/objects.hpp"
     "_core/utils.hpp"

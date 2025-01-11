@@ -5,14 +5,8 @@
 
 #pragma once
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // IWYU pragma: begin_exports
-#include "tit/py/_core/_python.hpp"
-#include "tit/py/_core/errors.hpp"
-#include "tit/py/_core/memory.hpp"
-#include "tit/py/_core/modules.hpp"
-#include "tit/py/_core/objects.hpp"
+#include "tit/py/_bind/class.hpp"
+#include "tit/py/_bind/func.hpp"
+#include "tit/py/_bind/module.hpp"
 // IWYU pragma: end_exports
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

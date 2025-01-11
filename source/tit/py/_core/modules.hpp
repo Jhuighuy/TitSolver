@@ -18,7 +18,7 @@ namespace tit::py {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Reference to a Python module.
-class Module final : public Object {
+class Module : public Object {
 public:
 
   /// Check if the object is a subclass of `Module`.
