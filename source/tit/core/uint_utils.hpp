@@ -6,8 +6,23 @@
 #pragma once
 
 #include <concepts>
+#include <type_traits>
 
 namespace tit {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Cast to signed integer of the same size.
+template<std::integral UInt>
+constexpr auto to_signed(UInt value) -> std::make_signed_t<UInt> {
+  return static_cast<std::make_signed_t<UInt>>(value);
+}
+
+/// Cast to unsigned integer of the same size.
+template<std::signed_integral SInt>
+constexpr auto to_unsigned(SInt value) -> std::make_unsigned_t<SInt> {
+  return static_cast<std::make_unsigned_t<SInt>>(value);
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
