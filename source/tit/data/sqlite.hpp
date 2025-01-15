@@ -71,10 +71,6 @@ private:
 /// Blob view type.
 using BlobView = std::span<const byte_t>;
 
-/// Text argument type.
-template<class Text>
-concept text_arg = std::constructible_from<std::string_view, Text>;
-
 /// Blob argument type.
 template<class Blob>
 concept blob_arg = std::constructible_from<BlobView, Blob>;
@@ -82,12 +78,7 @@ concept blob_arg = std::constructible_from<BlobView, Blob>;
 /// Statement argument type.
 template<class Value>
 concept arg = std::integral<Value> || std::floating_point<Value> ||
-              text_arg<Value> || blob_arg<Value>;
-
-/// Text column type.
-template<class Text>
-concept text_column =
-    std::is_object_v<Text> && std::constructible_from<Text, std::string_view>;
+              str_like<Value> || blob_arg<Value>;
 
 /// Blob column type.
 template<class Blob>
@@ -97,7 +88,7 @@ concept blob_column =
 /// Column type.
 template<class Value>
 concept column = std::integral<Value> || std::floating_point<Value> ||
-                 text_column<Value> || blob_column<Value>;
+                 str_like<Value> || blob_column<Value>;
 
 /// SQLite statement.
 class Statement final {
@@ -127,7 +118,7 @@ public:
         bind_(index, static_cast<int64_t>(arg));
       } else if constexpr (std::floating_point<Arg>) {
         bind_(index, static_cast<float64_t>(arg));
-      } else if constexpr (text_arg<Arg> || blob_arg<Arg>) {
+      } else if constexpr (str_like<Arg> || blob_arg<Arg>) {
         bind_(index, arg);
       } else static_assert(false);
     }(args));
@@ -187,7 +178,7 @@ public:
           return static_cast<Column>(column_int_(index));
         } else if constexpr (std::floating_point<Column>) {
           return static_cast<Column>(column_real_(index));
-        } else if constexpr (text_column<Column>) {
+        } else if constexpr (str_like<Column>) {
           return Column{column_text_(index)};
         } else if constexpr (blob_column<Column>) {
           const auto blob = column_blob_(index);
