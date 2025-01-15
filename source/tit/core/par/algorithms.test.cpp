@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <random>
 #include <ranges>
 #include <thread>
 #include <vector>
@@ -160,6 +161,31 @@ TEST_CASE("par::transform") {
         std::this_thread::sleep_for(std::chrono::milliseconds{10});
         if (i == 7) throw std::runtime_error{"Algorithm failed!"};
         return 2 * i + 1;
+      });
+      FAIL("Algorithm should have thrown an exception!");
+    };
+    CHECK_THROWS_WITH_AS(algorithm(), "Algorithm failed!", std::runtime_error);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("par::sort") {
+  par::set_num_threads(4);
+  constexpr auto sorted = std::views::iota(0, 1000);
+  auto data = sorted | std::ranges::to<std::vector>();
+  std::ranges::shuffle(data, std::mt19937{123});
+  SUBCASE("basic") {
+    // Ensure the loop is executed.
+    par::sort(data);
+    CHECK_RANGE_EQ(data, sorted);
+  }
+  SUBCASE("exceptions") {
+    // Ensure the exceptions from the worker threads are caught.
+    const auto algorithm = [&data] {
+      par::sort(data, [](int a, int b) {
+        if (a == 123) throw std::runtime_error{"Algorithm failed!"};
+        return a < b;
       });
       FAIL("Algorithm should have thrown an exception!");
     };

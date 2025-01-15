@@ -44,15 +44,16 @@ public:
 
 /// Valid underlying types for statistics variables.
 template<class Val>
-concept stattable = std::is_object_v<Val> && std::semiregular<Val> &&
-                    std::formattable<Val, char> && requires(Val val, size_t n) {
-                      // Can compute the average value.
-                      { val += val } -> std::convertible_to<Val&>;
-                      { val / n } -> std::convertible_to<Val>;
-                      // Can compute the minimum and maximum values.
-                      { std::min(val, val) } -> std::convertible_to<Val>;
-                      { std::max(val, val) } -> std::convertible_to<Val>;
-                    };
+concept stattable =
+    std::is_object_v<Val> && std::semiregular<Val> &&
+    std::formattable<Val, char> && requires (Val val, size_t n) {
+      // Can compute the average value.
+      { val += val } -> std::convertible_to<Val&>;
+      { val / n } -> std::convertible_to<Val>;
+      // Can compute the minimum and maximum values.
+      { std::min(val, val) } -> std::convertible_to<Val>;
+      { std::max(val, val) } -> std::convertible_to<Val>;
+    };
 
 /// Statistics variable.
 template<class Val>

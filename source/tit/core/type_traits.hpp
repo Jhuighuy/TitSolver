@@ -23,22 +23,16 @@ inline constexpr bool in_range_v = A <= X && X <= B;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Check if the template type can be constructed from the given arguments.
-template<template<class...> class T, class... Args>
-concept deduce_constructible_from = requires(Args... args) { T{args...}; };
+/// Check if the two types are different.
+template<class T, class U>
+concept different_from =
+    !std::same_as<std::remove_cv_t<T>, std::remove_cv_t<U>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Contiguous range with fixed size.
-template<class Range>
-concept contiguous_fixed_size_range =
-    requires(Range& range) { std::span{range}; } && //
-    decltype(std::span{std::declval<Range&>()})::extent != std::dynamic_extent;
-
-/// Size of the contiguous fixed size range.
-template<contiguous_fixed_size_range Range>
-inline constexpr auto range_fixed_size_v =
-    decltype(std::span{std::declval<Range&>()})::extent;
+/// Check if the template type can be constructed from the given arguments.
+template<template<class...> class T, class... Args>
+concept deduce_constructible_from = requires (Args... args) { T{args...}; };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -57,29 +51,63 @@ concept specialization_of = impl::is_specialization_of_v<Type, Class>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Contiguous range with fixed size.
+template<class Range>
+concept contiguous_fixed_size_range =
+    requires (Range& range) { std::span{range}; } && //
+    decltype(std::span{std::declval<Range&>()})::extent != std::dynamic_extent;
+
+/// Size of the contiguous fixed size range.
+template<contiguous_fixed_size_range Range>
+inline constexpr auto range_fixed_size_v =
+    decltype(std::span{std::declval<Range&>()})::extent;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 namespace impl {
 
-template<class Type, size_t I>
-concept has_tuple_element = requires {
-  typename std::tuple_element_t<I, std::remove_const_t<Type>>;
-} && requires(Type t) {
-  {
-    std::get<I>(t)
-  } -> std::convertible_to<const std::tuple_element_t<I, Type>&>;
-};
+template<class Tuple>
+concept has_tuple_size =
+    requires { typename std::tuple_size<Tuple>::type; } &&
+    std::derived_from<std::tuple_size<Tuple>,
+                      std::integral_constant<size_t, std::tuple_size_v<Tuple>>>;
+
+template<class Tuple, size_t Index>
+concept has_tuple_element = //
+    requires {
+      typename std::tuple_element_t<Index, std::remove_const_t<Tuple>>;
+    } && requires (Tuple& tuple) {
+      {
+        std::get<Index>(tuple)
+      } -> std::convertible_to<const std::tuple_element_t<Index, Tuple>&>;
+    };
+
+template<class Tuple, size_t Size>
+concept tuple_size_is =
+    has_tuple_size<Tuple> && (std::tuple_size_v<Tuple> == Size);
+
+template<class Tuple, size_t Index, class Elem>
+concept tuple_element_is =
+    has_tuple_element<Tuple, Index> &&
+    std::constructible_from<Elem, std::tuple_element_t<Index, Tuple>>;
 
 } // namespace impl
 
 /// Tuple-like type.
-template<class Type>
-concept tuple_like = !std::is_reference_v<Type> && requires(Type t) {
-  typename std::tuple_size<Type>::type;
-  requires std::derived_from<
-      std::tuple_size<Type>,
-      std::integral_constant<size_t, std::tuple_size_v<Type>>>;
-} && []<size_t... I>(std::index_sequence<I...>) {
-  return (impl::has_tuple_element<Type, I> && ...);
-}(std::make_index_sequence<std::tuple_size_v<Type>>());
+template<class Tuple>
+concept tuple_like =
+    std::is_object_v<Tuple> && impl::has_tuple_size<Tuple> &&
+    []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
+      return (impl::has_tuple_element<Tuple, Indices> && ...);
+    }(std::make_index_sequence<std::tuple_size_v<Tuple>>());
+
+/// Tuple-like type with the items of the given types.
+template<class Tuple, class... Items>
+concept tuple_like_with_items =
+    tuple_like<Tuple> && impl::tuple_size_is<Tuple, sizeof...(Items)> &&
+    []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
+      return (impl::tuple_element_is<Tuple, Indices, Items> && ...);
+    }(std::make_index_sequence<sizeof...(Items)>());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

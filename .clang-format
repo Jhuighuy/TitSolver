@@ -40,4 +40,4 @@ SpaceAfterTemplateKeyword: No
 SpaceBeforeParens: Custom
 SpaceBeforeParensOptions:
   AfterRequiresInClause: Yes
-  AfterRequiresInExpression: No
+  AfterRequiresInExpression: Yes
