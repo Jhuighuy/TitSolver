@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 
 // IWYU pragma: begin_exports
 #include "tit/geom/partition/grid_graph_partition.hpp"

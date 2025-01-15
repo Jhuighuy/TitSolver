@@ -9,7 +9,6 @@
 #include <utility>
 
 #include <zstd.h>
-#include <zstd_errors.h>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -41,9 +40,11 @@ void StreamCompressor::write(std::span<const byte_t> data) {
   if (in_buffer_.capacity() == 0) in_buffer_.reserve(in_chunk_size_);
 
   // Copy the remaining data into the buffer in chunks.
-  for (size_t copied = 0; !data.empty(); data = data.subspan(copied)) {
-    copied = std::min(in_chunk_size_ - in_buffer_.size(), data.size());
+  while (!data.empty()) {
+    const auto copied =
+        std::min(in_chunk_size_ - in_buffer_.size(), data.size());
     std::copy_n(data.begin(), copied, std::back_inserter(in_buffer_));
+    data = data.subspan(copied);
     if (in_buffer_.size() == in_chunk_size_) {
       flush();
       TIT_ASSERT(in_buffer_.empty(), "Buffer must be empty after flushing!");
@@ -126,7 +127,7 @@ auto StreamDecompressor::read(std::span<byte_t> data) -> size_t {
   if (out_buffer_.capacity() == 0) out_buffer_.reserve(out_chunk_size_);
 
   size_t total_copied = 0;
-  for (size_t copied = 0; !data.empty(); data = data.subspan(copied)) {
+  while (!data.empty()) {
     // If the output buffer is exhausted, decompress more data.
     if (out_offset_ == out_buffer_.size()) {
       // If the input buffer, read more data.
@@ -172,12 +173,13 @@ auto StreamDecompressor::read(std::span<byte_t> data) -> size_t {
 
     // Copy what we have in the output buffer.
     TIT_ASSERT(out_offset_ <= out_buffer_.size(), "Offset is out of range!");
-    copied = std::min(out_buffer_.size() - out_offset_, data.size());
+    const auto copied = std::min(out_buffer_.size() - out_offset_, data.size());
     std::copy_n(out_buffer_.begin() + static_cast<ssize_t>(out_offset_),
                 copied,
                 data.begin());
     total_copied += copied;
     out_offset_ += copied;
+    data = data.subspan(copied);
   }
 
   return total_copied;

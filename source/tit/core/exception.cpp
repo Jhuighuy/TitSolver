@@ -64,7 +64,11 @@ inline void report_std_exception_(const std::exception& e) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TerminateHandler::TerminateHandler() noexcept
-    : prev_handler_{std::set_terminate(handle_terminate_)} {}
+    : prev_handler_{std::set_terminate(handle_terminate_)} {
+  TIT_ASSERT(prev_handler_ != nullptr, "Failed to set terminate handler!");
+  TIT_ASSERT(prev_handler_ != handle_terminate_,
+             "Terminate handler was already registered!");
+}
 
 TerminateHandler::~TerminateHandler() noexcept {
   // Restore the previous terminate handler.

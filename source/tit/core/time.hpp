@@ -76,8 +76,10 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Scoped stopwatch cycle.
-class StopwatchCycle final : public NonCopyableBase {
+class StopwatchCycle final {
 public:
+
+  TIT_MOVE_ONLY(StopwatchCycle);
 
   /// Start the new stopwatch cycle.
   explicit StopwatchCycle(Stopwatch& stopwatch) noexcept

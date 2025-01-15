@@ -5,33 +5,21 @@
 
 #pragma once
 
+#include <algorithm> // IWYU pragma: keep
 #include <array>
-#include <concepts>
+#include <functional>
 #include <iterator>
 #include <ranges>
 #include <span>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/type_traits.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/range_utils.hpp"
+#include "tit/core/tuple_utils.hpp"
 
 namespace tit {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-namespace impl {
-template<size_t Rank>
-constexpr auto size_from_shape(std::span<const size_t, Rank> shape) noexcept
-    -> size_t {
-  auto s = shape[0];
-  for (size_t i = 1; i < Rank; ++i) s *= shape[i];
-  return s;
-}
-} // namespace impl
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -49,35 +37,38 @@ concept mdindex = can_pack_array<Rank, size_t, Indices...>;
 /// Basic multidimensional non-owning container.
 template<class Val, size_t Rank>
   requires (Rank >= 1)
-class Mdspan {
+class Mdspan final {
 public:
 
-  /// Shape span type.
-  using ShapeSpan = std::span<const size_t, Rank>;
+  /// Shape type.
+  using Shape = std::span<const size_t, Rank>;
 
-  /// Value span type.
-  using ValSpan = std::span<Val>;
-
-  /// Initialize the multidimensional span.
-  /// @{
+  /// Construct a multidimensional span from values iterator and shape.
   template<std::contiguous_iterator ValIter>
-    requires std::constructible_from<ValSpan, ValIter, ValIter>
-  constexpr Mdspan(ShapeSpan shape, ValIter val_iter) noexcept
-      : shape_{shape},
-        vals_{val_iter, val_iter + impl::size_from_shape(shape)} {}
-  template<std::ranges::contiguous_range Vals>
-    requires std::constructible_from<ValSpan, Vals&&>
-  constexpr Mdspan(ShapeSpan shape, Vals&& vals) noexcept
-      : shape_{shape}, vals_{std::forward<Vals>(vals)} {
-    TIT_ASSERT(vals_.size() == impl::size_from_shape(shape_),
-               "Data size is invalid!");
-  }
-  /// @}
+  constexpr Mdspan(ValIter iter, Shape shape) noexcept
+      // NOLINTNEXTLINE(misc-include-cleaner)
+      : vals_{iter, std::ranges::fold_left(shape, 1, std::multiplies{})},
+        shape_{shape} {}
 
   /// Amount of elements.
   constexpr auto size() const noexcept -> size_t {
     return vals_.size();
   }
+
+  /// Span shape.
+  constexpr auto shape() const noexcept -> Shape {
+    return shape_;
+  }
+
+  /// Span data.
+  /// @{
+  constexpr auto data() noexcept -> Val* {
+    return vals_.data();
+  }
+  constexpr auto data() const noexcept -> const Val* {
+    return vals_.data();
+  }
+  /// @}
 
   /// Iterator pointing to the first span element.
   constexpr auto begin() const noexcept {
@@ -88,53 +79,37 @@ public:
     return vals_.end();
   }
 
-  /// Reference to the first span element.
-  constexpr auto front() const noexcept -> Val& {
-    return vals_.front();
-  }
-  /// Reference to the last span element.
-  constexpr auto back() const noexcept -> Val& {
-    return vals_.back();
-  }
-
   /// Reference to span element or sub-span.
   template<class... Indices>
     requires mdindex<Rank, const Indices&...>
   constexpr auto operator[](const Indices&... indices) const noexcept
       -> decltype(auto) {
-    // Compute an offset to the data position.
     size_t offset = 0;
     for (const auto index_pack = make_array<Rank, size_t>(indices...);
-         const auto& [extent, index] : std::views::zip(shape_, index_pack)) {
+         const auto [extent, index] : std::views::zip(shape_, index_pack)) {
       TIT_ASSERT(index < extent, "Index is out of range!");
       offset = index + offset * extent;
     }
     TIT_ASSERT(offset < vals_.size(), "Offset is out of range!");
-    // Return with result.
-    if constexpr (constexpr auto IndicesRank = packed_array_size_v<Indices...>;
-                  IndicesRank == Rank) {
+    if constexpr (constexpr auto ResultRank = packed_array_size_v<Indices...>;
+                  ResultRank == Rank) {
       return vals_[offset];
     } else {
-      return tit::Mdspan{shape_.template subspan<IndicesRank>(),
-                         vals_.begin() + offset};
+      return tit::Mdspan{vals_.begin() + offset,
+                         shape_.template subspan<ResultRank>()};
     }
   }
 
 private:
 
-  ShapeSpan shape_;
-  ValSpan vals_;
+  std::span<Val> vals_;
+  Shape shape_;
 
 }; // class Mdspan
 
-template<contiguous_fixed_size_range Shape, std::contiguous_iterator ValIter>
-Mdspan(Shape&&, ValIter)
+template<std::contiguous_iterator ValIter, contiguous_fixed_size_range Shape>
+Mdspan(ValIter, Shape&&)
     -> Mdspan<std::remove_reference_t<std::iter_reference_t<ValIter>>,
-              range_fixed_size_v<Shape>>;
-
-template<contiguous_fixed_size_range Shape, std::ranges::contiguous_range Vals>
-Mdspan(Shape&&, Vals&&)
-    -> Mdspan<std::remove_reference_t<std::ranges::range_reference_t<Vals&&>>,
               range_fixed_size_v<Shape>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,22 +117,42 @@ Mdspan(Shape&&, Vals&&)
 /// Basic multidimensional owning container.
 template<class Val, size_t Rank>
   requires (Rank >= 1)
-class Mdvector {
+class Mdvector final {
 public:
 
-  /// Construct multidimensional vector.
+  /// Shape type.
+  using Shape = std::array<size_t, Rank>;
+
+  /// Construct an empty multidimensional vector.
   constexpr Mdvector() noexcept = default;
 
-  /// Construct multidimensional vector with specified size.
+  /// Construct a multidimensional vector with given shape and clear values.
   template<class... Extents>
     requires mdshape<Rank, Extents...>
   constexpr explicit Mdvector(const Extents&... extents) {
     assign(extents...);
   }
 
+  /// Construct a multidimensional vector with given shape and values.
+  template<std::forward_iterator ValIter, class... Extents>
+    requires mdshape<Rank, Extents...>
+  constexpr explicit Mdvector(ValIter iter, const Extents&... extents) {
+    assign(iter, extents...);
+  }
+
   /// Vector size.
   constexpr auto size() const noexcept -> size_t {
     return vals_.size();
+  }
+
+  /// Vector shape.
+  constexpr auto shape() const noexcept -> const Shape& {
+    return shape_;
+  }
+
+  /// Vector data.
+  constexpr auto data(this auto& self) noexcept {
+    return self.vals_.data();
   }
 
   /// Iterator pointing to the first vector element.
@@ -170,29 +165,27 @@ public:
     return self.vals_.end();
   }
 
-  /// Reference to the first span element.
-  constexpr auto front(this auto&& self) noexcept -> auto&& {
-    return std::forward_like<decltype(self)>(self.vals_.front());
-  }
-
-  /// Reference to the last span element.
-  constexpr auto back(this auto&& self) noexcept -> auto&& {
-    return std::forward_like<decltype(self)>(self.vals_.back());
-  }
-
   /// Clear the vector.
   constexpr void clear() noexcept {
     shape_.fill(0);
     vals_.clear();
   }
 
-  /// Clear and reshape the vector.
+  /// Reshape the vector and clear values.
   template<class... Extents>
-    requires mdshape<Rank, const Extents&...>
+    requires mdshape<Rank, Extents...>
   constexpr void assign(const Extents&... extents) {
     shape_ = make_array<Rank, size_t>(extents...);
     vals_.clear();
-    vals_.resize(impl::size_from_shape(std::span<const size_t, Rank>{shape_}));
+    vals_.resize(std::ranges::fold_left(shape_, 1, std::multiplies{}));
+  }
+
+  /// Reshape the vector and assign values.
+  template<std::forward_iterator ValIter, class... Extents>
+    requires mdshape<Rank, Extents...>
+  constexpr void assign(ValIter iter, const Extents&... extents) {
+    assign(extents...);
+    std::ranges::copy(iter, iter + size(), vals_.begin());
   }
 
   /// Reference to vector element or sub-vector span.
@@ -200,7 +193,7 @@ public:
     requires mdindex<Rank, Indices...>
   constexpr auto operator[](this auto& self, Indices... indices) noexcept
       -> decltype(auto) {
-    return Mdspan{self.shape_, self.vals_}[indices...];
+    return Mdspan{self.vals_.begin(), self.shape_}[indices...];
   }
 
 private:
@@ -209,6 +202,10 @@ private:
   std::vector<Val> vals_;
 
 }; // class Mdvector
+
+template<std::contiguous_iterator ValIter, class... Extents>
+Mdvector(ValIter, const Extents&...)
+    -> Mdvector<std::iter_value_t<ValIter>, packed_array_size_v<Extents...>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

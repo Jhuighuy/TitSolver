@@ -37,11 +37,11 @@ public:
 // Stack trace formatter.
 template<>
 struct std::formatter<tit::Stacktrace> {
-  constexpr auto parse(auto& context) {
+  static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }
-  constexpr auto format(const tit::Stacktrace& stacktrace,
-                        auto& context) const {
+  static constexpr auto format(const tit::Stacktrace& stacktrace,
+                               std::format_context& context) {
     auto out = context.out();
     out = std::format_to(out, "\nStack trace:\n");
     for (const auto& [index, frame] : std::views::enumerate(stacktrace)) {

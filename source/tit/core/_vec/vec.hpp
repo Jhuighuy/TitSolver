@@ -17,6 +17,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
+#include "tit/core/tuple_utils.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -96,19 +97,19 @@ public:
 
   /// Vector elements array.
   constexpr auto elems(this auto&& self) noexcept -> auto&& {
-    return std::forward_like<decltype(self)>(self.col_);
+    return TIT_FORWARD_LIKE(self, self.col_);
   }
 
   /// Vector element at index.
   constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return std::forward_like<decltype(self)>(self.col_[i]);
+    return TIT_FORWARD_LIKE(self, self.col_[i]);
   }
 
   /// Vector register at index.
   auto reg(this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < RegCount, "Register index is out of range!");
-    return std::forward_like<decltype(self)>(self.regs_[i]);
+    return TIT_FORWARD_LIKE(self, self.regs_[i]);
   }
 
   // NOLINTEND(*-type-union-access)
@@ -694,10 +695,11 @@ constexpr auto deserialize(Stream& in, Vec<Num, Dim>& vec) -> bool {
 // Vector formatter.
 template<class Num, tit::size_t Dim>
 struct std::formatter<tit::Vec<Num, Dim>> {
-  constexpr auto parse(auto& context) {
+  static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }
-  constexpr auto format(const tit::Vec<Num, Dim>& a, auto& context) const {
+  static constexpr auto format(const tit::Vec<Num, Dim>& a,
+                               std::format_context& context) {
     auto out = std::format_to(context.out(), "{}", a[0]);
     for (tit::size_t i = 1; i < Dim; ++i) {
       out = std::format_to(out, " {}", a[i]);

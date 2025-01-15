@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <concepts>
+#include <functional>
 #include <initializer_list>
 #include <numeric>
 #include <ranges>
@@ -21,6 +22,7 @@
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/tuple_utils.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -94,7 +96,12 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Build the multivector from a range of buckets.
-  template<par::basic_range Buckets>
+  template<par::range Buckets>
+    requires (
+        std::ranges::input_range<std::ranges::range_reference_t<Buckets>> &&
+        std::constructible_from<Val,
+                                std::ranges::range_value_t<
+                                    std::ranges::range_reference_t<Buckets>>>)
   void assign_buckets_par(Buckets&& buckets) {
     TIT_ASSUME_UNIVERSAL(Buckets, buckets);
 
@@ -128,33 +135,13 @@ public:
   /// @param count Amount of the value buckets to be added.
   /// @param pairs Range of the pairs of bucket indices and values.
   template<std::ranges::input_range Pairs>
+    requires tuple_like<std::ranges::range_value_t<Pairs>, size_t, Val>
   constexpr void assign_pairs_seq(size_t count, Pairs&& pairs) {
-    TIT_ASSUME_UNIVERSAL(Pairs, pairs);
-
-    // Compute how many values there are per each index.
-    // Note: counts are shifted by two in order to avoid shifting the entire
-    // array after assigning the values.
-    val_ranges_.clear(), val_ranges_.resize(count + 2);
-    for (const auto index : pairs | std::views::keys) {
-      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      val_ranges_[index + 2] += 1;
-    }
-
-    // Compute the bucket ranges from the bucket sizes.
-    std::partial_sum(val_ranges_.begin() + 2,
-                     val_ranges_.end(),
-                     val_ranges_.begin() + 2);
-
-    // Place each value into position of the first element of it's index
-    // range, then increment the position.
-    vals_.resize(val_ranges_.back());
-    for (const auto& [index, value] : pairs) {
-      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      auto& position = val_ranges_[index + 1];
-      vals_[position] = value;
-      position += 1;
-    }
-    val_ranges_.pop_back();
+    assign_pairs_tall_impl_(
+        count,
+        std::bind_front(std::ranges::for_each,
+                        std::views::all(std::forward<Pairs>(pairs))),
+        [](auto& cnt) { return cnt++; });
   }
 
   /// Build the multivector from pairs of bucket indices and values.
@@ -164,17 +151,65 @@ public:
   ///
   /// @param count Amount of the value buckets to be added.
   /// @param pairs Range of the pairs of bucket indices and values.
-  template<par::basic_range Pairs>
+  template<par::range Pairs>
+    requires tuple_like<std::ranges::range_value_t<Pairs>, size_t, Val>
   constexpr void assign_pairs_par_tall(size_t count, Pairs&& pairs) {
-    TIT_ASSUME_UNIVERSAL(Pairs, pairs);
+    assign_pairs_tall_impl_(
+        count,
+        std::bind_front(par::for_each,
+                        std::views::all(std::forward<Pairs>(pairs))),
+        [](auto& cnt) { return par::fetch_and_add(cnt, 1); });
+  }
 
+  /// Build the multivector from pairs of bucket indices and values.
+  ///
+  /// This version of the function works best when array size is much less
+  /// than typical size of a bucket (multivector is "wide").
+  ///
+  /// @param count Amount of the value buckets to be added.
+  /// @param pairs Range of the pairs of bucket indices and values.
+  /// @{
+  template<par::range Pairs>
+    requires tuple_like<std::ranges::range_value_t<Pairs>, size_t, Val>
+  constexpr void assign_pairs_par_wide(size_t count, Pairs&& pairs) {
+    assign_pairs_wide_impl_(
+        count,
+        std::bind_front(par::static_for_each,
+                        std::views::all(std::forward<Pairs>(pairs))));
+  }
+  template<par::range Range>
+    requires (
+        std::ranges::input_range<std::ranges::range_reference_t<Range>> &&
+        tuple_like<
+            std::ranges::range_value_t<std::ranges::range_reference_t<Range>>,
+            size_t,
+            Val>)
+  constexpr void assign_pairs_par_wide(size_t count,
+                                       std::ranges::join_view<Range> pairs) {
+    assign_pairs_wide_impl_(count, [base = std::move(pairs).base()](auto func) {
+      par::static_for_each(base, [&func](size_t thread, const auto& range) {
+        std::ranges::for_each(range, std::bind_front(std::ref(func), thread));
+      });
+    });
+  }
+  /// @}
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+private:
+
+  template<class ForEachPair, class FetchInc>
+  constexpr void assign_pairs_tall_impl_(size_t count,
+                                         ForEachPair for_each_pair,
+                                         FetchInc fetch_inc) {
     // Compute how many values there are per each index.
     // Note: counts are shifted by two in order to avoid shifting the entire
     // array after assigning the values.
     val_ranges_.clear(), val_ranges_.resize(count + 2);
-    par::for_each(pairs | std::views::keys, [count, this](size_t index) {
+    for_each_pair([&fetch_inc, count, this](const auto& pair) {
+      const auto& index = std::get<0>(pair);
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      par::fetch_and_add(val_ranges_[index + 2], 1);
+      fetch_inc(val_ranges_[index + 2]);
     });
 
     // Compute the bucket ranges from the bucket sizes.
@@ -185,34 +220,23 @@ public:
     // Place each value into position of the first element of it's index
     // range, then increment the position.
     vals_.resize(val_ranges_.back());
-    par::for_each(pairs, [count, this](const auto& pair) {
+    for_each_pair([&fetch_inc, count, this](const auto& pair) {
       const auto& [index, value] = pair;
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       auto& position = val_ranges_[index + 1];
-      vals_[par::fetch_and_add(position, 1)] = value;
+      vals_[fetch_inc(position)] = value;
     });
     val_ranges_.pop_back();
   }
 
-  /// Build the multivector from pairs of bucket indices and values.
-  ///
-  /// This version of the function works best when array size is much less
-  /// than typical size of a bucket (multivector is "wide").
-  ///
-  /// @param count Amount of the value buckets to be added.
-  /// @param pairs Range of the pairs of bucket indices and values.
-  template<par::range Pairs>
-  constexpr void assign_pairs_par_wide(size_t count, Pairs&& pairs) {
-    TIT_ASSUME_UNIVERSAL(Pairs, pairs);
-
+  template<class ForEachPair>
+  constexpr void assign_pairs_wide_impl_(size_t count,
+                                         ForEachPair for_each_pair) {
     // Compute how many values there are per each index per each thread.
     static Mdvector<size_t, 2> per_thread_ranges{};
     const auto num_threads = par::num_threads();
     per_thread_ranges.assign(num_threads, count + 1);
-    // Note: here we cannot use `std::views::keys` because
-    //       `par::static_for_each` requires either a sized random access range
-    //       or a join view over a sized random access range of ranges.
-    par::static_for_each(pairs, [count](size_t thread, const auto& pair) {
+    for_each_pair([count](size_t thread, const auto& pair) {
       const auto index = std::get<0>(pair);
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       per_thread_ranges[thread, index] += 1;
@@ -231,7 +255,7 @@ public:
     // Place each value into position of the first element of it's index
     // range, then increment the position.
     vals_.resize(val_ranges_.back());
-    par::static_for_each(pairs, [count, this](size_t thread, const auto& pair) {
+    for_each_pair([count, this](size_t thread, const auto& pair) {
       const auto& [index, value] = pair;
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       auto& position = per_thread_ranges[thread, index];
@@ -241,8 +265,6 @@ public:
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-private:
 
   std::vector<size_t> val_ranges_{0};
   std::vector<Val> vals_;

@@ -8,7 +8,7 @@
 #include <tuple>
 
 #include "tit/core/meta.hpp"
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 
 #include "tit/sph/field.hpp"
 

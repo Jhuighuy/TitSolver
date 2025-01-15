@@ -19,7 +19,7 @@ TEST_CASE("str_nocase_equal") {
   }
   SUBCASE("string") {
     CHECK(str_nocase_equal("aBc", "AbC"));
-    CHECK_FALSE(str_nocase_equal("aBc", "AbD"));
+    CHECK_FALSE(str_nocase_equal("aBc", "AbD")); // codespell:ignore
   }
 }
 

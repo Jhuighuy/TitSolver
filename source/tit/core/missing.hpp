@@ -117,8 +117,13 @@ inline void println() {
 }
 
 template<class... Ts>
-struct move_only_function : std::function<Ts...>, tit::NonCopyableBase {
+struct move_only_function : std::function<Ts...> {
+  TIT_MOVE_ONLY(move_only_function);
   using std::function<Ts...>::function;
+  ~move_only_function() noexcept = default;
+  move_only_function(move_only_function&&) noexcept = default;
+  auto operator=(move_only_function&&) noexcept
+      -> move_only_function& = default;
 };
 
 _LIBCPP_END_NAMESPACE_STD
@@ -137,10 +142,11 @@ template<std::ranges::input_range Range>
   requires (std::formattable<std::ranges::range_value_t<Range>, char> &&
             !std::constructible_from<std::string, Range &&>)
 struct std::formatter<Range> {
-  constexpr auto parse(auto& context) {
+  static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }
-  constexpr auto format(const Range& range, auto& context) const {
+  static constexpr auto format(const Range& range,
+                               std::format_context& context) {
     auto out = context.out();
     if (std::ranges::empty(range)) return std::format_to(out, "[]");
     out = std::format_to(out, "[{}", *std::begin(range));

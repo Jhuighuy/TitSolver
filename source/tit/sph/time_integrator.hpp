@@ -12,7 +12,7 @@
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
 
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -163,7 +163,7 @@ public:
       if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
     });
 
-    // Apply particle shifting, if necessary.
+    // Apply particle shifting.
     if constexpr (has<PV>(dr)) {
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
@@ -223,7 +223,7 @@ public:
     substep_(dt, mesh, particles);
     lincomb_(1.0 / 3.0, old_particles, 2.0 / 3.0, particles);
 
-    // Apply particle shifting, if necessary.
+    // Apply particle shifting.
     if constexpr (has<PV>(dr)) {
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
@@ -260,10 +260,10 @@ private:
 
   // Compute the linear combination of the two substeps.
   template<particle_array<required_fields> ParticleArray>
-  void lincomb_(particle_num_t<ParticleArray> weight,
-                const ParticleArray& particles,
-                particle_num_t<ParticleArray> out_weight,
-                ParticleArray& out_particles) {
+  static void lincomb_(particle_num_t<ParticleArray> weight,
+                       const ParticleArray& particles,
+                       particle_num_t<ParticleArray> out_weight,
+                       ParticleArray& out_particles) {
     using PV = ParticleView<ParticleArray>;
     par::for_each( //
         out_particles.fluid(),

@@ -10,11 +10,12 @@
 #include <array>
 #include <format>
 #include <initializer_list>
-#include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/tuple_utils.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit {
@@ -50,13 +51,13 @@ public:
 
   /// Matrix rows array.
   constexpr auto rows(this auto&& self) noexcept -> auto&& {
-    return std::forward_like<decltype(self)>(self.rows_);
+    return TIT_FORWARD_LIKE(self, self.rows_);
   }
 
   /// Matrix row at index.
   constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return std::forward_like<decltype(self)>(self.rows_[i]);
+    return TIT_FORWARD_LIKE(self, self.rows_[i]);
   }
 
   /// Matrix element at index.
@@ -64,7 +65,7 @@ public:
       -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
-    return std::forward_like<decltype(self)>(self.rows_[i][j]);
+    return TIT_FORWARD_LIKE(self, self.rows_[i][j]);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -281,10 +282,11 @@ constexpr auto deserialize(Stream& in, Mat<Num, Dim>& mat) -> bool {
 // Matrix formatter.
 template<class Num, tit::size_t Dim>
 struct std::formatter<tit::Mat<Num, Dim>> {
-  constexpr auto parse(auto& context) {
+  static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }
-  constexpr auto format(const tit::Mat<Num, Dim>& A, auto& context) const {
+  static constexpr auto format(const tit::Mat<Num, Dim>& A,
+                               std::format_context& context) {
     auto out = std::format_to(context.out(), "{}", A[0]);
     for (tit::size_t i = 1; i < Dim; ++i) {
       out = std::format_to(out, " {}", A[i]);

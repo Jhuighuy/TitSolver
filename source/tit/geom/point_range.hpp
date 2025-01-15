@@ -14,6 +14,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
+#include "tit/core/range_utils.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -86,10 +87,7 @@ constexpr auto compute_center(Points&& points, Perm&& perm)
 template<point_range Points>
 constexpr auto compute_bbox(Points&& points) -> point_range_bbox_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
-  /// @todo Assertion below fails to compile with GCC 14 in coverage mode.
-#if !defined(TIT_HAVE_GCOV) || !TIT_HAVE_GCOV
   TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
-#endif
   BBox box{*std::begin(points)};
   for (const auto& point : points | std::views::drop(1)) box.expand(point);
   return box;

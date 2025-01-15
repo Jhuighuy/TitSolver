@@ -92,12 +92,6 @@ Checks: |
   -readability-magic-numbers
   -readability-math-missing-parentheses
 
-# Allow implicitly deleted when deriving from a class with a deleted copy/move
-# constructor, `operator=` or destructor.
-CheckOptions:
-  cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
-  cppcoreguidelines-special-member-functions.AllowImplicitlyDeletedCopyOrMove: true
-
 # Treat all warning as errors.
 WarningsAsErrors: |
   *

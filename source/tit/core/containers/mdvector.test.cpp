@@ -3,10 +3,9 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <algorithm>
 #include <array>
-#include <ranges>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/containers/mdvector.hpp"
 
 #include "tit/testing/test.hpp"
@@ -17,99 +16,129 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("Mdspan") {
-  const std::array shape{3ZU, 3ZU};
-  const std::array vals{1, 2, 3, 4, 5, 6, 7, 8, 9};
-  const Mdspan mdspan{shape, vals};
-  SUBCASE("access") {
-    CHECK(mdspan.size() == 9);
-    CHECK(mdspan.front() == 1);
-    CHECK(mdspan.back() == 9);
-    CHECK(mdspan[0, 0] == 1);
-    CHECK(mdspan[0, 1] == 2);
-    CHECK(mdspan[std::array{1, 0}] == 4);
-    CHECK(mdspan[2, 1] == 8);
+  SUBCASE("construction") {
+    SUBCASE("from shape and values") {
+      const std::array vals{1, 2, 3, 4, 5, 6, 7, 8, 9};
+      const auto shape = std::to_array<size_t>({3, 3});
+      const Mdspan mdspan{vals.begin(), shape};
+      CHECK(mdspan.size() == 9);
+      CHECK(mdspan.data() == vals.data());
+      CHECK_RANGE_EQ(mdspan, vals);
+      CHECK_RANGE_EQ(mdspan.shape(), shape);
+    }
   }
-  SUBCASE("subspans") {
-    CHECK(mdspan[1].size() == 3);
-    CHECK(mdspan[1].front() == 4);
-    CHECK(mdspan[1].back() == 6);
-    CHECK(mdspan[0][0] == 1);
-    CHECK(mdspan[0][1] == 2);
-    CHECK(mdspan[1][0] == 4);
-    CHECK(mdspan[2][1] == 8);
-  }
-  SUBCASE("iterators") {
-    const auto iter = std::ranges::find(mdspan, 7);
-    CHECK(iter - mdspan.begin() == 6);
+  SUBCASE("operator[]") {
+    const std::array vals{1, 2, 3, 4, 5, 6, 7, 8};
+    const auto shape = std::to_array<size_t>({2, 2, 2});
+    const Mdspan mdspan{vals.begin(), shape};
+    SUBCASE("items access") {
+      CHECK(mdspan[0, 1, 0] == 3);
+      CHECK(mdspan[std::array{0, 1}, 1] == 4);
+      CHECK(mdspan[1][0, 1] == 6);
+      CHECK(mdspan[1, std::array{1, 0}] == 7);
+      CHECK(mdspan[std::array{1, 1, 1}] == 8);
+    }
+    SUBCASE("slices access") {
+      const Mdspan slice2D = mdspan[1];
+      CHECK_RANGE_EQ(slice2D.shape(), {2, 2});
+      CHECK_RANGE_EQ(slice2D, {5, 6, 7, 8});
+      const Mdspan slice1D = slice2D[1];
+      CHECK_RANGE_EQ(slice1D.shape(), {2});
+      CHECK_RANGE_EQ(slice1D, {7, 8});
+    }
   }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("Mdvector") {
-  SUBCASE("shape") {
-    // Construct `Mdvector` and check it's size.
-    Mdvector<int, 2> mdvector(3, 3);
-    CHECK(mdvector.size() == 9);
-
-    // Assign different shape to it and check it's size.
-    mdvector.assign(2, 4);
-    CHECK(mdvector.size() == 8);
-
-    // Clear the vector and check if it is size again.
-    mdvector.clear();
-    CHECK(mdvector.size() == 0);
+  SUBCASE("construction") {
+    SUBCASE("empty") {
+      const Mdvector<int, 2> mdvector;
+      CHECK(mdvector.size() == 0);
+      CHECK_RANGE_EQ(mdvector.shape(), std::array<size_t, 2>{});
+      CHECK(mdvector.data() == nullptr);
+    }
+    SUBCASE("from shape") {
+      const Mdvector<int, 2> mdvector(4, 2);
+      CHECK(mdvector.size() == 8);
+      CHECK(mdvector.data() != nullptr);
+      CHECK_RANGE_EQ(mdvector.shape(), {4, 2});
+    }
+    SUBCASE("from shape and values") {
+      const std::array vals{1, 2, 3, 4, 5, 6, 7, 8};
+      const Mdvector mdvector(vals.begin(), 2, std::array{1, 4});
+      CHECK(mdvector.size() == 8);
+      CHECK(mdvector.data() != nullptr);
+      CHECK(mdvector.data() != vals.data()); // copy should happen.
+      CHECK_RANGE_EQ(mdvector, vals);
+      CHECK_RANGE_EQ(mdvector.shape(), {2, 1, 4});
+    }
   }
-  SUBCASE("access") {
-    const auto make_mdvector = []() {
-      // Construct Mdvector.
-      Mdvector<int, 2> mdvector(3, 3);
-
-      // Populate it with vals using the different accessors.
-      mdvector.front() = 1, mdvector[0, 1] = 2, mdvector[0][2] = 2;
-      mdvector[1, 0] = 4, mdvector[1][1] = 5, mdvector[1, 2] = 6;
-      mdvector[2][0] = 9, mdvector[std::array{2, 1}] = 8, mdvector.back() = 9;
-      return mdvector;
-    };
-
-    // Retrieve const copy of our vector to play with.
-    const auto mdvector = make_mdvector();
-
-    // Check basic accessors.
-    CHECK(mdvector.front() == 1);
-    CHECK(mdvector.back() == 9);
-
-    // Check data access.
-    CHECK(mdvector[0, 0] == 1);
-    CHECK(mdvector[0, 1] == 2);
-    CHECK(mdvector[1, 0] == 4);
-    CHECK(mdvector[2, 1] == 8);
-
-    // Check data access via subspans.
-    CHECK(mdvector[1].size() == 3);
-    CHECK(mdvector[1].front() == 4);
-    CHECK(mdvector[1].back() == 6);
-    CHECK(mdvector[0][0] == 1);
-    CHECK(mdvector[0][1] == 2);
-    CHECK(mdvector[1][0] == 4);
-    CHECK(mdvector[2][1] == 8);
+  SUBCASE("operator[]") {
+    const std::array vals{1, 2, 3, 4, 5, 6, 7, 8};
+    const Mdvector mdvector{vals.begin(), 2, 2, 2};
+    SUBCASE("items access") {
+      CHECK(mdvector[0, 1, 0] == 3);
+      CHECK(mdvector[std::array{0, 1}, 1] == 4);
+      CHECK(mdvector[1][0, 1] == 6);
+      CHECK(mdvector[1, std::array{1, 0}] == 7);
+      CHECK(mdvector[std::array{1, 1, 1}] == 8);
+    }
+    SUBCASE("slices access") {
+      const Mdspan slice2D = mdvector[1];
+      CHECK_RANGE_EQ(slice2D.shape(), {2, 2});
+      CHECK_RANGE_EQ(slice2D, {5, 6, 7, 8});
+      const Mdspan slice1D = slice2D[1];
+      CHECK_RANGE_EQ(slice1D.shape(), {2});
+      CHECK_RANGE_EQ(slice1D, {7, 8});
+    }
   }
-  SUBCASE("iterators") {
-    const auto make_mdvector = []() {
-      // Construct and populate `Mdvector` using iterators.
-      Mdvector<int, 3> mdvector{};
-      mdvector.assign(4, 4, 4);
-      std::ranges::copy(std::views::iota(1, 65), mdvector.begin());
-      std::ranges::reverse(mdvector);
-      return mdvector;
-    };
-
-    // Retrieve const copy of our vector to play with.
-    const auto mdvector = make_mdvector();
-
-    // Find `17` in vector.
-    const auto iter = std::ranges::find(mdvector, 17);
-    CHECK(iter - mdvector.begin() == (65 - 17 - 1));
+  SUBCASE("methods") {
+    const std::array vals{1, 2, 3, 4, 5, 6, 7, 8};
+    Mdvector mdvector{vals.begin(), 2, 2, 2};
+    SUBCASE("clear") {
+      mdvector.clear();
+      CHECK(mdvector.size() == 0);
+      CHECK(mdvector.data() != nullptr); // no deallocation should happen.
+      CHECK_RANGE_EQ(mdvector.shape(), std::array<size_t, 3>{});
+    }
+    SUBCASE("assign") {
+      SUBCASE("shape") {
+        auto* const old_data = mdvector.data();
+        SUBCASE("same size") {
+          mdvector.assign(2, 1, 4);
+          CHECK(mdvector.size() == 8);
+          CHECK(mdvector.data() == old_data); // no reallocation should happen.
+          CHECK_RANGE_EQ(mdvector, std::array<int, 8>{});
+          CHECK_RANGE_EQ(mdvector.shape(), {2, 1, 4});
+        }
+        SUBCASE("smaller size") {
+          mdvector.assign(2, 1, 2);
+          CHECK(mdvector.size() == 4);
+          CHECK(mdvector.data() == old_data); // no reallocation should happen.
+          CHECK_RANGE_EQ(mdvector, std::array<int, 4>{});
+          CHECK_RANGE_EQ(mdvector.shape(), {2, 1, 2});
+        }
+        SUBCASE("larger size") {
+          mdvector.assign(2, 2, 4);
+          CHECK(mdvector.size() == 16);
+          CHECK(mdvector.data() != nullptr);
+          CHECK(mdvector.data() != old_data);
+          CHECK_RANGE_EQ(mdvector, std::array<int, 16>{});
+          CHECK_RANGE_EQ(mdvector.shape(), {2, 2, 4});
+        }
+      }
+      SUBCASE("shape and values") {
+        const std::array new_vals{9, 10, 11, 12, 13, 14, 15, 16};
+        mdvector.assign(new_vals.begin(), std::array{2, 4}, 1);
+        CHECK(mdvector.size() == 8);
+        CHECK(mdvector.data() != nullptr);
+        CHECK(mdvector.data() != new_vals.data()); // copy should happen.
+        CHECK_RANGE_EQ(mdvector, new_vals);
+        CHECK_RANGE_EQ(mdvector.shape(), {2, 4, 1});
+      }
+    }
   }
 }
 

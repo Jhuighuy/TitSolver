@@ -58,8 +58,9 @@ void checked_atexit(atexit_callback_t callback) {
 auto exe_path() -> std::filesystem::path {
 #ifdef __APPLE__
   std::array<char, PROC_PIDPATHINFO_MAXSIZE> buffer{};
-  const auto status = proc_pidpath(getpid(), buffer.data(), sizeof(buffer));
-  if (status <= 0) TIT_THROW("Unable to query the current executable path!");
+  if (proc_pidpath(getpid(), buffer.data(), sizeof(buffer)) <= 0) {
+    TIT_THROW("Unable to query the current executable path!");
+  }
   return buffer.data();
 #elifdef __linux__
   return std::filesystem::canonical("/proc/self/exe");
@@ -82,10 +83,8 @@ auto tty_width(TTY tty) -> std::optional<size_t> {
   const auto tty_fileno = std::to_underlying(tty);
   if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.
 
-  struct winsize window_size = {};
-  // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
-  const auto status = ioctl(tty_fileno, TIOCGWINSZ, &window_size);
-  if (status != 0) {
+  winsize window_size = {}; // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
+  if (ioctl(tty_fileno, TIOCGWINSZ, &window_size) != 0) {
     TIT_THROW("Unable to query terminal window size with fileno {}!",
               tty_fileno);
   }

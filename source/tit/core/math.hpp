@@ -18,7 +18,6 @@
 #endif
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/type_traits.hpp"
 
 namespace tit {
 
@@ -93,9 +92,9 @@ constexpr auto pow(Float a, std::type_identity_t<Float> power) noexcept
 }
 
 /// Evaluate polynomial @f$ \sum c_k x^k @f$ value.
-template<class Num, class Coeff>
-constexpr auto horner(Num x, std::initializer_list<Coeff> ci) {
-  mul_result_t<Num, Coeff> r{0};
+template<class Num>
+constexpr auto horner(Num x, std::initializer_list<Num> ci) {
+  Num r{0};
   for (const auto c : ci | std::views::reverse) r = r * x + c;
   return r;
 }

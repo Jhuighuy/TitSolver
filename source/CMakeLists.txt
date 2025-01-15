@@ -6,7 +6,6 @@
 add_subdirectory("tit")
 add_subdirectory("titback")
 add_subdirectory("titfront")
-add_subdirectory("titparaviewplugin")
 add_subdirectory("titwcsph")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -16,7 +16,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/data/storage.hpp"
@@ -363,6 +363,21 @@ template<class P>
 consteval auto has_uniform(field auto... uniforms) -> bool {
   constexpr auto present_fields = std::remove_cvref_t<P>::uniform_fields;
   return present_fields.includes(meta::Set{uniforms...});
+}
+
+/// Check presence of at least one particle field.
+template<class PV, field... Fields>
+consteval auto has_any(Fields... fields) -> bool {
+  constexpr auto present_fields = std::remove_cvref_t<PV>::fields;
+  return (... || present_fields.contains(fields));
+}
+
+// Clear the field value.
+template<class PV, field... Fields>
+constexpr void clear([[maybe_unused]] PV& particle, Fields... fields) {
+  meta::Set{fields...}.for_each([&particle](auto field) {
+    if constexpr (has<PV>(field)) particle[field] = {};
+  });
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

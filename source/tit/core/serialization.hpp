@@ -15,9 +15,9 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/range_utils.hpp"
 #include "tit/core/stream.hpp"
-#include "tit/core/type_traits.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/tuple_utils.hpp"
 
 namespace tit {
 

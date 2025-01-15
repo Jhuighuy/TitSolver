@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/range_utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bipartition.hpp"
@@ -35,9 +35,6 @@ TEST_CASE("geom::CoordBisection") {
   // Partition and ensure the result is correct.
   constexpr size_t axis = 0;
   constexpr auto pivot = 2.5;
-  constexpr std::array<size_t, 12>
-      expected_left_perm{0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14};
-  constexpr std::array<size_t, 4> expected_right_perm{3, 7, 11, 15};
   for (const auto reverse : {false, true}) {
     // Partition the points.
     auto [left_perm, right_perm] =
@@ -48,8 +45,8 @@ TEST_CASE("geom::CoordBisection") {
     std::ranges::sort(left_perm), std::ranges::sort(right_perm);
 
     // Ensure the result is correct.
-    CHECK_RANGE_EQ(left_perm, expected_left_perm);
-    CHECK_RANGE_EQ(right_perm, expected_right_perm);
+    CHECK_RANGE_EQ(left_perm, {0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14});
+    CHECK_RANGE_EQ(right_perm, {3, 7, 11, 15});
   }
 }
 
@@ -67,9 +64,6 @@ TEST_CASE("geom::DirBisection") {
   // Partition and ensure the result is correct.
   const auto dir = normalize(Vec2D{1, 1});
   constexpr auto pivot = 1.75;
-  constexpr std::array<size_t, 6> expected_left_perm = {0, 1, 2, 4, 5, 8};
-  constexpr std::array<size_t, 10> expected_right_perm =
-      {3, 6, 7, 9, 10, 11, 12, 13, 14, 15};
   for (const auto reverse : {false, true}) {
     // Partition the points.
     auto [left_perm, right_perm] =
@@ -80,8 +74,8 @@ TEST_CASE("geom::DirBisection") {
     std::ranges::sort(left_perm), std::ranges::sort(right_perm);
 
     // Ensure the result is correct.
-    CHECK_RANGE_EQ(left_perm, expected_left_perm);
-    CHECK_RANGE_EQ(right_perm, expected_right_perm);
+    CHECK_RANGE_EQ(left_perm, {0, 1, 2, 4, 5, 8});
+    CHECK_RANGE_EQ(right_perm, {3, 6, 7, 9, 10, 11, 12, 13, 14, 15});
   }
 }
 
@@ -106,12 +100,8 @@ TEST_CASE("geom::CoordMedianSplit") {
     std::ranges::sort(left_perm), std::ranges::sort(right_perm);
 
     // Ensure the result is correct.
-    constexpr std::array<size_t, 8>
-        expected_left_perm{0, 1, 4, 5, 8, 9, 12, 13};
-    constexpr std::array<size_t, 8>
-        expected_right_perm{2, 3, 6, 7, 10, 11, 14, 15};
-    CHECK_RANGE_EQ(left_perm, expected_left_perm);
-    CHECK_RANGE_EQ(right_perm, expected_right_perm);
+    CHECK_RANGE_EQ(left_perm, {0, 1, 4, 5, 8, 9, 12, 13});
+    CHECK_RANGE_EQ(right_perm, {2, 3, 6, 7, 10, 11, 14, 15});
   }
   SUBCASE("longes axis") {
     // Create points on a 5x4 lattice.
@@ -130,12 +120,8 @@ TEST_CASE("geom::CoordMedianSplit") {
     std::ranges::sort(left_perm), std::ranges::sort(right_perm);
 
     // Ensure the result is correct.
-    constexpr std::array<size_t, 12>
-        expected_left_perm{0, 1, 2, 5, 6, 7, 10, 11, 12, 15, 16, 17};
-    constexpr std::array<size_t, 8>
-        expected_right_perm{3, 4, 8, 9, 13, 14, 18, 19};
-    CHECK_RANGE_EQ(left_perm, expected_left_perm);
-    CHECK_RANGE_EQ(right_perm, expected_right_perm);
+    CHECK_RANGE_EQ(left_perm, {0, 1, 2, 5, 6, 7, 10, 11, 12, 15, 16, 17});
+    CHECK_RANGE_EQ(right_perm, {3, 4, 8, 9, 13, 14, 18, 19});
   }
 }
 
@@ -159,11 +145,8 @@ TEST_CASE("geom::DirMedianSplit") {
   std::ranges::sort(left_perm), std::ranges::sort(right_perm);
 
   // Ensure the result is correct.
-  constexpr std::array<size_t, 6> expected_left_perm{0, 1, 2, 4, 5, 8};
-  constexpr std::array<size_t, 10>
-      expected_right_perm{3, 6, 7, 9, 10, 11, 12, 13, 14, 15};
-  CHECK_RANGE_EQ(left_perm, expected_left_perm);
-  CHECK_RANGE_EQ(right_perm, expected_right_perm);
+  CHECK_RANGE_EQ(left_perm, {0, 1, 2, 4, 5, 8});
+  CHECK_RANGE_EQ(right_perm, {3, 6, 7, 9, 10, 11, 12, 13, 14, 15});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,12 +180,8 @@ TEST_CASE("geom::InertialMedianSplit") {
   std::ranges::sort(left_perm), std::ranges::sort(right_perm);
 
   // Ensure the result is correct.
-  constexpr std::array<size_t, 12>
-      expected_left_perm{0, 1, 2, 5, 6, 7, 10, 11, 12, 15, 16, 17};
-  constexpr std::array<size_t, 8>
-      expected_right_perm{3, 4, 8, 9, 13, 14, 18, 19};
-  CHECK_RANGE_EQ(left_perm, expected_left_perm);
-  CHECK_RANGE_EQ(right_perm, expected_right_perm);
+  CHECK_RANGE_EQ(left_perm, {0, 1, 2, 5, 6, 7, 10, 11, 12, 15, 16, 17});
+  CHECK_RANGE_EQ(right_perm, {3, 4, 8, 9, 13, 14, 18, 19});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

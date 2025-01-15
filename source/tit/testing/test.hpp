@@ -5,10 +5,13 @@
 
 #pragma once
 
-// Keep the algorithm header for range comparisons.
-#include <algorithm> // IWYU pragma: keep
+#include <algorithm>
+#include <initializer_list>
+#include <ranges>
 
 #include <doctest/doctest.h> // IWYU pragma: exports
+
+namespace tit::testing {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -56,17 +59,25 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Check that two ranges are equal.
+template<std::ranges::input_range Range1,
+         std::ranges::input_range Range2 =
+             std::initializer_list<std::ranges::range_value_t<Range1>>>
+constexpr auto equal(Range1&& a, Range2&& b) -> bool {
+  return std::ranges::equal(std::forward<Range1>(a), std::forward<Range2>(b));
+}
+
 /// Test that the range operands are equal.
-#define CHECK_RANGE_EQ(...) CHECK(std::ranges::equal(__VA_ARGS__))
+#define CHECK_RANGE_EQ(...) CHECK(tit::testing::equal(__VA_ARGS__))
 
 /// Test that the range operands are not equal.
-#define CHECK_RANGE_NE(...) CHECK_FALSE(std::ranges::equal(__VA_ARGS__))
+#define CHECK_RANGE_NE(...) CHECK_FALSE(tit::testing::equal(__VA_ARGS__))
 
 /// Require the range operands to be equal.
-#define REQUIRE_RANGE_EQ(...) REQUIRE(std::ranges::equal(__VA_ARGS__))
+#define REQUIRE_RANGE_EQ(...) REQUIRE(tit::testing::equal(__VA_ARGS__))
 
 /// Require the range operands not to be equal.
-#define REQUIRE_RANGE_NE(...) REQUIRE_FALSE(std::ranges::equal(__VA_ARGS__))
+#define REQUIRE_RANGE_NE(...) REQUIRE_FALSE(tit::testing::equal(__VA_ARGS__))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -81,3 +92,5 @@
   REQUIRE_THROWS_WITH_AS(expr, doctest::Contains(substring), Exception)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit::testing

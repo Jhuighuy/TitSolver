@@ -3,9 +3,6 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <array>
-
-#include "tit/core/basic_types.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
@@ -123,55 +120,40 @@ TEST_CASE("geom::Grid::cells") {
   SUBCASE("all") {
     const geom::BBox box{Vec{0.0, 0.0}, Vec{3.0, 3.0}};
     const geom::Grid grid{box, {3, 3}};
-    constexpr auto expected_cells = std::to_array<Vec<size_t, 2>>({
-        {0, 0},
-        {0, 1},
-        {0, 2},
-        {1, 0},
-        {1, 1},
-        {1, 2},
-        {2, 0},
-        {2, 1},
-        {2, 2},
-    });
-    CHECK_RANGE_EQ(grid.cells(), expected_cells);
+    CHECK_RANGE_EQ(grid.cells(),
+                   {{0, 0},
+                    {0, 1},
+                    {0, 2},
+                    {1, 0},
+                    {1, 1},
+                    {1, 2},
+                    {2, 0},
+                    {2, 1},
+                    {2, 2}});
   }
   SUBCASE("all(n)") {
     const geom::BBox box{Vec{0.0, 0.0}, Vec{4.0, 4.0}};
     const geom::Grid grid{box, {4, 4}};
-    constexpr auto expected_cells = std::to_array<Vec<size_t, 2>>({
-        {1, 1},
-        {1, 2},
-        {2, 1},
-        {2, 2},
-    });
-    CHECK_RANGE_EQ(grid.cells(1), expected_cells);
+    CHECK_RANGE_EQ(grid.cells(1), {{1, 1}, {1, 2}, {2, 1}, {2, 2}});
   }
   SUBCASE("range") {
     const geom::BBox box{Vec{0.0, 0.0}, Vec{8.0, 8.0}};
     const geom::Grid grid{box, {8, 8}};
     SUBCASE("exclusive") {
-      constexpr auto expected_cells = std::to_array<Vec<size_t, 2>>({
-          {1, 1},
-          {1, 2},
-          {2, 1},
-          {2, 2},
-      });
-      CHECK_RANGE_EQ(grid.cells({1, 1}, {3, 3}), expected_cells);
+      CHECK_RANGE_EQ(grid.cells({1, 1}, {3, 3}),
+                     {{1, 1}, {1, 2}, {2, 1}, {2, 2}});
     }
     SUBCASE("inclusive") {
-      constexpr auto expected_cells = std::to_array<Vec<size_t, 2>>({
-          {1, 1},
-          {1, 2},
-          {1, 3},
-          {2, 1},
-          {2, 2},
-          {2, 3},
-          {3, 1},
-          {3, 2},
-          {3, 3},
-      });
-      CHECK_RANGE_EQ(grid.cells_inclusive({1, 1}, {3, 3}), expected_cells);
+      CHECK_RANGE_EQ(grid.cells_inclusive({1, 1}, {3, 3}),
+                     {{1, 1},
+                      {1, 2},
+                      {1, 3},
+                      {2, 1},
+                      {2, 2},
+                      {2, 3},
+                      {3, 1},
+                      {3, 2},
+                      {3, 3}});
     }
   }
   SUBCASE("intersecting") {
@@ -179,28 +161,21 @@ TEST_CASE("geom::Grid::cells") {
     const geom::Grid grid{box, {8, 8}};
     SUBCASE("full intersection") {
       const geom::BBox search_box{Vec{3.0, 3.0}, Vec{5.0, 5.0}};
-      constexpr auto expected_cells = std::to_array<Vec<size_t, 2>>({
-          {3, 3},
-          {3, 4},
-          {3, 5},
-          {4, 3},
-          {4, 4},
-          {4, 5},
-          {5, 3},
-          {5, 4},
-          {5, 5},
-      });
-      CHECK_RANGE_EQ(grid.cells_intersecting(search_box), expected_cells);
+      CHECK_RANGE_EQ(grid.cells_intersecting(search_box),
+                     {{3, 3},
+                      {3, 4},
+                      {3, 5},
+                      {4, 3},
+                      {4, 4},
+                      {4, 5},
+                      {5, 3},
+                      {5, 4},
+                      {5, 5}});
     }
     SUBCASE("partial intersection") {
       const geom::BBox search_box{Vec{6.0, 6.0}, Vec{9.0, 9.0}};
-      constexpr auto expected_cells = std::to_array<Vec<size_t, 2>>({
-          {6, 6},
-          {6, 7},
-          {7, 6},
-          {7, 7},
-      });
-      CHECK_RANGE_EQ(grid.cells_intersecting(search_box), expected_cells);
+      CHECK_RANGE_EQ(grid.cells_intersecting(search_box),
+                     {{6, 6}, {6, 7}, {7, 6}, {7, 7}});
     }
   }
 }
