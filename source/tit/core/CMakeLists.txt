@@ -71,8 +71,7 @@ add_tit_library(
     gcem
     hwy::hwy
     mimalloc-static
-    TBB::tbb
-    TBB::tbbmalloc
+    Taskflow::Taskflow
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

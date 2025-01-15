@@ -13,10 +13,11 @@
 #include <type_traits>
 #include <utility>
 
-#include <oneapi/tbb/blocked_range.h>
-#include <oneapi/tbb/parallel_for.h>
-#include <oneapi/tbb/partitioner.h>
+#include <taskflow/taskflow.hpp>
 
+#include <taskflow/algorithm/for_each.hpp>
+
+#include "taskflow/algorithm/partitioner.hpp"
 #include "tit/core/basic_types.hpp"
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par/atomic.hpp"
@@ -52,10 +53,13 @@ struct ForEach {
   template<basic_range Range,
            std::regular_invocable<std::ranges::range_reference_t<Range&&>> Func>
   void operator()(Range&& range, Func func) const {
-    /// @todo Replace with `tbb::parallel_for_each` when it supports ranges.
     TIT_ASSUME_UNIVERSAL(Range, range);
-    tbb::parallel_for(tbb::blocked_range{std::begin(range), std::end(range)},
-                      std::bind_back(std::ranges::for_each, std::move(func)));
+    tf::Taskflow taskflow{};
+    taskflow.for_each(std::begin(range),
+                      std::end(range),
+                      std::move(func),
+                      tf::GuidedPartitioner<>{10});
+    executor().run(taskflow).wait();
   }
 };
 
@@ -77,16 +81,18 @@ struct StaticForEach {
       const auto offset = index * quotient + std::min(index, remainder);
       return first + offset;
     };
-    tbb::parallel_for<size_t>(
-        /*first=*/0,
-        /*last=*/thread_count,
-        /*step=*/1,
+    tf::Taskflow taskflow{};
+    taskflow.for_each_index(
+        0UZ,
+        thread_count,
+        1UZ,
         [&block_first, &func](size_t thread_index) {
           std::for_each(block_first(thread_index),
                         block_first(thread_index + 1),
                         std::bind_front(std::ref(func), thread_index));
         },
-        tbb::static_partitioner{});
+        tf::StaticPartitioner<>{});
+    executor().run(taskflow).wait();
   }
 
   // Not sure if this will be needed in the future, let's keep it here for now.
@@ -117,8 +123,12 @@ struct BlockForEach {
   void operator()(Range&& range, Func func) const {
     TIT_ASSUME_UNIVERSAL(Range, range);
     for (auto chunk : std::views::chunk(range, num_threads())) {
-      for_each(std::move(chunk),
-               std::bind_back(std::ranges::for_each, std::cref(func)));
+      tf::Taskflow taskflow{};
+      taskflow.for_each(std::begin(chunk),
+                        std::end(chunk),
+                        std::bind_back(std::ranges::for_each, std::cref(func)),
+                        tf::StaticPartitioner<>{});
+      executor().run(taskflow).wait();
     }
   }
 };

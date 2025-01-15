@@ -6,11 +6,10 @@
 #pragma once
 
 #include <concepts>
+#include <functional>
 #include <memory>
 #include <type_traits>
 #include <utility>
-
-#include <oneapi/tbb/task_group.h>
 
 #include "tit/core/checks.hpp"
 
@@ -34,28 +33,30 @@ public:
   template<class Task>
     requires task<Task&&>
   void run(Task&& task) {
-    TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
-    group_->run(std::forward<Task>(task));
+    // TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
+    // group_->run(std::forward<Task>(task));
+    std::invoke(std::forward<Task>(task));
   }
   template<class Task>
     requires task<Task&&>
-  void run(bool parallel, Task&& task) {
-    TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
-    if (parallel) group_->run(std::forward<Task>(task));
-    else std::invoke(std::forward<Task>(task));
+  void run(bool /*parallel*/, Task&& task) {
+    // TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
+    // if (parallel) group_->run(std::forward<Task>(task));
+    // else std::invoke(std::forward<Task>(task));
+    std::invoke(std::forward<Task>(task));
   }
   /// @}
 
   /// Wait for the group to finish.
   void wait() {
-    TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
-    this->group_->wait();
+    // TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
+    // this->group_->wait();
   }
 
 private:
 
-  std::unique_ptr<tbb::task_group> group_ =
-      std::make_unique<typename decltype(group_)::element_type>();
+  // std::unique_ptr<tbb::task_group> group_ =
+  //     std::make_unique<typename decltype(group_)::element_type>();
 
 }; // class TaskGroup
 

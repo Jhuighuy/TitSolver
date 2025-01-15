@@ -9,12 +9,6 @@
 #include <memory>
 #include <type_traits>
 
-#ifndef TBB_PREVIEW_MEMORY_POOL
-#define TBB_PREVIEW_MEMORY_POOL 1
-#endif
-
-#include <oneapi/tbb/memory_pool.h>
-
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 
@@ -32,18 +26,14 @@ public:
   template<class... Args>
     requires std::constructible_from<Val, Args&&...>
   [[nodiscard]] auto create(Args&&... args) -> Val* {
-    TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
-    auto* const ptr = static_cast<Val*>(pool_->malloc(sizeof(Val)));
-    if (ptr == nullptr) {
-      TIT_THROW("Memory pool failed to allocate {} bytes.", sizeof(Val));
-    }
-    return std::construct_at(ptr, std::forward<Args>(args)...);
+    // TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
+    // auto* const ptr = static_cast<Val*>(pool_->malloc(sizeof(Val)));
+    // if (ptr == nullptr) {
+    //   TIT_THROW("Memory pool failed to allocate {} bytes.", sizeof(Val));
+    // }
+    // return std::construct_at(ptr, std::forward<Args>(args)...);
+    return new (std::nothrow) Val{std::forward<Args>(args)...};
   }
-
-private:
-
-  std::unique_ptr<tbb::memory_pool<std::allocator<Val>>> pool_ =
-      std::make_unique<typename decltype(pool_)::element_type>();
 
 }; // class MemoryPool
 

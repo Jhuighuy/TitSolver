@@ -5,8 +5,9 @@
 
 #include <mutex>
 #include <optional>
+#include <utility>
 
-#include <oneapi/tbb/global_control.h>
+#include <taskflow/taskflow.hpp>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -16,16 +17,25 @@ namespace tit::par {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto num_threads() noexcept -> size_t {
-  return tbb::global_control::active_value(
-      tbb::global_control::max_allowed_parallelism);
+namespace {
+
+auto executor_holder() noexcept -> std::optional<tf::Executor>& {
+  static std::optional<tf::Executor> executor{std::in_place, 8};
+  return executor;
+}
+
+} // namespace
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto executor() noexcept -> tf::Executor& {
+  TIT_ASSERT(executor_holder().has_value(), "Executor was not initialized!");
+  return *executor_holder();
 }
 
 void set_num_threads(size_t value) {
   TIT_ASSERT(value > 0, "Invalid number of the worker threads!");
-  if (num_threads() == value) return;
-  static std::optional<tbb::global_control> control{};
-  control.emplace(tbb::global_control::max_allowed_parallelism, value);
+  executor_holder().emplace(value);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
