@@ -3,12 +3,6 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# TODO: Switch to `nanobind-static-abi3` once we update to Python 3.12+.
-nanobind_build_library(nanobind-static)
-add_library(nanobind::nanobind ALIAS nanobind-static)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 install_python(
   DESTINATION
     python
@@ -20,25 +14,38 @@ install_python(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_library(
-  NAME python
+  NAME
+    py
   SOURCES
-    "nb_config.hpp"
+    "_python.hpp"
   DEPENDS
-    nanobind::nanobind
+    tit::core
+    Python3::Module
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_library(
   NAME
-    python_interpreter
+    py_embed
   SOURCES
     "interpreter.cpp"
     "interpreter.hpp"
   DEPENDS
     tit::core
-    tit::python
-    Python::Python
+    tit::py
+    Python3::Python
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    py_tests
+  SOURCES
+  DEPENDS
+    tit::py_embed
+    tit::testing
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
