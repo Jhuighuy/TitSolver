@@ -1,0 +1,12 @@
+<built-in function hello>
+Hello, world!
+Echo, echo!
+10
+__init__ 123
+Hello, class!
+True
+<built-in method hello_w of test_module.TestClass object at 0x104bf87c0>
+get a = 14
+set a = 228
+14
+method '__init__': argument 'a': 'str' is not a <todo>

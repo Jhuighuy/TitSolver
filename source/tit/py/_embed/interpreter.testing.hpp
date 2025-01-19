@@ -5,14 +5,15 @@
 
 #pragma once
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#include "tit/py/embed.hpp"
 
-// IWYU pragma: begin_exports
-#include "tit/py/_core/_python.hpp"
-#include "tit/py/_core/errors.hpp"
-#include "tit/py/_core/memory.hpp"
-#include "tit/py/_core/modules.hpp"
-#include "tit/py/_core/objects.hpp"
-// IWYU pragma: end_exports
+namespace tit::testing {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Python interpreter for testing.
+auto interpreter() -> py::embed::Interpreter&;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit::testing

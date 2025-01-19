@@ -41,3 +41,4 @@ SpaceBeforeParens: Custom
 SpaceBeforeParensOptions:
   AfterRequiresInClause: Yes
   AfterRequiresInExpression: Yes
+StatementMacros: [PyObject_HEAD]
