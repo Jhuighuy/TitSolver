@@ -12,7 +12,7 @@
 #include "tit/core/str_utils.hpp"
 #include "tit/core/utils.hpp"
 
-#include "tit/py/core.hpp" // IWYU pragma: keep
+#include "tit/py/core.hpp"
 
 struct PyConfig; // Not available under limited API.
 
@@ -82,6 +82,13 @@ public:
   /// Append a search path to the Python path.
   void append_path(CStrView path) const;
 
+  /// Get the global variables.
+  auto globals() const -> const Dict&;
+
+  /// Evaluate the Python expression.
+  /// If evaluation fails, an exception is thrown.
+  auto eval(CStrView expr) const -> Object;
+
   /// Execute the Python statement.
   /// If execution fails, an error is printed and `false` is returned.
   auto exec(CStrView stmt) const -> bool;
@@ -98,7 +105,7 @@ private:
   // Stop the coverage report.
   void stop_coverage_report_() const;
 
-  PyObject* globals_ = nullptr;
+  Dict globals_;
 
 }; // class Interpreter
 
