@@ -15,9 +15,16 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/str_utils.hpp"
 #include "tit/core/sys/utils.hpp"
+#ifdef TIT_HAVE_GCOV
+#include "tit/core/log.hpp"
+#endif
 
 #include "tit/py/_python.hpp"
+#include "tit/py/cast.hpp"
+#include "tit/py/error.hpp"
 #include "tit/py/interpreter.hpp"
+#include "tit/py/module.hpp"
+#include "tit/py/object.hpp"
 
 namespace tit::py::embed {
 
@@ -89,11 +96,21 @@ BasicInterpreter::~BasicInterpreter() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Interpreter::Interpreter(Config config) : BasicInterpreter{std::move(config)} {
-  // Get the globals of the main module.
-  auto* const main_module = PyImport_AddModule("__main__");
-  globals_ = PyModule_GetDict(main_module);
+namespace {
 
+// Dedent the string.
+auto dedent(CStrView str) -> std::string {
+  if (!str.starts_with('\n')) return std::string{str};
+  const auto textwrap = import_("textwrap");
+  const auto result = textwrap.attr("dedent")(str);
+  return extract<std::string>(result);
+}
+
+} // namespace
+
+Interpreter::Interpreter(Config config)
+    : BasicInterpreter{std::move(config)},
+      globals_{import_("__main__").dict()} {
 #ifdef TIT_HAVE_GCOV
   start_coverage_report_();
 #endif
@@ -101,26 +118,37 @@ Interpreter::Interpreter(Config config) : BasicInterpreter{std::move(config)} {
 
 Interpreter::~Interpreter() {
 #ifdef TIT_HAVE_GCOV
-  stop_coverage_report_();
+  try {
+    stop_coverage_report_();
+  } catch (const ErrorException& e) {
+    TIT_ERROR("Failed to finalize Python coverage report: {}.", e.what());
+  }
 #endif
 }
 
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
 void Interpreter::append_path(CStrView path) const {
-  static_cast<void>(this);
-  auto* const sys = PyImport_ImportModule("sys");
-  auto* const sys_path = PyObject_GetAttrString(sys, "path");
-  auto* const path_str = PyUnicode_FromString(path.c_str());
-  PyList_Append(sys_path, path_str);
-  Py_DECREF(path_str);
-  Py_DECREF(sys_path);
-  Py_DECREF(sys);
+  const auto sys = import_("sys");
+  const auto sys_path = expect<List>(sys.attr("path"));
+  sys_path.append(path);
+}
+
+auto Interpreter::globals() const -> const Dict& {
+  return globals_;
+}
+
+auto Interpreter::eval(CStrView expr) const -> Object {
+  return steal(ensure(PyRun_String(dedent(expr).c_str(),
+                                   /*start=*/Py_eval_input,
+                                   /*globals=*/globals_.get(),
+                                   /*locals=*/globals_.get())));
 }
 
 auto Interpreter::exec(CStrView stmt) const -> bool {
-  auto* const result = PyRun_String(stmt.c_str(),
+  auto* const result = PyRun_String(dedent(stmt).c_str(),
                                     /*start=*/Py_file_input,
-                                    /*globals=*/globals_,
-                                    /*locals=*/globals_);
+                                    /*globals=*/globals_.get(),
+                                    /*locals=*/globals_.get());
   if (result == nullptr) {
     PyErr_Print();
     return false;
@@ -131,11 +159,12 @@ auto Interpreter::exec(CStrView stmt) const -> bool {
 
 auto Interpreter::exec_file(CStrView file_name) const -> bool {
   const auto file = open_file(file_name, "r");
+  globals()["__file__"] = file_name;
   auto* const result = PyRun_File(/*fp=*/file.get(),
                                   /*filename=*/file_name.c_str(),
                                   /*start=*/Py_file_input,
-                                  /*globals=*/globals_,
-                                  /*locals=*/globals_);
+                                  /*globals=*/globals_.get(),
+                                  /*locals=*/globals_.get());
   if (result == nullptr) {
     PyErr_Print();
     return false;
@@ -154,46 +183,23 @@ void Interpreter::start_coverage_report_() const {
   const auto config_file = std::string{*source_dir} + "/pyproject.toml";
 
   // Create the coverage report and start it.
-  auto* const coverage = PyImport_ImportModule("coverage");
-  auto* const coverage_class = PyObject_GetAttrString(coverage, "Coverage");
-  auto* const kwargs = PyDict_New();
-  {
-    auto* const branch = PyBool_FromLong(1);
-    PyDict_SetItemString(kwargs, "branch", branch);
-    Py_DECREF(branch);
-    auto* const config_file_str = PyUnicode_FromString(config_file.c_str());
-    PyDict_SetItemString(kwargs, "config_file", config_file_str);
-    Py_DECREF(config_file_str);
-  }
-  PyObject* coverage_report =
-      PyObject_Call(coverage_class, PyTuple_New(0), kwargs);
-  Py_DECREF(kwargs);
-  Py_DECREF(coverage_class);
-  Py_DECREF(coverage);
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  Py_DECREF(PyObject_CallMethod(coverage_report, "start", nullptr));
-  PyDict_SetItemString(globals_, "__coverage_report", coverage_report);
-  Py_DECREF(coverage_report);
+  const auto coverage = import_("coverage");
+  const auto Coverage = coverage.attr("Coverage");
+  const auto coverage_report = Coverage(py::kwarg("branch", true),
+                                        py::kwarg("config_file", config_file));
+  coverage_report.attr("start")();
+  globals()["__coverage_report"] = coverage_report;
 }
 
 void Interpreter::stop_coverage_report_() const {
   // Some of our tests emit warnings for missing coverage data, ignore them.
-  auto* warnings = PyImport_ImportModule("warnings");
-  auto* filterwarnings = PyObject_GetAttrString(warnings, "filterwarnings");
-  auto* ignore_str = PyUnicode_FromString("ignore");
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  Py_DECREF(PyObject_CallFunctionObjArgs(filterwarnings, ignore_str, nullptr));
-  Py_DECREF(ignore_str);
-  Py_DECREF(filterwarnings);
-  Py_DECREF(warnings);
+  const auto warnings = import_("warnings");
+  warnings.attr("filterwarnings")("ignore");
 
   // Stop the coverage report and save it.
-  auto* coverage_report = PyDict_GetItemString(globals_, "__coverage_report");
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  Py_DECREF(PyObject_CallMethod(coverage_report, "stop", nullptr));
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  Py_DECREF(PyObject_CallMethod(coverage_report, "save", nullptr));
-  Py_DECREF(coverage_report);
+  const Object coverage_report = globals()["__coverage_report"];
+  coverage_report.attr("stop")();
+  coverage_report.attr("save")();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
