@@ -8,6 +8,24 @@ add_tit_library(
     py
   SOURCES
     "_python.hpp"
+    "cast.cpp"
+    "cast.hpp"
+    "error.cpp"
+    "error.hpp"
+    "iterator.cpp"
+    "iterator.hpp"
+    "mapping.cpp"
+    "mapping.hpp"
+    "module.cpp"
+    "module.hpp"
+    "number.cpp"
+    "number.hpp"
+    "object.cpp"
+    "object.hpp"
+    "sequence.cpp"
+    "sequence.hpp"
+    "type.cpp"
+    "type.hpp"
   DEPENDS
     tit::core
 )
@@ -15,12 +33,12 @@ add_tit_library(
 # Since we are not linking to Python here, some manual configuration is needed.
 target_include_directories(
   tit_py
-  INTERFACE
+  PUBLIC
     "${Python3_INCLUDE_DIRS}"
 )
 target_compile_options(
   tit_py
-  INTERFACE
+  PUBLIC
     "-Wno-old-style-cast"
     "-Wno-redundant-decls"
 )
@@ -55,6 +73,18 @@ add_tit_executable(
   NAME
     py_tests
   SOURCES
+    "cast.test.cpp"
+    "error.test.cpp"
+    "interpreter.test.cpp"
+    "interpreter.testing.cpp"
+    "interpreter.testing.hpp"
+    "iterator.test.cpp"
+    "mapping.test.cpp"
+    "module.test.cpp"
+    "number.test.cpp"
+    "object.test.cpp"
+    "sequence.test.cpp"
+    "type.test.cpp"
   DEPENDS
     tit::py_embed
     tit::testing
