@@ -5,6 +5,7 @@
 
 #include "tit/core/str_utils.hpp"
 
+#include "tit/py/_python.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/number.hpp"
 #include "tit/py/object.hpp"
@@ -104,6 +105,11 @@ TEST_CASE("py::BaseObject") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("py::Object") {
+  SUBCASE("typing") {
+    CHECK(py::Object::type_name() == "object");
+    CHECK(py::Object::isinstance(py::Object{}));
+    CHECK(py::Object::isinstance(py::Int{}));
+  }
   SUBCASE("attributes") {
     REQUIRE(testing::interpreter().exec(R"PY(
       class MyClass:
@@ -178,6 +184,16 @@ TEST_CASE("py::Object") {
       CHECK(py::repr(py::Float{1.5}) == "1.5");
       CHECK(py::repr(py::Str{"abc"}) == "'abc'");
     }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("py::NoneType") {
+  SUBCASE("typing") {
+    CHECK(py::NoneType::type_name() == "NoneType");
+    CHECK(py::NoneType::isinstance(py::None()));
+    CHECK_FALSE(py::NoneType::isinstance(py::Int{}));
   }
 }
 

@@ -4,7 +4,6 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <format>
-#include <optional>
 #include <string>
 #include <utility>
 
@@ -48,19 +47,15 @@ auto BaseException::isinstance(const Object& obj) -> bool {
   return ensure(py::type(obj).is_subtype_of(type()));
 }
 
-auto BaseException::traceback() const -> std::optional<Traceback> {
-  if (auto* const result = PyException_GetTraceback(get()); result != nullptr) {
-    return steal<Traceback>(result);
-  }
-  ensure_no_error();
-  return std::nullopt;
+auto BaseException::traceback() const -> Optional<Traceback> {
+  return maybe_steal<Traceback>(PyException_GetTraceback(get()));
 }
 
 auto BaseException::render() const -> std::string {
   auto result =
       std::format("{}: {}", py::type(*this).fully_qualified_name(), str(*this));
-  if (const auto tb = traceback(); tb.has_value()) {
-    result = std::format("{}\n\n{}", result, tb->render());
+  if (const auto tb = traceback(); tb) {
+    result = std::format("{}\n\n{}", result, expect<Traceback>(tb).render());
   }
   return result;
 }

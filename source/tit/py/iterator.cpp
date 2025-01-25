@@ -3,12 +3,11 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <optional>
-
 #include "tit/py/_python.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/iterator.hpp"
 #include "tit/py/object.hpp"
+#include "tit/py/typing.hpp"
 
 namespace tit::py {
 
@@ -20,12 +19,8 @@ auto Iterator::isinstance(const Object& obj) -> bool {
   return ensure(PyIter_Check(obj.get()));
 }
 
-auto Iterator::next() const -> std::optional<Object> {
-  if (auto* const item = PyIter_Next(get()); item != nullptr) {
-    return steal(item);
-  }
-  ensure_no_error();
-  return std::nullopt;
+auto Iterator::next() const -> Optional<Object> {
+  return maybe_steal(PyIter_Next(get()));
 }
 
 auto iter(const Object& iterable) -> Iterator {

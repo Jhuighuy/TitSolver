@@ -19,6 +19,7 @@ namespace {
 
 TEST_CASE("py::Sequence") {
   SUBCASE("typing") {
+    CHECK(py::Sequence::type_name() == "Sequence");
     CHECK(py::Sequence::isinstance(py::Str{}));
     CHECK_FALSE(py::Sequence::isinstance(py::Int{}));
   }

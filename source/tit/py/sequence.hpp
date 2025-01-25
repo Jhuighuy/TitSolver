@@ -32,7 +32,9 @@ public:
   using Object::operator[];
 
   /// Get the type name of the `Sequence` protocol.
-  static constexpr CStrView type_name = "sequence";
+  static consteval auto type_name() -> CStrView {
+    return "Sequence";
+  }
 
   /// Check if the object implements the sequence protocol.
   static auto isinstance(const Object& obj) -> bool;
