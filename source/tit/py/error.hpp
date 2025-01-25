@@ -8,16 +8,15 @@
 #include <concepts>
 #include <exception>
 #include <format>
-#include <optional>
 #include <string>
 
 #include "tit/core/checks.hpp"
 #include "tit/core/str_utils.hpp"
 #include "tit/core/utils.hpp"
 
-#include "tit/py/_python.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/type.hpp"
+#include "tit/py/typing.hpp"
 
 /// @todo Error handling code is not as clean as it could be. With that said,
 ///       I do not want to spend too much time on it, since a lot will change
@@ -54,7 +53,7 @@ public:
   static auto isinstance(const Object& obj) -> bool;
 
   /// Get the traceback object.
-  auto traceback() const -> std::optional<Traceback>;
+  auto traceback() const -> Optional<Traceback>;
 
   /// Render the exception as a string.
   auto render() const -> std::string;
@@ -139,15 +138,29 @@ auto expect(const Object& arg) -> Derived {
 }
 
 /// Steal the reference to the object expected to be of the given type.
-template<std::derived_from<Object> Derived = Object>
+template<std::derived_from<Object> Derived>
 auto steal(PyObject* obj) -> Derived {
   return expect<Derived>(steal(obj));
 }
 
 /// Borrow the reference to the object expected to be of the given type.
-template<std::derived_from<Object> Derived = Object>
+template<std::derived_from<Object> Derived>
 auto borrow(PyObject* obj) -> Derived {
   return expect<Derived>(borrow(obj));
+}
+
+/// Maybe steal the reference to the object if it is not null.
+template<std::derived_from<Object> Derived = Object>
+auto maybe_steal(PyObject* obj) -> Optional<Derived> {
+  if (obj != nullptr) return steal<Derived>(obj);
+  return None();
+}
+
+/// Maybe borrow the reference to the object if it is not null.
+template<std::derived_from<Object> Derived = Object>
+auto maybe_borrow(PyObject* obj) -> Optional<Derived> {
+  if (obj != nullptr) return borrow<Derived>(obj);
+  return None();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

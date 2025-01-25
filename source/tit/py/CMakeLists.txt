@@ -26,6 +26,7 @@ add_tit_library(
     "sequence.hpp"
     "type.cpp"
     "type.hpp"
+    "typing.hpp"
   DEPENDS
     tit::core
 )
@@ -85,6 +86,7 @@ add_tit_executable(
     "object.test.cpp"
     "sequence.test.cpp"
     "type.test.cpp"
+    "typing.test.cpp"
   DEPENDS
     tit::py_embed
     tit::testing

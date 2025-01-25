@@ -31,7 +31,9 @@ public:
   using Object::operator[];
 
   /// Get the type name of the `Mapping` protocol.
-  static constexpr CStrView type_name = "mapping";
+  static consteval auto type_name() -> CStrView {
+    return "Mapping";
+  }
 
   /// Check if the object implements the mapping protocol.
   static auto isinstance(const Object& obj) -> bool;
