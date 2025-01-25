@@ -174,6 +174,22 @@ struct StrTo<bool> final {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Join the strings.
+template<StrLiteral Separator, class... Strs>
+  requires (str_like<std::remove_cvref_t<Strs>> && ...)
+auto join(Strs&&... strs) -> std::string {
+  /// @todo Rewrite with `std::views::join_with` once available.
+  std::string result;
+  (([&result](std::string_view str) {
+     if (result.empty()) result = str;
+     else result = std::format("{}{}{}", result, Separator, str);
+   }(std::forward<Strs>(strs))),
+   ...);
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit
 
 // Formatter for `CStrView`.

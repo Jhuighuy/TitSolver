@@ -142,7 +142,9 @@ public:
   }; // class ItemAt
 
   /// Get the type name of the `Object`.
-  static constexpr CStrView type_name = "object";
+  static consteval auto type_name() -> CStrView {
+    return "object";
+  }
 
   /// Check if the object is a subclass of `Object`.
   static auto isinstance(const Object& obj) -> bool;
@@ -284,8 +286,22 @@ auto pow_inplace(Object& a, const Object& b) -> Object&;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// None object reference.
+class NoneType final : public Object {
+public:
+
+  /// Get the type object of the `NoneType`.
+  static consteval auto type_name() -> CStrView {
+    return "NoneType";
+  }
+
+  /// Check if the object is a subclass of `NoneType`.
+  static auto isinstance(const Object& obj) -> bool;
+
+}; // class NoneType
+
 /// `None` literal.
-auto None() -> Object;
+auto None() -> NoneType;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

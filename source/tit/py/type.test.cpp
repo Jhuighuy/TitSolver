@@ -67,7 +67,7 @@ TEST_CASE("py::type_name") {
     CHECK(py::type_name<py::Float>() == "float");
   }
   SUBCASE("abstract type") {
-    CHECK(py::type_name<py::Sequence>() == "sequence");
+    CHECK(py::type_name<py::Sequence>() == "Sequence");
   }
 }
 

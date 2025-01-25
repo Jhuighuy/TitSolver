@@ -65,7 +65,7 @@ TEST_CASE("py::expect") {
     SUBCASE("abstract type") {
       CHECK_THROWS_MSG(py::expect<py::Mapping>(py::Int{}),
                        py::ErrorException,
-                       "TypeError: expected 'mapping', got 'int'");
+                       "TypeError: expected 'Mapping', got 'int'");
     }
   }
 }
