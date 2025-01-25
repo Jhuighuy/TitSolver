@@ -3,6 +3,9 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <string>
+#include <utility>
+
 #include "tit/core/checks.hpp"
 #include "tit/core/str_utils.hpp"
 
@@ -284,7 +287,6 @@ auto hash(const Object& obj) -> size_t {
 }
 
 auto str(const Object& obj) -> std::string {
-  /// @todo In C++26 there would be no need for `std::string{...}`.
   return std::string{Str{obj}.val()};
 }
 
@@ -314,8 +316,12 @@ auto pow_inplace(Object& a, const Object& b) -> Object& {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto None() -> Object {
-  return borrow(ensure(Py_None));
+auto NoneType::isinstance(const Object& obj) -> bool {
+  return ensure(Py_IsNone(obj.get()));
+}
+
+auto None() -> NoneType {
+  return borrow<NoneType>(ensure(Py_None));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

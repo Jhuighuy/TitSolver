@@ -58,9 +58,8 @@ template<std::derived_from<Object> Derived>
 auto type_name() -> std::string {
   if constexpr (requires { Derived::type(); }) {
     return Derived::type().fully_qualified_name();
-  } else if constexpr (requires { Derived::type_name; }) {
-    /// @todo In C++26 there would be no need for `std::string{...}`.
-    return std::string{Derived::type_name};
+  } else if constexpr (requires { Derived::type_name(); }) {
+    return std::string{Derived::type_name()};
   } else static_assert(false);
 }
 
