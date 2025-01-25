@@ -18,6 +18,7 @@ namespace {
 
 TEST_CASE("py::Iterator") {
   SUBCASE("typing") {
+    CHECK(py::Iterator::type_name() == "iterator");
     CHECK(py::Iterator::isinstance(py::iter(py::List{})));
     CHECK_FALSE(py::Iterator::isinstance(py::Int{}));
   }
