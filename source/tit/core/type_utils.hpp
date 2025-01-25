@@ -33,7 +33,6 @@ namespace impl {
 
 template<class Type, template<class...> class Class>
 inline constexpr bool is_specialization_of_v = false;
-
 template<class... Args, template<class...> class Class>
 inline constexpr bool is_specialization_of_v<Class<Args...>, Class> = true;
 
@@ -78,7 +77,6 @@ namespace impl {
 
 template<class... Ts>
 inline constexpr bool all_unique_v = true;
-
 template<class T, class... Ts>
 inline constexpr bool all_unique_v<T, Ts...> =
     (!contains_v<T, Ts...> && all_unique_v<Ts...>);

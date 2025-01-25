@@ -21,6 +21,7 @@ namespace {
 
 TEST_CASE("py::Mapping") {
   SUBCASE("typing") {
+    CHECK(py::Mapping::type_name() == "Mapping");
     CHECK(py::Mapping::isinstance(py::Dict{}));
     CHECK(py::Mapping::isinstance(py::List{})); // Yes, list is a mapping.
     CHECK_FALSE(py::Mapping::isinstance(py::Int{}));
