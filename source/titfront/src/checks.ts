@@ -3,20 +3,16 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import React from "react";
-import ReactDOM from "react-dom/client";
-
-import { PyConnectionProvider } from "./components/Python";
-import "./index.css";
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <PyConnectionProvider>
-      <span className="text-red-500">Hello, world!</span>
-    </PyConnectionProvider>
-  </React.StrictMode>
-);
+/// Assert that a condition is true.
+export function assert(
+  condition: unknown,
+  message?: string
+): asserts condition {
+  if (!condition) {
+    throw new Error(message ?? "Assertion failed.");
+  }
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
