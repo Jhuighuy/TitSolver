@@ -3,6 +3,10 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <forward_list>
+#include <string>
+#include <utility>
+
 #include "tit/core/checks.hpp"
 #include "tit/core/str_utils.hpp"
 
@@ -16,6 +20,30 @@
 namespace tit::py {
 
 // NOLINTBEGIN(*-include-cleaner)
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace {
+
+// Make a module definition.
+auto make_module_def(std::string name) -> PyModuleDef& {
+  TIT_ASSERT(!name.empty(), "Module name must not be empty!");
+  static std::forward_list<std::string> names;
+  static std::forward_list<PyModuleDef> defs;
+  return defs.emplace_front(PyModuleDef{
+      .m_base = PyModuleDef_HEAD_INIT,
+      .m_name = names.emplace_front(std::move(name)).c_str(),
+      .m_doc = nullptr,
+      .m_size = -1,
+      .m_methods = nullptr,
+      .m_slots = nullptr,
+      .m_traverse = nullptr,
+      .m_clear = nullptr,
+      .m_free = nullptr,
+  });
+}
+
+} // namespace
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -38,8 +66,18 @@ auto Module::dict() const -> Dict {
   return borrow<Dict>(ensure(PyModule_GetDict(get())));
 }
 
+void Module::add(CStrView name, const Object& obj) const {
+  ensure(PyModule_AddObjectRef(get(), name.c_str(), obj.get()));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 auto import_(CStrView name) -> Module {
   return steal<Module>(ensure(PyImport_ImportModule(name.c_str())));
+}
+
+auto module_(std::string name) -> Module {
+  return steal<Module>(PyModule_Create(&make_module_def(std::move(name))));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

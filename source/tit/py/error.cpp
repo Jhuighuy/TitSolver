@@ -47,8 +47,29 @@ auto BaseException::isinstance(const Object& obj) -> bool {
   return ensure(py::type(obj).is_subtype_of(type()));
 }
 
+auto BaseException::cause() const -> Optional<Object> {
+  return maybe_steal(PyException_GetCause(get()));
+}
+void BaseException::set_cause(Optional<Object> cause) const {
+  PyException_SetCause(get(), cause ? cause.release() : nullptr);
+}
+
+auto BaseException::context() const -> Optional<Object> {
+  return maybe_steal(PyException_GetContext(get()));
+}
+void BaseException::set_context(Optional<Object> context) const {
+  PyException_SetContext(get(), context ? context.release() : nullptr);
+}
+
 auto BaseException::traceback() const -> Optional<Traceback> {
   return maybe_steal<Traceback>(PyException_GetTraceback(get()));
+}
+void BaseException::set_traceback(const Optional<Traceback>& traceback) const {
+  /// @todo As the Python 3.13 docs say, we should pass None to
+  ///       `PyException_SetTraceback` in order to clear the traceback. However,
+  ///       this seem to be broken in Python 3.11. Thus, we return.
+  if (!traceback) return;
+  ensure(PyException_SetTraceback(get(), traceback.get()));
 }
 
 auto BaseException::render() const -> std::string {
@@ -106,6 +127,27 @@ void ErrorScope::set_error(BaseException value) noexcept {
   value_ = value.release();
 }
 
+void ErrorScope::prefix_message(CStrView prefix) {
+  const auto value = borrow<BaseException>(value_);
+  const auto message = std::format("{}: {}", prefix, str(value));
+  const auto type = borrow<Type>(type_);
+  auto new_value = expect<BaseException>(type(message));
+  new_value.set_cause(value.cause());
+  new_value.set_context(value.context());
+  new_value.set_traceback(value.traceback());
+  set_error(std::move(new_value));
+}
+
+void set_type_error(CStrView message) noexcept {
+  PyErr_SetString(PyExc_TypeError, message.c_str());
+}
+void set_assertion_error(CStrView message) noexcept {
+  PyErr_SetString(PyExc_AssertionError, message.c_str());
+}
+void set_system_error(CStrView message) noexcept {
+  PyErr_SetString(PyExc_SystemError, message.c_str());
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ErrorException::ErrorException() : message_{error().render()} {}
@@ -116,11 +158,6 @@ auto ErrorException::what() const noexcept -> const char* {
 
 [[noreturn]] void raise() {
   throw ErrorException{};
-}
-
-[[noreturn]] void raise_type_error(CStrView message) {
-  PyErr_SetString(PyExc_TypeError, message.c_str());
-  raise();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
