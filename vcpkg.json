@@ -15,7 +15,6 @@
     "gcem",
     "highway",
     "metis",
-    "mimalloc",
     "python3",
     "sqlite3",
     "tbb",

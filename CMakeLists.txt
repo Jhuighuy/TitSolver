@@ -33,7 +33,6 @@ find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
-find_package(mimalloc CONFIG REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
@@ -72,7 +71,6 @@ add_tit_library(
     gcem
     hwy::hwy
     metis
-    mimalloc-static
     Python3::Python
     TBB::tbb
     TBB::tbbmalloc
