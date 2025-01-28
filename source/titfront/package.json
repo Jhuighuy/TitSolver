@@ -10,7 +10,8 @@
     "lint": "eslint . && npx @biomejs/biome check ./src *.js *.ts",
     "preview": "vite preview",
     "test": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "upgrade": "ncu -u && pnpm install"
   },
   "dependencies": {
     "install": "^0.13.0",

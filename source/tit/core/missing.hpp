@@ -14,6 +14,7 @@
 #include <array>
 #include <cstdio>
 #include <functional>
+#include <thread>
 #include <utility>
 
 #include "tit/core/uint_utils.hpp"
@@ -111,6 +112,16 @@ inline constexpr struct {
 } cartesian_product{};
 
 } // namespace ranges::views
+
+struct jthread : std::thread {
+  using std::thread::thread;
+  TIT_MOVE_ONLY(jthread);
+  jthread(jthread&&) noexcept = default;
+  auto operator=(jthread&&) noexcept -> jthread& = default;
+  ~jthread() noexcept {
+    if (joinable()) join();
+  }
+};
 
 inline void println() {
   std::puts("");

@@ -6,13 +6,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
+import { PyConnectionProvider } from "~/components/Python";
 import "~/index.css";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <span className="text-red-500">Hello, world!</span>
+    <PyConnectionProvider>
+      <span className="text-red-500">Hello, world!</span>
+    </PyConnectionProvider>
   </React.StrictMode>
 );
 

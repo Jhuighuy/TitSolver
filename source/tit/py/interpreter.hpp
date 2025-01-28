@@ -21,7 +21,7 @@ namespace tit::py::embed {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Interpreter configuration.
-class Config final : public NonCopyableBase {
+class Config final {
 public:
 
   /// Construct the configuration.
@@ -52,8 +52,10 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Basic embedded Python interpreter.
-class BasicInterpreter : public NonMovableBase {
+class BasicInterpreter {
 public:
+
+  TIT_NOT_COPYABLE_OR_MOVABLE(BasicInterpreter);
 
   /// Construct the interpreter.
   explicit BasicInterpreter(Config config = {});
@@ -72,6 +74,8 @@ private:
 /// Embedded Python interpreter.
 class Interpreter final : public BasicInterpreter {
 public:
+
+  TIT_NOT_COPYABLE_OR_MOVABLE(Interpreter);
 
   /// Construct the interpreter.
   explicit Interpreter(Config config = {});
