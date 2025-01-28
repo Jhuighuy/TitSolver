@@ -11,7 +11,7 @@
 #include <utility>
 
 #include "tit/core/str_utils.hpp"
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 
 namespace tit::py {
 
