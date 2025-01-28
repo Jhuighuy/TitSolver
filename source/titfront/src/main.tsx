@@ -6,20 +6,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { App } from "~/components/App";
-import { ConnectionProvider } from "~/components/Server";
-import { ViewerProvider } from "~/components/Viewer";
+import { PyConnectionProvider } from "~/components/Python";
 import "~/index.css";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <ConnectionProvider>
-      <ViewerProvider>
-        <App />
-      </ViewerProvider>
-    </ConnectionProvider>
+    <PyConnectionProvider>
+      <span className="text-red-500">Hello, world!</span>
+    </PyConnectionProvider>
   </React.StrictMode>
 );
 

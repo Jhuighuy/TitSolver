@@ -13,23 +13,25 @@
 #include <crow/http_request.h>
 #include <crow/http_response.h>
 #include <crow/websocket.h>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/cmd.hpp"
 #include "tit/core/sys/utils.hpp"
-#include "tit/core/type_utils.hpp"
 
 #include "tit/data/storage.hpp"
 
+#include "tit/py/cast.hpp"
+#include "tit/py/error.hpp"
+#include "tit/py/gil.hpp"
 #include "tit/py/interpreter.hpp"
+#include "tit/py/mapping.hpp"
+#include "tit/py/module.hpp"
+#include "tit/py/object.hpp"
+#include "tit/py/type.hpp"
 
 namespace tit::back {
 namespace {
-
-namespace json = nlohmann;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -66,25 +68,31 @@ auto run_backend(CmdArgs args) -> int {
   crow::SimpleApp app;
 
   CROW_WEBSOCKET_ROUTE(app, "/ws")
-      .onmessage([&storage](crow::websocket::connection& connection,
-                            const std::string& data,
-                            bool is_binary) {
+      .onmessage([&interpreter](crow::websocket::connection& connection,
+                                const std::string& data,
+                                bool is_binary) { //
         TIT_ASSERT(!is_binary, "Binary messages are not supported.");
-        const auto request = json::json::parse(data);
-        json::json response;
-        response["status"] = "success";
-        response["requestID"] = request["requestID"];
-        const auto varyings = storage.last_series().last_time_step().varyings();
-        for (const auto* var : {"r", "rho"}) {
-          const auto r = varyings.find_array(var);
-          std::vector<byte_t> r_data(r->size() * r->type().width());
-          r->open_read()->read(r_data);
-          response["result"][var] = std::span{
-              safe_bit_ptr_cast<const double*>(std::as_const(r_data).data()),
-              r_data.size() / sizeof(double),
-          };
+        const py::AcquireGIL acquire_gil{};
+        const auto json = py::import_("json");
+        const py::Dict response;
+        try {
+          const auto request = py::expect<py::Dict>(json.attr("loads")(data));
+          response["requestID"] = static_cast<py::Object>(request["requestID"]);
+          const auto expr = py::extract<std::string>(request["expression"]);
+          response["result"] = interpreter.eval(expr);
+          response["status"] = "success";
+        } catch (const py::ErrorException& e) {
+          const py::Dict error;
+          error["type"] = py::type(e.error()).fully_qualified_name();
+          error["error"] = py::str(e.error());
+          if (const auto tb = e.error().traceback(); tb) {
+            response["traceback"] = py::expect<py::Traceback>(tb).render();
+          }
+          response["result"] = error;
+          response["status"] = "error";
         }
-        connection.send_text(response.dump());
+        connection.send_text(
+            py::extract<std::string>(json.attr("dumps")(response)));
       });
 
   CROW_ROUTE(app, "/")
@@ -104,6 +112,7 @@ auto run_backend(CmdArgs args) -> int {
   });
 
   /// @todo Pass port as a command line argument.
+  const py::ReleaseGIL release_gil{};
   app.port(get_env<uint16_t>("TIT_BACKEND_PORT", 18080)).run();
 
   return 0;
