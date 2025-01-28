@@ -52,8 +52,23 @@ public:
   /// Check if the object is a subclass of `BaseException`.
   static auto isinstance(const Object& obj) -> bool;
 
-  /// Get the traceback object.
+  /// Access the error cause.
+  /// @{
+  auto cause() const -> Optional<Object>;
+  void set_cause(Optional<Object> cause) const;
+  /// @}
+
+  /// Access the error context.
+  /// @{
+  auto context() const -> Optional<Object>;
+  void set_context(Optional<Object> context) const;
+  /// @}
+
+  /// Access the error traceback.
+  /// @{
   auto traceback() const -> Optional<Traceback>;
+  void set_traceback(const Optional<Traceback>& traceback) const;
+  /// @}
 
   /// Render the exception as a string.
   auto render() const -> std::string;
@@ -89,6 +104,15 @@ public:
   /// Restore the error.
   void restore() noexcept;
 
+  /// Add a prefix to the error message.
+  /// @{
+  void prefix_message(CStrView prefix);
+  template<class... Args>
+  void prefix_message(std::format_string<Args...> fmt, Args&&... args) {
+    prefix_message(std::format(fmt, std::forward<Args>(args)...));
+  }
+  /// @}
+
 private:
 
   PyObject* type_ = nullptr;
@@ -96,6 +120,13 @@ private:
   PyObject* traceback_ = nullptr;
 
 }; // class ErrorScope
+
+/// Set an error of various types.
+/// @{
+void set_type_error(CStrView message) noexcept;
+void set_assertion_error(CStrView message) noexcept;
+void set_system_error(CStrView message) noexcept;
+/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -119,14 +150,20 @@ private:
 [[noreturn]] void raise();
 
 /// Set `TypeError` and throw a C++ exception.
-/// @{
-[[noreturn]] void raise_type_error(CStrView message);
 template<class... Args>
 [[noreturn]] void raise_type_error(std::format_string<Args...> fmt,
                                    Args&&... args) {
-  raise_type_error(std::format(fmt, std::forward<Args>(args)...));
+  set_type_error(std::format(fmt, std::forward<Args>(args)...));
+  raise();
 }
-/// @}
+
+/// Set `SystemError` and throw a C++ exception.
+template<class... Args>
+[[noreturn]] void raise_system_error(std::format_string<Args...> fmt,
+                                     Args&&... args) {
+  set_system_error(std::format(fmt, std::forward<Args>(args)...));
+  raise();
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

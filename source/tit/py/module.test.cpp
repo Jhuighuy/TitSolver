@@ -7,6 +7,7 @@
 #include "tit/py/mapping.hpp"
 #include "tit/py/module.hpp"
 #include "tit/py/number.hpp"
+#include "tit/py/sequence.hpp"
 
 #include "tit/testing/test.hpp"
 
@@ -26,16 +27,30 @@ TEST_CASE("py::Module") {
     CHECK(module.name() == "numpy");
     CHECK(module.dict().has_key("ndarray"));
   }
-  SUBCASE("import") {
-    SUBCASE("existing module") {
-      py::import_("numpy");
-    }
-    SUBCASE("non-existing module") {
-      CHECK_THROWS_MSG(py::import_("does_not_exist"),
-                       py::ErrorException,
-                       "ModuleNotFoundError: No module named 'does_not_exist'");
-    }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("py::import_") {
+  SUBCASE("existing module") {
+    py::import_("numpy");
   }
+  SUBCASE("non-existing module") {
+    CHECK_THROWS_MSG(py::import_("does_not_exist"),
+                     py::ErrorException,
+                     "ModuleNotFoundError: No module named 'does_not_exist'");
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("py::module_") {
+  const auto module = py::module_("test_module");
+  CHECK(module.dict().valid());
+  REQUIRE(module.dict().has_key("__name__"));
+  CHECK(module.dict()["__name__"] == py::Str{"test_module"});
+  CHECK(module.name() == "test_module");
+  // `add` and `def` are tested in the integration test.
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
