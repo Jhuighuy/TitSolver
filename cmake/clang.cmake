@@ -185,8 +185,6 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       LIBCPP_DISABLED_CHECKS
       # False positives with standard headers, like <format> and <expected>.
       -misc-include-cleaner
-      # Suppress error messages from Doctest.
-      -modernize-type-traits
     )
     list(JOIN LIBCPP_DISABLED_CHECKS "," LIBCPP_DISABLED_CHECKS)
     list(APPEND CLANG_TIDY_ARGS "--checks=${LIBCPP_DISABLED_CHECKS}")

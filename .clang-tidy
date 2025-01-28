@@ -49,6 +49,9 @@
 #   like `size()`. I want to use `[[nodiscard]]` only when it is really needed,
 #   like memory allocation functions or system calls.
 #
+# * modernize-type-traits:
+#   Several libraries use C++11 type traits in their macros (doctest, Crow).
+#
 # * readability-braces-around-statements:
 #   I do not like braces around short single-line statements.
 #
@@ -80,6 +83,7 @@ Checks: |
   -misc-no-recursion
   modernize-*
   -modernize-use-nodiscard
+  -modernize-type-traits
   performance-*
   readability-*
   -readability-braces-around-statements
