@@ -17,8 +17,10 @@ namespace tit::py {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Release the Python GIL for the current scope.
-class ReleaseGIL final : public NonCopyableBase {
+class ReleaseGIL final {
 public:
+
+  TIT_MOVE_ONLY(ReleaseGIL);
 
   /// Release the Python GIL.
   ReleaseGIL();
@@ -45,8 +47,10 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Reacquire the Python GIL for the current scope.
-class AcquireGIL final : public NonCopyableBase {
+class AcquireGIL final {
 public:
+
+  TIT_MOVE_ONLY(AcquireGIL);
 
   /// Reacquire the Python GIL.
   AcquireGIL();

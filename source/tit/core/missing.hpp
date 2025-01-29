@@ -115,6 +115,7 @@ inline constexpr struct {
 
 struct jthread : std::thread {
   using std::thread::thread;
+  TIT_MOVE_ONLY(jthread);
   jthread(jthread&&) noexcept = default;
   auto operator=(jthread&&) noexcept -> jthread& = default;
   ~jthread() noexcept {
@@ -127,8 +128,13 @@ inline void println() {
 }
 
 template<class... Ts>
-struct move_only_function : std::function<Ts...>, tit::NonCopyableBase {
+struct move_only_function : std::function<Ts...> {
+  TIT_MOVE_ONLY(move_only_function);
   using std::function<Ts...>::function;
+  ~move_only_function() noexcept = default;
+  move_only_function(move_only_function&&) noexcept = default;
+  auto operator=(move_only_function&&) noexcept
+      -> move_only_function& = default;
 };
 
 _LIBCPP_END_NAMESPACE_STD

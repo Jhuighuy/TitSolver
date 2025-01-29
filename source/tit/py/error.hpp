@@ -78,8 +78,10 @@ public:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Store the currently active error.
-class ErrorScope : public NonCopyableBase {
+class ErrorScope {
 public:
+
+  TIT_MOVE_ONLY(ErrorScope);
 
   /// Construct the error scope and save the current error.
   ErrorScope() noexcept;

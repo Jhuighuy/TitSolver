@@ -56,8 +56,10 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Terminate handler that catches exceptions and exits the process.
-class TerminateHandler : public NonMovableBase {
+class TerminateHandler {
 public:
+
+  TIT_NOT_COPYABLE_OR_MOVABLE(TerminateHandler);
 
   /// Initialize the terminate handler.
   TerminateHandler() noexcept;

@@ -182,54 +182,36 @@ constexpr void iota_perm(Range&& range, Perm&& perm) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Non-copyable base class.
-class NonCopyableBase {
-public:
+// NOLINTBEGIN(*-macro-parentheses)
 
-  /// Construct the non-copyable class instance.
-  NonCopyableBase() = default;
+/// Mark the class as move-only.
+#define TIT_MOVE_ONLY(Class)                                                   \
+  /** This class is not copy-constructible. */                                 \
+  Class(const Class&) = delete;                                                \
+  /** This class is not copy-assignable. */                                    \
+  auto operator=(const Class&)->Class& = delete
 
-  /// Destruct the non-copyable class instance.
-  ~NonCopyableBase() = default;
+/// Mark the class as not copyable or movable.
+#define TIT_NOT_COPYABLE_OR_MOVABLE(Class)                                     \
+  TIT_MOVE_ONLY(Class);                                                        \
+  /** This class is not move-constructible. */                                 \
+  Class(Class&&) = delete;                                                     \
+  /** This class is not move-assignable. */                                    \
+  auto operator=(Class&&)->Class& = delete
 
-  /// Non-copyable class instance is move-constructible.
-  NonCopyableBase(NonCopyableBase&&) = default;
-
-  /// Non-copyable class instance is not copy-constructible.
-  NonCopyableBase(const NonCopyableBase&) = delete;
-
-  /// Non-copyable class instance is movable.
-  auto operator=(NonCopyableBase&&) -> NonCopyableBase& = default;
-
-  /// Non-copyable class instance is not copyable.
-  auto operator=(const NonCopyableBase&) -> NonCopyableBase& = delete;
-
-}; // class NonCopyableBase
-
-/// Non-movable base class.
-class NonMovableBase : public NonCopyableBase {
-public:
-
-  /// Construct the non-movable class instance.
-  NonMovableBase() = default;
-
-  /// Destruct the non-movable class instance.
-  ~NonMovableBase() = default;
-
-  /// Non-movable class instance is not move-constructible.
-  NonMovableBase(NonMovableBase&&) = delete;
-
-  /// Non-movable class instance is not movable.
-  auto operator=(NonMovableBase&&) -> NonMovableBase& = delete;
-
-}; // class NonMovableBase
+// NOLINTEND(*-macro-parentheses)
 
 /// Virtual base class.
-class VirtualBase : public NonMovableBase {
+class VirtualBase {
 public:
 
+  TIT_NOT_COPYABLE_OR_MOVABLE(VirtualBase);
+
+  /// Default constructor.
+  constexpr VirtualBase() = default;
+
   /// Virtual destructor.
-  virtual ~VirtualBase() = default;
+  constexpr virtual ~VirtualBase() = default;
 
 }; // class VirtualBase
 

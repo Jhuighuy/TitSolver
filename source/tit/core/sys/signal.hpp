@@ -26,6 +26,8 @@ void checked_raise(int signal_number);
 class SignalHandler : public VirtualBase {
 public:
 
+  TIT_NOT_COPYABLE_OR_MOVABLE(SignalHandler);
+
   /// Initialize handling for the specified signals.
   explicit SignalHandler(std::initializer_list<int> signal_numbers);
 
