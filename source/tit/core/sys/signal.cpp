@@ -21,6 +21,7 @@
 #include "tit/core/par/control.hpp"
 #include "tit/core/sys/signal.hpp"
 #include "tit/core/sys/utils.hpp"
+#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -117,15 +118,14 @@ FatalSignalHandler::FatalSignalHandler()
   } else {
     // Dump backtrace and fast-exit with an error.
     dump("\n\nTerminated by ");
-    switch (signal_number) {
-      case SIGILL:  dump("SIGILL (illegal instruction)"); break;
-      case SIGABRT: dump("SIGABRT (aborted)"); break;
-      case SIGFPE:  dump("SIGFPE (floating-point exception)"); break;
-      case SIGSEGV: dump("SIGSEGV (segmentation fault)"); break;
-      case SIGTRAP: dump("SIGTRAP (trace/breakpoint trap)"); break;
-      case SIGTERM: dump("SIGTERM"); break;
-      default:      dump("unknown signal"); break;
-    }
+    dump(translate<std::string_view>(signal_number)
+             .option(SIGILL, "SIGILL (illegal instruction)")
+             .option(SIGABRT, "SIGABRT (aborted)")
+             .option(SIGFPE, "SIGFPE (floating-point exception)")
+             .option(SIGSEGV, "SIGSEGV (segmentation fault)")
+             .option(SIGTRAP, "SIGTRAP (trace/breakpoint trap)")
+             .option(SIGTERM, "SIGTERM")
+             .fallback("unknown signal"));
     dump(".\n\nStacktrace:\n");
     dump_backtrace();
     fast_exit(ExitCode::failure);

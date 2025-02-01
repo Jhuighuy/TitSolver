@@ -347,7 +347,6 @@ auto DataStorage::create_array_id(DataSetID dataset_id,
   TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
   TIT_ASSERT(!name.empty(), "Array name must not be empty!");
   TIT_ASSERT(!find_array_id(dataset_id, name), "Array already exists!");
-  TIT_ASSERT(type.known(), "Invalid data type!");
   sqlite::Statement statement{db_, R"SQL(
     INSERT INTO DataArrays (data_set_id, name, type) VALUES (?, ?, ?)
   )SQL"};

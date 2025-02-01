@@ -100,7 +100,7 @@ public:
   auto data() const -> std::vector<byte_t> {
     return storage().array_data(array_id_);
   }
-  template<known_type Val>
+  template<known_type_of Val>
   auto data() const -> std::vector<Val> {
     return storage().template array_data<Val>(array_id_);
   }
@@ -480,12 +480,12 @@ public:
                        DataType type,
                        std::span<const byte_t> data) -> DataArrayID;
   template<std::ranges::input_range Vals>
-    requires known_type<std::ranges::range_value_t<Vals>>
+    requires known_type_of<std::ranges::range_value_t<Vals>>
   auto create_array_id(DataSetID dataset_id, std::string_view name, Vals&& vals)
       -> DataArrayID {
     TIT_ASSUME_UNIVERSAL(Vals, vals);
     using Val = std::ranges::range_value_t<Vals>;
-    const auto array_id = create_array_id(dataset_id, name, data_type_of<Val>);
+    const auto array_id = create_array_id(dataset_id, name, type_of<Val>);
     write_to(array_data_open_write<Val>(array_id), vals);
     return array_id;
   }
@@ -512,9 +512,9 @@ public:
   /// Open an output stream to the data of a data array.
   /// @{
   auto array_data_open_write(DataArrayID array_id) -> OutputStreamPtr<byte_t>;
-  template<known_type Val>
+  template<known_type_of Val>
   auto array_data_open_write(DataArrayID array_id) -> OutputStreamPtr<Val> {
-    TIT_ASSERT(array_type(array_id) == data_type_of<Val>, "Type mismatch!");
+    TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");
     return make_stream_serializer<Val>(array_data_open_write(array_id));
   }
   /// @}
@@ -523,9 +523,9 @@ public:
   /// @{
   auto array_data_open_read(DataArrayID array_id) const
       -> InputStreamPtr<byte_t>;
-  template<known_type Val>
+  template<known_type_of Val>
   auto array_data_open_read(DataArrayID array_id) const -> InputStreamPtr<Val> {
-    TIT_ASSERT(array_type(array_id) == data_type_of<Val>, "Type mismatch!");
+    TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");
     return make_stream_deserializer<Val>(array_data_open_read(array_id));
   }
   /// @}
@@ -533,7 +533,7 @@ public:
   /// Get the data of a data array.
   /// @{
   auto array_data(DataArrayID array_id) const -> std::vector<byte_t>;
-  template<known_type Val>
+  template<known_type_of Val>
   auto array_data(DataArrayID array_id) const -> std::vector<Val> {
     std::vector<Val> result;
     read_from(array_data_open_read<Val>(array_id),

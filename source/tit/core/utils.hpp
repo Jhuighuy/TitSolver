@@ -9,7 +9,9 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include <functional>
 #include <iterator>
+#include <optional>
 #include <ranges>
 #include <span>
 #include <tuple>
@@ -47,7 +49,7 @@ template<class T>
 using pair_of_t = std::pair<T, T>;
 
 /// Predicate that is always true.
-struct AlwaysTrue {
+struct AlwaysTrue final {
   constexpr auto operator()(const auto& /*arg*/) const noexcept -> bool {
     return true;
   }
@@ -112,6 +114,56 @@ constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
     out_iter = std::ranges::copy(array, out_iter).out;
   }(arrays));
   return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Translator for a given key.
+template<class Key, class Val>
+class Translator final {
+public:
+
+  /// Construct a translator for the given key.
+  constexpr Translator(Key key) : key_{std::move(key)} {}
+
+  /// Add an option for the given key and value.
+  constexpr auto option(const Key& key, const Val& value) -> Translator& {
+    if (!result_ && key == key_) result_ = value;
+    return *this;
+  }
+
+  /// Fall back to the given value if no value was set, and return it.
+  constexpr auto fallback(const Val& value) -> Val {
+    return result_ ? std::move(*result_) : value;
+  }
+
+  /// Fall back to the given function result if no value was set, and return it.
+  template<std::invocable<const Key&> Func>
+  constexpr auto fallback(Func func) -> Val {
+    if (result_) return std::move(*result_);
+    if constexpr (std::same_as<std::invoke_result_t<Func, const Key&>, void>) {
+      std::invoke(std::move(func), key_), std::unreachable();
+    } else {
+      return std::invoke(std::move(func), key_);
+    }
+  }
+
+  /// Convert the translator to a result.
+  constexpr explicit(false) operator Val() {
+    return fallback([](const Key& /*key*/) { std::unreachable(); });
+  }
+
+private:
+
+  Key key_;
+  std::optional<Val> result_;
+
+}; // class Translator
+
+/// Make a translator for the given key.
+template<class Val, class Key>
+constexpr auto translate(Key key) -> Translator<Key, Val> {
+  return Translator<Key, Val>{std::move(key)};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

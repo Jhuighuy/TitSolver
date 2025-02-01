@@ -136,7 +136,12 @@ struct fixed_width_type<SInt> :
     std::make_signed<fixed_width_type_t<std::make_unsigned_t<SInt>>> {};
 
 template<std::floating_point Float>
-struct fixed_width_type<Float> : std::type_identity<Float> {};
+  requires (sizeof(Float) == 4)
+struct fixed_width_type<Float> : std::type_identity<float32_t> {};
+
+template<std::floating_point Float>
+  requires (sizeof(Float) == 8)
+struct fixed_width_type<Float> : std::type_identity<float64_t> {};
 
 } // namespace impl
 

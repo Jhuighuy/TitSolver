@@ -17,94 +17,111 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("data::DataType") {
+TEST_CASE("data::DataKind") {
   SUBCASE("correct") {
-    SUBCASE("known") {
-      const data::DataType type{data::DataType::Kind::float32,
-                                data::DataType::Rank::scalar,
-                                1};
-      CHECK(type.kind() == data::DataType::Kind::float32);
-      CHECK(type.rank() == data::DataType::Rank::scalar);
-      CHECK(type.dim() == 1);
-    }
-    SUBCASE("unknown kind") {
-      const data::DataType type{data::DataType::Kind::unknown,
-                                data::DataType::Rank::scalar,
-                                3};
-      CHECK(type.kind() == data::DataType::Kind::unknown);
-    }
+    const data::DataKind kind{data::DataKind::ID::float32};
+    CHECK(kind.id() == data::DataKind::ID::float32);
+    CHECK(kind.name() == "float32_t");
+    CHECK(kind.width() == 4);
   }
   SUBCASE("incorrect") {
-    SUBCASE("invalid kind") {
-      CHECK_THROWS_MSG(data::DataType(data::DataType::Kind{137},
-                                      data::DataType::Rank::scalar,
-                                      3),
-                       Exception,
-                       "Invalid data type kind: 137.");
-    }
-    SUBCASE("invalid rank") {
-      CHECK_THROWS_MSG(data::DataType(data::DataType::Kind::float32,
-                                      data::DataType::Rank{137},
-                                      3),
-                       Exception,
-                       "Invalid data type rank: 137.");
-    }
-    SUBCASE("invalid dim") {
-      CHECK_THROWS_MSG(data::DataType(data::DataType::Kind::float32,
-                                      data::DataType::Rank::scalar,
-                                      0),
-                       Exception,
-                       "Dimensionality must be positive, but is 0.");
-    }
-    SUBCASE("invalid scalar dim") {
-      CHECK_THROWS_MSG(data::DataType(data::DataType::Kind::float32,
-                                      data::DataType::Rank::scalar,
-                                      2),
-                       Exception,
-                       "Dimensionality of a scalar must be 1, but is 2.");
-    }
+    CHECK_THROWS_MSG(data::DataKind{data::DataKind::ID{0}},
+                     Exception,
+                     "Invalid data kind ID: 0.");
+    CHECK_THROWS_MSG(data::DataKind{data::DataKind::ID{137}},
+                     Exception,
+                     "Invalid data kind ID: 137.");
   }
 }
 
-TEST_CASE("data::DataType::id") {
-  SUBCASE("to ID") {
-    const data::DataType type{data::DataType::Kind::float32,
-                              data::DataType::Rank::matrix,
-                              3};
-    CHECK(type.id() == 0x030209);
-  }
-  SUBCASE("from ID") {
-    SUBCASE("valid") {
-      const data::DataType type{0x030209};
-      CHECK(type.kind() == data::DataType::Kind::float32);
-      CHECK(type.rank() == data::DataType::Rank::matrix);
-      CHECK(type.dim() == 3);
-    }
-    SUBCASE("invalid") {
-      CHECK_THROWS_MSG(data::DataType{0x1337}, Exception, "Invalid");
-    }
-  }
+TEST_CASE("data::kind_of") {
+  CHECK(data::kind_of<int16_t>.id() == data::DataKind::ID::int16);
+  CHECK(data::kind_of<float32_t>.id() == data::DataKind::ID::float32);
+  CHECK(data::kind_of<uint64_t>.id() == data::DataKind::ID::uint64);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("data::data_type_of") {
+TEST_CASE("data::DataType") {
+  SUBCASE("correct") {
+    SUBCASE("scalar") {
+      const data::DataType type{data::kind_of<float32_t>};
+      CHECK(type.kind() == data::kind_of<float32_t>);
+      CHECK(type.rank() == data::DataRank::scalar);
+      CHECK(type.dim() == 1);
+      CHECK(type.name() == "float32_t");
+    }
+    SUBCASE("vector") {
+      const data::DataType type{data::kind_of<float64_t>,
+                                data::DataRank::vector,
+                                2};
+      CHECK(type.kind() == data::kind_of<float64_t>);
+      CHECK(type.rank() == data::DataRank::vector);
+      CHECK(type.dim() == 2);
+      CHECK(type.name() == "Vec<float64_t, 2>");
+    }
+    SUBCASE("matrix") {
+      const data::DataType type{data::kind_of<int16_t>,
+                                data::DataRank::matrix,
+                                3};
+      CHECK(type.kind() == data::kind_of<int16_t>);
+      CHECK(type.rank() == data::DataRank::matrix);
+      CHECK(type.dim() == 3);
+      CHECK(type.name() == "Mat<int16_t, 3>");
+    }
+  }
+  SUBCASE("incorrect") {
+    SUBCASE("invalid rank") {
+      CHECK_THROWS_MSG(
+          data::DataType(data::kind_of<float32_t>, data::DataRank{137}, 3),
+          Exception,
+          "Invalid data type rank: 137.");
+    }
+    SUBCASE("invalid dim") {
+      CHECK_THROWS_MSG(
+          data::DataType(data::kind_of<float32_t>, data::DataRank::vector, 0),
+          Exception,
+          "Dimensionality must be positive, but is 0.");
+    }
+    SUBCASE("invalid scalar dim") {
+      CHECK_THROWS_MSG(
+          data::DataType(data::kind_of<float32_t>, data::DataRank::scalar, 2),
+          Exception,
+          "Dimensionality of a scalar must be 1, but is 2.");
+    }
+  }
+  SUBCASE("ID") {
+    SUBCASE("to ID") {
+      CHECK(data::type_of<Mat<float32_t, 3>>.id() == 0x030209);
+    }
+    SUBCASE("from ID") {
+      SUBCASE("valid") {
+        CHECK(data::DataType{0x030209} == data::type_of<Mat<float32_t, 3>>);
+      }
+      SUBCASE("invalid") {
+        CHECK_THROWS_MSG(data::DataType{0x1337}, Exception, "Invalid");
+      }
+    }
+  }
+}
+
+TEST_CASE("data::type_of") {
   SUBCASE("scalar") {
-    const auto type = data::data_type_of<float32_t>;
-    CHECK(type.kind() == data::DataType::Kind::float32);
-    CHECK(type.rank() == data::DataType::Rank::scalar);
+    const auto type = data::type_of<float32_t>;
+    CHECK(type.kind() == data::kind_of<float32_t>);
+    CHECK(type.rank() == data::DataRank::scalar);
     CHECK(type.dim() == 1);
   }
   SUBCASE("vector") {
-    const auto type = data::data_type_of<Vec<int16_t, 7>>;
-    CHECK(type.kind() == data::DataType::Kind::int16);
-    CHECK(type.rank() == data::DataType::Rank::vector);
+    const auto type = data::type_of<Vec<int16_t, 7>>;
+    CHECK(type.kind() == data::kind_of<int16_t>);
+    CHECK(type.rank() == data::DataRank::vector);
     CHECK(type.dim() == 7);
   }
   SUBCASE("matrix") {
-    const auto type = data::data_type_of<Mat<float64_t, 5>>;
-    CHECK(type.kind() == data::DataType::Kind::float64);
-    CHECK(type.rank() == data::DataType::Rank::matrix);
+    const auto type = data::type_of<Mat<float64_t, 5>>;
+    CHECK(type.kind() == data::kind_of<float64_t>);
+    CHECK(type.rank() == data::DataRank::matrix);
     CHECK(type.dim() == 5);
   }
 }

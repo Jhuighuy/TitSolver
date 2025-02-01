@@ -205,8 +205,7 @@ private:
 }; // class PartVec
 
 template<>
-inline constexpr auto data::data_type_of<PartVec> =
-    data::data_type_of<uint64_t>;
+inline constexpr auto data::type_of<PartVec> = data::type_of<uint64_t>;
 
 template<class Stream>
 constexpr void serialize(Stream& out, const PartVec& pvec) {

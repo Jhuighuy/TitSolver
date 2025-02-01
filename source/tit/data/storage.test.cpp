@@ -402,18 +402,18 @@ TEST_CASE("data::DataArrayView") {
         std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
     CHECK(array_1 == data::DataArrayID{1});
-    CHECK(array_1.type() == data::data_type_of<float64_t>);
+    CHECK(array_1.type() == data::type_of<float64_t>);
     CHECK(array_1.template data<float64_t>() == std::vector{std::numbers::pi});
     CHECK(dataset.num_arrays() == 1);
     CHECK_RANGE_EQ(dataset.arrays(), NamedArrays{{"array_1", array_1}});
 
     const auto array_2 = dataset.create_array( //
         "array_2",
-        data::data_type_of<float32_t>,
+        data::type_of<float32_t>,
         to_byte_array(std::numbers::e_v<float32_t>));
     REQUIRE(storage.check_array(array_2));
     CHECK(array_2 == data::DataArrayID{2});
-    CHECK(array_2.type() == data::data_type_of<float32_t>);
+    CHECK(array_2.type() == data::type_of<float32_t>);
     CHECK_RANGE_EQ(array_2.data(), to_byte_array(std::numbers::e_v<float32_t>));
     CHECK(dataset.num_arrays() == 2);
     CHECK_RANGE_EQ(dataset.arrays(),
