@@ -39,6 +39,16 @@ function(install_python)
     message(FATAL_ERROR "Install destination must be specified.")
   endif()
 
+  # Find the Python interpreter.
+  # Note: `Development` component makes CMake to find Python from vcpkg.
+  if(Python3_FOUND)
+    message(
+      FATAL_ERROR
+      "`install_python` must be called before `find_package(Python3 ...)`."
+    )
+  endif()
+  find_package(Python3 QUIET REQUIRED COMPONENTS Interpreter Development)
+
   # Install pip and packages. Packages would be installed into `site-packages`
   # directory of the Python standard library.
   message(STATUS "Running pip install")

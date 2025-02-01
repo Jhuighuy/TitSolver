@@ -8,6 +8,8 @@ add_tit_library(
     py
   SOURCES
     "_python.hpp"
+    "capsule.hpp"
+    "capsule.cpp"
     "cast.cpp"
     "cast.hpp"
     "error.cpp"
@@ -24,6 +26,8 @@ add_tit_library(
     "module.hpp"
     "number.cpp"
     "number.hpp"
+    "numpy.cpp"
+    "numpy.hpp"
     "object.cpp"
     "object.hpp"
     "sequence.cpp"
@@ -33,6 +37,7 @@ add_tit_library(
     "typing.hpp"
   DEPENDS
     tit::core
+    # header-only part of tit::data
 )
 
 # Since we are not linking to Python here, some manual configuration is needed.
@@ -40,10 +45,12 @@ target_include_directories(
   tit_py
   PUBLIC
     "${Python3_INCLUDE_DIRS}"
+    "${Python3_NumPy_INCLUDE_DIRS}"
 )
 target_compile_options(
   tit_py
   PUBLIC
+    "-Wno-cast-qual"
     "-Wno-old-style-cast"
     "-Wno-redundant-decls"
 )
@@ -60,6 +67,7 @@ add_tit_library(
     tit::core
     tit::py
     Python3::Python
+    Python3::NumPy
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,6 +78,7 @@ add_tit_library(
   DEPENDS
     tit::py
     Python3::Module
+    Python3::NumPy
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,6 +87,7 @@ add_tit_executable(
   NAME
     py_tests
   SOURCES
+    "capsule.test.cpp"
     "cast.test.cpp"
     "error.test.cpp"
     "func.test.cpp"
@@ -89,6 +99,7 @@ add_tit_executable(
     "mapping.test.cpp"
     "module.test.cpp"
     "number.test.cpp"
+    "numpy.test.cpp"
     "object.test.cpp"
     "sequence.test.cpp"
     "type.test.cpp"
