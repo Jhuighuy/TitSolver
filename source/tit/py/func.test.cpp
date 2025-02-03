@@ -20,13 +20,7 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("py::CFunction") {
-  SUBCASE("typing") {
-    CHECK(py::CFunction::type().fully_qualified_name() ==
-          "builtin_function_or_method");
-    CHECK(py::CFunction::isinstance(py::make_func<"func", [] {}>()));
-    CHECK_FALSE(py::CFunction::isinstance(py::Int::type()));
-  }
+TEST_CASE("py::make_func") {
   SUBCASE("invoke") {
     SUBCASE("returns nothing") {
       const auto func = py::make_func<"func", [] {}>();

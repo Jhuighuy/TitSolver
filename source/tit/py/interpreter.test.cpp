@@ -8,8 +8,8 @@
 
 #include "tit/core/exception.hpp"
 
-#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
+#include "tit/py/object.hpp"
 
 #include "tit/py/interpreter.testing.hpp"
 #include "tit/testing/test.hpp"

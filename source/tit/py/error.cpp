@@ -10,11 +10,9 @@
 #include "tit/core/checks.hpp"
 
 #include "tit/py/_python.hpp"
-#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/module.hpp"
 #include "tit/py/object.hpp"
-#include "tit/py/type.hpp"
 
 namespace tit::py {
 
