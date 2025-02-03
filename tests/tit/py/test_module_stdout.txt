@@ -1,3 +1,4 @@
+__init__ 123
 3.14
 <built-in function hello>
 ['__call__', '__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__name__', '__ne__', '__new__', '__qualname__', '__reduce__', '__reduce_ex__', '__repr__', '__self__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__text_signature__']
@@ -11,3 +12,9 @@ Expected error: function 'test_func': function takes at most 4 arguments (5 give
 Expected error: function 'test_func': argument 'p': expected 'int', got 'str'
 Expected error: function 'test_func': duplicate argument 'p'
 Expected exception: Exception from C++!
+Hello, class!
+True
+<built-in method hello_w of test_module.TestClass object at 0x1014fc7c0>
+get a = 14
+set a = 228
+14

@@ -40,3 +40,13 @@ try:
     test_module.throw()
 except AssertionError as e:
     print(f"Expected exception: {e}")
+
+# Class test.
+t = test_module.TestClass(123)
+s, tt = t.hello_w()
+print(s, flush=True)
+print(tt is t, flush=True)
+print(tt.hello_w, flush=True)
+print(f"get a = {tt.a}", flush=True)
+t.a = 228
+print(tt.a, flush=True)

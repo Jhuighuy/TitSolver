@@ -10,6 +10,7 @@ add_tit_library(
     "capsule.hpp"
     "capsule.cpp"
     "cast.hpp"
+    "class.hpp"
     "error.cpp"
     "error.hpp"
     "func.cpp"
@@ -95,6 +96,7 @@ add_tit_executable(
   SOURCES
     "capsule.test.cpp"
     "cast.test.cpp"
+    "class.test.cpp"
     "error.test.cpp"
     "func.test.cpp"
     "gil.test.cpp"

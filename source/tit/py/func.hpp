@@ -24,6 +24,7 @@
 #include "tit/py/mapping.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/sequence.hpp"
+#include "tit/py/type.hpp"
 
 namespace tit::py {
 
@@ -237,6 +238,91 @@ auto make_func(const Module* module_ = nullptr) -> Object {
     });
   };
   return impl::make_func(Name.c_str(), func_wrapper, module_);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+
+// Construct a new method descriptor object from the given function pointer.
+auto make_method_descriptor(const char* name,
+                            FuncPtr method,
+                            const Type& class_) -> Object;
+
+} // namespace impl
+
+/// Method specification.
+template<class T, auto Method, class... Params>
+concept method_spec =
+    std::is_object_v<T> && (param_spec<Params> && ...) &&
+    (std::invocable<decltype(Method), T&, typename Params::type...>);
+
+/// Construct a class method descriptor object from the given specification.
+template<StrLiteral Name, class T, auto Method, param_spec... Params>
+  requires method_spec<T, Method, Params...>
+auto make_method_descriptor(const Type& class_) -> Object {
+  constexpr impl::FuncPtr method_wrapper =
+      [](PyObject* self, PyObject* posargs, PyObject* kwargs) -> PyObject* {
+    TIT_ASSERT(self != nullptr, "`self` must not be null for a method!");
+    return impl::translate_exceptions<nullptr>([self, posargs, kwargs]() {
+      auto func = std::bind_front(Method, std::ref(cast<T>(borrow(self))));
+      return impl::invoke<Name, Params...>(std::move(func), posargs, kwargs)
+          .release();
+    });
+  };
+  return impl::make_method_descriptor(Name.c_str(), method_wrapper, class_);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+
+// Python getter function pointer.
+using GetPtr = PyObject* (*) (PyObject*, void*);
+
+// Python setter function pointer.
+using SetPtr = int (*)(PyObject*, PyObject*, void*);
+
+// Construct a new property descriptor object from the given function pointers.
+auto make_prop_descriptor(const char* name,
+                          GetPtr get,
+                          SetPtr set,
+                          const Type& class_) -> Object;
+
+} // namespace impl
+
+/// Property specification.
+template<class T, auto Get, auto Set = nullptr>
+concept prop_spec =
+    std::is_object_v<T> && std::invocable<decltype(Get), T&> &&
+    (std::same_as<decltype(Set), std::nullptr_t> ||
+     std::
+         invocable<decltype(Set), T&, std::invoke_result_t<decltype(Get), T&>>);
+
+/// Construct a class property descriptor object.
+template<StrLiteral Name, class T, auto Get, auto Set = nullptr>
+  requires prop_spec<T, Get, Set>
+auto make_prop_descriptor(const Type& class_) -> Object {
+  using Value = std::remove_cvref_t<std::invoke_result_t<decltype(Get), T&>>;
+  constexpr impl::GetPtr getter = [](PyObject* self, void* /*closure*/) {
+    TIT_ASSERT(self != nullptr, "`self` must not be null for a getter!");
+    return impl::translate_exceptions<nullptr>([self]() {
+      return Object{std::invoke(Get, cast<T>(borrow(self)))}.release();
+    });
+  };
+  constexpr auto setter = [] -> impl::SetPtr {
+    if constexpr (!std::same_as<decltype(Set), std::nullptr_t>) {
+      return [](PyObject* self, PyObject* value, void* /*closure*/) {
+        TIT_ASSERT(self != nullptr, "`self` must not be null for a setter!");
+        return impl::translate_exceptions<-1>([self, value]() {
+          std::invoke(Set, cast<T>(borrow(self)), cast<Value>(value));
+          return 0;
+        });
+      };
+    }
+    return nullptr;
+  }();
+  return impl::make_prop_descriptor(Name.c_str(), getter, setter, class_);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

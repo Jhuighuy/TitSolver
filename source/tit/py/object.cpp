@@ -334,6 +334,23 @@ auto None() -> NoneType {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace impl {
+
+const size_t sizeof_PyObject = sizeof(PyObject);
+const size_t alignof_PyObject = alignof(PyObject);
+
+auto alloc(const std::type_info& type_info) -> PyObject* {
+  return ensure(PyType_GenericAlloc(lookup_type(type_info).get_type(), 1));
+}
+void dealloc(PyObject* ptr) {
+  TIT_ASSERT(ptr != nullptr, "Object must not be null!");
+  PyObject_Free(ptr);
+}
+
+} // namespace impl
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // NOLINTEND(*-include-cleaner)
 
 } // namespace tit::py
