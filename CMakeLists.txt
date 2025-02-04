@@ -22,6 +22,15 @@ include(tit_testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Install the third-party Python packages.
+install_python(
+  DESTINATION
+    python
+  PACKAGES
+    "coverage[toml]"
+    "numpy"
+)
+
 # Find the third-party libraries.
 find_package(
   Boost
@@ -33,19 +42,10 @@ find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development NumPy)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
-
-# Install the third-party Python packages.
-install_python(
-  DESTINATION
-    python
-  PACKAGES
-    "coverage[toml]"
-    "numpy"
-)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,6 +71,7 @@ add_tit_library(
     gcem
     hwy::hwy
     metis
+    Python3::NumPy
     Python3::Python
     TBB::tbb
     TBB::tbbmalloc
