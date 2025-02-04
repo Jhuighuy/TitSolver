@@ -27,7 +27,7 @@ public:
   /// Check if the object is a subclass of `Type`.
   static auto isinstance(const Object& obj) -> bool;
 
-  /// Get pointer to the object.
+  /// Get pointer to the object as `PyTypeObject*`.
   auto get_type() const -> PyTypeObject*;
 
   /// Get the name of the type.

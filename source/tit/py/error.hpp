@@ -9,6 +9,7 @@
 #include <exception>
 #include <format>
 #include <string>
+#include <type_traits>
 
 #include "tit/core/checks.hpp"
 #include "tit/core/str_utils.hpp"
@@ -220,8 +221,7 @@ template<class Result = bool, std::integral Int>
 auto ensure(Int status) -> Result {
   if constexpr (std::signed_integral<Int>) {
     if (status < 0) {
-      TIT_ASSERT(is_error_set(),
-                 "Status code represents a failure, but error is not set!");
+      TIT_ASSERT(is_error_set(), "Status is negative, but error is not set!");
       raise();
     }
   }
@@ -229,12 +229,14 @@ auto ensure(Int status) -> Result {
 }
 
 /// Ensure that the object returned by a Python function represents a success.
-inline auto ensure(PyObject* ptr) -> PyObject* {
+template<class Result = PyObject*, class Value>
+  requires std::is_pointer_v<Result>
+auto ensure(Value* ptr) -> Result {
   if (ptr == nullptr) {
-    TIT_ASSERT(is_error_set(), "Object is null!");
+    TIT_ASSERT(is_error_set(), "Pointer is null, but error is not set!");
     raise();
   }
-  return ptr;
+  return std::bit_cast<Result>(ptr);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
