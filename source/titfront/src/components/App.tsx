@@ -16,6 +16,7 @@ import {
 import { BottomMenu, LeftMenu, MenuItem } from "~/components/MainMenu";
 import { PythonShell } from "~/components/PythonShell";
 import { Viewer } from "~/components/Viewer";
+import { TreeView, MockData } from "~/components/TreeView";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -29,7 +30,9 @@ export const App: FC = () => {
           name="Configuration"
           icon={<SlidersIcon size={leftIconSize} />}
           group={0}
-        />
+        >
+          <TreeView nodes={MockData} />
+        </MenuItem>
         <MenuItem
           name="Storage"
           icon={<DatabaseIcon size={leftIconSize} />}
