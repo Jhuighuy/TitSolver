@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 
 import { Menu } from "~/components/Menu";
+import { MockData, TreeView } from "~/components/TreeView";
 import { Viewer } from "~/components/Viewer";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +29,9 @@ export const App: FC = () => {
           name="Configuration"
           icon={<SlidersIcon size={leftIconSize} />}
           group={0}
-        />
+        >
+          <TreeView nodes={MockData} />
+        </Menu.Item>
         <Menu.Item
           name="Storage"
           icon={<DatabaseIcon size={leftIconSize} />}
