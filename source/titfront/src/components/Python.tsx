@@ -64,9 +64,7 @@ export type PyRunCode = (expression: string, onResponse: PyCallback) => void;
  * @returns A function to run Python code.
  */
 export function usePython(): PyRunCode {
-  const runCode = useContext(PyConnectionContext);
-  assert(runCode !== null, "runCode is null!");
-  return runCode;
+  return useContext(PyConnectionContext)!;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,8 +114,7 @@ export const PyConnectionProvider: FC<{ children: ReactNode }> = ({
       );
 
       // Invoke the callback.
-      const callback = pendingRequests.current.get(requestID);
-      assert(callback !== undefined, `No callback for request ${requestID}`);
+      const callback = pendingRequests.current.get(requestID)!;
       if (status === "success") {
         callback(result);
       } else {

@@ -46,6 +46,16 @@ auto run_backend(CmdArgs args) -> int {
   const py::embed::Interpreter interpreter{std::move(config)};
   interpreter.append_path(home_dir.c_str());
 
+  // Load the storage.
+  interpreter.exec(R"PY(
+    import pytit.data
+    import os.path
+
+    storage = None
+    if os.path.exists(storage_path := "particles.ttdb"):
+        storage = pytit.data.Storage(storage_path)
+  )PY");
+
   // Execute the Python statement or file.
   /// @todo Proper command line parsing.
   const std::span argspan{args.argv(), static_cast<size_t>(args.argc())};
@@ -68,12 +78,15 @@ auto run_backend(CmdArgs args) -> int {
         const py::AcquireGIL acquire_gil{};
         const auto json = py::import_("json");
         const py::Dict response;
+        std::string response_string;
         try {
           const auto request = py::expect<py::Dict>(json.attr("loads")(data));
           response["requestID"] = request.at("requestID"); /// @todo Fix it!
           const auto expr = py::extract<std::string>(request["expression"]);
           response["result"] = interpreter.eval(expr);
           response["status"] = "success";
+          response_string = // May fail during serialization.
+              py::extract<std::string>(json.attr("dumps")(response));
         } catch (const py::ErrorException& e) {
           const py::Dict error;
           error["type"] = py::type(e.error()).fully_qualified_name();
@@ -83,9 +96,10 @@ auto run_backend(CmdArgs args) -> int {
           }
           response["result"] = error;
           response["status"] = "error";
+          response_string = // Should not fail during serialization.
+              py::extract<std::string>(json.attr("dumps")(response));
         }
-        connection.send_text(
-            py::extract<std::string>(json.attr("dumps")(response)));
+        connection.send_text(response_string);
       });
 
   CROW_ROUTE(app, "/")

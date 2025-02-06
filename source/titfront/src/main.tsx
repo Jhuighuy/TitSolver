@@ -8,6 +8,7 @@ import ReactDOM from "react-dom/client";
 
 import { App } from "~/components/App";
 import { PyConnectionProvider } from "~/components/Python";
+import { ViewerProvider } from "~/components/Viewer";
 import "~/index.css";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -15,7 +16,9 @@ import "~/index.css";
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <PyConnectionProvider>
-      <App />
+      <ViewerProvider>
+        <App />
+      </ViewerProvider>
     </PyConnectionProvider>
   </React.StrictMode>
 );
