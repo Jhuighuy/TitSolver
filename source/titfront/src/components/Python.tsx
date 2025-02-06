@@ -100,7 +100,13 @@ export const PyConnectionProvider: FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     const ws = new WebSocket(`ws://${window.location.host}/ws`);
-    ws.onopen = () => setWebSocket(ws);
+    ws.onopen = () => {
+      setWebSocket(ws);
+
+      // Ping every 90 seconds to keep the connection alive.
+      const pingInterval = 90 * 1000;
+      setInterval(() => ws.send(JSON.stringify({ ping: 1 })), pingInterval);
+    };
     ws.onclose = () => setWebSocket(null);
     ws.onmessage = (event: MessageEvent) => {
       // Parse and validate the message.
