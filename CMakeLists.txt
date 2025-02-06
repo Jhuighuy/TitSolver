@@ -33,6 +33,7 @@ find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
@@ -61,6 +62,7 @@ add_tit_library(
     hwy::hwy
     metis
     mimalloc-static
+    nlohmann_json::nlohmann_json
     TBB::tbb
     TBB::tbbmalloc
     unofficial::sqlite3::sqlite3
