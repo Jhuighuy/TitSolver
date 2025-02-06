@@ -15,6 +15,7 @@
     "highway",
     "metis",
     "mimalloc",
+    "nlohmann-json",
     "sqlite3",
     "tbb",
     "zstd"

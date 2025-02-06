@@ -11,7 +11,9 @@ add_tit_executable(
     "backend.cpp"
   DEPENDS
     tit::core
+    tit::data
     Crow::Crow
+    nlohmann_json::nlohmann_json
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

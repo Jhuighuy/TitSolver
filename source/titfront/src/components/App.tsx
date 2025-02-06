@@ -15,7 +15,7 @@ import {
 
 import { Menu } from "~/components/Menu";
 import { MockData, TreeView } from "~/components/TreeView";
-import { Viewer } from "~/components/Viewer";
+import { ViewerComponent } from "~/components/Viewer";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -49,7 +49,7 @@ export const App: FC = () => {
         />
       </Menu>
       <div className="flex-1 flex flex-col">
-        <Viewer />
+        <ViewerComponent />
         <Menu side="bottom">
           <Menu.Item
             name="Python shell"

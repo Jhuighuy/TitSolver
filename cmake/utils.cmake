@@ -87,6 +87,7 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
   # Append compile definitions.
   foreach(PROP COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
     set(TARGET_DEFS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
+    set(TARGET_DEFS "$<FILTER:${TARGET_DEFS},INCLUDE,.+>") # remove stray `;`.
     list(
       APPEND
       ${OPTIONS_VAR}
