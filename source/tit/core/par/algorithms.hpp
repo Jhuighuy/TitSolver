@@ -22,7 +22,7 @@
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit::par {

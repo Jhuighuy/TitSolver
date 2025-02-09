@@ -16,7 +16,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {

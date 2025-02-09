@@ -12,7 +12,7 @@
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
 
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/particle_array.hpp"

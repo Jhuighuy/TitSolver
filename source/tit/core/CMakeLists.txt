@@ -60,7 +60,7 @@ add_tit_library(
     "sys/utils.cpp"
     "sys/utils.hpp"
     "time.hpp"
-    "type_traits.hpp"
+    "type_utils.hpp"
     "uint_utils.hpp"
     "utils.hpp"
     "vec.hpp"
@@ -108,7 +108,7 @@ add_tit_executable(
     "sys/signal.test.cpp"
     "sys/utils.test.cpp"
     "time.test.cpp"
-    "type_traits.test.cpp"
+    "type_utils.test.cpp"
     "uint_utils.test.cpp"
   DEPENDS
     tit::core

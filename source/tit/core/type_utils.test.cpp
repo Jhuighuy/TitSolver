@@ -5,7 +5,7 @@
 
 #include <type_traits>
 
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 
 namespace tit {
 namespace {
