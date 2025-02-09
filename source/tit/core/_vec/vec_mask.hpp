@@ -90,13 +90,13 @@ public:
   /// Vector mask element at index.
   constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return std::forward_like<decltype(self)>(self.col_[i]);
+    return TIT_FORWARD_LIKE(self, self.col_[i]);
   }
 
   /// Underlying register at index.
   auto reg(this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < RegCount, "Register index is out of range!");
-    return std::forward_like<decltype(self)>(self.regs_[i]);
+    return TIT_FORWARD_LIKE(self, self.regs_[i]);
   }
 
   // NOLINTEND(*-type-union-access)

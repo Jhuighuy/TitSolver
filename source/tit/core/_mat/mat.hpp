@@ -10,11 +10,11 @@
 #include <array>
 #include <format>
 #include <initializer_list>
-#include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit {
@@ -50,13 +50,13 @@ public:
 
   /// Matrix rows array.
   constexpr auto rows(this auto&& self) noexcept -> auto&& {
-    return std::forward_like<decltype(self)>(self.rows_);
+    return TIT_FORWARD_LIKE(self, self.rows_);
   }
 
   /// Matrix row at index.
   constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return std::forward_like<decltype(self)>(self.rows_[i]);
+    return TIT_FORWARD_LIKE(self, self.rows_[i]);
   }
 
   /// Matrix element at index.
@@ -64,7 +64,7 @@ public:
       -> auto&& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
-    return std::forward_like<decltype(self)>(self.rows_[i][j]);
+    return TIT_FORWARD_LIKE(self, self.rows_[i][j]);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

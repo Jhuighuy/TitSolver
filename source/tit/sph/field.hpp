@@ -179,7 +179,7 @@ public:
   /// Get the partition index at the specified level.
   constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
     TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
-    return std::forward_like<decltype(self)>(self.vec_[i]);
+    return TIT_FORWARD_LIKE(self, self.vec_[i]);
   }
 
   /// Find the last assigned partition index.

@@ -6,9 +6,9 @@
 #pragma once
 
 #include <concepts>
-#include <utility>
 
 #include "tit/core/math.hpp"
+#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -35,7 +35,7 @@ public:
 
   /// Get the underlying value.
   constexpr auto get(this auto&& self) noexcept -> auto&& {
-    return std::forward<decltype(self)>(self).val_;
+    return TIT_FORWARD_LIKE(self, self.val_);
   }
 
   /// Cast number to a different type.
