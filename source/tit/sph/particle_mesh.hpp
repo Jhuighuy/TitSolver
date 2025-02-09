@@ -25,7 +25,6 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/type_utils.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"

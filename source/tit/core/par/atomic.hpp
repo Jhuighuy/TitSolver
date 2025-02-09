@@ -17,7 +17,7 @@ namespace tit::par {
 /// Atomically perform addition and return what was stored before.
 template<class Val>
   requires std::integral<Val> || std::is_pointer_v<Val>
-auto fetch_and_add(Val& val, sub_result_t<Val> delta) noexcept -> Val {
+auto fetch_and_add(Val& val, difference_t<Val> delta) noexcept -> Val {
   return __atomic_fetch_add(&val, delta, __ATOMIC_RELAXED); // NOLINT(*-vararg)
 }
 

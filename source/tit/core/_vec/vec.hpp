@@ -17,6 +17,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
+#include "tit/core/tuple_utils.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {

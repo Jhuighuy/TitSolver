@@ -14,6 +14,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/tuple_utils.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 

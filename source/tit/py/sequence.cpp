@@ -7,13 +7,12 @@
 #include <span>
 #include <string_view>
 
-#include "pyport.h"
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/str_utils.hpp"
+#include "tit/core/tuple_utils.hpp"
 #include "tit/core/uint_utils.hpp"
-#include "tit/core/utils.hpp"
 
 #include "tit/py/_python.hpp"
 #include "tit/py/error.hpp"

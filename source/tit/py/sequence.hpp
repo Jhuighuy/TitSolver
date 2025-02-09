@@ -12,7 +12,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/str_utils.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/tuple_utils.hpp"
 
 #include "tit/py/cast.hpp"
 #include "tit/py/object.hpp"

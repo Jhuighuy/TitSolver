@@ -3,8 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <type_traits>
-
 #include "tit/core/type_utils.hpp"
 
 namespace tit {
@@ -31,12 +29,6 @@ static_assert(!specialization_of<Template1<A>, Template2>);
 
 static_assert(contains_v<A, A, B, C>);
 static_assert(!contains_v<A, B, C, D>);
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-static_assert(std::is_same_v<type_at_t<0, A, B, C>, A>);
-static_assert(std::is_same_v<type_at_t<1, A, B, C>, B>);
-static_assert(std::is_same_v<type_at_t<2, A, B, C>, C>);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
