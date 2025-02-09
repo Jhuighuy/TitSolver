@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Part of the Tit Solver project, under the MIT License.
-# See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+# Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+# Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Test Runner Script.
