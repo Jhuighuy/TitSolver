@@ -6,8 +6,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { PyConnectionProvider } from "./components/Python";
-import "./index.css";
+import { PyConnectionProvider } from "~/components/Python";
+import "~/index.css";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

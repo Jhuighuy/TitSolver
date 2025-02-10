@@ -15,7 +15,7 @@ import {
 } from "react";
 import { z } from "zod";
 
-import { assert } from "../checks";
+import { assert } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

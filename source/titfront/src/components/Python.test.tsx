@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 import { useState } from "react";
 import { z } from "zod";
 
-import { PyConnectionProvider, PyError, usePython } from "./Python";
+import { PyConnectionProvider, PyError, usePython } from "~/components/Python";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -23,6 +23,8 @@ describe("usePython", () => {
 
     expect(screen.getByText("Connecting...")).toBeInTheDocument();
   });
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   it("runs code and returns primitives", async () => {
     const TestComponent = () => {
@@ -43,6 +45,8 @@ describe("usePython", () => {
 
     await waitFor(() => expect(screen.getByText("13")).toBeInTheDocument());
   });
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   it("runs code and returns objects", async () => {
     const object = { a: 1, b: 2 };
@@ -68,6 +72,8 @@ describe("usePython", () => {
     });
   });
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   it("sends result to right components", async () => {
     const TestComponent = ({ denum }: { denum: number }) => {
       const [result, setResult] = useState("");
@@ -91,6 +97,8 @@ describe("usePython", () => {
       expect(screen.getByText("65 / 13 = 5")).toBeInTheDocument();
     });
   });
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   it("runs code and returns errors", async () => {
     const TestComponent = () => {

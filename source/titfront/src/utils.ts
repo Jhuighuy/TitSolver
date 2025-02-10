@@ -5,14 +5,14 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Assert that a condition is true.
+/**
+ * Assert that the condition is true.
+ */
 export function assert(
   condition: unknown,
   message?: string
 ): asserts condition {
-  if (!condition) {
-    throw new Error(message ?? "Assertion failed.");
-  }
+  if (!condition) throw new Error(message ?? "Assertion failed.");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
