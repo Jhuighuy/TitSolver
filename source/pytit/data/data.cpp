@@ -15,7 +15,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/type_traits.hpp"
+#include "tit/core/type_utils.hpp"
 
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"
