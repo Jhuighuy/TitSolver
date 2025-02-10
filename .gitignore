@@ -24,6 +24,7 @@
 !/vcpkg.json
 
 # Web configuration files.
+!biome.json
 !package.json
 !*.config.json
 !tsconfig*.json

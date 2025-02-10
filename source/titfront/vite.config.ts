@@ -4,16 +4,30 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 /// <reference types="vitest" />
-import react from "@vitejs/plugin-react";
+import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
-import { Plugin, defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { type Plugin, defineConfig } from "vite";
 import { setupBackend } from "./setupBackend";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // See https://vitejs.dev/config/ for options.
 export default defineConfig({
-  plugins: [react(), tailwindcss(), titback()],
+  plugins: [
+    react({
+      babel: {
+        plugins: [["babel-plugin-react-compiler"]],
+      },
+    }),
+    tailwindcss(),
+    titback(),
+  ],
+  resolve: {
+    alias: {
+      "~": path.resolve(__dirname, "./src"),
+    },
+  },
   build: {
     outDir: process.env.PNPM_OUTPUT_DIR ?? "dist",
     emptyOutDir: true,
