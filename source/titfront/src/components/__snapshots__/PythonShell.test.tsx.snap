@@ -1,0 +1,293 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PythonShell > does not run empty commands 1`] = `
+<DocumentFragment>
+  <section
+    aria-label="Python Shell"
+    class="size-full flex flex-col overflow-auto font-mono select-text bg-gray-900"
+    data-testid="python-shell"
+  >
+    <div
+      class="grid grid-cols-[20px_auto]"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="currentColor"
+          height="1em"
+          stroke="currentColor"
+          stroke-width="0"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 5c-3.859 0-7 3.141-7 7s3.141 7 7 7 7-3.141 7-7-3.141-7-7-7zm0 12c-2.757 0-5-2.243-5-5s2.243-5 5-5 5 2.243 5 5-2.243 5-5 5z"
+          />
+          <path
+            d="M12 9c-1.627 0-3 1.373-3 3s1.373 3 3 3 3-1.373 3-3-1.373-3-3-3z"
+          />
+        </svg>
+      </div>
+      <pre
+        class="break-all whitespace-pre-wrap"
+      />
+    </div>
+    <div
+      class="grid grid-cols-[20px_auto]"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="none"
+          height="1em"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <line
+            x1="12"
+            x2="12"
+            y1="1"
+            y2="23"
+          />
+          <path
+            d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
+          />
+        </svg>
+      </div>
+      <span
+        aria-label="Command input"
+        class="break-all whitespace-pre-wrap focus:outline-none"
+        contenteditable="plaintext-only"
+        spellcheck="false"
+      />
+    </div>
+  </section>
+</DocumentFragment>
+`;
+
+exports[`PythonShell > renders commands 1`] = `
+<DocumentFragment>
+  <section
+    aria-label="Python Shell"
+    class="size-full flex flex-col overflow-auto font-mono select-text bg-gray-900"
+    data-testid="python-shell"
+  >
+    <div
+      class="grid grid-cols-[20px_auto]"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="currentColor"
+          height="1em"
+          stroke="currentColor"
+          stroke-width="0"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 5c-3.859 0-7 3.141-7 7s3.141 7 7 7 7-3.141 7-7-3.141-7-7-7zm0 12c-2.757 0-5-2.243-5-5s2.243-5 5-5 5 2.243 5 5-2.243 5-5 5z"
+          />
+          <path
+            d="M12 9c-1.627 0-3 1.373-3 3s1.373 3 3 3 3-1.373 3-3-1.373-3-3-3z"
+          />
+        </svg>
+      </div>
+      <pre
+        class="break-all whitespace-pre-wrap"
+      >
+        test1
+      </pre>
+    </div>
+    <div
+      class="grid grid-cols-[20px_auto]"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="none"
+          height="1em"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <polyline
+            points="15 10 20 15 15 20"
+          />
+          <path
+            d="M4 4v7a4 4 0 0 0 4 4h12"
+          />
+        </svg>
+      </div>
+      <pre
+        class="break-all whitespace-pre-wrap"
+      >
+        output
+      </pre>
+    </div>
+    <div
+      class="grid grid-cols-[20px_auto]"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="currentColor"
+          height="1em"
+          stroke="currentColor"
+          stroke-width="0"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 5c-3.859 0-7 3.141-7 7s3.141 7 7 7 7-3.141 7-7-3.141-7-7-7zm0 12c-2.757 0-5-2.243-5-5s2.243-5 5-5 5 2.243 5 5-2.243 5-5 5z"
+          />
+          <path
+            d="M12 9c-1.627 0-3 1.373-3 3s1.373 3 3 3 3-1.373 3-3-1.373-3-3-3z"
+          />
+        </svg>
+      </div>
+      <pre
+        class="break-all whitespace-pre-wrap"
+      >
+        test2
+      </pre>
+    </div>
+    <div
+      class="grid grid-cols-[20px_auto] text-red-600"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="none"
+          height="1em"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <polyline
+            points="15 10 20 15 15 20"
+          />
+          <path
+            d="M4 4v7a4 4 0 0 0 4 4h12"
+          />
+        </svg>
+      </div>
+      <pre
+        class="break-all whitespace-pre-wrap"
+      >
+        error
+      </pre>
+    </div>
+    <div
+      class="grid grid-cols-[20px_auto]"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="currentColor"
+          height="1em"
+          stroke="currentColor"
+          stroke-width="0"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 5c-3.859 0-7 3.141-7 7s3.141 7 7 7 7-3.141 7-7-3.141-7-7-7zm0 12c-2.757 0-5-2.243-5-5s2.243-5 5-5 5 2.243 5 5-2.243 5-5 5z"
+          />
+          <path
+            d="M12 9c-1.627 0-3 1.373-3 3s1.373 3 3 3 3-1.373 3-3-1.373-3-3-3z"
+          />
+        </svg>
+      </div>
+      <pre
+        class="break-all whitespace-pre-wrap"
+      />
+    </div>
+    <div
+      class="grid grid-cols-[20px_auto]"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="currentColor"
+          height="1em"
+          stroke="currentColor"
+          stroke-width="0"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M5 12c0 3.859 3.14 7 7 7 3.859 0 7-3.141 7-7s-3.141-7-7-7c-3.86 0-7 3.141-7 7zm12 0c0 2.757-2.243 5-5 5s-5-2.243-5-5 2.243-5 5-5 5 2.243 5 5z"
+          />
+        </svg>
+      </div>
+      <pre
+        class="break-all whitespace-pre-wrap"
+      >
+        test3
+      </pre>
+    </div>
+    <div
+      class="grid grid-cols-[20px_auto]"
+    >
+      <div
+        class="h-[1lh] flex items-center justify-center"
+      >
+        <svg
+          fill="none"
+          height="1em"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <line
+            x1="12"
+            x2="12"
+            y1="1"
+            y2="23"
+          />
+          <path
+            d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
+          />
+        </svg>
+      </div>
+      <span
+        aria-label="Command input"
+        class="break-all whitespace-pre-wrap focus:outline-none"
+        contenteditable="plaintext-only"
+        spellcheck="false"
+      />
+    </div>
+  </section>
+</DocumentFragment>
+`;

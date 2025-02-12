@@ -5,8 +5,8 @@
 
 import "@testing-library/jest-dom/vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
 import { useState } from "react";
+import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { PyConnectionProvider, PyError, usePython } from "~/components/Python";
