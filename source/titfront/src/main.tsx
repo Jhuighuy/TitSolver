@@ -7,6 +7,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import { PyConnectionProvider } from "~/components/Python";
+import { PythonShell } from "~/components/PythonShell";
 import "~/index.css";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -14,7 +15,10 @@ import "~/index.css";
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <PyConnectionProvider>
-      <span className="text-red-500">Hello, world!</span>
+      {/* This div is to be replaced with the actual app. */}
+      <div className="h-screen w-screen text-gray-300">
+        <PythonShell />
+      </div>
     </PyConnectionProvider>
   </React.StrictMode>
 );
