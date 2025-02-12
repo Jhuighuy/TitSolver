@@ -14,18 +14,22 @@
     "upgrade": "ncu -u && pnpm install"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "install": "^0.13.0",
     "npm": "^11.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.4.0",
-    "zod": "^3.24.1"
+    "tailwind-merge": "^3.0.1",
+    "zod": "^3.24.1",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@tailwindcss/vite": "4.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/http-proxy": "^1.17.15",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^22.10.10",
