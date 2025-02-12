@@ -14,7 +14,15 @@ import { setupBackend } from "./setupBackend";
 
 // See https://vitejs.dev/config/ for options.
 export default defineConfig({
-  plugins: [react(), tailwindcss(), titback()],
+  plugins: [
+    react({
+      babel: {
+        plugins: [["babel-plugin-react-compiler"]],
+      },
+    }),
+    tailwindcss(),
+    titback(),
+  ],
   resolve: {
     alias: {
       "~": path.resolve(__dirname, "./src"),
