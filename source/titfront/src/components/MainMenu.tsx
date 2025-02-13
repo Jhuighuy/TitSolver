@@ -3,12 +3,39 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { FC, Fragment, ReactNode, ReactElement, useState } from "react";
+import {
+  FC,
+  Fragment,
+  ReactNode,
+  ReactElement,
+  createContext,
+  useContext,
+  useState,
+} from "react";
 import { IconBaseProps } from "react-icons";
 import { FiMinimize as MinimizeIcon } from "react-icons/fi";
 
 import { HorizontalResizableDiv, VerticalResizableDiv } from "./ResizableDiv";
 import { cn } from "../utils";
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface Action {
+  key: string;
+  icon: ReactElement<IconBaseProps>;
+  action: () => void;
+}
+
+export interface MenuProviderProps {
+  actions: Action[];
+  addAction: (Action: Action) => void;
+}
+
+const MenuContext = createContext<MenuProviderProps | null>(null);
+
+export function useMenu() {
+  return useContext(MenuContext)!;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -20,6 +47,7 @@ export interface MenuItemProps {
 }
 
 export const MenuItem: FC<MenuItemProps> = ({ name, children }) => {
+  const { actions } = useMenu();
   return (
     <div
       className={cn(
@@ -30,14 +58,20 @@ export const MenuItem: FC<MenuItemProps> = ({ name, children }) => {
       {/* Title. */}
       <div className="h-4 m-1 mt-2 flex flex-row items-center justify-between">
         <span className="ml-2 font-medium truncate">{name.toUpperCase()}</span>
-        <button
-          className={cn(
-            "w-6 h-6 mr-2 rounded flex items-center justify-center",
-            "hover:bg-gray-500"
-          )}
-        >
-          <MinimizeIcon className="h-4 w-4" />
-        </button>
+        <div className="flex flex-row items-center">
+          {actions.map(({ key, icon, action }) => (
+            <button
+              key={key}
+              className={cn(
+                "w-6 h-6 mr-2 rounded flex items-center justify-center",
+                "hover:bg-gray-500"
+              )}
+              onClick={action}
+            >
+              {icon}
+            </button>
+          ))}
+        </div>
       </div>
       {/* Contents. */}
       <div
@@ -60,6 +94,16 @@ export interface MenuProps {
 
 export const LeftMenu: FC<MenuProps> = ({ children }) => {
   const [activeItemIndex, setActiveItemIndex] = useState(0);
+  const [actions, setActions] = useState<Action[]>([
+    {
+      key: "hide",
+      icon: <MinimizeIcon size={16} />,
+      action: () => setActiveItemIndex(-1),
+    },
+  ]);
+  const addAction = (action: Action) => {
+    setActions((prevActions) => [action, ...prevActions]);
+  };
 
   const selectItem = (index: number) => {
     setActiveItemIndex((prevIndex) => (prevIndex !== index ? index : -1));
@@ -114,7 +158,9 @@ export const LeftMenu: FC<MenuProps> = ({ children }) => {
       {/* Currently active item. */}
       {activeItemIndex !== -1 && (
         <HorizontalResizableDiv>
-          {children[activeItemIndex]}
+          <MenuContext.Provider value={{ actions, addAction }}>
+            {children[activeItemIndex]}
+          </MenuContext.Provider>
         </HorizontalResizableDiv>
       )}
     </div>
@@ -123,6 +169,16 @@ export const LeftMenu: FC<MenuProps> = ({ children }) => {
 
 export const BottomMenu: FC<MenuProps> = ({ children }) => {
   const [activeItemIndex, setActiveItemIndex] = useState(-1);
+  const [actions, setActions] = useState<Action[]>([
+    {
+      key: "hide",
+      icon: <MinimizeIcon size={16} />,
+      action: () => setActiveItemIndex(-1),
+    },
+  ]);
+  const addAction = (action: Action) => {
+    setActions((prevActions) => [action, ...prevActions]);
+  };
 
   const selectItem = (index: number) => {
     setActiveItemIndex((prevIndex) => (prevIndex !== index ? index : -1));
@@ -151,7 +207,11 @@ export const BottomMenu: FC<MenuProps> = ({ children }) => {
     <div className="flex flex-col bg-black text-gray-300">
       {/* Currently active item. */}
       {activeItemIndex !== -1 && (
-        <VerticalResizableDiv>{children[activeItemIndex]}</VerticalResizableDiv>
+        <VerticalResizableDiv>
+          <MenuContext.Provider value={{ actions, addAction }}>
+            {children[activeItemIndex]}
+          </MenuContext.Provider>
+        </VerticalResizableDiv>
       )}
       {/* Menu items. */}
       <div
