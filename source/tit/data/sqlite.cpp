@@ -48,24 +48,22 @@ Database::Database(const std::filesystem::path& path) {
       &db,
       SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
       nullptr);
-  if (status == SQLITE_OK) {
-    db_.reset(db);
-    return;
+  if (status != SQLITE_OK) {
+    TIT_THROW("SQLite database open failed ({}): {}",
+              status,
+              error_message(status, db));
   }
-
-  TIT_THROW("SQLite database open failed ({}): {}",
-            status,
-            error_message(status, db));
+  db_.reset(db);
 }
 
 void Database::Closer_::operator()(sqlite3* db) {
   const auto status = sqlite3_close_v2(db);
-  if (status == SQLITE_OK) return;
-
-  // Let's not throw in destructors.
-  TIT_ERROR("SQLite database close failed ({}): {}",
-            status,
-            error_message(status, db));
+  if (status != SQLITE_OK) {
+    // Let's not throw in destructors.
+    TIT_ERROR("SQLite database close failed ({}): {}",
+              status,
+              error_message(status, db));
+  }
 }
 
 auto Database::base() const noexcept -> sqlite3* {
@@ -75,27 +73,27 @@ auto Database::base() const noexcept -> sqlite3* {
 
 auto Database::path() const -> std::filesystem::path {
   const auto* const path = sqlite3_db_filename(base(), "main");
-  if (path != nullptr) return path;
-  TIT_THROW("Could not get database path!");
+  if (path == nullptr) TIT_THROW("Could not get database path!");
+  return path;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void Database::execute(CStrView sql) const {
   char* error_message = nullptr;
-  const auto status = sqlite3_exec(base(),
-                                   sql.c_str(),
-                                   /*callback=*/nullptr,
-                                   /*callback_arg=*/nullptr,
-                                   &error_message);
-  if (status == SQLITE_OK) return;
-
-  std::string error_message_str{error_message};
-  sqlite3_free(error_message);
-  TIT_THROW("SQLite operation '{}' failed ({}): {}",
-            sql,
-            status,
-            error_message_str);
+  if (const auto status = sqlite3_exec(base(),
+                                       sql.c_str(),
+                                       /*callback=*/nullptr,
+                                       /*callback_arg=*/nullptr,
+                                       &error_message);
+      status != SQLITE_OK) {
+    std::string error_message_str{error_message};
+    sqlite3_free(error_message);
+    TIT_THROW("SQLite operation '{}' failed ({}): {}",
+              sql,
+              status,
+              error_message_str);
+  }
 }
 
 auto Database::last_insert_row_id() const -> RowID {
@@ -109,34 +107,32 @@ Statement::Statement(Database& db, std::string_view sql) : db_{&db} {
   TIT_ASSERT(sql.size() <= std::numeric_limits<int>::max(), "SQL is too big!");
 
   sqlite3_stmt* stmt = nullptr;
-  const auto status = sqlite3_prepare_v3(db_->base(),
-                                         sql.data(),
-                                         static_cast<int>(sql.size()),
-                                         SQLITE_PREPARE_PERSISTENT,
-                                         &stmt,
-                                         /*pzTail=*/nullptr);
-  if (status == SQLITE_OK) {
-    stmt_.reset(stmt);
-    state_ = State_::prepared;
-    return;
+  if (const auto status = sqlite3_prepare_v3(db_->base(),
+                                             sql.data(),
+                                             static_cast<int>(sql.size()),
+                                             SQLITE_PREPARE_PERSISTENT,
+                                             &stmt,
+                                             /*pzTail=*/nullptr);
+      status != SQLITE_OK) {
+    TIT_THROW("SQLite statement '{}' prepare failed ({}): {}",
+              sql,
+              status,
+              error_message(status, db_->base()));
   }
 
-  TIT_THROW("SQLite statement '{}' prepare failed ({}): {}",
-            sql,
-            status,
-            error_message(status, db_->base()));
+  stmt_.reset(stmt);
+  state_ = State_::prepared;
 }
 
 void Statement::Finalizer_::operator()(sqlite3_stmt* stmt) {
-  const auto status = sqlite3_finalize(stmt);
-  if (status == SQLITE_OK) return;
-
-  // `sqlite3_finalize` returns an error code if any usage of the statement
-  // resulted in an error, so we've must have already thrown an exception.
-  // So, let's just log the error here and return peacefully.
-  TIT_ERROR("SQLite statement close failed ({}): {}",
-            status,
-            error_message(status));
+  if (const auto status = sqlite3_finalize(stmt); status != SQLITE_OK) {
+    // `sqlite3_finalize` returns an error code if any usage of the statement
+    // resulted in an error, so we've must have already thrown an exception.
+    // So, let's just log the error here and return peacefully.
+    TIT_ERROR("SQLite statement close failed ({}): {}",
+              status,
+              error_message(status));
+  }
 }
 
 auto Statement::base() const noexcept -> sqlite3_stmt* {
@@ -154,28 +150,28 @@ void Statement::bind_(size_t index, int64_t value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
 
-  const auto status =
-      sqlite3_bind_int64(base(), static_cast<int>(index), value);
-  if (status == SQLITE_OK) return;
-
-  TIT_THROW("SQLite statement bind integer argument #{} failed ({}): {}",
-            index,
-            status,
-            error_message(status, db_->base()));
+  if (const auto status =
+          sqlite3_bind_int64(base(), static_cast<int>(index), value);
+      status != SQLITE_OK) {
+    TIT_THROW("SQLite statement bind integer argument #{} failed ({}): {}",
+              index,
+              status,
+              error_message(status, db_->base()));
+  }
 }
 
 void Statement::bind_(size_t index, float64_t value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
 
-  const auto status =
-      sqlite3_bind_double(base(), static_cast<int>(index), value);
-  if (status == SQLITE_OK) return;
-
-  TIT_THROW("SQLite statement bind real argument #{} failed ({}): {}",
-            index,
-            status,
-            error_message(status, db_->base()));
+  if (const auto status =
+          sqlite3_bind_double(base(), static_cast<int>(index), value);
+      status != SQLITE_OK) {
+    TIT_THROW("SQLite statement bind real argument #{} failed ({}): {}",
+              index,
+              status,
+              error_message(status, db_->base()));
+  }
 }
 
 void Statement::bind_(size_t index, std::string_view value) const {
@@ -184,17 +180,17 @@ void Statement::bind_(size_t index, std::string_view value) const {
   TIT_ASSERT(value.size() <= std::numeric_limits<int>::max(),
              "Statement string argument is too large!");
 
-  const auto status = sqlite3_bind_text(base(),
-                                        static_cast<int>(index),
-                                        value.data(),
-                                        static_cast<int>(value.size()),
-                                        SQLITE_STATIC);
-  if (status == SQLITE_OK) return;
-
-  TIT_THROW("SQLite statement bind text argument #{} failed ({}): {}",
-            index,
-            status,
-            error_message(status, db_->base()));
+  if (const auto status = sqlite3_bind_text(base(),
+                                            static_cast<int>(index),
+                                            value.data(),
+                                            static_cast<int>(value.size()),
+                                            SQLITE_STATIC);
+      status != SQLITE_OK) {
+    TIT_THROW("SQLite statement bind text argument #{} failed ({}): {}",
+              index,
+              status,
+              error_message(status, db_->base()));
+  }
 }
 
 void Statement::bind_(size_t index, BlobView value) const {
@@ -203,17 +199,17 @@ void Statement::bind_(size_t index, BlobView value) const {
   TIT_ASSERT(value.size() <= std::numeric_limits<int>::max(),
              "Statement blob argument is too large!");
 
-  const auto status = sqlite3_bind_blob(base(),
-                                        static_cast<int>(index),
-                                        value.data(),
-                                        static_cast<int>(value.size()),
-                                        SQLITE_STATIC);
-  if (status == SQLITE_OK) return;
-
-  TIT_THROW("SQLite statement bind blob argument #{} failed ({}): {}",
-            index,
-            status,
-            error_message(status, db_->base()));
+  if (const auto status = sqlite3_bind_blob(base(),
+                                            static_cast<int>(index),
+                                            value.data(),
+                                            static_cast<int>(value.size()),
+                                            SQLITE_STATIC);
+      status != SQLITE_OK) {
+    TIT_THROW("SQLite statement bind blob argument #{} failed ({}): {}",
+              index,
+              status,
+              error_message(status, db_->base()));
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -222,19 +218,14 @@ auto Statement::step() -> bool {
   TIT_ASSERT(is_any_of(state_, State_::prepared, State_::executing),
              "Statement was already executed!");
 
-  const auto status = sqlite3_step(base());
-  if (status == SQLITE_DONE) {
-    state_ = State_::finished;
-    return false;
+  switch (const auto status = sqlite3_step(base()); status) {
+    case SQLITE_DONE: state_ = State_::finished; return false;
+    case SQLITE_ROW:  state_ = State_::executing; return true;
+    default:
+      TIT_THROW("SQLite statement step failed ({}): {}",
+                status,
+                error_message(status, db_->base()));
   }
-  if (status == SQLITE_ROW) {
-    state_ = State_::executing;
-    return true;
-  }
-
-  TIT_THROW("SQLite statement step failed ({}): {}",
-            status,
-            error_message(status, db_->base()));
 }
 
 void Statement::reset() {
@@ -258,10 +249,12 @@ auto Statement::num_columns_() const -> size_t {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
 
   const auto count = sqlite3_column_count(base());
-  if (count > 0) return static_cast<size_t>(count);
+  if (count <= 0) {
+    TIT_THROW("SQLite statement's column count query failed: {}",
+              error_message(sqlite3_errcode(db_->base()), db_->base()));
+  }
 
-  TIT_THROW("SQLite statement's column count query failed: {}",
-            error_message(sqlite3_errcode(db_->base()), db_->base()));
+  return static_cast<size_t>(count);
 }
 
 auto Statement::column_type_(size_t index) const -> int {
@@ -269,11 +262,13 @@ auto Statement::column_type_(size_t index) const -> int {
   TIT_ASSERT(index < num_columns_(), "Column index is out of range!");
 
   const auto type = sqlite3_column_type(base(), static_cast<int>(index));
-  if (type > 0) return type;
+  if (type <= 0) {
+    TIT_THROW("SQLite statement's column type #{} query failed: {}",
+              index,
+              error_message(sqlite3_errcode(db_->base()), db_->base()));
+  }
 
-  TIT_THROW("SQLite statement's column type #{} query failed: {}",
-            index,
-            error_message(sqlite3_errcode(db_->base()), db_->base()));
+  return type;
 }
 
 auto Statement::column_int_(size_t index) const -> int64_t {
@@ -349,30 +344,31 @@ BlobReader::BlobReader(const Database& db,
                        RowID row_id)
     : db_{&db} {
   sqlite3_blob* blob = nullptr;
-  const auto status = sqlite3_blob_open(db.base(),
-                                        "main",
-                                        table_name.c_str(),
-                                        column_name.c_str(),
-                                        row_id,
-                                        SQLITE_OPEN_READONLY,
-                                        &blob);
-  if (status == SQLITE_OK) {
-    blob_.reset(blob);
-    size_ = sqlite3_blob_bytes(blob);
-    return;
+  if (const auto status = sqlite3_blob_open(db.base(),
+                                            "main",
+                                            table_name.c_str(),
+                                            column_name.c_str(),
+                                            row_id,
+                                            SQLITE_OPEN_READONLY,
+                                            &blob);
+      status != SQLITE_OK) {
+    TIT_THROW("SQLite blob open failed ({}): {}",
+              status,
+              error_message(status, db.base()));
   }
 
-  TIT_THROW("SQLite blob open failed ({}): {}",
-            status,
-            error_message(status, db.base()));
+  blob_.reset(blob);
+  size_ = sqlite3_blob_bytes(blob);
 }
 
 void BlobReader::Finalizer_::operator()(sqlite3_blob* blob) {
   const auto status = sqlite3_blob_close(blob);
-  if (status == SQLITE_OK) return;
-
-  // Let's not throw in destructors.
-  TIT_ERROR("SQLite blob close failed ({}): {}", status, error_message(status));
+  if (status != SQLITE_OK) {
+    // Let's not throw in destructors.
+    TIT_ERROR("SQLite blob close failed ({}): {}",
+              status,
+              error_message(status));
+  }
 }
 
 auto BlobReader::base() const noexcept -> sqlite3_blob* {
@@ -386,18 +382,18 @@ auto BlobReader::read(std::span<byte_t> data) -> size_t {
 
   TIT_ASSERT(offset_ <= size_, "Offset is out of range!");
   const auto count = std::min(data.size(), size_ - offset_);
-  const auto status = sqlite3_blob_read(base(),
-                                        data.data(),
-                                        static_cast<int>(count),
-                                        static_cast<int>(offset_));
-  if (status == SQLITE_OK) {
-    offset_ += count;
-    return count;
+  if (const auto status = sqlite3_blob_read(base(),
+                                            data.data(),
+                                            static_cast<int>(count),
+                                            static_cast<int>(offset_));
+      status != SQLITE_OK) {
+    TIT_THROW("SQLite blob read failed ({}): {}",
+              status,
+              error_message(status, db_->base()));
   }
 
-  TIT_THROW("SQLite blob read failed ({}): {}",
-            status,
-            error_message(status, db_->base()));
+  offset_ += count;
+  return count;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

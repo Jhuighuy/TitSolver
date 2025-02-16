@@ -67,7 +67,7 @@ class Translator final {
 public:
 
   /// Construct a translator for the given key.
-  constexpr Translator(Key key) : key_{std::move(key)} {}
+  constexpr explicit Translator(Key key) : key_{std::move(key)} {}
 
   /// Add an option for the given key and value.
   constexpr auto option(const Key& key, const Val& value) -> Translator& {

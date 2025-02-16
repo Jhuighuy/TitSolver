@@ -40,7 +40,7 @@ public:
 
   /// Construct SIMD register mask from the Highway register.
   [[gnu::always_inline]]
-  RegMask(const Base& b) noexcept
+  explicit(false) RegMask(const Base& b) noexcept
       : base{b} {}
 
   /// Fill-initialize the SIMD register mask with zeroes.

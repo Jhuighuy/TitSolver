@@ -43,7 +43,7 @@ public:
 
   /// Construct SIMD register from the Highway register.
   [[gnu::always_inline]]
-  Reg(const Base& b) noexcept
+  explicit(false) Reg(const Base& b) noexcept
       : base{b} {}
 
   /// Fill-initialize the SIMD register with zeroes.
