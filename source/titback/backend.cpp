@@ -5,6 +5,7 @@
 
 #include <cstring>
 #include <filesystem>
+#include <span>
 #include <string>
 #include <utility>
 
@@ -15,7 +16,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/main_func.hpp"
+#include "tit/core/cmd.hpp"
 #include "tit/core/sys/utils.hpp"
 
 #include "tit/py/cast.hpp"
@@ -49,12 +50,13 @@ auto run_backend(CmdArgs args) -> int {
 
   // Execute the Python statement or file.
   /// @todo Proper command line parsing.
-  if (args.size() >= 3 && std::strcmp(args[1], "-c") == 0) {
-    const auto* const statement = args[2];
+  const std::span argspan{args.argv(), static_cast<size_t>(args.argc())};
+  if (argspan.size() >= 3 && std::strcmp(argspan[1], "-c") == 0) {
+    const auto* const statement = argspan[2];
     return interpreter.exec(statement) ? 0 : 1;
   }
-  if (args.size() >= 2) {
-    const auto* const file_name = args[1];
+  if (argspan.size() >= 2) {
+    const auto* const file_name = argspan[1];
     return interpreter.exec_file(file_name) ? 0 : 1;
   }
 

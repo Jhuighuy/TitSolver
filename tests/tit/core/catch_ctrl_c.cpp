@@ -5,8 +5,8 @@
 
 #include <csignal>
 
+#include "tit/core/cmd.hpp"
 #include "tit/core/io.hpp"
-#include "tit/core/main_func.hpp"
 #include "tit/core/sys/signal.hpp"
 #include "tit/core/sys/utils.hpp"
 

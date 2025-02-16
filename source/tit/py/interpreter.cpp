@@ -11,8 +11,8 @@
 #include <utility>
 
 #include "tit/core/checks.hpp"
+#include "tit/core/cmd.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/main_func.hpp"
 #include "tit/core/str_utils.hpp"
 #include "tit/core/sys/utils.hpp"
 #ifdef TIT_HAVE_GCOV
@@ -72,10 +72,7 @@ void Config::set_cmd_args(CmdArgs args) const {
   get()->parse_argv = 1;
 
   // Set the command line arguments.
-  const auto status = PyConfig_SetBytesArgv(
-      get(),
-      static_cast<int>(args.size()),
-      const_cast<char* const*>(args.data())); // NOLINT(*-const-cast)
+  const auto status = PyConfig_SetBytesArgv(get(), args.argc(), args.argv());
   if (PyStatus_IsError(status) == 0) return;
   TIT_THROW("Failed to set Python command line arguments: {}: {}.",
             status.func,

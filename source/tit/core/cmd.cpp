@@ -3,12 +3,9 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <cstdlib>
-
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/cmd.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/main_func.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
@@ -24,10 +21,8 @@ auto run_main(int argc, char** argv, MainFunc main_func) -> int {
   const TerminateHandler terminate_handler{};
   const FatalSignalHandler signal_handler{};
 
-  // Enable statistics.
+  // Enable subsystems.
   if (get_env("TIT_ENABLE_STATS", false)) Stats::enable();
-
-  // Enable profiling.
   if (get_env("TIT_ENABLE_PROFILER", false)) Profiler::enable();
 
   // Setup parallelism.
@@ -35,9 +30,7 @@ auto run_main(int argc, char** argv, MainFunc main_func) -> int {
 
   // Run the main function.
   TIT_ASSERT(main_func != nullptr, "Main function must be specified!");
-  TIT_ASSERT(argc > 0, "Invalid number of command line arguments!");
-  TIT_ASSERT(argv != nullptr, "Invalid command line arguments!");
-  return main_func({const_cast<const char**>(argv), static_cast<size_t>(argc)});
+  return main_func({argc, argv});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "tit/core/main_func.hpp"
+#include "tit/core/cmd.hpp"
 #include "tit/core/str_utils.hpp"
 #include "tit/core/utils.hpp"
 

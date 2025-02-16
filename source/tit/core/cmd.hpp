@@ -6,8 +6,8 @@
 #pragma once
 
 #include <functional>
-#include <span>
 
+#include "tit/core/checks.hpp"
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 
 namespace tit {
@@ -15,9 +15,35 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Command line arguments.
-using CmdArgs = std::span<const char*>;
+class CmdArgs final {
+public:
 
-/// `main`-like function pointer.
+  /// Construct the command line arguments.
+  constexpr CmdArgs(int argc, char** argv) : argc_{argc}, argv_{argv} {
+    TIT_ASSERT(argc >= 1, "Invalid number of command line arguments!");
+    TIT_ASSERT(argv != nullptr, "Invalid command line arguments!");
+  }
+
+  /// Get the number of command line arguments.
+  constexpr auto argc() const noexcept -> int {
+    return argc_;
+  }
+
+  /// Get the command line argument values.
+  constexpr auto argv() const noexcept -> char** {
+    return argv_;
+  }
+
+private:
+
+  int argc_;
+  char** argv_;
+
+}; // class CmdArgs
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Main function pointer.
 using MainFunc = std::move_only_function<int(CmdArgs)>;
 
 /// Wrapper for the main function that should run sets up the
