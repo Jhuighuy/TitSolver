@@ -10,7 +10,6 @@
 #include <functional>
 #include <iterator>
 #include <ranges>
-#include <type_traits>
 #include <utility>
 
 #include <oneapi/tbb/blocked_range.h>
@@ -22,35 +21,22 @@
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
-#include "tit/core/type_utils.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit::par {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Underlying range type.
-template<std::ranges::view View>
-using view_base_t = decltype(std::declval<View>().base());
-
-/// Parallelizable range that could be processed directly.
-template<class Range>
-concept basic_range =
-    std::ranges::sized_range<Range> && std::ranges::random_access_range<Range>;
-
-/// Parallelizable range.
+/// Range that could be processed in parallel.
 template<class Range>
 concept range =
-    basic_range<Range> ||
-    // Not sure if this will be needed in the future, but it's here for now.
-    (specialization_of<std::remove_cvref_t<Range>, std::ranges::join_view> &&
-     basic_range<view_base_t<std::remove_cvref_t<Range>>>);
+    std::ranges::sized_range<Range> && std::ranges::random_access_range<Range>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Iterate through the range in parallel (dynamic partitioning).
 struct ForEach {
-  template<basic_range Range,
+  template<range Range,
            std::regular_invocable<std::ranges::range_reference_t<Range&&>> Func>
   void operator()(Range&& range, Func func) const {
     /// @todo Replace with `tbb::parallel_for_each` when it supports ranges.
@@ -67,7 +53,7 @@ inline constexpr ForEach for_each{};
 
 /// Iterate through the range in parallel (static partitioning).
 struct StaticForEach {
-  template<basic_range Range,
+  template<range Range,
            std::invocable<size_t, std::ranges::range_reference_t<Range&&>> Func>
   void operator()(Range&& range, Func func) const {
     TIT_ASSUME_UNIVERSAL(Range, range);
@@ -88,20 +74,6 @@ struct StaticForEach {
                         std::bind_front(std::ref(func), thread_index));
         },
         tbb::static_partitioner{});
-  }
-
-  // Not sure if this will be needed in the future, let's keep it here for now.
-  template<basic_range Range,
-           std::invocable<size_t,
-                          std::ranges::range_reference_t<
-                              std::ranges::join_view<Range>>> Func>
-  void operator()(std::ranges::join_view<Range> join_view, Func func) const {
-    StaticForEach{}( //
-        std::move(join_view).base(),
-        [&func](size_t thread_index, const auto& range) {
-          std::ranges::for_each(range,
-                                std::bind_front(std::ref(func), thread_index));
-        });
   }
 };
 
@@ -132,7 +104,7 @@ inline constexpr BlockForEach block_for_each{};
 /// Parallel copy-if.
 /// Relative order of the elements in the output range is not preserved.
 struct CopyIf {
-  template<basic_range Range,
+  template<range Range,
            std::random_access_iterator OutIter,
            class Proj = std::identity,
            std::indirect_unary_predicate<
@@ -158,7 +130,7 @@ inline constexpr CopyIf copy_if{};
 
 /// Parallel transform.
 struct Transform final {
-  template<basic_range Range,
+  template<range Range,
            std::random_access_iterator OutIter,
            class Func,
            class Proj = std::identity>
@@ -188,9 +160,7 @@ inline constexpr Transform transform{};
 
 /// Parallel sort.
 struct Sort final {
-  template<basic_range Range,
-           class Compare = std::less<>,
-           class Proj = std::identity>
+  template<range Range, class Compare = std::less<>, class Proj = std::identity>
     requires std::sortable<std::ranges::iterator_t<Range>, Compare, Proj>
   static void operator()(Range&& range, Compare compare = {}, Proj proj = {}) {
     TIT_ASSUME_UNIVERSAL(Range, range);
