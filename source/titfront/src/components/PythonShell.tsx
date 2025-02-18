@@ -20,6 +20,7 @@ import {
   FiDollarSign as DollarIcon,
 } from "react-icons/fi";
 
+// import { useMenu } from "~/components/MainMenu";
 import { PyError, usePython } from "~/components/Python";
 import { usePythonShellStore } from "~/stores/PythonShellStore";
 import { cn } from "~/utils";
@@ -42,6 +43,17 @@ export const PythonShell: FC = () => {
   } = usePythonShellStore();
   const inputRef = useRef<HTMLSpanElement>(null);
   const runCode = usePython();
+
+  /*
+  const { addAction } = useMenu();
+  useEffect(() => {
+    addAction({
+      key: "python-shell",
+      icon: <DollarIcon size={16} />,
+      action: () => clearVisibleCommands(),
+    });
+  }, [addAction, clearVisibleCommands]);
+  */
 
   const runCommand = (input: string) => {
     if (input.length === 0) {

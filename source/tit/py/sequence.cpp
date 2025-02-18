@@ -18,7 +18,6 @@
 #include "tit/py/error.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/sequence.hpp"
-#include "tit/py/type.hpp"
 
 namespace tit::py {
 

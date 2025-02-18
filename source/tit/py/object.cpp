@@ -3,7 +3,9 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <bit>
 #include <string>
+#include <typeinfo>
 #include <utility>
 
 #include "tit/core/checks.hpp"
@@ -12,24 +14,13 @@
 #include "tit/py/_python.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/mapping.hpp"
+#include "tit/py/number.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/sequence.hpp"
 
 namespace tit::py {
 
 // NOLINTBEGIN(*-include-cleaner)
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto steal(PyObject* obj) -> Object {
-  TIT_ASSERT(obj != nullptr, "Object is null!");
-  return Object{obj};
-}
-
-auto borrow(PyObject* obj) -> Object {
-  TIT_ASSERT(obj != nullptr, "Object is null!");
-  return Object{Py_NewRef(obj)};
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -323,6 +314,119 @@ auto NoneType::isinstance(const Object& obj) -> bool {
 auto None() -> NoneType {
   return borrow<NoneType>(ensure(Py_None));
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto Type::type() -> Type {
+  return borrow(&PyType_Type);
+}
+
+auto Type::isinstance(const Object& obj) -> bool {
+  return ensure(PyType_Check(obj.get()));
+}
+
+auto Type::get_type() const -> PyTypeObject* {
+  return std::bit_cast<PyTypeObject*>(get());
+}
+
+/// @todo Use `PyType_GetName` once we have Python 3.11.
+auto Type::name() const -> std::string {
+  return extract<std::string>(attr("__name__"));
+}
+
+/// @todo Use `PyType_GetQualName` once we have Python 3.11.
+auto Type::qualified_name() const -> std::string {
+  return extract<std::string>(attr("__qualname__"));
+}
+
+/// @todo Use `PyType_GetFullyQualifiedName` once we have Python 3.13.
+auto Type::fully_qualified_name() const -> std::string {
+  const auto mod_name = module_name();
+  const auto qual_name = qualified_name();
+  return mod_name == "builtins" ? qual_name :
+                                  std::format("{}.{}", mod_name, qual_name);
+}
+
+/// @todo Use `PyType_GetModuleName` once we have Python 3.13.
+auto Type::module_name() const -> std::string {
+  return extract<std::string>(attr("__module__"));
+}
+
+auto Type::is_subtype_of(const Type& other) const -> bool {
+  return ensure(PyType_IsSubtype(get_type(), other.get_type()));
+}
+
+auto type(const Object& obj) -> Type {
+  return steal<Type>(ensure(PyObject_Type(obj.get())));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto steal(PyObject* ptr) -> Object {
+  TIT_ASSERT(ptr != nullptr, "Object is null!");
+  return Object{ptr};
+}
+
+auto borrow(PyObject* ptr) -> Object {
+  TIT_ASSERT(ptr != nullptr, "Object is null!");
+  return Object{Py_NewRef(ptr)};
+}
+auto borrow(PyTypeObject* type) -> Type {
+  return borrow<Type>(std::bit_cast<PyObject*>(type));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+
+const size_t sizeof_PyObject = sizeof(PyObject);
+const size_t alignof_PyObject = alignof(PyObject);
+
+[[noreturn]] void raise_unexpected_type_error(
+    std::string_view expected_type_name,
+    const Object& obj) {
+  raise_type_error("expected '{}', got '{}'",
+                   expected_type_name,
+                   type(obj).fully_qualified_name());
+}
+
+auto alloc(const std::type_info& type_info) -> PyObject* {
+  return ensure(PyType_GenericAlloc(lookup_type(type_info).get_type(), 1));
+}
+void dealloc(PyObject* ptr) {
+  TIT_ASSERT(ptr != nullptr, "Object must not be null!");
+  PyObject_Free(ptr);
+}
+
+auto Converter<bool>::object(bool value) -> Object {
+  return Bool{value};
+}
+auto Converter<bool>::extract(const Object& obj) -> bool {
+  return expect<Bool>(obj).val();
+}
+
+auto Converter<long long>::object(long long value) -> Object {
+  return Int{value};
+}
+auto Converter<long long>::extract(const Object& obj) -> long long {
+  return expect<Int>(obj).val();
+}
+
+auto Converter<double>::object(double value) -> Object {
+  return Float{value};
+}
+auto Converter<double>::extract(const Object& obj) -> double {
+  return expect<Float>(obj).val();
+}
+
+auto Converter<std::string_view>::object(std::string_view value) -> Object {
+  return Str{value};
+}
+auto Converter<std::string_view>::extract(const Object& obj) -> CStrView {
+  return expect<Str>(obj).val();
+}
+
+} // namespace impl
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

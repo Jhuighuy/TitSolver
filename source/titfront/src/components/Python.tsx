@@ -64,9 +64,7 @@ export type PyRunCode = (expression: string, onResponse: PyCallback) => void;
  * @returns A function to run Python code.
  */
 export function usePython(): PyRunCode {
-  const runCode = useContext(PyConnectionContext);
-  assert(runCode !== null, "runCode is null!");
-  return runCode;
+  return useContext(PyConnectionContext)!;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,7 +98,13 @@ export const PyConnectionProvider: FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     const ws = new WebSocket(`ws://${window.location.host}/ws`);
-    ws.onopen = () => setWebSocket(ws);
+    ws.onopen = () => {
+      setWebSocket(ws);
+
+      // Ping every 90 seconds to keep the connection alive.
+      const pingInterval = 90 * 1000;
+      setInterval(() => ws.send(JSON.stringify({ ping: 1 })), pingInterval);
+    };
     ws.onclose = () => setWebSocket(null);
     ws.onmessage = (event: MessageEvent) => {
       // Parse and validate the message.
@@ -110,8 +114,7 @@ export const PyConnectionProvider: FC<{ children: ReactNode }> = ({
       );
 
       // Invoke the callback.
-      const callback = pendingRequests.current.get(requestID);
-      assert(callback !== undefined, `No callback for request ${requestID}`);
+      const callback = pendingRequests.current.get(requestID)!;
       if (status === "success") {
         callback(result);
       } else {

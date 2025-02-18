@@ -6,8 +6,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
+import { App } from "~/components/App";
 import { PyConnectionProvider } from "~/components/Python";
-import { PythonShell } from "~/components/PythonShell";
+import { ViewerProvider } from "~/components/Viewer";
 import "~/index.css";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -15,10 +16,9 @@ import "~/index.css";
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <PyConnectionProvider>
-      {/* This div is to be replaced with the actual app. */}
-      <div className="h-screen w-screen text-gray-300">
-        <PythonShell />
-      </div>
+      <ViewerProvider>
+        <App />
+      </ViewerProvider>
     </PyConnectionProvider>
   </React.StrictMode>
 );

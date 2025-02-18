@@ -12,10 +12,8 @@
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/str_utils.hpp"
 
-#include "tit/py/cast.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/sequence.hpp"
-#include "tit/py/type.hpp"
 
 namespace tit::py {
 

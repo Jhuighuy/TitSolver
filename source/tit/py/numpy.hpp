@@ -10,6 +10,7 @@
 #include <memory>
 #include <span>
 #include <utility>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -20,7 +21,6 @@
 #include "tit/py/capsule.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/sequence.hpp"
-#include "tit/py/type.hpp"
 
 using PyArrayObject = struct tagPyArrayObject;
 
@@ -46,6 +46,14 @@ public:
                 mdvec.size() * sizeof(Val),
                 mdvec.shape()} {
     set_base(Capsule{std::make_unique<Mdvector<Val, Rank>>(std::move(mdvec))});
+  }
+
+  /// Create a new NumPy array from a byte array.
+  explicit NDArray(data::DataKind kind,
+                   std::vector<byte_t> bytes,
+                   std::span<const size_t> shape = {})
+      : NDArray{kind, bytes.data(), bytes.size(), shape} {
+    set_base(Capsule{std::make_unique<std::vector<byte_t>>(std::move(bytes))});
   }
 
   /// Get pointer to the object as `PyArrayObject*`.
