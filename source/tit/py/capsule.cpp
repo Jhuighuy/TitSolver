@@ -7,7 +7,6 @@
 #include "tit/py/capsule.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/object.hpp"
-#include "tit/py/type.hpp"
 
 namespace tit::py {
 

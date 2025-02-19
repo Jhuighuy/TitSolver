@@ -19,14 +19,12 @@
 #include "tit/core/cmd.hpp"
 #include "tit/core/sys/utils.hpp"
 
-#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/gil.hpp"
 #include "tit/py/interpreter.hpp"
 #include "tit/py/mapping.hpp"
 #include "tit/py/module.hpp"
 #include "tit/py/object.hpp"
-#include "tit/py/type.hpp"
 
 namespace tit::back {
 namespace {

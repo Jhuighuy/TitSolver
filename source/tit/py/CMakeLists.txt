@@ -10,8 +10,8 @@ add_tit_library(
     "_python.hpp"
     "capsule.hpp"
     "capsule.cpp"
-    "cast.cpp"
-    "cast.hpp"
+    "class.cpp"
+    "class.hpp"
     "error.cpp"
     "error.hpp"
     "func.cpp"
@@ -32,8 +32,6 @@ add_tit_library(
     "object.hpp"
     "sequence.cpp"
     "sequence.hpp"
-    "type.cpp"
-    "type.hpp"
     "typing.hpp"
   DEPENDS
     tit::core
@@ -88,7 +86,7 @@ add_tit_executable(
     py_tests
   SOURCES
     "capsule.test.cpp"
-    "cast.test.cpp"
+    "class.test.cpp"
     "error.test.cpp"
     "func.test.cpp"
     "gil.test.cpp"
@@ -102,7 +100,6 @@ add_tit_executable(
     "numpy.test.cpp"
     "object.test.cpp"
     "sequence.test.cpp"
-    "type.test.cpp"
     "typing.test.cpp"
   DEPENDS
     tit::py_embed

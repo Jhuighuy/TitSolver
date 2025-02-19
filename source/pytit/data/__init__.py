@@ -3,17 +3,25 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-install(
-  FILES
-    "__init__.py"
-  DESTINATION
-    "python/pytit"
+from .data import (
+    # DataRank,
+    # DataKind,
+    DataType,
+    DataArray,
+    DataSet,
+    TimeStep,
+    Series,
+    Storage,
 )
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_subdirectory("data")
-add_subdirectory("paraview")
-add_subdirectory("utils")
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+__all__ = (
+    # "DataRank",
+    # "DataKind",
+    "DataType",
+    "DataArray",
+    "DataSet",
+    "TimeStep",
+    "Series",
+    "Storage",
+    "to_numpy",
+)

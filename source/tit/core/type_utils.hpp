@@ -96,12 +96,6 @@ using difference_t = decltype(std::declval<T>() - std::declval<U>());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Defer the type resolution of `T` based on template parameter.
-template<class T, class Param>
-using defer_t = std::conditional_t<std::is_same_v<T, Param>, T, T>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Compile-time value constant.
 template<auto Val>
 struct value_constant_t {

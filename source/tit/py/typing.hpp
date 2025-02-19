@@ -12,9 +12,7 @@
 #include "tit/core/str_utils.hpp"
 #include "tit/core/type_utils.hpp"
 
-#include "tit/py/cast.hpp"
 #include "tit/py/object.hpp"
-#include "tit/py/type.hpp"
 
 namespace tit::py {
 
@@ -56,6 +54,20 @@ public:
 /// Optional object reference.
 template<std::derived_from<Object> Option>
 using Optional = Union<Option, NoneType>;
+
+/// Maybe steal the reference to the object if it is not null.
+template<std::derived_from<Object> Derived = Object>
+auto maybe_steal(PyObject* obj) -> Optional<Derived> {
+  if (obj != nullptr) return steal<Derived>(obj);
+  return None();
+}
+
+/// Maybe borrow the reference to the object if it is not null.
+template<std::derived_from<Object> Derived = Object>
+auto maybe_borrow(PyObject* obj) -> Optional<Derived> {
+  if (obj != nullptr) return borrow<Derived>(obj);
+  return None();
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
