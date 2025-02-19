@@ -14,6 +14,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
+#include "tit/core/par/algorithms.hpp"
 #include "tit/core/range_utils.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
@@ -67,8 +68,7 @@ template<point_range Points>
 constexpr auto compute_center(Points&& points) -> point_range_vec_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
   TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
-  auto sum = *std::begin(points);
-  for (const auto& point : points | std::views::drop(1)) sum += point;
+  const auto sum = par::fold(par::static_, points);
   return sum / count_points(points);
 }
 template<point_range Points, index_range Perm>
@@ -91,9 +91,13 @@ constexpr auto compute_bbox(Points&& points) -> point_range_bbox_t<Points> {
 #if !defined(TIT_HAVE_GCOV) || !TIT_HAVE_GCOV
   TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
 #endif
-  BBox box{*std::begin(points)};
-  for (const auto& point : points | std::views::drop(1)) box.expand(point);
-  return box;
+  using Box = point_range_bbox_t<Points>;
+  return par::fold(
+      par::static_,
+      points,
+      Box{*std::begin(points)},
+      [](Box partial, const auto& point) { return partial.expand(point); },
+      [](Box partial, const auto& other) { return partial.join(other); });
 }
 template<point_range Points, index_range Perm>
 constexpr auto compute_bbox(Points&& points, Perm&& perm)
@@ -116,12 +120,20 @@ constexpr auto compute_inertia_tensor(Points&& points)
     -> point_range_mat_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
   TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
-  auto sum = *std::begin(points);
-  auto inertia_tensor = outer_sqr(sum);
-  for (const auto& point : points | std::views::drop(1)) {
-    sum += point;
-    inertia_tensor += outer_sqr(point);
-  }
+  struct Result {
+    point_range_vec_t<Points> sum;
+    point_range_mat_t<Points> tensor;
+  };
+  auto [sum, inertia_tensor] = par::fold(
+      par::static_,
+      points,
+      Result{},
+      [](Result partial, const auto& point) -> Result {
+        return {partial.sum + point, partial.tensor + outer_sqr(point)};
+      },
+      [](Result partial, const Result& other) -> Result {
+        return {partial.sum + other.sum, partial.tensor + other.tensor};
+      });
   const auto center = sum / count_points(points);
   inertia_tensor -= outer(sum, center);
   return inertia_tensor;

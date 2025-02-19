@@ -55,6 +55,8 @@ set(
   -march=native
   # Position independent code.
   -fPIC
+  # By default, hide all symbols.
+  -fvisibility=hidden
 )
 if(APPLE)
   # Set the minimum macOS version to 15.20.

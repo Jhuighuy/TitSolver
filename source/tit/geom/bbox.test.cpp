@@ -90,6 +90,13 @@ TEST_CASE("geom::BBox::intersect") {
   CHECK(box.high() == Vec{2.0, 2.0});
 }
 
+TEST_CASE("geom::BBox::join") {
+  geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
+  box.join(geom::BBox{Vec{1.0, 1.0}, Vec{3.0, 3.0}});
+  CHECK(box.low() == Vec{0.0, 0.0});
+  CHECK(box.high() == Vec{3.0, 3.0});
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("geom::BBox::split(plane)") {

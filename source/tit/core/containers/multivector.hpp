@@ -166,7 +166,7 @@ public:
   constexpr void assign_pairs_par_wide(size_t count, Pairs&& pairs) {
     TIT_ASSUME_UNIVERSAL(Pairs, pairs);
     assign_pairs_wide_impl_(count, [&pairs](auto func) {
-      par::static_for_each(pairs, std::move(func));
+      par::deterministic_for_each(pairs, std::move(func));
     });
   }
   template<par::range Range>
@@ -174,9 +174,12 @@ public:
                                        std::ranges::join_view<Range> pairs) {
     auto base = std::move(pairs).base();
     assign_pairs_wide_impl_(count, [&base](auto func) {
-      par::static_for_each(base, [&func](size_t thread, const auto& range) {
-        std::ranges::for_each(range, std::bind_front(std::ref(func), thread));
-      });
+      par::deterministic_for_each(base,
+                                  [&func](const auto& range, size_t thread) {
+                                    std::ranges::for_each(
+                                        range,
+                                        std::bind_back(std::ref(func), thread));
+                                  });
     });
   }
   /// @}
@@ -223,7 +226,7 @@ private:
     static Mdvector<size_t, 2> per_thread_ranges{};
     const auto num_threads = par::num_threads();
     per_thread_ranges.assign(num_threads, count + 1);
-    for_each_pair([count](size_t thread, const auto& pair) {
+    for_each_pair([count](const auto& pair, size_t thread) {
       const auto index = std::get<0>(pair);
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       per_thread_ranges[thread, index] += 1;
@@ -242,7 +245,7 @@ private:
     // Place each value into position of the first element of it's index
     // range, then increment the position.
     vals_.resize(val_ranges_.back());
-    for_each_pair([count, this](size_t thread, const auto& pair) {
+    for_each_pair([count, this](const auto& pair, size_t thread) {
       const auto& [index, value] = pair;
       TIT_ASSERT(index < count, "Index of the value is out of expected range!");
       auto& position = per_thread_ranges[thread, index];
