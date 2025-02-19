@@ -6,12 +6,14 @@
 #pragma once
 
 #include <ranges>
+#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/boost.hpp"
 #include "tit/core/containers/mdvector.hpp"
+#include "tit/core/containers/multivector.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range_utils.hpp"
@@ -21,7 +23,7 @@
 #include "tit/geom/point_range.hpp"
 
 #include "tit/graph/graph.hpp"
-#include "tit/graph/simple_partition.hpp"
+#include "tit/graph/partition.hpp"
 
 namespace tit::geom {
 
@@ -29,7 +31,7 @@ namespace tit::geom {
 
 /// Partitioning based on a graph partitioning of a grid cell connectivity.
 /// @todo Replace `UniformPartition` with a proper graph partitioning function.
-template<graph::partition_func GraphPartition = graph::UniformPartition>
+template<graph::partition_func GraphPartition = graph::GreedyPartition>
 class GridGraphPartition final {
 public:
 
@@ -96,18 +98,18 @@ public:
     /// @todo I wish this code to be cleaner. Once we have a proper graph
     ///       library, we can simplify this code.
     static constexpr auto MaxNumEdges = 2 * Dim;
-    using EdgeMap = InplaceFlatMap<size_t, size_t, MaxNumEdges>;
-    graph::CapWeightedGraph<MaxNumEdges> graph(num_nodes);
-    std::vector<graph::weight_t> node_weights(num_nodes);
+    using Conns = InplaceFlatMap<graph::node_t, graph::weight_t, MaxNumEdges>;
+    CapMultivector<graph::wconn_t, MaxNumEdges> adjacency(num_nodes);
+    std::vector<graph::weight_t> weights(num_nodes);
     par::for_each( //
         grid.cells(1),
-        [&graph, &node_weights, &cells](const auto& cell_index) {
+        [&adjacency, &weights, &cells](const auto& cell_index) {
           const auto& [node, weight] = cells[cell_index.elems()];
           if (weight == 0) return;
           TIT_ASSERT(node != npos, "Missing node!");
 
           // Build the edges.
-          EdgeMap edges{};
+          Conns conns{};
           for (size_t d = 0; d < Dim; ++d) {
             for (ssize_t i = -1; i <= 1; i += 2) {
               auto neighbor_cell_index = cell_index;
@@ -117,18 +119,19 @@ public:
               if (neighbor_weight == 0) continue;
 
               const auto edge_weight = weight * neighbor_weight;
-              edges.emplace(neighbor, edge_weight);
+              conns.emplace(neighbor, edge_weight);
             }
           }
 
           // Set the node edges and weight.
-          graph.set_bucket(node, edges);
-          node_weights[node] = weight;
+          adjacency.set_bucket(node, conns);
+          weights[node] = weight;
         });
 
     // Build the graph partitioning.
+    graph::BaseWeightedGraph graph{std::move(adjacency), std::move(weights)};
     std::vector<size_t> graph_parts(graph.num_nodes());
-    graph_partition_(graph, node_weights, graph_parts, num_parts);
+    graph_partition_(graph, graph_parts, num_parts);
 
     // Propagate the partitions to the points.
     par::transform( //

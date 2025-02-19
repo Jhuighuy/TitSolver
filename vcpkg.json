@@ -13,7 +13,6 @@
     "doctest",
     "gcem",
     "highway",
-    "metis",
     "python3",
     "sqlite3",
     "tbb",
