@@ -32,6 +32,8 @@ set(
   -march=native
   # Position independent code.
   -fPIC
+  # Do not export symbols.
+  -fvisibility=hidden
   # Bug in LLVM.
   -fno-builtin-std-forward_like
 )
