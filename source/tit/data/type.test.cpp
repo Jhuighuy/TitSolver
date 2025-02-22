@@ -49,6 +49,7 @@ TEST_CASE("data::DataType") {
       CHECK(type.kind() == data::kind_of<float32_t>);
       CHECK(type.rank() == data::DataRank::scalar);
       CHECK(type.dim() == 1);
+      CHECK(type.width() == 4);
       CHECK(type.name() == "float32_t");
     }
     SUBCASE("vector") {
@@ -58,6 +59,7 @@ TEST_CASE("data::DataType") {
       CHECK(type.kind() == data::kind_of<float64_t>);
       CHECK(type.rank() == data::DataRank::vector);
       CHECK(type.dim() == 2);
+      CHECK(type.width() == 2 * 8);
       CHECK(type.name() == "Vec<float64_t, 2>");
     }
     SUBCASE("matrix") {
@@ -67,6 +69,7 @@ TEST_CASE("data::DataType") {
       CHECK(type.kind() == data::kind_of<int16_t>);
       CHECK(type.rank() == data::DataRank::matrix);
       CHECK(type.dim() == 3);
+      CHECK(type.width() == 3 * 3 * 2);
       CHECK(type.name() == "Mat<int16_t, 3>");
     }
   }

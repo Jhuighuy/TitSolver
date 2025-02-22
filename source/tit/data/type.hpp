@@ -15,6 +15,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/mat.hpp"
+#include "tit/core/math.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -217,6 +218,11 @@ public:
   /// Data type dimensionality. Always 1 for scalars.
   constexpr auto dim() const noexcept -> size_t {
     return dim_;
+  }
+
+  /// Data type width (in bytes).
+  constexpr auto width() const -> size_t {
+    return kind().width() * ipow(dim(), std::to_underlying(rank()));
   }
 
   /// Data type string representation.

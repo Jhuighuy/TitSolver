@@ -67,13 +67,15 @@ TEST_CASE_TEMPLATE("bitwise_equal", Num, NUM_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("pow", Num, NUM_TYPES) {
+  CHECK(pow<0>(-Num{2}) == +Num{1});
+  CHECK(ipow(-Num{2}, 1) == -Num{2});
   CHECK(pow2(-Num{2}) == +Num{4});
   CHECK(pow<3>(-Num{2}) == -Num{8});
-  CHECK(pow<4>(-Num{2}) == +Num{16});
+  CHECK(ipow(-Num{2}, 4) == +Num{16});
   CHECK(pow<5>(-Num{2}) == -Num{32});
   CHECK(pow<6>(-Num{2}) == +Num{64});
   CHECK(pow<7>(-Num{2}) == -Num{128});
-  CHECK(pow<8>(-Num{2}) == +Num{256});
+  CHECK(ipow(-Num{2}, 8) == +Num{256});
   CHECK(pow<9>(-Num{2}) == -Num{512});
   CHECK(pow(-Num{2}, 10) == Num{1024});
 }

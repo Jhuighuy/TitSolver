@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <numbers>
+#include <ranges>
 #include <set>
 #include <vector>
 
@@ -71,7 +72,7 @@ TEST_CASE("data::DataSeriesView") {
   SUBCASE("empty storage") {
     const data::DataStorage storage{":memory:"};
     CHECK(storage.num_series() == 0);
-    CHECK(storage.series_ids().empty());
+    CHECK(std::ranges::empty(storage.series_ids()));
   }
   SUBCASE("create series") {
     data::DataStorage storage{":memory:"};
@@ -194,7 +195,7 @@ TEST_CASE("data::DataTimeStepView") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
     CHECK(series.num_time_steps() == 0);
-    CHECK(series.time_steps().empty());
+    CHECK(std::ranges::empty(series.time_steps()));
   }
   SUBCASE("create time steps") {
     data::DataStorage storage{":memory:"};
@@ -315,13 +316,13 @@ TEST_CASE("data::DataSetView") {
     REQUIRE(storage.check_dataset(uniforms));
     CHECK(uniforms == data::DataSetID{1});
     CHECK(uniforms.num_arrays() == 0);
-    CHECK(uniforms.arrays().empty());
+    CHECK(std::ranges::empty(uniforms.arrays()));
 
     const auto varyings = step.varyings();
     REQUIRE(storage.check_dataset(varyings));
     CHECK(varyings == data::DataSetID{2});
     CHECK(varyings.num_arrays() == 0);
-    CHECK(varyings.arrays().empty());
+    CHECK(std::ranges::empty(varyings.arrays()));
   }
   SUBCASE("datasets in different time steps") {
     data::DataStorage storage{":memory:"};
@@ -378,7 +379,7 @@ TEST_CASE("data::DataArrayView") {
     const auto step = series.create_time_step(0.0);
     const auto dataset = step.uniforms();
     CHECK(dataset.num_arrays() == 0);
-    CHECK(dataset.arrays().empty());
+    CHECK(std::ranges::empty(dataset.arrays()));
   }
   SUBCASE("create arrays") {
     data::DataStorage storage{":memory:"};
@@ -392,7 +393,8 @@ TEST_CASE("data::DataArrayView") {
     REQUIRE(storage.check_array(array_1));
     CHECK(array_1 == data::DataArrayID{1});
     CHECK(array_1.type() == data::type_of<float64_t>);
-    CHECK_RANGE_EQ(array_1.template data<float64_t>(), {std::numbers::pi});
+    CHECK(array_1.size() == 1);
+    CHECK_RANGE_EQ(array_1.open_read<float64_t>(), {std::numbers::pi});
     CHECK(dataset.num_arrays() == 1);
     CHECK_RANGE_EQ(dataset.arrays(), {{"array_1", array_1}});
 
@@ -403,7 +405,9 @@ TEST_CASE("data::DataArrayView") {
     REQUIRE(storage.check_array(array_2));
     CHECK(array_2 == data::DataArrayID{2});
     CHECK(array_2.type() == data::type_of<float32_t>);
-    CHECK_RANGE_EQ(array_2.data(), to_byte_array(std::numbers::e_v<float32_t>));
+    CHECK(array_2.size() == 1);
+    CHECK_RANGE_EQ(array_2.open_read<float32_t>(),
+                   {std::numbers::e_v<float32_t>});
     CHECK(dataset.num_arrays() == 2);
     CHECK_RANGE_EQ(dataset.arrays(),
                    {{"array_1", array_1}, {"array_2", array_2}});
@@ -426,6 +430,25 @@ TEST_CASE("data::DataArrayView") {
     CHECK(dataset.find_array("array_1") == array_1);
     CHECK(dataset.find_array("array_2") == array_2);
     CHECK_FALSE(dataset.find_array("does_not_exist"));
+  }
+  SUBCASE("update arrays") {
+    data::DataStorage storage{":memory:"};
+    const auto series = storage.create_series("");
+    const auto step = series.create_time_step(0.0);
+    const auto dataset = step.uniforms();
+
+    const auto array =
+        dataset.create_array("array", std::vector{std::numbers::pi});
+    REQUIRE(storage.check_array(array));
+    CHECK(array.size() == 1);
+    CHECK_RANGE_EQ(array.open_read<float64_t>(), {std::numbers::pi});
+
+    // Overwrite the array.
+    array.open_write<float64_t>()->write(
+        std::vector{std::numbers::phi, std::numbers::sqrt3});
+    CHECK(array.size() == 2);
+    CHECK_RANGE_EQ(array.open_read<float64_t>(),
+                   {std::numbers::phi, std::numbers::sqrt3});
   }
   SUBCASE("delete arrays") {
     data::DataStorage storage{":memory:"};
