@@ -33,12 +33,12 @@ TEST_CASE("Multivector") {
     const Multivector multivector{{1, 2, 3, 4}, {5, 6, 7}, {8, 9}};
     CHECK(multivector.size() == 3);
     CHECK_FALSE(multivector.empty());
-    CHECK_RANGE_EQ(multivector.bucket_sizes(), std::vector{4, 3, 2});
+    CHECK_RANGE_EQ(multivector.bucket_sizes(), {4, 3, 2});
     CHECK_RANGE_EQ(multivector.buckets() | std::views::join,
-                   std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9});
-    CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
-    CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
-    CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
+                   {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
+    CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
+    CHECK_RANGE_EQ(multivector[2], {8, 9});
   }
 }
 
@@ -89,9 +89,9 @@ TEST_CASE("Multivector::assign_pairs_seq") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == 3);
-  CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
-  CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
-  CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
+  CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
+  CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
+  CHECK_RANGE_EQ(multivector[2], {8, 9});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -139,9 +139,9 @@ TEST_CASE("Multivector::assign_pairs_par_tall") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == 3);
-  CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
-  CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
-  CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
+  CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
+  CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
+  CHECK_RANGE_EQ(multivector[2], {8, 9});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -167,9 +167,9 @@ TEST_CASE("Multivector::assign_pairs_par_wide") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == 3);
-  CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
-  CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
-  CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
+  CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
+  CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
+  CHECK_RANGE_EQ(multivector[2], {8, 9});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -189,12 +189,12 @@ TEST_CASE("CapMultivector") {
     const CapMultivector<int, 4> multivector{{1, 2, 3, 4}, {5, 6, 7}, {8, 9}};
     CHECK(multivector.size() == 3);
     CHECK_FALSE(multivector.empty());
-    CHECK_RANGE_EQ(multivector.bucket_sizes(), std::vector{4, 3, 2});
+    CHECK_RANGE_EQ(multivector.bucket_sizes(), {4, 3, 2});
     CHECK_RANGE_EQ(multivector.buckets() | std::views::join,
-                   std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9});
-    CHECK_RANGE_EQ(multivector[0], std::vector{1, 2, 3, 4});
-    CHECK_RANGE_EQ(multivector[1], std::vector{5, 6, 7});
-    CHECK_RANGE_EQ(multivector[2], std::vector{8, 9});
+                   {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
+    CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
+    CHECK_RANGE_EQ(multivector[2], {8, 9});
   }
 }
 

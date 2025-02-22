@@ -6,8 +6,6 @@
 #include <filesystem>
 #include <numbers>
 #include <set>
-#include <string>
-#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -84,7 +82,7 @@ TEST_CASE("data::DataSeriesView") {
     CHECK(series_1 == data::DataSeriesID{1});
     CHECK(series_1.parameters() == "1");
     CHECK(storage.num_series() == 1);
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_1});
+    CHECK_RANGE_EQ(storage.series(), {series_1});
     CHECK(storage.last_series() == series_1);
 
     const auto series_2 = storage.create_series("2");
@@ -92,7 +90,7 @@ TEST_CASE("data::DataSeriesView") {
     CHECK(series_2 == data::DataSeriesID{2});
     CHECK(series_2.parameters() == "2");
     CHECK(storage.num_series() == 2);
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_1, series_2});
+    CHECK_RANGE_EQ(storage.series(), {series_1, series_2});
     CHECK(storage.last_series() == series_2);
 
     const auto series_3 = storage.create_series("3");
@@ -100,7 +98,7 @@ TEST_CASE("data::DataSeriesView") {
     CHECK(series_3 == data::DataSeriesID{3});
     CHECK(series_3.parameters() == "3");
     CHECK(storage.num_series() == 3);
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_1, series_2, series_3});
+    CHECK_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
     CHECK(storage.last_series() == series_3);
   }
   SUBCASE("create more series than the maximum") {
@@ -112,19 +110,18 @@ TEST_CASE("data::DataSeriesView") {
     const auto series_1 = storage.create_series("1");
     const auto series_2 = storage.create_series("2");
     const auto series_3 = storage.create_series("3");
-    REQUIRE_RANGE_EQ(storage.series(),
-                     std::vector{series_1, series_2, series_3});
+    REQUIRE_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
 
     // Create more series than the maximum. The oldest series should be removed.
     const auto series_4 = storage.create_series("4");
     CHECK(storage.check_series(series_4));
     CHECK_FALSE(storage.check_series(series_1));
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_2, series_3, series_4});
+    CHECK_RANGE_EQ(storage.series(), {series_2, series_3, series_4});
 
     const auto series_5 = storage.create_series("5");
     CHECK(storage.check_series(series_5));
     CHECK_FALSE(storage.check_series(series_2));
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_3, series_4, series_5});
+    CHECK_RANGE_EQ(storage.series(), {series_3, series_4, series_5});
   }
   SUBCASE("decrease maximum") {
     data::DataStorage storage{":memory:"};
@@ -135,13 +132,12 @@ TEST_CASE("data::DataSeriesView") {
     const auto series_1 = storage.create_series("1");
     const auto series_2 = storage.create_series("2");
     const auto series_3 = storage.create_series("3");
-    REQUIRE_RANGE_EQ(storage.series(),
-                     std::vector{series_1, series_2, series_3});
+    REQUIRE_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
 
     // Decrease the maximum. The oldest series should be removed.
     storage.set_max_series(2);
     CHECK(storage.max_series() == 2);
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_2, series_3});
+    CHECK_RANGE_EQ(storage.series(), {series_2, series_3});
   }
   SUBCASE("increase maximum") {
     data::DataStorage storage{":memory:"};
@@ -152,22 +148,20 @@ TEST_CASE("data::DataSeriesView") {
     const auto series_1 = storage.create_series("1");
     const auto series_2 = storage.create_series("2");
     const auto series_3 = storage.create_series("3");
-    REQUIRE_RANGE_EQ(storage.series(),
-                     std::vector{series_1, series_2, series_3});
+    REQUIRE_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
 
     // Increase the maximum.
     storage.set_max_series(5);
     CHECK(storage.max_series() == 5);
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_1, series_2, series_3});
+    CHECK_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
 
     // Create more series. Maximum should not be exceeded.
     const auto series_4 = storage.create_series("4");
     CHECK(storage.check_series(series_4));
     const auto series_5 = storage.create_series("5");
     CHECK(storage.check_series(series_5));
-    CHECK_RANGE_EQ(
-        storage.series(),
-        std::vector{series_1, series_2, series_3, series_4, series_5});
+    CHECK_RANGE_EQ(storage.series(),
+                   {series_1, series_2, series_3, series_4, series_5});
   }
   SUBCASE("delete series") {
     data::DataStorage storage{":memory:"};
@@ -178,19 +172,18 @@ TEST_CASE("data::DataSeriesView") {
     const auto series_1 = storage.create_series("1");
     const auto series_2 = storage.create_series("2");
     const auto series_3 = storage.create_series("3");
-    REQUIRE_RANGE_EQ(storage.series(),
-                     std::vector{series_1, series_2, series_3});
+    REQUIRE_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
 
     // Delete the series.
     storage.delete_series(series_2);
     CHECK_FALSE(storage.check_series(series_2));
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_1, series_3});
+    CHECK_RANGE_EQ(storage.series(), {series_1, series_3});
 
     // Create more series. Make sure the ID of the removed series is not reused.
     const auto series_4 = storage.create_series("4");
     CHECK(storage.check_series(series_4));
     CHECK(series_4 != series_2);
-    CHECK_RANGE_EQ(storage.series(), std::vector{series_1, series_3, series_4});
+    CHECK_RANGE_EQ(storage.series(), {series_1, series_3, series_4});
   }
 }
 
@@ -214,7 +207,7 @@ TEST_CASE("data::DataTimeStepView") {
     CHECK(storage.check_dataset(step_1.uniforms()));
     CHECK(storage.check_dataset(step_1.varyings()));
     CHECK(series.num_time_steps() == 1);
-    CHECK_RANGE_EQ(series.time_steps(), std::vector{step_1});
+    CHECK_RANGE_EQ(series.time_steps(), {step_1});
     CHECK(series.last_time_step() == step_1);
 
     const auto step_2 = series.create_time_step(1.0);
@@ -224,7 +217,7 @@ TEST_CASE("data::DataTimeStepView") {
     CHECK(storage.check_dataset(step_2.uniforms()));
     CHECK(storage.check_dataset(step_2.varyings()));
     CHECK(series.num_time_steps() == 2);
-    CHECK_RANGE_EQ(series.time_steps(), std::vector{step_1, step_2});
+    CHECK_RANGE_EQ(series.time_steps(), {step_1, step_2});
     CHECK(series.last_time_step() == step_2);
 
     const auto step_3 = series.create_time_step(2.0);
@@ -234,7 +227,7 @@ TEST_CASE("data::DataTimeStepView") {
     CHECK(storage.check_dataset(step_3.uniforms()));
     CHECK(storage.check_dataset(step_3.varyings()));
     CHECK(series.num_time_steps() == 3);
-    CHECK_RANGE_EQ(series.time_steps(), std::vector{step_1, step_2, step_3});
+    CHECK_RANGE_EQ(series.time_steps(), {step_1, step_2, step_3});
     CHECK(series.last_time_step() == step_3);
   }
   SUBCASE("create time steps in different series") {
@@ -246,15 +239,13 @@ TEST_CASE("data::DataTimeStepView") {
     const auto step_11 = series_1.create_time_step(0.0);
     const auto step_12 = series_1.create_time_step(1.0);
     const auto step_13 = series_1.create_time_step(2.0);
-    REQUIRE_RANGE_EQ(series_1.time_steps(),
-                     std::vector{step_11, step_12, step_13});
+    REQUIRE_RANGE_EQ(series_1.time_steps(), {step_11, step_12, step_13});
 
     // Create time steps in the second series.
     const auto step_21 = series_2.create_time_step(0.0);
     const auto step_22 = series_2.create_time_step(1.0);
     const auto step_23 = series_2.create_time_step(2.0);
-    REQUIRE_RANGE_EQ(series_2.time_steps(),
-                     std::vector{step_21, step_22, step_23});
+    REQUIRE_RANGE_EQ(series_2.time_steps(), {step_21, step_22, step_23});
 
     // Make sure the time steps are not shared between series.
     const std::set<data::DataTimeStepID> all_steps{
@@ -275,19 +266,19 @@ TEST_CASE("data::DataTimeStepView") {
     const auto step_1 = series.create_time_step(0.0);
     const auto step_2 = series.create_time_step(1.0);
     const auto step_3 = series.create_time_step(2.0);
-    REQUIRE_RANGE_EQ(series.time_steps(), std::vector{step_1, step_2, step_3});
+    REQUIRE_RANGE_EQ(series.time_steps(), {step_1, step_2, step_3});
 
     // Delete the time step.
     storage.delete_time_step(step_2);
     CHECK_FALSE(storage.check_time_step(step_2));
-    CHECK_RANGE_EQ(series.time_steps(), std::vector{step_1, step_3});
+    CHECK_RANGE_EQ(series.time_steps(), {step_1, step_3});
 
     // Create more time steps.
     // Make sure the ID of the removed time step is not reused.
     const auto step_4 = series.create_time_step(3.0);
     CHECK(storage.check_time_step(step_4));
     CHECK(step_4 == data::DataTimeStepID{4});
-    CHECK_RANGE_EQ(series.time_steps(), std::vector{step_1, step_3, step_4});
+    CHECK_RANGE_EQ(series.time_steps(), {step_1, step_3, step_4});
   }
   SUBCASE("delete series") {
     data::DataStorage storage{":memory:"};
@@ -297,7 +288,7 @@ TEST_CASE("data::DataTimeStepView") {
     const auto step_1 = series.create_time_step(0.0);
     const auto step_2 = series.create_time_step(1.0);
     const auto step_3 = series.create_time_step(2.0);
-    REQUIRE_RANGE_EQ(series.time_steps(), std::vector{step_1, step_2, step_3});
+    REQUIRE_RANGE_EQ(series.time_steps(), {step_1, step_2, step_3});
 
     // Delete the series.
     storage.delete_series(series);
@@ -381,8 +372,6 @@ TEST_CASE("data::DataSetView") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("data::DataArrayView") {
-  using NamedArrays = std::vector<
-      std::pair<std::string, data::DataArrayView<data::DataStorage>>>;
   SUBCASE("empty dataset") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
@@ -403,9 +392,9 @@ TEST_CASE("data::DataArrayView") {
     REQUIRE(storage.check_array(array_1));
     CHECK(array_1 == data::DataArrayID{1});
     CHECK(array_1.type() == data::type_of<float64_t>);
-    CHECK(array_1.template data<float64_t>() == std::vector{std::numbers::pi});
+    CHECK_RANGE_EQ(array_1.template data<float64_t>(), {std::numbers::pi});
     CHECK(dataset.num_arrays() == 1);
-    CHECK_RANGE_EQ(dataset.arrays(), NamedArrays{{"array_1", array_1}});
+    CHECK_RANGE_EQ(dataset.arrays(), {{"array_1", array_1}});
 
     const auto array_2 = dataset.create_array( //
         "array_2",
@@ -417,7 +406,7 @@ TEST_CASE("data::DataArrayView") {
     CHECK_RANGE_EQ(array_2.data(), to_byte_array(std::numbers::e_v<float32_t>));
     CHECK(dataset.num_arrays() == 2);
     CHECK_RANGE_EQ(dataset.arrays(),
-                   NamedArrays{{"array_1", array_1}, {"array_2", array_2}});
+                   {{"array_1", array_1}, {"array_2", array_2}});
   }
   SUBCASE("find arrays") {
     data::DataStorage storage{":memory:"};
@@ -455,7 +444,7 @@ TEST_CASE("data::DataArrayView") {
     // Delete the arrays.
     storage.delete_array(array_1);
     REQUIRE_FALSE(storage.check_array(array_1));
-    CHECK_RANGE_EQ(dataset.arrays(), NamedArrays{{"array_2", array_2}});
+    CHECK_RANGE_EQ(dataset.arrays(), {{"array_2", array_2}});
 
     // Create more arrays. Make sure the ID of the removed array is not reused.
     const auto array_3 =
@@ -463,7 +452,7 @@ TEST_CASE("data::DataArrayView") {
     CHECK(storage.check_array(array_3));
     CHECK(array_3 == data::DataArrayID{3});
     CHECK_RANGE_EQ(dataset.arrays(),
-                   NamedArrays{{"array_2", array_2}, {"array_3", array_3}});
+                   {{"array_2", array_2}, {"array_3", array_3}});
   }
   SUBCASE("delete time step") {
     data::DataStorage storage{":memory:"};

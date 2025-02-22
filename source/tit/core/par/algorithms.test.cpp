@@ -123,7 +123,7 @@ TEST_CASE("par::copy_if") {
     CHECK(iter == out.begin() + 5);
     const auto out_range = std::ranges::subrange(out.begin(), iter);
     std::ranges::sort(out_range);
-    CHECK_RANGE_EQ(out_range, std::vector{0, 2, 4, 6, 8});
+    CHECK_RANGE_EQ(out_range, {0, 2, 4, 6, 8});
   }
   SUBCASE("exceptions") {
     // Ensure the exceptions from the worker threads are caught.
@@ -152,7 +152,7 @@ TEST_CASE("par::transform") {
       return 2 * i + 1;
     });
     CHECK(iter == out.end());
-    CHECK_RANGE_EQ(out, std::vector{1, 3, 5, 7, 9, 11, 13, 15, 17, 19});
+    CHECK_RANGE_EQ(out, {1, 3, 5, 7, 9, 11, 13, 15, 17, 19});
   }
   SUBCASE("exceptions") {
     // Ensure the exceptions from the worker threads are caught.

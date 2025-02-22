@@ -35,7 +35,7 @@ TEST_CASE("py::NDArray") {
       const Mdvector mdvec{std::array{1.0, 2.0, 3.0, 4.0}.begin(), 2, 2};
       const py::NDArray array{mdvec};
       REQUIRE(array.rank() == 2);
-      REQUIRE_RANGE_EQ(array.shape(), std::array{2, 2});
+      REQUIRE_RANGE_EQ(array.shape(), {2, 2});
       CHECK(array.elem<double>(0, 0) == 1.0);
       CHECK(array.elem<double>(0, 1) == 2.0);
       CHECK(array.elem<double>(1, 0) == 3.0);
@@ -76,7 +76,7 @@ TEST_CASE("py::NDArray") {
         const auto slice2D = py::expect<py::NDArray>(array[1]);
         CHECK(slice2D.kind() == data::kind_of<int>);
         CHECK(slice2D.rank() == 2);
-        CHECK_RANGE_EQ(slice2D.shape(), std::array{1, 4});
+        CHECK_RANGE_EQ(slice2D.shape(), {1, 4});
         CHECK(slice2D[0, 0] == py::Int{5});
         CHECK(slice2D[0, 1] == py::Int{6});
         CHECK(slice2D[0, 2] == py::Int{7});
@@ -89,7 +89,7 @@ TEST_CASE("py::NDArray") {
         const auto slice1D = py::expect<py::NDArray>(slice2D[0]);
         CHECK(slice1D.kind() == data::kind_of<int>);
         CHECK(slice1D.rank() == 1);
-        CHECK_RANGE_EQ(slice1D.shape(), std::array{4});
+        CHECK_RANGE_EQ(slice1D.shape(), {4});
         CHECK(slice1D[0] == py::Int{5});
         CHECK(slice1D[1] == py::Int{6});
         CHECK(slice1D[2] == py::Int{7});
@@ -153,7 +153,7 @@ TEST_CASE("NDArrays from Python") {
       py::expect<py::NDArray>(testing::interpreter().globals()["array"]);
   CHECK(array.kind() == data::kind_of<int64_t>); // Weird NumPy behavior.
   REQUIRE(array.rank() == 3);
-  REQUIRE_RANGE_EQ(array.shape(), std::array{2, 3, 3});
+  REQUIRE_RANGE_EQ(array.shape(), {2, 3, 3});
   CHECK(py::List{array[0, 0]} == py::make_list(1, 2, 3));
   CHECK(py::List{array[0, 1]} == py::make_list(4, 5, 6));
   CHECK(py::List{array[0, 2]} == py::make_list(7, 8, 9));
@@ -164,7 +164,7 @@ TEST_CASE("NDArrays from Python") {
   const auto slice2D =
       py::expect<py::NDArray>(testing::interpreter().globals()["slice2D"]);
   REQUIRE(slice2D.rank() == 2);
-  REQUIRE_RANGE_EQ(slice2D.shape(), std::array{3, 3});
+  REQUIRE_RANGE_EQ(slice2D.shape(), {3, 3});
   CHECK(py::List{slice2D[0]} == py::make_list(10, 11, 12));
   CHECK(py::List{slice2D[1]} == py::make_list(13, 14, 15));
   CHECK(py::List{slice2D[2]} == py::make_list(16, 17, 18));
@@ -172,7 +172,7 @@ TEST_CASE("NDArrays from Python") {
   const auto slice1D =
       py::expect<py::NDArray>(testing::interpreter().globals()["slice1D"]);
   REQUIRE(slice1D.rank() == 1);
-  REQUIRE_RANGE_EQ(slice1D.shape(), std::array{2});
+  REQUIRE_RANGE_EQ(slice1D.shape(), {2});
   CHECK(py::List{slice1D} == py::make_list(13, 16));
 
   // There is no intention to all NumPy types, for example complex numbers.
