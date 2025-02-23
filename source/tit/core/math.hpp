@@ -18,6 +18,7 @@
 #endif
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/checks.hpp"
 
 namespace tit {
 
@@ -70,14 +71,23 @@ constexpr auto pow2(Num a) -> Num {
   return a * a;
 }
 
-/// Raise to the unsigned integer power.
-template<unsigned Power, class Num>
-constexpr auto pow(Num a) -> Num {
-  static_assert(Power > 0, "Power must be positive!");
-  if constexpr (Power == 1) return a;
-  else if constexpr (Power % 2 == 0) return pow<Power / 2>(a * a);
-  else return a * pow<Power / 2>(a * a);
+/// Raise to the non-negative integer power.
+/// @{
+template<class Num>
+constexpr auto ipow(Num a, std::integral auto power) -> Num {
+  if constexpr (std::integral<Num> || std::floating_point<Num>) {
+    TIT_ASSERT(power >= 0, "Power must be non-negative!");
+    if (power == 0) return Num{1};
+  } else TIT_ASSERT(power > 0, "Power must be positive!");
+  if (power == 1) return a;
+  if (power % 2 == 0) return ipow(a * a, power / 2);
+  return a * ipow(a * a, power / 2);
 }
+template<std::integral auto Power, class Num>
+constexpr auto pow(Num a) -> Num {
+  return ipow(a, Power);
+}
+/// @}
 
 /// Raise to the floating-point power.
 template<std::floating_point Float>

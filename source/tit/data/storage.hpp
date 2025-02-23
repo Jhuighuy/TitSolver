@@ -14,7 +14,6 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -61,6 +60,9 @@ template<data_storage Storage>
 class DataArrayView final {
 public:
 
+  /// Construct a null data array view.
+  constexpr DataArrayView() noexcept = default;
+
   /// Construct a data array view.
   constexpr explicit DataArrayView(Storage& storage, DataArrayID array_id)
       : storage_{&storage}, array_id_{array_id} {
@@ -69,13 +71,14 @@ public:
 
   /// Get the data storage.
   constexpr auto storage() const noexcept -> Storage& {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
     return *storage_;
   }
 
   /// Get the data array ID.
   /// @{
   constexpr auto id() const noexcept -> DataArrayID {
+    TIT_ASSERT(array_id_.get() != 0, "Array ID is null!");
     return array_id_;
   }
   constexpr explicit(false) operator DataArrayID() const noexcept {
@@ -95,21 +98,41 @@ public:
     return storage().array_type(array_id_);
   }
 
-  /// Get the data of the data array.
-  /// @{
-  auto data() const -> std::vector<byte_t> {
-    return storage().array_data(array_id_);
+  /// Get the size of a data array (in elements).
+  auto size() const -> size_t {
+    return storage().array_size(array_id_);
   }
-  template<known_type Val>
-  auto data() const -> std::vector<Val> {
-    return storage().template array_data<Val>(array_id_);
+
+  /// Open an output stream to write the data.
+  /// @{
+  auto open_write() const -> OutputStreamPtr<byte_t>
+    requires (!std::is_const_v<Storage>)
+  {
+    return storage().array_data_open_write(array_id_);
+  }
+  template<known_type_of Val>
+  auto open_write() const -> OutputStreamPtr<Val>
+    requires (!std::is_const_v<Storage>)
+  {
+    return storage().template array_data_open_write<Val>(array_id_);
+  }
+  /// @}
+
+  /// Open an input stream to read the data.
+  /// @{
+  auto open_read() const -> InputStreamPtr<byte_t> {
+    return storage().array_data_open_read(array_id_);
+  }
+  template<known_type_of Val>
+  auto open_read() const -> InputStreamPtr<Val> {
+    return storage().template array_data_open_read<Val>(array_id_);
   }
   /// @}
 
 private:
 
-  Storage* storage_;
-  DataArrayID array_id_;
+  Storage* storage_ = nullptr;
+  DataArrayID array_id_{0};
 
 }; // class DataArrayView
 
@@ -120,6 +143,9 @@ template<data_storage Storage>
 class DataSetView final {
 public:
 
+  /// Construct a null data set view.
+  constexpr DataSetView() noexcept = default;
+
   /// Construct a dataset view.
   constexpr explicit DataSetView(Storage& storage, DataSetID dataset_id)
       : storage_{&storage}, dataset_id_{dataset_id} {
@@ -128,13 +154,14 @@ public:
 
   /// Get the data storage.
   constexpr auto storage() const noexcept -> Storage& {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
     return *storage_;
   }
 
   /// Get the dataset ID.
   /// @{
   constexpr auto id() const noexcept -> DataSetID {
+    TIT_ASSERT(dataset_id_.get() != 0, "Data set ID is null!");
     return dataset_id_;
   }
   constexpr explicit(false) operator DataSetID() const noexcept {
@@ -177,8 +204,8 @@ public:
 
 private:
 
-  Storage* storage_;
-  DataSetID dataset_id_;
+  Storage* storage_ = nullptr;
+  DataSetID dataset_id_{0};
 
 }; // class DataSetView
 
@@ -189,6 +216,9 @@ template<data_storage Storage>
 class DataTimeStepView final {
 public:
 
+  /// Construct a null data time step view.
+  constexpr DataTimeStepView() noexcept = default;
+
   /// Construct a data time step view.
   constexpr explicit DataTimeStepView(Storage& storage,
                                       DataTimeStepID time_step_id)
@@ -198,13 +228,14 @@ public:
 
   /// Get the data storage.
   constexpr auto storage() const noexcept -> Storage& {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
     return *storage_;
   }
 
   /// Get the data time step ID.
   /// @{
   constexpr auto id() const noexcept -> DataTimeStepID {
+    TIT_ASSERT(time_step_id_.get() != 0, "Time step ID is null!");
     return time_step_id_;
   }
   constexpr explicit(false) operator DataTimeStepID() const noexcept {
@@ -236,8 +267,8 @@ public:
 
 private:
 
-  Storage* storage_;
-  DataTimeStepID time_step_id_;
+  Storage* storage_ = nullptr;
+  DataTimeStepID time_step_id_{0};
 
 }; // class DataTimeStepView
 
@@ -248,6 +279,9 @@ template<data_storage Storage>
 class DataSeriesView final {
 public:
 
+  /// Construct a null data series view.
+  constexpr DataSeriesView() noexcept = default;
+
   /// Construct a data series view.
   constexpr explicit DataSeriesView(Storage& storage, DataSeriesID series_id)
       : storage_{&storage}, series_id_{series_id} {
@@ -256,13 +290,14 @@ public:
 
   /// Get the data storage.
   constexpr auto storage() const noexcept -> Storage& {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
     return *storage_;
   }
 
   /// Get the data series ID.
   /// @{
   constexpr auto id() const noexcept -> DataSeriesID {
+    TIT_ASSERT(series_id_.get() != 0, "Series ID is null!");
     return series_id_;
   }
   constexpr explicit(false) operator DataSeriesID() const noexcept {
@@ -301,14 +336,14 @@ public:
   auto create_time_step(real_t time) const -> DataTimeStepView<Storage>
     requires (!std::is_const_v<Storage>)
   {
-    TIT_ASSERT(storage_ != nullptr, "Data storage was not set!");
+    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
     return storage().create_time_step(series_id_, time);
   }
 
 private:
 
-  Storage* storage_;
-  DataSeriesID series_id_;
+  Storage* storage_ = nullptr;
+  DataSeriesID series_id_{0};
 
 }; // class DataSeriesView
 
@@ -340,11 +375,11 @@ public:
 
   /// Enumerate all data series.
   /// @{
-  auto series_ids() const -> std::vector<DataSeriesID>;
+  auto series_ids() const -> InputStreamPtr<DataSeriesID>;
   auto series(this auto& self) {
-    return self.series_ids() | std::views::transform([&self](DataSeriesID id) {
-             return DataSeriesView{self, id};
-           });
+    return transform_stream(self.series_ids(), [&self](DataSeriesID id) {
+      return DataSeriesView{self, id};
+    });
   }
   /// @}
 
@@ -382,12 +417,11 @@ public:
   /// Enumerate all time steps in the series.
   /// @{
   auto series_time_step_ids(DataSeriesID series_id) const
-      -> std::vector<DataTimeStepID>;
+      -> InputStreamPtr<DataTimeStepID>;
   auto series_time_steps(this auto& self, DataSeriesID series_id) {
-    return self.series_time_step_ids(series_id) |
-           std::views::transform([&self](DataTimeStepID id) {
-             return DataTimeStepView{self, id};
-           });
+    return transform_stream(
+        self.series_time_step_ids(series_id),
+        [&self](DataTimeStepID id) { return DataTimeStepView{self, id}; });
   }
   /// @}
 
@@ -447,13 +481,14 @@ public:
   /// Enumerate all data arrays in the dataset.
   /// @{
   auto dataset_array_ids(DataSetID dataset_id) const
-      -> std::vector<std::pair<std::string, DataArrayID>>;
+      -> InputStreamPtr<std::pair<std::string, DataArrayID>>;
   auto dataset_arrays(this auto& self, DataSetID dataset_id) {
-    return self.dataset_array_ids(dataset_id) |
-           std::views::transform([&self](auto name_and_id) {
-             auto [name, id] = std::move(name_and_id);
-             return std::pair{std::move(name), DataArrayView{self, id}};
-           });
+    return transform_stream( //
+        self.dataset_array_ids(dataset_id),
+        [&self](auto name_and_id) {
+          auto [name, id] = std::move(name_and_id);
+          return std::pair{std::move(name), DataArrayView{self, id}};
+        });
   }
   /// @}
 
@@ -480,13 +515,13 @@ public:
                        DataType type,
                        std::span<const byte_t> data) -> DataArrayID;
   template<std::ranges::input_range Vals>
-    requires known_type<std::ranges::range_value_t<Vals>>
+    requires known_type_of<std::ranges::range_value_t<Vals>>
   auto create_array_id(DataSetID dataset_id, std::string_view name, Vals&& vals)
       -> DataArrayID {
     TIT_ASSUME_UNIVERSAL(Vals, vals);
     using Val = std::ranges::range_value_t<Vals>;
-    const auto array_id = create_array_id(dataset_id, name, data_type_of<Val>);
-    write_to(array_data_open_write<Val>(array_id), vals);
+    const auto array_id = create_array_id(dataset_id, name, type_of<Val>);
+    array_data_open_write<Val>(array_id)->write(vals);
     return array_id;
   }
   template<class... Args>
@@ -506,40 +541,30 @@ public:
   /// Check if a data array with the given ID exists.
   auto check_array(DataArrayID array_id) const -> bool;
 
-  /// Get the data type of a data array.
+  /// Get the data type of the data array.
   auto array_type(DataArrayID array_id) const -> DataType;
 
-  /// Open an output stream to the data of a data array.
+  /// Get the number of elements in the data array.
+  auto array_size(DataArrayID array_id) const -> size_t;
+
+  /// Open an output stream to write the data of a data array.
   /// @{
   auto array_data_open_write(DataArrayID array_id) -> OutputStreamPtr<byte_t>;
-  template<known_type Val>
+  template<known_type_of Val>
   auto array_data_open_write(DataArrayID array_id) -> OutputStreamPtr<Val> {
-    TIT_ASSERT(array_type(array_id) == data_type_of<Val>, "Type mismatch!");
+    TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");
     return make_stream_serializer<Val>(array_data_open_write(array_id));
   }
   /// @}
 
-  /// Open an input stream to the data of a data array.
+  /// Open an input stream to read the data of a data array.
   /// @{
   auto array_data_open_read(DataArrayID array_id) const
       -> InputStreamPtr<byte_t>;
-  template<known_type Val>
+  template<known_type_of Val>
   auto array_data_open_read(DataArrayID array_id) const -> InputStreamPtr<Val> {
-    TIT_ASSERT(array_type(array_id) == data_type_of<Val>, "Type mismatch!");
+    TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");
     return make_stream_deserializer<Val>(array_data_open_read(array_id));
-  }
-  /// @}
-
-  /// Get the data of a data array.
-  /// @{
-  auto array_data(DataArrayID array_id) const -> std::vector<byte_t>;
-  template<known_type Val>
-  auto array_data(DataArrayID array_id) const -> std::vector<Val> {
-    std::vector<Val> result;
-    read_from(array_data_open_read<Val>(array_id),
-              result,
-              /*chunk_size=*/(64 * 1024UZ / sizeof(Val)));
-    return result;
   }
   /// @}
 
