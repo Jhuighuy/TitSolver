@@ -10,6 +10,7 @@
 #include "tit/py/func.hpp"
 #include "tit/py/number.hpp"
 #include "tit/py/object.hpp"
+#include "tit/py/type.hpp"
 
 #include "tit/testing/test.hpp"
 
@@ -20,12 +21,10 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("py::CFunction") {
+TEST_CASE("py::make_func") {
   SUBCASE("typing") {
-    CHECK(py::CFunction::type().fully_qualified_name() ==
+    CHECK(py::type(py::make_func<"func", [] {}>()).fully_qualified_name() ==
           "builtin_function_or_method");
-    CHECK(py::CFunction::isinstance(py::make_func<"func", [] {}>()));
-    CHECK_FALSE(py::CFunction::isinstance(py::Int::type()));
   }
   SUBCASE("invoke") {
     SUBCASE("returns nothing") {

@@ -14,7 +14,6 @@
 #include "tit/core/str_utils.hpp"
 #include "tit/core/tuple_utils.hpp"
 
-#include "tit/py/cast.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/type.hpp"
 
@@ -45,7 +44,7 @@ public:
   void set_at(size_t index, const Object& value) const;
   template<not_object Value>
   void set_at(size_t index, Value&& value) const {
-    set_at(index, object(std::forward<Value>(value)));
+    set_at(index, Object{std::forward<Value>(value)});
   }
   auto operator[](size_t index) const -> ItemAt<Sequence, size_t> {
     return {*this, index};
@@ -56,9 +55,9 @@ public:
   /// @{
   auto at(pair_of_t<size_t> slice) const -> Sequence;
   void set_at(pair_of_t<size_t> slice, const Object& value) const;
-  template<not_object Value>
-  void set_at(pair_of_t<size_t> slice, Value&& values) const {
-    set_at(slice, object(std::forward<Value>(values)));
+  template<not_object Values>
+  void set_at(pair_of_t<size_t> slice, Values&& values) const {
+    set_at(slice, Object{std::forward<Values>(values)});
   }
   auto operator[](pair_of_t<size_t> slice) const
       -> ItemAt<Sequence, pair_of_t<size_t>> {
@@ -77,7 +76,7 @@ public:
   auto count(const Object& value) const -> size_t;
   template<not_object Value>
   auto count(Value&& value) const -> size_t {
-    return count(object(std::forward<Value>(value)));
+    return count(Object{std::forward<Value>(value)});
   }
   /// @}
 
@@ -86,7 +85,7 @@ public:
   auto contains(const Object& value) const -> bool;
   template<not_object Value>
   auto contains(Value&& value) const -> bool {
-    return contains(object(std::forward<Value>(value)));
+    return contains(Object{std::forward<Value>(value)});
   }
   /// @}
 
@@ -95,7 +94,7 @@ public:
   auto index(const Object& value) const -> size_t;
   template<not_object Value>
   auto index(Value&& value) const -> size_t {
-    return index(object(std::forward<Value>(value)));
+    return index(Object{std::forward<Value>(value)});
   }
   /// @}
 
@@ -162,7 +161,7 @@ auto to_tuple(std::span<const Object> values) -> Tuple;
 template<class... Values>
 auto make_tuple(Values&&... values) -> Tuple {
   /// @todo In C++26 `std::span` can be constructed from a braced-init-list.
-  return to_tuple(std::vector<Object>{object(std::forward<Values>(values))...});
+  return to_tuple(std::vector<Object>{Object{std::forward<Values>(values)}...});
 }
 /// @}
 
@@ -189,7 +188,7 @@ public:
   void insert(size_t index, const Object& value) const;
   template<not_object Value>
   void insert(size_t index, Value&& value) const {
-    insert(index, object(std::forward<Value>(value)));
+    insert(index, Object{std::forward<Value>(value)});
   }
   /// @}
 
@@ -198,7 +197,7 @@ public:
   void append(const Object& value) const;
   template<not_object Value>
   void append(Value&& value) const {
-    append(object(std::forward<Value>(value)));
+    append(Object{std::forward<Value>(value)});
   }
   /// @}
 
@@ -216,7 +215,7 @@ auto to_list(std::span<const Object> values) -> List;
 template<class... Values>
 auto make_list(Values&&... values) -> List {
   /// @todo In C++26 `std::span` can be constructed from a braced-init-list.
-  return to_list(std::vector<Object>{object(std::forward<Values>(values))...});
+  return to_list(std::vector<Object>{Object{std::forward<Values>(values)}...});
 }
 /// @}
 

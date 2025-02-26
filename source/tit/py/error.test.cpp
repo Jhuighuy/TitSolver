@@ -4,8 +4,6 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/py/error.hpp"
-#include "tit/py/mapping.hpp"
-#include "tit/py/number.hpp"
 
 #include "tit/testing/test.hpp"
 
@@ -46,27 +44,6 @@ TEST_CASE("py::is_error_set / py::clear_error") {
     REQUIRE(py::is_error_set());
     py::clear_error();
     CHECK_FALSE(py::is_error_set());
-  }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("py::expect") {
-  SUBCASE("success") {
-    const auto obj = py::Int{1};
-    py::expect<py::Int>(obj);
-  }
-  SUBCASE("failure") {
-    SUBCASE("concrete type") {
-      CHECK_THROWS_MSG(py::expect<py::Float>(py::Dict{}),
-                       py::ErrorException,
-                       "TypeError: expected 'float', got 'dict'");
-    }
-    SUBCASE("abstract type") {
-      CHECK_THROWS_MSG(py::expect<py::Mapping>(py::Int{}),
-                       py::ErrorException,
-                       "TypeError: expected 'Mapping', got 'int'");
-    }
   }
 }
 

@@ -73,7 +73,7 @@ public:
   template<std::integral... Indices>
     requires (sizeof...(Indices) > 0)
   auto operator[](Indices... indices) const -> ItemAt<NDArray, Object> {
-    if constexpr (sizeof...(Indices) == 1) return {*this, object(indices...)};
+    if constexpr (sizeof...(Indices) == 1) return {*this, Object{indices...}};
     else return {*this, make_tuple(indices...)};
   }
   /// @}

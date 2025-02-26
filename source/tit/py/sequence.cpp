@@ -7,6 +7,8 @@
 #include <span>
 #include <string_view>
 
+#include <Python.h> // IWYU pragma: keep
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/missing.hpp" // IWYU pragma: keep
@@ -14,7 +16,7 @@
 #include "tit/core/tuple_utils.hpp"
 #include "tit/core/uint_utils.hpp"
 
-#include "tit/py/_python.hpp"
+#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/sequence.hpp"
