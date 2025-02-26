@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <string>
-
 #include "tit/core/str_utils.hpp"
 
 #include "tit/py/func.hpp"
@@ -28,6 +26,9 @@ public:
   /// Check if the object is a subclass of `Module`.
   static auto isinstance(const Object& obj) -> bool;
 
+  /// Create a new module.
+  explicit Module(const char* name);
+
   /// Get the module name.
   auto name() const -> CStrView;
 
@@ -39,8 +40,9 @@ public:
   void add(CStrView name, const Object& obj) const;
   template<not_object Value>
   void add(CStrView name, Value&& value) const {
-    add(name, object(std::forward<Value>(value)));
+    add(name, Object{std::forward<Value>(value)});
   }
+  void add(const Type& type) const;
   /// @}
 
   /// Define a new module function.
@@ -52,13 +54,8 @@ public:
 
 }; // class Module
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Import the module by name, similar to `import name`.
 auto import_(CStrView name) -> Module;
-
-/// Create a new C++ module.
-auto module_(std::string name) -> Module;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -68,9 +65,9 @@ auto module_(std::string name) -> Module;
   auto PyInit_##name()->PyObject* {                                            \
     using namespace tit;                                                       \
     return py::impl::translate_exceptions<nullptr>([] {                        \
-      auto m = py::module_(#name);                                             \
-      func(m);                                                                 \
-      return m.release();                                                      \
+      py::Module module_{#name};                                               \
+      func(module_);                                                           \
+      return module_.release();                                                \
     });                                                                        \
   }
 

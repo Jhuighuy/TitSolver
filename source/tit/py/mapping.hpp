@@ -12,7 +12,6 @@
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/str_utils.hpp"
 
-#include "tit/py/cast.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/sequence.hpp"
 #include "tit/py/type.hpp"
@@ -50,7 +49,7 @@ public:
   void set_at(CStrView key, const Object& value) const;
   template<not_object Value>
   void set_at(CStrView key, Value&& value) const {
-    set_at(key, object(std::forward<Value>(value)));
+    set_at(key, Object{std::forward<Value>(value)});
   }
   auto operator[](CStrView key) const {
     return ItemAt<Mapping, std::string>{*this, std::string{key}};
@@ -132,7 +131,7 @@ public:
   auto has(const Object& value) const -> bool;
   template<not_object Value>
   auto has(Value&& value) const -> bool {
-    return has(object(std::forward<Value>(value)));
+    return has(Object{std::forward<Value>(value)});
   }
   /// @}
 
@@ -141,7 +140,7 @@ public:
   void add(const Object& value) const;
   template<not_object Value>
   void add(Value&& value) const {
-    add(object(std::forward<Value>(value)));
+    add(Object{std::forward<Value>(value)});
   }
   /// @}
 
@@ -150,7 +149,7 @@ public:
   void discard(const Object& value) const;
   template<not_object Value>
   void discard(Value&& value) const {
-    discard(object(std::forward<Value>(value)));
+    discard(Object{std::forward<Value>(value)});
   }
   /// @}
 

@@ -65,6 +65,7 @@ add_tit_library(
   NAME
     all_flags
   DEPENDS
+    tit::py
     Boost::container
     Boost::core
     Boost::stacktrace_addr2line

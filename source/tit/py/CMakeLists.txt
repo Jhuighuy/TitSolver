@@ -7,10 +7,8 @@ add_tit_library(
   NAME
     py
   SOURCES
-    "_python.hpp"
     "capsule.hpp"
     "capsule.cpp"
-    "cast.cpp"
     "cast.hpp"
     "error.cpp"
     "error.hpp"
@@ -40,19 +38,27 @@ add_tit_library(
     # header-only part of tit::data
 )
 
-# Since we are not linking to Python here, some manual configuration is needed.
+# Since we are not linking to Python here, configure dependencies manually.
 target_include_directories(
   tit_py
-  PUBLIC
+  PRIVATE
     "${Python3_INCLUDE_DIRS}"
     "${Python3_NumPy_INCLUDE_DIRS}"
 )
 target_compile_options(
   tit_py
-  PUBLIC
+  PRIVATE
     "-Wno-cast-qual"
     "-Wno-old-style-cast"
     "-Wno-redundant-decls"
+)
+target_compile_definitions(
+  tit_py
+  PUBLIC
+    "PY_SSIZE_T_CLEAN"
+    "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION"
+  PRIVATE
+    "Py_LIMITED_API=0x030A0000" # Python 3.10.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

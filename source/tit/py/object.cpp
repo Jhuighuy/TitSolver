@@ -6,12 +6,15 @@
 #include <string>
 #include <utility>
 
+#include <Python.h> // IWYU pragma: keep
+
 #include "tit/core/checks.hpp"
 #include "tit/core/str_utils.hpp"
 
-#include "tit/py/_python.hpp"
+#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/mapping.hpp"
+#include "tit/py/number.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/sequence.hpp"
 
@@ -21,14 +24,14 @@ namespace tit::py {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto steal(PyObject* obj) -> Object {
-  TIT_ASSERT(obj != nullptr, "Object is null!");
-  return Object{obj};
+auto steal(PyObject* ptr) -> Object {
+  TIT_ASSERT(ptr != nullptr, "Object is null!");
+  return Object{ptr};
 }
 
-auto borrow(PyObject* obj) -> Object {
-  TIT_ASSERT(obj != nullptr, "Object is null!");
-  return Object{Py_NewRef(obj)};
+auto borrow(PyObject* ptr) -> Object {
+  TIT_ASSERT(ptr != nullptr, "Object is null!");
+  return Object{Py_NewRef(ptr)};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,6 +96,11 @@ void BaseObject::decref() const noexcept {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Object::Object(bool value) : Object{Bool{value}} {}
+Object::Object(long long value) : Object{Int{value}} {}
+Object::Object(double value) : Object{Float{value}} {}
+Object::Object(std::string_view value) : Object{Str{value}} {}
 
 auto Object::isinstance(const Object& /*obj*/) -> bool {
   return true;

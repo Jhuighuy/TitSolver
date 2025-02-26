@@ -6,110 +6,107 @@
 #pragma once
 
 #include <concepts>
-#include <string_view>
-#include <type_traits>
-#include <utility>
 
 #include "tit/core/str_utils.hpp"
-#include "tit/core/type_utils.hpp"
+
+#include "tit/py/error.hpp"
+#include "tit/py/number.hpp"
+#include "tit/py/object.hpp"
+#include "tit/py/sequence.hpp"
+#include "tit/py/type.hpp"
+#include "tit/py/typing.hpp"
 
 namespace tit::py {
 
-class Object;
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Convert a Python object reference to another type.
+template<class To>
+struct Cast;
+
+/// @copydoc Cast
+template<class To>
+inline constexpr auto cast = Cast<To>{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-namespace impl {
-
-// Converter from C++ values to Python objects and back.
-template<class Value>
-struct Converter;
-
-// Boolean converter.
-template<>
-struct Converter<bool> final {
-  static auto object(bool value) -> Object;
-  static auto extract(const Object& obj) -> bool;
-};
-
-// Integer converter.
-template<>
-struct Converter<long long> final {
-  static auto object(long long value) -> Object;
-  static auto extract(const Object& obj) -> long long;
-};
-template<std::integral Value>
-struct Converter<Value> final {
-  using Base = Converter<defer_t<long long, Value>>;
-  static auto object(Value value) -> defer_t<Object, Value> {
-    return Base::object(static_cast<long long>(value));
-  }
-  static auto extract(const Object& obj) -> Value {
-    return static_cast<Value>(Base::extract(obj));
-  }
-};
-
-// Floating-point value converter.
-template<>
-struct Converter<double> final {
-  static auto object(double value) -> Object;
-  static auto extract(const Object& obj) -> double;
-};
-template<std::floating_point Value>
-struct Converter<Value> final {
-  using Base = Converter<defer_t<double, Value>>;
-  static auto object(Value value) -> defer_t<Object, Value> {
-    return Base::object(static_cast<double>(value));
-  }
-  static auto extract(const Object& obj) -> Value {
-    return static_cast<Value>(Base::extract(obj));
-  }
-};
-
-// String converter.
-template<>
-struct Converter<std::string_view> final {
-  static auto object(std::string_view value) -> Object;
-  static auto extract(const Object& obj) -> CStrView;
-};
-template<str_like Value>
-struct Converter<Value> final {
-  using Base = Converter<defer_t<std::string_view, Value>>;
-  static auto object(const Value& value) -> defer_t<Object, Value> {
-    return Base::object(value);
-  }
-  static auto extract(const Object& obj) -> Value {
-    return static_cast<Value>(Base::extract(obj));
-  }
-};
-
-// Python object converter.
+/// Convert a Python object reference.
 template<std::derived_from<Object> Derived>
-struct Converter<Derived> final {
-  static auto object(const Derived& obj) -> defer_t<Object, Derived> {
-    return obj; // Already a Python object.
+struct Cast<Derived> final {
+  auto operator()(const Object& obj) const -> Derived {
+    static_assert(sizeof(Derived) == sizeof(Object), "Invalid derived type!");
+    if (!Derived::isinstance(obj)) {
+      raise_type_error("expected '{}', got '{}'",
+                       type_name<Derived>(),
+                       type(obj).fully_qualified_name());
+    }
+    return static_cast<const Derived&>(obj);
   }
-  static auto extract(const Object& obj) -> Derived {
-    return expect<Derived>(obj);
+  template<not_object Value>
+  auto operator()(Value&& value) const -> Derived {
+    return (*this)(Object{std::forward<Value>(value)});
   }
 };
 
-} // namespace impl
+/// Steal the reference to the object expected to be of the given type.
+template<std::derived_from<Object> Derived>
+auto steal(PyObject* ptr) -> Derived {
+  return cast<Derived>(steal(ptr));
+}
+
+/// Borrow the reference to the object expected to be of the given type.
+template<std::derived_from<Object> Derived>
+auto borrow(PyObject* ptr) -> Derived {
+  return cast<Derived>(borrow(ptr));
+}
+
+/// Maybe steal the reference to the object if it is not null.
+template<std::derived_from<Object> Derived = Object>
+auto maybe_steal(PyObject* ptr) -> Optional<Derived> {
+  if (ptr == nullptr) return None();
+  return steal<Derived>(ptr);
+}
+
+/// Maybe borrow the reference to the object if it is not null.
+template<std::derived_from<Object> Derived = Object>
+auto maybe_borrow(PyObject* ptr) -> Optional<Derived> {
+  if (ptr == nullptr) return None();
+  return borrow<Derived>(ptr);
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Make a Python object from the given argument.
-template<class Value>
-auto object(Value&& value) -> defer_t<Object, Value> {
-  return impl::Converter<std::decay_t<Value>>::object(
-      std::forward<Value>(value));
-}
+/// Convert to C++ boolean value.
+template<>
+struct Cast<bool> final {
+  auto operator()(const Object& obj) const -> bool {
+    return cast<Bool>(obj).val();
+  }
+};
 
-/// Extract the C++ value from the Python object.
-template<class Value>
-auto extract(const Object& obj) -> decltype(auto) {
-  return impl::Converter<std::decay_t<Value>>::extract(obj);
-}
+/// Convert to C++ integer value.
+template<std::integral Value>
+struct Cast<Value> final {
+  auto operator()(const Object& obj) const -> Value {
+    return static_cast<Value>(cast<Int>(obj).val());
+  }
+};
+
+/// Convert to C++ floating-point value.
+template<std::floating_point Value>
+struct Cast<Value> final {
+  auto operator()(const Object& obj) const -> Value {
+    return static_cast<Value>(cast<Float>(obj).val());
+  }
+};
+
+/// Convert to C++ string value.
+template<str_like Value>
+struct Cast<Value> final {
+  auto operator()(const Object& obj) const -> Value {
+    return static_cast<Value>(cast<Str>(obj).val());
+  }
+};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

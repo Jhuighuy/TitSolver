@@ -6,10 +6,12 @@
 #include <functional>
 #include <string_view>
 
+#include <Python.h> // IWYU pragma: keep
+
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/str_utils.hpp"
 
-#include "tit/py/_python.hpp"
+#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/mapping.hpp"
 #include "tit/py/object.hpp"

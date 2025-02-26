@@ -3,12 +3,12 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#define TIT_PYTHON_INTERPRETER // Disable limited API.
-
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
+
+#include <Python.h> // IWYU pragma: keep
 
 #include "tit/core/checks.hpp"
 #include "tit/core/cmd.hpp"
@@ -19,7 +19,6 @@
 #include "tit/core/log.hpp"
 #endif
 
-#include "tit/py/_python.hpp"
 #include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/interpreter.hpp"
@@ -103,7 +102,7 @@ auto dedent(CStrView str) -> std::string {
   if (!str.starts_with('\n')) return std::string{str};
   const auto textwrap = import_("textwrap");
   const auto result = textwrap.attr("dedent")(str);
-  return extract<std::string>(result);
+  return cast<std::string>(result);
 }
 
 } // namespace
@@ -129,7 +128,7 @@ Interpreter::~Interpreter() {
 // NOLINTNEXTLINE(*-convert-member-functions-to-static)
 void Interpreter::append_path(CStrView path) const {
   const auto sys = import_("sys");
-  const auto sys_path = expect<List>(sys.attr("path"));
+  const auto sys_path = cast<List>(sys.attr("path"));
   sys_path.append(path);
 }
 
