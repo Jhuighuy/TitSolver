@@ -5,7 +5,8 @@
 
 #include "tit/core/exception.hpp"
 
-#include "tit/py/_python.hpp"
+#include <Python.h> // IWYU pragma: keep
+
 #include "tit/py/gil.hpp"
 
 namespace tit::py {

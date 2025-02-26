@@ -8,18 +8,18 @@
 #include <span>
 #include <utility>
 
+#include <Python.h>              // IWYU pragma: keep
+#include <numpy/ndarrayobject.h> // IWYU pragma: keep
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/utils.hpp"
 
-#include "tit/py/_python.hpp"
+#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/numpy.hpp"
 #include "tit/py/object.hpp"
 #include "tit/py/type.hpp"
-
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include <numpy/ndarrayobject.h> // IWYU pragma: keep
 
 namespace tit::py {
 

@@ -3,9 +3,10 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <Python.h> // IWYU pragma: keep
+
 #include "tit/core/str_utils.hpp"
 
-#include "tit/py/_python.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/number.hpp"
 #include "tit/py/object.hpp"
@@ -105,6 +106,7 @@ TEST_CASE("py::BaseObject") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("py::Object") {
+  // Conversion constructors are tested in `cast.test.cpp`.
   SUBCASE("typing") {
     CHECK(py::Object::type_name() == "object");
     CHECK(py::Object::isinstance(py::Object{}));

@@ -21,8 +21,8 @@ namespace {
 
 TEST_CASE("py::embed::Interpreter::eval") {
   SUBCASE("success") {
-    CHECK(extract<int>(testing::interpreter().eval("1 + 2")) == 3);
-    CHECK(extract<int>(testing::interpreter().eval(R"PY(
+    CHECK(py::cast<int>(testing::interpreter().eval("1 + 2")) == 3);
+    CHECK(py::cast<int>(testing::interpreter().eval(R"PY(
       1 + 2
     )PY")) == 3);
   }

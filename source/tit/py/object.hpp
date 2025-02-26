@@ -5,18 +5,18 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 #include <span>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/str_utils.hpp"
-
-#include "tit/py/cast.hpp"
 
 using PyObject = struct _object; // NOLINT(*-reserved-identifier, cert-*)
 
@@ -30,10 +30,10 @@ struct Kwarg;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Steal the reference to the object.
-auto steal(PyObject* obj) -> Object;
+auto steal(PyObject* ptr) -> Object;
 
 /// Borrow the reference to the object.
-auto borrow(PyObject* obj) -> Object;
+auto borrow(PyObject* ptr) -> Object;
 
 /// A type that is not a Python object.
 template<class Value>
@@ -146,6 +146,20 @@ public:
     return "object";
   }
 
+  /// Construct an object from the given value.
+  /// @{
+  explicit Object(bool value);
+  explicit Object(long long value);
+  template<std::integral Int>
+  explicit Object(Int value) : Object{static_cast<long long>(value)} {}
+  explicit Object(double value);
+  template<std::floating_point Float>
+  explicit Object(Float value) : Object{static_cast<double>(value)} {}
+  explicit Object(std::string_view value);
+  template<str_like Str>
+  explicit Object(Str value) : Object{std::string_view{value}} {}
+  /// @}
+
   /// Check if the object is a subclass of `Object`.
   static auto isinstance(const Object& obj) -> bool;
 
@@ -166,11 +180,11 @@ public:
   void set_attr(CStrView name, const Object& value) const;
   template<not_object Value>
   void set_attr(const Object& name, Value&& value) const {
-    set_attr(name, object(std::forward<Value>(value)));
+    set_attr(name, Object{std::forward<Value>(value)});
   }
   template<not_object Value>
   void set_attr(CStrView name, Value&& value) const {
-    set_attr(name, object(std::forward<Value>(value)));
+    set_attr(name, Object{std::forward<Value>(value)});
   }
   /// @}
 
@@ -186,7 +200,7 @@ public:
   void set_at(const Object& key, const Object& value) const;
   template<not_object Value>
   void set_at(const Object& key, Value&& value) const {
-    set_at(key, object(std::forward<Value>(value)));
+    set_at(key, Object{std::forward<Value>(value)});
   }
   auto operator[](const Object& key) const -> ItemAt<Object, Object> {
     return {*this, key};
@@ -318,7 +332,7 @@ concept is_kwarg = std::same_as<std::remove_cvref_t<Arg>, Kwarg>;
 /// Make a keyword argument.
 template<class Value>
 auto kwarg(CStrView name, Value&& value) -> Kwarg {
-  return Kwarg{name, object(std::forward<Value>(value))};
+  return Kwarg{.name = name, .value = Object{std::forward<Value>(value)}};
 }
 
 template<class... Args>
@@ -326,30 +340,31 @@ auto Object::operator()(Args&&... args) const -> Object {
   if constexpr (constexpr auto NumArgs = sizeof...(Args); NumArgs == 0) {
     // No arguments.
     return call();
+  } else if constexpr (constexpr auto NumKwargs =
+                           (size_t{is_kwarg<Args>} + ...);
+                       NumKwargs == 0) {
+    // Only positional arguments.
+    return call(std::array{Object{std::forward<Args>(args)}...});
   } else {
-    if constexpr (constexpr auto NumKwargs = ((is_kwarg<Args> ? 1 : 0) + ...);
-                  NumKwargs == 0) {
-      // Only positional arguments.
-      return call(std::array{object(std::forward<Args>(args))...});
-    } else {
-      // Positional and keyword arguments.
-      constexpr auto NumPosArgs = NumArgs - NumKwargs;
-      std::array<Object, NumPosArgs> posargs;
-      std::array<Kwarg, NumKwargs> kwargs;
-      auto posarg_iter = posargs.begin();
-      auto kwarg_iter = kwargs.begin();
-      const auto fill_arg = [&posarg_iter, &kwarg_iter]<class Arg>(Arg&& arg) {
-        if constexpr (is_kwarg<Arg>) {
-          *kwarg_iter = std::forward<Arg>(arg);
-          ++kwarg_iter;
-        } else {
-          *posarg_iter = object(std::forward<Arg>(arg));
-          ++posarg_iter;
-        }
-      };
-      (fill_arg(std::forward<Args>(args)), ...);
-      return call(posargs, kwargs);
-    }
+    // Positional and keyword arguments.
+    constexpr auto NumPosArgs = NumArgs - NumKwargs;
+    std::array<Object, NumPosArgs> posargs;
+    std::array<Kwarg, NumKwargs> kwargs;
+    auto posarg_iter = posargs.begin();
+    auto kwarg_iter = kwargs.begin();
+    const auto fill_arg = [&posarg_iter, &kwarg_iter]<class Arg>(Arg&& arg) {
+      if constexpr (is_kwarg<Arg>) {
+        *kwarg_iter = std::forward<Arg>(arg);
+        ++kwarg_iter;
+      } else {
+        *posarg_iter = Object{std::forward<Arg>(arg)};
+        ++posarg_iter;
+      }
+    };
+    (fill_arg(std::forward<Args>(args)), ...);
+    TIT_ASSERT(posarg_iter == posargs.end(), "Error parsing arguments!");
+    TIT_ASSERT(kwarg_iter == kwargs.end(), "Error parsing arguments!");
+    return call(posargs, kwargs);
   }
 }
 

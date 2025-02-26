@@ -3,7 +3,9 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/py/_python.hpp"
+#include <Python.h> // IWYU pragma: keep
+
+#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/iterator.hpp"
 #include "tit/py/object.hpp"
