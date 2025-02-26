@@ -11,6 +11,7 @@
 #include "tit/data/type.hpp"
 
 #include "tit/py/capsule.hpp"
+#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/number.hpp"
 #include "tit/py/numpy.hpp"
@@ -73,7 +74,7 @@ TEST_CASE("py::NDArray") {
             "but 4 were indexed");
       }
       SUBCASE("slices access") {
-        const auto slice2D = py::expect<py::NDArray>(array[1]);
+        const auto slice2D = py::cast<py::NDArray>(array[1]);
         CHECK(slice2D.kind() == data::kind_of<int>);
         CHECK(slice2D.rank() == 2);
         CHECK_RANGE_EQ(slice2D.shape(), {1, 4});
@@ -86,7 +87,7 @@ TEST_CASE("py::NDArray") {
             py::ErrorException,
             "IndexError: index 3 is out of bounds for axis 0 with size 2");
 
-        const auto slice1D = py::expect<py::NDArray>(slice2D[0]);
+        const auto slice1D = py::cast<py::NDArray>(slice2D[0]);
         CHECK(slice1D.kind() == data::kind_of<int>);
         CHECK(slice1D.rank() == 1);
         CHECK_RANGE_EQ(slice1D.shape(), {4});
@@ -150,7 +151,7 @@ TEST_CASE("NDArrays from Python") {
 
   // Here I'll convert everything to plain list to save some lines.
   const auto array =
-      py::expect<py::NDArray>(testing::interpreter().globals()["array"]);
+      py::cast<py::NDArray>(testing::interpreter().globals()["array"]);
   CHECK(array.kind() == data::kind_of<int64_t>); // Weird NumPy behavior.
   REQUIRE(array.rank() == 3);
   REQUIRE_RANGE_EQ(array.shape(), {2, 3, 3});
@@ -162,7 +163,7 @@ TEST_CASE("NDArrays from Python") {
   CHECK(py::List{array[1, 2]} == py::make_list(16, 17, 18));
 
   const auto slice2D =
-      py::expect<py::NDArray>(testing::interpreter().globals()["slice2D"]);
+      py::cast<py::NDArray>(testing::interpreter().globals()["slice2D"]);
   REQUIRE(slice2D.rank() == 2);
   REQUIRE_RANGE_EQ(slice2D.shape(), {3, 3});
   CHECK(py::List{slice2D[0]} == py::make_list(10, 11, 12));
@@ -170,14 +171,14 @@ TEST_CASE("NDArrays from Python") {
   CHECK(py::List{slice2D[2]} == py::make_list(16, 17, 18));
 
   const auto slice1D =
-      py::expect<py::NDArray>(testing::interpreter().globals()["slice1D"]);
+      py::cast<py::NDArray>(testing::interpreter().globals()["slice1D"]);
   REQUIRE(slice1D.rank() == 1);
   REQUIRE_RANGE_EQ(slice1D.shape(), {2});
   CHECK(py::List{slice1D} == py::make_list(13, 16));
 
   // There is no intention to all NumPy types, for example complex numbers.
-  const auto complex_array = py::expect<py::NDArray>(
-      testing::interpreter().globals()["complex_array"]);
+  const auto complex_array =
+      py::cast<py::NDArray>(testing::interpreter().globals()["complex_array"]);
   CHECK_THROWS_MSG(static_cast<void>(complex_array.kind()),
                    py::ErrorException,
                    "TypeError: Unsupported NumPy type");

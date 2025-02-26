@@ -168,43 +168,6 @@ template<class... Args>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Convert a Python object reference to another type.
-template<std::derived_from<Object> Derived>
-auto expect(const Object& arg) -> Derived {
-  if (Derived::isinstance(arg)) return static_cast<const Derived&>(arg);
-  raise_type_error("expected '{}', got '{}'",
-                   type_name<Derived>(),
-                   type(arg).fully_qualified_name());
-}
-
-/// Steal the reference to the object expected to be of the given type.
-template<std::derived_from<Object> Derived>
-auto steal(PyObject* obj) -> Derived {
-  return expect<Derived>(steal(obj));
-}
-
-/// Borrow the reference to the object expected to be of the given type.
-template<std::derived_from<Object> Derived>
-auto borrow(PyObject* obj) -> Derived {
-  return expect<Derived>(borrow(obj));
-}
-
-/// Maybe steal the reference to the object if it is not null.
-template<std::derived_from<Object> Derived = Object>
-auto maybe_steal(PyObject* obj) -> Optional<Derived> {
-  if (obj != nullptr) return steal<Derived>(obj);
-  return None();
-}
-
-/// Maybe borrow the reference to the object if it is not null.
-template<std::derived_from<Object> Derived = Object>
-auto maybe_borrow(PyObject* obj) -> Optional<Derived> {
-  if (obj != nullptr) return borrow<Derived>(obj);
-  return None();
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Check if the Python error is already set.
 auto is_error_set() -> bool;
 

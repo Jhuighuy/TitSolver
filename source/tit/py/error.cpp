@@ -7,9 +7,10 @@
 #include <string>
 #include <utility>
 
+#include <Python.h> // IWYU pragma: keep
+
 #include "tit/core/checks.hpp"
 
-#include "tit/py/_python.hpp"
 #include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/module.hpp"
@@ -34,7 +35,7 @@ auto Traceback::render() const -> std::string {
   const auto StringIO = import_("io").attr("StringIO");
   const auto stream = StringIO();
   PyTraceBack_Print(get(), stream.get());
-  return extract<std::string>(stream.attr("getvalue")());
+  return cast<std::string>(stream.attr("getvalue")());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -76,7 +77,7 @@ auto BaseException::render() const -> std::string {
   auto result =
       std::format("{}: {}", py::type(*this).fully_qualified_name(), str(*this));
   if (const auto tb = traceback(); tb) {
-    result = std::format("{}\n\n{}", result, expect<Traceback>(tb).render());
+    result = std::format("{}\n\n{}", result, cast<Traceback>(tb).render());
   }
   return result;
 }
@@ -131,7 +132,7 @@ void ErrorScope::prefix_message(CStrView prefix) {
   const auto value = borrow<BaseException>(value_);
   const auto message = std::format("{}: {}", prefix, str(value));
   const auto type = borrow<Type>(type_);
-  auto new_value = expect<BaseException>(type(message));
+  auto new_value = cast<BaseException>(type(message));
   new_value.set_cause(value.cause());
   new_value.set_context(value.context());
   new_value.set_traceback(value.traceback());

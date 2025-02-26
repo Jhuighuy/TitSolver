@@ -5,7 +5,8 @@
 
 #include <bit>
 
-#include "tit/py/_python.hpp"
+#include <Python.h> // IWYU pragma: keep
+
 #include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/object.hpp"
@@ -31,12 +32,12 @@ auto Type::get_type() const -> PyTypeObject* {
 
 /// @todo Use `PyType_GetName` once we have Python 3.11.
 auto Type::name() const -> std::string {
-  return extract<std::string>(attr("__name__"));
+  return cast<std::string>(attr("__name__"));
 }
 
 /// @todo Use `PyType_GetQualName` once we have Python 3.11.
 auto Type::qualified_name() const -> std::string {
-  return extract<std::string>(attr("__qualname__"));
+  return cast<std::string>(attr("__qualname__"));
 }
 
 /// @todo Use `PyType_GetFullyQualifiedName` once we have Python 3.13.
@@ -49,7 +50,7 @@ auto Type::fully_qualified_name() const -> std::string {
 
 /// @todo Use `PyType_GetModuleName` once we have Python 3.13.
 auto Type::module_name() const -> std::string {
-  return extract<std::string>(attr("__module__"));
+  return cast<std::string>(attr("__module__"));
 }
 
 auto Type::is_subtype_of(const Type& other) const -> bool {

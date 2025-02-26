@@ -76,9 +76,9 @@ auto run_backend(CmdArgs args) -> int {
         const auto json = py::import_("json");
         const py::Dict response;
         try {
-          const auto request = py::expect<py::Dict>(json.attr("loads")(data));
+          const auto request = py::cast<py::Dict>(json.attr("loads")(data));
           response["requestID"] = static_cast<py::Object>(request["requestID"]);
-          const auto expr = py::extract<std::string>(request["expression"]);
+          const auto expr = py::cast<std::string>(request["expression"]);
           response["result"] = interpreter.eval(expr);
           response["status"] = "success";
         } catch (const py::ErrorException& e) {
@@ -86,13 +86,13 @@ auto run_backend(CmdArgs args) -> int {
           error["type"] = py::type(e.error()).fully_qualified_name();
           error["error"] = py::str(e.error());
           if (const auto tb = e.error().traceback(); tb) {
-            response["traceback"] = py::expect<py::Traceback>(tb).render();
+            response["traceback"] = py::cast<py::Traceback>(tb).render();
           }
           response["result"] = error;
           response["status"] = "error";
         }
         connection.send_text(
-            py::extract<std::string>(json.attr("dumps")(response)));
+            py::cast<std::string>(json.attr("dumps")(response)));
       });
 
   CROW_ROUTE(app, "/")

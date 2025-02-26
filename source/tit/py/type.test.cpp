@@ -3,6 +3,7 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include "tit/py/cast.hpp"
 #include "tit/py/error.hpp"
 #include "tit/py/module.hpp"
 #include "tit/py/number.hpp"
@@ -34,7 +35,7 @@ TEST_CASE("py::Type") {
     }
     SUBCASE("third-party types") {
       const auto numpy = py::import_("numpy");
-      const auto ndarray = py::expect<py::Type>(numpy.attr("ndarray"));
+      const auto ndarray = py::cast<py::Type>(numpy.attr("ndarray"));
       CHECK(ndarray.name() == "ndarray");
       CHECK(ndarray.qualified_name() == "ndarray");
       CHECK(ndarray.fully_qualified_name() == "numpy.ndarray");
@@ -45,7 +46,7 @@ TEST_CASE("py::Type") {
     SUBCASE("is_subtype_of") {
       CHECK(py::BaseException::type().is_subtype_of(py::BaseException::type()));
       const auto SystemError =
-          py::expect<py::Type>(testing::interpreter().eval("SystemError"));
+          py::cast<py::Type>(testing::interpreter().eval("SystemError"));
       CHECK(SystemError.is_subtype_of(py::BaseException::type()));
       CHECK_FALSE(SystemError.is_subtype_of(py::Int::type()));
     }
