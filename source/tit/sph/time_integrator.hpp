@@ -59,7 +59,7 @@ public:
 
     // Initialize particles, build the mesh.
     if (step_index_ == 0) equations_.init(particles);
-    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+    if (step_index_ % mesh_update_freq_ == 0) mesh.update(particles);
 
     // Setup boundary conditions.
     equations_.setup_boundary(mesh, particles);
@@ -132,7 +132,7 @@ public:
 
     // Initialize and index particles.
     if (step_index_ == 0) equations_.init(particles);
-    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+    if (step_index_ % mesh_update_freq_ == 0) mesh.update(particles);
 
     // Setup boundary conditions.
     equations_.setup_boundary(mesh, particles);
@@ -212,7 +212,7 @@ public:
 
     // Initialize and index particles.
     if (step_index_ == 0) equations_.init(particles);
-    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+    if (step_index_ % mesh_update_freq_ == 0) mesh.update(particles);
 
     // Run the SSPRK(3,3) substeps.
     /// @todo We should copy only the needed fields, and not the whole array.

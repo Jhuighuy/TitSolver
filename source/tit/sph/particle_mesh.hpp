@@ -34,6 +34,7 @@
 #include "tit/graph/graph.hpp"
 
 #include "tit/sph/field.hpp"
+#include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
@@ -45,7 +46,8 @@ inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle adjacency graph.
-template<geom::search_func SearchFunc = geom::GridSearch,
+template<kernel Kernel,
+         geom::search_func SearchFunc = geom::GridSearch,
          geom::partition_func PartitionFunc = geom::RecursiveInertialBisection,
          geom::partition_func InterfacePartitionFunc = PartitionFunc>
 class ParticleMesh final {
@@ -55,16 +57,23 @@ public:
 
   /// Construct a particle adjacency graph.
   ///
+  /// @param kernel               Kernel.
   /// @param search_indexing_func Nearest-neighbors search indexing function.
-  /// @param partition_func Geometry partitioning function.
+  /// @param partition_func       Geometry partitioning function.
   /// @param interface_partition_func Interface partitioning function.
   constexpr explicit ParticleMesh(
+      Kernel kernel,
       SearchFunc search_func = {},
       PartitionFunc partition_func = {},
       InterfacePartitionFunc interface_partition_func = {}) noexcept
-      : search_func_{std::move(search_func)},
+      : kernel_{std::move(kernel)}, search_func_{std::move(search_func)},
         partition_func_{std::move(partition_func)},
         interface_partition_func_{std::move(interface_partition_func)} {}
+
+  /// Kernel.
+  constexpr auto kernel() const noexcept -> const Kernel& {
+    return kernel_;
+  }
 
   /// Adjacent particles.
   template<particle_view PV>
@@ -113,12 +122,12 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Update the adjacency graph.
-  template<particle_array ParticleArray, class SearchRadiusFunc>
-  void update(ParticleArray& particles, const SearchRadiusFunc& radius_func) {
+  template<particle_array ParticleArray>
+  void update(ParticleArray& particles) {
     TIT_PROFILE_SECTION("ParticleMesh::update()");
 
     // Update the adjacency graphs.
-    search_(particles, radius_func);
+    search_(particles);
 
     // Partition the adjacency graph by the block.
     partition_(particles);
@@ -126,8 +135,8 @@ public:
 
 private:
 
-  template<particle_array ParticleArray, class SearchRadiusFunc>
-  void search_(ParticleArray& particles, const SearchRadiusFunc& radius_func) {
+  template<particle_array ParticleArray>
+  void search_(ParticleArray& particles) {
     TIT_PROFILE_SECTION("ParticleMesh::search()");
     using PV = ParticleView<ParticleArray>;
 
@@ -137,12 +146,12 @@ private:
 
     // Search for the neighbors.
     par::TaskGroup search_tasks{};
-    search_tasks.run([&particles, &radius_func, &search_index, this] {
+    search_tasks.run([&particles, &search_index, this] {
       static std::vector<std::vector<size_t>> adjacency_buckets{};
       adjacency_buckets.resize(particles.size());
-      par::for_each(particles.all(), [&radius_func, &search_index](PV a) {
+      par::for_each(particles.all(), [&search_index, this](PV a) {
         const auto& search_point = r[a];
-        const auto search_radius = radius_func(a);
+        const auto search_radius = kernel_.radius(a);
         TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
 
         // Search for the neighbors for the current particle and store the
@@ -158,18 +167,18 @@ private:
     });
 
     // Search for the interpolation points for the fixed particles.
-    search_tasks.run([&particles, &radius_func, &search_index, this] {
+    search_tasks.run([&particles, &search_index, this] {
       static std::vector<std::vector<size_t>> interp_adjacency_buckets{};
       interp_adjacency_buckets.resize(particles.fixed().size());
       par::for_each( //
           std::views::enumerate(particles.fixed()),
-          [&radius_func, &search_index, &particles](const auto& ia) {
+          [&search_index, &particles, this](const auto& ia) {
             const auto& [i, a] = ia;
 
             /// @todo Once we have a proper geometry library, we should use
             ///       here and clean up the code.
             const auto& search_point = r[a];
-            const auto search_radius = RADIUS_SCALE * radius_func(a);
+            const auto search_radius = RADIUS_SCALE * kernel_.radius(a);
             const auto point_on_boundary = Domain.clamp(search_point);
             const auto interp_point = 2 * point_on_boundary - search_point;
 
@@ -269,6 +278,7 @@ private:
   graph::Graph adjacency_;
   graph::Graph interp_adjacency_;
   Multivector<std::pair<size_t, size_t>> block_edges_;
+  [[no_unique_address]] Kernel kernel_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;
   [[no_unique_address]] InterfacePartitionFunc interface_partition_func_;

@@ -76,8 +76,6 @@ auto sph_main(CmdArgs /*args*/) -> int {
       NoEnergyEquation{},
       // Weakly compressible equation of state.
       LinearTaitEquationOfState{cs_0, rho_0},
-      // C2 Wendland's spline kernel.
-      QuarticWendlandKernel{},
   };
 
   // Setup the time integrator.
@@ -139,6 +137,8 @@ auto sph_main(CmdArgs /*args*/) -> int {
 
   // Setup the particle mesh structure.
   ParticleMesh mesh{
+      // C2 Wendland's spline kernel.
+      QuarticWendlandKernel{},
       // Search for the particles using the grid search.
       geom::GridSearch{h_0},
       // Use RIB as the primary partitioning method.

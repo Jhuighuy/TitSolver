@@ -21,7 +21,6 @@
 #include "tit/sph/energy_equation.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
-#include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
 #include "tit/sph/motion_equation.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -36,8 +35,7 @@ template<motion_equation MotionEquation,
          continuity_equation ContinuityEquation,
          momentum_equation MomentumEquation,
          energy_equation EnergyEquation,
-         equation_of_state EquationOfState,
-         kernel Kernel>
+         equation_of_state EquationOfState>
 class FluidEquations final {
 public:
 
@@ -48,8 +46,7 @@ public:
       MomentumEquation::required_fields |   //
       EnergyEquation::required_fields |     //
       EquationOfState::required_fields |    //
-      Kernel::required_fields |
-      meta::Set{parinfo, dr, N, FS} | // TODO: these should not be here.
+      meta::Set{parinfo, dr, N, FS} |       // TODO: these should not be here.
       meta::Set{h, m, r, rho, p, v, dv_dt};
 
   /// Set of particle fields that are modified.
@@ -59,7 +56,6 @@ public:
       MomentumEquation::modified_fields |          //
       EnergyEquation::modified_fields |            //
       EquationOfState::modified_fields |           //
-      Kernel::modified_fields |                    //
       meta::Set{rho, drho_dt, grad_rho, C, N, L} | //
       meta::Set{p, v, dv_dt, div_v, curl_v} |      //
       meta::Set{u, du_dt} |                        //
@@ -74,19 +70,16 @@ public:
   /// @param momentum_equation   Momentum equation.
   /// @param energy_equation     Energy equation.
   /// @param equation_of_state   Equation of state.
-  /// @param kernel              Kernel.
   constexpr explicit FluidEquations(MotionEquation motion_equation,
                                     ContinuityEquation continuity_equation,
                                     MomentumEquation momentum_equation,
                                     EnergyEquation energy_equation,
-                                    EquationOfState eos,
-                                    Kernel kernel) noexcept
+                                    EquationOfState eos) noexcept
       : motion_equation_{std::move(motion_equation)},
         continuity_equation_{std::move(continuity_equation)},
         momentum_equation_{std::move(momentum_equation)},
         energy_equation_{std::move(energy_equation)}, //
-        eos_{std::move(eos)},                         //
-        kernel_{std::move(kernel)} {}
+        eos_{std::move(eos)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -99,15 +92,6 @@ public:
     if constexpr (has<PV>(alpha)) {
       par::for_each(particles.all(), [](PV a) { alpha[a] = 1.0; });
     }
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  auto index(ParticleMesh& mesh, ParticleArray& particles) const {
-    using PV = ParticleView<ParticleArray>;
-    mesh.update(particles, [this](PV a) { return kernel_.radius(a); });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -139,7 +123,7 @@ public:
       for (const PV a : mesh.fixed_interp(b)) {
         const auto r_delta = r_ghost - r[a];
         const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
-        const auto W_delta = kernel_(r_delta, h_ghost);
+        const auto W_delta = mesh.kernel()(r_delta, h_ghost);
         S += W_delta * m[a] / rho[a];
         M += outer(B_delta, B_delta * W_delta * m[a] / rho[a]);
       }
@@ -151,7 +135,8 @@ public:
         for (const PV a : mesh.fixed_interp(b)) {
           const auto r_delta = r_ghost - r[a];
           const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
-          const auto W_delta = dot(E, B_delta) * kernel_(r_delta, h_ghost);
+          const auto W_delta =
+              dot(E, B_delta) * mesh.kernel()(r_delta, h_ghost);
           rho[b] += m[a] * W_delta;
           v[b] += m[a] / rho[a] * v[a] * W_delta;
           if constexpr (has<PV>(u)) u[b] += m[a] / rho[a] * u[a] * W_delta;
@@ -162,7 +147,7 @@ public:
         const auto E = inverse(S);
         for (const PV a : mesh.fixed_interp(b)) {
           const auto r_delta = r_ghost - r[a];
-          const auto W_delta = E * kernel_(r_delta, h_ghost);
+          const auto W_delta = E * mesh.kernel()(r_delta, h_ghost);
           rho[b] += m[a] * W_delta;
           v[b] += m[a] / rho[a] * v[a] * W_delta;
           if constexpr (has<PV>(u)) u[b] += m[a] / rho[a] * u[a] * W_delta;
@@ -208,12 +193,12 @@ public:
     // Compute density gradient and renormalization fields.
     if constexpr (has_any<PV>(grad_rho, C, N, L)) {
       // Precompute the fields.
-      par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      par::block_for_each(mesh.block_pairs(particles), [this, &mesh](auto ab) {
         const auto [a, b] = ab;
         const auto V_a = m[a] / rho[a];
         const auto V_b = m[b] / rho[b];
-        [[maybe_unused]] const auto W_ab = kernel_(a, b);
-        [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
+        [[maybe_unused]] const auto W_ab = mesh.kernel()(a, b);
+        [[maybe_unused]] const auto grad_W_ab = mesh.kernel().grad(a, b);
 
         // Update density gradient.
         if constexpr (has<PV>(grad_rho)) {
@@ -264,9 +249,9 @@ public:
     }
 
     // Compute density time derivative.
-    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [&mesh, this](auto ab) {
       const auto [a, b] = ab;
-      const auto grad_W_ab = kernel_.grad(a, b);
+      const auto grad_W_ab = mesh.kernel().grad(a, b);
 
       // Update density time derivative.
       const auto Psi_ab =
@@ -311,11 +296,11 @@ public:
     // Compute velocity divergence and curl.
     // Those fields may be required by the artificial viscosity.
     if constexpr (has_any<PV>(div_v, curl_v)) {
-      par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      par::block_for_each(mesh.block_pairs(particles), [&mesh, this](auto ab) {
         const auto [a, b] = ab;
         const auto V_a = m[a] / rho[a];
         const auto V_b = m[b] / rho[b];
-        const auto grad_W_ab = kernel_.grad(a, b);
+        const auto grad_W_ab = mesh.kernel().grad(a, b);
 
         // Update velocity divergence.
         if constexpr (has<PV>(div_v)) {
@@ -334,9 +319,9 @@ public:
     }
 
     // Compute velocity and internal energy time derivatives.
-    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [&mesh, this](auto ab) {
       const auto [a, b] = ab;
-      const auto grad_W_ab = kernel_.grad(a, b);
+      const auto grad_W_ab = mesh.kernel().grad(a, b);
 
       // Update velocity time derivative.
       const auto P_a = p[a] / pow2(rho[a]);
@@ -450,18 +435,19 @@ public:
         auto fs_neighbors = std::views::filter(mesh[a], on_fs);
         const auto dist_to_a = [a](PV b) { return norm2(r[a, b]); };
         const auto b = *std::ranges::min_element(fs_neighbors, {}, dist_to_a);
-        FS[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius(a);
+        FS[a] *= abs(dot(N[b], r[a, b])) / mesh.kernel().radius(a);
       }
     });
 
     // Compute the particle shifts.
-    const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h[a_0] / 2), h[a_0]));
+    const auto inv_W_0 =
+        inverse(mesh.kernel()(unit(r[a_0], h[a_0] / 2), h[a_0]));
     par::block_for_each(
         mesh.block_pairs(particles),
-        [inv_W_0, FS_FAR, this](auto ab) {
+        [inv_W_0, FS_FAR, &mesh](auto ab) {
           const auto [a, b] = ab;
-          const auto W_ab = kernel_(a, b);
-          const auto grad_W_ab = kernel_.grad(a, b);
+          const auto W_ab = mesh.kernel()(a, b);
+          const auto grad_W_ab = mesh.kernel().grad(a, b);
 
           // Update the particle shifts.
           const auto Chi_ab = R * pow<4>(W_ab * inv_W_0);
@@ -481,7 +467,6 @@ private:
   [[no_unique_address]] MomentumEquation momentum_equation_;
   [[no_unique_address]] EnergyEquation energy_equation_;
   [[no_unique_address]] EquationOfState eos_;
-  [[no_unique_address]] Kernel kernel_;
 
 }; // class FluidEquations
 
