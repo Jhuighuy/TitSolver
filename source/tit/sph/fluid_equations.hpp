@@ -106,7 +106,7 @@ public:
     static constexpr auto Dim = particle_dim_v<ParticleArray>;
 
     // Interpolate the field values on the boundary.
-    par::for_each(particles.fixed(), [this, &mesh](PV b) {
+    par::for_each(particles.fixed(), [&mesh](PV b) {
       /// @todo Once we have a proper geometry library, we should use
       ///       here and clean up the code.
       const auto& search_point = r[b];
@@ -193,12 +193,10 @@ public:
     // Compute density gradient and renormalization fields.
     if constexpr (has_any<PV>(grad_rho, C, N, L)) {
       // Precompute the fields.
-      par::block_for_each(mesh.block_pairs(particles), [this, &mesh](auto ab) {
-        const auto [a, b] = ab;
+      par::block_for_each(mesh.block_pairs(particles), [](auto ab) {
+        const auto& [a, b, W_ab, grad_W_ab] = ab;
         const auto V_a = m[a] / rho[a];
         const auto V_b = m[b] / rho[b];
-        [[maybe_unused]] const auto W_ab = mesh.kernel()(a, b);
-        [[maybe_unused]] const auto grad_W_ab = mesh.kernel().grad(a, b);
 
         // Update density gradient.
         if constexpr (has<PV>(grad_rho)) {
@@ -249,9 +247,8 @@ public:
     }
 
     // Compute density time derivative.
-    par::block_for_each(mesh.block_pairs(particles), [&mesh, this](auto ab) {
-      const auto [a, b] = ab;
-      const auto grad_W_ab = mesh.kernel().grad(a, b);
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto& [a, b, _, grad_W_ab] = ab;
 
       // Update density time derivative.
       const auto Psi_ab =
@@ -296,11 +293,10 @@ public:
     // Compute velocity divergence and curl.
     // Those fields may be required by the artificial viscosity.
     if constexpr (has_any<PV>(div_v, curl_v)) {
-      par::block_for_each(mesh.block_pairs(particles), [&mesh, this](auto ab) {
-        const auto [a, b] = ab;
+      par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+        const auto& [a, b, _, grad_W_ab] = ab;
         const auto V_a = m[a] / rho[a];
         const auto V_b = m[b] / rho[b];
-        const auto grad_W_ab = mesh.kernel().grad(a, b);
 
         // Update velocity divergence.
         if constexpr (has<PV>(div_v)) {
@@ -319,9 +315,8 @@ public:
     }
 
     // Compute velocity and internal energy time derivatives.
-    par::block_for_each(mesh.block_pairs(particles), [&mesh, this](auto ab) {
-      const auto [a, b] = ab;
-      const auto grad_W_ab = mesh.kernel().grad(a, b);
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto& [a, b, _, grad_W_ab] = ab;
 
       // Update velocity time derivative.
       const auto P_a = p[a] / pow2(rho[a]);
@@ -387,7 +382,7 @@ public:
     // There is no race condition because we read the neighbor to compare it
     // with `FS_ON`, and non-free-surface particles are updated in the loop.
     par::block_for_each(mesh.block_pairs(particles), [FS_FAR](auto ab) {
-      const auto [a, b] = ab;
+      const auto& [a, b, _, _grad_W_ab] = ab;
 
       // Skip the particles that are too far away.
       const auto r_ab = norm2(r[a, b]);
@@ -420,7 +415,7 @@ public:
     // some other thread, and the chances of a false positive comparison with
     // distinct bits are very small, at least orders of magnitude smaller than
     // if we used zero.
-    par::for_each(particles.fluid(), [FS_FAR, &mesh, this](PV a) {
+    par::for_each(particles.fluid(), [FS_FAR, &mesh](PV a) {
       if (!bitwise_equal(FS[a], FS_FAR)) return;
 
       // Do not apply the shifts to the particles near the walls.
@@ -444,10 +439,8 @@ public:
         inverse(mesh.kernel()(unit(r[a_0], h[a_0] / 2), h[a_0]));
     par::block_for_each(
         mesh.block_pairs(particles),
-        [inv_W_0, FS_FAR, &mesh](auto ab) {
-          const auto [a, b] = ab;
-          const auto W_ab = mesh.kernel()(a, b);
-          const auto grad_W_ab = mesh.kernel().grad(a, b);
+        [inv_W_0, FS_FAR](auto ab) {
+          const auto& [a, b, W_ab, grad_W_ab] = ab;
 
           // Update the particle shifts.
           const auto Chi_ab = R * pow<4>(W_ab * inv_W_0);

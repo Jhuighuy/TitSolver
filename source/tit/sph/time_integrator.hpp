@@ -60,6 +60,7 @@ public:
     // Initialize particles, build the mesh.
     if (step_index_ == 0) equations_.init(particles);
     if (step_index_ % mesh_update_freq_ == 0) mesh.update(particles);
+    mesh.update_edges(particles);
 
     // Setup boundary conditions.
     equations_.setup_boundary(mesh, particles);
@@ -133,6 +134,7 @@ public:
     // Initialize and index particles.
     if (step_index_ == 0) equations_.init(particles);
     if (step_index_ % mesh_update_freq_ == 0) mesh.update(particles);
+    mesh.update_edges(particles);
 
     // Setup boundary conditions.
     equations_.setup_boundary(mesh, particles);
@@ -242,6 +244,8 @@ private:
                 ParticleMesh& mesh,
                 ParticleArray& particles) {
     using PV = ParticleView<ParticleArray>;
+
+    mesh.update_edges(particles);
 
     // Calculate right hand sides for the given particle array.
     equations_.setup_boundary(mesh, particles);

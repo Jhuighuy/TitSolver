@@ -111,10 +111,11 @@ public:
     return block_edges_.buckets() |
            std::views::transform([&particles](auto block) {
              return block | std::views::transform([&particles](auto ab) {
-                      const auto [a, b] = ab;
-                      /// @todo I have zero idea why, but using pair here
-                      /// instead of a tuple causes a massive performance hit.
-                      return std::tuple{particles[a], particles[b]};
+                      const auto [a, b, W_ab, grad_W_ab] = ab;
+                      return std::tuple{particles[a],
+                                        particles[b],
+                                        W_ab,
+                                        grad_W_ab};
                     });
            });
   }
@@ -131,6 +132,20 @@ public:
 
     // Partition the adjacency graph by the block.
     partition_(particles);
+  }
+
+  /// Update the adjacency graph edges (kernel value and gradient deltas).
+  template<particle_array ParticleArray>
+  void update_edges(ParticleArray& particles) {
+    TIT_PROFILE_SECTION("ParticleMesh::update_edges()");
+
+    par::for_each(block_edges_.values(), [&particles, this](auto& ab) {
+      auto& [ia, ib, W_ab, grad_W_ab] = ab;
+      const auto a = particles[ia];
+      const auto b = particles[ib];
+      W_ab = kernel_(a, b);
+      grad_W_ab = kernel_.grad(a, b);
+    });
   }
 
 private:
@@ -266,7 +281,7 @@ private:
         adjacency_.transform_edges([parts](const auto& ab) {
           const auto [a, b] = ab;
           const auto part_ab = PartVec::common(parts[a], parts[b]);
-          return std::pair{part_ab, ab};
+          return std::pair{part_ab, EdgeTuple_{a, b, {}, {}}};
         }));
 
     // Report the block sizes.
@@ -275,9 +290,12 @@ private:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// @todo We should not hardcode the type and dimension here.
+  using EdgeTuple_ = std::tuple<size_t, size_t, real_t, Vec<real_t, 2>>;
+
   graph::Graph adjacency_;
   graph::Graph interp_adjacency_;
-  Multivector<std::pair<size_t, size_t>> block_edges_;
+  Multivector<EdgeTuple_> block_edges_;
   [[no_unique_address]] Kernel kernel_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;

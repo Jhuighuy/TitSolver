@@ -74,6 +74,11 @@ public:
                      self.vals_.begin() + self.val_ranges_[index + 1]};
   }
 
+  /// Range of all values.
+  constexpr auto values(this auto& self) noexcept {
+    return std::span{self.vals_};
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Clear the multivector.
