@@ -5,15 +5,9 @@
 
 install(
   FILES
-    "__init__.py"
+    "abc.py"
   DESTINATION
-    "python/pytit"
+    "python/pytit/utils"
 )
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_subdirectory("data")
-add_subdirectory("paraview")
-add_subdirectory("utils")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

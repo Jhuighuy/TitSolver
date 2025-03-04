@@ -178,6 +178,13 @@
     "version": "cpp"
   },
   "python.languageServer": "Pylance",
-  "python.analysis.extraPaths": ["${workspaceFolder}/source"],
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/source",
+    // Until we figure out how to get the path from the ParaView installation.
+    "/Applications/ParaView-5.13.1.app/Contents/Python/"
+  ],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingModuleSource": "none"
+  },
   "flake8.args": ["--config", "${workspaceFolder}/pyptoject.toml"]
 }

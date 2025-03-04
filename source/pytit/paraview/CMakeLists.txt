@@ -5,15 +5,9 @@
 
 install(
   FILES
-    "__init__.py"
+    "ttdb_reader.py"
   DESTINATION
-    "python/pytit"
+    "python/pytit/paraview"
 )
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_subdirectory("data")
-add_subdirectory("paraview")
-add_subdirectory("utils")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
