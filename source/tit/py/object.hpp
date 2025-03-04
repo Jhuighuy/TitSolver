@@ -7,16 +7,19 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <concepts>
 #include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/str_utils.hpp"
+#include "tit/core/uint_utils.hpp"
 
 using PyObject = struct _object; // NOLINT(*-reserved-identifier, cert-*)
 
@@ -25,6 +28,7 @@ namespace tit::py {
 class Object;
 class Tuple;
 class Dict;
+class Type;
 struct Kwarg;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -150,14 +154,10 @@ public:
   /// @{
   explicit Object(bool value);
   explicit Object(long long value);
-  template<std::integral Int>
-  explicit Object(Int value) : Object{static_cast<long long>(value)} {}
   explicit Object(double value);
-  template<std::floating_point Float>
-  explicit Object(Float value) : Object{static_cast<double>(value)} {}
   explicit Object(std::string_view value);
-  template<str_like Str>
-  explicit Object(Str value) : Object{std::string_view{value}} {}
+  template<not_object Value>
+  explicit Object(Value&& value);
   /// @}
 
   /// Check if the object is a subclass of `Object`.
@@ -316,6 +316,120 @@ public:
 
 /// `None` literal.
 auto None() -> NoneType;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Get the parent object of the instance.
+template<class T>
+struct ObjectParent final {
+  auto operator()(const T& self) const -> Object = delete;
+};
+
+namespace impl {
+
+// `PyObject` structure size / alignment in bytes.
+extern const size_t sizeof_PyObject;
+extern const size_t alignof_PyObject;
+
+// Find the already bound type or raise an error. Defined in `type.cpp`.
+auto lookup_type(const std::type_info& type_info) -> const Type&;
+
+// Allocate a new uninitialized object of the given bound type / free it.
+auto alloc(const std::type_info& type_info) -> PyObject*;
+void dealloc(PyObject* ptr);
+
+// Bound object structure alignment (in bytes).
+template<class T>
+auto alignof_instance() noexcept -> size_t {
+  return std::max(alignof_PyObject, alignof(T));
+}
+
+// Offset of the data in the bound object structure (in bytes).
+template<class T>
+auto offsetof_data() noexcept -> size_t {
+  return align_up(sizeof_PyObject, alignof_instance<T>());
+}
+
+// Size of the bound object structure (in bytes).
+template<class T>
+auto sizeof_instance() noexcept -> size_t {
+  return offsetof_data<T>() + align_up(sizeof(T), alignof_instance<T>());
+}
+
+// Get the pointer to the instance data.
+template<class T>
+auto data(PyObject* ptr) noexcept -> T* {
+  lookup_type(typeid(T));
+  TIT_ASSERT(ptr != nullptr, "Object must not be null!");
+  return std::bit_cast<T*>(std::bit_cast<byte_t*>(ptr) + offsetof_data<T>());
+}
+
+// Is the parent object specified?
+template<class T>
+concept has_parent = requires (ObjectParent<T> getter, T& self) {
+  { getter(self) } -> std::derived_from<Object>;
+};
+
+// Initialize the instance data from the given arguments.
+template<class T, class... Args>
+  requires std::constructible_from<T, Args&&...>
+void init_(T* self, Args&&... args) {
+  lookup_type(typeid(T));
+  TIT_ASSERT(self != nullptr, "Pointer must not be null!");
+  std::construct_at(self, std::forward<Args>(args)...);
+  if constexpr (const ObjectParent<T> parent_getter{}; has_parent<T>) {
+    parent_getter(*self).incref();
+  }
+}
+
+// Deinitialize the instance data and delete the object.
+template<class T>
+void delete_(PyObject* ptr) {
+  T* const self = data<T>(ptr);
+  [[maybe_unused]] Object parent;
+  if constexpr (const ObjectParent<T> parent_getter{}; has_parent<T>) {
+    parent = &parent_getter(*self);
+  }
+  std::destroy_at(self);
+  dealloc(ptr);
+  if constexpr (has_parent<T>) parent.decref();
+}
+
+} // namespace impl
+
+/// Find a Python object holding the given bound class instance.
+template<class T>
+  requires std::is_class_v<T>
+auto find(const T& self) -> Object {
+  impl::lookup_type(typeid(T));
+  return borrow(std::bit_cast<PyObject*>(
+      std::bit_cast<byte_t*>(std::addressof(self)) - impl::offsetof_data<T>()));
+}
+
+/// Create a new bound type instance object.
+template<class T, class... Args>
+  requires std::constructible_from<T, Args&&...>
+auto new_(Args&&... args) -> Object {
+  const auto self = steal(impl::alloc(typeid(T)));
+  impl::init_(impl::data<T>(self.get()), std::forward<Args>(args)...);
+  return self;
+}
+
+template<not_object Value>
+Object::Object(Value&& value) {
+  using T = std::remove_cvref_t<Value>;
+  if constexpr (std::integral<T>) {
+    *this = Object{static_cast<long long>(value)};
+  } else if constexpr (std::floating_point<T>) {
+    *this = Object{static_cast<double>(value)};
+  } else if constexpr (str_like<T>) {
+    *this = Object{std::string_view{value}};
+  } else if constexpr (std::convertible_to<T, Object>) {
+    *this = std::forward<Value>(value);
+  } else {
+    *this = new_<T>(std::forward<Value>(value));
+  }
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
