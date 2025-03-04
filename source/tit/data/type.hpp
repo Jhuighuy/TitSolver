@@ -8,7 +8,6 @@
 #include <concepts>
 #include <format>
 #include <string>
-#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -16,6 +15,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/str_utils.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -74,9 +74,9 @@ public:
   }
 
   /// Data kind name.
-  constexpr auto name() const -> std::string_view {
+  constexpr auto name() const -> CStrView {
     using enum ID;
-    return translate<std::string_view>(id_)
+    return translate<CStrView>(id_)
         .option(int8, "int8_t")
         .option(uint8, "uint8_t")
         .option(int16, "int16_t")

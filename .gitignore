@@ -29,6 +29,9 @@
 !*.config.json
 !tsconfig*.json
 
+# Python configuration files.
+!pyproject.toml
+
 # Output.
 .cache/
 /output/
