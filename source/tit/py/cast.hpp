@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <type_traits>
 
 #include "tit/core/str_utils.hpp"
 
@@ -75,6 +76,21 @@ auto maybe_borrow(PyObject* ptr) -> Optional<Derived> {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Convert to C++ bound class reference.
+template<class Value>
+struct Cast final {
+  auto operator()(const Object& obj) const -> Value& {
+    using T = std::remove_cvref_t<Value>;
+    if (const auto expected_type = impl::lookup_type(typeid(T));
+        !type(obj).is_subtype_of(expected_type)) {
+      raise_type_error("expected '{}', got '{}'",
+                       expected_type.fully_qualified_name(),
+                       type(obj).fully_qualified_name());
+    }
+    return *impl::data<T>(obj.get());
+  }
+};
 
 /// Convert to C++ boolean value.
 template<>

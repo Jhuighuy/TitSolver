@@ -46,7 +46,34 @@ private:
 
 }; // class FuncDefs
 
+// Container for property definitions.
+class PropDefs final {
+public:
+
+  // Emplace a property definition.
+  static auto emplace(const char* name, GetPtr get, SetPtr set)
+      -> PyGetSetDef& {
+    TIT_ASSERT(name != nullptr, "Property name must not be null!");
+    TIT_ASSERT(get != nullptr, "Property getter pointer must not be null!");
+    return defs_.emplace_front(PyGetSetDef{
+        .name = name,
+        .get = get,
+        .set = set,
+        .doc = nullptr,
+        .closure = nullptr,
+    });
+  }
+
+private:
+
+  // Pointers to the property definitions must be kept alive until the
+  // extension is unloaded, so we need to keep them in a node-based container.
+  static std::forward_list<PyGetSetDef> defs_;
+
+}; // class PropDefs
+
 std::forward_list<PyMethodDef> FuncDefs::defs_;
+std::forward_list<PyGetSetDef> PropDefs::defs_;
 
 } // namespace
 
@@ -67,6 +94,25 @@ auto make_func(const char* name, FuncPtr func, const Module* module_)
       PyCFunction_NewEx(&FuncDefs::emplace(name, func),
                         /*self=*/nullptr,
                         module_ != nullptr ? module_->get() : nullptr)));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto make_method_descriptor(const char* name,
+                            FuncPtr method,
+                            const Type& class_) -> Object {
+  return steal(ensure(
+      PyDescr_NewMethod(class_.get_type(), &FuncDefs::emplace(name, method))));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto make_prop_descriptor(const char* name,
+                          GetPtr get,
+                          SetPtr set,
+                          const Type& class_) -> Object {
+  return steal(ensure(PyDescr_NewGetSet(class_.get_type(),
+                                        &PropDefs::emplace(name, get, set))));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

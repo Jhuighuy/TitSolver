@@ -7,6 +7,11 @@
 
 #include <concepts>
 #include <string>
+#include <string_view>
+#include <typeinfo>
+#include <unordered_map>
+
+#include "tit/core/basic_types.hpp"
 
 #include "tit/py/object.hpp"
 
@@ -14,6 +19,8 @@
 using PyTypeObject = struct _typeobject;
 
 namespace tit::py {
+
+class Module;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -45,6 +52,11 @@ public:
   /// Check if this type a inherited from a different type.
   auto is_subtype_of(const Type& other) const -> bool;
 
+protected:
+
+  /// Construct a new reference to the existing type object.
+  explicit Type(PyObject* ptr);
+
 }; // class Type
 
 /// Get the type of the given object, similar to `type(obj)`.
@@ -62,6 +74,32 @@ auto type_name() -> std::string {
     return std::string{Derived::type_name()};
   } else static_assert(false);
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Python destructor function pointer.
+using DestructorPtr = void (*)(PyObject*);
+
+/// Python heap type reference.
+class HeapType : public Type {
+public:
+
+  /// Find the type object by its type info.
+  static auto find(const std::type_info& type_info) -> const HeapType&;
+
+  /// Construct a new heap type.
+  HeapType(const std::type_info& type_info,
+           std::string_view name,
+           size_t basic_size,
+           DestructorPtr destructor,
+           const Module& module_);
+
+private:
+
+  // Map of bound types.
+  static std::unordered_map<size_t, HeapType> types_;
+
+}; // class HeapType
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
