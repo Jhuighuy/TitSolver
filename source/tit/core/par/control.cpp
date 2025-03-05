@@ -30,8 +30,8 @@ void set_num_threads(size_t value) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto global_mutex() noexcept -> std::mutex& {
-  static std::mutex mutex{};
+auto global_mutex() noexcept -> std::recursive_mutex& {
+  static std::recursive_mutex mutex{};
   return mutex;
 }
 
