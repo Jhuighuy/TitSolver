@@ -101,6 +101,11 @@ template<class Indices>
 concept output_index_range = std::ranges::random_access_range<Indices> &&
                              std::ranges::output_range<Indices, size_t>;
 
+/// Input-output index range.
+template<class Indices>
+concept input_output_index_range =
+    index_range<Indices> && output_index_range<Indices>;
+
 /// Permuted range view.
 template<std::ranges::random_access_range Range, index_range Perm>
   requires std::ranges::viewable_range<Range> &&
