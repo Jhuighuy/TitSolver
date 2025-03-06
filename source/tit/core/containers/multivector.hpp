@@ -22,6 +22,7 @@
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/range_utils.hpp"
 #include "tit/core/tuple_utils.hpp"
 #include "tit/core/utils.hpp"
 
@@ -56,15 +57,9 @@ public:
   }
 
   /// Range of bucket sizes.
-  constexpr auto bucket_sizes() const noexcept {
+  constexpr auto sizes() const noexcept {
     return val_ranges_ | std::views::adjacent_transform<2>(
                              [](size_t a, size_t b) { return b - a; });
-  }
-
-  /// Buckets of values.
-  constexpr auto buckets(this auto& self) noexcept {
-    return std::views::iota(size_t{0}, self.size()) |
-           std::views::transform([&self](size_t index) { return self[index]; });
   }
 
   /// Bucket of values at index.
@@ -73,6 +68,16 @@ public:
     return std::span{self.vals_.begin() + self.val_ranges_[index],
                      self.vals_.begin() + self.val_ranges_[index + 1]};
   }
+
+  /// Iterate the buckets.
+  /// @{
+  constexpr auto begin(this auto& self) noexcept {
+    return IndexIter{self, 0};
+  }
+  constexpr auto end(this auto& self) noexcept {
+    return IndexIter{self, self.size()};
+  }
+  /// @}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -318,18 +323,22 @@ public:
     return bucket_sizes_;
   }
 
-  /// Buckets of values.
-  constexpr auto buckets(this auto& self) noexcept {
-    return std::views::iota(size_t{0}, self.size()) |
-           std::views::transform([&self](size_t index) { return self[index]; });
-  }
-
   /// Bucket of values at index.
   constexpr auto operator[](this auto& self, size_t index) noexcept {
     TIT_ASSERT(index < self.size(), "Bucket index is out of range!");
     return std::span{self.buckets_[index]} //
         .subspan(0, self.bucket_sizes_[index]);
   }
+
+  /// Iterate the buckets.
+  /// @{
+  constexpr auto begin(this auto& self) noexcept {
+    return IndexIter{self, 0};
+  }
+  constexpr auto end(this auto& self) noexcept {
+    return IndexIter{self, self.size()};
+  }
+  /// @}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

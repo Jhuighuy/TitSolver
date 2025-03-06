@@ -26,16 +26,15 @@ TEST_CASE("Multivector") {
     const Multivector<int> multivector{};
     CHECK(multivector.size() == 0);
     CHECK(multivector.empty());
-    CHECK_RANGE_EMPTY(multivector.bucket_sizes());
-    CHECK_RANGE_EMPTY(multivector.buckets());
+    CHECK_RANGE_EMPTY(multivector.sizes());
+    CHECK_RANGE_EMPTY(multivector);
   }
   SUBCASE("from initial values") {
     const Multivector multivector{{1, 2, 3, 4}, {5, 6, 7}, {8, 9}};
     CHECK(multivector.size() == 3);
     CHECK_FALSE(multivector.empty());
-    CHECK_RANGE_EQ(multivector.bucket_sizes(), {4, 3, 2});
-    CHECK_RANGE_EQ(multivector.buckets() | std::views::join,
-                   {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    CHECK_RANGE_EQ(multivector.sizes(), {4, 3, 2});
+    CHECK_RANGE_EQ(multivector | std::views::join, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
     CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
     CHECK_RANGE_EQ(multivector[2], {8, 9});
@@ -63,8 +62,7 @@ TEST_CASE("Multivector::append_bucket") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == buckets.size());
-  for (const auto& [bucket, expected] :
-       std::views::zip(multivector.buckets(), buckets)) {
+  for (const auto& [bucket, expected] : std::views::zip(multivector, buckets)) {
     CHECK_RANGE_EQ(bucket, expected);
   }
 }
@@ -110,8 +108,7 @@ TEST_CASE("Multivector::assign_buckets_par") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == buckets.size());
-  for (const auto& [bucket, expected] :
-       std::views::zip(multivector.buckets(), buckets)) {
+  for (const auto& [bucket, expected] : std::views::zip(multivector, buckets)) {
     CHECK_RANGE_EQ(bucket, expected);
   }
 }
@@ -135,7 +132,7 @@ TEST_CASE("Multivector::assign_pairs_par_tall") {
   multivector.assign_pairs_par_tall(3, pairs);
 
   // Sort the buckets, since parallel algorithms does not guarantee order.
-  std::ranges::for_each(multivector.buckets(), std::ranges::sort);
+  std::ranges::for_each(multivector, std::ranges::sort);
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == 3);
@@ -163,7 +160,7 @@ TEST_CASE("Multivector::assign_pairs_par_wide") {
   multivector.assign_pairs_par_wide(3, pairs);
 
   // Sort the buckets, since parallel algorithms does not guarantee order.
-  std::ranges::for_each(multivector.buckets(), std::ranges::sort);
+  std::ranges::for_each(multivector, std::ranges::sort);
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == 3);
@@ -183,15 +180,14 @@ TEST_CASE("CapMultivector") {
     CHECK(multivector.size() == 0);
     CHECK(multivector.empty());
     CHECK_RANGE_EMPTY(multivector.bucket_sizes());
-    CHECK_RANGE_EMPTY(multivector.buckets());
+    CHECK_RANGE_EMPTY(multivector);
   }
   SUBCASE("from initial values") {
     const CapMultivector<int, 4> multivector{{1, 2, 3, 4}, {5, 6, 7}, {8, 9}};
     CHECK(multivector.size() == 3);
     CHECK_FALSE(multivector.empty());
     CHECK_RANGE_EQ(multivector.bucket_sizes(), {4, 3, 2});
-    CHECK_RANGE_EQ(multivector.buckets() | std::views::join,
-                   {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    CHECK_RANGE_EQ(multivector | std::views::join, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
     CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
     CHECK_RANGE_EQ(multivector[2], {8, 9});
@@ -221,8 +217,7 @@ TEST_CASE("CapMultivector::set_bucket") {
 
   // Ensure the multivector is correct.
   REQUIRE(multivector.size() == buckets.size());
-  for (const auto& [bucket, expected] :
-       std::views::zip(multivector.buckets(), buckets)) {
+  for (const auto& [bucket, expected] : std::views::zip(multivector, buckets)) {
     CHECK_RANGE_EQ(bucket, expected);
   }
 }
