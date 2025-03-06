@@ -16,10 +16,7 @@ namespace tit::graph {
 
 /// Dummy uniform partitioning function.
 struct UniformPartition final {
-  static void operator()(const auto& graph,
-                         const auto& /*weights*/,
-                         auto& parts,
-                         size_t num_parts) {
+  static void operator()(const auto& graph, auto& parts, size_t num_parts) {
     const auto num_nodes = graph.num_nodes();
     const auto part_size = num_nodes / num_parts;
     const auto remainder = num_nodes % num_parts;
