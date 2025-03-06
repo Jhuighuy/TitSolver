@@ -10,6 +10,7 @@
 #include <array>
 #include <concepts>
 #include <iterator>
+#include <memory>
 #include <ranges>
 #include <span>
 #include <type_traits>
@@ -21,6 +22,124 @@
 #include "tit/core/utils.hpp"
 
 namespace tit {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Iterator for a container that supports random access.
+template<class Container>
+class IndexIter final {
+public:
+
+  using reference_type = decltype(std::declval<Container&>()[0]);
+  using value_type = std::remove_cvref_t<reference_type>;
+  using difference_type = ssize_t;
+
+  /// Construct an invalid iterator.
+  constexpr IndexIter() noexcept = default;
+
+  /// Construct from a container and an index.
+  constexpr explicit IndexIter(Container& container, size_t index = 0) noexcept
+      : container_{&container}, index_{index} {}
+
+  /// Dereference the iterator.
+  /// @{
+  constexpr auto operator[](size_t offset) const noexcept -> decltype(auto) {
+    TIT_ASSERT(container_ != nullptr, "Iterator is not dereferenceable!");
+    return (*container_)[index_ + offset];
+  }
+  constexpr auto operator*() const noexcept -> decltype(auto) {
+    return (*this)[0];
+  }
+  constexpr auto operator->() const noexcept -> decltype(auto)
+    requires std::is_lvalue_reference_v<reference_type>
+  {
+    return std::addressof(**this);
+  }
+  /// @}
+
+  /// Increment the iterator.
+  /// @{
+  constexpr auto operator++() noexcept -> IndexIter& {
+    ++index_;
+    return *this;
+  }
+  constexpr auto operator++(int) noexcept -> IndexIter {
+    return IndexIter{*container_, index_++};
+  }
+  /// @}
+
+  /// Decrement the iterator.
+  /// @{
+  constexpr auto operator--() noexcept -> IndexIter& {
+    --index_;
+    return *this;
+  }
+  constexpr auto operator--(int) noexcept -> IndexIter {
+    return IndexIter{*container_, index_--};
+  }
+  /// @}
+
+  /// Add an offset to the iterator.
+  /// @{
+  friend constexpr auto operator+(IndexIter iter, ssize_t offset) noexcept
+      -> IndexIter {
+    return IndexIter{*iter.container_, iter.index_ + offset};
+  }
+  friend constexpr auto operator+(ssize_t offset, IndexIter iter) noexcept
+      -> IndexIter {
+    return iter + offset;
+  }
+  friend constexpr auto operator+=(IndexIter& iter, ssize_t offset) noexcept
+      -> IndexIter& {
+    iter.index_ += offset;
+    return iter;
+  }
+  /// @}
+
+  /// Subtract an offset from the iterator.
+  /// @{
+  friend constexpr auto operator-(IndexIter iter, ssize_t offset) noexcept
+      -> IndexIter {
+    return IndexIter{*iter.container_, iter.index_ + offset};
+  }
+  friend constexpr auto operator-(ssize_t offset, IndexIter iter) noexcept
+      -> IndexIter {
+    return iter + offset;
+  }
+  friend constexpr auto operator-=(IndexIter& iter, ssize_t offset) noexcept
+      -> IndexIter& {
+    iter.index_ -= offset;
+    return iter;
+  }
+  /// @}
+
+  /// Difference between two iterators.
+  friend constexpr auto operator-(IndexIter lhs, IndexIter rhs) -> ssize_t {
+    TIT_ASSERT(lhs.container_ == rhs.container_,
+               "Iterators must be from the same container!");
+    return lhs.index_ - rhs.index_;
+  }
+
+  /// Compare two iterators.
+  /// @{
+  friend constexpr auto operator==(IndexIter lhs, IndexIter rhs) noexcept {
+    TIT_ASSERT(lhs.container_ == rhs.container_,
+               "Iterators must be from the same container!");
+    return lhs.index_ == rhs.index_;
+  }
+  friend constexpr auto operator<=>(IndexIter lhs, IndexIter rhs) noexcept {
+    TIT_ASSERT(lhs.container_ == rhs.container_,
+               "Iterators must be from the same container!");
+    return lhs.index_ <=> rhs.index_;
+  }
+  /// @}
+
+private:
+
+  Container* container_ = nullptr;
+  size_t index_ = 0;
+
+}; // class IndexIter
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
