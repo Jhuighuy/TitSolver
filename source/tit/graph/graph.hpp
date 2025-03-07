@@ -397,4 +397,10 @@ concept graph = unweighted_graph<G> || weighted_graph<G>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Node partitioning range.
+template<class NodeParts, class /*Graph*/>
+concept node_parts = true; /// @todo Implement this.
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit::graph
