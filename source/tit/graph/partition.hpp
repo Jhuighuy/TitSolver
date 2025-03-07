@@ -7,7 +7,10 @@
 
 #include <concepts>
 
+#include "tit/core/type.hpp"
+
 // IWYU pragma: begin_exports
+#include "tit/graph/partition/greedy.hpp"
 #include "tit/graph/partition/metis.hpp"
 #include "tit/graph/partition/uniform.hpp"
 // IWYU pragma: end_exports
@@ -18,7 +21,8 @@ namespace tit::graph {
 
 /// Partition function type.
 template<class PF>
-concept partition_func = std::same_as<PF, MetisPartition> || //
+concept partition_func = std::same_as<PF, MetisPartition> ||
+                         specialization_of<PF, GreedyPartition> ||
                          std::same_as<PF, UniformPartition>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
