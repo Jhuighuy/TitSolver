@@ -18,13 +18,15 @@
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
+#include "tit/core/stats.hpp"
 #include "tit/core/utils.hpp"
 
 #include "tit/geom/grid.hpp"
 #include "tit/geom/point_range.hpp"
 
 #include "tit/graph/graph.hpp"
-#include "tit/graph/simple_partition.hpp"
+#include "tit/graph/partition.hpp"
+#include "tit/graph/utils.hpp"
 
 namespace tit::geom {
 
@@ -135,6 +137,7 @@ public:
     graph::BaseWeightedGraph graph{std::move(adjacency), std::move(weights)};
     std::vector<size_t> graph_parts(graph.num_nodes());
     graph_partition_(graph, graph_parts, num_parts);
+    TIT_STATS("edge_cut", graph::edge_cut(graph, graph_parts));
 
     // Propagate the partitions to the points.
     par::transform( //
