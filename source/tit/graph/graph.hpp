@@ -405,6 +405,10 @@ concept node_parts = true; /// @todo Implement this.
 template<class NodePred>
 concept node_predicate = std::predicate<NodePred, node_t>;
 
+/// Node mapping range.
+template<class M, class /*SourceGraph*/, class /*TargetGraph*/>
+concept node_mapping = true; /// @todo Implement this.
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::graph
