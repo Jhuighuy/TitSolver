@@ -9,6 +9,7 @@ add_tit_library(
   SOURCES
     "graph.hpp"
     "partition.hpp"
+    "partition/greedy.hpp"
     "partition/metis.hpp"
     "partition/uniform.hpp"
     "refine.hpp"
