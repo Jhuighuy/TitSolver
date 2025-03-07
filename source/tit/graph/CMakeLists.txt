@@ -7,6 +7,10 @@ add_tit_library(
   NAME
     graph
   SOURCES
+    "coarsen.hpp"
+    "coarsen/gem.hpp"
+    "coarsen/hem.hpp"
+    "coarsen/utils.hpp"
     "graph.hpp"
     "partition.hpp"
     "partition/greedy.hpp"
