@@ -65,6 +65,18 @@ constexpr auto is_any_of(T x, Us... us) noexcept -> bool {
   return (... || (x == us));
 }
 
+/// Convert a signed integer to an unsigned integer.
+template<std::unsigned_integral UInt>
+constexpr auto to_signed(UInt i) noexcept -> std::make_signed_t<UInt> {
+  return static_cast<std::make_signed_t<UInt>>(i);
+}
+
+/// Convert an unsigned integer to a signed integer.
+template<std::signed_integral SInt>
+constexpr auto to_unsigned(SInt i) noexcept -> std::make_unsigned_t<SInt> {
+  return static_cast<std::make_unsigned_t<SInt>>(i);
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Translator for a given key.
