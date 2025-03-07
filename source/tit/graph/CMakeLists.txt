@@ -11,6 +11,9 @@ add_tit_library(
     "partition.hpp"
     "partition/metis.hpp"
     "partition/uniform.hpp"
+    "refine.hpp"
+    "refine/fm.hpp"
+    "refine/noop.hpp"
     "utils.hpp"
   DEPENDS
     tit::core
