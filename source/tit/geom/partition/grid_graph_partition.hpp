@@ -33,7 +33,7 @@ namespace tit::geom {
 
 /// Partitioning based on a graph partitioning of a grid cell connectivity.
 /// @todo Replace `UniformPartition` with a proper graph partitioning function.
-template<graph::partition_func GraphPartition = graph::UniformPartition>
+template<graph::partition_func GraphPartition = graph::GreedyPartition<>>
 class GridGraphPartition final {
 public:
 

@@ -401,6 +401,10 @@ concept graph = unweighted_graph<G> || weighted_graph<G>;
 template<class NodeParts, class /*Graph*/>
 concept node_parts = true; /// @todo Implement this.
 
+/// Node predicate.
+template<class NodePred>
+concept node_predicate = std::predicate<NodePred, node_t>;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::graph
