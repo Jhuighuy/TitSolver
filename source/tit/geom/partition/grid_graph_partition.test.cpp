@@ -11,7 +11,7 @@
 
 #include "tit/geom/partition/grid_graph_partition.hpp"
 
-#include "tit/graph/simple_partition.hpp"
+#include "tit/graph/partition.hpp"
 
 #include "tit/testing/test.hpp"
 
