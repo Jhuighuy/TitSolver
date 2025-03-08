@@ -29,13 +29,22 @@ __all__ = (
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ttdb = CDLL(os.path.dirname(__file__) + "/libttdb.so")
+ttdb__last_error = ttdb.ttdb__last_error
+ttdb__last_error.restype = c_char_p
 
 
 def ttdb_func(name: str, ret_type: type | None, args: tuple[type, ...]) -> Any:
     func = getattr(ttdb, name)
     func.argtypes = args
     func.restype = ret_type
-    return func
+
+    def checked_func(*args: Any) -> Any:
+        result = func(*args)
+        if error := ttdb__last_error():
+            raise RuntimeError(error.decode("utf-8"))
+        return result
+
+    return checked_func
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
