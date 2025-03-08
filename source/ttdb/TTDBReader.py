@@ -5,6 +5,7 @@
 
 # pylint: disable=import-error,no-name-in-module,invalid-name,unused-argument
 # pylint: disable=wrong-import-position,missing-docstring
+from collections.abc import Iterator
 from operator import attrgetter
 import os
 import sys
@@ -46,7 +47,6 @@ FILE_EXTENSIONS = "ttdb"
 class TTDBReader(VTKPythonAlgorithmBase):
     _file_path: str | None
     _storage: Storage | None
-    _time_steps: list[TimeStep] | None
     _array_selection: vtkDataArraySelection
 
     def __init__(self) -> None:
@@ -54,7 +54,6 @@ class TTDBReader(VTKPythonAlgorithmBase):
         self._file_path = None
         self._storage = None
         self._series = None
-        self._time_steps = None
         self._array_selection = vtkDataArraySelection()
         self._array_selection.AddObserver(
             "ModifiedEvent", lambda *_: self.Modified()
@@ -66,14 +65,11 @@ class TTDBReader(VTKPythonAlgorithmBase):
             if not self._file_path or not os.path.exists(self._file_path):
                 raise RuntimeError(f"File not found: {self._file_path}.")
             self._storage = Storage(self._file_path)
-            self._time_steps = None
         return self._storage
 
-    @property
-    def time_steps(self) -> list[TimeStep]:
-        if self._time_steps is None:
-            self._time_steps = list(self.storage.last_series.time_steps())
-        return self._time_steps
+    def time_steps(self) -> Iterator[TimeStep]:
+        # Do not cache the last series and time steps, as they may change.
+        return self.storage.last_series.time_steps()
 
     @smproperty.stringvector(name="FileName")
     @smdomain.filelist()
@@ -92,7 +88,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
         si_class="vtkSITimeStepsProperty",
     )
     def GetTimestepValues(self) -> list[float]:
-        return list(map(attrgetter("time"), self.time_steps))
+        return list(map(attrgetter("time"), self.time_steps()))
 
     @smproperty.dataarrayselection(name="Arrays")
     def GetDataArraySelection(self) -> vtkDataArraySelection:
@@ -103,19 +99,21 @@ class TTDBReader(VTKPythonAlgorithmBase):
 
         # Report the available time steps.
         info = outInfo.GetInformationObject(0)
-        info.Remove(executive.TIME_RANGE())
         info.Remove(executive.TIME_STEPS())
-        info.Append(executive.TIME_RANGE(), 0)
-        info.Append(executive.TIME_RANGE(), len(self.time_steps) - 1)
-        for ts in self.time_steps:
+        num_time_steps = 0
+        for ts in self.time_steps():
+            num_time_steps += 1
             info.Append(executive.TIME_STEPS(), ts.time)
+        info.Remove(executive.TIME_RANGE())
+        info.Append(executive.TIME_RANGE(), 0)
+        info.Append(executive.TIME_RANGE(), num_time_steps)
 
         # Report the available arrays.
         # ParaView does not support matrix arrays, so we do not report them.
-        probe_time_step = self.time_steps[0]
-        for array in probe_time_step.varyings.arrays():
-            if array.type.rank in (Rank.scalar, Rank.vector):
-                self._array_selection.AddArray(array.name)
+        if (probe_time_step := next(self.time_steps(), None)) is not None:
+            for array in probe_time_step.varyings.arrays():
+                if array.type.rank in (Rank.scalar, Rank.vector):
+                    self._array_selection.AddArray(array.name)
 
         return True
 
@@ -125,7 +123,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
             self.GetExecutive().UPDATE_TIME_STEP()
         )
         time_step = next(
-            (ts for ts in self.time_steps if ts.time == time), None
+            (ts for ts in self.time_steps() if ts.time == time), None
         )
         if time_step is None:
             return False
