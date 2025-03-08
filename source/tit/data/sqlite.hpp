@@ -38,7 +38,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Open or create a database file.
-  explicit Database(const std::filesystem::path& path);
+  explicit Database(const std::filesystem::path& path, bool read_only = false);
 
   /// SQLite database object.
   auto base() const noexcept -> sqlite3*;

@@ -41,13 +41,11 @@ auto error_message(int status, sqlite3* db = nullptr) -> std::string {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Database::Database(const std::filesystem::path& path) {
+Database::Database(const std::filesystem::path& path, bool read_only) {
   sqlite3* db = nullptr;
-  if (const auto status = sqlite3_open_v2( //
-          path.c_str(),
-          &db,
-          SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
-          nullptr);
+  const auto flags = read_only ? SQLITE_OPEN_READONLY :
+                                 SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+  if (const auto status = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
       status != SQLITE_OK) {
     TIT_THROW("SQLite database open failed ({}): {}",
               status,
@@ -348,7 +346,7 @@ BlobReader::BlobReader(const Database& db,
                                             table_name.c_str(),
                                             column_name.c_str(),
                                             row_id,
-                                            SQLITE_OPEN_READONLY,
+                                            /*flags=*/0, // read-only.
                                             &blob);
       status != SQLITE_OK) {
     TIT_THROW("SQLite blob open failed ({}): {}",

@@ -356,7 +356,8 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Open a data storage or create it if it does not exist.
-  explicit DataStorage(const std::filesystem::path& path);
+  explicit DataStorage(const std::filesystem::path& path,
+                       bool read_only = false);
 
   /// Path to the database file.
   auto path() const -> std::filesystem::path;
