@@ -6,20 +6,21 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/utils.hpp"
+
+#include "tit/graph/graph.hpp"
 
 namespace tit::graph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Dummy uniform partitioning function.
+/// "Uniform" partitioning function. Only for testing purposes.
 struct UniformPartition final {
-  static void operator()(const auto& graph,
-                         const auto& /*weights*/,
-                         auto& parts,
-                         size_t num_parts) {
+  template<weighted_graph Graph, node_parts<Graph> Parts>
+  static void operator()(const Graph& graph, Parts&& parts, size_t num_parts) {
+    TIT_ASSUME_UNIVERSAL(Parts, parts);
     const auto num_nodes = graph.num_nodes();
     const auto part_size = num_nodes / num_parts;
     const auto remainder = num_nodes % num_parts;
@@ -30,12 +31,6 @@ struct UniformPartition final {
     }
   }
 };
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Partition function type.
-template<class PF>
-concept partition_func = std::same_as<PF, UniformPartition>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
