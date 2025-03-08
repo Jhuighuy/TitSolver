@@ -28,6 +28,7 @@ DataStorage::DataStorage(const std::filesystem::path& path, bool read_only)
     : db_{path, read_only} {
   if (read_only) return;
   db_.execute(R"SQL(
+    PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
 
     CREATE TABLE IF NOT EXISTS Settings (
