@@ -77,9 +77,7 @@ auto DataStorage::max_series() const -> size_t {
   sqlite::Statement statement{db_, R"SQL(
     SELECT max_series FROM Settings
   )SQL"};
-  if (!statement.step()) {
-    TIT_THROW("Unable to get maximum number of data series!");
-  }
+  TIT_ENSURE(statement.step(), "Unable to get maximum number of data series!");
   return statement.column<size_t>();
 }
 
@@ -103,7 +101,7 @@ auto DataStorage::num_series() const -> size_t {
   sqlite::Statement statement{db_, R"SQL(
     SELECT COUNT(*) FROM DataSeries
   )SQL"};
-  if (!statement.step()) TIT_THROW("Unable to count data series!");
+  TIT_ENSURE(statement.step(), "Unable to count data series!");
   return statement.column<size_t>();
 }
 
@@ -124,7 +122,7 @@ auto DataStorage::last_series_id() const -> DataSeriesID {
   sqlite::Statement statement{db_, R"SQL(
     SELECT id FROM DataSeries ORDER BY id DESC LIMIT 1
   )SQL"};
-  if (!statement.step()) TIT_THROW("Unable to get last data series!");
+  TIT_ENSURE(statement.step(), "Unable to get last data series!");
   return DataSeriesID{statement.column<sqlite::RowID>()};
 }
 
@@ -170,7 +168,7 @@ auto DataStorage::series_parameters(DataSeriesID series_id) const
     SELECT parameters FROM DataSeries WHERE id = ?
   )SQL"};
   statement.bind(series_id.get());
-  if (!statement.step()) TIT_THROW("Unable to get series parameters!");
+  TIT_ENSURE(statement.step(), "Unable to get series parameters!");
   return statement.column<std::string>();
 }
 
@@ -181,7 +179,7 @@ auto DataStorage::series_num_time_steps(DataSeriesID series_id) const
     SELECT COUNT(*) FROM TimeSteps WHERE series_id = ?
   )SQL"};
   statement.bind(series_id.get());
-  if (!statement.step()) TIT_THROW("Unable to count time steps!");
+  TIT_ENSURE(statement.step(), "Unable to count time steps!");
   return statement.column<size_t>();
 }
 
@@ -208,7 +206,7 @@ auto DataStorage::series_last_time_step_id(DataSeriesID series_id) const
     SELECT id FROM TimeSteps WHERE series_id = ? ORDER BY id DESC LIMIT 1
   )SQL"};
   statement.bind(series_id.get());
-  if (!statement.step()) TIT_THROW("Unable to get last time step!");
+  TIT_ENSURE(statement.step(), "Unable to get last time step!");
   return DataTimeStepID{statement.column<sqlite::RowID>()};
 }
 
@@ -262,7 +260,7 @@ auto DataStorage::time_step_time(DataTimeStepID time_step_id) const -> real_t {
     SELECT time FROM TimeSteps WHERE id = ?
   )SQL"};
   statement.bind(time_step_id.get());
-  if (!statement.step()) TIT_THROW("Unable to get time step time!");
+  TIT_ENSURE(statement.step(), "Unable to get time step time!");
   return statement.column<real_t>();
 }
 
@@ -273,9 +271,7 @@ auto DataStorage::time_step_uniforms_id(DataTimeStepID time_step_id) const
     SELECT uniform_id FROM TimeSteps WHERE id = ?
   )SQL"};
   statement.bind(time_step_id.get());
-  if (!statement.step()) {
-    TIT_THROW("Unable to get time step uniform data set ID!");
-  }
+  TIT_ENSURE(statement.step(), "Unable to get time step uniform data set ID!");
   return DataSetID{statement.column<sqlite::RowID>()};
 }
 
@@ -286,9 +282,7 @@ auto DataStorage::time_step_varyings_id(DataTimeStepID time_step_id) const
     SELECT varying_id FROM TimeSteps WHERE id = ?
   )SQL"};
   statement.bind(time_step_id.get());
-  if (!statement.step()) {
-    TIT_THROW("Unable to get time step varying data set ID!");
-  }
+  TIT_ENSURE(statement.step(), "Unable to get time step varying data set ID!");
   return DataSetID{statement.column<sqlite::RowID>()};
 }
 
@@ -316,7 +310,7 @@ auto DataStorage::dataset_num_arrays(DataSetID dataset_id) const -> size_t {
     SELECT COUNT(*) FROM DataArrays WHERE data_set_id = ?
   )SQL"};
   statement.bind(dataset_id.get());
-  if (!statement.step()) TIT_THROW("Unable to count data arrays!");
+  TIT_ENSURE(statement.step(), "Unable to count data arrays!");
   return statement.column<size_t>();
 }
 
@@ -395,7 +389,7 @@ auto DataStorage::array_type(DataArrayID array_id) const -> DataType {
     SELECT type FROM DataArrays WHERE id = ?
   )SQL"};
   statement.bind(array_id.get());
-  if (!statement.step()) TIT_THROW("Unable to get data array data type!");
+  TIT_ENSURE(statement.step(), "Unable to get data array data type!");
   return DataType{statement.column<uint32_t>()};
 }
 
@@ -405,7 +399,7 @@ auto DataStorage::array_size(DataArrayID array_id) const -> size_t {
     SELECT size FROM DataArrays WHERE id = ?
   )SQL"};
   statement.bind(array_id.get());
-  if (!statement.step()) TIT_THROW("Unable to get data array size!");
+  TIT_ENSURE(statement.step(), "Unable to get data array size!");
   return statement.column<size_t>();
 }
 

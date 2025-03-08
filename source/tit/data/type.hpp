@@ -46,9 +46,9 @@ public:
 
   /// Construct a data kind.
   constexpr explicit DataKind(ID id) : id_{id} {
-    if (id_ <= ID::unknown_ || ID::count_ <= id_) {
-      TIT_THROW("Invalid data kind ID: {}.", std::to_underlying(id_));
-    }
+    TIT_ENSURE(ID::unknown_ < id_ && id < ID::count_,
+               "Invalid data kind ID: {}.",
+               std::to_underlying(id_));
   }
 
   /// Data kind ID.
@@ -180,15 +180,13 @@ public:
       : DataType{kind, DataRank::scalar, 1} {}
   constexpr explicit DataType(DataKind kind, DataRank rank, uint8_t dim)
       : kind_{kind}, rank_{rank}, dim_{dim} {
-    if (rank >= DataRank::count_) {
-      TIT_THROW("Invalid data type rank: {}.", std::to_underlying(rank));
-    }
-    if (rank == DataRank::scalar && dim != 1) {
-      TIT_THROW("Dimensionality of a scalar must be 1, but is {}.", dim);
-    }
-    if (dim <= 0) {
-      TIT_THROW("Dimensionality must be positive, but is {}.", dim);
-    }
+    TIT_ENSURE(rank < DataRank::count_,
+               "Invalid data type rank: {}.",
+               std::to_underlying(rank));
+    TIT_ENSURE(dim > 0, "Dimensionality must be positive, but is {}.", dim);
+    TIT_ENSURE(rank != DataRank::scalar || dim == 1,
+               "Dimensionality of a scalar must be 1, but is {}.",
+               dim);
   }
   /// @}
 

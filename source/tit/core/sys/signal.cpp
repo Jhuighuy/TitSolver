@@ -29,7 +29,7 @@ namespace tit {
 
 void checked_raise(int signal_number) {
   const auto status = std::raise(signal_number);
-  if (status != 0) TIT_THROW("Failed to raise the signal {}!", signal_number);
+  TIT_ENSURE(status == 0, "Failed to raise the signal {}!", signal_number);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,9 +45,9 @@ SignalHandler::SignalHandler(std::initializer_list<int> signal_numbers) {
   for (const auto signal_number : signal_numbers) {
     // Register the new action and store the previous one.
     const auto prev_handler = std::signal(signal_number, &handle_signal_);
-    if (prev_handler == SIG_ERR) {
-      TIT_THROW("Unable to set the action for signal {}!", signal_number);
-    }
+    TIT_ENSURE(prev_handler != SIG_ERR,
+               "Unable to register the action for signal {}!",
+               signal_number);
     prev_handlers_.emplace_back(signal_number, prev_handler);
   }
 }

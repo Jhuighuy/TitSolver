@@ -39,7 +39,7 @@ namespace tit {
 void checked_atexit(atexit_callback_t callback) {
   TIT_ASSERT(callback != nullptr, "At-exit callback is invalid!");
   const auto status = std::atexit(callback);
-  if (status != 0) TIT_THROW("Unable to register at-exit callback!");
+  TIT_ENSURE(status == 0, "Unable to register at-exit callback!");
 }
 
 [[noreturn]] void exit(ExitCode exit_code) noexcept {
@@ -58,9 +58,8 @@ void checked_atexit(atexit_callback_t callback) {
 auto exe_path() -> std::filesystem::path {
 #ifdef __APPLE__
   std::array<char, PROC_PIDPATHINFO_MAXSIZE> buffer{};
-  if (proc_pidpath(getpid(), buffer.data(), sizeof(buffer)) <= 0) {
-    TIT_THROW("Unable to query the current executable path!");
-  }
+  const auto status = proc_pidpath(getpid(), buffer.data(), sizeof(buffer));
+  TIT_ENSURE(status > 0, "Unable to query the current executable path!");
   return buffer.data();
 #elifdef __linux__
   return std::filesystem::canonical("/proc/self/exe");
@@ -84,10 +83,10 @@ auto tty_width(TTY tty) -> std::optional<size_t> {
   if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.
 
   winsize window_size = {}; // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
-  if (ioctl(tty_fileno, TIOCGWINSZ, &window_size) != 0) {
-    TIT_THROW("Unable to query terminal window size with fileno {}!",
-              tty_fileno);
-  }
+  const auto status = ioctl(tty_fileno, TIOCGWINSZ, &window_size);
+  TIT_ENSURE(status == 0,
+             "Unable to query terminal window size with fileno {}!",
+             tty_fileno);
   return window_size.ws_col;
 }
 

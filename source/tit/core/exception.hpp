@@ -81,6 +81,13 @@ private:
 #define TIT_THROW(message, ...)                                                \
   throw tit::Exception(std::format((message) __VA_OPT__(, __VA_ARGS__)))
 
+/// Ensure that the condition is true, otherwise throw an exception.
+#define TIT_ENSURE(condition, message, ...)                                    \
+  do {                                                                         \
+    if (const bool TIT_NAME(result) = (condition); !TIT_NAME(result))          \
+      TIT_THROW((message) __VA_OPT__(, __VA_ARGS__));                          \
+  } while (false)
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
