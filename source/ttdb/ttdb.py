@@ -31,10 +31,28 @@ __all__ = (
 ttdb = CDLL(os.path.dirname(__file__) + "/libttdb.so")
 
 
-def ttdb_func(name: str, ret_type: type | None, args: tuple[type, ...]) -> Any:
+def ttdb_ufunc(name: str, ret_type: type | None, args: tuple[type, ...]) -> Any:
     func = getattr(ttdb, name)
     func.argtypes = args
     func.restype = ret_type
+    return func
+
+
+ttdb__last_error = ttdb_ufunc("ttdb__last_error", c_char_p, ())
+ttdb__clear_error = ttdb_ufunc("ttdb__clear_error", None, ())
+
+
+def ttdb_func(name: str, ret_type: type | None, args: tuple[type, ...]) -> Any:
+    unchecked_func = ttdb_ufunc(name, ret_type, args)
+
+    def func(*args: Any) -> Any:
+        result = unchecked_func(*args)
+        if error := ttdb__last_error():
+            error = error.decode("utf-8")
+            ttdb__clear_error()
+            raise RuntimeError(error)
+        return result
+
     return func
 
 

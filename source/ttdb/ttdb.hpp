@@ -18,6 +18,11 @@ extern "C" {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+const char* ttdb__last_error();
+void ttdb__clear_error();
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 typedef uint32_t ttdb_type_t;
 
 const char* ttdb_type__kind(ttdb_type_t type);
