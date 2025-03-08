@@ -81,11 +81,10 @@ void StreamCompressor::flush() {
     };
     const auto remaining =
         ZSTD_compressStream2(context_.get(), &output, &input, mode);
-    if (const auto status = remaining; ZSTD_isError(status) != 0) {
-      TIT_THROW("ZSTD compression failed ({}): {}.",
-                std::to_underlying(ZSTD_getErrorCode(status)),
-                ZSTD_getErrorName(status));
-    }
+    TIT_ENSURE(ZSTD_isError(remaining) == 0,
+               "ZSTD compression failed ({}): {}.",
+               std::to_underlying(ZSTD_getErrorCode(remaining)),
+               ZSTD_getErrorName(remaining));
 
     // Write the compressed data to the underlying stream.
     stream_->write({out_buffer_.data(), output.pos});
@@ -136,10 +135,8 @@ auto StreamDecompressor::read(std::span<byte_t> data) -> size_t {
         in_buffer_.resize(in_chunk_size_);
         in_buffer_.resize(stream_->read(in_buffer_));
         if (in_buffer_.empty()) {
-          if (last_status_ != 0) {
-            // The last status did not indicate a complete frame.
-            TIT_THROW("ZSTD decompression failed: truncated frame.");
-          }
+          TIT_ENSURE(last_status_ == 0,
+                     "ZSTD decompression failed: truncated frame.");
           break; // Input stream is exhausted.
         }
       }
@@ -158,11 +155,10 @@ auto StreamDecompressor::read(std::span<byte_t> data) -> size_t {
       };
       // Store the status in order to identify truncated frames.
       last_status_ = ZSTD_decompressStream(context_.get(), &output, &input);
-      if (ZSTD_isError(last_status_) != 0) {
-        TIT_THROW("ZSTD decompression failed ({}): {}.",
-                  std::to_underlying(ZSTD_getErrorCode(last_status_)),
-                  ZSTD_getErrorName(last_status_));
-      }
+      TIT_ENSURE(ZSTD_isError(last_status_) == 0,
+                 "ZSTD decompression failed ({}): {}.",
+                 std::to_underlying(ZSTD_getErrorCode(last_status_)),
+                 ZSTD_getErrorName(last_status_));
       TIT_ASSERT(input.pos > in_offset_, "Offset was not updated!");
       TIT_ASSERT(input.pos <= in_buffer_.size(), "Offset is out of range!");
       in_offset_ = input.pos;

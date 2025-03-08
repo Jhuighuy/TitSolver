@@ -84,7 +84,8 @@ private:
 /// Ensure that the condition is true, otherwise throw an exception.
 #define TIT_ENSURE(condition, message, ...)                                    \
   do {                                                                         \
-    if (!(condition)) TIT_THROW((message) __VA_OPT__(, __VA_ARGS__));          \
+    if (const bool c = (condition); !c)                                        \
+      TIT_THROW((message) __VA_OPT__(, __VA_ARGS__));                          \
   } while (false)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
