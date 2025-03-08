@@ -53,6 +53,14 @@ TEST_CASE("data::sqlite::Database") {
       CHECK(db.base() != nullptr);
       CHECK(db.path().filename() == file_name);
     }
+    SUBCASE("open readonly") {
+      // Should exist due to the previous test.
+      REQUIRE(std::filesystem::exists(file_name));
+      const data::sqlite::Database db{file_name, /*read_only=*/true};
+      CHECK_THROWS_MSG(db.execute("CREATE TABLE test (id INTEGER PRIMARY KEY)"),
+                       Exception,
+                       "attempt to write a readonly database");
+    }
   }
   SUBCASE("failure") {
     SUBCASE("cannot create") {

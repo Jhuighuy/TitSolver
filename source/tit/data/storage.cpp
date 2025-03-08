@@ -24,7 +24,9 @@ namespace tit::data {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DataStorage::DataStorage(const std::filesystem::path& path) : db_{path} {
+DataStorage::DataStorage(const std::filesystem::path& path, bool read_only)
+    : db_{path, read_only} {
+  if (read_only) return;
   db_.execute(R"SQL(
     PRAGMA foreign_keys = ON;
 

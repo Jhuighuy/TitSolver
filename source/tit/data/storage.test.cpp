@@ -47,6 +47,14 @@ TEST_CASE("data::DataStorage") {
       const data::DataStorage storage{file_name};
       CHECK(storage.path().filename() == file_name);
     }
+    SUBCASE("open readonly") {
+      // Should exist due to the previous test.
+      REQUIRE(std::filesystem::exists(file_name));
+      data::DataStorage storage{file_name, /*read_only=*/true};
+      CHECK_THROWS_MSG(storage.create_series_id("test"),
+                       Exception,
+                       "attempt to write a readonly database");
+    }
   }
   SUBCASE("failure") {
     SUBCASE("cannot create") {
