@@ -304,7 +304,7 @@ auto Statement::column_text_(size_t index) const -> std::string_view {
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
 
-  return {std::bit_cast<const char*>(value_uchar_ptr),
+  return {std::bit_cast<const char*>(value_uchar_ptr), // NOLINT(*-pointer-cast)
           static_cast<size_t>(num_bytes_int)};
 }
 

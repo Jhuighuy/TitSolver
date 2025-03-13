@@ -23,6 +23,10 @@
 #   To be re-enabled in the future, once there is a better support for flag
 #   enums.
 #
+# * -clang-analyzer-cplusplus.NewDeleteLeaks,
+#   -clang-analyzer-webkit.NoUncountedMemberChecker
+#   These are unstable checks from LLVM 21. Disabling them for now.
+#
 # * cppcoreguidelines-avoid-do-while:
 #   Doctest uses do-while loops in it's assert macros. Apart from that, the
 #   check is definitely useful.
@@ -71,7 +75,9 @@ Checks: |
   -cert-dcl58-cpp
   -cert-msc32-c
   -cert-msc51-cpp
+  -clang-analyzer-cplusplus.NewDeleteLeaks
   -clang-analyzer-optin.core.EnumCastOutOfRange
+  -clang-analyzer-webkit.NoUncountedMemberChecker
   concurrency-*
   cppcoreguidelines-*
   -cppcoreguidelines-avoid-do-while

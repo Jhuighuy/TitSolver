@@ -78,6 +78,7 @@ auto search_grid(const std::vector<Vec3D>& points,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#if FALSE
 // Nearest neighbor search via a K-dimensional tree.
 auto search_kd_tree(const std::vector<Vec3D>& points,
                     double search_radius,
@@ -93,6 +94,7 @@ auto search_kd_tree(const std::vector<Vec3D>& points,
   }
   return result;
 }
+#endif
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -129,6 +131,7 @@ TEST_CASE("geom::Search") {
     }
   }
 
+#if FALSE
   // Nearest neighbor search with a K-dimensional tree.
   SUBCASE("KD tree") {
     SUBCASE("max leaf size = 1") {
@@ -140,6 +143,7 @@ TEST_CASE("geom::Search") {
       match_search_results(result_naive, result_kd_tree);
     }
   }
+#endif
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

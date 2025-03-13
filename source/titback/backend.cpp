@@ -53,6 +53,7 @@ auto run_backend(CmdArgs /*args*/) -> int {
           std::vector<byte_t> r_data(r->size() * r->type().width());
           r->open_read()->read(r_data);
           response["result"][var] = std::span{
+              // NOLINTNEXTLINE(bugprone-bitwise-pointer-cast)
               std::bit_cast<const double*>(r_data.data()),
               r_data.size() / sizeof(double),
           };

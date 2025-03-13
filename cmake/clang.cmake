@@ -81,10 +81,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND APPLE)
     -cxx-isystem "${STDCPP_SYS_INCLUDE_DIR}"
   )
 endif()
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR NOT APPLE)
-  # Needed for `std::bind_back` to be available.
-  list(APPEND CLANG_COMPILE_OPTIONS -D__cpp_explicit_this_parameter=1)
-endif()
 
 # Define common link options.
 set(CLANG_LINK_OPTIONS ${CLANG_COMPILE_OPTIONS})
@@ -138,7 +134,7 @@ set(CLANG_LINK_OPTIONS_DEBUG ${CLANG_LINK_OPTIONS} ${CLANG_DEBUG_OPTIONS})
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find clang-tidy. Prefer version-suffixed executables.
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy-19" "clang-tidy")
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-20" "clang-tidy")
 if(NOT CLANG_TIDY_EXE)
   message(WARNING "clang-tidy was not found!")
 endif()
@@ -171,19 +167,6 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     # Enable colors during piping through chronic.
     --use-color
   )
-
-  # Disable a few checks when compiling with libc++.
-  # TODO: As soon as we'll be able to run all required checks, we should start
-  #       exporting compile commands and run clang-tidy using CMake.
-  if(CXX_COMPILER STREQUAL "CLANG")
-    set(
-      LIBCPP_DISABLED_CHECKS
-      # False positives with standard headers, like <format> and <expected>.
-      -misc-include-cleaner
-    )
-    list(JOIN LIBCPP_DISABLED_CHECKS "," LIBCPP_DISABLED_CHECKS)
-    list(APPEND CLANG_TIDY_ARGS "--checks=${LIBCPP_DISABLED_CHECKS}")
-  endif()
 
   # Setup "compilation" arguments for clang-tidy call.
   get_generated_compile_options(${TARGET} CLANG_TIDY_COMPILE_OPTIONS)
