@@ -207,7 +207,7 @@ struct Fold final {
                          Func func = {},
                          ResultFunc result_func = {}) -> Result {
     return fold_range(std::forward<Range>(range),
-                      std::move(init), // NOLINTNEXTLINE(*-include-cleaner)
+                      std::move(init),
                       std::bind_back(std::ranges::fold_left, std::move(func)),
                       std::move(result_func));
   }
