@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <algorithm> // IWYU pragma: keep
+#include <algorithm>
 #include <array>
 #include <functional>
 #include <iterator>
@@ -46,7 +46,6 @@ public:
   /// Construct a multidimensional span from values iterator and shape.
   template<std::contiguous_iterator ValIter>
   constexpr Mdspan(ValIter iter, Shape shape) noexcept
-      // NOLINTNEXTLINE(misc-include-cleaner)
       : vals_{iter, std::ranges::fold_left(shape, 1, std::multiplies{})},
         shape_{shape} {}
 

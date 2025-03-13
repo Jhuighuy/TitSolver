@@ -56,10 +56,6 @@ set(
   # Do not export symbols.
   -fvisibility=hidden
 )
-if(APPLE)
-  # Set the minimum macOS version to 15.20.
-  list(APPEND GNU_COMPILE_OPTIONS -mmacosx-version-min=15.20)
-endif()
 
 # Define common link options.
 set(GNU_LINK_OPTIONS ${GNU_COMPILE_OPTIONS})

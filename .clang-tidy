@@ -11,6 +11,12 @@
 #   There are many easily-swappable parameters in the solver code, we cannot
 #   avoid that without introducing structures almost for any function.
 #
+# * bugprone-bitwise-pointer-cast:
+#   Check recommends to use `reinterpret_cast` instead of `std::bit_cast` in
+#   the codebase for casting different pointer types. While this is reasonable,
+#   I would like not to use `reinterpret_cast` to avoid anger from the analysis
+#   tools, like SonarQube. Maybe we will re-enable this check in the future.
+#
 # * cert-dcl58-cpp:
 #   This checks threats specializations of `std::` classes as modifying the
 #   standard library.
@@ -22,6 +28,11 @@
 # * clang-analyzer-optin.core.EnumCastOutOfRange:
 #   To be re-enabled in the future, once there is a better support for flag
 #   enums.
+#
+# * clang-analyzer-cplusplus.NewDeleteLeaks,
+#   clang-analyzer-webkit.NoUncountedMemberChecker
+#   Some of this checks are not stable yet (false positives or crashes), and
+#   some are vendors-specific, that are enabled by default for some reason.
 #
 # * cppcoreguidelines-avoid-do-while:
 #   Doctest uses do-while loops in it's assert macros. Apart from that, the
@@ -66,12 +77,15 @@
 #   a lot of math.
 Checks: |
   bugprone-*
+  -bugprone-bitwise-pointer-cast
   -bugprone-easily-swappable-parameters
   cert-*
   -cert-dcl58-cpp
   -cert-msc32-c
   -cert-msc51-cpp
+  -clang-analyzer-cplusplus.NewDeleteLeaks
   -clang-analyzer-optin.core.EnumCastOutOfRange
+  -clang-analyzer-webkit.NoUncountedMemberChecker
   concurrency-*
   cppcoreguidelines-*
   -cppcoreguidelines-avoid-do-while

@@ -18,7 +18,7 @@ AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortLoopsOnASingleLine: Yes
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: No
-BinPackParameters: No
+BinPackParameters: OnePerLine
 BreakAfterAttributes: Leave
 BreakBeforeTernaryOperators: No
 BreakInheritanceList: AfterColon
@@ -33,7 +33,7 @@ MaxEmptyLinesToKeep: 1
 PenaltyReturnTypeOnItsOwnLine: 1000 # Never.
 PointerAlignment: Left
 QualifierAlignment: Left
-ReflowComments: Yes
+ReflowComments: Always
 RequiresClausePosition: OwnLine
 SpaceAfterCStyleCast: Yes # Needed for __VA_OPT__ to work.
 SpaceAfterTemplateKeyword: No

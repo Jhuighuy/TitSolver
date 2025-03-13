@@ -93,6 +93,11 @@ configure() {
   # Setup the build directory.
   prepare-build-dir
 
+  # TODO: This is needed for some of our vcpkg packages to compile.
+  #       Remove once all the packages are updated or older ones are dropped.
+  #       Do not forget to update `setup-ci-runner.sh` as well.
+  export CMAKE_POLICY_VERSION_MINIMUM=3.5
+
   # Prepare the CMake arguments.
   local CMAKE_ARGS
   CMAKE_ARGS=("$CMAKE_EXE")

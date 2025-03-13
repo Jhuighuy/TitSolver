@@ -16,11 +16,12 @@ set(
   # Enable all the commonly used warning options.
   -Wall
   -Wextra
-  -Wextra-semi
   -Wpedantic
   -Wgnu
   # No warnings for unknown warning options.
   -Wno-unknown-warning-option
+  -Wno-gnu-zero-variadic-macro-arguments
+  -Wno-deprecated-literal-operator
 )
 
 # Define common compile options.
@@ -37,65 +38,6 @@ set(
   # Bug in LLVM.
   -fno-builtin-std-forward_like
 )
-if(APPLE)
-  # Set the minimum macOS version to 15.20.
-  list(APPEND CLANG_COMPILE_OPTIONS -mmacosx-version-min=15.20)
-endif()
-
-# When compiling with GCC, force LLVM tools to use libstdc++.
-#
-# It is generally hard to detect which standard library is used by the LLVM
-# tools, so we have to to make an assumption here. Looks like LLVM defaults to
-# libc++ on Apple platforms only, on Linux it defaults to libstdc++.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND APPLE)
-  # Find path to libstdc++ include directories. It should be something like
-  # `<install-path>/gcc/<version>/include/c++/<version>/` and
-  # `<install-path>/gcc/<version>/include/c++/<version>/<platform>/`.
-  set(
-    STDCPP_INCLUDE_DIR_REGEX
-    "gcc/([0-9]+(\\.[0-9]+)+(_[0-9]+)?)/include/c\\+\\+/([0-9]+)"
-  )
-  set(
-    STDCPP_SYS_INCLUDE_DIR_REGEX
-    "${STDCPP_INCLUDE_DIR_REGEX}/(.*-apple-.*)"
-  )
-  set(STDCPP_INCLUDE_DIR)
-  set(STDCPP_SYS_INCLUDE_DIR)
-  foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-    if(DIR MATCHES "${STDCPP_INCLUDE_DIR_REGEX}$")
-      set(STDCPP_INCLUDE_DIR ${DIR})
-    elseif(DIR MATCHES "${STDCPP_SYS_INCLUDE_DIR_REGEX}$")
-      set(STDCPP_SYS_INCLUDE_DIR ${DIR})
-    endif()
-  endforeach()
-  if(NOT STDCPP_INCLUDE_DIR OR NOT STDCPP_SYS_INCLUDE_DIR)
-    list(JOIN CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "\n" DIRS)
-    message(FATAL_ERROR "Could not find libstdc++ in:\n${DIRS}")
-  endif()
-
-  # Add libstdc++ include paths.
-  list(
-    APPEND
-    CLANG_COMPILE_OPTIONS
-    -stdlib++-isystem "${STDCPP_INCLUDE_DIR}"
-    -cxx-isystem "${STDCPP_SYS_INCLUDE_DIR}"
-  )
-endif()
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR NOT APPLE)
-  # Needed for `std::bind_back` to be available.
-  list(APPEND CLANG_COMPILE_OPTIONS -D__cpp_explicit_this_parameter=1)
-endif()
-
-# Define common link options.
-set(CLANG_LINK_OPTIONS ${CLANG_COMPILE_OPTIONS})
-if(APPLE)
-  list(
-    APPEND
-    CLANG_LINK_OPTIONS
-    # Do not warn about duplicate libraries.
-    -Wl,-no_warn_duplicate_libraries
-  )
-endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -110,7 +52,8 @@ set(
 )
 
 # Define compile options for "Release" configuration.
-set(CLANG_COMPILE_OPTIONS_RELEASE
+set(
+  CLANG_COMPILE_OPTIONS_RELEASE
   ${CLANG_COMPILE_OPTIONS}
   ${CLANG_OPTIMIZE_OPTIONS}
 )
@@ -138,7 +81,7 @@ set(CLANG_LINK_OPTIONS_DEBUG ${CLANG_LINK_OPTIONS} ${CLANG_DEBUG_OPTIONS})
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find clang-tidy. Prefer version-suffixed executables.
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy-19" "clang-tidy")
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-20" "clang-tidy")
 if(NOT CLANG_TIDY_EXE)
   message(WARNING "clang-tidy was not found!")
 endif()
@@ -172,17 +115,11 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     --use-color
   )
 
-  # Disable a few checks when compiling with libc++.
-  # TODO: As soon as we'll be able to run all required checks, we should start
-  #       exporting compile commands and run clang-tidy using CMake.
-  if(CXX_COMPILER STREQUAL "CLANG")
-    set(
-      LIBCPP_DISABLED_CHECKS
-      # False positives with standard headers, like <format> and <expected>.
-      -misc-include-cleaner
-    )
-    list(JOIN LIBCPP_DISABLED_CHECKS "," LIBCPP_DISABLED_CHECKS)
-    list(APPEND CLANG_TIDY_ARGS "--checks=${LIBCPP_DISABLED_CHECKS}")
+  # TODO: As of LLVM 20.1.1, clang-tidy crashes somewhere in libstdc++ headers.
+  #       Crash happens somewhere in `clang-analyzer` checks, but I cannot
+  #       figure out which one exactly.
+  if(NOT APPLE)
+    list(APPEND CLANG_TIDY_ARGS "--checks=-clang-analyzer*")
   endif()
 
   # Setup "compilation" arguments for clang-tidy call.
@@ -236,7 +173,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
               ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_OPTIONS}
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
-      DEPENDS "${SOURCE_PATH}"
+      DEPENDS "${SOURCE_PATH}" "${CMAKE_SOURCE_DIR}/.clang-tidy"
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
       COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
       VERBATIM
@@ -251,8 +188,6 @@ endfunction()
 
 #
 # Write the `compile_flags.txt` for the clangd language server.
-#
-# TODO: In a better world, we would simply use `CMAKE_EXPORT_COMPILE_COMMANDS`.
 #
 function(write_compile_flags SAMPLE_TARGET)
   # Setup "compilation" arguments for hypothetical "clang" call.

@@ -9,7 +9,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GCC_VERSION=${GCC_VERSION:-14}
-LLVM_VERSION=${LLVM_VERSION:-19}
+LLVM_VERSION=${LLVM_VERSION:-20}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -99,6 +99,11 @@ install-vcpkg() {
   git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT" --depth=1
   "$VCPKG_ROOT/bootstrap-vcpkg.sh"
   mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" || true # Ignore if it already exists.
+
+  # TODO: This is needed for some of our vcpkg packages to compile.
+  #       Remove once all the packages are updated or older ones are dropped.
+  #       Do not forget to update `build.sh` as well.
+  echo "CMAKE_POLICY_VERSION_MINIMUM=3.5" >> "$GITHUB_ENV"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
