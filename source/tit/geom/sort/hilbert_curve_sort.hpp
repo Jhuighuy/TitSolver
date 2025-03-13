@@ -58,7 +58,7 @@ public:
 
   // Compute the next rotation state.
   constexpr auto next(size_t index) const noexcept -> HilbertRotation {
-    TIT_ASSERT(index < (1 << Dim), "Index is out of range!");
+    TIT_ASSERT(index < (1U << Dim), "Index is out of range!");
     const auto [shift, flip] = [index] -> std::pair<size_t, int> {
       if constexpr (Dim == 1) {
         return {0, 0};
