@@ -9,7 +9,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GCC_VERSION=${GCC_VERSION:-14}
-LLVM_VERSION=${LLVM_VERSION:-19}
+LLVM_VERSION=${LLVM_VERSION:-20}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -22,10 +22,6 @@ enforce-ci() {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 setup-macos() {
-  # Select the correct Xcode version.
-  sudo xcode-select -s /Library/Developer/CommandLineTools
-  # sudo xcode-select -s /Applications/Xcode_16.2.app
-
   # Install Homebrew packages.
   #
   # Upon installation, Homebrew will automatically update itself and upgrade

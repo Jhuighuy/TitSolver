@@ -120,14 +120,16 @@ private:
         coord_bisection(points_, perm, center_coord, cut_axis);
 
     // Build subtrees.
+    /// @todo All these `lp = left_perm` shenanigans are a workaround for
+    ///       a Clang Analyzer 20.1.3 crash. Remove them once Clang is fixed.
     node->cut_axis = cut_axis;
-    tasks.run(is_async_(left_perm), [left_perm, node, &tasks, this] {
-      const auto [left_tree, left_box] = build_subtree_(tasks, left_perm);
+    tasks.run(is_async_(left_perm), [lp = left_perm, node, &tasks, this] {
+      const auto [left_tree, left_box] = build_subtree_(tasks, lp);
       node->left_subtree = left_tree;
       node->cut_left = left_box.high()[node->cut_axis];
     });
-    tasks.run(is_async_(right_perm), [right_perm, node, &tasks, this] {
-      const auto [right_tree, right_box] = build_subtree_(tasks, right_perm);
+    tasks.run(is_async_(right_perm), [rp = right_perm, node, &tasks, this] {
+      const auto [right_tree, right_box] = build_subtree_(tasks, rp);
       node->right_subtree = right_tree;
       node->cut_right = right_box.low()[node->cut_axis];
     });

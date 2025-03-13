@@ -4,7 +4,6 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
-#include <bit>
 #include <cctype>
 #include <filesystem>
 #include <format>
@@ -20,6 +19,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/log.hpp"
 #include "tit/core/str_utils.hpp"
+#include "tit/core/type_utils.hpp"
 #include "tit/core/utils.hpp"
 
 #include "tit/data/sqlite.hpp"
@@ -304,7 +304,7 @@ auto Statement::column_text_(size_t index) const -> std::string_view {
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
 
-  return {std::bit_cast<const char*>(value_uchar_ptr),
+  return {safe_bit_ptr_cast<const char*>(value_uchar_ptr),
           static_cast<size_t>(num_bytes_int)};
 }
 

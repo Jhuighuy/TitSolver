@@ -3,9 +3,9 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <bit>
 #include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <crow/app.h>
@@ -20,6 +20,7 @@
 #include "tit/core/cmd.hpp"
 #include "tit/core/sys/utils.hpp"
 
+#include "tit/core/type_utils.hpp"
 #include "tit/data/storage.hpp"
 
 namespace tit::back {
@@ -53,7 +54,7 @@ auto run_backend(CmdArgs /*args*/) -> int {
           std::vector<byte_t> r_data(r->size() * r->type().width());
           r->open_read()->read(r_data);
           response["result"][var] = std::span{
-              std::bit_cast<const double*>(r_data.data()),
+              safe_bit_ptr_cast<const double*>(std::as_const(r_data).data()),
               r_data.size() / sizeof(double),
           };
         }

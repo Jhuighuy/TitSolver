@@ -16,7 +16,6 @@ set(
   # Enable all the commonly used warning options.
   -Wall
   -Wextra
-  -Wextra-semi
   -Wpedantic
   -Wgnu
   # No warnings for unknown warning options.
@@ -34,56 +33,41 @@ set(
   -fPIC
   # Do not export symbols.
   -fvisibility=hidden
-  # Bug in LLVM.
+  # As of LLVM 20.1.3, builtin for `std::forward_like` is bogus.
   -fno-builtin-std-forward_like
 )
-if(APPLE)
-  # Set the minimum macOS version to 15.20.
-  list(APPEND CLANG_COMPILE_OPTIONS -mmacosx-version-min=15.20)
-endif()
 
-# When compiling with GCC, force LLVM tools to use libstdc++.
-#
-# It is generally hard to detect which standard library is used by the LLVM
-# tools, so we have to to make an assumption here. Looks like LLVM defaults to
-# libc++ on Apple platforms only, on Linux it defaults to libstdc++.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND APPLE)
+# On macOS LLVM tools use libc++ by default. When compiling with GCC, I want
+# the LLVM tools to use libstdc++ (during analysis and especially for clangd).
+if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # Find path to libstdc++ include directories. It should be something like
   # `<install-path>/gcc/<version>/include/c++/<version>/` and
   # `<install-path>/gcc/<version>/include/c++/<version>/<platform>/`.
   set(
-    STDCPP_INCLUDE_DIR_REGEX
+    LIBSTDCPP_INCLUDE_DIR_REGEX
     "gcc/([0-9]+(\\.[0-9]+)+(_[0-9]+)?)/include/c\\+\\+/([0-9]+)"
   )
   set(
-    STDCPP_SYS_INCLUDE_DIR_REGEX
-    "${STDCPP_INCLUDE_DIR_REGEX}/(.*-apple-.*)"
+    LIBSTDCPP_SYS_INCLUDE_DIR_REGEX
+    "${LIBSTDCPP_INCLUDE_DIR_REGEX}/(.*-apple-.*)"
   )
-  set(STDCPP_INCLUDE_DIR)
-  set(STDCPP_SYS_INCLUDE_DIR)
+  set(LIBSTDCPP_INCLUDE_DIR)
+  set(LIBSTDCPP_SYS_INCLUDE_DIR)
   foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-    if(DIR MATCHES "${STDCPP_INCLUDE_DIR_REGEX}$")
-      set(STDCPP_INCLUDE_DIR ${DIR})
-    elseif(DIR MATCHES "${STDCPP_SYS_INCLUDE_DIR_REGEX}$")
-      set(STDCPP_SYS_INCLUDE_DIR ${DIR})
+    if(DIR MATCHES "${LIBSTDCPP_INCLUDE_DIR_REGEX}$")
+      set(LIBSTDCPP_INCLUDE_DIR ${DIR})
+    elseif(DIR MATCHES "${LIBSTDCPP_SYS_INCLUDE_DIR_REGEX}$")
+      set(LIBSTDCPP_SYS_INCLUDE_DIR ${DIR})
     endif()
   endforeach()
-  if(NOT STDCPP_INCLUDE_DIR OR NOT STDCPP_SYS_INCLUDE_DIR)
-    list(JOIN CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "\n" DIRS)
-    message(FATAL_ERROR "Could not find libstdc++ in:\n${DIRS}")
+  if(LIBSTDCPP_INCLUDE_DIR AND LIBSTDCPP_SYS_INCLUDE_DIR)
+    list(
+      APPEND
+      CLANG_COMPILE_OPTIONS
+      -stdlib++-isystem "${LIBSTDCPP_INCLUDE_DIR}"
+      -cxx-isystem "${LIBSTDCPP_SYS_INCLUDE_DIR}"
+    )
   endif()
-
-  # Add libstdc++ include paths.
-  list(
-    APPEND
-    CLANG_COMPILE_OPTIONS
-    -stdlib++-isystem "${STDCPP_INCLUDE_DIR}"
-    -cxx-isystem "${STDCPP_SYS_INCLUDE_DIR}"
-  )
-endif()
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR NOT APPLE)
-  # Needed for `std::bind_back` to be available.
-  list(APPEND CLANG_COMPILE_OPTIONS -D__cpp_explicit_this_parameter=1)
 endif()
 
 # Define common link options.
@@ -104,13 +88,16 @@ set(
   CLANG_OPTIMIZE_OPTIONS
   # Enable aggressive optimization levels.
   -O3
-  -ffast-math
   # Enable aggressive floating-point expression contraction.
+  -ffast-math
   -ffp-contract=fast
+  # Link time optimizations are disabled: we experience crashes in tests.
+  # -flto=auto
 )
 
 # Define compile options for "Release" configuration.
-set(CLANG_COMPILE_OPTIONS_RELEASE
+set(
+  CLANG_COMPILE_OPTIONS_RELEASE
   ${CLANG_COMPILE_OPTIONS}
   ${CLANG_OPTIMIZE_OPTIONS}
 )
@@ -138,7 +125,7 @@ set(CLANG_LINK_OPTIONS_DEBUG ${CLANG_LINK_OPTIONS} ${CLANG_DEBUG_OPTIONS})
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find clang-tidy. Prefer version-suffixed executables.
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy-19" "clang-tidy")
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-20" "clang-tidy")
 if(NOT CLANG_TIDY_EXE)
   message(WARNING "clang-tidy was not found!")
 endif()
@@ -171,19 +158,6 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     # Enable colors during piping through chronic.
     --use-color
   )
-
-  # Disable a few checks when compiling with libc++.
-  # TODO: As soon as we'll be able to run all required checks, we should start
-  #       exporting compile commands and run clang-tidy using CMake.
-  if(CXX_COMPILER STREQUAL "CLANG")
-    set(
-      LIBCPP_DISABLED_CHECKS
-      # False positives with standard headers, like <format> and <expected>.
-      -misc-include-cleaner
-    )
-    list(JOIN LIBCPP_DISABLED_CHECKS "," LIBCPP_DISABLED_CHECKS)
-    list(APPEND CLANG_TIDY_ARGS "--checks=${LIBCPP_DISABLED_CHECKS}")
-  endif()
 
   # Setup "compilation" arguments for clang-tidy call.
   get_generated_compile_options(${TARGET} CLANG_TIDY_COMPILE_OPTIONS)
@@ -236,7 +210,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
               ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_OPTIONS}
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
-      DEPENDS "${SOURCE_PATH}"
+      DEPENDS "${SOURCE_PATH}" "${CMAKE_SOURCE_DIR}/.clang-tidy"
       IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
       COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
       VERBATIM
@@ -251,8 +225,6 @@ endfunction()
 
 #
 # Write the `compile_flags.txt` for the clangd language server.
-#
-# TODO: In a better world, we would simply use `CMAKE_EXPORT_COMPILE_COMMANDS`.
 #
 function(write_compile_flags SAMPLE_TARGET)
   # Setup "compilation" arguments for hypothetical "clang" call.

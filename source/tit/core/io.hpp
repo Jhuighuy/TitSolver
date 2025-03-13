@@ -10,8 +10,6 @@
 #include <print>
 #include <utility>
 
-#include "tit/core/missing.hpp" // IWYU pragma: keep
-
 namespace tit {
 
 using std::print;
@@ -33,7 +31,7 @@ void eprintln(std::format_string<Args...> fmt, Args&&... args) {
 
 /// Print the newline to the standard error stream.
 inline void eprintln() {
-  std::cerr << '\n';
+  eprintln("");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

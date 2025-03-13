@@ -20,8 +20,10 @@
 #   any level of sequerity right now.
 #
 # * clang-analyzer-optin.core.EnumCastOutOfRange:
-#   To be re-enabled in the future, once there is a better support for flag
-#   enums.
+#   False-positives on flag enums.
+#
+# * clang-analyzer-cplusplus.NewDeleteLeaks:
+#   Bogus check, false-positives and crashes.
 #
 # * cppcoreguidelines-avoid-do-while:
 #   Doctest uses do-while loops in it's assert macros. Apart from that, the
@@ -42,7 +44,10 @@
 #   This check does not works correctly with our asserts.
 #
 # * misc-no-recursion:
-#   We need recusion is some in templated recurred lambdas.
+#   We need recusion in some templated recurred lambdas.
+#
+# * modernize-use-constraints:
+#   Bogus check, non-deterministic crashes from inside Boost.
 #
 # * modernize-use-nodiscard:
 #   I do not want to put `[[nodiscard]]` everywhere, especially on functions
@@ -72,6 +77,7 @@ Checks: |
   -cert-msc32-c
   -cert-msc51-cpp
   -clang-analyzer-optin.core.EnumCastOutOfRange
+  -clang-analyzer-cplusplus.NewDeleteLeaks
   concurrency-*
   cppcoreguidelines-*
   -cppcoreguidelines-avoid-do-while
@@ -82,6 +88,7 @@ Checks: |
   misc-*
   -misc-no-recursion
   modernize-*
+  -modernize-use-constraints
   -modernize-use-nodiscard
   -modernize-type-traits
   performance-*

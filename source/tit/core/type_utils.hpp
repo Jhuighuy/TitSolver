@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <bit>
 #include <concepts>
 #include <type_traits>
 #include <utility>
@@ -107,6 +108,21 @@ template<auto Val>
 struct value_constant_t {
   static constexpr auto value = Val;
 };
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Safely cast a pointer from one type to another between unrelated types.
+template<class ToPtr, class FromPtr>
+  requires std::is_pointer_v<ToPtr> && std::is_pointer_v<FromPtr> && ([] {
+             using T = std::remove_pointer_t<ToPtr>;
+             using F = std::remove_pointer_t<FromPtr>;
+             return std::is_trivially_copyable_v<T> &&
+                    std::is_trivially_copyable_v<F> &&
+                    (sizeof(F) % sizeof(T) == 0 || sizeof(T) % sizeof(F) == 0);
+           }())
+constexpr auto safe_bit_ptr_cast(FromPtr from) noexcept -> ToPtr {
+  return std::bit_cast<ToPtr>(from); // NOLINT(bugprone-bitwise-pointer-cast)
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

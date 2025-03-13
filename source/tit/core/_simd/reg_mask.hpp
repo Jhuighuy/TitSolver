@@ -6,6 +6,7 @@
 // IWYU pragma: private, include "tit/core/simd.hpp"
 #pragma once
 
+#include <bit>
 #include <span>
 
 #include <hwy/highway.h>
@@ -14,6 +15,7 @@
 #include "tit/core/_simd/traits.hpp"
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/type_utils.hpp"
 
 namespace tit::simd {
 
@@ -58,7 +60,7 @@ public:
   explicit RegMask(std::span<const Mask<Num>> span) noexcept {
     TIT_ASSERT(span.size() >= Size, "Span size is too small!");
     base = hn::MaskFromVec( // NOLINT(*-prefer-member-initializer)
-        hn::LoadU(Tag{}, std::bit_cast<const Num*>(span.data())));
+        hn::LoadU(Tag{}, safe_bit_ptr_cast<const Num*>(span.data())));
   }
 
   /// Store SIMD register mask into memory.
@@ -67,7 +69,7 @@ public:
     TIT_ASSERT(span.size() >= Size, "Span size is too small!");
     hn::StoreU(hn::VecFromMask(Tag{}, base),
                Tag{},
-               std::bit_cast<Num*>(span.data()));
+               safe_bit_ptr_cast<Num*>(span.data()));
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

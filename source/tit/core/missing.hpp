@@ -11,6 +11,8 @@
 
 #ifdef _LIBCPP_VERSION
 
+// NOLINTBEGIN(*-include-cleaner)
+
 #include <array>
 #include <cstdio>
 #include <functional>
@@ -64,7 +66,7 @@ inline constexpr struct {
                });
   }
   constexpr auto operator()(size_t chunk_size) const {
-    return __range_adaptor_closure_t(std::bind_back(*this, chunk_size));
+    return __pipeable(std::bind_back(*this, chunk_size));
   }
 } chunk{};
 
@@ -83,7 +85,7 @@ struct AdjacentTransformAdaptor {
   }
   template<class Func>
   constexpr auto operator()(Func func) const {
-    return __range_adaptor_closure_t(std::bind_back(*this, std::move(func)));
+    return __pipeable(std::bind_back(*this, std::move(func)));
   }
 };
 template<size_t N>
@@ -112,10 +114,6 @@ inline constexpr struct {
 
 } // namespace ranges::views
 
-inline void println() {
-  std::puts("");
-}
-
 template<class... Ts>
 struct move_only_function : std::function<Ts...> {
   TIT_MOVE_ONLY(move_only_function);
@@ -127,6 +125,8 @@ struct move_only_function : std::function<Ts...> {
 };
 
 _LIBCPP_END_NAMESPACE_STD
+
+// NOLINTEND(*-include-cleaner)
 
 #endif // ifdef _LIBCPP_VERSION
 
