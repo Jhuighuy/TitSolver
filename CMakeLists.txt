@@ -25,7 +25,7 @@ include(tit_testing)
 find_package(
   Boost
   CONFIG REQUIRED
-  COMPONENTS core container stacktrace_addr2line
+  COMPONENTS core container geometry stacktrace_addr2line
 )
 find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
@@ -56,6 +56,7 @@ add_tit_library(
   DEPENDS
     Boost::container
     Boost::core
+    Boost::geometry
     Boost::stacktrace_addr2line
     doctest::doctest
     gcem

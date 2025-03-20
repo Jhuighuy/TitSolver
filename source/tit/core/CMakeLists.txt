@@ -70,6 +70,7 @@ add_tit_library(
   DEPENDS
     Boost::container
     Boost::core
+    Boost::geometry
     Boost::stacktrace_addr2line
     gcem
     hwy::hwy

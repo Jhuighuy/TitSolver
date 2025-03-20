@@ -5,6 +5,7 @@
   "dependencies": [
     "boost-container",
     "boost-core",
+    "boost-geometry",
     {
       "name": "boost-stacktrace",
       "default-features": false
