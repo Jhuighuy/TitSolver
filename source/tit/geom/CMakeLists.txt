@@ -15,6 +15,7 @@ add_tit_library(
     "partition/recursive_bisection.hpp"
     "partition/sort_partition.hpp"
     "point_range.hpp"
+    "polygon.hpp"
     "search.hpp"
     "search/grid_search.hpp"
     "search/kd_tree_search.hpp"
@@ -24,6 +25,7 @@ add_tit_library(
   DEPENDS
     tit::core
     tit::graph
+    Boost::geometry
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
