@@ -5,6 +5,7 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/partition.hpp"
+#include "tit/geom/polygon.hpp"
 #include "tit/geom/search.hpp"
 
 #include "tit/data/storage.hpp"
@@ -52,6 +53,8 @@ auto sph_main(CmdArgs /*args*/) -> int {
 
   constexpr Real CFL = 0.8;
   constexpr Real dt = std::min(CFL * h_0 / cs_0, 0.25 * sqrt(h_0 / g));
+
+  geom::Polygon<Real> poly({{0.0, 0.0}, {0.0, H}, {L, H}, {L, 0.0}});
 
   // Parameters for the heat equation. Unused for now.
   [[maybe_unused]] constexpr Real kappa_0 = 0.6;
