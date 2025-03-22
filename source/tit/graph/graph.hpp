@@ -7,8 +7,12 @@
 
 #include <algorithm>
 #include <concepts>
+#include <filesystem>
+#include <fstream>
 #include <ranges>
 #include <span>
+#include <sstream>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -364,6 +368,43 @@ public:
     TIT_ASSUME_UNIVERSAL(Conns, conns);
     node_weights_.push_back(node_weight);
     adjacency_.append_bucket(conns);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Write the graph to a file.
+  void write(const std::filesystem::path& file_name) const {
+    std::ofstream file(file_name);
+    file << num_nodes() << "\n";
+    for (const auto& [node, node_weight] : wnodes()) {
+      file << node_weight;
+      for (const auto& [neighbor, edge_weight] : wedges(node)) {
+        file << " " << neighbor << " " << edge_weight;
+      }
+      file << "\n";
+    }
+  }
+
+  /// Read the graph from a file.
+  void read(const std::filesystem::path& file_name) {
+    std::ifstream file(file_name);
+    clear();
+    size_t num_nodes = 0;
+    file >> num_nodes;
+    std::string line_buffer;
+    std::getline(file, line_buffer); // skip the rest of the line.
+    std::vector<wconn_t> conns;
+    for (size_t i = 0; i < num_nodes; ++i) {
+      std::getline(file, line_buffer);
+      std::istringstream line(line_buffer);
+      weight_t node_weight = 0;
+      line >> node_weight;
+      conns.clear();
+      for (wconn_t conn; line >> conn.neighbor >> conn.edge_weight;) {
+        conns.push_back(conn);
+      }
+      append_node(node_weight, conns);
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -72,6 +72,7 @@
 Checks: |
   bugprone-*
   -bugprone-easily-swappable-parameters
+  -bugprone-unchecked-optional-access
   cert-*
   -cert-dcl58-cpp
   -cert-msc32-c

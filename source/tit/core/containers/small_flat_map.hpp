@@ -5,8 +5,10 @@
 
 #pragma once
 
-#include <flat_map>
 #include <functional>
+#include <utility>
+
+#include <boost/container/flat_map.hpp>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/small_vector.hpp"
@@ -20,11 +22,8 @@ template<class Key,
          class Val,
          size_t InplaceCapacity,
          class Cmp = std::less<Key>>
-using SmallFlatMap = std::flat_map<Key,
-                                   Val,
-                                   Cmp,
-                                   SmallVector<Key, InplaceCapacity>,
-                                   SmallVector<Val, InplaceCapacity>>;
+using SmallFlatMap = boost::container::
+    flat_map<Key, Val, Cmp, SmallVector<std::pair<Key, Val>, InplaceCapacity>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
