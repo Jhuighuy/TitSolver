@@ -22,6 +22,8 @@ set(
   -Wno-unknown-warning-option
   -Wno-gnu-zero-variadic-macro-arguments
   -Wno-deprecated-literal-operator
+  # ???
+  -Wno-nontrivial-memcall
 )
 
 # Define common compile options.
