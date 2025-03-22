@@ -65,7 +65,7 @@ public:
 
   /// Get the mean value as a string.
   constexpr auto render_avg() const -> std::string override {
-    return std::format("{}", sum_ / count_);
+    return std::format("{}", sum_ / static_cast<Val>(count_));
   }
 
   /// Get the minimum value as a string.
