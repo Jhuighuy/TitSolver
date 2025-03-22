@@ -20,6 +20,8 @@ set(
   -Wgnu
   # No warnings for unknown warning options.
   -Wno-unknown-warning-option
+  # ???
+  -Wno-nontrivial-memcall
 )
 
 # Define common compile options.
