@@ -6,7 +6,6 @@
 #include <numbers>
 
 #include "tit/core/math.hpp"
-#include "tit/core/numbers/dual.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -14,6 +13,7 @@
 
 #include "tit/sph/kernel.hpp"
 
+#include "tit/testing/dual.hpp"
 #include "tit/testing/integrals.hpp"
 #include "tit/testing/test.hpp"
 
@@ -40,14 +40,14 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
     SUBCASE("2D") {
       for (const double h : {1.0, 0.1, 0.01}) {
         const auto r = w.radius(h);
-        const auto i = integrate_cr(std::bind_back(w, h), r);
+        const auto i = testing::integrate_cr(std::bind_back(w, h), r);
         CHECK(approx_equal_to(i, 1.0));
       }
     }
     SUBCASE("3D") {
       for (const double h : {1.0, 0.1, 0.01}) {
         const auto r = w.radius(h);
-        const auto i = integrate_sp(std::bind_back(w, h), r);
+        const auto i = testing::integrate_sp(std::bind_back(w, h), r);
         CHECK(approx_equal_to(i, 1.0));
       }
     }
@@ -61,7 +61,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
       for (const double h : {1.0, 0.1, 0.01}) {
         using Box1D = geom::BBox<Vec<double, 1>>;
         const auto r = w.radius(h);
-        const auto i = integrate(std::bind_back(w, h), Box1D{-r, +r});
+        const auto i = testing::integrate(std::bind_back(w, h), Box1D{-r, +r});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
@@ -70,7 +70,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
         using Box2D = geom::BBox<Vec<double, 2>>;
         const auto r = w.radius(h);
         const auto i =
-            integrate(std::bind_back(w, h), Box2D{{-r, -r}, {+r, +r}});
+            testing::integrate(std::bind_back(w, h), Box2D{{-r, -r}, {+r, +r}});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
@@ -78,8 +78,8 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
       for (const double h : {1.0, 0.1, 0.01}) {
         using Box3D = geom::BBox<Vec<double, 3>>;
         const auto r = w.radius(h);
-        const auto i =
-            integrate(std::bind_back(w, h), Box3D{{-r, -r, -r}, {+r, +r, +r}});
+        const auto i = testing::integrate(std::bind_back(w, h),
+                                          Box3D{{-r, -r, -r}, {+r, +r, +r}});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
@@ -89,6 +89,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("sph::Kernel::grad", Kernel, KERNEL_TYPES) {
+  using testing::Dual;
   // Ensure that the kernel gradient is computed correctly:
   // calculate the derivative of the kernel value using dual numbers
   // and compare it to the exact kernel gradient.
@@ -125,7 +126,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::width_deriv", Kernel, KERNEL_TYPES) {
   for (const double h : {1.0, 0.1, 0.01}) {
     REQUIRE(w.radius(h) >= h * std::numbers::sqrt3);
     const auto x = pow2(h) * Vec{0.1, 0.1, 0.1};
-    const auto value = w(vec_cast<Dual>(x), Dual{h, 1.0});
+    const auto value = w(vec_cast<testing::Dual>(x), testing::Dual{h, 1.0});
     const auto dw_dh = w.width_deriv(x, h);
     CHECK(approx_equal_to(value.deriv(), dw_dh));
   }

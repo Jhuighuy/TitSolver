@@ -18,7 +18,7 @@
 
 #include "tit/geom/bbox.hpp"
 
-namespace tit {
+namespace tit::testing {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -32,7 +32,7 @@ constexpr auto integrate_piece(Func&& f, const geom::BBox<Vec<Num, 1>>& box) {
   const auto& b = box.high()[0];
   const auto c = avg(a, b);
   const auto half_h = c - a;
-  const auto w = half_h * static_cast<Num>(sqrt(0.6));
+  const auto w = half_h * static_cast<Num>(tit::sqrt(0.6));
   return (Num{8.0 / 9.0} * std::invoke(f, Vec{c}) +
           Num{5.0 / 9.0} * (std::invoke(f, Vec{c + w}) + //
                             std::invoke(f, Vec{c - w}))) *
@@ -122,10 +122,10 @@ constexpr auto integrate_sp(Func&& f,
     const auto& r = point[0];
     const auto& theta = point[1];
     const auto& phi = point[2];
-    const auto x = r * sin(theta) * cos(phi);
-    const auto y = r * sin(theta) * sin(phi);
-    const auto z = r * cos(theta);
-    const auto J = pow2(r) * sin(theta);
+    const auto x = r * tit::sin(theta) * tit::cos(phi);
+    const auto y = r * tit::sin(theta) * tit::sin(phi);
+    const auto z = r * tit::cos(theta);
+    const auto J = pow2(r) * tit::sin(theta);
     return J * std::invoke(f, Vec{x, y, z});
   };
   using std::numbers::pi;
@@ -135,4 +135,4 @@ constexpr auto integrate_sp(Func&& f,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+} // namespace tit::testing

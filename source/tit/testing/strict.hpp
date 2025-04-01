@@ -8,20 +8,14 @@
 #include <concepts>
 
 #include "tit/core/math.hpp"
-#include "tit/core/utils.hpp"
 
-namespace tit {
+namespace tit::testing {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Wrapper for the numerical type. Use is to prevent explicit specializations
 /// for the built-in numerical types.
-///
-/// @tparam Num Underlying numerical type.
-/// @tparam Tag Tag type. Strict numbers with different tags considered
-///             different types, operations between such numbers are not
-///             defined.
-template<class Num, class Tag = void>
+template<class Num>
 class Strict final {
 public:
 
@@ -34,8 +28,8 @@ public:
   constexpr explicit Strict(Num val) : val_{val} {}
 
   /// Get the underlying value.
-  constexpr auto get(this auto&& self) noexcept -> auto&& {
-    return TIT_FORWARD_LIKE(self, self.val_);
+  constexpr auto get() const noexcept -> const Num& {
+    return val_;
   }
 
   /// Cast number to a different type.
@@ -59,7 +53,7 @@ public:
 
   /// Number addition with assignment.
   friend constexpr auto operator+=(Strict& a, const Strict& b) -> Strict& {
-    a.get() += b.get();
+    a = a + b;
     return a;
   }
 
@@ -75,7 +69,7 @@ public:
 
   /// Number subtraction with assignment.
   friend constexpr auto operator-=(Strict& a, const Strict& b) -> Strict& {
-    a.get() -= b.get();
+    a = a - b;
     return a;
   }
 
@@ -86,7 +80,7 @@ public:
 
   /// Number multiplication with assignment.
   friend constexpr auto operator*=(Strict& a, const Strict& b) -> Strict& {
-    a.get() *= b.get();
+    a = a * b;
     return a;
   }
 
@@ -97,7 +91,7 @@ public:
 
   /// Number division with assignment.
   friend constexpr auto operator/=(Strict& a, const Strict& b) -> Strict& {
-    a.get() /= b.get();
+    a = a / b;
     return a;
   }
 
@@ -114,33 +108,30 @@ private:
 
 }; // class Strict
 
-template<std::floating_point Float>
-constexpr auto tiny_v<Strict<Float>> = Strict{tiny_v<Float>};
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Number absolute value.
 template<class Num>
 constexpr auto abs(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{abs(a.get())};
+  return Strict{tit::abs(a.get())};
 }
 
 /// Compute the largest integer value not greater than the number.
 template<class Num>
 constexpr auto floor(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{floor(a.get())};
+  return Strict{tit::floor(a.get())};
 }
 
 /// Compute the nearest integer value to the number.
 template<class Num>
 constexpr auto round(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{round(a.get())};
+  return Strict{tit::round(a.get())};
 }
 
 /// Compute the smallest integer value not less than the number.
 template<class Num>
 constexpr auto ceil(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{ceil(a.get())};
+  return Strict{tit::ceil(a.get())};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -148,9 +139,13 @@ constexpr auto ceil(const Strict<Num>& a) -> Strict<Num> {
 /// Compute the square root of the number.
 template<class Num>
 constexpr auto sqrt(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{sqrt(a.get())};
+  return Strict{tit::sqrt(a.get())};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+} // namespace tit::testing
+
+template<std::floating_point Float>
+constexpr auto tit::tiny_v<tit::testing::Strict<Float>> =
+    tit::testing::Strict{tiny_v<Float>};
