@@ -114,10 +114,6 @@ inline constexpr struct {
 
 } // namespace ranges::views
 
-inline void println() {
-  std::puts("");
-}
-
 template<class... Ts>
 struct move_only_function : std::function<Ts...> {
   TIT_MOVE_ONLY(move_only_function);
