@@ -24,21 +24,22 @@ TEST_CASE("integrate") {
     SUBCASE("1D") {
       using Box1D = geom::BBox<Vec<double, 1>>;
       CHECK_APPROX_EQ(
-          integrate([](auto x) { return sin(x[0]); }, Box1D{0.0, pi}),
+          testing::integrate([](auto x) { return sin(x[0]); }, Box1D{0.0, pi}),
           2.0);
     }
     SUBCASE("2D") {
       using Box2D = geom::BBox<Vec<double, 2>>;
       CHECK_APPROX_EQ( //
-          integrate([](auto x) { return sin(x[0]) * sin(x[1]); },
-                    Box2D{{0.0, 0.0}, {pi, pi}}),
+          testing::integrate([](auto x) { return sin(x[0]) * sin(x[1]); },
+                             Box2D{{0.0, 0.0}, {pi, pi}}),
           4.0);
     }
     SUBCASE("3D") {
       using Box3D = geom::BBox<Vec<double, 3>>;
       CHECK_APPROX_EQ(
-          integrate([](auto x) { return sin(x[0]) * sin(x[1]) * sin(x[2]); },
-                    Box3D{{0.0, 0.0, 0.0}, {pi, pi, pi}}),
+          testing::integrate(
+              [](auto x) { return sin(x[0]) * sin(x[1]) * sin(x[2]); },
+              Box3D{{0.0, 0.0, 0.0}, {pi, pi, pi}}),
           8.0);
     }
   }
@@ -47,13 +48,15 @@ TEST_CASE("integrate") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("integrate_cr") {
-  CHECK_APPROX_EQ(integrate_cr([](const auto& x) { return norm2(x); }, 1.0),
-                  std::numbers::pi / 2.0);
+  CHECK_APPROX_EQ(
+      testing::integrate_cr([](const auto& x) { return norm2(x); }, 1.0),
+      std::numbers::pi / 2.0);
 }
 
 TEST_CASE("integrate_sp") {
-  CHECK_APPROX_EQ(integrate_sp([](const auto& x) { return norm2(x); }, 1.0),
-                  4.0 * std::numbers::pi / 5.0);
+  CHECK_APPROX_EQ(
+      testing::integrate_sp([](const auto& x) { return norm2(x); }, 1.0),
+      4.0 * std::numbers::pi / 5.0);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
