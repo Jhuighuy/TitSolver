@@ -13,6 +13,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -77,8 +78,8 @@ concept blob_arg = std::constructible_from<BlobView, Blob>;
 
 /// Statement argument type.
 template<class Value>
-concept arg = std::integral<Value> || std::floating_point<Value> ||
-              str_like<Value> || blob_arg<Value>;
+concept arg = std::integral<Value> || std::is_enum_v<Value> ||
+              std::floating_point<Value> || str_like<Value> || blob_arg<Value>;
 
 /// Blob column type.
 template<class Blob>
@@ -87,8 +88,9 @@ concept blob_column =
 
 /// Column type.
 template<class Value>
-concept column = std::integral<Value> || std::floating_point<Value> ||
-                 str_like<Value> || blob_column<Value>;
+concept column =
+    std::integral<Value> || std::is_enum_v<Value> ||
+    std::floating_point<Value> || str_like<Value> || blob_column<Value>;
 
 /// SQLite statement.
 class Statement final {
@@ -114,7 +116,7 @@ public:
     size_t index = 0;
     (..., [&index, this]<class Arg>(const Arg& arg) {
       index += 1; // Statement arguments are one-based.
-      if constexpr (std::integral<Arg>) {
+      if constexpr (std::integral<Arg> || std::is_enum_v<Arg>) {
         bind_(index, static_cast<int64_t>(arg));
       } else if constexpr (std::floating_point<Arg>) {
         bind_(index, static_cast<float64_t>(arg));
@@ -174,7 +176,7 @@ public:
     return {
       [&index, this]<class Column>() {
         index += 1; // Columns are zero-based.
-        if constexpr (std::integral<Column>) {
+        if constexpr (std::integral<Column> || std::is_enum_v<Column>) {
           return static_cast<Column>(column_int_(index));
         } else if constexpr (std::floating_point<Column>) {
           return static_cast<Column>(column_real_(index));

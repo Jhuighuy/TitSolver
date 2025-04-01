@@ -17,7 +17,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/numbers/strict.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/core/stream.hpp"
 
@@ -29,24 +28,17 @@ namespace tit::data {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-namespace impl {
-struct DataSeriesTag;
-struct DataTimeStepTag;
-struct DataSetTag;
-struct DataArrayTag;
-} // namespace impl
-
 /// Data series ID type.
-using DataSeriesID = Strict<sqlite::RowID, impl::DataSeriesTag>;
+enum class DataSeriesID : sqlite::RowID {};
 
 /// Data time step ID type.
-using DataTimeStepID = Strict<sqlite::RowID, impl::DataTimeStepTag>;
+enum class DataTimeStepID : sqlite::RowID {};
 
 /// Dataset ID type.
-using DataSetID = Strict<sqlite::RowID, impl::DataSetTag>;
+enum class DataSetID : sqlite::RowID {};
 
 /// Data array ID type.
-using DataArrayID = Strict<sqlite::RowID, impl::DataArrayTag>;
+enum class DataArrayID : sqlite::RowID {};
 
 /// Data storage type.
 template<class Storage>
@@ -78,7 +70,7 @@ public:
   /// Get the data array ID.
   /// @{
   constexpr auto id() const noexcept -> DataArrayID {
-    TIT_ASSERT(array_id_.get() != 0, "Array ID is null!");
+    TIT_ASSERT(array_id_ != DataArrayID{0}, "Array ID is null!");
     return array_id_;
   }
   constexpr explicit(false) operator DataArrayID() const noexcept {
@@ -161,7 +153,7 @@ public:
   /// Get the dataset ID.
   /// @{
   constexpr auto id() const noexcept -> DataSetID {
-    TIT_ASSERT(dataset_id_.get() != 0, "Data set ID is null!");
+    TIT_ASSERT(dataset_id_ != DataSetID{0}, "Data set ID is null!");
     return dataset_id_;
   }
   constexpr explicit(false) operator DataSetID() const noexcept {
@@ -235,7 +227,7 @@ public:
   /// Get the data time step ID.
   /// @{
   constexpr auto id() const noexcept -> DataTimeStepID {
-    TIT_ASSERT(time_step_id_.get() != 0, "Time step ID is null!");
+    TIT_ASSERT(time_step_id_ != DataTimeStepID{0}, "Time step ID is null!");
     return time_step_id_;
   }
   constexpr explicit(false) operator DataTimeStepID() const noexcept {
@@ -297,7 +289,7 @@ public:
   /// Get the data series ID.
   /// @{
   constexpr auto id() const noexcept -> DataSeriesID {
-    TIT_ASSERT(series_id_.get() != 0, "Series ID is null!");
+    TIT_ASSERT(series_id_ != DataSeriesID{0}, "Series ID is null!");
     return series_id_;
   }
   constexpr explicit(false) operator DataSeriesID() const noexcept {
