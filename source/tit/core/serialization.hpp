@@ -106,7 +106,7 @@ public:
   }
 
   /// Flush the stream.
-  constexpr auto flush() -> void override {
+  constexpr void flush() override {
     stream_->flush();
   }
 
