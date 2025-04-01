@@ -3,17 +3,17 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/numbers/strict.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 
+#include "tit/testing/strict.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
 
 // To test implementations with and without SIMD.
-#define NUM_TYPES double, Strict<double>
+#define NUM_TYPES double, testing::Strict<double>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

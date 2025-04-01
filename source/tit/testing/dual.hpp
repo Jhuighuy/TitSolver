@@ -11,7 +11,7 @@
 
 #include "tit/core/math.hpp"
 
-namespace tit {
+namespace tit::testing {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -144,15 +144,12 @@ private:
 
 }; // class Dual
 
-template<std::floating_point Float, class Deriv>
-constexpr auto tiny_v<Dual<Float, Deriv>> = Dual{tiny_v<Float>, Deriv{}};
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Square root of a dual number.
 template<class Num, class Deriv>
 constexpr auto sqrt(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
-  return Dual{sqrt(f.val()), f.deriv() / (Num{2.0} * sqrt(f.val()))};
+  return Dual{tit::sqrt(f.val()), f.deriv() / (Num{2.0} * tit::sqrt(f.val()))};
 }
 
 /// Raise a dual number to a power.
@@ -160,14 +157,16 @@ constexpr auto sqrt(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
 template<class Num, class Deriv>
 constexpr auto pow(const Dual<Num, Deriv>& f, std::type_identity_t<Num> a)
     -> Dual<Num, Deriv> {
-  return Dual{pow(f.val(), a), a * pow(f.val(), a - Num{1.0}) * f.deriv()};
+  return Dual{tit::pow(f.val(), a),
+              a * tit::pow(f.val(), a - Num{1.0}) * f.deriv()};
 }
 template<class Num, class Deriv>
 constexpr auto pow(const Dual<Num, Deriv>& f, const Dual<Num, Deriv>& g)
     -> Dual<Num, Deriv> {
-  return Dual{pow(f.val(), g.val()),
-              pow(f.val(), g.val() - Num{1.0}) *
-                  (g.val() * f.deriv() + f.val() * log(f.val()) * g.deriv())};
+  return Dual{
+      tit::pow(f.val(), g.val()),
+      tit::pow(f.val(), g.val() - Num{1.0}) *
+          (g.val() * f.deriv() + f.val() * tit::log(f.val()) * g.deriv())};
 }
 /// @}
 
@@ -176,15 +175,19 @@ constexpr auto pow(const Dual<Num, Deriv>& f, const Dual<Num, Deriv>& g)
 /// Exponential of a dual number.
 template<class Num, class Deriv>
 constexpr auto exp(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
-  return Dual{exp(f.val()), exp(f.val()) * f.deriv()};
+  return Dual{tit::exp(f.val()), tit::exp(f.val()) * f.deriv()};
 }
 
 /// Natural logarithm of a dual number.
 template<class Num, class Deriv>
 constexpr auto log(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
-  return Dual{log(f.val()), f.deriv() / f.val()};
+  return Dual{tit::log(f.val()), f.deriv() / f.val()};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+} // namespace tit::testing
+
+template<std::floating_point Float, class Deriv>
+constexpr auto tit::tiny_v<tit::testing::Dual<Float, Deriv>> =
+    tit::testing::Dual{tiny_v<Float>, Deriv{}};

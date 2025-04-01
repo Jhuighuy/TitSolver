@@ -9,7 +9,9 @@ add_tit_library(
   TYPE
     OBJECT
   SOURCES
+    "dual.hpp"
     "integrals.hpp"
+    "strict.hpp"
     "test.hpp"
     "test_main.cpp"
   DEPENDS
@@ -22,6 +24,7 @@ add_tit_executable(
   NAME
     testing_tests
   SOURCES
+    "dual.test.cpp"
     "integrals.test.cpp"
   DEPENDS
     tit::core
