@@ -17,6 +17,8 @@ add_tit_library(
     "_simd/reg_mask.hpp"
     "_simd/reg.hpp"
     "_simd/traits.hpp"
+    "_stream/stream.hpp"
+    "_stream/utils.hpp"
     "_vec/traits.hpp"
     "_vec/vec_mask.hpp"
     "_vec/vec.hpp"
