@@ -8,7 +8,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/cmd.hpp"
-#include "tit/core/io.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 
 namespace tit {

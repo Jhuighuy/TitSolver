@@ -10,8 +10,6 @@
 #include <print>
 #include <utility>
 
-#include "tit/core/missing.hpp" // IWYU pragma: keep
-
 namespace tit {
 
 using std::print;
