@@ -10,10 +10,10 @@
 #include <ranges>
 #include <span>
 #include <utility>
-#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/containers/array.hpp"
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range_utils.hpp"
@@ -56,7 +56,7 @@ public:
     }
 
     // Initialize the permutation.
-    auto perm = iota_perm(points) | std::ranges::to<std::vector>();
+    FixedArray perm{std::from_range, iota_perm(points)};
 
     // Partition the points.
     par::TaskGroup tasks{};
@@ -86,7 +86,7 @@ public:
       tasks.run(std::bind_front(self, left_num_parts, left_part, left_perm));
       tasks.run(std::bind_front(self, right_num_parts, right_part, right_perm));
     };
-    impl(num_parts, init_part, perm);
+    impl(num_parts, init_part, std::span<size_t>{perm});
     tasks.wait();
   }
 

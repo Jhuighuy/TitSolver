@@ -7,10 +7,10 @@
 
 #include <algorithm>
 #include <ranges>
-#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/containers/array.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range_utils.hpp"
 #include "tit/core/utils.hpp"
@@ -55,7 +55,7 @@ public:
 
     // Build the permutation using the spatial sort.
     const auto num_points = std::size(points);
-    std::vector<size_t> perm(num_points);
+    FixedArray<size_t> perm(num_points);
     sort_(points, perm);
 
     // Assign the partitions.
