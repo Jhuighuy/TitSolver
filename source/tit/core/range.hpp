@@ -25,6 +25,20 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Compatible iterator.
+template<class Iterator, class T>
+concept iterator_compatible_with =
+    std::input_iterator<Iterator> &&
+    std::convertible_to<std::iter_value_t<Iterator>, T>;
+
+/// Compatible range.
+template<class Range, class T>
+concept range_compatible_with =
+    std::ranges::input_range<Range> &&
+    std::convertible_to<std::ranges::range_value_t<Range>, T>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Contiguous range with fixed size.
 template<class Range>
 concept contiguous_fixed_size_range =
