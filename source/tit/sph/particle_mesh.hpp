@@ -99,8 +99,7 @@ public:
   /// Unique pairs of the adjacent particles partitioned by the block.
   template<particle_array ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
-    return block_edges_.buckets() |
-           std::views::transform([&particles](auto block) {
+    return block_edges_ | std::views::transform([&particles](auto block) {
              return block | std::views::transform([&particles](auto ab) {
                       const auto [a, b] = ab;
                       /// @todo I have zero idea why, but using pair here
@@ -262,7 +261,7 @@ private:
         }));
 
     // Report the block sizes.
-    TIT_STATS("ParticleMesh::block_edges_", block_edges_.bucket_sizes());
+    TIT_STATS("ParticleMesh::block_edges_", block_edges_.sizes());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
