@@ -15,7 +15,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/str_utils.hpp"
+#include "tit/core/str.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 

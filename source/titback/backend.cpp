@@ -17,10 +17,10 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/cmd.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/main.hpp"
+#include "tit/core/sys.hpp"
 
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 #include "tit/data/storage.hpp"
 
 namespace tit::back {

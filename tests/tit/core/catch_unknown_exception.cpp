@@ -3,8 +3,8 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/cmd.hpp"
-#include "tit/core/io.hpp"
+#include "tit/core/main.hpp"
+#include "tit/core/print.hpp"
 
 namespace tit {
 namespace {

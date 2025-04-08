@@ -10,7 +10,7 @@
 #include "tit/core/_mat/traits.hpp"
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/enum_utils.hpp"
+#include "tit/core/enum.hpp"
 
 namespace tit {
 
