@@ -9,9 +9,9 @@
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/io.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/stats.hpp"
-#include "tit/core/str_utils.hpp"
+#include "tit/core/str.hpp"
 #include "tit/core/sys/utils.hpp"
 
 namespace tit {

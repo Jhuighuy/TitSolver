@@ -12,7 +12,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
