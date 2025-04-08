@@ -6,9 +6,9 @@
 #include <csignal>
 
 #include "tit/core/cmd.hpp"
-#include "tit/core/io.hpp"
-#include "tit/core/sys/signal.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/print.hpp"
+#include "tit/core/signal.hpp"
+#include "tit/core/sys.hpp"
 
 namespace tit {
 namespace {

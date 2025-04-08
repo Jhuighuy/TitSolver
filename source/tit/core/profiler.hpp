@@ -7,7 +7,7 @@
 
 #include <string_view>
 
-#include "tit/core/str_utils.hpp"
+#include "tit/core/str.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/utils.hpp"
 
