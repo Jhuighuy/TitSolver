@@ -16,7 +16,7 @@
 #include "tit/core/containers/multivector.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 

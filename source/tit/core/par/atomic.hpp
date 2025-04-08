@@ -13,7 +13,7 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 
 namespace tit::par {
 
