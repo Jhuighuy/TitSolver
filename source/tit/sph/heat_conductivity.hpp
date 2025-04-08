@@ -9,7 +9,7 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/meta.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"

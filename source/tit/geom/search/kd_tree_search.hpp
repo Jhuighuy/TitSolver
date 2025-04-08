@@ -20,7 +20,7 @@
 #include "tit/core/par/memory_pool.hpp"
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 

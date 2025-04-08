@@ -4,7 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/enum_utils.hpp"
+#include "tit/core/enum.hpp"
 
 #include "tit/testing/test.hpp"
 

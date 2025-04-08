@@ -21,7 +21,7 @@
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
-#include "tit/core/tuple_utils.hpp"
+#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
