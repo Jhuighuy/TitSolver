@@ -14,7 +14,8 @@ CONFIG="Release"
 FORCE=false
 RUN_TESTS=false
 JOBS="${JOBS:-$(get-num-cpus)}"
-COMPILER=$CXX
+C_COMPILER=$CC
+CXX_COMPILER=$CXX
 VCPKG_ROOT="${VCPKG_ROOT:-}"
 CMAKE_EXE="${CMAKE_EXE:-cmake}"
 
@@ -29,7 +30,8 @@ usage() {
   echo "  -j, --jobs <num>      Number of threads to parallelize the build."
   echo ""
   echo "Advanced options:"
-  echo "  --compiler <path>     Override the default C++ compiler."
+  echo "  --cc <path>           Override the default C compiler."
+  echo "  --cpp <path>          Override the default C++ compiler."
   echo "  --vcpkg-root <path>   Vcpkg package manager installation root path."
 }
 
@@ -37,16 +39,19 @@ parse-args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       # Options.
-      -c | --config)  CONFIG="$2";           shift 2;;
-      --config=*)     CONFIG="${1#*=}";      shift 1;;
-      -f | --force)   FORCE=true;            shift;;
-      -t | --test)    RUN_TESTS=true;        shift;;
-      -j | --jobs)    JOBS="$2";             shift 2;;
+      -c | --config)  CONFIG="$2";            shift 2;;
+      --config=*)     CONFIG="${1#*=}";       shift 1;;
+      -f | --force)   FORCE=true;             shift;;
+      -t | --test)    RUN_TESTS=true;         shift;;
+      -j | --jobs)    JOBS="$2";              shift 2;;
+      --jobs=*)       JOBS="${1#*=}";         shift 1;;
       # Advanced options.
-      --compiler)     COMPILER="$2";         shift 2;;
-      --compiler=*)   COMPILER="${1#*=}";    shift 1;;
-      --vcpkg-root)   VCPKG_ROOT="$2";       shift 2;;
-      --vcpkg-root=*) VCPKG_ROOT="${1#*=}";  shift 1;;
+      --cc)           C_COMPILER="$2";        shift 2;;
+      --cc=*)         C_COMPILER="${1#*=}";   shift 1;;
+      --cxx)          CXX_COMPILER="$2";      shift 2;;
+      --cxx=*)        CXX_COMPILER="${1#*=}"; shift 1;;
+      --vcpkg-root)   VCPKG_ROOT="$2";        shift 2;;
+      --vcpkg-root=*) VCPKG_ROOT="${1#*=}";   shift 1;;
       # Help.
       -h | -help | --help)             usage; exit 0;;
       *) echo "Invalid argument: $1."; usage; exit 1;;
@@ -56,12 +61,13 @@ parse-args() {
 
 display-options() {
   echo "# Options:"
-  [ "$CONFIG"          ] && echo "#   CONFIG     = $CONFIG"
-  [ $FORCE = true      ] && echo "#   FORCE      = YES"
-  [ $RUN_TESTS = true  ] && echo "#   RUN_TESTS  = YES"
-  [ "$JOBS" -gt 1      ] && echo "#   JOBS       = $JOBS"
-  [ "$COMPILER"        ] && echo "#   COMPILER   = $COMPILER"
-  [ "$VCPKG_ROOT"      ] && echo "#   VCPKG_ROOT = $VCPKG_ROOT"
+  [ "$CONFIG"          ] && echo "#   CONFIG       = $CONFIG"
+  [ $FORCE = true      ] && echo "#   FORCE        = YES"
+  [ $RUN_TESTS = true  ] && echo "#   RUN_TESTS    = YES"
+  [ "$JOBS" -gt 1      ] && echo "#   JOBS         = $JOBS"
+  [ "$C_COMPILER"      ] && echo "#   C_COMPILER   = $C_COMPILER"
+  [ "$CXX_COMPILER"    ] && echo "#   CXX_COMPILER = $CXX_COMPILER"
+  [ "$VCPKG_ROOT"      ] && echo "#   VCPKG_ROOT   = $VCPKG_ROOT"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,39 +122,44 @@ configure() {
   SKIP_ANALYSIS=$([ "$FORCE" = true ] && echo "YES" || echo "NO")
   CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=$SKIP_ANALYSIS")
 
-  # Set the C++ compiler.
-  if [ -n "$COMPILER" ]; then
-    # To override the system compiler, there are two available approaches:
-    #
-    # 1. Specify it using CMake's `CMAKE_CXX_COMPILER` variable.
-    #
-    # 2. Export it as an environment variable named `CXX`.
-    #
-    # The former method appears more favorable for pure CMake. However, there's
-    # an issue with this approach: the overridden compiler isn't recognized by
-    # vcpkg. To ensure vcpkg uses our designated compiler, we can create a
-    # custom triplet following these steps:
-    #
-    # 1. Create `my-triplet.toolchain` with the following content:
-    #
-    #    set(CMAKE_CXX_COMPILER "my-favorite-compiler")
-    #
-    # 2. Create `my-triplet.cmake` with the following content:
-    #
-    #    set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "/path/to/my-triplet.toolchain")
-    #    set(VCPKG_CRT_LINKAGE dynamic)
-    #    set(VCPKG_LIBRARY_LINKAGE static)
-    #
-    # 3. Provide the following parameters to CMake:
-    #
-    #    -D VCPKG_OVERLAY_TRIPLETS=/path/to/triplet/and/toolchain/
-    #    -D VCPKG_HOST_TRIPLET=my-triplet
-    #    -D VCPKG_TARGET_TRIPLET=my-triplet
-    #
-    # In my view, using custom triplets solely to switch the compiler might be
-    # excessive. Therefore, I'll stick to the environment variable method for
-    # now.
-    export CXX="$COMPILER"
+  # Set the C/C++ compilers.
+  # To override the system compilers, there are two options:
+  #
+  # 1. Specify them using CMake's `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER`
+  #    variables.
+  #
+  # 2. Export them as an environment variable `CC` and `CXX`.
+  #
+  # The former method appears more favorable for pure CMake. However, there's
+  # an issue with this approach: the overridden compiler isn't recognized by
+  # vcpkg. To ensure vcpkg uses our compiler of choice, we can create a
+  # custom triplet following these steps:
+  #
+  # 1. Create `my-triplet.toolchain` with the following content:
+  #
+  #    set(CMAKE_C_COMPILER   "/path/to/compiler")
+  #    set(CMAKE_CXX_COMPILER "/path/to/compiler++")
+  #
+  # 2. Create `my-triplet.cmake` with the following content:
+  #
+  #    set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "/path/to/my-triplet.toolchain")
+  #    set(VCPKG_CRT_LINKAGE dynamic)
+  #    set(VCPKG_LIBRARY_LINKAGE static)
+  #
+  # 3. Provide the following parameters to CMake:
+  #
+  #    -D VCPKG_OVERLAY_TRIPLETS=/path/to/triplet/and/toolchain/
+  #    -D VCPKG_HOST_TRIPLET=my-triplet
+  #    -D VCPKG_TARGET_TRIPLET=my-triplet
+  #
+  # In my view, using custom triplets solely to switch the compiler might be
+  # excessive. Therefore, I'll stick to the environment variable method for
+  # now.
+  if [ -n "$C_COMPILER" ]; then
+    export CC="$C_COMPILER"
+  fi
+  if [ -n "$CXX_COMPILER" ]; then
+    export CXX="$CXX_COMPILER"
   fi
 
   # Find vcpkg.
@@ -202,7 +213,7 @@ install() {
 TIMEFORMAT="Done. Elapsed %R seconds."
 time {
   echo-thick-separator
-  echo "Tit Build Script"
+  echo "BlueTit Build Script"
   echo-thick-separator
   parse-args "$@"
   display-options
