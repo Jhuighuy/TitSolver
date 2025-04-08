@@ -11,10 +11,10 @@
 #include <ranges>
 
 #include "tit/core/mat.hpp"
-#include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/utils/math.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/continuity_equation.hpp"

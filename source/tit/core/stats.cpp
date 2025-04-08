@@ -11,8 +11,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/stats.hpp"
-#include "tit/core/str_utils.hpp"
 #include "tit/core/sys/utils.hpp"
+#include "tit/core/utils/str.hpp"
 
 namespace tit {
 

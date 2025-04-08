@@ -7,9 +7,9 @@
 
 #include <string_view>
 
-#include "tit/core/str_utils.hpp"
-#include "tit/core/time.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
+#include "tit/core/utils/str.hpp"
+#include "tit/core/utils/time.hpp"
 
 namespace tit {
 

@@ -7,7 +7,7 @@
 #include <unordered_set>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/rand_utils.hpp"
+#include "tit/core/utils/rand.hpp"
 
 #include "tit/testing/test.hpp"
 

@@ -14,8 +14,8 @@
 #include "tit/core/containers/mdvector.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/range_utils.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
+#include "tit/core/utils/range.hpp"
 
 #include "tit/geom/grid.hpp"
 #include "tit/geom/point_range.hpp"

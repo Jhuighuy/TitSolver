@@ -21,7 +21,7 @@
 #include "tit/core/print.hpp"
 #include "tit/core/sys/signal.hpp"
 #include "tit/core/sys/utils.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
 
 namespace tit {
 

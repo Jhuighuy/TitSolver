@@ -18,8 +18,8 @@
 #include <functional>
 #include <utility>
 
-#include "tit/core/uint_utils.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
+#include "tit/core/utils/uint.hpp"
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 

@@ -20,7 +20,7 @@
 #include "tit/core/serialization.hpp"
 #include "tit/core/stream.hpp"
 
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
 #include "tit/data/sqlite.hpp"
 #include "tit/data/type.hpp"
 

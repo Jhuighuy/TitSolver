@@ -5,7 +5,7 @@
 
 #include <limits>
 
-#include "tit/core/math.hpp"
+#include "tit/core/utils/math.hpp"
 
 #include "tit/testing/test.hpp"
 

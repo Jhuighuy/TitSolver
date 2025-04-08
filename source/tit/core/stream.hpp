@@ -21,7 +21,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/boost.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
 
 namespace tit {
 

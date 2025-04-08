@@ -16,8 +16,8 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/range_utils.hpp"
-#include "tit/core/tuple_utils.hpp"
+#include "tit/core/utils/range.hpp"
+#include "tit/core/utils/tuple.hpp"
 
 namespace tit {
 

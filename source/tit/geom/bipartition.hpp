@@ -13,9 +13,9 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/range_utils.hpp"
-#include "tit/core/tuple_utils.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
+#include "tit/core/utils/range.hpp"
+#include "tit/core/utils/tuple.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/point_range.hpp"

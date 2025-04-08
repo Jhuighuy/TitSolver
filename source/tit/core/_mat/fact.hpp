@@ -13,7 +13,7 @@
 #include "tit/core/_mat/part.hpp"
 #include "tit/core/_mat/traits.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/math.hpp"
+#include "tit/core/utils/math.hpp"
 
 namespace tit {
 

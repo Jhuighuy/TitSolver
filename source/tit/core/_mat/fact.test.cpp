@@ -4,7 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/core/mat.hpp"
-#include "tit/core/math.hpp" // IWYU pragma: keep
+#include "tit/core/utils/math.hpp" // IWYU pragma: keep
 #include "tit/core/vec.hpp"
 
 #include "tit/testing/test.hpp"

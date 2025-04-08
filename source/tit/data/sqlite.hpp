@@ -18,8 +18,8 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/str_utils.hpp"
 #include "tit/core/stream.hpp"
+#include "tit/core/utils/str.hpp"
 
 struct sqlite3;
 struct sqlite3_stmt;

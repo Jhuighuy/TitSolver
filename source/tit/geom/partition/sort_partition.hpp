@@ -12,8 +12,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/range_utils.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
+#include "tit/core/utils/range.hpp"
 
 #include "tit/geom/point_range.hpp"
 #include "tit/geom/sort.hpp"

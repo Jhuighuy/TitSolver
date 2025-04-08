@@ -18,8 +18,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/missing.hpp" // IWYU pragma: keep
-#include "tit/core/str_utils.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
+#include "tit/core/utils/str.hpp"
 
 namespace tit {
 

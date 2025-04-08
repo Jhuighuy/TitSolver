@@ -1,7 +1,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/cmd.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/time.hpp"
+#include "tit/core/utils/time.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/partition.hpp"

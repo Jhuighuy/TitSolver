@@ -13,9 +13,9 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/str_utils.hpp"
 #include "tit/core/sys/utils.hpp"
-#include "tit/core/time.hpp"
+#include "tit/core/utils/str.hpp"
+#include "tit/core/utils/time.hpp"
 
 namespace tit {
 

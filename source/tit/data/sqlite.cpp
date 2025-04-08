@@ -19,8 +19,8 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/str_utils.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
+#include "tit/core/utils/str.hpp"
 
 #include "tit/data/sqlite.hpp"
 

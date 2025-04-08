@@ -24,7 +24,7 @@
 #include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
 
 // Mark the `tbb::blocked_range` as a view.
 template<std::random_access_iterator Iter>

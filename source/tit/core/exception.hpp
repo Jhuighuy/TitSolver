@@ -12,7 +12,7 @@
 #include <utility>
 
 #include "tit/core/sys/stacktrace.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/utils/misc.hpp"
 
 namespace tit {
 

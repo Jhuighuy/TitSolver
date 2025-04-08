@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "tit/core/math.hpp"
+#include "tit/core/utils/math.hpp"
 
 namespace tit::testing {
 
