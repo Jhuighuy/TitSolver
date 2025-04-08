@@ -9,7 +9,7 @@
 #include <tuple>
 
 #include "tit/core/meta.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
 #include "tit/sph/heat_conductivity.hpp"

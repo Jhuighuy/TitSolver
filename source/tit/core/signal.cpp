@@ -17,10 +17,10 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/log.hpp"
 #include "tit/core/par/control.hpp"
-#include "tit/core/sys/signal.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/print.hpp"
+#include "tit/core/signal.hpp"
+#include "tit/core/sys.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
