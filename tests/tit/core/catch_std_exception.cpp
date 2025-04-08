@@ -5,8 +5,8 @@
 
 #include <string>
 
-#include "tit/core/cmd.hpp"
-#include "tit/core/io.hpp"
+#include "tit/core/main.hpp"
+#include "tit/core/print.hpp"
 
 namespace tit {
 namespace {

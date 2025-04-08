@@ -3,7 +3,7 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/uint_utils.hpp"
+#include "tit/core/uint.hpp"
 
 #include "tit/testing/test.hpp"
 
