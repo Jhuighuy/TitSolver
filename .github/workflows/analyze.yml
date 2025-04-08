@@ -24,7 +24,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04]
-        compiler: [g++-14]
+        c-compiler: [gcc-14]
+        cxx-compiler: [g++-14]
         configuration: [Coverage]
 
     runs-on: ${{ matrix.os }}
@@ -61,13 +62,14 @@ jobs:
             ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           # Use the run ID as the cache key, this way the cache is updated
           # after each run.
-          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ github.run_id }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.cxx-compiler }}-${{ github.run_id }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.cxx-compiler }}
 
       - name: Install vcpkg packages
         run: $VCPKG_ROOT/vcpkg install
         env:
-          CXX: ${{ matrix.compiler }}
+          CC: ${{ matrix.c-compiler }}
+          CXX: ${{ matrix.cxx-compiler }}
 
       - name: Update vcpkg packages cache
         uses: actions/cache/save@v4
@@ -80,10 +82,11 @@ jobs:
 
       - name: Build
         run: |
-          build-wrapper-linux-x86-64                     \
-            --out-dir "${{ env.BUILD_WRAPPER_OUT_DIR }}" \
-            ./build/build.sh --force                     \
-              --compiler ${{ matrix.compiler }}          \
+          build-wrapper-linux-x86-64                                           \
+            --out-dir "${{ env.BUILD_WRAPPER_OUT_DIR }}"                       \
+            ./build/build.sh --force                                           \
+              --cc ${{ matrix.c-compiler }}                                    \
+              --cxx ${{ matrix.cxx-compiler }}                                 \
               --config ${{ matrix.configuration }}
 
       - name: Run tests
@@ -92,23 +95,23 @@ jobs:
       - name: Collect coverage reports
         run: |
           # Generate C++ coverage report.
-          GCOV_EXE="${{ matrix.compiler }}"
-          GCOV_EXE="${GCOV_EXE/g++/gcov}"
-          gcovr                                                 \
-            --gcov-executable "$GCOV_EXE"                       \
-            --exclude "output/.*"                               \
-            --exclude "tests/.*"                                \
-            --exclude ".*\.test.*"                              \
-            --exclude-unreachable-branches                      \
-            --exclude-throw-branches                            \
-            --xml "${{ env.CXX_COVERAGE_REPORT_PATH_CODECOV }}" \
+          GCOV_EXE="${{ matrix.c-compiler }}"
+          GCOV_EXE="${GCOV_EXE/gcc/gcov}"
+          gcovr                                                                \
+            --gcov-executable "$GCOV_EXE"                                      \
+            --exclude "output/.*"                                              \
+            --exclude "tests/.*"                                               \
+            --exclude ".*\.test.*"                                             \
+            --exclude-unreachable-branches                                     \
+            --exclude-throw-branches                                           \
+            --xml "${{ env.CXX_COVERAGE_REPORT_PATH_CODECOV }}"                \
             --sonarqube "${{ env.CXX_COVERAGE_REPORT_PATH_SONAR }}"
 
       - name: Upload test output
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: test-output-${{ runner.os }}-${{ matrix.cxx-compiler }}-${{ matrix.configuration }}
           path: output/test_output
 
       - name: Upload coverage reports to Codecov

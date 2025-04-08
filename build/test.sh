@@ -70,7 +70,7 @@ run-tests() {
 TIMEFORMAT="Done. Elapsed %R seconds."
 time {
   echo-thick-separator
-  echo "Tit Test Script"
+  echo "BlueTit Test Script"
   echo-thick-separator
   parse-args "$@"
   display-options

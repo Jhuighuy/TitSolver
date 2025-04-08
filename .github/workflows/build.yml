@@ -24,8 +24,14 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04, macos-15]
-        compiler: [g++-14, clang++-19]
+        c-compiler: [gcc-14, clang-19]
+        cxx-compiler: [g++-14, clang++-19]
         configuration: [Debug, Release]
+        exclude: # Do not mix compilers.
+          - c-compiler: gcc-14
+            cxx-compiler: clang++-19
+          - c-compiler: clang-19
+            cxx-compiler: g++-14
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -52,13 +58,14 @@ jobs:
             ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           # Use the run ID as the cache key, this way the cache is updated
           # after each run.
-          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ github.run_id }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.cxx-compiler }}-${{ github.run_id }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.cxx-compiler }}
 
       - name: Install vcpkg packages
         run: $VCPKG_ROOT/vcpkg install
         env:
-          CXX: ${{ matrix.compiler }}
+          CC: ${{ matrix.c-compiler }}
+          CXX: ${{ matrix.cxx-compiler }}
 
       - name: Update vcpkg packages cache
         uses: actions/cache/save@v4
@@ -71,8 +78,9 @@ jobs:
 
       - name: Build
         run: |
-          ./build/build.sh                     \
-            --compiler ${{ matrix.compiler }}  \
+          ./build/build.sh                                                     \
+            --cc ${{ matrix.c-compiler }}                                      \
+            --cxx ${{ matrix.cxx-compiler }}                                   \
             --config ${{ matrix.configuration }}
 
       - name: Run tests
@@ -82,5 +90,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: test-output-${{ runner.os }}-${{ matrix.cxx-compiler }}-${{ matrix.configuration }}
           path: output/test_output
