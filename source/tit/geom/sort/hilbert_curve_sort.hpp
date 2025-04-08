@@ -13,8 +13,8 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/range_utils.hpp"
-#include "tit/core/tuple_utils.hpp"
+#include "tit/core/range.hpp"
+#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 
 #include "tit/geom/bipartition.hpp"

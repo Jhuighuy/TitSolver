@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/str_utils.hpp"
+#include "tit/core/str.hpp"
 
 namespace tit {
 
