@@ -18,8 +18,8 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/log.hpp"
-#include "tit/core/str_utils.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/str.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 
 #include "tit/data/sqlite.hpp"
