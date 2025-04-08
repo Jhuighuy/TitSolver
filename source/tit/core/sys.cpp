@@ -25,8 +25,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/str_utils.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/str.hpp"
+#include "tit/core/sys.hpp"
 
 #ifdef TIT_HAVE_GCOV
 extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
