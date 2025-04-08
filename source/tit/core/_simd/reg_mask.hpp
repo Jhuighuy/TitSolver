@@ -15,7 +15,7 @@
 #include "tit/core/_simd/traits.hpp"
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 
 namespace tit::simd {
 

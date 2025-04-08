@@ -23,7 +23,7 @@
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"

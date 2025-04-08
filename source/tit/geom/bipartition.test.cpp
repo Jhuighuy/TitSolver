@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/range_utils.hpp"
+#include "tit/core/range.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bipartition.hpp"
