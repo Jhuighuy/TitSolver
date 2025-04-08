@@ -7,7 +7,7 @@
 #include <initializer_list>
 #include <utility>
 
-#include "tit/core/sys/signal.hpp"
+#include "tit/core/signal.hpp"
 
 #include "tit/testing/test.hpp"
 
