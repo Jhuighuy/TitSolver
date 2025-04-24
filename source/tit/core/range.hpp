@@ -18,6 +18,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -27,13 +28,66 @@ namespace tit {
 /// Contiguous range with fixed size.
 template<class Range>
 concept contiguous_fixed_size_range =
-    requires (Range& range) { std::span{range}; } && //
+    std::ranges::contiguous_range<Range> && std::ranges::sized_range<Range> &&
     decltype(std::span{std::declval<Range&>()})::extent != std::dynamic_extent;
 
 /// Size of the contiguous fixed size range.
 template<contiguous_fixed_size_range Range>
 inline constexpr auto range_fixed_size_v =
     decltype(std::span{std::declval<Range&>()})::extent;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Range of ranges.
+template<class Range>
+concept multirange = std::ranges::input_range<Range> &&
+                     std::ranges::range<std::ranges::range_reference_t<Range>>;
+
+/// Range of input ranges.
+template<class Range>
+concept input_multirange =
+    multirange<Range> &&
+    std::ranges::input_range<std::ranges::range_reference_t<Range>>;
+
+/// Value of a range of ranges.
+template<class Range>
+using multirange_value_t =
+    std::ranges::range_value_t<std::ranges::range_reference_t<Range>>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Input iterator with compatible value type.
+template<class Iterator, class Val>
+concept value_iterator = std::input_iterator<Iterator> &&
+                         std::convertible_to<std::iter_value_t<Iterator>, Val>;
+
+/// Input range with compatible value type.
+template<class Range, class Val>
+concept value_range =
+    std::ranges::input_range<Range> &&
+    std::convertible_to<std::ranges::range_value_t<Range>, Val>;
+
+/// Input range of ranges with compatible value type.
+template<class Range, class Val>
+concept value_multirange = input_multirange<Range> &&
+                           std::convertible_to<multirange_value_t<Range>, Val>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Input iterator with compatible tuple item types.
+template<class Iterator, class... Items>
+concept tuple_iterator = std::input_iterator<Iterator> &&
+                         tuple_like<std::iter_value_t<Iterator>, Items...>;
+
+/// Input range with convertible tuple item types.
+template<class Range, class... Items>
+concept tuple_range = std::ranges::input_range<Range> &&
+                      tuple_like<std::ranges::range_value_t<Range>, Items...>;
+
+/// Input range of ranges with convertible tuple item types.
+template<class Range, class... Items>
+concept tuple_multirange =
+    input_multirange<Range> && tuple_like<multirange_value_t<Range>, Items...>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
