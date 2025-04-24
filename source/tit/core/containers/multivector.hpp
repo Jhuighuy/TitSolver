@@ -6,7 +6,6 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
 #include <functional>
 #include <initializer_list>
 #include <numeric>
@@ -21,7 +20,7 @@
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
-#include "tit/core/tuple.hpp"
+#include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -83,9 +82,7 @@ public:
   }
 
   /// Append a new bucket to the multivector.
-  template<std::ranges::input_range Bucket>
-    requires std::constructible_from<Val,
-                                     std::ranges::range_reference_t<Bucket>>
+  template<value_range<Val> Bucket>
   constexpr void append_bucket(Bucket&& bucket) {
     TIT_ASSUME_UNIVERSAL(Bucket, bucket);
     std::ranges::copy(bucket, std::back_inserter(vals_));
@@ -95,12 +92,8 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Build the multivector from a range of buckets.
-  template<par::range Buckets>
-    requires (
-        std::ranges::input_range<std::ranges::range_reference_t<Buckets>> &&
-        std::constructible_from<Val,
-                                std::ranges::range_value_t<
-                                    std::ranges::range_reference_t<Buckets>>>)
+  template<value_multirange<Val> Buckets>
+    requires par::range<Buckets>
   void assign_buckets_par(Buckets&& buckets) {
     TIT_ASSUME_UNIVERSAL(Buckets, buckets);
 
@@ -133,8 +126,7 @@ public:
   ///
   /// @param count Amount of the value buckets to be added.
   /// @param pairs Range of the pairs of bucket indices and values.
-  template<std::ranges::input_range Pairs>
-    requires tuple_like<std::ranges::range_value_t<Pairs>, size_t, Val>
+  template<tuple_range<size_t, Val> Pairs>
   constexpr void assign_pairs_seq(size_t count, Pairs&& pairs) {
     assign_pairs_tall_impl_(
         count,
@@ -150,8 +142,8 @@ public:
   ///
   /// @param count Amount of the value buckets to be added.
   /// @param pairs Range of the pairs of bucket indices and values.
-  template<par::range Pairs>
-    requires tuple_like<std::ranges::range_value_t<Pairs>, size_t, Val>
+  template<tuple_range<size_t, Val> Pairs>
+    requires par::range<Pairs>
   constexpr void assign_pairs_par_tall(size_t count, Pairs&& pairs) {
     assign_pairs_tall_impl_(
         count,
@@ -168,21 +160,16 @@ public:
   /// @param count Amount of the value buckets to be added.
   /// @param pairs Range of the pairs of bucket indices and values.
   /// @{
-  template<par::range Pairs>
-    requires tuple_like<std::ranges::range_value_t<Pairs>, size_t, Val>
+  template<tuple_range<size_t, Val> Pairs>
+    requires par::range<Pairs>
   constexpr void assign_pairs_par_wide(size_t count, Pairs&& pairs) {
     assign_pairs_wide_impl_(
         count,
         std::bind_front(par::static_for_each,
                         std::views::all(std::forward<Pairs>(pairs))));
   }
-  template<par::range Range>
-    requires (
-        std::ranges::input_range<std::ranges::range_reference_t<Range>> &&
-        tuple_like<
-            std::ranges::range_value_t<std::ranges::range_reference_t<Range>>,
-            size_t,
-            Val>)
+  template<tuple_multirange<size_t, Val> Range>
+    requires par::range<Range>
   constexpr void assign_pairs_par_wide(size_t count,
                                        std::ranges::join_view<Range> pairs) {
     assign_pairs_wide_impl_(count, [base = std::move(pairs).base()](auto func) {
@@ -345,9 +332,7 @@ public:
   }
 
   /// Assign the bucket at index.
-  template<std::ranges::input_range Bucket>
-    requires std::constructible_from<Val,
-                                     std::ranges::range_reference_t<Bucket>>
+  template<value_range<Val> Bucket>
   constexpr void set_bucket(size_t index, Bucket&& bucket) {
     TIT_ASSUME_UNIVERSAL(Bucket, bucket);
     if constexpr (std::ranges::sized_range<Bucket>) {
