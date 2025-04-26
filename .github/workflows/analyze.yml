@@ -24,8 +24,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04]
-        c-compiler: [gcc-14]
-        cxx-compiler: [g++-14]
+        compiler: [GCC]
         configuration: [Coverage]
 
     runs-on: ${{ matrix.os }}
@@ -35,9 +34,6 @@ jobs:
       CXX_COVERAGE_REPORT_PATH_CODECOV: cxx_coverage_codecov.xml
       CXX_COVERAGE_REPORT_PATH_SONAR: cxx_coverage_sonar.xml
       JS_COVERAGE_REPORT_PATH: source/titfront/coverage/lcov.info
-      # To be set by the steps.
-      VCPKG_ROOT:
-      VCPKG_DEFAULT_BINARY_CACHE:
 
     steps:
       - name: Checkout
@@ -46,48 +42,22 @@ jobs:
           # Fetch all history for proper analysis and coverage reports.
           fetch-depth: 0
 
-      - name: Install packages and tools
-        run: ./build/setup-ci-runner.sh
-
-      - name: Install Sonar Scanner
+      - name: Setup Sonar Scanner
         uses: SonarSource/sonarcloud-github-c-cpp@v2
 
-      - name: Restore vcpkg packages cache
-        id: vcpkg-cache-restore
-        uses: actions/cache/restore@v4
+      - name: Setup runner
+        uses: ./.github/actions/setup_runner
         with:
-          path: |
-            ${{ env.VCPKG_ROOT }}/installed
-            ${{ env.VCPKG_ROOT }}/buildtrees
-            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          # Use the run ID as the cache key, this way the cache is updated
-          # after each run.
-          key: vcpkg-${{ runner.os }}-${{ matrix.cxx-compiler }}-${{ github.run_id }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.cxx-compiler }}
+          compiler: ${{ matrix.compiler }}
 
-      - name: Install vcpkg packages
-        run: $VCPKG_ROOT/vcpkg install
-        env:
-          CC: ${{ matrix.c-compiler }}
-          CXX: ${{ matrix.cxx-compiler }}
-
-      - name: Update vcpkg packages cache
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ${{ env.VCPKG_ROOT }}/installed
-            ${{ env.VCPKG_ROOT }}/buildtrees
-            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
+      - name: Setup vcpkg
+        uses: ./.github/actions/setup_vcpkg
 
       - name: Build
         run: |
           build-wrapper-linux-x86-64                                           \
             --out-dir "${{ env.BUILD_WRAPPER_OUT_DIR }}"                       \
-            ./build/build.sh --force                                           \
-              --cc ${{ matrix.c-compiler }}                                    \
-              --cxx ${{ matrix.cxx-compiler }}                                 \
-              --config ${{ matrix.configuration }}
+            ./build/build.sh --force --config ${{ matrix.configuration }}
 
       - name: Run tests
         run: ./build/test.sh
@@ -95,10 +65,8 @@ jobs:
       - name: Collect coverage reports
         run: |
           # Generate C++ coverage report.
-          GCOV_EXE="${{ matrix.c-compiler }}"
-          GCOV_EXE="${GCOV_EXE/gcc/gcov}"
           gcovr                                                                \
-            --gcov-executable "$GCOV_EXE"                                      \
+            --gcov-executable "${CC/gcc/gcov}"                                 \
             --exclude "output/.*"                                              \
             --exclude "tests/.*"                                               \
             --exclude ".*\.test.*"                                             \
@@ -111,14 +79,14 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-output-${{ runner.os }}-${{ matrix.cxx-compiler }}-${{ matrix.configuration }}
+          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: output/test_output
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           slug: Jhuighuy/TitSolver
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ env.CXX_COVERAGE_REPORT_PATH_CODECOV }},${{ env.JS_COVERAGE_REPORT_PATH }}
           disable_search: true
 

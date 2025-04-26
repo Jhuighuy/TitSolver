@@ -12,7 +12,7 @@
 
 # Project configuration files.
 !.git*
-!/.github/workflows/*.yml
+!/.github/**
 !/sonar-project.properties
 
 # Editor configuration files.

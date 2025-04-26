@@ -1,0 +1,109 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+# Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+inputs:
+  compiler:
+    description: "Compiler (`GCC` or `Clang`)."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - name: Setup runner
+      shell: bash
+      run: |
+        # Select the compiler from the arguments.
+        GCC_VERSION=${GCC_VERSION:-14}
+        LLVM_VERSION=${LLVM_VERSION:-20}
+        case "${{ inputs.compiler }}" in
+          GCC)
+            CC="gcc-$GCC_VERSION"
+            CXX="g++-$GCC_VERSION"
+            ;;
+          Clang)
+            CC="clang-$LLVM_VERSION"
+            CXX="clang++-$LLVM_VERSION"
+            ;;
+          *)
+            echo "Unknown compiler: '$1'. Must be either 'GCC' or 'Clang'."
+            exit 1
+            ;;
+        esac
+
+        # Select packages to install.
+        PACKAGES=(
+          cmake
+          codespell
+          "gcc@$GCC_VERSION"
+          gcovr
+          "llvm@$LLVM_VERSION"
+          node
+          pnpm
+          sphinx-doc
+        )
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          PACKAGES+=(
+            diffutils
+            gnu-sed
+          )
+        fi
+
+        # Install packages.
+        #
+        # Upon installation, Homebrew will automatically update itself and
+        # upgrade all installed packages that depend on those we are installing
+        # or upgrading. The below variables prevent Homebrew from doing this.
+        export HOMEBREW_NO_AUTO_UPDATE=1
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        export HOMEBREW_NO_INSTALL_CLEANUP=1
+        brew update -q
+        brew install -q "${PACKAGES[@]}" || true # Continue on failure.
+
+        # Add GCC tools to the path and create versioned symlinks.
+        GCC_INSTALLATION="$(brew --prefix gcc@$GCC_VERSION)"
+        GCC_PATH="$GCC_INSTALLATION/bin"
+        echo "$GCC_PATH" >> "$GITHUB_PATH"
+        if [[ ! -f "$GCC_PATH/gcc-$GCC_VERSION" ]]; then
+          ln -s "$GCC_PATH/gcc" "$GCC_PATH/gcc-$GCC_VERSION"
+        fi
+        if [[ ! -f "$GCC_PATH/g++-$GCC_VERSION" ]]; then
+          ln -s "$GCC_PATH/g++" "$GCC_PATH/g++-$GCC_VERSION"
+        fi
+
+        # Add LLVM tools to the path and create versioned symlinks.
+        LLVM_PATH="$(brew --prefix "llvm@$LLVM_VERSION")/bin"
+        echo "$LLVM_PATH" >> "$GITHUB_PATH"
+        if [[ ! -f "$LLVM_PATH/clang-$LLVM_VERSION" ]]; then
+          ln -s "$LLVM_PATH/clang" "$LLVM_PATH/clang-$LLVM_VERSION"
+        fi
+        if [[ ! -f "$LLVM_PATH/clang++-$LLVM_VERSION" ]]; then
+          ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
+        fi
+        # On Linux LLVM tools will use system libstdc++ library by default,
+        # so we need to override it with the one from our GCC installation.
+        if [[ "$OSTYPE" == "linux-gnu"* &&
+              "${{ inputs.compiler }}" == "Clang" ]]; then
+          LIBSTDCPP_PATH="$GCC_INSTALLATION/include/c++/$GCC_VERSION"
+          LIBSTDCPP_PLATFORM_PATH="$LIBSTDCPP_PATH/x86_64-pc-linux-gnu"
+          CXXFLAGS="-isystem $LIBSTDCPP_PATH $CXXFLAGS"
+          CXXFLAGS="-isystem $LIBSTDCPP_PLATFORM_PATH $CXXFLAGS"
+          CFLAGS="-isystem $LIBSTDCPP_PATH $CFLAGS"
+          CFLAGS="-isystem $LIBSTDCPP_PLATFORM_PATH $CFLAGS"
+        fi
+
+        # Add Sphinx to the path.
+        SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
+        echo "$SPHINX_PATH" >> "$GITHUB_PATH"
+
+        # Export compiler configuration variables to the CI environment.
+        echo "CC=$CC" >> "$GITHUB_ENV"
+        echo "CXX=$CXX" >> "$GITHUB_ENV"
+        echo "CPPFLAGS=$CPPFLAGS" >> "$GITHUB_ENV"
+        echo "CFLAGS=$CFLAGS" >> "$GITHUB_ENV"
+        echo "CXXFLAGS=$CXXFLAGS" >> "$GITHUB_ENV"
+        echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"

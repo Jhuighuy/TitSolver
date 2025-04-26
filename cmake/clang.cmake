@@ -37,39 +37,6 @@ set(
   -fno-builtin-std-forward_like
 )
 
-# On macOS LLVM tools use libc++ by default. When compiling with GCC, I want
-# the LLVM tools to use libstdc++ (during analysis and especially for clangd).
-if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  # Find path to libstdc++ include directories. It should be something like
-  # `<install-path>/gcc/<version>/include/c++/<version>/` and
-  # `<install-path>/gcc/<version>/include/c++/<version>/<platform>/`.
-  set(
-    LIBSTDCPP_INCLUDE_DIR_REGEX
-    "gcc/([0-9]+(\\.[0-9]+)+(_[0-9]+)?)/include/c\\+\\+/([0-9]+)"
-  )
-  set(
-    LIBSTDCPP_SYS_INCLUDE_DIR_REGEX
-    "${LIBSTDCPP_INCLUDE_DIR_REGEX}/(.*-apple-.*)"
-  )
-  set(LIBSTDCPP_INCLUDE_DIR)
-  set(LIBSTDCPP_SYS_INCLUDE_DIR)
-  foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-    if(DIR MATCHES "${LIBSTDCPP_INCLUDE_DIR_REGEX}$")
-      set(LIBSTDCPP_INCLUDE_DIR ${DIR})
-    elseif(DIR MATCHES "${LIBSTDCPP_SYS_INCLUDE_DIR_REGEX}$")
-      set(LIBSTDCPP_SYS_INCLUDE_DIR ${DIR})
-    endif()
-  endforeach()
-  if(LIBSTDCPP_INCLUDE_DIR AND LIBSTDCPP_SYS_INCLUDE_DIR)
-    list(
-      APPEND
-      CLANG_COMPILE_OPTIONS
-      -stdlib++-isystem "${LIBSTDCPP_INCLUDE_DIR}"
-      -cxx-isystem "${LIBSTDCPP_SYS_INCLUDE_DIR}"
-    )
-  endif()
-endif()
-
 # Define common link options.
 set(CLANG_LINK_OPTIONS ${CLANG_COMPILE_OPTIONS})
 if(APPLE)
@@ -80,6 +47,50 @@ if(APPLE)
     -Wl,-no_warn_duplicate_libraries
   )
 endif()
+
+# When the actual compiler is configured to use libstdc++, I want the LLVM tools
+# invoked externally (e.g. clang-tidy, clangd) to use exactly the same libstdc++
+# as well. Paths to the libstdc++ headers are usually found in the implicit
+# include directories, they look something like this:
+#
+# `<install-path>/gcc/[<version>/]include/c++/<version>/` and
+# `<install-path>/gcc/[<version>/]include/c++/<version>/<platform>/`.
+function(_make_libstdcpp_options RESULT_VAR)
+  set(FOUND_DIR)
+  set(DIR_REGEX "gcc/([1-9]+(\\.[0-9]+)*(_[0-9]+)?/)?include/c\\+\\+/[1-9]+")
+  foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+    if(DIR MATCHES "${DIR_REGEX}$")
+      set(FOUND_DIR "${DIR}")
+      break() # I hope the first match is the right one.
+    endif()
+  endforeach()
+  if(NOT FOUND_DIR)
+    return()
+  endif()
+
+  set(FOUND_PLATFORM_DIR)
+  set(PLATFORM_DIR_REGEX "${DIR_REGEX}/[^/]*-(apple|linux)-[^/]*")
+  foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+    if(DIR STRGREATER "${FOUND_DIR}" AND DIR MATCHES "${PLATFORM_DIR_REGEX}$")
+      set(FOUND_PLATFORM_DIR "${DIR}")
+      break()
+    endif()
+  endforeach()
+  if(NOT FOUND_PLATFORM_DIR)
+    return()
+  endif()
+
+  message(STATUS "LLVM: using libstdc++ at path: ${FOUND_DIR}")
+  message(STATUS "LLVM: using libstdc++ platf. at path: ${FOUND_PLATFORM_DIR}")
+  set(
+    ${RESULT_VAR}
+    -stdlib++-isystem "${FOUND_DIR}"
+    -cxx-isystem "${FOUND_PLATFORM_DIR}"
+    PARENT_SCOPE
+  )
+endfunction()
+_make_libstdcpp_options(CLANG_STDLIB_OPTIONS)
+unset(_make_libstdcpp_options)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -166,6 +177,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     CLANG_TIDY_COMPILE_OPTIONS
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
+    ${CLANG_STDLIB_OPTIONS}
     # Enable C++23, as it is not configured by the compile options.
     -std=c++23
   )
@@ -235,6 +247,7 @@ function(write_compile_flags SAMPLE_TARGET)
     CLANG_COMPILE_ARGS
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
+    ${CLANG_STDLIB_OPTIONS}
     # Enable C++23, as it is not configured by the compile options.
     -std=c++23
   )

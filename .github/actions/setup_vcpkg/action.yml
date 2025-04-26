@@ -1,0 +1,56 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+# Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup vcpkg
+      shell: bash
+      run: |
+        # Install vcpkg.
+        VCPKG_ROOT="$HOME/vcpkg"
+        git clone --depth=1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+        eval "$VCPKG_ROOT/bootstrap-vcpkg.sh"
+        echo "VCPKG_ROOT=$VCPKG_ROOT" >> "$GITHUB_ENV"
+
+        # Setup the default binary cache location.
+        VCPKG_DEFAULT_BINARY_CACHE="$HOME/vcpkg_cache"
+        mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" || true
+        echo "VCPKG_DEFAULT_BINARY_CACHE=$VCPKG_DEFAULT_BINARY_CACHE" >> "$GITHUB_ENV"
+
+    - name: Identify compiler
+      shell: bash
+      run: |
+        # Identify the compiler and set the environment variables.
+        CC=${CC:-cc}
+        CXX=${CXX:-c++}
+        COMPILER_ID=$(cat $(which "$CC") $(which "$CXX") | sha1sum | cut -d' ' -f1)
+        echo "COMPILER_ID=$COMPILER_ID" >> "$GITHUB_ENV"
+
+    - name: Restore vcpkg packages cache
+      id: vcpkg-cache-restore
+      uses: actions/cache/restore@v4
+      with:
+        # Use the run ID as the cache key, this way the cache is updated
+        # after each run.
+        key: vcpkg-${{ runner.os }}-${{ env.COMPILER_ID }}-${{ github.run_id }}
+        restore-keys: vcpkg-${{ runner.os }}-${{ env.COMPILER_ID }}
+        path: |
+          ${{ env.VCPKG_ROOT }}/installed
+          ${{ env.VCPKG_ROOT }}/buildtrees
+          ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+
+    - name: Install vcpkg packages
+      shell: bash
+      run: $VCPKG_ROOT/vcpkg install
+
+    - name: Update vcpkg packages cache
+      uses: actions/cache/save@v4
+      with:
+        key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
+        path: |
+          ${{ env.VCPKG_ROOT }}/installed
+          ${{ env.VCPKG_ROOT }}/buildtrees
+          ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
