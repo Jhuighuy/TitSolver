@@ -24,64 +24,53 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04, macos-15]
-        c-compiler: [gcc-14, clang-20]
-        cxx-compiler: [g++-14, clang++-20]
+        compiler: [GCC, Clang]
         configuration: [Debug, Release]
-        exclude: # Do not mix compilers.
-          - c-compiler: gcc-14
-            cxx-compiler: clang++-20
-          - c-compiler: clang-20
-            cxx-compiler: g++-14
       fail-fast: false
 
-    runs-on: ${{ matrix.os }}
-
     env:
-      # To be set by the steps.
-      VCPKG_ROOT:
+      VCPKG_ROOT: # To be set within the steps.
       VCPKG_DEFAULT_BINARY_CACHE:
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install packages and tools
-        run: ./build/setup-ci-runner.sh
+      - name: Setup Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Setup runner
+        run: ./build/setup-ci-runner.sh ${{ matrix.compiler }}
 
       - name: Restore vcpkg packages cache
         id: vcpkg-cache-restore
         uses: actions/cache/restore@v4
         with:
+          # Use the run ID as the cache key, this way the cache is updated
+          # after each run.
+          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ github.run_id }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}
           path: |
             ${{ env.VCPKG_ROOT }}/installed
             ${{ env.VCPKG_ROOT }}/buildtrees
             ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          # Use the run ID as the cache key, this way the cache is updated
-          # after each run.
-          key: vcpkg-${{ runner.os }}-${{ matrix.cxx-compiler }}-${{ github.run_id }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.cxx-compiler }}
 
       - name: Install vcpkg packages
         run: $VCPKG_ROOT/vcpkg install
-        env:
-          CC: ${{ matrix.c-compiler }}
-          CXX: ${{ matrix.cxx-compiler }}
 
       - name: Update vcpkg packages cache
         uses: actions/cache/save@v4
         with:
+          key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
           path: |
             ${{ env.VCPKG_ROOT }}/installed
             ${{ env.VCPKG_ROOT }}/buildtrees
             ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
 
       - name: Build
-        run: |
-          ./build/build.sh                                                     \
-            --cc ${{ matrix.c-compiler }}                                      \
-            --cxx ${{ matrix.cxx-compiler }}                                   \
-            --config ${{ matrix.configuration }}
+        run: ./build/build.sh --config ${{ matrix.configuration }}
 
       - name: Run tests
         run: ./build/test.sh
@@ -90,5 +79,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-output-${{ runner.os }}-${{ matrix.cxx-compiler }}-${{ matrix.configuration }}
+          name: test-output-${{ runner.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: output/test_output
