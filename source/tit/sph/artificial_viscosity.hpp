@@ -10,7 +10,6 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
@@ -26,10 +25,10 @@ class NoArtificialViscosity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{/*empty*/};
+  static constexpr TypeSet required_fields{/*empty*/};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Continuity equation diffusive term.
   template<particle_view<required_fields> PV>
@@ -55,10 +54,10 @@ class AlphaBetaArtificialViscosity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho, h, r, v, cs};
+  static constexpr TypeSet required_fields{rho, h, r, v, cs};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct artificial viscosity scheme.
   ///
@@ -108,8 +107,7 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      BaseArtificialViscosity::required_fields |
-      meta::Set{h, cs, div_v, curl_v};
+      BaseArtificialViscosity::required_fields | TypeSet{h, cs, div_v, curl_v};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
@@ -161,7 +159,7 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      meta::Set{h, cs, div_v, alpha, dalpha_dt} |
+      TypeSet{h, cs, div_v, alpha, dalpha_dt} |
       BaseArtificialViscosity::required_fields;
 
   /// Set of particle fields that are modified.
@@ -234,10 +232,10 @@ class MolteniColagrossiArtificialViscosity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho, grad_rho, h, r, v};
+  static constexpr TypeSet required_fields{rho, grad_rho, h, r, v};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct artificial viscosity scheme.
   ///
@@ -294,10 +292,10 @@ class DeltaSPHArtificialViscosity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho, grad_rho, h, r, L, v};
+  static constexpr TypeSet required_fields{rho, grad_rho, h, r, L, v};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct artificial viscosity scheme.
   ///
