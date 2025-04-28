@@ -6,12 +6,6 @@
 add_tit_test(
   NAME "tit/core/unit"
   COMMAND "tit_core_tests"
-  ENVIRONMENT
-    "TEST_ZERO=0"
-    "TEST_POS_INT=123"
-    "TEST_NEG_INT=-456"
-    "TEST_TRUE=TRUE"
-    "TEST_FALSE=false"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
