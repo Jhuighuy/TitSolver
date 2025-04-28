@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
-#include <string>
 #include <utility>
 
 #ifdef __APPLE__
@@ -20,12 +19,9 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include <boost/core/demangle.hpp>
-
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/str.hpp"
 #include "tit/core/sys.hpp"
 
 #ifdef TIT_HAVE_GCOV
@@ -80,18 +76,6 @@ auto tty_width(TTY tty) -> std::optional<size_t> {
              "Unable to query terminal window size with fileno {}!",
              tty_fileno);
   return window_size.ws_col;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto try_demangle(CStrView mangled_name) -> std::optional<std::string> {
-  const boost::core::scoped_demangled_name demangled_name{mangled_name.c_str()};
-  if (const auto* p = demangled_name.get(); p != nullptr) return p;
-  return std::nullopt;
-}
-
-auto maybe_demangle(CStrView mangled_name) -> std::string {
-  return try_demangle(mangled_name).value_or(mangled_name.c_str());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
