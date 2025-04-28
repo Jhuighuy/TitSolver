@@ -1,0 +1,37 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+ * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+#pragma once
+#pragma GCC system_header
+
+#include_next <filesystem>
+#include <format>
+#include <string>
+
+#ifdef _LIBCPP_VERSION
+_LIBCPP_BEGIN_NAMESPACE_STD
+#elifdef __GLIBCXX__
+namespace std _GLIBCXX_VISIBILITY(default) {
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+#endif
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// C++26 feature.
+template<>
+struct formatter<filesystem::path> : formatter<string> {
+  constexpr auto format(const filesystem::path& path, format_context& context) {
+    return formatter<string>::format(path.string(), context);
+  }
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#ifdef _LIBCPP_VERSION
+_LIBCPP_END_NAMESPACE_STD
+#elifdef __GLIBCXX__
+_GLIBCXX_END_NAMESPACE_VERSION
+} // namespace std _GLIBCXX_VISIBILITY(default)
+#endif
