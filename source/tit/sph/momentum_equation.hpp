@@ -7,7 +7,6 @@
 
 #include <tuple>
 
-#include "tit/core/meta.hpp"
 #include "tit/core/type.hpp"
 
 #include "tit/sph/artificial_viscosity.hpp"
@@ -25,10 +24,10 @@ class GravitySource final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields = meta::Set{/*empty*/};
+  static constexpr auto required_fields = TypeSet{};
 
   /// Set of particle fields that are modified.
-  static constexpr auto modified_fields = meta::Set{/*empty*/};
+  static constexpr auto modified_fields = TypeSet{};
 
   /// Construct the gravity source.
   ///
@@ -64,13 +63,13 @@ public:
   static constexpr auto required_fields =
       Viscosity::required_fields | //
       ArtificialViscosity::required_fields |
-      (MomentumSources::required_fields | ... | meta::Set{v, dv_dt});
+      (MomentumSources::required_fields | ... | TypeSet{v, dv_dt});
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
       Viscosity::modified_fields | //
       ArtificialViscosity::modified_fields |
-      (MomentumSources::modified_fields | ... | meta::Set{/*empty*/});
+      (MomentumSources::modified_fields | ... | TypeSet{});
 
   /// Construct the momentum equation.
   constexpr explicit MomentumEquation(

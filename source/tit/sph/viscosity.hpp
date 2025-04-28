@@ -8,7 +8,7 @@
 #include <concepts>
 
 #include "tit/core/checks.hpp"
-#include "tit/core/meta.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
@@ -23,10 +23,10 @@ class NoViscosity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{/*empty*/};
+  static constexpr TypeSet required_fields{/*empty*/};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Compute viscosity term.
   template<particle_view<required_fields> PV>
@@ -44,10 +44,10 @@ class LaplacianViscosity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho, r, v, mu};
+  static constexpr TypeSet required_fields{rho, r, v, mu};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Compute viscosity term.
   template<particle_view<required_fields> PV>

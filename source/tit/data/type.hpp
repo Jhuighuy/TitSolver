@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <concepts>
 #include <format>
 #include <string>
 #include <type_traits>
@@ -16,6 +15,7 @@
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/str.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -40,7 +40,6 @@ public:
     uint64,
     float32,
     float64,
-    float128,
     count_,
   };
 
@@ -69,8 +68,7 @@ public:
         .option(int64, 8)
         .option(uint64, 8)
         .option(float32, 4)
-        .option(float64, 8)
-        .option(float128, 16);
+        .option(float64, 8);
   }
 
   /// Data kind name.
@@ -86,8 +84,7 @@ public:
         .option(int64, "int64_t")
         .option(uint64, "uint64_t")
         .option(float32, "float32_t")
-        .option(float64, "float64_t")
-        .option(float128, "float128_t");
+        .option(float64, "float64_t");
   }
 
   /// Compare data kinds.
@@ -104,57 +101,44 @@ namespace impl {
 template<class Val>
 inline constexpr auto kind_id_of = DataKind::ID::unknown_;
 
-template<std::signed_integral SInt>
-  requires (sizeof(SInt) == 1)
-inline constexpr auto kind_id_of<SInt> = DataKind::ID::int8;
+template<>
+inline constexpr auto kind_id_of<int8_t> = DataKind::ID::int8;
 
-template<std::unsigned_integral UInt>
-  requires (sizeof(UInt) == 1)
-inline constexpr auto kind_id_of<UInt> = DataKind::ID::uint8;
+template<>
+inline constexpr auto kind_id_of<uint8_t> = DataKind::ID::uint8;
 
-template<std::signed_integral SInt>
-  requires (sizeof(SInt) == 2)
-inline constexpr auto kind_id_of<SInt> = DataKind::ID::int16;
+template<>
+inline constexpr auto kind_id_of<int16_t> = DataKind::ID::int16;
 
-template<std::unsigned_integral UInt>
-  requires (sizeof(UInt) == 2)
-inline constexpr auto kind_id_of<UInt> = DataKind::ID::uint16;
+template<>
+inline constexpr auto kind_id_of<uint16_t> = DataKind::ID::uint16;
 
-template<std::signed_integral SInt>
-  requires (sizeof(SInt) == 4)
-inline constexpr auto kind_id_of<SInt> = DataKind::ID::int32;
+template<>
+inline constexpr auto kind_id_of<int32_t> = DataKind::ID::int32;
 
-template<std::unsigned_integral UInt>
-  requires (sizeof(UInt) == 4)
-inline constexpr auto kind_id_of<UInt> = DataKind::ID::uint32;
+template<>
+inline constexpr auto kind_id_of<uint32_t> = DataKind::ID::uint32;
 
-template<std::signed_integral SInt>
-  requires (sizeof(SInt) == 8)
-inline constexpr auto kind_id_of<SInt> = DataKind::ID::int64;
+template<>
+inline constexpr auto kind_id_of<int64_t> = DataKind::ID::int64;
 
-template<std::unsigned_integral UInt>
-  requires (sizeof(UInt) == 8)
-inline constexpr auto kind_id_of<UInt> = DataKind::ID::uint64;
+template<>
+inline constexpr auto kind_id_of<uint64_t> = DataKind::ID::uint64;
 
-template<std::floating_point Float>
-  requires (sizeof(Float) == 4)
-inline constexpr auto kind_id_of<Float> = DataKind::ID::float32;
+template<>
+inline constexpr auto kind_id_of<float32_t> = DataKind::ID::float32;
 
-template<std::floating_point Float>
-  requires (sizeof(Float) == 8)
-inline constexpr auto kind_id_of<Float> = DataKind::ID::float64;
-
-template<std::floating_point Float>
-  requires (sizeof(Float) == 16)
-inline constexpr auto kind_id_of<Float> = DataKind::ID::float128;
+template<>
+inline constexpr auto kind_id_of<float64_t> = DataKind::ID::float64;
 
 } // namespace impl
 
 /// Class that has a known data kind.
 template<class Val>
-concept known_kind_of =
-    std::is_object_v<Val> && (DataKind::ID::unknown_ < impl::kind_id_of<Val> &&
-                              impl::kind_id_of<Val> < DataKind::ID::count_);
+concept known_kind_of = std::is_object_v<Val> &&
+                        in_range_ex(impl::kind_id_of<normalize_type_t<Val>>,
+                                    DataKind::ID::unknown_,
+                                    DataKind::ID::count_);
 
 /// Data kind of a class.
 template<known_kind_of Val>

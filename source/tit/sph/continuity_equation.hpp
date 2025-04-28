@@ -7,7 +7,6 @@
 
 #include <tuple>
 
-#include "tit/core/meta.hpp"
 #include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
@@ -29,11 +28,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      (MassSources::required_fields | ... | meta::Set{rho, drho_dt});
+      (MassSources::required_fields | ... | TypeSet{rho, drho_dt});
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      (MassSources::modified_fields | ... | meta::Set{/*empty*/});
+      (MassSources::modified_fields | ... | TypeSet{});
 
   /// Construct the continuity equation.
   constexpr explicit ContinuityEquation(MassSources... mass_sources) noexcept
