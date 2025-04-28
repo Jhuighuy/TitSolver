@@ -22,7 +22,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/str.hpp"
 #include "tit/core/sys/utils.hpp"
 
 #ifdef TIT_HAVE_GCOV
@@ -63,14 +62,6 @@ auto exe_path() -> std::filesystem::path {
 #else
 #error Unsupported platform!
 #endif
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto get_env(CStrView name) noexcept -> std::optional<std::string_view> {
-  const auto* const value = std::getenv(name.c_str()); // NOLINT(*-mt-unsafe)
-  if (value == nullptr) return std::nullopt;
-  return std::string_view{value};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
