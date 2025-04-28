@@ -7,7 +7,7 @@
 
 #include <concepts>
 
-#include "tit/core/meta.hpp"
+#include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
 
@@ -20,10 +20,10 @@ class MotionEquation final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{r, v};
+  static constexpr TypeSet required_fields{r, v};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
 }; // class MotionEquation
 
