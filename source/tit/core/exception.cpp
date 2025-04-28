@@ -5,13 +5,11 @@
 
 #include <exception>
 #include <format>
-#include <string>
 
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/io.hpp"
 #include "tit/core/par/control.hpp"
-#include "tit/core/sys/stacktrace.hpp"
 #include "tit/core/sys/utils.hpp"
 
 namespace tit {
@@ -37,7 +35,7 @@ inline void report_std_exception_(const std::exception& e) {
   eprintln("  {}", throw_expression);
   eprintln("  ^{:~>{}} {}", "", throw_expression.size() - 1, e.what());
   eprintln();
-  eprintln("{}", tit_e != nullptr ? tit_e->when() : Stacktrace::current());
+  eprintln("{}", tit_e != nullptr ? tit_e->when() : std::stacktrace::current());
 }
 
 // Report unhandled exception that does not derive from `std::exception`.
@@ -46,7 +44,7 @@ inline void report_std_exception_(const std::exception& e) {
   eprintln();
   eprintln("Terminating due to an unhandled exception.");
   eprintln();
-  eprintln("{}", Stacktrace::current());
+  eprintln("{}", std::stacktrace::current());
 }
 
 // Report call to `std::terminate`.
@@ -55,7 +53,7 @@ inline void report_std_exception_(const std::exception& e) {
   eprintln();
   eprintln("Terminating due to a call to std::terminate().");
   eprintln();
-  eprintln("{}", Stacktrace::current());
+  eprintln("{}", std::stacktrace::current());
 }
 
 } // namespace
