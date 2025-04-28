@@ -7,7 +7,6 @@
 
 #include <concepts>
 
-#include "tit/core/meta.hpp"
 #include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
@@ -21,10 +20,10 @@ class NoParticleShifting final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields = meta::Set{/*empty*/};
+  static constexpr auto required_fields = TypeSet{};
 
   /// Set of particle fields that are modified.
-  static constexpr auto modified_fields = meta::Set{/*empty*/};
+  static constexpr auto modified_fields = TypeSet{};
 
 }; // class NoParticleShifting
 
@@ -34,10 +33,10 @@ class ParticleShiftingTechnique final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields = meta::Set{dr, N, FS};
+  static constexpr auto required_fields = TypeSet{dr, N, FS};
 
   /// Set of particle fields that are modified.
-  static constexpr auto modified_fields = meta::Set{/*empty*/};
+  static constexpr auto modified_fields = TypeSet{};
 
   /// Construct the particle shifting technique.
   ///
@@ -84,11 +83,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      ParticleShifting::required_fields | meta::Set{r, v};
+      ParticleShifting::required_fields | TypeSet{r, v};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      ParticleShifting::required_fields | meta::Set{/*empty*/};
+      ParticleShifting::modified_fields | TypeSet{};
 
   /// Construct the motion equation.
   constexpr explicit MotionEquation(ParticleShifting particle_shifting) noexcept

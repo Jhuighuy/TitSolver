@@ -8,7 +8,6 @@
 #include <concepts>
 #include <tuple>
 
-#include "tit/core/meta.hpp"
 #include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
@@ -29,10 +28,10 @@ class NoEnergyEquation {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{/*empty*/};
+  static constexpr TypeSet required_fields{/*empty*/};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
 }; // class NoEnergyEquation
 
@@ -46,12 +45,12 @@ public:
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
       HeatConductivity::required_fields |
-      (EnergySources::required_fields | ... | meta::Set{u, du_dt});
+      (EnergySources::required_fields | ... | TypeSet{u, du_dt});
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
       HeatConductivity::modified_fields |
-      (EnergySources::modified_fields | ... | meta::Set{/*empty*/});
+      (EnergySources::modified_fields | ... | TypeSet{});
 
   /// Construct the energy equation.
   constexpr explicit EnergyEquation(HeatConductivity heat_conductivity,
