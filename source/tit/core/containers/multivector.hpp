@@ -18,7 +18,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/mdvector.hpp"
-#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"

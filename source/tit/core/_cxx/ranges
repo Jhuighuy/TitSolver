@@ -4,29 +4,35 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
+#pragma GCC system_header
+
+#include_next <ranges>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #ifdef _LIBCPP_VERSION
 
-// NOLINTBEGIN(*-include-cleaner)
-
 #include <array>
 #include <cstdio>
-#include <functional>
+#include_next <functional>
 #include <utility>
 
-#include "tit/core/uint_utils.hpp"
-#include "tit/core/utils.hpp"
-
 _LIBCPP_BEGIN_NAMESPACE_STD
-
 namespace ranges::views {
+
+namespace impl {
 
 template<class Range>
 concept good_range =
     std::ranges::viewable_range<Range> && std::ranges::sized_range<Range> &&
     std::ranges::random_access_range<Range>;
+
+template<class UInt>
+constexpr auto divide_up(UInt n, UInt d) noexcept -> UInt {
+  return (n + d - UInt{1}) / d;
+}
+
+} // namespace impl
 
 inline constexpr struct {
   template<std::ranges::viewable_range Range>
@@ -37,7 +43,7 @@ inline constexpr struct {
 } as_const{};
 
 inline constexpr struct {
-  template<good_range Range>
+  template<impl::good_range Range>
   constexpr auto operator()(Range&& range) const noexcept {
     using Ref = std::ranges::range_reference_t<Range>;
     auto view = std::views::all(std::forward<Range>(range));
@@ -49,10 +55,11 @@ inline constexpr struct {
 } enumerate{};
 
 inline constexpr struct {
-  template<good_range Range>
+  template<impl::good_range Range>
   constexpr auto operator()(Range&& range, size_t chunk_size) const noexcept {
     auto view = std::views::all(std::forward<Range>(range));
-    const auto num_chunks = tit::divide_up(std::ranges::size(view), chunk_size);
+    const auto num_chunks =
+        impl::divide_up(std::ranges::size(view), chunk_size);
     return std::views::iota(0UZ, num_chunks) |
            std::views::transform(
                [view = std::move(view), chunk_size](size_t chunk_index) {
@@ -71,7 +78,7 @@ inline constexpr struct {
 template<size_t N>
 struct AdjacentTransformAdaptor {
   static_assert(N == 2, "Only two adjacent elements are supported!");
-  template<good_range Range, class Func>
+  template<impl::good_range Range, class Func>
   constexpr auto operator()(Range&& range, Func func) const noexcept {
     auto view = std::views::all(std::forward<Range>(range));
     return std::views::iota(0UZ, std::ranges::size(range) - 1) |
@@ -90,7 +97,7 @@ template<size_t N>
 inline constexpr AdjacentTransformAdaptor<N> adjacent_transform{};
 
 inline constexpr struct {
-  template<good_range... Ranges>
+  template<impl::good_range... Ranges>
   constexpr auto operator()(Ranges&&... ranges) const noexcept {
     static constexpr auto Dim = sizeof...(Ranges);
     const auto flat_size = (std::ranges::size(ranges) * ...);
@@ -111,20 +118,7 @@ inline constexpr struct {
 } cartesian_product{};
 
 } // namespace ranges::views
-
-template<class... Ts>
-struct move_only_function : std::function<Ts...> {
-  TIT_MOVE_ONLY(move_only_function);
-  using std::function<Ts...>::function;
-  ~move_only_function() noexcept = default;
-  move_only_function(move_only_function&&) noexcept = default;
-  auto operator=(move_only_function&&) noexcept
-      -> move_only_function& = default;
-};
-
 _LIBCPP_END_NAMESPACE_STD
-
-// NOLINTEND(*-include-cleaner)
 
 #endif // ifdef _LIBCPP_VERSION
 

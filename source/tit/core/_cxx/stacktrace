@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
+#pragma GCC system_header
 
 #include <format>
 #include <ranges>
@@ -11,36 +12,28 @@
 #define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 #include <boost/stacktrace/stacktrace.hpp>
 
-#include "tit/core/missing.hpp" // IWYU pragma: keep
-
-namespace tit {
+#ifdef _LIBCPP_VERSION
+_LIBCPP_BEGIN_NAMESPACE_STD
+#elifdef __GLIBCXX__
+namespace std _GLIBCXX_VISIBILITY(default) {
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+#endif // ifdef _LIBCPP_VERSION
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Stack trace.
-class Stacktrace final : public boost::stacktrace::stacktrace {
-public:
-
+struct stacktrace final : public boost::stacktrace::stacktrace {
   using boost::stacktrace::stacktrace::stacktrace;
-
-  /// Retrieve the current stack trace.
-  [[gnu::always_inline]] static auto current() noexcept -> Stacktrace {
+  [[gnu::always_inline]] static auto current() noexcept -> stacktrace {
     return {};
   }
+};
 
-}; // class Stacktrace
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-} // namespace tit
-
-// Stack trace formatter.
 template<>
-struct std::formatter<tit::Stacktrace> {
+struct formatter<stacktrace> {
   static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }
-  static constexpr auto format(const tit::Stacktrace& stacktrace,
+  static constexpr auto format(const std::stacktrace& stacktrace,
                                std::format_context& context) {
     auto out = context.out();
     out = std::format_to(out, "\nStack trace:\n");
@@ -56,3 +49,10 @@ struct std::formatter<tit::Stacktrace> {
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#ifdef _LIBCPP_VERSION
+_LIBCPP_END_NAMESPACE_STD
+#elifdef __GLIBCXX__
+_GLIBCXX_END_NAMESPACE_VERSION
+} // namespace std
+#endif // ifdef _LIBCPP_VERSION
