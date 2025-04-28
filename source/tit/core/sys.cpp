@@ -70,14 +70,6 @@ auto exe_path() -> std::filesystem::path {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto get_env(CStrView name) noexcept -> std::optional<std::string_view> {
-  const auto* const value = std::getenv(name.c_str()); // NOLINT(*-mt-unsafe)
-  if (value == nullptr) return std::nullopt;
-  return std::string_view{value};
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 auto tty_width(TTY tty) -> std::optional<size_t> {
   const auto tty_fileno = std::to_underlying(tty);
   if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.
