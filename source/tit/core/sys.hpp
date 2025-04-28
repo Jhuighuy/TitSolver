@@ -7,13 +7,10 @@
 
 #include <filesystem>
 #include <optional>
-#include <string>
-#include <typeinfo>
 
 #include <unistd.h>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/str.hpp"
 
 namespace tit {
 
@@ -54,33 +51,6 @@ enum class TTY : uint8_t {
 
 /// Query terminal width.
 auto tty_width(TTY tty) -> std::optional<size_t>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Try to demangle a mangled name.
-/// @{
-auto try_demangle(CStrView mangled_name) -> std::optional<std::string>;
-auto try_demangle_arg_type(const auto& arg) -> std::optional<std::string> {
-  return try_demangle(CStrView{typeid(arg).name()});
-}
-template<class Type>
-auto try_demangle_type() -> std::optional<std::string> {
-  return try_demangle(CStrView{typeid(Type).name()});
-}
-/// @}
-
-/// Try to demangle a mangled name.
-/// If demangling fails, return the original name.
-/// @{
-auto maybe_demangle(CStrView mangled_name) -> std::string;
-auto maybe_demangle_arg_type(const auto& arg) -> std::string {
-  return maybe_demangle(CStrView{typeid(arg).name()});
-}
-template<class Type>
-auto maybe_demangle_type() -> std::string {
-  return maybe_demangle(CStrView{typeid(Type).name()});
-}
-/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

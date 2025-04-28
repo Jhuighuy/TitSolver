@@ -10,7 +10,7 @@
 
 #include "tit/core/exception.hpp"
 #include "tit/core/str.hpp"
-#include "tit/core/sys.hpp"
+#include "tit/core/type.hpp"
 
 namespace tit {
 
@@ -41,7 +41,7 @@ auto get_env(CStrView name) -> std::optional<Val> {
                "Invalid value of environment variable '{}={}'. Must be '{}'.",
                name,
                val,
-               maybe_demangle_type<Val>());
+               type_name_of<Val>());
     return result;
   });
 }
