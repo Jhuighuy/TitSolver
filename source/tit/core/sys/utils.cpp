@@ -3,17 +3,11 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifdef __APPLE__
-#include <array>
-#endif
 #include <cstdlib>
-#include <filesystem>
 #include <optional>
 #include <utility>
 
 #ifdef __APPLE__
-#include <libproc.h>
-#include <sys/proc_info.h>
 #include <sys/ttycom.h>
 #endif
 #include <sys/ioctl.h>
@@ -47,21 +41,6 @@ void checked_atexit(atexit_callback_t callback) {
   __gcov_dump();
 #endif
   std::_Exit(std::to_underlying(exit_code));
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto exe_path() -> std::filesystem::path {
-#ifdef __APPLE__
-  std::array<char, PROC_PIDPATHINFO_MAXSIZE> buffer{};
-  const auto status = proc_pidpath(getpid(), buffer.data(), sizeof(buffer));
-  TIT_ENSURE(status > 0, "Unable to query the current executable path!");
-  return buffer.data();
-#elifdef __linux__
-  return std::filesystem::canonical("/proc/self/exe");
-#else
-#error Unsupported platform!
-#endif
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
