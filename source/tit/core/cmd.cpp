@@ -5,12 +5,12 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/cmd.hpp"
+#include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/sys/signal.hpp"
-#include "tit/core/sys/utils.hpp"
 
 namespace tit {
 
