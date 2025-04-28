@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <filesystem>
 #include <optional>
 
 #include <unistd.h>
@@ -35,11 +34,6 @@ enum class ExitCode : uint8_t {
 ///
 /// @note No at-exit callbacks are triggered, except for coverage report.
 [[noreturn]] void fast_exit(ExitCode exit_code) noexcept;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Path to the current executable.
-auto exe_path() -> std::filesystem::path;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
