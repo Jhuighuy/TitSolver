@@ -4,16 +4,8 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <cstdlib>
-#include <optional>
 #include <utility>
 
-#ifdef __APPLE__
-#include <sys/ttycom.h>
-#endif
-#include <sys/ioctl.h>
-#include <unistd.h>
-
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/sys/utils.hpp"
@@ -41,20 +33,6 @@ void checked_atexit(atexit_callback_t callback) {
   __gcov_dump();
 #endif
   std::_Exit(std::to_underlying(exit_code));
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto tty_width(TTY tty) -> std::optional<size_t> {
-  const auto tty_fileno = std::to_underlying(tty);
-  if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.
-
-  winsize window_size = {}; // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
-  const auto status = ioctl(tty_fileno, TIOCGWINSZ, &window_size);
-  TIT_ENSURE(status == 0,
-             "Unable to query terminal window size with fileno {}!",
-             tty_fileno);
-  return window_size.ws_col;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

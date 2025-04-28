@@ -5,10 +5,6 @@
 
 #pragma once
 
-#include <optional>
-
-#include <unistd.h>
-
 #include "tit/core/basic_types.hpp"
 
 namespace tit {
@@ -34,17 +30,6 @@ enum class ExitCode : uint8_t {
 ///
 /// @note No at-exit callbacks are triggered, except for coverage report.
 [[noreturn]] void fast_exit(ExitCode exit_code) noexcept;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Terminal stream type.
-enum class TTY : uint8_t {
-  Stdout = STDOUT_FILENO, ///< Standard output.
-  Stderr = STDERR_FILENO, ///< Standard error.
-};
-
-/// Query terminal width.
-auto tty_width(TTY tty) -> std::optional<size_t>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
