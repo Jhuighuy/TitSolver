@@ -7,12 +7,10 @@
 
 #include <filesystem>
 #include <optional>
-#include <string_view>
 
 #include <unistd.h>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/str.hpp"
 
 namespace tit {
 
@@ -53,19 +51,6 @@ enum class TTY : uint8_t {
 
 /// Query terminal width.
 auto tty_width(TTY tty) -> std::optional<size_t>;
-
-/// Get the value of an environment variable.
-/// @{
-auto get_env(CStrView name) noexcept -> std::optional<std::string_view>;
-template<class Val>
-auto get_env(CStrView name) noexcept -> std::optional<Val> {
-  return get_env(name).and_then(str_to<Val>);
-}
-template<class Val>
-auto get_env(CStrView name, Val fallback) noexcept -> Val {
-  return get_env<Val>(name).value_or(fallback);
-}
-/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
