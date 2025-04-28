@@ -20,8 +20,7 @@
 #include <oneapi/tbb/partitioner.h>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/containers/boost.hpp"
-#include "tit/core/missing.hpp" // IWYU pragma: keep
+#include "tit/core/containers/inplace_vector.hpp"
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/utils.hpp"

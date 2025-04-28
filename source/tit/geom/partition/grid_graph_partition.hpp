@@ -10,7 +10,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/containers/boost.hpp"
+#include "tit/core/containers/inplace_flat_map.hpp"
 #include "tit/core/containers/mdvector.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"

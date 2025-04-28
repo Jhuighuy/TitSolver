@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <stdfloat>
 
 namespace tit {
 
@@ -51,12 +52,10 @@ inline constexpr size_t npos = SIZE_MAX;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// 32-bit floating point type.
-/// @todo Use definitions from <stdfloat> when it becomes available.
-using float32_t = float;
+using std::float32_t;
 
 /// 64-bit floating point type.
-/// @todo Use definitions from <stdfloat> when it becomes available.
-using float64_t = double;
+using std::float64_t;
 
 /// Default floating-point type type.
 using real_t = float64_t;
