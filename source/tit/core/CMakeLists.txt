@@ -34,6 +34,8 @@ add_tit_library(
     "containers/small_flat_map.hpp"
     "containers/small_vector.hpp"
     "enum.hpp"
+    "env.cpp"
+    "env.hpp"
     "exception.cpp"
     "exception.hpp"
     "main.cpp"
@@ -70,7 +72,6 @@ add_tit_library(
     "tuple.hpp"
     "type.hpp"
     "uint.hpp"
-    "utils.hpp"
     "vec.hpp"
   DEPENDS
     _cxx
@@ -102,6 +103,7 @@ add_tit_executable(
     "containers/mdvector.test.cpp"
     "containers/multivector.test.cpp"
     "enum.test.cpp"
+    "env.test.cpp"
     "math.test.cpp"
     "meta.test.cpp"
     "numbers/dual.test.cpp"
