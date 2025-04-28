@@ -6,7 +6,6 @@
 #pragma once
 
 #include "tit/core/checks.hpp"
-#include "tit/core/missing.hpp" // IWYU pragma: keep
 
 namespace tit {
 
