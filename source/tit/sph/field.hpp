@@ -14,7 +14,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -29,10 +29,10 @@ namespace impl {
 template<class PV>
 concept with_fields_ =
     requires { std::remove_cvref_t<PV>::fields; } && //
-    meta::is_set_v<decltype(auto(std::remove_cvref_t<PV>::fields))>;
+    is_type_set_v<decltype(auto(std::remove_cvref_t<PV>::fields))>;
 
 template<class PV, class Field>
-concept has_field_ = with_fields_<PV> && meta::type<Field> &&
+concept has_field_ = with_fields_<PV> && empty_type<Field> &&
                      std::remove_cvref_t<PV>::fields.contains(Field{});
 
 } // namespace impl
@@ -83,13 +83,13 @@ public:
 
 /// Field specification type.
 template<class Field>
-concept field = meta::type<Field> && std::derived_from<Field, BaseField>;
+concept field = empty_type<Field> && std::derived_from<Field, BaseField>;
 
 namespace impl {
 template<class FieldSet>
 inline constexpr bool is_field_set_v = false;
 template<field... Fields>
-inline constexpr bool is_field_set_v<meta::Set<Fields...>> = true;
+inline constexpr bool is_field_set_v<TypeSet<Fields...>> = true;
 } // namespace impl
 
 /// Field set specification type.
@@ -126,7 +126,7 @@ concept field_set = impl::is_field_set_v<FieldSet>;
   TIT_DEFINE_FIELD(TIT_PASS(Mat<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
 
 /// Field name.
-template<meta::type Field>
+template<empty_type Field>
 inline constexpr auto field_name_v = std::remove_cvref_t<Field>::field_name;
 
 /// Space specification.
@@ -145,17 +145,17 @@ struct is_space<Space<Num, Dim>> : std::true_type {};
 template<class S>
 concept space = impl::is_space<S>::value;
 
-template<meta::type Field, class Space>
+template<empty_type Field, class Space>
 struct field_value;
 
-template<meta::type Field, class Real, size_t Dim>
+template<empty_type Field, class Real, size_t Dim>
 struct field_value<Field, Space<Real, Dim>> {
   using type =
       typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
 };
 
 /// Field value type.
-template<meta::type Field, class Space>
+template<empty_type Field, class Space>
 using field_value_t = typename field_value<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
