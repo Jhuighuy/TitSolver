@@ -15,7 +15,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/meta.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
@@ -128,9 +127,8 @@ private:
 template<class PV, auto... fields>
 concept particle_view =
     specialization_of<std::remove_cvref_t<PV>, ParticleView> &&
-    ((field_set<decltype(meta::Set{fields})> &&
-      std::remove_cvref_t<PV>::fields.includes(meta::Set{fields})) &&
-     ...);
+    field_set<decltype(TypeSet{fields...})> &&
+    (TypeSet{fields...} <= std::remove_cvref_t<PV>::fields);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -281,11 +279,11 @@ private:
   std::array<size_t, std::to_underlying(ParticleType::count) + 1>
       particle_ranges_{0};
 
-  decltype([]<class... Fields>(meta::Set<Fields...> /*fields*/) {
+  decltype([]<class... Fields>(TypeSet<Fields...> /*fields*/) {
     return std::tuple<field_value_t<Fields, Space>...>{};
   }(uniform_fields)) uniform_data_;
 
-  decltype([]<class... Fields>(meta::Set<Fields...> /*fields*/) {
+  decltype([]<class... Fields>(TypeSet<Fields...> /*fields*/) {
     return std::tuple<std::vector<field_value_t<Fields, Space>>...>{};
   }(varying_fields)) varying_data_;
 
@@ -354,7 +352,7 @@ template<class P>
   requires particle_view<P> || particle_array<P>
 consteval auto has(field auto... fields) -> bool {
   constexpr auto present_fields = std::remove_cvref_t<P>::fields;
-  return present_fields.includes(meta::Set{fields...});
+  return TypeSet{fields...} <= present_fields;
 }
 
 /// Check particle uniform fields presence.
@@ -362,7 +360,7 @@ template<class P>
   requires particle_view<P> || particle_array<P>
 consteval auto has_uniform(field auto... uniforms) -> bool {
   constexpr auto present_fields = std::remove_cvref_t<P>::uniform_fields;
-  return present_fields.includes(meta::Set{uniforms...});
+  return TypeSet{uniforms...} <= present_fields;
 }
 
 /// Check presence of at least one particle field.
@@ -375,7 +373,7 @@ consteval auto has_any(Fields... fields) -> bool {
 // Clear the field value.
 template<class PV, field... Fields>
 constexpr void clear([[maybe_unused]] PV& particle, Fields... fields) {
-  meta::Set{fields...}.for_each([&particle](auto field) {
+  TypeSet{fields...}.for_each([&particle](auto field) {
     if constexpr (has<PV>(field)) particle[field] = {};
   });
 }

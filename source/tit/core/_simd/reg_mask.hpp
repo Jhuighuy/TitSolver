@@ -30,7 +30,7 @@ class alignas(sizeof(Num) * Size) RegMask final {
 public:
 
   /// Highway tag type.
-  using Tag = hn::FixedTag<impl::fixed_width_type_t<Num>, Size>;
+  using Tag = hn::FixedTag<normalize_type_t<Num>, Size>;
 
   /// Highway mask register type.
   using Base = hn::Mask<Tag>;
