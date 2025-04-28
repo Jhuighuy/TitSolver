@@ -12,7 +12,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta.hpp"
 #include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
@@ -27,10 +26,10 @@ class IdealGasEquationOfState final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho, u};
+  static constexpr TypeSet required_fields{rho, u};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct an equation of state.
   ///
@@ -65,10 +64,10 @@ class AdiabaticIdealGasEquationOfState final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho};
+  static constexpr TypeSet required_fields{rho};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct an equation of state.
   ///
@@ -139,10 +138,10 @@ class TaitEquationOfState final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho};
+  static constexpr TypeSet required_fields{rho};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct an equation of state.
   ///
@@ -195,10 +194,10 @@ class LinearTaitEquationOfState final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho};
+  static constexpr TypeSet required_fields{rho};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct an equation of state.
   ///

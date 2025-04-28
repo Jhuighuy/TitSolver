@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/utils.hpp"
+#include "tit/core/type.hpp"
 
 namespace tit {
 

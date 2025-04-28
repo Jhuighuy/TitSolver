@@ -664,7 +664,7 @@ constexpr auto approx_equal_to(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
 ///
 /// @returns 3D vector with a result of cross product.
 template<class Num, size_t Dim>
-  requires in_range_v<Dim, 1, 3>
+  requires (in_range(Dim, 1, 3))
 constexpr auto cross(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
     -> Vec<Num, 3> {
   Vec<Num, 3> r{};
