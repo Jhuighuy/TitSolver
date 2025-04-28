@@ -1,0 +1,35 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+ * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+#pragma once
+#pragma GCC system_header
+
+#ifdef _LIBCPP_VERSION
+_LIBCPP_BEGIN_NAMESPACE_STD
+#elifdef __GLIBCXX__
+namespace std _GLIBCXX_VISIBILITY(default) {
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+#endif // ifdef _LIBCPP_VERSION
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+static_assert(sizeof(float) == 4, "'float' must be 32 bits");
+
+using float32_t = float;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+static_assert(sizeof(double) == 8, "'double' must be 64 bits");
+
+using float64_t = double;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#ifdef _LIBCPP_VERSION
+_LIBCPP_END_NAMESPACE_STD
+#elifdef __GLIBCXX__
+_GLIBCXX_END_NAMESPACE_VERSION
+} // namespace std
+#endif // ifdef _LIBCPP_VERSION

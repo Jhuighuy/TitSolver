@@ -8,10 +8,10 @@
 #include <exception>
 #include <format> // IWYU pragma: keep
 #include <source_location>
+#include <stacktrace>
 #include <string>
 #include <utility>
 
-#include "tit/core/sys/stacktrace.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -26,7 +26,7 @@ public:
   [[gnu::always_inline]] explicit Exception(
       std::string message,
       std::source_location location = std::source_location::current(),
-      Stacktrace stacktrace = Stacktrace::current())
+      std::stacktrace stacktrace = std::stacktrace::current())
       : message_{std::move(message)}, location_{location},
         stacktrace_{std::move(stacktrace)} {}
 
@@ -41,7 +41,7 @@ public:
   }
 
   /// Retrieve the exception stack trace.
-  auto when() const noexcept -> const Stacktrace& {
+  auto when() const noexcept -> const std::stacktrace& {
     return stacktrace_;
   }
 
@@ -49,7 +49,7 @@ private:
 
   std::string message_;
   std::source_location location_;
-  Stacktrace stacktrace_;
+  std::stacktrace stacktrace_;
 
 }; // class Exception
 
