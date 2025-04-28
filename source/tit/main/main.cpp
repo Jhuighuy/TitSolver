@@ -19,6 +19,7 @@
 #include <execinfo.h>
 #include <unistd.h>
 
+#include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/print.hpp"
