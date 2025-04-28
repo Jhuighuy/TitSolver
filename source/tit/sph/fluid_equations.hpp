@@ -12,9 +12,9 @@
 
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/continuity_equation.hpp"
@@ -48,20 +48,20 @@ public:
       MomentumEquation::required_fields |   //
       EnergyEquation::required_fields |     //
       EquationOfState::required_fields |    //
-      Kernel::required_fields | meta::Set{h, m, r, rho, p, v, dv_dt};
+      Kernel::required_fields | TypeSet{h, m, r, rho, p, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      MotionEquation::modified_fields |            //
-      ContinuityEquation::modified_fields |        //
-      MomentumEquation::modified_fields |          //
-      EnergyEquation::modified_fields |            //
-      EquationOfState::modified_fields |           //
-      Kernel::modified_fields |                    //
-      meta::Set{rho, drho_dt, grad_rho, C, N, L} | //
-      meta::Set{p, v, dv_dt, div_v, curl_v} |      //
-      meta::Set{u, du_dt} |                        //
-      meta::Set{dr, FS};
+      MotionEquation::modified_fields |          //
+      ContinuityEquation::modified_fields |      //
+      MomentumEquation::modified_fields |        //
+      EnergyEquation::modified_fields |          //
+      EquationOfState::modified_fields |         //
+      Kernel::modified_fields |                  //
+      TypeSet{rho, drho_dt, grad_rho, C, N, L} | //
+      TypeSet{p, v, dv_dt, div_v, curl_v} |      //
+      TypeSet{u, du_dt} |                        //
+      TypeSet{dr, FS};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -19,4 +19,12 @@ struct AlwaysTrue final {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Overload a set of functions.
+template<class... Funcs>
+struct Overload final : Funcs... {
+  using Funcs::operator()...;
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit
