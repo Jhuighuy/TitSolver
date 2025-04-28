@@ -8,11 +8,10 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/meta.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
-
 #include "tit/core/type.hpp"
+
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -35,11 +34,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | meta::Set{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | meta::Set{parinfo, r, v, u, alpha};
+      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
 
   /// Construct time integrator.
   ///
@@ -107,11 +106,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | meta::Set{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | meta::Set{parinfo, r, v, u, alpha};
+      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
 
   /// Construct time integrator.
   ///
@@ -190,11 +189,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | meta::Set{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | meta::Set{parinfo, r, v, u, alpha};
+      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
 
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(Equations equations,

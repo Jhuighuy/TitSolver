@@ -8,7 +8,6 @@
 #include <concepts>
 
 #include "tit/core/checks.hpp"
-#include "tit/core/meta.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
@@ -24,10 +23,10 @@ class NoHeatConductivity {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{r};
+  static constexpr TypeSet required_fields{r};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Heat conductivity term.
   template<particle_view<required_fields> PV>
@@ -46,10 +45,10 @@ class HeatConductivity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{rho, r, v, u, kappa};
+  static constexpr TypeSet required_fields{rho, r, v, u, kappa};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct heat conductivity with a constant coefficient.
   ///
