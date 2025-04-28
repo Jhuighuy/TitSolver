@@ -17,6 +17,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/env.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/sys.hpp"
 
