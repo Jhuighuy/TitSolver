@@ -54,6 +54,8 @@ add_tit_library(
     "path-linux.cpp"
     "path-macos.cpp"
     "path.hpp"
+    "posix.cpp"
+    "posix.hpp"
     "print.hpp"
     "profiler.cpp"
     "profiler.hpp"
