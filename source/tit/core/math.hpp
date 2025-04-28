@@ -33,6 +33,8 @@ using std::cos;
 using std::exp;
 using std::floor;
 using std::log;
+using std::log10;
+using std::log2;
 using std::round;
 using std::sin;
 using std::sqrt;
@@ -51,6 +53,8 @@ TIT_MAKE_CONSTEXPR_MATH_FUNC_(cos)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(exp)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(floor)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(log)
+TIT_MAKE_CONSTEXPR_MATH_FUNC_(log10)
+TIT_MAKE_CONSTEXPR_MATH_FUNC_(log2)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(round)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(sin)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(sqrt)

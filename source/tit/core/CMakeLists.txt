@@ -42,7 +42,6 @@ add_tit_library(
     "main.hpp"
     "mat.hpp"
     "math.hpp"
-    "meta.hpp"
     "mimalloc.cpp"
     "numbers/dual.hpp"
     "numbers/strict.hpp"
@@ -70,13 +69,13 @@ add_tit_library(
     "sys.hpp"
     "time.hpp"
     "tuple.hpp"
+    "type.cpp"
     "type.hpp"
     "uint.hpp"
     "vec.hpp"
   DEPENDS
     _cxx
     Boost::container
-    Boost::core
     gcem
     hwy::hwy
     mimalloc-static
@@ -105,7 +104,6 @@ add_tit_executable(
     "enum.test.cpp"
     "env.test.cpp"
     "math.test.cpp"
-    "meta.test.cpp"
     "numbers/dual.test.cpp"
     "par/algorithms.test.cpp"
     "par/atomic.test.cpp"
