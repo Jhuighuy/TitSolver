@@ -39,10 +39,18 @@ namespace tit {
 
 /// Check if the given value is in the range [ @p a, @p b ].
 template<class T>
-constexpr auto in_range(T x,
-                        std::type_identity_t<T> a,
-                        std::type_identity_t<T> b) noexcept -> bool {
+constexpr auto in_range(const T& x,
+                        const std::type_identity_t<T>& a,
+                        const std::type_identity_t<T>& b) noexcept -> bool {
   return a <= x && x <= b;
+}
+
+/// Check if the given value is in the range ( @p a, @p b ).
+template<class T>
+constexpr auto in_range_ex(const T& x,
+                           const std::type_identity_t<T>& a,
+                           const std::type_identity_t<T>& b) noexcept -> bool {
+  return a < x && x < b;
 }
 
 /// Check that the value is equal to any of the given values.
@@ -100,41 +108,6 @@ template<class Val, class Key>
 constexpr auto translate(Key key) -> Translator<Key, Val> {
   return Translator<Key, Val>{std::move(key)};
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// NOLINTBEGIN(*-macro-parentheses)
-
-/// Mark the class as move-only.
-#define TIT_MOVE_ONLY(Class)                                                   \
-  /** This class is not copy-constructible. */                                 \
-  Class(const Class&) = delete;                                                \
-  /** This class is not copy-assignable. */                                    \
-  auto operator=(const Class&)->Class& = delete
-
-/// Mark the class as not copyable or movable.
-#define TIT_NOT_COPYABLE_OR_MOVABLE(Class)                                     \
-  TIT_MOVE_ONLY(Class);                                                        \
-  /** This class is not move-constructible. */                                 \
-  Class(Class&&) = delete;                                                     \
-  /** This class is not move-assignable. */                                    \
-  auto operator=(Class&&)->Class& = delete
-
-// NOLINTEND(*-macro-parentheses)
-
-/// Virtual base class.
-class VirtualBase {
-public:
-
-  TIT_NOT_COPYABLE_OR_MOVABLE(VirtualBase);
-
-  /// Default constructor.
-  constexpr VirtualBase() = default;
-
-  /// Virtual destructor.
-  constexpr virtual ~VirtualBase() = default;
-
-}; // class VirtualBase
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

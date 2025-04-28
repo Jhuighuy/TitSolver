@@ -12,6 +12,7 @@
 #include <string>
 #include <utility>
 
+#include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {

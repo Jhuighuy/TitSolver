@@ -8,11 +8,11 @@
 #include <array>
 #include <functional>
 #include <tuple>
+#include <type_traits>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit::geom {
@@ -129,16 +129,17 @@ public:
     TIT_ASSERT(point >= low_, "Split point is below lower bounds!");
     TIT_ASSERT(point <= high_, "Split point is above upper bounds!");
     return [&point]<size_t Axis>(this const auto& self,
-                                 value_constant_t<Axis> /*axis*/,
+                                 std::integral_constant<size_t, Axis> /*axis*/,
                                  const auto&... boxes) {
       auto split_boxes = array_cat(boxes.split(Axis, point[Axis])...);
       if constexpr (Axis == vec_dim_v<Vec> - 1) {
         return split_boxes;
       } else {
-        return std::apply(std::bind_front(self, value_constant_t<Axis + 1>{}),
-                          split_boxes);
+        return std::apply(
+            std::bind_front(self, std::integral_constant<size_t, Axis + 1>{}),
+            split_boxes);
       }
-    }(value_constant_t<size_t{0}>{}, *this);
+    }(std::integral_constant<size_t, 0>{}, *this);
   }
 
 private:
