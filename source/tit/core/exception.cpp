@@ -12,6 +12,7 @@
 #include "tit/core/par/control.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/sys.hpp"
+#include "tit/core/type.hpp"
 
 namespace tit {
 
@@ -31,8 +32,7 @@ inline void report_std_exception_(const std::exception& e) {
   }
   eprintln("Terminating due to an unhandled exception.");
   eprintln();
-  const auto throw_expression =
-      std::format("throw {}(...);", maybe_demangle_arg_type(e));
+  const auto throw_expression = std::format("throw {}(...);", type_name_of(e));
   eprintln("  {}", throw_expression);
   eprintln("  ^{:~>{}} {}", "", throw_expression.size() - 1, e.what());
   eprintln();
