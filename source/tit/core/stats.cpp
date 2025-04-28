@@ -12,6 +12,7 @@
 #include "tit/core/containers/str_hash_map.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/stats.hpp"
+#include "tit/core/sys/io.hpp"
 #include "tit/core/sys/utils.hpp"
 
 namespace tit {
@@ -37,7 +38,7 @@ void Stats::report_() {
                     [](const auto* var) -> const auto& { return var->first; });
 
   // Print the report table.
-  const auto width = tty_width(TTY::Stdout).value_or(80);
+  const auto width = terminal_width(stdout_fd);
   constexpr size_t name_width = 19;
   constexpr const auto* name_title = "name";
   constexpr const auto* values_title = "value";
