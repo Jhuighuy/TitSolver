@@ -14,6 +14,6 @@ if [[ "$*" == *"-h"* || "$*" == *"--help"* ]]; then
 fi
 
 # Count the lines of code.
-git ls-files "$@" | xargs cloc
+git ls-files "$@" | xargs cloc --exclude-ext=txt
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
