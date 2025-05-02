@@ -12,91 +12,96 @@
 namespace tit {
 namespace {
 
-#define NUM_TYPES float, double
+#define FLOAT_TYPES float, double
+#define UINT_TYPES unsigned int, unsigned long
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE_TEMPLATE("zero", Num, NUM_TYPES) {
-  CHECK(zero(Num{2}) == Num{0});
-}
-
-TEST_CASE_TEMPLATE("tiny_v", Num, NUM_TYPES) {
+TEST_CASE_TEMPLATE("tiny_v", Float, FLOAT_TYPES) {
   // Tiny number must not be less than machine epsilon.
-  static_assert(tiny_v<Num> >= std::numeric_limits<Num>::epsilon());
+  static_assert(tiny_v<Float> >= std::numeric_limits<Float>::epsilon());
 }
 
-TEST_CASE_TEMPLATE("is_tiny", Num, NUM_TYPES) {
-  // Check ordinary numbers.
-  CHECK(is_tiny(+Num{0.0}));
-  CHECK(is_tiny(-Num{0.0}));
-  CHECK_FALSE(is_tiny(+Num{1.0}));
-  CHECK_FALSE(is_tiny(-Num{1.0}));
-  // Check if comparisons with `tiny_v` work as expected.
-  CHECK(is_tiny(+tiny_v<Num>));
-  CHECK(is_tiny(-tiny_v<Num>));
-  CHECK(is_tiny(+Num{0.1} * tiny_v<Num>));
-  CHECK(is_tiny(-Num{0.1} * tiny_v<Num>));
-  CHECK_FALSE(is_tiny(+Num{2.0} * tiny_v<Num>));
-  CHECK_FALSE(is_tiny(-Num{2.0} * tiny_v<Num>));
+TEST_CASE_TEMPLATE("is_tiny", Float, FLOAT_TYPES) {
+  CHECK(is_tiny(+Float{0.0}));
+  CHECK(is_tiny(-Float{0.0}));
+  CHECK_FALSE(is_tiny(+Float{1.0}));
+  CHECK_FALSE(is_tiny(-Float{1.0}));
+  CHECK(is_tiny(+tiny_v<Float>));
+  CHECK(is_tiny(-tiny_v<Float>));
+  CHECK(is_tiny(+Float{0.1} * tiny_v<Float>));
+  CHECK(is_tiny(-Float{0.1} * tiny_v<Float>));
+  CHECK_FALSE(is_tiny(+Float{2.0} * tiny_v<Float>));
+  CHECK_FALSE(is_tiny(-Float{2.0} * tiny_v<Float>));
 }
 
-TEST_CASE_TEMPLATE("approx_equal_to", Num, NUM_TYPES) {
-  // Check ordinary numbers.
-  CHECK(approx_equal_to(Num{1.23}, Num{1.23}));
-  CHECK_FALSE(approx_equal_to(Num{1.23}, Num{5.67}));
-  // Check if comparisons with `tiny_v` work as expected.
-  CHECK(approx_equal_to(Num{1.23}, Num{1.23} + Num{0.1} * tiny_v<Num>));
-  CHECK(approx_equal_to(Num{1.23} - Num{0.1} * tiny_v<Num>, Num{1.23}));
-  CHECK_FALSE(approx_equal_to(Num{1.23}, Num{1.23} + Num{2.0} * tiny_v<Num>));
-  CHECK_FALSE(approx_equal_to(Num{1.23} - Num{2.0} * tiny_v<Num>, Num{1.23}));
+TEST_CASE_TEMPLATE("approx_equal_to", Float, FLOAT_TYPES) {
+  CHECK(approx_equal_to(Float{1.23}, Float{1.23}));
+  CHECK_FALSE(approx_equal_to(Float{1.23}, Float{5.67}));
+  CHECK(approx_equal_to(Float{1.23}, Float{1.23} + Float{0.1} * tiny_v<Float>));
+  CHECK(approx_equal_to(Float{1.23} - Float{0.1} * tiny_v<Float>, Float{1.23}));
+  CHECK_FALSE(approx_equal_to(Float{1.23}, //
+                              Float{1.23} + Float{2.0} * tiny_v<Float>));
+  CHECK_FALSE(approx_equal_to(Float{1.23} - Float{2.0} * tiny_v<Float>, //
+                              Float{1.23}));
 }
 
-TEST_CASE_TEMPLATE("bitwise_equal", Num, NUM_TYPES) {
+TEST_CASE_TEMPLATE("bitwise_equal", Float, FLOAT_TYPES) {
   // Check ordinary numbers.
-  CHECK(bitwise_equal(Num{1.23}, Num{1.23}));
-  CHECK_FALSE(bitwise_equal(Num{1.23}, Num{1.24}));
+  CHECK(bitwise_equal(Float{1.23}, Float{1.23}));
+  CHECK_FALSE(bitwise_equal(Float{1.23}, Float{1.24}));
   // Zeros of different signs are not bitwise-equal.
-  CHECK(Num{+0.0} == Num{-0.0});
-  CHECK_FALSE(bitwise_equal(Num{+0.0}, Num{-0.0}));
+  CHECK(Float{+0.0} == Float{-0.0});
+  CHECK_FALSE(bitwise_equal(Float{+0.0}, Float{-0.0}));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE_TEMPLATE("pow", Num, NUM_TYPES) {
-  CHECK(pow<0>(-Num{2}) == +Num{1});
-  CHECK(ipow(-Num{2}, 1) == -Num{2});
-  CHECK(pow2(-Num{2}) == +Num{4});
-  CHECK(pow<3>(-Num{2}) == -Num{8});
-  CHECK(ipow(-Num{2}, 4) == +Num{16});
-  CHECK(pow<5>(-Num{2}) == -Num{32});
-  CHECK(pow<6>(-Num{2}) == +Num{64});
-  CHECK(pow<7>(-Num{2}) == -Num{128});
-  CHECK(ipow(-Num{2}, 8) == +Num{256});
-  CHECK(pow<9>(-Num{2}) == -Num{512});
-  CHECK(pow(-Num{2}, 10) == Num{1024});
+TEST_CASE_TEMPLATE("pow", Float, FLOAT_TYPES) {
+  CHECK(pow<0>(-Float{2}) == +Float{1});
+  CHECK(pow(-Float{2}, 1) == -Float{2});
+  CHECK(pow2(-Float{2}) == +Float{4});
+  CHECK(pow<3>(-Float{2}) == -Float{8});
+  CHECK(pow(-Float{2}, 4) == +Float{16});
+  CHECK(pow<5>(-Float{2}) == -Float{32});
+  CHECK(pow<6>(-Float{2}) == +Float{64});
+  CHECK(pow<7>(-Float{2}) == -Float{128});
+  CHECK(pow(-Float{2}, 8) == +Float{256});
+  CHECK(pow<9>(-Float{2}) == -Float{512});
+  CHECK(pow(-Float{2}, 10) == Float{1024});
 }
 
-TEST_CASE_TEMPLATE("horner", Num, NUM_TYPES) {
-  CHECK(horner(Num{1}, {Num{1}}) == Num{1});
-  CHECK(horner(Num{3}, {Num{1}, -Num{3}, Num{2}}) == Num{10});
-  CHECK(horner(-Num{2}, {Num{4}, -Num{1}, Num{3}}) == Num{18});
-  CHECK(horner(Num{3}, {Num{6}, Num{1}, -Num{4}, Num{1}}) == Num{0});
-}
-
-TEST_CASE_TEMPLATE("inverse", Num, NUM_TYPES) {
-  CHECK(inverse(Num{2}) == 0.5);
-  CHECK(inverse(Num{8}) == 0.125);
+TEST_CASE_TEMPLATE("horner", Float, FLOAT_TYPES) {
+  CHECK(horner(Float{1}, {Float{1}}) == Float{1});
+  CHECK(horner(Float{3}, {Float{1}, -Float{3}, Float{2}}) == Float{10});
+  CHECK(horner(-Float{2}, {Float{4}, -Float{1}, Float{3}}) == Float{18});
+  CHECK(horner(Float{3}, {Float{6}, Float{1}, -Float{4}, Float{1}}) ==
+        Float{0});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE_TEMPLATE("avg", Num, NUM_TYPES) {
-  CHECK(avg(Num{1}, Num{2}) == static_cast<Num>(1.5));
-  CHECK(avg(Num{1}, Num{2}, Num{3}) == static_cast<Num>(2.0));
+TEST_CASE_TEMPLATE("inverse", Float, FLOAT_TYPES) {
+  CHECK(inverse(Float{2}) == 0.5);
+  CHECK(inverse(Float{8}) == 0.125);
 }
 
-TEST_CASE_TEMPLATE("havg", Num, NUM_TYPES) {
-  CHECK(havg(Num{1.0}, Num{4.0}) == Num{1.6});
+TEST_CASE_TEMPLATE("divide_up", UInt, UINT_TYPES) {
+  CHECK(divide_up(UInt{0}, UInt{10}) == UInt{0});
+  CHECK(divide_up(UInt{3}, UInt{10}) == UInt{1});
+  CHECK(divide_up(UInt{7}, UInt{10}) == UInt{1});
+  CHECK(divide_up(UInt{10}, UInt{10}) == UInt{1});
+  CHECK(divide_up(UInt{11}, UInt{10}) == UInt{2});
+  CHECK(divide_up(UInt{20}, UInt{10}) == UInt{2});
+}
+
+TEST_CASE_TEMPLATE("avg", Float, FLOAT_TYPES) {
+  CHECK(avg(Float{1}, Float{2}) == static_cast<Float>(1.5));
+  CHECK(avg(Float{1}, Float{2}, Float{3}) == static_cast<Float>(2.0));
+}
+
+TEST_CASE_TEMPLATE("havg", Float, FLOAT_TYPES) {
+  CHECK(havg(Float{1.0}, Float{4.0}) == Float{1.6});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
