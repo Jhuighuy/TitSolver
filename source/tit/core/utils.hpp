@@ -52,6 +52,12 @@ struct AlwaysTrue final {
   }
 };
 
+/// Default-initialize a type.
+template<std::default_initializable T>
+constexpr auto zero(const T& /*a*/) -> T {
+  return T{};
+}
+
 /// Check if the given value is in the range [ @p a, @p b ].
 template<class T>
 constexpr auto in_range(const T& x,
