@@ -71,7 +71,6 @@ add_tit_library(
     "tuple.hpp"
     "type.cpp"
     "type.hpp"
-    "uint.hpp"
     "utils.hpp"
     "vec.hpp"
   DEPENDS
@@ -118,7 +117,6 @@ add_tit_executable(
     "sys/utils.test.cpp"
     "time.test.cpp"
     "type.test.cpp"
-    "uint.test.cpp"
   DEPENDS
     tit::core
     tit::testing

@@ -23,21 +23,13 @@
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Standard math functions.
+//
 
 // Clang does not have constexpr implementations of the math functions yet.
 #ifndef __clang__
-using std::abs;
-using std::atan2;
-using std::ceil;
-using std::cos;
-using std::exp;
-using std::floor;
-using std::log;
-using std::log10;
-using std::log2;
-using std::round;
-using std::sin;
-using std::sqrt;
+#define TIT_MAKE_CONSTEXPR_MATH_FUNC_(func) using std::func;
 #else
 #define TIT_MAKE_CONSTEXPR_MATH_FUNC_(func)                                    \
   constexpr auto func(std::floating_point auto... args) noexcept {             \
@@ -46,6 +38,7 @@ using std::sqrt;
     }                                                                          \
     return std::func(args...);                                                 \
   }
+#endif
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(abs)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(atan2)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(ceil)
@@ -53,21 +46,17 @@ TIT_MAKE_CONSTEXPR_MATH_FUNC_(cos)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(exp)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(floor)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(log)
-TIT_MAKE_CONSTEXPR_MATH_FUNC_(log10)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(log2)
+TIT_MAKE_CONSTEXPR_MATH_FUNC_(log10)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(round)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(sin)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(sqrt)
 #undef TIT_MAKE_CONSTEXPR_MATH_FUNC_
-#endif
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Zero of the same type.
-template<class Num>
-constexpr auto zero(const Num& /*a*/) -> Num {
-  return Num{0};
-}
+//
+// Multiplication and power functions.
+//
 
 /// Square a number.
 template<class Num>
@@ -78,25 +67,25 @@ constexpr auto pow2(Num a) -> Num {
 /// Raise to the non-negative integer power.
 /// @{
 template<class Num>
-constexpr auto ipow(Num a, std::integral auto power) -> Num {
+constexpr auto pow(Num a, std::integral auto power) -> Num {
   if constexpr (std::integral<Num> || std::floating_point<Num>) {
     TIT_ASSERT(power >= 0, "Power must be non-negative!");
     if (power == 0) return Num{1};
   } else TIT_ASSERT(power > 0, "Power must be positive!");
   if (power == 1) return a;
-  if (power % 2 == 0) return ipow(a * a, power / 2);
-  return a * ipow(a * a, power / 2);
+  if (power % 2 == 0) return pow(a * a, power / 2);
+  return a * pow(a * a, power / 2);
 }
 template<std::integral auto Power, class Num>
 constexpr auto pow(Num a) -> Num {
-  return ipow(a, Power);
+  return pow(a, Power);
 }
 /// @}
 
 /// Raise to the floating-point power.
+/// @note This function accepts only standard floating-point types.
 template<std::floating_point Float>
-constexpr auto pow(Float a, std::type_identity_t<Float> power) noexcept
-    -> Float {
+constexpr auto pow(Float a, std::floating_point auto power) noexcept -> Float {
 #ifdef __clang__
   if consteval {
     return gcem::pow(a, power);
@@ -113,10 +102,21 @@ constexpr auto horner(Num x, std::initializer_list<Num> ci) {
   return r;
 }
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Division and average functions.
+//
+
 /// Number reciprocal.
 template<class Num>
 constexpr auto inverse(Num a) -> Num {
   return Num{1} / a;
+}
+
+/// Divide two unsigned integers and round up the result.
+template<std::unsigned_integral UInt>
+constexpr auto divide_up(UInt n, UInt d) noexcept -> UInt {
+  return (n + d - UInt{1}) / d;
 }
 
 /// Arithmetic average function.
@@ -134,6 +134,9 @@ constexpr auto havg(Nums... vals) noexcept {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Comparison functions.
+//
 
 /// Tiny number, used a systemwise zero tolerance.
 template<class Num>
@@ -157,9 +160,6 @@ constexpr auto approx_equal_to(Num a, Num b) -> bool {
 }
 
 /// Check if two numbers are bitwise equal.
-///
-/// This function may be used to as a fast comparison of floating-point numbers
-/// that are known to be not NaN.
 template<std::floating_point Num>
 [[gnu::always_inline]]
 constexpr auto bitwise_equal(Num a, Num b) noexcept -> bool {
