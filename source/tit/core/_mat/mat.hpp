@@ -187,12 +187,6 @@ Mat(carr_ref_t<const Num, 1 + sizeof...(RestNums)>,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Make a zero matrix.
-template<class Num, size_t Dim>
-constexpr auto zero(const Mat<Num, Dim>& /*A*/) -> Mat<Num, Dim> {
-  return {};
-}
-
 /// Make a diagonal matrix.
 template<class Num, size_t Dim>
 constexpr auto eye(const Mat<Num, Dim>& /*A*/, const Num& q = Num{1.0})
@@ -217,14 +211,6 @@ constexpr auto diag(const Mat<Num, Dim>& D) -> Vec<Num, Dim> {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Matrix trace (sum of the diagonal elements).
-template<class Num, size_t Dim>
-constexpr auto tr(const Mat<Num, Dim>& A) -> Num {
-  auto r = A[0, 0];
-  for (size_t i = 1; i < Dim; ++i) r += A[i, i];
-  return r;
-}
 
 /// Product of the diagonal elements.
 template<class Num, size_t Dim>

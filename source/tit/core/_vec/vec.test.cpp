@@ -181,10 +181,6 @@ TEST_CASE_TEMPLATE("Vec::operator>=", Num, NUM_TYPES) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE_TEMPLATE("Vec::zero", Num, NUM_TYPES) {
-  CHECK(zero(Vec{Num{1}, Num{2}}) == Vec{Num{0}, Num{0}});
-}
-
 TEST_CASE_TEMPLATE("Vec::unit", Num, NUM_TYPES) {
   CHECK(unit(Vec<Num, 2>{}) == Vec{Num{1}, Num{0}});
   CHECK(unit<1>(Vec<Num, 2>{}) == Vec{Num{0}, Num{1}});
