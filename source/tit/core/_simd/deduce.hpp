@@ -10,7 +10,7 @@
 #include "tit/core/_simd/reg_mask.hpp"
 #include "tit/core/_simd/traits.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/uint.hpp"
+#include "tit/core/math.hpp"
 
 namespace tit::simd {
 
