@@ -204,7 +204,7 @@ public:
 
   /// Data type width (in bytes).
   constexpr auto width() const -> size_t {
-    return kind().width() * ipow(dim(), std::to_underlying(rank()));
+    return kind().width() * pow(dim(), std::to_underlying(rank()));
   }
 
   /// Data type string representation.

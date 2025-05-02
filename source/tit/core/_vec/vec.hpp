@@ -329,12 +329,6 @@ Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Make a zero vector.
-template<class Num, size_t Dim>
-constexpr auto zero(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
-  return {};
-}
-
 /// Make a unit vector.
 template<size_t Axis = 0, class Num, size_t Dim>
 constexpr auto unit(const Vec<Num, Dim>& /*a*/, const Num& n = Num{1.0})
