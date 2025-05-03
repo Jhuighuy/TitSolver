@@ -13,13 +13,17 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("str_nocase_equal") {
-  SUBCASE("char") {
-    CHECK(str_nocase_equal('A', 'a'));
-    CHECK_FALSE(str_nocase_equal('A', 'B'));
+  SUBCASE("empty") {
+    CHECK(str_nocase_equal("", ""));
   }
-  SUBCASE("string") {
+  SUBCASE("single character") {
+    CHECK(str_nocase_equal("a", "a"));
+    CHECK(str_nocase_equal("a", "A"));
+    CHECK_FALSE(str_nocase_equal("a", "b"));
+  }
+  SUBCASE("multiple characters") {
     CHECK(str_nocase_equal("aBc", "AbC"));
-    CHECK_FALSE(str_nocase_equal("aBc", "AbD")); // codespell:ignore
+    CHECK_FALSE(str_nocase_equal("aBc", "AcC"));
   }
 }
 
