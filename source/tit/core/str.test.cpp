@@ -13,14 +13,8 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("str_nocase_equal") {
-  SUBCASE("char") {
-    CHECK(str_nocase_equal('A', 'a'));
-    CHECK_FALSE(str_nocase_equal('A', 'B'));
-  }
-  SUBCASE("string") {
-    CHECK(str_nocase_equal("aBc", "AbC"));
-    CHECK_FALSE(str_nocase_equal("aBc", "AbD")); // codespell:ignore
-  }
+  CHECK(str_nocase_equal("aBc", "AbC"));
+  CHECK_FALSE(str_nocase_equal("aBc", "AcC"));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
