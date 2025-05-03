@@ -60,6 +60,7 @@ add_tit_library(
     "simd.hpp"
     "stats.cpp"
     "stats.hpp"
+    "str.cpp"
     "str.hpp"
     "stream.hpp"
     "sys.cpp"
