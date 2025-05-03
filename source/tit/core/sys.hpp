@@ -75,11 +75,11 @@ auto get_env(CStrView name, Val fallback) noexcept -> Val {
 /// @{
 auto try_demangle(CStrView mangled_name) -> std::optional<std::string>;
 auto try_demangle_arg_type(const auto& arg) -> std::optional<std::string> {
-  return try_demangle(typeid(arg).name());
+  return try_demangle(CStrView{typeid(arg).name()});
 }
 template<class Type>
 auto try_demangle_type() -> std::optional<std::string> {
-  return try_demangle(typeid(Type).name());
+  return try_demangle(CStrView{typeid(Type).name()});
 }
 /// @}
 
@@ -88,11 +88,11 @@ auto try_demangle_type() -> std::optional<std::string> {
 /// @{
 auto maybe_demangle(CStrView mangled_name) -> std::string;
 auto maybe_demangle_arg_type(const auto& arg) -> std::string {
-  return maybe_demangle(typeid(arg).name());
+  return maybe_demangle(CStrView{typeid(arg).name()});
 }
 template<class Type>
 auto maybe_demangle_type() -> std::string {
-  return maybe_demangle(typeid(Type).name());
+  return maybe_demangle(CStrView{typeid(Type).name()});
 }
 /// @}
 
