@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <filesystem>
 #include <format>
-#include <optional>
 #include <string>
 #include <utility>
 #ifdef __linux__
@@ -34,6 +33,7 @@
 #include "tit/core/str.hpp"
 #include "tit/core/sys/utils.hpp"
 #ifdef __linux__
+#include "tit/core/containers/str_hash_set.hpp"
 #include "tit/core/math.hpp"
 #endif
 
@@ -60,6 +60,24 @@ void checked_atexit(atexit_callback_t callback) {
   __gcov_dump();
 #endif
   std::_Exit(std::to_underlying(exit_code));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto is_terminal(fd_t fd) -> bool {
+  return isatty(std::to_underlying(fd)) != 0;
+}
+
+auto terminal_width(fd_t fd) -> size_t {
+  if (!is_terminal(fd)) return default_terminal_width;
+
+  winsize window_size = {}; // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
+  const auto status = ioctl(std::to_underlying(fd), TIOCGWINSZ, &window_size);
+  TIT_ENSURE(status == 0,
+             "Unable to query terminal window size with fileno {}!",
+             std::to_underlying(fd));
+
+  return window_size.ws_col;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -227,21 +245,6 @@ auto exe_path() -> std::filesystem::path {
 #elifdef __linux__
   return std::filesystem::canonical("/proc/self/exe");
 #endif
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto tty_width(TTY tty) -> std::optional<size_t> {
-  const auto tty_fileno = std::to_underlying(tty);
-  if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.
-
-  winsize window_size = {}; // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
-  const auto status = ioctl(tty_fileno, TIOCGWINSZ, &window_size);
-  TIT_ENSURE(status == 0,
-             "Unable to query terminal window size with fileno {}!",
-             tty_fileno);
-
-  return window_size.ws_col;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

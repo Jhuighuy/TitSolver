@@ -37,22 +37,21 @@ void Stats::report_() {
                     [](const auto* var) -> const auto& { return var->first; });
 
   // Print the report table.
-  const auto width = tty_width(TTY::Stdout).value_or(80);
   constexpr size_t name_width = 19;
   constexpr const auto* name_title = "name";
   constexpr const auto* values_title = "value";
   println();
   println("Statistics report:");
   println();
-  println("{:->{}}", "", width);
+  println_separator();
   println("{:<{}} {}", name_title, name_width, values_title);
-  println("{:->{}}", "", width);
+  println_separator();
   for (const auto* named_var : sorted_vars) {
     const auto& [name, var_ptr] = *named_var;
     println("{:<{}} min: {}", "  ", name_width, var_ptr->render_min());
     println("{:<{}} avg: {}", name, name_width, var_ptr->render_avg());
     println("{:<{}} max: {}", "  ", name_width, var_ptr->render_max());
-    println("{:->{}}", "", width);
+    println_separator();
   }
   println();
 }
