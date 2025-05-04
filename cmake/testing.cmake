@@ -150,6 +150,7 @@ function(add_tit_test)
     "TEST_DATA_DIR=${CMAKE_CURRENT_SOURCE_DIR}/_data"
     "TIT_ENABLE_PROFILER=0"
     "TIT_ENABLE_STATS=0"
+    "TIT_NO_BANNER=1"
   )
   set_tests_properties(
     "${TEST_NAME}"
