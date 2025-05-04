@@ -110,6 +110,7 @@ function(add_tit_test)
     PREPEND
     TEST_ENVIRONMENT
     "TEST_DATA_DIR=${CMAKE_CURRENT_SOURCE_DIR}/_data"
+    "TIT_NO_BANNER=1"
     "TIT_ENABLE_PROFILER=0"
     "TIT_ENABLE_STATS=0"
   )

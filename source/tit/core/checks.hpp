@@ -23,9 +23,9 @@
 /// Use this macro to check the internal logic, do not use it for to check the
 /// status of any operation (in such case, use ``TIT_ENSURE` instead).
 #ifdef TIT_ENABLE_ASSERTS
-#define TIT_ASSERT(expr, message) tit::impl::check((expr), (#expr), message)
+#define TIT_ASSERT(expr, descr) tit::impl::check((expr), (#expr), descr)
 #else
-#define TIT_ASSERT(expr, message) static_cast<void>(expr)
+#define TIT_ASSERT(expr, descr) static_cast<void>(expr)
 #endif
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,15 +33,15 @@
 namespace tit::impl {
 
 [[noreturn]] void report_check_failure(std::string_view expression,
-                                       std::string_view message,
+                                       std::string_view description,
                                        std::source_location location) noexcept;
 
 constexpr void check(
     bool condition,
     std::string_view expression,
-    std::string_view message,
+    std::string_view description,
     std::source_location location = std::source_location::current()) noexcept {
-  if (!condition) report_check_failure(expression, message, location);
+  if (!condition) report_check_failure(expression, description, location);
 }
 
 } // namespace tit::impl

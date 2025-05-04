@@ -8,6 +8,9 @@
 #include <cstdio> // IWYU pragma: keep
 #include <format>
 #include <print>
+#include <source_location>
+#include <stacktrace>
+#include <string_view>
 #include <utility>
 
 namespace tit {
@@ -53,6 +56,29 @@ template<class... Args>
 void err(std::format_string<Args...> fmt, Args&&... args) {
   eprint("ERROR: "), eprintln(fmt, std::forward<Args>(args)...);
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print a separator line.
+/// @{
+void println_separator(char c = '-');
+void eprintln_separator(char c = '-');
+/// @}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print the logo and system information.
+void println_logo_and_system_info();
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print crash report.
+void eprintln_crash_report(
+    std::string_view message,
+    std::string_view cause = "",
+    std::string_view cause_description = "",
+    std::source_location loc = std::source_location::current(),
+    std::stacktrace trace = std::stacktrace::current());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
