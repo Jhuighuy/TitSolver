@@ -14,7 +14,6 @@
 #include "tit/core/containers/str_hash_map.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/sys/io.hpp"
 #include "tit/core/sys/utils.hpp"
 #include "tit/core/time.hpp"
 
@@ -53,7 +52,6 @@ void Profiler::report_() {
   });
 
   // Print the report table.
-  const auto width = terminal_width(stdout_fd);
   constexpr std::string_view abs_time_title = "abs. time [s]";
   constexpr std::string_view rel_time_title = "rel. time [%]";
   constexpr std::string_view num_calls_title = "calls [#]";
@@ -61,13 +59,13 @@ void Profiler::report_() {
   println();
   println("Profiling report:");
   println();
-  println("{:->{}}", "", width);
+  println_separator();
   println("{}    {}    {}    {}",
           abs_time_title,
           rel_time_title,
           num_calls_title,
           section_title);
-  println("{:->{}}", "", width);
+  println_separator();
   const auto root_absolute_time = sorted_sections.front()->second.total();
   for (const auto* section : sorted_sections) {
     const auto& [section_name, stopwatch] = *section;
@@ -83,7 +81,7 @@ void Profiler::report_() {
             num_calls_title.size(),
             section_name);
   }
-  println("{:->{}}", "", width);
+  println_separator();
   println();
 }
 
