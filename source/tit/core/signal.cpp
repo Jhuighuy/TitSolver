@@ -56,8 +56,8 @@ SignalHandler::~SignalHandler() noexcept { // NOLINT(*-exception-escape)
   // Restore the old signal handlers or actions.
   for (const auto& [signal_number, prev_handler] : prev_handlers_) {
     if (std::signal(signal_number, prev_handler) == SIG_ERR) {
-      TIT_ERROR("Unable to restore the previous handler for signal {}!",
-                signal_number);
+      error("Unable to restore the previous handler for signal {}!",
+            signal_number);
     }
   }
 

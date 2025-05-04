@@ -36,10 +36,9 @@ struct formatter<stacktrace> {
   static constexpr auto format(const std::stacktrace& stacktrace,
                                std::format_context& context) {
     auto out = context.out();
-    out = std::format_to(out, "\nStack trace:\n");
     for (const auto& [index, frame] : std::views::enumerate(stacktrace)) {
       out = std::format_to(out,
-                           "\n{:>3} {} {}",
+                           "{:>3} {} {}\n",
                            index,
                            frame.address(),
                            frame.name());
