@@ -64,6 +64,7 @@ add_tit_library(
     "path.hpp"
     "posix.cpp"
     "posix.hpp"
+    "print.cpp"
     "print.hpp"
     "profiler.cpp"
     "profiler.hpp"
