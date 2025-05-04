@@ -6,7 +6,6 @@
 #pragma once
 
 #include <filesystem>
-#include <optional>
 #include <string>
 
 #include <unistd.h>
@@ -36,6 +35,30 @@ enum class ExitCode : uint8_t {
 ///
 /// @note No at-exit callbacks are triggered, except for coverage report.
 [[noreturn]] void fast_exit(ExitCode exit_code) noexcept;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// POSIX file descriptor.
+enum class fd_t : int {};
+
+/// Standard input file descriptor.
+inline constexpr fd_t stdin_fd{STDIN_FILENO};
+
+/// Standard output file descriptor.
+inline constexpr fd_t stdout_fd{STDOUT_FILENO};
+
+/// Standard error file descriptor.
+inline constexpr fd_t stderr_fd{STDERR_FILENO};
+
+/// Check if a file descriptor is a terminal.
+auto is_terminal(fd_t fd) -> bool;
+
+/// Default terminal width.
+inline constexpr size_t default_terminal_width = 80;
+
+/// Query width of a terminal.
+/// If the file descriptor is not a terminal, returns default width (80).
+auto terminal_width(fd_t fd) -> size_t;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -80,17 +103,6 @@ auto disk_space() -> uint64_t;
 
 /// Get path to the current executable.
 auto exe_path() -> std::filesystem::path;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Terminal stream type.
-enum class TTY : uint8_t {
-  Stdout = STDOUT_FILENO, ///< Standard output.
-  Stderr = STDERR_FILENO, ///< Standard error.
-};
-
-/// Query terminal width.
-auto tty_width(TTY tty) -> std::optional<size_t>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
