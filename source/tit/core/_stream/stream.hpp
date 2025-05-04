@@ -61,7 +61,7 @@ struct FlushDeleter : std::default_delete<Flushable> {
     try {
       stream->flush();
     } catch (const std::exception& e) {
-      TIT_ERROR("Failed to flush: {}", e.what());
+      error("Failed to flush: {}", e.what());
     }
     std::default_delete<Flushable>::operator()(stream);
   }
