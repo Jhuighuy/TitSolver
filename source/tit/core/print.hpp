@@ -56,4 +56,17 @@ void err(std::format_string<Args...> fmt, Args&&... args) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Print a separator line.
+/// @{
+void println_separator(char c = '-');
+void eprintln_separator(char c = '-');
+/// @}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print the logo and system information.
+void println_logo_and_system_info();
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit
