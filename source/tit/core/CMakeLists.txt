@@ -66,6 +66,7 @@ add_tit_library(
     "stats.cpp"
     "stats.hpp"
     "str.hpp"
+    "str.cpp"
     "stream.hpp"
     "sys/signal.cpp"
     "sys/signal.hpp"
