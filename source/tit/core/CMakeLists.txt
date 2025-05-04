@@ -56,6 +56,7 @@ add_tit_library(
     "par/control.hpp"
     "par/memory_pool.hpp"
     "par/task_group.hpp"
+    "print.cpp"
     "print.hpp"
     "profiler.cpp"
     "profiler.hpp"

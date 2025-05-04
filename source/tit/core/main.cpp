@@ -8,6 +8,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/signal.hpp"
 #include "tit/core/stats.hpp"
@@ -21,6 +22,12 @@ auto run_main(int argc, char** argv, MainFunc main_func) -> int {
   // Setup error handlers.
   const TerminateHandler terminate_handler{};
   const FatalSignalHandler signal_handler{};
+
+  // Print the logo and system information.
+  // Skip the logo if requested. If logo is printed, set the variable to
+  // prevent printing it again in the child processes.
+  if (!get_env("TIT_NO_BANNER", false)) println_logo_and_system_info();
+  set_env("TIT_NO_BANNER", true);
 
   // Enable subsystems.
   if (get_env("TIT_ENABLE_STATS", false)) Stats::enable();
