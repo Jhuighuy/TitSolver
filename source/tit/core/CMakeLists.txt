@@ -67,6 +67,7 @@ add_tit_library(
     "stats.cpp"
     "stats.hpp"
     "str.hpp"
+    "str.cpp"
     "stream.hpp"
     "sys/malloc.cpp"
     "sys/signal.cpp"
