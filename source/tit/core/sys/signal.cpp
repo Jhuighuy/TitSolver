@@ -16,8 +16,8 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/log.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/sys/signal.hpp"
 #include "tit/core/sys/utils.hpp"
 #include "tit/core/utils.hpp"
@@ -55,8 +55,8 @@ SignalHandler::~SignalHandler() noexcept { // NOLINT(*-exception-escape)
   // Restore the old signal handlers or actions.
   for (const auto& [signal_number, prev_handler] : prev_handlers_) {
     if (std::signal(signal_number, prev_handler) == SIG_ERR) {
-      TIT_ERROR("Unable to restore the previous handler for signal {}!",
-                signal_number);
+      error("Unable to restore the previous handler for signal {}!",
+            signal_number);
     }
   }
 

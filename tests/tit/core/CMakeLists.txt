@@ -134,6 +134,7 @@ add_tit_test(
   MATCH_STDOUT "profiler_stdout.txt"
   FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
   ENVIRONMENT
+    "TIT_NO_BANNER=1"
     "TIT_ENABLE_PROFILER=1"
     "TIT_ENABLE_STATS=0"
 )
@@ -151,6 +152,7 @@ add_tit_test(
   COMMAND "tit_core_stats_test"
   MATCH_STDOUT "stats_stdout.txt"
   ENVIRONMENT
+    "TIT_NO_BANNER=1"
     "TIT_ENABLE_PROFILER=0"
     "TIT_ENABLE_STATS=1"
 )

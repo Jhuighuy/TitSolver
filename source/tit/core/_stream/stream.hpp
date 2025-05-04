@@ -14,7 +14,7 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/log.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/type.hpp"
 
 namespace tit {
@@ -61,7 +61,7 @@ struct FlushDeleter : std::default_delete<Flushable> {
     try {
       stream->flush();
     } catch (const std::exception& e) {
-      TIT_ERROR("Failed to flush: {}", e.what());
+      error("Failed to flush: {}", e.what());
     }
     std::default_delete<Flushable>::operator()(stream);
   }
