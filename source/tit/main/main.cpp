@@ -203,7 +203,7 @@ auto main(int argc, char** argv) noexcept(false) -> int {
   if (get_env("TIT_ENABLE_PROFILER", false)) Profiler::enable();
 
   // Setup parallelism.
-  par::set_num_threads(get_env("TIT_NUM_THREADS", 8UZ));
+  par::set_num_threads(get_env("TIT_NUM_THREADS", cpu_perf_cores()));
 
   // Run the main function.
   tit_main({argc, argv});
