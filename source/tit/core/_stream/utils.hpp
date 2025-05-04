@@ -162,7 +162,7 @@ public:
     try {
       callback_(written_);
     } catch (const std::exception& e) {
-      TIT_ERROR("`CountingOutputStream` callback failed: {}", e.what());
+      error("`CountingOutputStream` callback failed: {}", e.what());
     }
   }
 

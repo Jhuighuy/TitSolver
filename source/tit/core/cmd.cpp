@@ -7,6 +7,7 @@
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/signal.hpp"
 #include "tit/core/stats.hpp"
@@ -20,6 +21,9 @@ auto main(int argc, char** argv) -> int {
   // Setup error handlers.
   const TerminateHandler terminate_handler{};
   const FatalSignalHandler signal_handler{};
+
+  // Print the logo and system information.
+  println_banner_and_system_info();
 
   // Enable subsystems.
   if (get_env("TIT_ENABLE_STATS", false)) Stats::enable();
