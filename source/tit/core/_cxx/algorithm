@@ -1,0 +1,43 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+ * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+#pragma once
+#pragma GCC system_header
+
+#include_next <algorithm>
+#include_next <ranges>
+
+#ifdef _LIBCPP_VERSION
+_LIBCPP_BEGIN_NAMESPACE_STD
+#elifdef __GLIBCXX__
+namespace std _GLIBCXX_VISIBILITY(default) {
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+#endif
+namespace ranges {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// C++23 feature, missing in libc++ 20.1.6, libstdc++ 15.1.0.
+template<ranges::forward_range R>
+  requires permutable<iterator_t<R>> && common_range<R>
+constexpr void shift_left(R&& r, range_difference_t<R> n) {
+  std::shift_left(begin(r), end(r), n);
+}
+
+template<forward_range R>
+  requires permutable<iterator_t<R>> && common_range<R>
+constexpr void shift_right(R&& r, range_difference_t<R> n) {
+  std::shift_right(begin(r), end(r), n);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace ranges
+#ifdef _LIBCPP_VERSION
+_LIBCPP_END_NAMESPACE_STD
+#elifdef __GLIBCXX__
+_GLIBCXX_END_NAMESPACE_VERSION
+} // namespace std _GLIBCXX_VISIBILITY(default)
+#endif
