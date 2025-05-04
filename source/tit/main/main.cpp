@@ -6,22 +6,31 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <chrono>
 #include <csignal>
 #include <cstring>
 #include <exception>
+#include <filesystem>
 #include <format>
 #include <mutex>
+#include <ranges>
 #include <source_location>
 #include <stacktrace>
+#include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include <execinfo.h>
 #include <unistd.h>
 
+#include "tit/core/basic_types.hpp"
+#include "tit/core/build_info.hpp"
+#include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/posix.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/runtime.hpp"
@@ -69,6 +78,69 @@ void eprintln_crash_report(
   eprintln("Stack trace:");
   eprintln();
   eprintln("{}", trace);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void println_logo_and_system_info() {
+  constexpr auto logo_lines = std::to_array<std::string_view>({
+      R"(               ############               )",
+      R"(          ######################          )",
+      R"(        #######            #######        )",
+      R"(      ######                  ######      )",
+      R"(    #####          _,########._  #####    )",
+      R"(   #####         .##############. #####   )",
+      R"(  #####        .####"__'#########. #####  )",
+      R"(  ####        _#### |_'| ##########.####  )",
+      R"( ####      _-"``\"  `--  """'  `###; #### )",
+      R"( ####     "--==="#.             `###.#### )",
+      R"( ####          "###.         __.######### )",
+      R"( ####           `####._ _.=######" "##### )",
+      R"(  ####           ############"      ####  )",
+      R"(  #####          #######'          #####  )",
+      R"(   #####         #####'           #####   )",
+      R"(    #####        `###'          #####     )",
+      R"(      ######      `##         ######      )",
+      R"(        #######    `#.     #######        )",
+      R"(          ######################          )",
+      R"(               ############               )",
+  });
+
+  std::chrono::year_month_day commit_date{};
+  std::istringstream{build_info::commit_date.c_str()} >>
+      std::chrono::parse("%F", commit_date);
+
+  std::vector<std::string> info_lines{
+      "BlueTit Solver",
+      "",
+      std::format("© 2020 - {:%Y} Oleg Butakov", commit_date),
+      "",
+      std::format("Version ........ {}", build_info::version),
+      std::format("Commit ......... {}", build_info::commit_hash),
+      std::format("Host ........... {}", sys_info::host_name()),
+      std::format("OS ............. {}", sys_info::os_info()),
+      std::format("CPU ............ {}", sys_info::cpu_info()),
+      std::format("RAM ............ {}", fmt_memsize(sys_info::ram_size())),
+      std::format("Working dir .... {}", std::filesystem::current_path()),
+      std::format("Disk space ..... {}", fmt_memsize(sys_info::disk_space())),
+  };
+
+  TIT_ASSERT(info_lines.size() <= logo_lines.size(), "Too many lines!");
+  const auto padding = (logo_lines.size() - info_lines.size()) / 2;
+  info_lines.resize(logo_lines.size());
+  std::ranges::shift_right(info_lines, static_cast<ssize_t>(padding));
+
+  println();
+  const auto width = terminal_width(stdout_fd);
+  println("{:~>{}}", "", width);
+  println();
+  for (const auto& [logo_line, info_line] :
+       std::views::zip(logo_lines, info_lines) | std::views::as_const) {
+    println("{}   {}", logo_line, info_line);
+  }
+  println();
+  println("{:~>{}}", "", width);
+  println();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -198,6 +270,14 @@ auto main(int argc, char** argv) noexcept(false) -> int {
   // Setup error handlers.
   setup_signal_handlers();
   setup_terminate_handler();
+
+  // Print the logo and system information. Skip the logo if requested. If logo
+  // is printed, set the variable to prevent printing it again in the child
+  // processes.
+  if (!get_env("TIT_NO_BANNER", false)) {
+    println_logo_and_system_info();
+    set_env("TIT_NO_BANNER", true);
+  }
 
   // Enable subsystems.
   if (get_env("TIT_ENABLE_STATS", false)) Stats::enable();
