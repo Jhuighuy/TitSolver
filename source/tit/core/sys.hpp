@@ -6,7 +6,6 @@
 #pragma once
 
 #include <filesystem>
-#include <optional>
 #include <string>
 
 #include <unistd.h>
@@ -89,8 +88,9 @@ enum class TTY : uint8_t {
   Stderr = STDERR_FILENO, ///< Standard error.
 };
 
-/// Query terminal width.
-auto tty_width(TTY tty) -> std::optional<size_t>;
+/// Query terminal width. If this information is not available
+// (e.g. redirected), return default value of 80 characters.
+auto tty_width(TTY tty) -> size_t;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

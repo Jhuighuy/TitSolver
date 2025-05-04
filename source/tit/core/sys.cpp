@@ -3,11 +3,13 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#ifdef __linux__
+#include <fstream>
+#endif
 #include <array>
 #include <cstdlib>
 #include <filesystem>
 #include <format>
-#include <optional>
 #include <string>
 #include <utility>
 #ifdef __linux__
@@ -226,9 +228,9 @@ auto exe_path() -> std::filesystem::path {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto tty_width(TTY tty) -> std::optional<size_t> {
+auto tty_width(TTY tty) -> size_t {
   const auto tty_fileno = std::to_underlying(tty);
-  if (isatty(tty_fileno) == 0) return std::nullopt; // Redirected.
+  if (isatty(tty_fileno) == 0) return 80; // Redirected, return default value.
 
   winsize window_size = {}; // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
   const auto status = ioctl(tty_fileno, TIOCGWINSZ, &window_size);

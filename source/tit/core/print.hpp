@@ -8,6 +8,9 @@
 #include <cstdio>
 #include <format>
 #include <print>
+#include <source_location>
+#include <stacktrace>
+#include <string_view>
 #include <utility>
 
 namespace tit {
@@ -34,19 +37,46 @@ inline void eprintln() {
   eprintln("");
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Print information message.
-#define TIT_INFO(message, ...)                                                 \
-  tit::println("INFO: " message __VA_OPT__(, __VA_ARGS__))
+template<class... Args>
+void info(std::format_string<Args...> fmt, Args&&... args) {
+  print("INFO: "), println(fmt, std::forward<Args>(args)...);
+}
 
 /// Print warning message.
-#define TIT_WARN(message, ...)                                                 \
-  tit::eprintln("WARN: " message __VA_OPT__(, __VA_ARGS__))
+template<class... Args>
+void warn(std::format_string<Args...> fmt, Args&&... args) {
+  eprint("WARN: "), eprintln(fmt, std::forward<Args>(args)...);
+}
 
 /// Print error message.
-#define TIT_ERROR(message, ...)                                                \
-  tit::eprintln("ERROR: " message __VA_OPT__(, __VA_ARGS__))
+template<class... Args>
+void error(std::format_string<Args...> fmt, Args&&... args) {
+  eprint("ERROR: "), eprintln(fmt, std::forward<Args>(args)...);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print a separator line.
+/// @{
+void println_separator(char c = '-');
+void eprintln_separator(char c = '-');
+/// @}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print banner and system information.
+void println_banner_and_system_info(std::string_view product_name = "");
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print crash report.
+void eprintln_crash_report(
+    std::string_view message,
+    std::string_view cause = "",
+    std::string_view cause_description = "",
+    std::source_location loc = std::source_location::current(),
+    std::stacktrace trace = std::stacktrace::current());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
