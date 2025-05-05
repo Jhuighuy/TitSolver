@@ -7,8 +7,10 @@ cmake_minimum_required(VERSION 3.20..3.27)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Setup the project.
-project(tit VERSION 0.1 LANGUAGES CXX)
+# Read the version from vcpkg manifest and setup the project.
+file(READ "${CMAKE_SOURCE_DIR}/vcpkg.json" VCPKG_MANIFEST)
+string(JSON TIT_VERSION GET "${VCPKG_MANIFEST}" "version-string")
+project(tit VERSION "${TIT_VERSION}" LANGUAGES CXX)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -17,6 +19,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang)
 include(codespell)
 include(doxygen)
+include(git)
 include(pnpm)
 include(python)
 include(sphinx)
