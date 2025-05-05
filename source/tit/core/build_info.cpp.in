@@ -1,0 +1,31 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+ * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+#include "tit/core/build_info.hpp"
+#include "tit/core/str.hpp"
+
+namespace tit::build_info {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto version() noexcept -> CStrView {
+  return "@TIT_VERSION@";
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto commit_hash() noexcept -> CStrView {
+  return "@GIT_COMMIT_HASH@";
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto commit_date() noexcept -> CStrView {
+  return "@GIT_COMMIT_DATE@";
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit::build_info
