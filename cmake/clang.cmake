@@ -195,6 +195,13 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
     set(STAMP "${TARGET_BINARY_DIR}/${STAMP}")
     list(APPEND ALL_STAMPS "${STAMP}")
     set(SOURCE_PATH "${TARGET_SOURCE_DIR}/${SOURCE}")
+    if(NOT EXISTS "${SOURCE_PATH}")
+      set(SOURCE_PATH "${TARGET_BINARY_DIR}/${SOURCE}") # Generated file?
+      if(NOT EXISTS "${SOURCE_PATH}")
+        message(WARNING "clang-tidy: source file '${SOURCE_PATH}' not found!")
+        continue()
+      endif()
+    endif()
     cmake_path(
       RELATIVE_PATH SOURCE_PATH
       BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
