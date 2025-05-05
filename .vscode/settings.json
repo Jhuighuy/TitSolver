@@ -67,6 +67,7 @@
   "files.associations": {
     ".clang-tidy": "yaml",
     ".clangd": "yaml",
+    "*.cpp.in": "cpp",
     "*.ipp": "cpp",
     "*.tcc": "cpp",
     "**/_templates/**.html": "jinja-html",

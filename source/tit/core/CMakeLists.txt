@@ -7,6 +7,8 @@ add_subdirectory("_cxx")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+configure_file("build_info.cpp.in" "build_info.cpp" @ONLY)
+
 add_tit_library(
   NAME
     core
@@ -25,6 +27,8 @@ add_tit_library(
     "_vec/vec_mask.hpp"
     "_vec/vec.hpp"
     "basic_types.hpp"
+    "build_info.cpp"
+    "build_info.hpp"
     "checks.cpp"
     "checks.hpp"
     "cmd.cpp"
