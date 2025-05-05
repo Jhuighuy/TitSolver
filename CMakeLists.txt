@@ -24,7 +24,7 @@ include(tit_testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find the third-party libraries.
+# Find the third-party libraries. Most of them come from vcpkg.
 find_package(Boost CONFIG REQUIRED COMPONENTS container stacktrace_addr2line)
 find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
@@ -33,6 +33,7 @@ find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
@@ -67,6 +68,8 @@ add_tit_library(
     TBB::tbbmalloc
     unofficial::sqlite3::sqlite3
     zstd::libzstd
+    Qt::Widgets
+    Qt::WebEngineWidgets
 )
 
 # Write "compile_flags.txt" based on the meta library.

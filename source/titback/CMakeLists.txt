@@ -3,6 +3,8 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+qt_standard_project_setup()
+
 add_tit_executable(
   PUBLIC
   NAME
@@ -14,6 +16,8 @@ add_tit_executable(
     tit::data
     Crow::Crow
     nlohmann_json::nlohmann_json
+    Qt::Widgets
+    Qt::WebEngineWidgets
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
