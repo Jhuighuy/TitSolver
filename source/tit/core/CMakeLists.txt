@@ -7,6 +7,10 @@ add_subdirectory("_cxx")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+configure_file("version.cpp.in" "version.cpp" @ONLY)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 add_tit_library(
   NAME
     core
@@ -78,6 +82,8 @@ add_tit_library(
     "type.hpp"
     "utils.hpp"
     "vec.hpp"
+    "version.cpp"
+    "version.hpp"
   DEPENDS
     _cxx
     Boost::container
