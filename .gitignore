@@ -45,6 +45,7 @@
 # C++ files.
 !*.hpp
 !*.cpp
+!*.cpp.in
 
 # Web files.
 !*.js
