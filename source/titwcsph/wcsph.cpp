@@ -185,4 +185,6 @@ auto sph_main(CmdArgs /*args*/) -> int {
 } // namespace
 } // namespace tit::sph
 
-TIT_IMPLEMENT_MAIN(sph::sph_main<tit::real_t>)
+auto tit::main(CmdArgs args) -> int {
+  return sph::sph_main<double>(args);
+}

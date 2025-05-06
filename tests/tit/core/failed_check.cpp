@@ -31,15 +31,11 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_test(CmdArgs /*args*/) -> int {
+} // namespace
+} // namespace tit
+
+auto tit::main(CmdArgs /*args*/) -> int {
   func_1();
   eprintln("This line should not be executed.");
   return 0;
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-} // namespace
-} // namespace tit
-
-TIT_IMPLEMENT_MAIN(run_test)

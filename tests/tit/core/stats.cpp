@@ -43,16 +43,12 @@ void stat_empty_vector() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_test(CmdArgs /*args*/) -> int {
+} // namespace
+} // namespace tit
+
+auto tit::main(CmdArgs /*args*/) -> int {
   stat_scalar();
   stat_vector();
   stat_empty_vector();
   return 0;
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-} // namespace
-} // namespace tit
-
-TIT_IMPLEMENT_MAIN(run_test)

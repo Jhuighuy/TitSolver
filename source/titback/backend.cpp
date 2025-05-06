@@ -23,14 +23,11 @@
 #include "tit/core/type_utils.hpp"
 #include "tit/data/storage.hpp"
 
-namespace tit::back {
-namespace {
-
 namespace json = nlohmann;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_backend(CmdArgs /*args*/) -> int {
+auto tit::main(CmdArgs /*args*/) -> int {
   const auto exe_dir = exe_path().parent_path();
   const auto root_dir = exe_dir.parent_path();
 
@@ -84,8 +81,3 @@ auto run_backend(CmdArgs /*args*/) -> int {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-} // namespace
-} // namespace tit::back
-
-TIT_IMPLEMENT_MAIN(back::run_backend)

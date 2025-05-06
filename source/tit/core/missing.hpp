@@ -114,16 +114,6 @@ inline constexpr struct {
 
 } // namespace ranges::views
 
-template<class... Ts>
-struct move_only_function : std::function<Ts...> {
-  TIT_MOVE_ONLY(move_only_function);
-  using std::function<Ts...>::function;
-  ~move_only_function() noexcept = default;
-  move_only_function(move_only_function&&) noexcept = default;
-  auto operator=(move_only_function&&) noexcept
-      -> move_only_function& = default;
-};
-
 _LIBCPP_END_NAMESPACE_STD
 
 // NOLINTEND(*-include-cleaner)
