@@ -50,6 +50,8 @@ auto sph_main(CmdArgs /*args*/) -> int {
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2);
 
+  constexpr Real R = 0.2;
+  constexpr Real Ma = 0.1;
   constexpr Real CFL = 0.8;
   constexpr Real dt = std::min(CFL * h_0 / cs_0, Real{0.25} * sqrt(h_0 / g));
 
@@ -60,7 +62,10 @@ auto sph_main(CmdArgs /*args*/) -> int {
   // Setup the SPH equations.
   const FluidEquations equations{
       // Standard motion equation.
-      MotionEquation{},
+      MotionEquation{
+          // Enabled particle shifting technique.
+          ParticleShiftingTechnique{R, Ma, CFL},
+      },
       // Continuity equation with no source terms.
       ContinuityEquation{},
       // Momentum equation with gravity source term.
