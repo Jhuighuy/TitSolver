@@ -48,9 +48,7 @@ public:
       MomentumEquation::required_fields |   //
       EnergyEquation::required_fields |     //
       EquationOfState::required_fields |    //
-      Kernel::required_fields |
-      meta::Set{parinfo, dr, N, FS} | // TODO: these should not be here.
-      meta::Set{h, m, r, rho, p, v, dv_dt};
+      Kernel::required_fields | meta::Set{h, m, r, rho, p, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
@@ -376,10 +374,9 @@ public:
     using PV = ParticleView<ParticleArray>;
     using Num = particle_num_t<PV>;
 
-    /// @todo Factor out the constants.
-    static constexpr Num R{0.2};
-    static constexpr Num Ma{0.1};
-    static constexpr Num CFL{0.8};
+    const auto R = motion_equation_.particle_shifting().R();
+    const auto Ma = motion_equation_.particle_shifting().Ma();
+    const auto CFL = motion_equation_.particle_shifting().CFL();
 
     // Initialize the free surface flag values and clear the particle shifts.
     // - Positive value `FS_FAR` means that the particle is far from the free
@@ -458,7 +455,7 @@ public:
     const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h[a_0] / 2), h[a_0]));
     par::block_for_each(
         mesh.block_pairs(particles),
-        [inv_W_0, FS_FAR, this](auto ab) {
+        [inv_W_0, FS_FAR, R, this](auto ab) {
           const auto [a, b] = ab;
           const auto W_ab = kernel_(a, b);
           const auto grad_W_ab = kernel_.grad(a, b);
