@@ -73,6 +73,16 @@ public:
                      self.vals_.begin() + self.val_ranges_[index + 1]};
   }
 
+  /// Get raw value ranges.
+  constexpr auto get_val_ranges() noexcept -> std::span<size_t> {
+    return val_ranges_;
+  }
+
+  /// Get raw values.
+  constexpr auto get_vals() noexcept -> std::span<Val> {
+    return vals_;
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Clear the multivector.

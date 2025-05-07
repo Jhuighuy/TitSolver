@@ -30,7 +30,12 @@
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "OpenCL.server.buildOptions": ["-I ./source/tit/sph/kernels"],
+  "OpenCL.server.buildOptions": [
+    "-I ./source/tit/sph/kernels",
+    "-D __INTELLISENSE__",
+    "-D Num=float",
+    "-D Dim=2"
+  ],
   "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
