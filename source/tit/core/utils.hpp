@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <concepts>
+#include <cstddef>
 #include <functional>
 #include <optional>
 #include <type_traits>
@@ -57,6 +58,113 @@ template<class T, std::same_as<T>... Us>
 constexpr auto is_any_of(T x, Us... us) noexcept -> bool {
   return (... || (x == us));
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Shared pointer with custom retain and release functions.
+template<class T, std::invocable<T*> RetainFunc, std::invocable<T*> ReleaseFunc>
+class SharedPtr final {
+public:
+
+  /// Construct a shared pointer.
+  constexpr explicit SharedPtr(T* ptr = nullptr,
+                               RetainFunc retain = {},
+                               ReleaseFunc release = {}) noexcept
+      : ptr_{ptr}, retain_{std::move(retain)}, release_{std::move(release)} {}
+
+  /// Move-construct the shared pointer.
+  constexpr SharedPtr(SharedPtr&& other) noexcept
+      : ptr_{std::exchange(other.ptr_, nullptr)},
+        retain_{std::exchange(other.retain_, {})},
+        release_{std::exchange(other.release_, {})} {}
+
+  /// Copy-construct the shared pointer.
+  constexpr SharedPtr(const SharedPtr& other)
+      : ptr_{other.ptr_}, retain_{other.retain_}, release_{other.release_} {
+    do_retain_();
+  }
+
+  /// Move-assign the shared pointer.
+  constexpr auto operator=(SharedPtr&& other) noexcept -> SharedPtr& {
+    if (this != &other) {
+      do_release_();
+      ptr_ = std::exchange(other.ptr_, nullptr);
+      retain_ = std::exchange(other.retain_, {});
+      release_ = std::exchange(other.release_, {});
+    }
+    return *this;
+  }
+
+  /// Copy-assign the shared pointer.
+  constexpr auto operator=(const SharedPtr& other) -> SharedPtr& {
+    if (this != &other) {
+      do_release_();
+      ptr_ = other.ptr_;
+      retain_ = other.retain_;
+      release_ = other.release_;
+      do_retain_();
+    }
+    return *this;
+  }
+
+  /// Destructor.
+  constexpr ~SharedPtr() noexcept {
+    do_release_();
+  }
+
+  /// Get the pointer.
+  constexpr auto get() const noexcept -> T* {
+    return ptr_;
+  }
+
+  /// Reset the pointer.
+  constexpr void reset(T* ptr = nullptr) noexcept {
+    do_release_();
+    ptr_ = ptr;
+  }
+
+  /// Release the pointer.
+  constexpr auto release() noexcept -> T* {
+    return std::exchange(ptr_, nullptr);
+  }
+
+  /// Compare shared pointers.
+  /// @{
+  friend constexpr auto operator==(const SharedPtr& a, const SharedPtr& b)
+      -> bool {
+    return a.ptr_ == b.ptr_;
+  }
+  friend constexpr auto operator==(const SharedPtr& a,
+                                   const std::nullptr_t /*b*/) -> bool {
+    return a.ptr_ == nullptr;
+  }
+  friend constexpr auto operator==(const std::nullptr_t /*a*/,
+                                   const SharedPtr& b) -> bool {
+    return b.ptr_ == nullptr;
+  }
+  /// @}
+
+private:
+
+  constexpr void do_retain_() {
+    if (ptr_ != nullptr) retain_(ptr_);
+  }
+
+  constexpr void do_release_() //
+      noexcept(std::is_nothrow_invocable_v<ReleaseFunc, T*>) {
+    if (ptr_ != nullptr) release_(ptr_);
+  }
+
+  T* ptr_ = nullptr;
+  [[no_unique_address]] RetainFunc retain_;
+  [[no_unique_address]] ReleaseFunc release_;
+
+}; // class SharedPtr
+
+/// Same as `SharedPtr`, but type argument is a pointer itself.
+template<class P, std::invocable<P> RetainFunc, std::invocable<P> ReleaseFunc>
+  requires std::is_pointer_v<P>
+using Shared = SharedPtr<std::remove_pointer_t<P>, RetainFunc, ReleaseFunc>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

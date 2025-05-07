@@ -81,6 +81,7 @@ set(
   -flto=auto
   -ffat-lto-objects
   # This warning produces a lot of false positives, disable it.
+  # Disable `-Wmaybe-uninitialized` warning, it produces many false positives.
   -Wno-maybe-uninitialized
 )
 

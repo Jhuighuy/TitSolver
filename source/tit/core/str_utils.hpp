@@ -13,6 +13,7 @@
 #include <format>
 #include <functional>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -23,6 +24,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/tuple_utils.hpp"
+#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -171,6 +173,33 @@ struct StrTo<bool> final {
     return str_to<int>(str).transform([](int value) { return value != 0; });
   }
 };
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+template<std::ranges::input_range Strs>
+  requires str_like<std::ranges::range_reference_t<Strs>>
+auto str_join(std::string_view sep, Strs&& strs) -> std::string {
+  TIT_ASSUME_UNIVERSAL(Strs, strs);
+  std::string result{};
+  for (const auto& str : strs) {
+    if (!result.empty()) result += sep;
+    if (!str.empty()) result += str;
+  }
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Add quotes to the string, if not already quoted.
+inline auto str_quote(std::string_view str) -> std::string {
+  if (str.size() > 1 && str.front() == '"' && str.back() == '"') {
+    return std::string{str};
+  }
+  return std::format("\"{}\"", str);
+}
+
+/// Remove quotes from the string, if present.
+auto str_unquote(std::string_view str) -> std::string_view;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

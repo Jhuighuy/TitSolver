@@ -44,6 +44,9 @@
 !*.hpp
 !*.cpp
 
+# OpenCL files.
+!*.cl
+
 # Web files.
 !*.js
 !*.jsx

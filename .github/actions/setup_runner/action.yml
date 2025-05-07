@@ -43,7 +43,9 @@ runs:
           gcovr
           "llvm@$LLVM_VERSION"
           node
+          opencl-headers
           pnpm
+          pocl
           sphinx-doc
         )
         if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -109,6 +111,15 @@ runs:
         # Add Sphinx to the path.
         SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
         echo "$SPHINX_PATH" >> "$GITHUB_PATH"
+
+        # Use POCL via the OpenCL ICD loader instead of the system OpenCL
+        # when configuring with CMake.
+        #
+        # Linux runners do not have any OpenCL installation at all, and macOS
+        # runners have broken default OpenCL framework.
+        OpenCL_ROOT="$(brew --prefix opencl-icd-loader)"
+        echo "OpenCL_ROOT=$OpenCL_ROOT" >> "$GITHUB_ENV"
+        LD_LIBRARY_PATH="$OpenCL_ROOT/lib $LD_LIBRARY_PATH"
 
         # Export compiler configuration variables to the CI environment.
         echo "CC=$CC" >> "$GITHUB_ENV"
