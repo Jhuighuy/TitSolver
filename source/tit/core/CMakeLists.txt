@@ -42,6 +42,8 @@ add_tit_library(
     "mat.hpp"
     "math.hpp"
     "mimalloc.cpp"
+    "opencl.cpp"
+    "opencl.hpp"
     "numbers/dual.hpp"
     "numbers/strict.hpp"
     "par/algorithms.hpp"
@@ -78,6 +80,7 @@ add_tit_library(
     gcem
     hwy::hwy
     mimalloc-static
+    OpenCL::OpenCL
     TBB::tbb
     TBB::tbbmalloc
 )
