@@ -24,6 +24,9 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[opencl]": {
+    "editor.defaultFormatter": "galarius.vscode-opencl"
+  },
   "[python]": {
     "editor.defaultFormatter": "eeyore.yapf"
   },
@@ -38,6 +41,7 @@
   },
   "python.analysis.extraPaths": ["${workspaceFolder}/source"],
   "flake8.args": ["--config", "${workspaceFolder}/pyptoject.toml"],
+  "OpenCL.server.buildOptions": ["-I ./source/tit/sph/kernels"],
   "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
