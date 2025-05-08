@@ -57,9 +57,6 @@ using std::float32_t;
 /// 64-bit floating point type.
 using std::float64_t;
 
-/// Default floating-point type type.
-using real_t = float64_t;
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
