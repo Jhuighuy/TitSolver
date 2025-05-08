@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <ranges>
 #include <vector>
 
@@ -29,7 +30,8 @@ namespace tit::geom {
 
 /// Partitioning based on a graph partitioning of a grid cell connectivity.
 /// @todo Replace `UniformPartition` with a proper graph partitioning function.
-template<graph::partition_func GraphPartition = graph::UniformPartition>
+template<class Num,
+         graph::partition_func GraphPartition = graph::UniformPartition>
 class GridGraphPartition final {
 public:
 
@@ -37,7 +39,7 @@ public:
   ///
   /// @param size_hint Grid cell size, typically 2x of the particle spacing.
   constexpr explicit GridGraphPartition(
-      real_t size_hint,
+      Num size_hint,
       GraphPartition graph_partition = {}) noexcept
       : size_hint_{size_hint}, graph_partition_{std::move(graph_partition)} {
     TIT_ASSERT(size_hint_ > 0.0, "Cell size hint must be positive!");
@@ -45,6 +47,7 @@ public:
 
   /// Partition the points using the grid graph partitioning algorithm.
   template<point_range Points, output_index_range Parts>
+    requires std::same_as<point_range_num_t<Points>, Num>
   void operator()(Points&& points,
                   Parts&& parts,
                   size_t num_parts,
@@ -143,7 +146,7 @@ public:
 
 private:
 
-  real_t size_hint_;
+  Num size_hint_;
   [[no_unique_address]] GraphPartition graph_partition_;
 
 }; // class GridGraphPartition
