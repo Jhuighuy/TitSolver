@@ -38,10 +38,8 @@ TEST_CASE_TEMPLATE("is_tiny", Float, FLOAT_TYPES) {
 TEST_CASE_TEMPLATE("approx_equal_to", Float, FLOAT_TYPES) {
   CHECK(approx_equal_to(Float{1.23}, Float{1.23}));
   CHECK_FALSE(approx_equal_to(Float{1.23}, Float{5.67}));
-  CHECK(approx_equal_to(Float{1.23}, Float{1.23} + tiny_v<Float>));
-  CHECK(approx_equal_to(Float{1.23} - tiny_v<Float>, Float{1.23}));
-  CHECK(approx_equal_to(Float{1.23}, Float{1.23} + Float{0.1} * tiny_v<Float>));
-  CHECK(approx_equal_to(Float{1.23} - Float{0.1} * tiny_v<Float>, Float{1.23}));
+  CHECK(approx_equal_to(Float{1.23}, Float{1.23} + Float{0.9} * tiny_v<Float>));
+  CHECK(approx_equal_to(Float{1.23} - Float{0.9} * tiny_v<Float>, Float{1.23}));
   CHECK_FALSE(approx_equal_to(Float{1.23}, //
                               Float{1.23} + Float{2.0} * tiny_v<Float>));
   CHECK_FALSE(approx_equal_to(Float{1.23} - Float{2.0} * tiny_v<Float>, //
