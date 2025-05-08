@@ -7,6 +7,8 @@
 
 #include <concepts>
 
+#include "tit/core/type_utils.hpp"
+
 // IWYU pragma: begin_exports
 #include "tit/geom/search/grid_search.hpp"
 #include "tit/geom/search/kd_tree_search.hpp"
@@ -18,7 +20,7 @@ namespace tit::geom {
 
 /// Spatial search indexing function type.
 template<class SF>
-concept search_func = std::same_as<SF, GridSearch> || //
+concept search_func = specialization_of<SF, GridSearch> || //
                       std::same_as<SF, KDTreeSearch>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

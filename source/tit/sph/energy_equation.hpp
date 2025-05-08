@@ -54,8 +54,8 @@ public:
       (EnergySources::modified_fields | ... | meta::Set{/*empty*/});
 
   /// Construct the energy equation.
-  constexpr EnergyEquation(HeatConductivity heat_conductivity,
-                           EnergySources... energy_sources) noexcept
+  constexpr explicit EnergyEquation(HeatConductivity heat_conductivity,
+                                    EnergySources... energy_sources) noexcept
       : heat_conductivity_{std::move(heat_conductivity)},
         energy_sources_{std::move(energy_sources)...} {}
 

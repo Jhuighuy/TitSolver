@@ -51,7 +51,7 @@ auto sph_main(CmdArgs /*args*/) -> int {
   constexpr Real m_0 = rho_0 * pow(dr, 2);
 
   constexpr Real CFL = 0.8;
-  constexpr Real dt = std::min(CFL * h_0 / cs_0, 0.25 * sqrt(h_0 / g));
+  constexpr Real dt = std::min(CFL * h_0 / cs_0, Real{0.25} * sqrt(h_0 / g));
 
   // Parameters for the heat equation. Unused for now.
   [[maybe_unused]] constexpr Real kappa_0 = 0.6;
@@ -105,7 +105,7 @@ auto sph_main(CmdArgs /*args*/) -> int {
 
       auto a = particles.append(is_fixed ? ParticleType::fixed :
                                            ParticleType::fluid);
-      r[a] = dr * Vec{i + 0.5, j + 0.5};
+      r[a] = dr * Vec{i + Real{0.5}, j + Real{0.5}};
     }
   }
   TIT_INFO("Num. fixed particles: {}", num_fixed_particles);
@@ -185,4 +185,4 @@ auto sph_main(CmdArgs /*args*/) -> int {
 } // namespace
 } // namespace tit::sph
 
-TIT_IMPLEMENT_MAIN(sph::sph_main<tit::real_t>)
+TIT_IMPLEMENT_MAIN(sph::sph_main<tit::float64_t>)
