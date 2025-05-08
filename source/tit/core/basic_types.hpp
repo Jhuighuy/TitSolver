@@ -58,9 +58,6 @@ using float32_t = float;
 /// @todo Use definitions from <stdfloat> when it becomes available.
 using float64_t = double;
 
-/// Default floating-point type type.
-using real_t = float64_t;
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

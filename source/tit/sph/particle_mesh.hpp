@@ -39,12 +39,14 @@ namespace tit::sph {
 
 /// @todo Move it to an appropriate place!
 constexpr auto RADIUS_SCALE = 3;
-inline constexpr auto Domain = geom::BBox{Vec{0.0, 0.0}, Vec{3.2196, 1.5}};
+template<class Num>
+inline constexpr auto Domain =
+    geom::BBox{Vec<Num, 2>{0.0, 0.0}, Vec<Num, 2>{3.2196, 1.5}};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle adjacency graph.
-template<geom::search_func SearchFunc = geom::GridSearch,
+template<geom::search_func SearchFunc = geom::KDTreeSearch,
          geom::partition_func PartitionFunc = geom::RecursiveInertialBisection,
          geom::partition_func InterfacePartitionFunc = PartitionFunc>
 class ParticleMesh final {
@@ -169,7 +171,8 @@ private:
             ///       here and clean up the code.
             const auto& search_point = r[a];
             const auto search_radius = RADIUS_SCALE * radius_func(a);
-            const auto point_on_boundary = Domain.clamp(search_point);
+            const auto point_on_boundary =
+                Domain<particle_num_t<PV>>.clamp(search_point);
             const auto interp_point = 2 * point_on_boundary - search_point;
 
             // Search for the neighbors for the interpolation point and
