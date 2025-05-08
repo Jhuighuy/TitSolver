@@ -243,7 +243,7 @@ public:
   }
 
   /// Get the time of the data time step.
-  auto time() const -> real_t {
+  auto time() const -> float64_t {
     return storage().time_step_time(time_step_id_);
   }
 
@@ -325,7 +325,7 @@ public:
   }
 
   /// Create a new time step in the data series.
-  auto create_time_step(real_t time) const -> DataTimeStepView<Storage>
+  auto create_time_step(float64_t time) const -> DataTimeStepView<Storage>
     requires (!std::is_const_v<Storage>)
   {
     TIT_ASSERT(storage_ != nullptr, "Storage is null!");
@@ -428,9 +428,9 @@ public:
 
   /// Create a new time step in the series.
   /// @{
-  auto create_time_step_id(DataSeriesID series_id, real_t time)
+  auto create_time_step_id(DataSeriesID series_id, float64_t time)
       -> DataTimeStepID;
-  auto create_time_step(DataSeriesID series_id, real_t time)
+  auto create_time_step(DataSeriesID series_id, float64_t time)
       -> DataTimeStepView<DataStorage> {
     return DataTimeStepView{*this, create_time_step_id(series_id, time)};
   }
@@ -445,7 +445,7 @@ public:
   auto check_time_step(DataTimeStepID time_step_id) const -> bool;
 
   /// Get the time of a time step.
-  auto time_step_time(DataTimeStepID time_step_id) const -> real_t;
+  auto time_step_time(DataTimeStepID time_step_id) const -> float64_t;
 
   /// Get the uniform dataset of a time step.
   /// @{
