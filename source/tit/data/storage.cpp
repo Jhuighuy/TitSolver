@@ -212,7 +212,7 @@ auto DataStorage::series_last_time_step_id(DataSeriesID series_id) const
   return statement.column<DataTimeStepID>();
 }
 
-auto DataStorage::create_time_step_id(DataSeriesID series_id, real_t time)
+auto DataStorage::create_time_step_id(DataSeriesID series_id, float64_t time)
     -> DataTimeStepID {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
   TIT_ASSERT((series_num_time_steps(series_id) == 0 ||
@@ -256,14 +256,15 @@ auto DataStorage::check_time_step(DataTimeStepID time_step_id) const -> bool {
   return statement.step();
 }
 
-auto DataStorage::time_step_time(DataTimeStepID time_step_id) const -> real_t {
+auto DataStorage::time_step_time(DataTimeStepID time_step_id) const
+    -> float64_t {
   TIT_ASSERT(check_time_step(time_step_id), "Invalid time step ID!");
   sqlite::Statement statement{db_, R"SQL(
     SELECT time FROM TimeSteps WHERE id = ?
   )SQL"};
   statement.bind(time_step_id);
   TIT_ENSURE(statement.step(), "Unable to get time step time!");
-  return statement.column<real_t>();
+  return statement.column<float64_t>();
 }
 
 auto DataStorage::time_step_uniforms_id(DataTimeStepID time_step_id) const

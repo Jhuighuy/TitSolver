@@ -104,19 +104,22 @@ GridIndex(Points&&, Args...) -> GridIndex<std::views::all_t<Points>>;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Grid based spatial search indexing function.
+template<class Num>
 class GridSearch final {
 public:
 
   /// Construct a grid search indexing function.
   ///
   /// @param size_hint Grid cell size, typically 2x of the particle spacing.
-  constexpr explicit GridSearch(real_t size_hint) : size_hint_{size_hint} {
+  constexpr explicit GridSearch(Num size_hint) : size_hint_{size_hint} {
     TIT_ASSERT(size_hint_ > 0.0, "Cell size hint must be positive!");
   }
 
   /// Index the points for search using a grid.
   template<std::ranges::viewable_range Points>
-    requires deduce_constructible_from<GridIndex, Points&&, real_t>
+    requires point_range<Points> &&
+             std::same_as<point_range_num_t<Points>, Num> &&
+             deduce_constructible_from<GridIndex, Points&&, Num>
   [[nodiscard]] auto operator()(Points&& points) const {
     TIT_PROFILE_SECTION("GridSearch::operator()");
     return GridIndex{std::forward<Points>(points), size_hint_};
@@ -124,7 +127,7 @@ public:
 
 private:
 
-  real_t size_hint_;
+  Num size_hint_;
 
 }; // class GridSearch
 

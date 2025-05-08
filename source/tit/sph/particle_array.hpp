@@ -6,6 +6,7 @@
 #pragma once
 
 #include <array>
+#include <concepts>
 #include <ranges>
 #include <span>
 #include <tuple>
@@ -162,9 +163,9 @@ public:
                                    Equations /*equations*/) noexcept {}
 
   /// Write a particle array into a data series.
-  void write(real_t time,
+  void write(field_value_t<h_t, Space> time,
              data::DataSeriesView<data::DataStorage> series) const {
-    auto time_step = series.create_time_step(time);
+    auto time_step = series.create_time_step(static_cast<float64_t>(time));
     auto uniforms = time_step.uniforms();
     ParticleArray::uniform_fields.for_each([&uniforms, this](auto field) {
       uniforms.create_array(field.field_name, std::span{&field[*this], 1});
@@ -346,6 +347,11 @@ using particle_vec_t = particle_field_t<r, P>;
 template<class P>
   requires particle_view<P> || particle_array<P>
 inline constexpr auto particle_dim_v = vec_dim_v<particle_vec_t<P>>;
+
+/// Particle view type with the specific number type.
+template<class PV, class Num, auto... fields>
+concept particle_view_n =
+    particle_view<PV, fields...> && std::same_as<particle_num_t<PV>, Num>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

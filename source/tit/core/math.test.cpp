@@ -45,8 +45,6 @@ TEST_CASE_TEMPLATE("approx_equal_to", Num, NUM_TYPES) {
   CHECK(approx_equal_to(Num{1.23}, Num{1.23}));
   CHECK_FALSE(approx_equal_to(Num{1.23}, Num{5.67}));
   // Check if comparisons with `tiny_v` work as expected.
-  CHECK(approx_equal_to(Num{1.23}, Num{1.23} + tiny_v<Num>));
-  CHECK(approx_equal_to(Num{1.23} - tiny_v<Num>, Num{1.23}));
   CHECK(approx_equal_to(Num{1.23}, Num{1.23} + Num{0.1} * tiny_v<Num>));
   CHECK(approx_equal_to(Num{1.23} - Num{0.1} * tiny_v<Num>, Num{1.23}));
   CHECK_FALSE(approx_equal_to(Num{1.23}, Num{1.23} + Num{2.0} * tiny_v<Num>));

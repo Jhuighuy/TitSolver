@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <concepts>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/meta.hpp"
@@ -51,6 +50,7 @@ public:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// α-β artificial viscosity (Monaghan, 1992).
+template<class Num>
 class AlphaBetaArtificialViscosity final {
 public:
 
@@ -66,22 +66,22 @@ public:
   /// @param beta   Quadratic viscosity coefficient. Typically two times greater
   ///               than linear coefficient for compressible flows and zero for
   ///               weakly-compressible or incompressible flows.
-  constexpr explicit AlphaBetaArtificialViscosity(real_t alpha = 1.0,
-                                                  real_t beta = 2.0) noexcept
+  constexpr explicit AlphaBetaArtificialViscosity(Num alpha = 1.0,
+                                                  Num beta = 2.0) noexcept
       : alpha_{alpha}, beta_{beta} {
     TIT_ASSERT(alpha_ > 0.0, "Linear coefficient must be positive.");
     TIT_ASSERT(beta_ >= 0.0, "Quadratic coefficient must be non-negative.");
   }
 
   /// Continuity equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     return zero(r[a, b]);
   }
 
   /// Momentum equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     if (dot(v[a, b], r[a, b]) >= 0.0) return 0.0;
@@ -94,15 +94,15 @@ public:
 
 private:
 
-  real_t alpha_;
-  real_t beta_;
+  Num alpha_;
+  Num beta_;
 
 }; // class AlphaBetaArtificialViscosity
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Artificial viscosity with Balsara switch (Balsara, 1995).
-template<class BaseArtificialViscosity = AlphaBetaArtificialViscosity>
+template<class BaseArtificialViscosity>
 class BalsaraArtificialViscosity final {
 public:
 
@@ -153,7 +153,9 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Artificial viscosity with Rosswog switch (Rosswog, 2000).
-template<class BaseArtificialViscosity = BalsaraArtificialViscosity<>>
+template<class Num,
+         class BaseArtificialViscosity =
+             BalsaraArtificialViscosity<AlphaBetaArtificialViscosity<Num>>>
 class RosswogArtificialViscosity final {
 public:
 
@@ -173,9 +175,9 @@ public:
   /// @param alpha_max Maximal value of the switch coefficient.
   /// @param sigma     Decay time inverse scale factor.
   constexpr explicit RosswogArtificialViscosity(BaseArtificialViscosity base,
-                                                real_t alpha_min = 0.1,
-                                                real_t alpha_max = 2.0,
-                                                real_t sigma = 0.1) noexcept
+                                                Num alpha_min = 0.1,
+                                                Num alpha_max = 2.0,
+                                                Num sigma = 0.1) noexcept
       : base_{std::move(base)}, //
         alpha_min_{alpha_min}, alpha_max_{alpha_max}, sigma_{sigma} {
     TIT_ASSERT(alpha_min_ > 0.0, "Switch minimal value must be positive.");
@@ -188,14 +190,14 @@ public:
   }
 
   /// Continuity equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     return base_.density_term(a, b);
   }
 
   /// Momentum equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     auto Pi_ab = base_.velocity_term(a, b);
@@ -206,7 +208,7 @@ public:
   }
 
   /// Switch equation source term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto switch_source(PV a) const noexcept {
     const auto S_a = std::max(-div_v[a], decltype(div_v[a]){0.0});
     const auto tau_a = h[a] / (sigma_ * cs[a]);
@@ -217,9 +219,9 @@ public:
 private:
 
   [[no_unique_address]] BaseArtificialViscosity base_;
-  real_t alpha_min_;
-  real_t alpha_max_;
-  real_t sigma_;
+  Num alpha_min_;
+  Num alpha_max_;
+  Num sigma_;
 
 }; // class RosswogArtificialViscosity
 
@@ -227,6 +229,7 @@ private:
 
 /// ξ-SPH artificial viscosity (Molteni, Colagrossi, 2009).
 /// Weakly-compressible SPH formulation is assumed.
+template<class Num>
 class MolteniColagrossiArtificialViscosity final {
 public:
 
@@ -242,11 +245,10 @@ public:
   /// @param rho_0 Reference density, as defined for equation of state.
   /// @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
   /// @param xi    Density diffusion coefficient. Typically 0.1.
-  constexpr explicit MolteniColagrossiArtificialViscosity(
-      real_t cs_0,
-      real_t rho_0,
-      real_t alpha = 0.02,
-      real_t xi = 0.1) noexcept
+  constexpr explicit MolteniColagrossiArtificialViscosity(Num cs_0,
+                                                          Num rho_0,
+                                                          Num alpha = 0.02,
+                                                          Num xi = 0.1) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, xi_{xi} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive.");
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");
@@ -255,7 +257,7 @@ public:
   }
 
   /// Continuity equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
@@ -265,7 +267,7 @@ public:
   }
 
   /// Momentum equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
@@ -276,10 +278,10 @@ public:
 
 private:
 
-  real_t cs_0_;
-  real_t rho_0_;
-  real_t alpha_;
-  real_t xi_;
+  Num cs_0_;
+  Num rho_0_;
+  Num alpha_;
+  Num xi_;
 
 }; // class MolteniColagrossiArtificialViscosity
 
@@ -287,6 +289,7 @@ private:
 
 /// δ-SPH artificial viscosity (Marrone, 2011).
 /// Weakly-compressible SPH formulation is assumed.
+template<class Num>
 class DeltaSPHArtificialViscosity final {
 public:
 
@@ -302,10 +305,10 @@ public:
   /// @param rho_0 Reference density, as defined for equation of state.
   /// @param alpha Velocity viscosity coefficient. Typically 0.01~0.05.
   /// @param delta Density diffusion coefficient. Typically 0.1.
-  constexpr explicit DeltaSPHArtificialViscosity(real_t cs_0,
-                                                 real_t rho_0,
-                                                 real_t alpha = 0.02,
-                                                 real_t delta = 0.1) noexcept
+  constexpr explicit DeltaSPHArtificialViscosity(Num cs_0,
+                                                 Num rho_0,
+                                                 Num alpha = 0.02,
+                                                 Num delta = 0.1) noexcept
       : cs_0_{cs_0}, rho_0_{rho_0}, alpha_{alpha}, delta_{delta} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive!");
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive!");
@@ -314,7 +317,7 @@ public:
   }
 
   /// Continuity equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
@@ -326,7 +329,7 @@ public:
   }
 
   /// Momentum equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
@@ -337,10 +340,10 @@ public:
 
 private:
 
-  real_t cs_0_;
-  real_t rho_0_;
-  real_t alpha_;
-  real_t delta_;
+  Num cs_0_;
+  Num rho_0_;
+  Num alpha_;
+  Num delta_;
 
 }; // class DeltaSPHArtificialViscosity
 
@@ -350,11 +353,11 @@ private:
 template<class AV>
 concept artificial_viscosity = //
     std::same_as<AV, NoArtificialViscosity> ||
-    std::same_as<AV, AlphaBetaArtificialViscosity> ||
+    specialization_of<AV, AlphaBetaArtificialViscosity> ||
     specialization_of<AV, BalsaraArtificialViscosity> ||
     specialization_of<AV, RosswogArtificialViscosity> ||
-    std::same_as<AV, MolteniColagrossiArtificialViscosity> ||
-    std::same_as<AV, DeltaSPHArtificialViscosity>;
+    specialization_of<AV, MolteniColagrossiArtificialViscosity> ||
+    specialization_of<AV, DeltaSPHArtificialViscosity>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -5,10 +5,8 @@
 
 #pragma once
 
-#include <concepts>
 #include <tuple>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/meta.hpp"
 #include "tit/core/type_utils.hpp"
 
@@ -22,6 +20,7 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Gravity source.
+template<class Num>
 class GravitySource final {
 public:
 
@@ -34,23 +33,23 @@ public:
   /// Construct the gravity source.
   ///
   /// @param g Gravitational acceleration absolute value.
-  constexpr explicit GravitySource(real_t g_0) noexcept : g_0_{g_0} {}
+  constexpr explicit GravitySource(Num g_0) noexcept : g_0_{g_0} {}
 
   /// Source term value.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto operator()(PV /*a*/) const noexcept {
     return unit<1>(particle_vec_t<PV>{}, -g_0_);
   }
 
 private:
 
-  real_t g_0_;
+  Num g_0_;
 
 }; // class GravitySource
 
 /// Momentum source type.
 template<class MS>
-concept momentum_source = std::same_as<MS, GravitySource>;
+concept momentum_source = specialization_of<MS, GravitySource>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

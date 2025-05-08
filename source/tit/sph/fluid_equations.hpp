@@ -126,7 +126,7 @@ public:
       /// @todo Once we have a proper geometry library, we should use
       ///       here and clean up the code.
       const auto& search_point = r[b];
-      const auto clipped_point = Domain.clamp(search_point);
+      const auto clipped_point = Domain<Num>.clamp(search_point);
       const auto r_ghost = 2 * clipped_point - search_point;
       const auto SN = normalize(search_point - clipped_point);
       const auto SD = norm(r_ghost - r[b]);
@@ -174,9 +174,9 @@ public:
 
       // Compute the density at the boundary.
       // drho/dn = rho_0/(cs_0^2)*dot(g,n).
-      constexpr auto rho_0 = 1000.0;
-      constexpr auto cs_0 = 20 * sqrt(9.81 * 0.6);
-      constexpr auto G = Vec{0.0, -9.81};
+      constexpr Num rho_0 = 1000.0;
+      constexpr Num cs_0 = 20 * sqrt(9.81 * 0.6);
+      constexpr Vec<Num, 2> G{0.0, -9.81};
       rho[b] += SD * rho_0 / pow2(cs_0) * dot(G, SN);
 
       // Compute the velocity at the boundary (slip wall boundary condition).
@@ -411,7 +411,7 @@ public:
 
       // Perform "visibility" test. The actual test is just an optimized
       // version of `acos(n_{a,b} / sqrt(r_ab)) <= fov`.
-      constexpr Num cos_fov{cos(std::numbers::pi / 4)};
+      constexpr auto cos_fov = static_cast<Num>(cos(std::numbers::pi / 4));
       const auto fov_threshold = cos_fov * r_ab;
       if (bitwise_equal(FS[a], FS_ON)) {
         const auto n_a = dot(N[a], r[a, b]);
