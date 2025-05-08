@@ -135,10 +135,10 @@ constexpr auto havg(Nums... vals) noexcept {
 template<class Num>
 inline constexpr auto tiny_v = Num{};
 
-/// @todo Can we switch to a more precise tiny number, e.g. `sqrt(epsilon())`?
+/// Default value is ~6.0e-6.
 template<std::floating_point Float>
 inline constexpr auto tiny_v<Float> =
-    pow(std::numeric_limits<Float>::epsilon(), Float{1.0 / 3.0});
+    static_cast<Float>(pow(std::numeric_limits<double>::epsilon(), 1.0 / 3.0));
 
 /// Check if number is tiny.
 template<class Num>

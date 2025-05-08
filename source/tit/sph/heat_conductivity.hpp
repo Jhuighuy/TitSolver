@@ -7,9 +7,9 @@
 
 #include <concepts>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/meta.hpp"
+#include "tit/core/type_utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
@@ -41,6 +41,7 @@ public:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Heat conductivity term.
+template<class Num>
 class HeatConductivity final {
 public:
 
@@ -53,12 +54,12 @@ public:
   /// Construct heat conductivity with a constant coefficient.
   ///
   /// @param c_v Specific heat capacity of the fluid.
-  constexpr explicit HeatConductivity(real_t c_v) noexcept : c_v_{c_v} {
+  constexpr explicit HeatConductivity(Num c_v) noexcept : c_v_{c_v} {
     TIT_ASSERT(c_v_ > 0.0, "Specific heat capacity must be positive!");
   }
 
   /// Heat conductivity term.
-  template<particle_view<required_fields> PV>
+  template<particle_view_n<Num, required_fields> PV>
   constexpr auto operator()(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto kappa_ab = kappa.havg(a, b);
@@ -68,7 +69,7 @@ public:
 
 private:
 
-  real_t c_v_;
+  Num c_v_;
 
 }; // class HeatConductivity
 
@@ -76,8 +77,8 @@ private:
 
 /// Heat conductivity type.
 template<class HC>
-concept heat_conductivity = std::same_as<HC, NoHeatConductivity> || //
-                            std::same_as<HC, HeatConductivity>;
+concept heat_conductivity = std::same_as<HC, NoHeatConductivity> ||
+                            specialization_of<HC, HeatConductivity>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

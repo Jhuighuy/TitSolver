@@ -28,7 +28,7 @@ public:
   /// Stop the stopwatch cycle and update the measured delta time.
   void stop() noexcept {
     const auto stop = std::chrono::steady_clock::now();
-    TIT_ASSERT(stop > start_, "Stopwatch was not started!");
+    TIT_ASSERT(stop >= start_, "Stopwatch was not started!");
     const auto delta = stop - start_;
     total_ += std::chrono::duration_cast<std::chrono::nanoseconds>(delta);
     cycles_ += 1;
@@ -40,8 +40,8 @@ public:
   }
 
   /// Get the total measured time (in seconds).
-  constexpr auto total() const noexcept -> real_t {
-    return 1.0e-9 * static_cast<real_t>(total_ns());
+  constexpr auto total() const noexcept -> float64_t {
+    return 1.0e-9 * static_cast<float64_t>(total_ns());
   }
 
   /// Get the average cycle time (in nanoseconds).
@@ -50,8 +50,8 @@ public:
   }
 
   /// Get the average cycle time (in seconds).
-  constexpr auto cycle() const noexcept -> real_t {
-    return 1.0e-9 * static_cast<real_t>(cycle_ns());
+  constexpr auto cycle() const noexcept -> float64_t {
+    return 1.0e-9 * static_cast<float64_t>(cycle_ns());
   }
 
   /// Amount of cycles.
