@@ -1,0 +1,49 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
+# Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+inputs:
+  compiler:
+    description: "Compiler (`GCC` or `Clang`)."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup vcpkg
+      shell: bash
+      run: |
+        export VCPKG_ROOT="$HOME/vcpkg"
+        export VCPKG_DEFAULT_BINARY_CACHE="$HOME/vcpkg_cache"
+        echo "VCPKG_ROOT=$VCPKG_ROOT" >> "$GITHUB_ENV"
+        echo "VCPKG_DEFAULT_BINARY_CACHE=$VCPKG_DEFAULT_BINARY_CACHE" >> "$GITHUB_ENV"
+        git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT" --depth=1
+        "$VCPKG_ROOT/bootstrap-vcpkg.sh"
+        mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" || true
+
+    - name: Restore vcpkg packages cache
+      id: vcpkg-cache-restore
+      uses: actions/cache/restore@v4
+      with:
+        # Use the run ID as the cache key, this way the cache is updated
+        # after each run.
+        key: vcpkg-${{ runner.os }}-${{ inputs.compiler }}-${{ github.run_id }}
+        restore-keys: vcpkg-${{ runner.os }}-${{ inputs.compiler }}
+        path: |
+          ${{ env.VCPKG_ROOT }}/installed
+          ${{ env.VCPKG_ROOT }}/buildtrees
+          ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+
+    - name: Install vcpkg packages
+      shell: bash
+      run: $VCPKG_ROOT/vcpkg install
+
+    - name: Update vcpkg packages cache
+      uses: actions/cache/save@v4
+      with:
+        key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
+        path: |
+          ${{ env.VCPKG_ROOT }}/installed
+          ${{ env.VCPKG_ROOT }}/buildtrees
+          ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}

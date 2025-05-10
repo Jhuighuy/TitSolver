@@ -34,9 +34,6 @@ jobs:
       CXX_COVERAGE_REPORT_PATH_CODECOV: cxx_coverage_codecov.xml
       CXX_COVERAGE_REPORT_PATH_SONAR: cxx_coverage_sonar.xml
       JS_COVERAGE_REPORT_PATH: source/titfront/coverage/lcov.info
-      # To be set by the steps.
-      VCPKG_ROOT:
-      VCPKG_DEFAULT_BINARY_CACHE:
 
     steps:
       - name: Checkout
@@ -48,36 +45,15 @@ jobs:
       - name: Setup Sonar Scanner
         uses: SonarSource/sonarcloud-github-c-cpp@v2
 
-      - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-
       - name: Setup runner
-        run: ./build/setup-ci-runner.sh ${{ matrix.compiler }}
-
-      - name: Restore vcpkg packages cache
-        id: vcpkg-cache-restore
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/setup_runner
         with:
-          # Use the run ID as the cache key, this way the cache is updated
-          # after each run.
-          key: vcpkg-${{ runner.os }}-${{ matrix.compiler }}-${{ github.run_id }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ matrix.compiler }}
-          path: |
-            ${{ env.VCPKG_ROOT }}/installed
-            ${{ env.VCPKG_ROOT }}/buildtrees
-            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          compiler: ${{ matrix.compiler }}
 
-      - name: Install vcpkg packages
-        run: $VCPKG_ROOT/vcpkg install
-
-      - name: Update vcpkg packages cache
-        uses: actions/cache/save@v4
+      - name: Setup vcpkg
+        uses: ./.github/actions/setup_vcpkg
         with:
-          key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
-          path: |
-            ${{ env.VCPKG_ROOT }}/installed
-            ${{ env.VCPKG_ROOT }}/buildtrees
-            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          compiler: ${{ matrix.compiler }}
 
       - name: Build
         run: |
