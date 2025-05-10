@@ -18,6 +18,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/opencl.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/sys.hpp"
@@ -139,6 +140,7 @@ void println_banner_and_system_info(std::string_view product_name) {
                      {"OS", os_info()},
                      {"CPU", cpu_info()},
                      {"RAM", fmt_memsize(ram_size())},
+                     {"OpenCL", ocl::Platform::default_().info()},
                      {"Working dir", std::filesystem::current_path()},
                      {"Disk space", fmt_memsize(disk_space())},
                  });

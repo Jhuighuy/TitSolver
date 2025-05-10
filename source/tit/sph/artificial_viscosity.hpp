@@ -232,7 +232,7 @@ class MolteniColagrossiArtificialViscosity final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, grad_rho, h, r, v};
+  static constexpr TypeSet required_fields{rho, h, r, v};
 
   /// Set of particle fields that are modified.
   static constexpr TypeSet modified_fields{/*empty*/};

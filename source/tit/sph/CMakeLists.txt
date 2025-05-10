@@ -28,6 +28,17 @@ add_tit_library(
     tit::graph
 )
 
+install(
+  FILES
+    "kernels/artificial_viscosity.cl"
+    "kernels/common.cl"
+    "kernels/fluid_equations.cl"
+    "kernels/kernel.cl"
+    "kernels/math.cl"
+  DESTINATION
+    "kernels"
+)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
