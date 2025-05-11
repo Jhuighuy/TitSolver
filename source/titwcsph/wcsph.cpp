@@ -1,5 +1,4 @@
 #include "tit/core/basic_types.hpp"
-#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
@@ -23,13 +22,15 @@
 #include "tit/sph/time_integrator.hpp"
 #include "tit/sph/viscosity.hpp"
 
+#include "tit/main/main.hpp"
+
 namespace tit::sph {
 namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Real>
-auto sph_main(CmdArgs /*args*/) -> int {
+void sph_main(CmdArgs /*args*/) {
   constexpr Real H = 0.6;   // Water column height.
   constexpr Real L = 2 * H; // Water column length.
 
@@ -181,8 +182,6 @@ auto sph_main(CmdArgs /*args*/) -> int {
     if (end) break;
     time += dt;
   }
-
-  return 0;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -190,4 +189,6 @@ auto sph_main(CmdArgs /*args*/) -> int {
 } // namespace
 } // namespace tit::sph
 
-TIT_IMPLEMENT_MAIN(sph::sph_main<tit::float64_t>)
+void tit::main(CmdArgs args) {
+  sph::sph_main<float64_t>(args);
+}
