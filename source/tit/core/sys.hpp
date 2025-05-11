@@ -23,7 +23,7 @@ using atexit_callback_t = void (*)();
 void checked_atexit(atexit_callback_t callback);
 
 /// Exit code.
-enum class ExitCode : uint8_t {
+enum class ExitCode : int8_t {
   success = 0, ///< Success.
   failure = 1, ///< Failure.
 };
