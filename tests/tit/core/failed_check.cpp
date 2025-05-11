@@ -5,7 +5,6 @@
 
 #define TIT_ENABLE_ASSERTS
 #include "tit/core/checks.hpp"
-#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
 
 namespace tit {
@@ -31,15 +30,10 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_test(CmdArgs /*args*/) -> int {
-  func_1();
-  eprintln("This line should not be executed.");
-  return 0;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace
 } // namespace tit
 
-TIT_IMPLEMENT_MAIN(run_test)
+auto main() -> int { // NOLINT(*-exception-escape)
+  tit::func_1();
+  tit::eprintln("This line should not be executed.");
+}
