@@ -4,7 +4,7 @@ func_3
 Doing something bad...
 
 
-/Users/jhuighuy/TitSolver/source/tit/core/exception.cpp:52:28: Terminating due to an unhandled exception.
+/Users/jhuighuy/TitSolver/source/tit/core/main.cpp:118:9: Terminating due to an unhandled exception.
 
 Stack trace:
 

@@ -5,10 +5,9 @@
 
 #include <csignal>
 
-#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/signal.hpp"
-#include "tit/core/sys.hpp"
+
+#include "tit/main/main.hpp"
 
 namespace tit {
 namespace {
@@ -17,8 +16,8 @@ namespace {
 
 [[gnu::noinline]] void func_3() {
   eprintln("func_3");
-  eprintln("Simulating Ctrl+C...");
-  checked_raise(SIGINT);
+  eprintln("Doing something bad...");
+  std::raise(SIGSEGV); // NOLINT(cert-err33-c)
 }
 
 [[gnu::noinline]] void func_2() {
@@ -33,16 +32,10 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_test(CmdArgs /*args*/) -> int {
-  checked_atexit([] { eprintln("At exit..."); });
-  func_1();
-  eprintln("This line should not be executed.");
-  return 0;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace
 } // namespace tit
 
-TIT_IMPLEMENT_MAIN(run_test)
+void tit::main(CmdArgs /*args*/) {
+  func_1();
+  eprintln("This line should not be executed.");
+}

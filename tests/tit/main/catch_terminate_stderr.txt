@@ -4,7 +4,7 @@ func_3
 Creating a joinable thread...
 
 
-/Users/jhuighuy/TitSolver/source/tit/core/exception.cpp:56:26: Terminating due to a call to std::terminate().
+/Users/jhuighuy/TitSolver/source/tit/core/main.cpp:125:7: Terminating due to a call to std::terminate().
 
 Stack trace:
 
