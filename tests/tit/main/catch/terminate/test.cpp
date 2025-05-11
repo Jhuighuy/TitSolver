@@ -6,9 +6,9 @@
 #include <chrono>
 #include <thread>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/profiler.hpp"
+
+#include "tit/main/main.hpp"
 
 namespace tit {
 namespace {
@@ -16,23 +16,20 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [[gnu::noinline]] void func_3() {
-  TIT_PROFILE_SECTION("func_3");
-  println("func_3");
-  std::this_thread::sleep_for(std::chrono::microseconds(10));
+  eprintln("func_3");
+  eprintln("Creating a joinable thread...");
+  std::thread(
+      [] { std::this_thread::sleep_for(std::chrono::milliseconds(100)); });
 }
 
 [[gnu::noinline]] void func_2() {
-  TIT_PROFILE_SECTION("func_2");
-  println("func_2");
-  for (size_t i = 0; i < 3; ++i) func_3();
-  std::this_thread::sleep_for(std::chrono::microseconds(20));
+  eprintln("func_2");
+  func_3();
 }
 
 [[gnu::noinline]] void func_1() {
-  TIT_PROFILE_SECTION("func_1");
-  println("func_1");
-  for (size_t i = 0; i < 3; ++i) func_2();
-  std::this_thread::sleep_for(std::chrono::microseconds(40));
+  eprintln("func_1");
+  func_2();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,7 +37,7 @@ namespace {
 } // namespace
 } // namespace tit
 
-auto main() -> int { // NOLINT(*-exception-escape)
-  tit::Profiler::enable();
-  tit::func_1();
+void tit::main(CmdArgs /*args*/) {
+  func_1();
+  eprintln("This line should not be executed.");
 }

@@ -7,7 +7,6 @@ add_tit_test_executable(
   SOURCES "test.cpp"
   DEPENDS tit::core
   MATCH_STDOUT "stdout.txt"
-  ENVIRONMENT "TIT_ENABLE_STATS=1"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

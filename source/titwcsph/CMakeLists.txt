@@ -12,6 +12,7 @@ add_tit_executable(
   DEPENDS
     tit::core
     tit::data
+    tit::main
     tit::sph
 )
 

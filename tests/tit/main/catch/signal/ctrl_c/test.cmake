@@ -3,18 +3,11 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
-  PUBLIC
-  NAME
-    titback
-  SOURCES
-    "backend.cpp"
-  DEPENDS
-    tit::core
-    tit::data
-    tit::main
-    Crow::Crow
-    nlohmann_json::nlohmann_json
+add_tit_test_executable(
+  SOURCES "test.cpp"
+  DEPENDS tit::main
+  EXIT_CODE 254
+  MATCH_STDERR "stderr.txt"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

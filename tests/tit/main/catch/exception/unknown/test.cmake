@@ -3,18 +3,15 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
-  PUBLIC
-  NAME
-    titback
-  SOURCES
-    "backend.cpp"
-  DEPENDS
-    tit::core
-    tit::data
-    tit::main
-    Crow::Crow
-    nlohmann_json::nlohmann_json
+add_tit_test_executable(
+  SOURCES "test.cpp"
+  DEPENDS tit::main
+  EXIT_CODE 134
+  MATCH_STDERR "stderr.txt"
+  FILTERS
+    "/0x*/d" # Remove everything related to the stack trace.
+    "/terminate called after throwing an instance of 'unsigned int'/d"
+    "/terminating due to uncaught exception of type unsigned int/d"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
