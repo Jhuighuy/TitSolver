@@ -32,8 +32,6 @@ add_tit_library(
     "basic_types.hpp"
     "checks.cpp"
     "checks.hpp"
-    "cmd.cpp"
-    "cmd.hpp"
     "containers/inplace_flat_map.hpp"
     "containers/inplace_vector.hpp"
     "containers/mdvector.hpp"
@@ -45,7 +43,6 @@ add_tit_library(
     "enum.hpp"
     "env.cpp"
     "env.hpp"
-    "exception.cpp"
     "exception.hpp"
     "func.hpp"
     "mat.hpp"
@@ -71,8 +68,6 @@ add_tit_library(
     "str.hpp"
     "str.cpp"
     "stream.hpp"
-    "sys/signal.cpp"
-    "sys/signal.hpp"
     "sys/utils.cpp"
     "sys/utils.hpp"
     "time.hpp"
@@ -90,19 +85,6 @@ add_tit_library(
     hwy::hwy
     TBB::tbb
     TBB::tbbmalloc
-)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_tit_library(
-  NAME
-    core_malloc
-  TYPE
-    OBJECT
-  SOURCES
-    "sys/malloc.cpp"
-  DEPENDS
-    mimalloc-static
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -136,7 +118,6 @@ add_tit_executable(
     "serialization.test.cpp"
     "serialization.testing.hpp"
     "str.test.cpp"
-    "sys/signal.test.cpp"
     "sys/utils.test.cpp"
     "time.test.cpp"
     "type.test.cpp"

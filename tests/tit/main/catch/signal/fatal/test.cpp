@@ -3,12 +3,13 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <chrono>
-#include <thread>
+// Here I am using <iostream> instead of our routines to avoid the weird
+// segfault from the `backtrace` function in the signal handler.
+#include <iostream>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/profiler.hpp"
+
+#include "tit/main/main.hpp"
 
 namespace tit {
 namespace {
@@ -16,23 +17,20 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [[gnu::noinline]] void func_3() {
-  TIT_PROFILE_SECTION("func_3");
-  println("func_3");
-  std::this_thread::sleep_for(std::chrono::microseconds(10));
+  std::cerr << "func_3\n";
+  std::cerr << "Doing something bad...\n";
+  int* const null_pointer = nullptr;
+  *null_pointer = 0; // NOLINT
 }
 
 [[gnu::noinline]] void func_2() {
-  TIT_PROFILE_SECTION("func_2");
-  println("func_2");
-  for (size_t i = 0; i < 3; ++i) func_3();
-  std::this_thread::sleep_for(std::chrono::microseconds(20));
+  std::cerr << "func_2\n";
+  func_3();
 }
 
 [[gnu::noinline]] void func_1() {
-  TIT_PROFILE_SECTION("func_1");
-  println("func_1");
-  for (size_t i = 0; i < 3; ++i) func_2();
-  std::this_thread::sleep_for(std::chrono::microseconds(40));
+  std::cerr << "func_1\n";
+  func_2();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,7 +38,7 @@ namespace {
 } // namespace
 } // namespace tit
 
-auto main() -> int { // NOLINT(*-exception-escape)
-  tit::Profiler::enable();
-  tit::func_1();
+void tit::main(CmdArgs /*args*/) {
+  func_1();
+  eprintln("This line should not be executed.");
 }

@@ -4,9 +4,11 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_test(
-  EXE SOURCES "test.cpp" DEPENDS tit::core
-  MATCH_STDOUT "stdout.txt"
-  FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
+  EXE SOURCES "test.cpp" DEPENDS tit::core tit::main
+  EXIT_CODE 245
+  MATCH_STDERR "stderr.txt"
+  FILTERS "s/SIG.+$/<SIGNAL>./g" # Simplify signal name.
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3,10 +3,16 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_test(
-  EXE SOURCES "test.cpp" DEPENDS tit::core
-  MATCH_STDOUT "stdout.txt"
-  FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
+add_tit_library(
+  NAME
+    main
+  SOURCES
+    "main.cpp"
+    "main.hpp"
+    "malloc.cpp"
+  DEPENDS
+    tit::core
+    mimalloc-static
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
