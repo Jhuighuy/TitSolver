@@ -6,6 +6,8 @@
 #pragma once
 #pragma GCC system_header
 
+#ifndef Q_MOC_RUN
+
 #include_next <ranges>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,3 +125,5 @@ _LIBCPP_END_NAMESPACE_STD
 #endif // ifdef _LIBCPP_VERSION
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#endif // Q_MOC_RUN

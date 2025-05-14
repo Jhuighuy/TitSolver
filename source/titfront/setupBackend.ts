@@ -48,7 +48,7 @@ export async function setupBackend(
 ): Promise<BackendConfig> {
   const backendPort = options.backendPort ?? (await randomFreePort());
   process.env.TIT_BACKEND_PORT = backendPort.toString();
-  const backendProcess = spawn("./output/TIT_ROOT/bin/titback", {
+  const backendProcess = spawn("./output/TIT_ROOT/bin/titapp", {
     cwd: "../../",
   });
   backendProcess.on("exit", (code, signal) => {
