@@ -6,6 +6,8 @@
 #pragma once
 #pragma GCC system_header
 
+#ifndef Q_MOC_RUN
+
 #include_next <ranges>
 #include <tuple>
 #include <type_traits>
@@ -187,3 +189,5 @@ _GLIBCXX_END_NAMESPACE_VERSION
 #endif
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#endif // ifndef Q_MOC_RUN

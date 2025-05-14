@@ -23,13 +23,14 @@ include(tit_testing)
 
 # Find the third-party libraries.
 find_package(Boost CONFIG REQUIRED COMPONENTS container stacktrace_addr2line)
-find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(metis CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(Qt6 CONFIG REQUIRED COMPONENTS
+  Core Gui WebEngineWidgets WebSockets Widgets)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
@@ -53,13 +54,17 @@ add_tit_library(
     _cxx
     Boost::container
     Boost::stacktrace_addr2line
-    Crow::Crow
     doctest::doctest
     gcem
     hwy::hwy
     metis
     mimalloc-static
     nlohmann_json::nlohmann_json
+    Qt::Core
+    Qt::Gui
+    Qt::WebEngineWidgets
+    Qt::WebSockets
+    Qt::Widgets
     TBB::tbb
     TBB::tbbmalloc
     unofficial::sqlite3::sqlite3

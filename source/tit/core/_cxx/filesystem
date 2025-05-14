@@ -7,6 +7,8 @@
 #pragma GCC system_header
 
 #include_next <filesystem>
+#ifndef Q_MOC_RUN
+
 #include <format>
 #include <string>
 
@@ -36,3 +38,5 @@ _LIBCPP_END_NAMESPACE_STD
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std _GLIBCXX_VISIBILITY(default)
 #endif
+
+#endif // ifndef Q_MOC_RUN

@@ -7,6 +7,7 @@
 #pragma GCC system_header
 
 #include_next <functional>
+#ifndef Q_MOC_RUN
 
 #ifdef _LIBCPP_VERSION
 _LIBCPP_BEGIN_NAMESPACE_STD
@@ -33,3 +34,5 @@ struct move_only_function : function<Ts...> {
 
 _LIBCPP_END_NAMESPACE_STD
 #endif // ifdef _LIBCPP_VERSION
+
+#endif // ifndef Q_MOC_RUN
