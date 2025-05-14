@@ -19,8 +19,8 @@
 !/.vscode/settings.json
 
 # C++ configuration files.
+!.clang-tidy
 !/.clang-format
-!/.clang-tidy
 !/vcpkg.json
 
 # Web configuration files.

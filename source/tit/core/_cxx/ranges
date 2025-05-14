@@ -6,6 +6,8 @@
 #pragma once
 #pragma GCC system_header
 
+#ifndef Q_MOC_RUN
+
 #include_next <ranges>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -152,3 +154,5 @@ struct std::formatter<Range> {
 #endif // ifdef __GLIBCXX__
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#endif // Q_MOC_RUN
