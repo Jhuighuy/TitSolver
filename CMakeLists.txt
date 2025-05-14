@@ -23,7 +23,6 @@ include(tit_testing)
 
 # Find the third-party libraries.
 find_package(Boost CONFIG REQUIRED COMPONENTS container stacktrace_addr2line)
-find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
@@ -55,7 +54,6 @@ add_tit_library(
     _cxx
     Boost::container
     Boost::stacktrace_addr2line
-    Crow::Crow
     doctest::doctest
     gcem
     hwy::hwy
