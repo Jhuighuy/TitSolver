@@ -21,8 +21,7 @@ namespace tit {
 namespace {
 
 #define KERNEL_TYPES                                                           \
-  TIT_PASS(sph::GaussianKernel,                                                \
-           sph::CubicSplineKernel,                                             \
+  TIT_PASS(sph::CubicSplineKernel,                                             \
            sph::QuarticSplineKernel,                                           \
            sph::QuinticSplineKernel,                                           \
            sph::QuarticWendlandKernel,                                         \

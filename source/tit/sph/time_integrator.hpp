@@ -32,14 +32,6 @@ template<explicit_equations Equations>
 class KickDriftIntegrator final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
-
   /// Construct time integrator.
   ///
   /// @param equations Equations to integrate.
@@ -47,17 +39,25 @@ public:
                                          size_t mesh_update_freq = 10) noexcept
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
 
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return equations_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return equations_.required_varyings();
+  }
+
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) {
     TIT_PROFILE_SECTION("EulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Initialize particles, build the mesh.
-    if (step_index_ == 0) equations_.init(particles);
+    // Index particles, if needed.
     if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
 
     // Setup boundary conditions.
@@ -65,7 +65,7 @@ public:
 
     // Update particle density.
     equations_.compute_density(mesh, particles);
-    if constexpr (has<PV>(drho_dt)) {
+    if TIT_HAVE (particles, drho_dt) {
       par::for_each(particles.fluid(),
                     [dt](PV a) { rho[a] += dt * drho_dt[a]; });
     }
@@ -75,12 +75,11 @@ public:
     par::for_each(particles.fluid(), [dt](PV a) {
       v[a] += dt * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
+      if TIT_HAS (a, u, du_dt) u[a] += dt * du_dt[a];
     });
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
+    if TIT_HAVE (particles, dr) {
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
@@ -104,14 +103,6 @@ template<explicit_equations Equations>
 class KickDriftKickIntegrator final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
-
   /// Construct time integrator.
   ///
   /// @param equations Equations to integrate.
@@ -120,17 +111,25 @@ public:
       size_t mesh_update_freq = 10) noexcept
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
 
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return equations_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return equations_.required_varyings();
+  }
+
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) {
     TIT_PROFILE_SECTION("LeapfrogIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Initialize and index particles.
-    if (step_index_ == 0) equations_.init(particles);
+    // Index particles, if needed.
     if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
 
     // Setup boundary conditions.
@@ -143,13 +142,12 @@ public:
     par::for_each(particles.fluid(), [dt, dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
+      if TIT_HAS (a, u, du_dt) u[a] += dt_2 * du_dt[a];
     });
 
     // Update particle velocity to the full step.
     equations_.compute_density(mesh, particles);
-    if constexpr (has<PV>(drho_dt)) {
+    if TIT_HAVE (particles, drho_dt) {
       par::for_each(particles.fluid(),
                     [dt](PV a) { rho[a] += dt * drho_dt[a]; });
     }
@@ -158,12 +156,11 @@ public:
     equations_.compute_forces(mesh, particles);
     par::for_each(particles.fluid(), [dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a]; // Kick.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
+      if TIT_HAS (a, u, du_dt) u[a] += dt_2 * du_dt[a];
     });
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
+    if TIT_HAVE (particles, dr) {
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
@@ -187,30 +184,30 @@ template<explicit_equations Equations>
 class RungeKuttaIntegrator final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
-
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(Equations equations,
                                           size_t mesh_update_freq = 10) noexcept
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
 
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return equations_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return equations_.required_varyings();
+  }
+
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) {
     TIT_PROFILE_SECTION("RungeKuttaIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Initialize and index particles.
-    if (step_index_ == 0) equations_.init(particles);
+    // Index particles, if needed.
     if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
 
     // Run the SSPRK(3,3) substeps.
@@ -223,7 +220,7 @@ public:
     lincomb_(1.0 / 3.0, old_particles, 2.0 / 3.0, particles);
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
+    if TIT_HAVE (particles, dr) {
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
@@ -235,8 +232,7 @@ public:
 private:
 
   // Do an explicit Euler substep.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void substep_(particle_num_t<ParticleArray> dt,
                 ParticleMesh& mesh,
                 ParticleArray& particles) {
@@ -251,14 +247,13 @@ private:
     par::for_each(particles.fluid(), [dt](PV a) {
       r[a] += dt * v[a]; // Drift-Kick: position is updated before velocity.
       v[a] += dt * dv_dt[a];
-      if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
+      if TIT_HAS (a, drho_dt) rho[a] += dt * drho_dt[a];
+      if TIT_HAS (a, u, du_dt) u[a] += dt * du_dt[a];
     });
   }
 
   // Compute the linear combination of the two substeps.
-  template<particle_array<required_fields> ParticleArray>
+  template<particle_array ParticleArray>
   static void lincomb_(particle_num_t<ParticleArray> weight,
                        const ParticleArray& particles,
                        particle_num_t<ParticleArray> out_weight,
@@ -271,12 +266,7 @@ private:
           r[out_a] = weight * r[a] + out_weight * r[out_a];
           v[out_a] = weight * v[a] + out_weight * v[out_a];
           rho[out_a] = weight * rho[a] + out_weight * rho[out_a];
-          if constexpr (has<PV>(u)) {
-            u[out_a] = weight * u[a] + out_weight * u[out_a];
-          }
-          if constexpr (has<PV>(alpha)) {
-            alpha[out_a] = weight * alpha[a] + out_weight * alpha[out_a];
-          }
+          if TIT_HAS (a, u) u[out_a] = weight * u[a] + out_weight * u[out_a];
         });
   }
 

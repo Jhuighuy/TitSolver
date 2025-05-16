@@ -44,20 +44,6 @@ public:
   /// Particle array type.
   using Array = std::remove_const_t<ParticleArray>;
 
-  /// Particle space.
-  static constexpr space auto space = Array::space;
-
-  /// Subset of particle fields that are array-wise constants.
-  static constexpr field_set auto uniform_fields = Array::uniform_fields;
-
-  /// Subset of particle fields that are individual for each particle.
-  static constexpr field_set auto varying_fields = Array::varying_fields;
-
-  /// Set of particle fields that are present.
-  static constexpr field_set auto fields = Array::fields;
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   /// Construct a particle view.
   constexpr ParticleView(ParticleArray& array, size_t index) noexcept
       : array_{&array}, index_{index} {}
@@ -91,7 +77,6 @@ public:
   /// Particle field value.
   template<field Field>
   constexpr auto operator[](Field field) const noexcept -> decltype(auto) {
-    static_assert(fields.contains(Field{}));
     return array()[index(), field];
   }
 
@@ -123,13 +108,9 @@ private:
 }; // class ParticleView
 
 /// Particle view type.
-///
-/// @tparam fields Fields that the view should contain.
-template<class PV, auto... fields>
+template<class PV>
 concept particle_view =
-    specialization_of<std::remove_cvref_t<PV>, ParticleView> &&
-    field_set<decltype(TypeSet{fields...})> &&
-    (TypeSet{fields...} <= std::remove_cvref_t<PV>::fields);
+    specialization_of<std::remove_cvref_t<PV>, ParticleView>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -141,14 +122,24 @@ public:
   /// Particle space.
   static constexpr Space space{};
 
-  /// Subset of particle fields that are array-wise constants.
-  static constexpr Uniforms uniform_fields{};
+  static constexpr Uniforms::Set static_uniforms{};
 
-  /// Subset of particle fields that are individual for each particle.
-  static constexpr Varyings varying_fields{};
+  static constexpr Varyings::Set static_varyings{};
 
-  /// Set of particle fields that are present.
-  static constexpr field_set auto fields = uniform_fields | varying_fields;
+  static_assert((static_uniforms & static_varyings) == TypeSet{},
+                "Static uniforms and varyings must be disjoint!");
+
+  static constexpr field_set auto static_fields =
+      static_uniforms | static_varyings;
+
+  static constexpr auto only_static_uniforms =
+      std::is_same_v<Uniforms, typename Uniforms::Set>;
+
+  static constexpr auto only_static_varyings =
+      !std::is_same_v<Varyings, typename Varyings::Set>;
+
+  static constexpr auto only_static_fields =
+      only_static_uniforms && only_static_varyings;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -158,19 +149,24 @@ public:
   /// @param equations The equations that define the particle fields.
   template<class Equations>
   constexpr explicit ParticleArray(Space /*space*/,
-                                   Equations /*equations*/) noexcept {}
+                                   const Equations& equations) noexcept
+      : dynamic_uniforms_{equations.required_uniforms()},
+        dynamic_varyings_{equations.required_varyings()} {}
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Write a particle array into a data series.
   void write(field_value_t<h_t, Space> time,
              data::DataSeriesView<data::DataStorage> series) const {
     auto time_step = series.create_time_step(static_cast<float64_t>(time));
-    auto uniforms = time_step.uniforms();
-    ParticleArray::uniform_fields.for_each([&uniforms, this](auto field) {
-      uniforms.create_array(field.field_name, std::span{&field[*this], 1});
+    auto time_step_uniforms = time_step.uniforms();
+    dynamic_uniforms_.for_each([&time_step_uniforms, this](auto field) {
+      time_step_uniforms.create_array(field.field_name,
+                                      std::span{&field[*this], 1});
     });
-    auto varyings = time_step.varyings();
-    ParticleArray::varying_fields.for_each([&varyings, this](auto field) {
-      varyings.create_array(field.field_name, field[*this]);
+    auto time_step_varyings = time_step.varyings();
+    dynamic_varyings_.for_each([&time_step_varyings, this](auto field) {
+      time_step_varyings.create_array(field.field_name, field[*this]);
     });
   }
 
@@ -178,31 +174,45 @@ public:
 
   /// Number of particles.
   constexpr auto size() const noexcept -> size_t {
-    return std::get<0>(varying_data_).size();
+    return std::get<static_varyings.find(r)>(varying_data_).size();
   }
 
   /// Reserve amount of particles.
   constexpr void reserve(size_t capacity) {
-    std::apply([capacity](auto&... cols) { ((cols.reserve(capacity)), ...); },
-               varying_data_);
+    dynamic_varyings_.for_each([this, capacity](auto field) {
+      std::get<static_varyings.find(field)>(varying_data_).reserve(capacity);
+    });
   }
 
   /// Appends a new particle of the specified type @p type.
   constexpr auto append(ParticleType type) -> ParticleView<ParticleArray> {
     TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
     const auto type_index = std::to_underlying(type);
+
     // Get the index of the next particle of the specified type and increment
     // the range of particles for the next types.
     const size_t index = particle_ranges_[type_index + 1];
     for (auto& p : particle_ranges_ | std::views::drop(type_index + 1)) p += 1;
+
     // Insert the new particle.
-    std::apply(
-        [index](auto&... cols) { ((cols.emplace(cols.begin() + index)), ...); },
-        varying_data_);
+    dynamic_varyings_.for_each([this, index](auto field) {
+      auto& vector = std::get<static_varyings.find(field)>(varying_data_);
+      vector.emplace(vector.begin() + index);
+    });
+
     return (*this)[index];
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Check if the particle has the specified type.
+  constexpr auto has_type(size_t index, ParticleType type) const noexcept
+      -> bool {
+    TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
+    const auto type_index = std::to_underlying(type);
+    return particle_ranges_[type_index] <= index &&
+           index < particle_ranges_[type_index + 1];
+  }
 
   /// All particles.
   constexpr auto all(this auto& self) noexcept {
@@ -231,13 +241,24 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Check if the particle has the specified type.
-  constexpr auto has_type(size_t index, ParticleType type) const noexcept
-      -> bool {
-    TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
-    const auto type_index = std::to_underlying(type);
-    return particle_ranges_[type_index] <= index &&
-           index < particle_ranges_[type_index + 1];
+  /// Check if the particles have all of the specified fields.
+  constexpr auto have(field auto... fields) const noexcept -> bool {
+    return have_uniform(fields...) || have_varying(fields...);
+  }
+
+  /// Check if the particles have all of the specified uniform fields.
+  constexpr auto have_uniform(field auto... fields) const noexcept -> bool {
+    return (dynamic_uniforms_.contains(fields) && ...);
+  }
+
+  /// Check if the particles have all of the specified varying fields.
+  constexpr auto have_varying(field auto... fields) const noexcept -> bool {
+    return (dynamic_varyings_.contains(fields) && ...);
+  }
+
+  /// Check if the particles have any of the specified fields.
+  constexpr auto have_any(field auto... fields) const noexcept -> bool {
+    return (have(fields) || ...);
   }
 
   /// Particle at index.
@@ -251,12 +272,15 @@ public:
   constexpr auto operator[](this auto& self,
                             [[maybe_unused]] size_t index,
                             Field /*field*/) noexcept -> decltype(auto) {
-    static_assert(fields.contains(Field{}));
     TIT_ASSERT(index < self.size(), "Particle index is out of range.");
-    if constexpr (uniform_fields.contains(Field{})) {
-      return std::get<uniform_fields.find(Field{})>(self.uniform_data_);
-    } else if constexpr (varying_fields.contains(Field{})) {
-      return std::get<varying_fields.find(Field{})>(self.varying_data_)[index];
+    if constexpr (static_uniforms.contains(Field{})) {
+      TIT_ASSERT(self.dynamic_uniforms_.contains(Field{}),
+                 "Field is not present in the dynamic uniform set!");
+      return std::get<static_uniforms.find(Field{})>(self.uniform_data_);
+    } else if constexpr (static_varyings.contains(Field{})) {
+      TIT_ASSERT(self.dynamic_varyings_.contains(Field{}),
+                 "Field '{}' is not present in the dynamic varying set!");
+      return std::get<static_varyings.find(Field{})>(self.varying_data_)[index];
     } else static_assert(false);
   }
 
@@ -264,12 +288,15 @@ public:
   template<field Field>
   constexpr auto operator[](this auto& self, Field /*field*/) noexcept
       -> decltype(auto) {
-    static_assert(fields.contains(Field{}));
-    if constexpr (uniform_fields.contains(Field{})) {
-      return std::get<uniform_fields.find(Field{})>(self.uniform_data_);
-    } else if constexpr (varying_fields.contains(Field{})) {
+    if constexpr (static_uniforms.contains(Field{})) {
+      TIT_ASSERT(self.dynamic_uniforms_.contains(Field{}),
+                 "Field is not present in the dynamic uniform set!");
+      return std::get<static_uniforms.find(Field{})>(self.uniform_data_);
+    } else if constexpr (static_varyings.contains(Field{})) {
+      TIT_ASSERT(self.dynamic_varyings_.contains(Field{}),
+                 "Field is not present in the dynamic varying set!");
       return std::span{
-          std::get<varying_fields.find(Field{})>(self.varying_data_)};
+          std::get<static_varyings.find(Field{})>(self.varying_data_)};
     } else static_assert(false);
   }
 
@@ -280,54 +307,55 @@ private:
   std::array<size_t, std::to_underlying(ParticleType::count) + 1>
       particle_ranges_{0};
 
+  [[no_unique_address]] Uniforms dynamic_uniforms_;
   decltype([]<class... Fields>(TypeSet<Fields...> /*fields*/) {
     return std::tuple<field_value_t<Fields, Space>...>{};
-  }(uniform_fields)) uniform_data_;
+  }(static_uniforms)) uniform_data_;
 
+  [[no_unique_address]] Varyings dynamic_varyings_;
   decltype([]<class... Fields>(TypeSet<Fields...> /*fields*/) {
     return std::tuple<std::vector<field_value_t<Fields, Space>>...>{};
-  }(varying_fields)) varying_data_;
+  }(static_varyings)) varying_data_;
 
 }; // class ParticleArray
 
 template<class Space, class Equations>
-ParticleArray(Space, Equations) -> ParticleArray<
-    Space,
-    decltype(Equations::required_fields - Equations::modified_fields),
-    decltype(Equations::required_fields & Equations::modified_fields)>;
+ParticleArray(Space, const Equations&)
+    -> ParticleArray<Space,
+                     decltype(std::declval<Equations>().required_uniforms()),
+                     decltype(std::declval<Equations>().required_varyings())>;
 
 /// Particle array type.
-///
-/// @tparam fields Fields that the array should contain.
-template<class PA, auto... fields>
+template<class PA>
 concept particle_array =
-    specialization_of<std::remove_cvref_t<PA>, ParticleArray> &&
-    particle_view<ParticleView<PA>, fields...>;
+    specialization_of<std::remove_cvref_t<PA>, ParticleArray>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace impl {
+
 template<auto field, class P>
 struct particle_field_reference;
-template<auto field, particle_view<field> PV>
-struct particle_field_reference<field, PV> {
-  using type = decltype(std::declval<PV>()[field]);
-};
-template<auto field, particle_array<r> PA>
-struct particle_field_reference<field, PA> {
-  using type = decltype(std::declval<PA&>()[0, field]);
-};
+
+template<auto field, particle_view PV>
+struct particle_field_reference<field, PV> :
+    std::type_identity<decltype(std::declval<PV&>()[field])> {};
+
+template<auto field, particle_array PA>
+struct particle_field_reference<field, PA> :
+    std::type_identity<decltype(std::declval<PA&>()[0, field])> {};
+
 } // namespace impl
 
 /// Particle field reference type.
 template<auto field, class P>
-  requires particle_view<P, field> || particle_array<P, field>
+  requires particle_view<P> || particle_array<P>
 using particle_field_reference_t =
     typename impl::particle_field_reference<field, P>::type;
 
 /// Particle field type.
 template<auto field, class P>
-  requires particle_view<P, field> || particle_array<P, field>
+  requires particle_view<P> || particle_array<P>
 using particle_field_t =
     std::remove_cvref_t<particle_field_reference_t<field, P>>;
 
@@ -338,7 +366,7 @@ using particle_num_t = particle_field_t<h, P>;
 
 /// Particle vector type.
 template<class P>
-  requires particle_view<P, r> || particle_array<P, r>
+  requires particle_view<P> || particle_array<P>
 using particle_vec_t = particle_field_t<r, P>;
 
 /// Particle space dimension.
@@ -347,40 +375,131 @@ template<class P>
 inline constexpr auto particle_dim_v = vec_dim_v<particle_vec_t<P>>;
 
 /// Particle view type with the specific number type.
-template<class PV, class Num, auto... fields>
+template<class PV, class Num>
 concept particle_view_n =
-    particle_view<PV, fields...> && std::same_as<particle_num_t<PV>, Num>;
+    particle_view<PV> && std::same_as<particle_num_t<PV>, Num>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Check particle fields presence.
-template<class P>
-  requires particle_view<P> || particle_array<P>
-consteval auto has(field auto... fields) -> bool {
-  constexpr auto present_fields = std::remove_cvref_t<P>::fields;
-  return TypeSet{fields...} <= present_fields;
-}
+/// Check if the particle array has all of the specified fields at compile time.
+#define TIT_HAVE_STATIC_(P, ...)                                               \
+  /*if*/ constexpr(P::static_fields >= TypeSet{__VA_ARGS__})
 
-/// Check particle uniform fields presence.
-template<class P>
-  requires particle_view<P> || particle_array<P>
-consteval auto has_uniform(field auto... uniforms) -> bool {
-  constexpr auto present_fields = std::remove_cvref_t<P>::uniform_fields;
-  return TypeSet{uniforms...} <= present_fields;
-}
+/// Check if the particle array has all of the specified fields at compile time.
+///
+/// Usage example:
+/// @code
+///   if TIT_HAVE_ (Particles, particles, rho, u, v) {
+///     // Do something.
+///   } // NEVER PUT `else` BRANCH AFTER THIS MACRO!
+/// @endcode
+///
+/// @warning NEVER PUT `else` BRANCH AFTER THIS MACRO!
+#define TIT_HAVE_(P, ps, ...)                                                  \
+  /*if*/ TIT_HAVE_STATIC_(P, __VA_ARGS__) /*)*/                                \
+  /*  */ /*  */ if (P::only_static_fields || (ps).have(__VA_ARGS__))
 
-/// Check presence of at least one particle field.
+/// Check if the particle array has all of the specified fields.
+///
+/// Usage example:
+/// @code
+///   if TIT_HAVE (particles, rho, u, v) {
+///     // Do something.
+///   } // NEVER PUT `else` BRANCH AFTER THIS MACRO!
+/// @endcode
+///
+/// @warning NEVER PUT `else` BRANCH AFTER THIS MACRO!
+#define TIT_HAVE(ps, ...)                                                      \
+  TIT_HAVE_(std::remove_cvref_t<decltype(ps)>, ps, __VA_ARGS__)
+
+/// Check if the particle array has all of the specified fields.
+///
+/// Usage example:
+/// @code
+///   if TIT_HAVE_ANY_ (Particles, particles, p, cs) {
+///     // Do something.
+///   } // NEVER PUT `else` BRANCH AFTER THIS MACRO!
+/// @endcode
+///
+/// @warning NEVER PUT `else` BRANCH AFTER THIS MACRO!
+#define TIT_HAVE_ANY_(P, ps, ...)                                              \
+  /*if*/ TIT_HAVE_STATIC_(P, __VA_ARGS__) /*)*/                                \
+  /*  */ /*  */ if (P::only_static_fields || (ps).have_any(__VA_ARGS__))
+
+/// Check if the particle array has all of the specified fields.
+///
+/// Usage example:
+/// @code
+///   if TIT_HAVE_ANY (particles, p, cs) {
+///     // Do something.
+///   } // NEVER PUT `else` BRANCH AFTER THIS MACRO!
+/// @endcode
+///
+/// @warning NEVER PUT `else` BRANCH AFTER THIS MACRO!
+#define TIT_HAVE_ANY(ps, ...)                                                  \
+  TIT_HAVE_ANY_(std::remove_cvref_t<decltype(ps)>, ps, __VA_ARGS__)
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Check if the particle has all of the specified fields.
+///
+/// Usage example:
+/// @code
+///   if TIT_HAS_ (PV, a, rho, u, v) {
+///     // Do something.
+///   } // NEVER PUT `else` BRANCH AFTER THIS MACRO!
+/// @endcode
+///
+/// @warning NEVER PUT `else` BRANCH AFTER THIS MACRO!
+#define TIT_HAS_(PV, pv, ...) /**/                                             \
+  TIT_HAVE_(PV::Array, ((pv).array()), __VA_ARGS__)
+
+/// Check if the particle has all of the specified fields.
+///
+/// Usage example:
+/// @code
+///   if TIT_HAS (a, rho, u, v) {
+///     // Do something.
+///   } // NEVER PUT `else` BRANCH AFTER THIS MACRO!
+/// @endcode
+///
+/// @warning NEVER PUT `else` BRANCH AFTER THIS MACRO!
+#define TIT_HAS(pv, ...)                                                       \
+  TIT_HAS_(std::remove_cvref_t<decltype(pv)>, pv, __VA_ARGS__)
+
+/// Check if the particle has any of the specified fields.
+///
+/// Usage example:
+/// @code
+///   if TIT_HAS_ANY_ (PV, a, p, cs) {
+///     // Do something.
+///   } // NEVER PUT `else` BRANCH AFTER THIS MACRO!
+/// @endcode
+///
+/// @warning DO NOT PUT `else` BRANCH AFTER THIS MACRO!
+#define TIT_HAS_ANY_(PV, pv, ...)                                              \
+  TIT_HAVE_ANY_(PV::Array, ((pv).array()), __VA_ARGS__)
+
+/// Check if the particle has any of the specified fields.
+///
+/// Usage example:
+/// @code
+///   if TIT_HAS_ANY (a, p, cs) {
+///     // Do something.
+///   } // NEVER PUT `else` BRANCH AFTER THIS MACRO!
+/// @endcode
+///
+/// @warning DO NOT PUT `else` BRANCH AFTER THIS MACRO!
+#define TIT_HAS_ANY(pv, ...)                                                   \
+  TIT_HAS_ANY_(std::remove_cvref_t<decltype(pv)>, pv, __VA_ARGS__)
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Clear fields of the specified particle.
 template<class PV, field... Fields>
-consteval auto has_any(Fields... fields) -> bool {
-  constexpr auto present_fields = std::remove_cvref_t<PV>::fields;
-  return (... || present_fields.contains(fields));
-}
-
-// Clear the field value.
-template<class PV, field... Fields>
-constexpr void clear([[maybe_unused]] PV& particle, Fields... fields) {
-  TypeSet{fields...}.for_each([&particle](auto field) {
-    if constexpr (has<PV>(field)) particle[field] = {};
+constexpr void clear([[maybe_unused]] PV& pv, Fields... fields) {
+  TypeSet{fields...}.for_each([&pv](auto field) {
+    if TIT_HAS (pv, field) pv[field] = {};
   });
 }
 

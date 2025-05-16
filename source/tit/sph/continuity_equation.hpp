@@ -26,17 +26,19 @@ template<mass_source... MassSources>
 class ContinuityEquation final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      (MassSources::required_fields | ... | TypeSet{rho, drho_dt});
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      (MassSources::modified_fields | ... | TypeSet{/*empty*/});
-
   /// Construct the continuity equation.
   constexpr explicit ContinuityEquation(MassSources... mass_sources) noexcept
       : mass_sources_{std::move(mass_sources)...} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return (MassSources::required_uniforms | ... | TypeSet{/*empty*/});
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return (MassSources::required_varyings | ... | TypeSet{rho, drho_dt});
+  }
 
   /// Mass source terms.
   constexpr auto mass_sources() const noexcept -> const auto& {
@@ -48,6 +50,12 @@ private:
   [[no_unique_address]] std::tuple<MassSources...> mass_sources_;
 
 }; // class ContinuityEquation
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Dynamically dispatched continuity equation.
+/// @todo What about the mass sources?
+using DContinuityEquation = ContinuityEquation<>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

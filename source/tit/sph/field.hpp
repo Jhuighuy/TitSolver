@@ -6,9 +6,13 @@
 #pragma once
 
 #include <concepts>
+#include <optional>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
+#include <variant>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -24,55 +28,31 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-namespace impl {
-
-template<class PV>
-concept with_fields_ =
-    requires { std::remove_cvref_t<PV>::fields; } && //
-    is_type_set_v<decltype(auto(std::remove_cvref_t<PV>::fields))>;
-
-template<class PV, class Field>
-concept has_field_ = with_fields_<PV> && empty_type<Field> &&
-                     std::remove_cvref_t<PV>::fields.contains(Field{});
-
-} // namespace impl
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Base field specification.
 class BaseField {
 public:
 
   /// Field value for the specified particle view.
-  template<class Self, impl::has_field_<Self> PV>
+  template<class Self, class PV>
   constexpr auto operator[](this const Self& self, PV&& a) noexcept
       -> decltype(auto) {
     return std::forward<PV>(a)[self];
   }
 
-  /// Field value for the specified particle view or default value.
-  template<class Self, impl::with_fields_ PV, class Default>
-  constexpr auto get(this const Self& self,
-                     PV&& a,
-                     Default&& default_val) noexcept -> decltype(auto) {
-    if constexpr (impl::has_field_<PV, Self>) return std::forward<PV>(a)[self];
-    else return std::forward<Default>(default_val);
-  }
-
   /// Field value delta for the specified particle view.
-  template<class Self, impl::has_field_<Self> PVa, impl::has_field_<Self> PVb>
+  template<class Self, class PVa, class PVb>
   constexpr auto operator[](this const Self& self, PVa&& a, PVb&& b) noexcept {
     return std::forward<PVa>(a)[self] - std::forward<PVb>(b)[self];
   }
 
   /// Average of the field values over the specified particle views.
-  template<class Self, impl::has_field_<Self>... PVs>
+  template<class Self, class... PVs>
   constexpr auto avg(this const Self& self, PVs&&... ai) {
     return tit::avg(std::forward<PVs>(ai)[self]...);
   }
 
   /// Harmonic average of the field values over the specified particle views.
-  template<class Self, impl::has_field_<Self>... PVs>
+  template<class Self, class... PVs>
   constexpr auto havg(this const Self& self, PVs&&... ai) {
     return tit::havg(std::forward<PVs>(ai)[self]...);
   }
@@ -86,10 +66,16 @@ template<class Field>
 concept field = empty_type<Field> && std::derived_from<Field, BaseField>;
 
 namespace impl {
+
 template<class FieldSet>
 inline constexpr bool is_field_set_v = false;
+
 template<field... Fields>
 inline constexpr bool is_field_set_v<TypeSet<Fields...>> = true;
+
+template<field... Fields>
+inline constexpr bool is_field_set_v<TypeSubset<Fields...>> = true;
+
 } // namespace impl
 
 /// Field set specification type.
@@ -229,10 +215,6 @@ TIT_DEFINE_VECTOR_FIELD(v)
 TIT_DEFINE_VECTOR_FIELD(dv_dt)
 /// Particle velocity gradient.
 TIT_DEFINE_MATRIX_FIELD(grad_v)
-/// Particle velocity divergence.
-TIT_DEFINE_SCALAR_FIELD(div_v)
-/// Particle velocity curl (always 3D).
-TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, 3>), curl_v)
 
 /// Particle mass.
 TIT_DEFINE_SCALAR_FIELD(m)
@@ -262,13 +244,6 @@ TIT_DEFINE_SCALAR_FIELD(mu)
 /// Particle heat conductivity coefficient.
 TIT_DEFINE_SCALAR_FIELD(kappa)
 
-/// Particle artificial viscosity switch.
-TIT_DEFINE_SCALAR_FIELD(alpha)
-/// Particle artificial viscosity switch time derivative.
-TIT_DEFINE_SCALAR_FIELD(dalpha_dt)
-
-/// Particle concentration value.
-TIT_DEFINE_SCALAR_FIELD(C)
 /// Particle normal vector.
 TIT_DEFINE_VECTOR_FIELD(N)
 /// Particle renormalization matrix.
@@ -279,6 +254,100 @@ TIT_DEFINE_SCALAR_FIELD(FS)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+struct None {};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+constexpr auto get_required_uniforms(const None& /*impl*/) noexcept {
+  return TypeSubset{/*empty*/};
+}
+constexpr auto get_required_varyings(const None& /*impl*/) noexcept {
+  return TypeSubset{/*empty*/};
+}
+
+template<class Impl>
+constexpr auto get_required_uniforms(const Impl& impl) noexcept {
+  return impl.required_uniforms();
+}
+template<class Impl>
+constexpr auto get_required_varyings(const Impl& impls) noexcept {
+  return impls.required_varyings();
+}
+
+template<class... Impls>
+constexpr auto get_required_uniforms(
+    const std::tuple<Impls...>& impls) noexcept {
+  return std::apply(
+      [](const auto&... impl) {
+        return (get_required_uniforms(impl) | ... | TypeSet{/*empty*/});
+      },
+      impls);
+}
+template<class... Impls>
+constexpr auto get_required_varyings(
+    const std::tuple<Impls...>& impls) noexcept {
+  return std::apply(
+      [](const auto&... impl) {
+        return (get_required_varyings(impl) | ... | TypeSet{/*empty*/});
+      },
+      impls);
+}
+
+template<class Impl>
+constexpr auto get_required_uniforms(const std::optional<Impl>& impl) noexcept {
+  decltype(TypeSubset{get_required_uniforms(std::declval<Impl>())}) result{};
+  if (impl.has_value()) result = result | get_required_uniforms(*impl);
+  return result;
+}
+template<class Impl>
+constexpr auto get_required_varyings(const std::optional<Impl>& impl) noexcept {
+  decltype(TypeSubset{get_required_varyings(std::declval<Impl>())}) result{};
+  if (impl.has_value()) result = result | get_required_varyings(*impl);
+  return result;
+}
+
+template<class... Impls>
+constexpr auto get_required_uniforms(
+    const std::variant<Impls...>& impls) noexcept {
+  decltype(TypeSubset{
+      (get_required_uniforms(std::declval<Impls>()) | ...)}) result{};
+  std::visit(
+      [&result](const auto& impl) {
+        result = result | get_required_uniforms(impl);
+      },
+      impls);
+  return result;
+}
+template<class... Impls>
+constexpr auto get_required_varyings(
+    const std::variant<Impls...>& impls) noexcept {
+  decltype(TypeSubset{
+      (get_required_varyings(std::declval<Impls>()) | ...)}) result{};
+  std::visit(
+      [&result](const auto& impl) {
+        result = result | get_required_varyings(impl);
+      },
+      impls);
+  return result;
+}
+
+template<class Impl>
+constexpr auto get_required_uniforms(const std::vector<Impl>& impls) noexcept {
+  decltype(TypeSubset{get_required_uniforms(std::declval<Impl>())}) result{};
+  for (const auto& impl : impls) result = result | get_required_uniforms(impl);
+  return result;
+}
+template<class Impl>
+constexpr auto get_required_varyings(const std::vector<Impl>& impls) noexcept {
+  decltype(TypeSubset{get_required_varyings(std::declval<Impl>())}) result{};
+  for (const auto& impl : impls) result = result | get_required_varyings(impl);
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#define TIT_MAYBE(equation, ...) [&] {}()
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit

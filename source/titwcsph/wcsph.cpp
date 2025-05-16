@@ -63,27 +63,28 @@ void sph_main(CmdArgs /*args*/) {
   // Setup the SPH equations.
   const FluidEquations equations{
       // Standard motion equation.
-      MotionEquation{
+      DMotionEquation<Real>{
           // Enabled particle shifting technique.
-          ParticleShiftingTechnique{R, Ma, CFL},
+          DParticleShiftingTechnique<Real>{
+              ParticleShiftingTechnique{R, Ma, CFL}},
       },
       // Continuity equation with no source terms.
-      ContinuityEquation{},
+      DContinuityEquation{},
       // Momentum equation with gravity source term.
       MomentumEquation{
           // Inviscid flow.
           NoViscosity{},
           // δ-SPH artificial viscosity formulation.
-          DeltaSPHArtificialViscosity{cs_0, rho_0},
+          DArtificialViscosity<Real>{DeltaSPHArtificialViscosity{cs_0, rho_0}},
           // Gravity source term.
           GravitySource{g},
       },
       // No energy equation.
-      NoEnergyEquation{},
+      DOptionalEnergyEquation<Real>{},
       // Weakly compressible equation of state.
-      LinearTaitEquationOfState{cs_0, rho_0},
+      DEquationOfState<Real>{LinearTaitEquationOfState{cs_0, rho_0}},
       // C2 Wendland's spline kernel.
-      QuarticWendlandKernel{},
+      DKernel{QuarticWendlandKernel{}},
   };
 
   // Setup the time integrator.

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <concepts>
 #include <utility>
+#include <variant>
 
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
@@ -25,12 +26,6 @@ template<class Num>
 class IdealGasEquationOfState final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, u};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct an equation of state.
   ///
   /// @param gamma Adiabatic index.
@@ -39,15 +34,25 @@ public:
     TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1!");
   }
 
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{/*empty*/};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho, u};
+  }
+
   /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
+  template<particle_view_n<Num> PV>
+  constexpr auto pressure(PV a) const noexcept -> particle_num_t<PV> {
     return (gamma_ - 1.0) * rho[a] * u[a];
   }
 
   /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV a) const noexcept {
+  template<particle_view_n<Num> PV>
+  constexpr auto sound_speed(PV a) const noexcept -> particle_num_t<PV> {
     return sqrt(gamma_ * (gamma_ - 1.0) * u[a]); // == sqrt(gamma * p / rho).
   }
 
@@ -64,12 +69,6 @@ template<class Num>
 class AdiabaticIdealGasEquationOfState final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct an equation of state.
   ///
   /// @param kappa Thermal conductivity coefficient.
@@ -81,15 +80,25 @@ public:
     TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1!");
   }
 
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{/*empty*/};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho};
+  }
+
   /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
+  template<particle_view_n<Num> PV>
+  constexpr auto pressure(PV a) const noexcept -> particle_num_t<PV> {
     return kappa_ * pow(rho[a], gamma_);
   }
 
   /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV a) const noexcept {
+  template<particle_view_n<Num> PV>
+  constexpr auto sound_speed(PV a) const noexcept -> particle_num_t<PV> {
     return sqrt(kappa_ * pow(rho[a], gamma_)); // == sqrt(gamma * p / rho).
   }
 
@@ -107,9 +116,10 @@ class NoCorrection final {
 public:
 
   /// Corrected density value.
-  template<particle_view<rho> PV>
-  constexpr auto corrected_density(PV a, particle_num_t<PV> /*rho_0*/)
-      const noexcept {
+  template<particle_view PV>
+  constexpr auto corrected_density(PV a,
+                                   particle_num_t<PV> /*rho_0*/) const noexcept
+      -> particle_num_t<PV> {
     return rho[a];
   }
 
@@ -120,9 +130,10 @@ class HughesGrahamCorrection final {
 public:
 
   /// Corrected density value.
-  template<particle_view<rho> PV>
+  template<particle_view PV>
   constexpr auto corrected_density(PV a,
-                                   particle_num_t<PV> rho_0) const noexcept {
+                                   particle_num_t<PV> rho_0) const noexcept
+      -> particle_num_t<PV> {
     const auto rho_a = rho[a];
     return a.has_type(ParticleType::fixed) ? std::max(rho_a, rho_0) : rho_a;
   }
@@ -138,12 +149,6 @@ concept pressure_correction = std::same_as<PC, NoCorrection> || //
 template<class Num, pressure_correction Correction = HughesGrahamCorrection>
 class TaitEquationOfState final {
 public:
-
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct an equation of state.
   ///
@@ -165,17 +170,27 @@ public:
     TIT_ASSERT(gamma_ > 1.0, "Polytropic index must be greater than 1!");
   }
 
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{/*empty*/};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho};
+  }
+
   /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
+  template<particle_view_n<Num> PV>
+  constexpr auto pressure(PV a) const noexcept -> particle_num_t<PV> {
     const auto B = rho_0_ * pow2(cs_0_) / gamma_;
     const auto rho_a = correction_.corrected_density(a, rho_0_);
     return p_0_ + B * (pow(rho_a / rho_0_, gamma_) - 1.0);
   }
 
   /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV a) const noexcept {
+  template<particle_view_n<Num> PV>
+  constexpr auto sound_speed(PV a) const noexcept -> particle_num_t<PV> {
     const auto rho_a = correction_.corrected_density(a, rho_0_);
     return cs_0_ * pow(rho_a / rho_0_, gamma_);
   }
@@ -195,12 +210,6 @@ template<class Num, pressure_correction Correction = HughesGrahamCorrection>
 class LinearTaitEquationOfState final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct an equation of state.
   ///
   /// @param cs_0       Reference sound speed, typically 10x of the expected
@@ -218,16 +227,26 @@ public:
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive!");
   }
 
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{/*empty*/};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho};
+  }
+
   /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
+  template<particle_view_n<Num> PV>
+  constexpr auto pressure(PV a) const noexcept -> particle_num_t<PV> {
     const auto rho_a = correction_.corrected_density(a, rho_0_);
     return p_0_ + pow2(cs_0_) * (rho_a - rho_0_);
   }
 
   /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV /*a*/) const noexcept {
+  template<particle_view_n<Num> PV>
+  constexpr auto sound_speed(PV /*a*/) const noexcept -> particle_num_t<PV> {
     return cs_0_;
   }
 
@@ -242,13 +261,66 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Equation of state variant.
+template<class... Impls>
+class EquationOfStateVariant final {
+public:
+
+  /// Construct an equation of state variant.
+  template<class Impl>
+  constexpr explicit EquationOfStateVariant(Impl impl) noexcept
+      : impl_{std::move(impl)} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return get_required_uniforms(impl_);
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return get_required_varyings(impl_);
+  }
+
+  /// Pressure value.
+  template<particle_view PV>
+  constexpr auto pressure(PV a) const noexcept -> particle_num_t<PV> {
+    return std::visit([a](const auto& impl) { return impl.pressure(a); },
+                      impl_);
+  }
+
+  /// Sound speed value.
+  template<particle_view PV>
+  constexpr auto sound_speed(PV a) const noexcept -> particle_num_t<PV> {
+    return std::visit([a](const auto& impl) { return impl.sound_speed(a); },
+                      impl_);
+  }
+
+private:
+
+  std::variant<Impls...> impl_;
+
+}; // class EquationOfStateVariant
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Equation of state type.
 template<class EOS>
 concept equation_of_state =
     specialization_of<EOS, IdealGasEquationOfState> ||
     specialization_of<EOS, AdiabaticIdealGasEquationOfState> ||
     specialization_of<EOS, TaitEquationOfState> ||
-    specialization_of<EOS, LinearTaitEquationOfState>;
+    specialization_of<EOS, LinearTaitEquationOfState> ||
+    specialization_of<EOS, EquationOfStateVariant>;
+
+/// Dynamically dispatched equation of state.
+template<class Num>
+using DEquationOfState = EquationOfStateVariant<
+    IdealGasEquationOfState<Num>,
+    AdiabaticIdealGasEquationOfState<Num>,
+    TaitEquationOfState<Num, NoCorrection>,
+    TaitEquationOfState<Num, HughesGrahamCorrection>,
+    LinearTaitEquationOfState<Num, NoCorrection>,
+    LinearTaitEquationOfState<Num, HughesGrahamCorrection>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
