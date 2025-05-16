@@ -6,6 +6,7 @@
 #pragma once
 
 #include <bit>
+#include <bitset>
 #include <concepts>
 #include <cstring>
 #include <optional>
@@ -218,6 +219,9 @@ template<empty_type... Ts>
 class TypeSet final {
 public:
 
+  /// Set type (alias for this class).
+  using Set = TypeSet<Ts...>;
+
   /// Construct a set.
   /// @{
   consteval TypeSet() = default;
@@ -226,17 +230,12 @@ public:
   {}
   /// @}
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /// @todo I do not like these functions and wish to remove/refactor them.
-  ///       Also, these functions add an `empty_type` constraint to the class.
-
-  /// Call a function for each element.
-  template<class Func>
-    requires (std::invocable<Func, Ts> && ...)
-  constexpr void for_each(Func func) const {
-    (std::invoke(func, Ts{}), ...);
+  /// Get a copy of the set.
+  constexpr auto set() const noexcept -> Set {
+    return {};
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Check if the set contains a type `U`.
   template<empty_type U>
@@ -249,6 +248,13 @@ public:
     requires contains_v<U, Ts...>
   constexpr auto find(U /*elem*/) const noexcept -> size_t {
     return index_of_v<U, Ts...>;
+  }
+
+  /// Call a function for each element.
+  template<class Func>
+    requires (std::invocable<Func, Ts> && ...)
+  constexpr void for_each([[maybe_unused]] Func func) const {
+    (std::invoke(func, Ts{}), ...);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -344,6 +350,104 @@ template<class T>
 inline constexpr bool is_type_set_v = false;
 template<class... Ts>
 inline constexpr bool is_type_set_v<TypeSet<Ts...>> = true;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Subset of the set of types that can be dynamically modified.
+template<empty_type... Ts>
+  requires all_unique_v<Ts...>
+class TypeSubset final {
+public:
+
+  /// Set type for this subset.
+  using Set = TypeSet<Ts...>;
+
+  /// Construct an empty subset.
+  constexpr TypeSubset() noexcept = default;
+
+  /// Construct a subset from the elements.
+  template<empty_type... Us>
+    requires (contains_v<Us, Ts...> && ...)
+  constexpr TypeSubset(Us... elems) noexcept {
+    (put(elems), ...);
+  }
+
+  /// Construct a subset which is equal to the given set.
+  template<class... Us>
+    requires (contains_v<Us, Ts...> && ...)
+  constexpr explicit(false) TypeSubset(TypeSet<Us...> set) noexcept {
+    set.for_each([this](auto elem) { this->put(elem); });
+  }
+
+  /// Get the set of all types in this subset.
+  constexpr auto set() const noexcept -> Set {
+    return {};
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Put a type into the subset.
+  template<empty_type U>
+    requires (contains_v<U, Ts...>)
+  constexpr void put(U /*elem*/) noexcept {
+    bits_.set(index_of_v<U, Ts...>);
+  }
+
+  /// Check if the set contains a type `U`.
+  template<empty_type U>
+  constexpr auto contains(U /*elem*/) const noexcept -> bool {
+    if constexpr (contains_v<U, Ts...>) return bits_[index_of_v<U, Ts...>];
+    return false;
+  }
+
+  /// Call a function for each present element.
+  template<class Func>
+    requires (std::invocable<Func, Ts> && ...)
+  constexpr void for_each(Func func) const {
+    [[maybe_unused]] const auto checked_func = [this, &func](auto elem) {
+      if (this->contains(elem)) std::invoke(func, elem);
+    };
+    (std::invoke(checked_func, Ts{}), ...);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Subset union.
+  /// @{
+  template<empty_type... Us>
+  friend constexpr auto operator|(const TypeSubset& lhs,
+                                  const TypeSubset<Us...>& rhs) noexcept {
+    decltype(tit::TypeSubset{lhs.set() | rhs.set()}) result{};
+    lhs.for_each([&result](auto elem) { result.put(elem); });
+    rhs.for_each([&result](auto elem) { result.put(elem); });
+    return result;
+  }
+  template<empty_type... Us>
+  friend constexpr auto operator|(const TypeSubset& lhs,
+                                  const TypeSet<Us...>& rhs) noexcept {
+    decltype(tit::TypeSubset{lhs.set() | rhs}) result{rhs};
+    lhs.for_each([&result](auto elem) { result.put(elem); });
+    return result;
+  }
+  template<empty_type... Us>
+  friend constexpr auto operator|(const TypeSet<Us...>& lhs,
+                                  const TypeSubset& rhs) noexcept {
+    decltype(tit::TypeSubset{lhs | rhs.set()}) result{lhs};
+    rhs.for_each([&result](auto elem) { result.put(elem); });
+    return result;
+  }
+  /// @}
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+private:
+
+  std::bitset<sizeof...(Ts)> bits_;
+
+}; // class TypeSubset
+
+template<empty_type... Ts>
+TypeSubset(TypeSet<Ts...>) -> TypeSubset<Ts...>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
