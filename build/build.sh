@@ -161,6 +161,13 @@ configure() {
   export CC
   export CXX
 
+  # Use ccache (if available).
+  if command -v ccache &> /dev/null; then
+    echo "# Found ccache, using it."
+    CMAKE_ARGS+=("-D" "CMAKE_C_COMPILER_LAUNCHER=ccache")
+    CMAKE_ARGS+=("-D" "CMAKE_CXX_COMPILER_LAUNCHER=ccache")
+  fi
+
   # Find vcpkg.
   find-vcpkg
   local TOOLCHAIN_PATH="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
