@@ -12,7 +12,6 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
@@ -87,7 +86,7 @@ public:
   template<particle_view_n<Num> PV>
   constexpr auto density_term(PV a, PV b) const noexcept -> particle_vec_t<PV> {
     TIT_ASSERT(a != b, "Particles must be different!");
-    return zero(r[a, b]);
+    return {};
   }
 
   /// Momentum equation diffusive term.

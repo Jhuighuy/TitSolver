@@ -14,6 +14,7 @@
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
+#include "tit/sph/heat_conductivity.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
 #include "tit/sph/motion_equation.hpp"
@@ -51,8 +52,8 @@ void sph_main(CmdArgs /*args*/) {
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2);
 
-  constexpr Real R = 0.2;
-  constexpr Real Ma = 0.1;
+  [[maybe_unused]] constexpr Real R = 0.2;
+  [[maybe_unused]] constexpr Real Ma = 0.1;
   constexpr Real CFL = 0.8;
   constexpr Real dt = std::min(CFL * h_0 / cs_0, Real{0.25} * sqrt(h_0 / g));
 
@@ -63,28 +64,29 @@ void sph_main(CmdArgs /*args*/) {
   // Setup the SPH equations.
   const FluidEquations equations{
       // Standard motion equation.
-      DMotionEquation<Real>{
+      MotionEquation{
           // Enabled particle shifting technique.
-          DParticleShiftingTechnique<Real>{
-              ParticleShiftingTechnique{R, Ma, CFL}},
+          ParticleShiftingTechnique{R, Ma, CFL},
+          // NoParticleShifting{},
       },
       // Continuity equation with no source terms.
-      DContinuityEquation{},
+      ContinuityEquation{},
       // Momentum equation with gravity source term.
       MomentumEquation{
           // Inviscid flow.
           NoViscosity{},
           // δ-SPH artificial viscosity formulation.
-          DArtificialViscosity<Real>{DeltaSPHArtificialViscosity{cs_0, rho_0}},
+          DeltaSPHArtificialViscosity{cs_0, rho_0},
           // Gravity source term.
           GravitySource{g},
       },
       // No energy equation.
-      DOptionalEnergyEquation<Real>{},
+      // NoEnergyEquation{},
+      EnergyEquation{NoHeatConductivity{}},
       // Weakly compressible equation of state.
-      DEquationOfState<Real>{LinearTaitEquationOfState{cs_0, rho_0}},
+      LinearTaitEquationOfState{cs_0, rho_0},
       // C2 Wendland's spline kernel.
-      DKernel{QuarticWendlandKernel{}},
+      QuarticWendlandKernel{},
   };
 
   // Setup the time integrator.

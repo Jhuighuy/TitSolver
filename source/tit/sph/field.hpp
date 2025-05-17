@@ -346,7 +346,7 @@ constexpr auto get_required_varyings(const std::vector<Impl>& impls) noexcept {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#define TIT_MAYBE(equation, ...) [&] {}()
+#define TIT_ENABLED(eq) /*if*/ constexpr(different_from<decltype(eq), None>)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

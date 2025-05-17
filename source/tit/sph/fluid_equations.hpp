@@ -66,22 +66,22 @@ public:
   /// Set of required uniform fields.
   constexpr auto required_uniforms() const noexcept {
     return TypeSet{h, m} | //
-           motion_equation_.required_uniforms() |
-           continuity_equation_.required_uniforms() |
-           momentum_equation_.required_uniforms() |
-           energy_equation_.required_uniforms() | eos_.required_uniforms() |
-           kernel_.required_uniforms();
+           get_required_uniforms(motion_equation_) |
+           get_required_uniforms(continuity_equation_) |
+           get_required_uniforms(momentum_equation_) |
+           get_required_uniforms(energy_equation_) |
+           get_required_uniforms(eos_) | get_required_uniforms(kernel_);
   }
 
   /// Set of required varying fields.
   constexpr auto required_varyings() const noexcept {
     /// @todo `parinfo` should not be listed here.
     return TypeSet{r, rho, drho_dt, p, v, dv_dt, parinfo} |
-           motion_equation_.required_varyings() |
-           continuity_equation_.required_varyings() |
-           momentum_equation_.required_varyings() |
-           energy_equation_.required_varyings() | eos_.required_varyings() |
-           kernel_.required_varyings();
+           get_required_varyings(motion_equation_) |
+           get_required_varyings(continuity_equation_) |
+           get_required_varyings(momentum_equation_) |
+           get_required_varyings(energy_equation_) |
+           get_required_varyings(eos_) | get_required_varyings(kernel_);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -135,7 +135,7 @@ public:
           const auto W_delta = dot(E, B_delta) * kernel_(r_delta, h_ghost);
           rho[b] += m[a] * W_delta;
           v[b] += m[a] / rho[a] * v[a] * W_delta;
-          if TIT_HAS (b, u) u[b] += m[a] / rho[a] * u[a] * W_delta;
+          if (b.has(u)) u[b] += m[a] / rho[a] * u[a] * W_delta;
         }
       } else if (!is_tiny(S)) {
         // Constant interpolation succeeds, use it.
@@ -146,7 +146,7 @@ public:
           const auto W_delta = E * kernel_(r_delta, h_ghost);
           rho[b] += m[a] * W_delta;
           v[b] += m[a] / rho[a] * v[a] * W_delta;
-          if TIT_HAS (b, u) u[b] += m[a] / rho[a] * u[a] * W_delta;
+          if (b.has(u)) u[b] += m[a] / rho[a] * u[a] * W_delta;
         }
       } else {
         // Both interpolations fail, leave the particle as it is.
@@ -174,6 +174,7 @@ public:
   void compute_density(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
+    using Vec = particle_vec_t<ParticleArray>;
 
     // Clean-up continuity equation fields and apply source terms.
     par::for_each(particles.all(), [this](PV a) {
@@ -186,7 +187,7 @@ public:
     });
 
     // Compute density gradient and renormalization fields.
-    if TIT_HAVE_ANY (particles, grad_rho, N, L) {
+    if (particles.have_any(grad_rho, N, L)) {
       // Precompute the fields.
       par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
         const auto [a, b] = ab;
@@ -195,20 +196,20 @@ public:
         const auto grad_W_ab = kernel_.grad(a, b);
 
         // Update density gradient.
-        if TIT_HAS (a, grad_rho) {
+        if (a.has(grad_rho)) {
           const auto grad_flux = rho[b, a] * grad_W_ab;
           grad_rho[a] += V_b * grad_flux;
           grad_rho[b] += V_a * grad_flux;
         }
 
         // Update normal vector.
-        if TIT_HAS (a, N) {
+        if (a.array().have(N)) {
           N[a] += V_b * grad_W_ab;
           N[b] -= V_a * grad_W_ab;
         }
 
         // Update renormalization matrix.
-        if TIT_HAS (a, L) {
+        if (a.array().have(L)) {
           const auto L_flux = outer(r[b, a], grad_W_ab);
           L[a] += V_b * L_flux;
           L[b] += V_a * L_flux;
@@ -218,17 +219,15 @@ public:
       // Renormalize fields.
       par::for_each(particles.all(), [](PV a) {
         // Renormalize density gradient and normal vector, if possible.
-        if TIT_HAS (a, L) {
-          if TIT_HAS_ANY (a, N, grad_rho) {
-            if (const auto fact = ldl(L[a]); fact) {
-              if TIT_HAS (a, N) N[a] = fact->solve(N[a]);
-              if TIT_HAS (a, grad_rho) grad_rho[a] = fact->solve(grad_rho[a]);
-            }
+        if (a.has(L) && a.has_any(N, grad_rho)) {
+          if (const auto fact = ldl(L[a]); fact) {
+            if (a.has(N)) N[a] = fact->solve(N[a]);
+            if (a.has(grad_rho)) grad_rho[a] = fact->solve(grad_rho[a]);
           }
         }
 
         // Finalize the normal vector.
-        if TIT_HAS (a, N) N[a] = normalize(N[a]);
+        if (a.has(N)) N[a] = normalize(N[a]);
       });
     }
 
@@ -237,9 +236,13 @@ public:
       const auto [a, b] = ab;
       const auto grad_W_ab = kernel_.grad(a, b);
 
+      // Compute viscosity term.
+      Vec Psi_ab{};
+      if TIT_ENABLED (momentum_equation_.artificial_viscosity()) {
+        Psi_ab = momentum_equation_.artificial_viscosity().density_term(a, b);
+      }
+
       // Update density time derivative.
-      const auto Psi_ab =
-          momentum_equation_.artificial_viscosity().density_term(a, b);
       drho_dt[a] -= m[b] * dot(v[b, a] - Psi_ab / rho[b], grad_W_ab);
       drho_dt[b] -= m[a] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
     });
@@ -263,17 +266,17 @@ public:
       std::apply(
           [a](const auto&... g) {
             ((dv_dt[a] += g(a)), ...);
-            if TIT_HAS (a, du_dt) ((du_dt[a] += dot(g(a), v[a])), ...);
+            if (a.has(du_dt)) ((du_dt[a] += dot(g(a), v[a])), ...);
           },
           momentum_equation_.momentum_sources());
-      if TIT_HAS (a, du_dt) {
+      if (a.has(du_dt)) {
         std::apply([a](const auto&... q) { ((du_dt[a] += q(a)), ...); },
                    energy_equation_.energy_sources());
       }
 
       // Compute pressure and sound speed.
       p[a] = eos_.pressure(a);
-      if TIT_HAS (a, cs) cs[a] = eos_.sound_speed(a);
+      if (a.has(cs)) cs[a] = eos_.sound_speed(a);
     });
 
     // Compute velocity and internal energy time derivatives.
@@ -292,7 +295,7 @@ public:
       dv_dt[b] -= m[a] * v_flux;
 
       // Update internal energy time derivative.
-      if TIT_HAS_ (PV, a, du_dt) {
+      if (a.has(du_dt)) {
         const auto Q_ab = energy_equation_.heat_conductivity()(a, b);
         du_dt[a] -= m[b] * dot((P_a - Pi_ab / 2) * v[b, a] - Q_ab, grad_W_ab);
         du_dt[b] -= m[a] * dot((P_b - Pi_ab / 2) * v[b, a] + Q_ab, grad_W_ab);
