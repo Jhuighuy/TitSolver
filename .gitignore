@@ -54,6 +54,9 @@
 !*.css
 !*.svg
 
+# OpenCL files.
+!*.cl
+
 # Python files.
 !*.py
 
