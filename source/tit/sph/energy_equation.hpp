@@ -5,72 +5,36 @@
 
 #pragma once
 
-#include <concepts>
-#include <tuple>
-
 #include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
-#include "tit/sph/heat_conductivity.hpp"
+#include "tit/sph/heat_conductivity.hpp" // IWYU pragma: export
 
 namespace tit::sph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Enegry source type.
-template<class ES>
-concept energy_source = false; // No energy sources at the moment.
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// No energy equation.
-class NoEnergyEquation {
-public:
-
-  /// Set of required uniform fields.
-  static constexpr auto required_uniforms() noexcept {
-    return TypeSet{/*empty*/};
-  }
-
-  /// Set of required varying fields.
-  static constexpr auto required_varyings() noexcept {
-    return TypeSet{/*empty*/};
-  }
-
-}; // class NoEnergyEquation
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Energy equation.
-template<heat_conductivity HeatConductivity, energy_source... EnergySources>
+template<variant HeatConductivity, variant SourceTerm>
 class EnergyEquation final {
 public:
 
   /// Construct the energy equation.
   constexpr EnergyEquation(HeatConductivity heat_conductivity,
-                           EnergySources... energy_sources) noexcept
+                           SourceTerm source_term) noexcept
       : heat_conductivity_{std::move(heat_conductivity)},
-        energy_sources_{std::move(energy_sources)...} {}
+        source_term_{std::move(source_term)} {}
 
   /// Set of required uniform fields.
   constexpr auto required_uniforms() const noexcept {
     return heat_conductivity_.required_uniforms() |
-           std::apply(
-               [](const auto&... f) {
-                 return (f.required_uniforms() | ... | TypeSet{/*empty*/});
-               },
-               energy_sources_);
+           source_term_.required_uniforms();
   }
 
   /// Set of required varying fields.
   constexpr auto required_varyings() const noexcept {
     return heat_conductivity_.required_varyings() |
-           std::apply(
-               [](const auto&... f) {
-                 return (f.required_varyings() | ... | TypeSet{/*empty*/});
-               },
-               energy_sources_) |
-           TypeSet{u, du_dt};
+           source_term_.required_varyings() | TypeSet{u, du_dt};
   }
 
   /// Heat conductivity term.
@@ -78,24 +42,17 @@ public:
     return heat_conductivity_;
   }
 
-  /// Energy source terms.
-  constexpr auto energy_sources() const noexcept -> const auto& {
-    return energy_sources_;
+  /// Energy source term.
+  constexpr auto source_term() const noexcept -> const auto& {
+    return source_term_;
   }
 
 private:
 
   [[no_unique_address]] HeatConductivity heat_conductivity_;
-  [[no_unique_address]] std::tuple<EnergySources...> energy_sources_;
+  [[no_unique_address]] SourceTerm source_term_;
 
 }; // class EnergyEquation
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Energy equation type.
-template<class EE>
-concept energy_equation = std::same_as<EE, NoEnergyEquation> || //
-                          specialization_of<EE, EnergyEquation>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

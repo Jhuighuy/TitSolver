@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <concepts>
-
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -15,31 +13,6 @@
 #include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// No viscosity, for inviscid flows.
-class NoViscosity final {
-public:
-
-  /// Set of required uniform fields.
-  static constexpr auto required_uniforms() noexcept {
-    return TypeSet{/*empty*/};
-  }
-
-  /// Set of required varying fields.
-  static constexpr auto required_varyings() noexcept {
-    return TypeSet{/*empty*/};
-  }
-
-  /// Compute viscosity term.
-  template<particle_view PV>
-  constexpr auto operator()(PV a, PV b) const noexcept -> particle_num_t<PV> {
-    TIT_ASSERT(a != b, "Particles must be different!");
-    return {};
-  }
-
-}; // class NoViscosity
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -67,14 +40,7 @@ public:
            (rho[a] * rho[b] * norm2(r[a, b]));
   }
 
-}; // class ConstantViscosity
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Viscosity type.
-template<class V>
-concept viscosity = std::same_as<V, NoViscosity> || //
-                    std::same_as<V, LaplacianViscosity>;
+}; // class LaplacianViscosity
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
