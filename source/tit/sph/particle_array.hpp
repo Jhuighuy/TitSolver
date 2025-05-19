@@ -285,10 +285,10 @@ private:
 }; // class ParticleArray
 
 template<class Space, class Equations>
-ParticleArray(Space, Equations) -> ParticleArray<
-    Space,
-    decltype(Equations::required_fields - Equations::modified_fields),
-    decltype(Equations::required_fields & Equations::modified_fields)>;
+ParticleArray(Space, const Equations&)
+    -> ParticleArray<Space,
+                     decltype(std::declval<Equations>().required_uniforms()),
+                     decltype(std::declval<Equations>().required_varyings())>;
 
 /// Particle array type.
 template<class PA>
