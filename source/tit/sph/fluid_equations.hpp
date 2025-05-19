@@ -40,28 +40,6 @@ template<motion_equation MotionEquation,
 class FluidEquations final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =   //
-      MotionEquation::required_fields |     //
-      ContinuityEquation::required_fields | //
-      MomentumEquation::required_fields |   //
-      EnergyEquation::required_fields |     //
-      EquationOfState::required_fields |    //
-      Kernel::required_fields | TypeSet{h, m, r, rho, p, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      MotionEquation::modified_fields |       //
-      ContinuityEquation::modified_fields |   //
-      MomentumEquation::modified_fields |     //
-      EnergyEquation::modified_fields |       //
-      EquationOfState::modified_fields |      //
-      Kernel::modified_fields |               //
-      TypeSet{rho, drho_dt, grad_rho, N, L} | //
-      TypeSet{p, v, dv_dt} |                  //
-      TypeSet{u, du_dt} |                     //
-      TypeSet{dr, FS};
-
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct the fluid equations.
@@ -84,6 +62,26 @@ public:
         energy_equation_{std::move(energy_equation)}, //
         eos_{std::move(eos)},                         //
         kernel_{std::move(kernel)} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return TypeSet{h, m} | //
+           motion_equation_.required_uniforms() |
+           continuity_equation_.required_uniforms() |
+           momentum_equation_.required_uniforms() |
+           energy_equation_.required_uniforms() | eos_.required_uniforms() |
+           kernel_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return TypeSet{r, rho, drho_dt, p, v, dv_dt} |
+           motion_equation_.required_varyings() |
+           continuity_equation_.required_varyings() |
+           momentum_equation_.required_varyings() |
+           energy_equation_.required_varyings() | eos_.required_varyings() |
+           kernel_.required_varyings();
+  }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
