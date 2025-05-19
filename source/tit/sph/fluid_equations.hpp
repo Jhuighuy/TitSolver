@@ -52,15 +52,15 @@ public:
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      MotionEquation::modified_fields |          //
-      ContinuityEquation::modified_fields |      //
-      MomentumEquation::modified_fields |        //
-      EnergyEquation::modified_fields |          //
-      EquationOfState::modified_fields |         //
-      Kernel::modified_fields |                  //
-      TypeSet{rho, drho_dt, grad_rho, C, N, L} | //
-      TypeSet{p, v, dv_dt, div_v, curl_v} |      //
-      TypeSet{u, du_dt} |                        //
+      MotionEquation::modified_fields |       //
+      ContinuityEquation::modified_fields |   //
+      MomentumEquation::modified_fields |     //
+      EnergyEquation::modified_fields |       //
+      EquationOfState::modified_fields |      //
+      Kernel::modified_fields |               //
+      TypeSet{rho, drho_dt, grad_rho, N, L} | //
+      TypeSet{p, v, dv_dt} |                  //
+      TypeSet{u, du_dt} |                     //
       TypeSet{dr, FS};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -88,22 +88,9 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<particle_array<required_fields> ParticleArray>
-  void init([[maybe_unused]] ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::init()");
-    using PV = ParticleView<ParticleArray>;
-
-    // Initialize particle artificial viscosity switch value.
-    if constexpr (has<PV>(alpha)) {
-      par::for_each(particles.all(), [](PV a) { alpha[a] = 1.0; });
-    }
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  auto index(ParticleMesh& mesh, ParticleArray& particles) const {
+  auto setup_mesh(ParticleMesh& mesh, ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
     mesh.update(particles, [this](PV a) { return kernel_.radius(a); });
   }
@@ -196,7 +183,7 @@ public:
     // Clean-up continuity equation fields and apply source terms.
     par::for_each(particles.all(), [this](PV a) {
       // Clean-up continuity equation fields.
-      clear(a, drho_dt, grad_rho, C, N, L);
+      clear(a, drho_dt, grad_rho, N, L);
 
       // Apply continuity equation source terms.
       std::apply([a](const auto&... f) { ((drho_dt[a] += f(a)), ...); },
@@ -204,26 +191,19 @@ public:
     });
 
     // Compute density gradient and renormalization fields.
-    if constexpr (has_any<PV>(grad_rho, C, N, L)) {
+    if constexpr (has_any<PV>(grad_rho, N, L)) {
       // Precompute the fields.
       par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
         const auto [a, b] = ab;
         const auto V_a = m[a] / rho[a];
         const auto V_b = m[b] / rho[b];
-        [[maybe_unused]] const auto W_ab = kernel_(a, b);
-        [[maybe_unused]] const auto grad_W_ab = kernel_.grad(a, b);
+        const auto grad_W_ab = kernel_.grad(a, b);
 
         // Update density gradient.
         if constexpr (has<PV>(grad_rho)) {
           const auto grad_flux = rho[b, a] * grad_W_ab;
           grad_rho[a] += V_b * grad_flux;
           grad_rho[b] += V_a * grad_flux;
-        }
-
-        // Update concentration.
-        if constexpr (has<PV>(C)) {
-          C[a] += V_b * W_ab;
-          C[b] += V_a * W_ab;
         }
 
         // Update normal vector.
@@ -242,11 +222,6 @@ public:
 
       // Renormalize fields.
       par::for_each(particles.all(), [](PV a) {
-        // Renormalize density, if possible.
-        if constexpr (has<PV>(C)) {
-          if (!is_tiny(C[a])) rho[a] /= C[a];
-        }
-
         // Renormalize density gradient and normal vector, if possible.
         if constexpr (has<PV>(L) && has_any<PV>(N, grad_rho)) {
           if (const auto fact = ldl(L[a]); fact) {
@@ -287,7 +262,7 @@ public:
     // sound speed and apply source terms.
     par::for_each(particles.all(), [this](PV a) {
       // Clean-up momentum and energy equation fields.
-      clear(a, dv_dt, div_v, curl_v, du_dt);
+      clear(a, dv_dt, du_dt);
 
       // Apply source terms.
       std::apply(
@@ -301,35 +276,9 @@ public:
                    energy_equation_.energy_sources());
       }
 
-      // Compute pressure and sound speed.
+      // Compute pressure.
       p[a] = eos_.pressure(a);
-      if constexpr (has<PV>(cs)) cs[a] = eos_.sound_speed(a);
     });
-
-    // Compute velocity divergence and curl.
-    // Those fields may be required by the artificial viscosity.
-    if constexpr (has_any<PV>(div_v, curl_v)) {
-      par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
-        const auto [a, b] = ab;
-        const auto V_a = m[a] / rho[a];
-        const auto V_b = m[b] / rho[b];
-        const auto grad_W_ab = kernel_.grad(a, b);
-
-        // Update velocity divergence.
-        if constexpr (has<PV>(div_v)) {
-          const auto div_flux = dot(v[b, a], grad_W_ab);
-          div_v[a] += V_b * div_flux;
-          div_v[b] += V_a * div_flux;
-        }
-
-        // Update velocity curl.
-        if constexpr (has<PV>(curl_v)) {
-          const auto curl_flux = -cross(v[b, a], grad_W_ab);
-          curl_v[a] += V_b * curl_flux;
-          curl_v[b] += V_a * curl_flux;
-        }
-      });
-    }
 
     // Compute velocity and internal energy time derivatives.
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
@@ -353,14 +302,6 @@ public:
         du_dt[b] -= m[a] * dot((P_b - Pi_ab / 2) * v[b, a] + Q_ab, grad_W_ab);
       }
     });
-
-    // Compute artificial viscosity switch.
-    if constexpr (has<PV>(dalpha_dt)) {
-      par::for_each(particles.fluid(), [this](PV a) {
-        dalpha_dt[a] =
-            momentum_equation_.artificial_viscosity().switch_source(a);
-      });
-    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
