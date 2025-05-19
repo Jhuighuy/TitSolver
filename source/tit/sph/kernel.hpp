@@ -27,11 +27,15 @@ namespace tit::sph {
 class Kernel {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{r, h};
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{h};
+  }
 
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{r};
+  }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

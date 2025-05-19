@@ -22,16 +22,20 @@ template<class Num>
 class GravitySource final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields = TypeSet{};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields = TypeSet{};
-
   /// Construct the gravity source.
   ///
   /// @param g Gravitational acceleration absolute value.
   constexpr explicit GravitySource(Num g_0) noexcept : g_0_{g_0} {}
+
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{};
+  }
 
   /// Source term value.
   template<particle_view_n<Num> PV>
@@ -58,18 +62,6 @@ template<viscosity Viscosity,
 class MomentumEquation final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Viscosity::required_fields | //
-      ArtificialViscosity::required_fields |
-      (MomentumSources::required_fields | ... | TypeSet{v, dv_dt});
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Viscosity::modified_fields | //
-      ArtificialViscosity::modified_fields |
-      (MomentumSources::modified_fields | ... | TypeSet{});
-
   /// Construct the momentum equation.
   constexpr explicit MomentumEquation(
       Viscosity viscosity,
@@ -78,6 +70,29 @@ public:
       : viscosity_{std::move(viscosity)},
         artificial_viscosity_{std::move(artificial_viscosity)},
         momentum_sources_{std::move(momentum_sources)...} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return viscosity_.required_uniforms() |
+           artificial_viscosity_.required_uniforms() |
+           std::apply(
+               [](const auto&... f) {
+                 return (f.required_uniforms() | ... | TypeSet{});
+               },
+               momentum_sources_);
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return viscosity_.required_varyings() |
+           artificial_viscosity_.required_varyings() |
+           std::apply(
+               [](const auto&... f) {
+                 return (f.required_varyings() | ... | TypeSet{});
+               },
+               momentum_sources_) |
+           TypeSet{v, dv_dt};
+  }
 
   /// Viscosity term.
   constexpr auto viscosity() const noexcept -> const auto& {

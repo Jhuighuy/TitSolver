@@ -21,17 +21,21 @@ namespace tit::sph {
 class NoHeatConductivity {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{r};
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{};
+  }
 
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{};
+  }
 
   /// Heat conductivity term.
   template<particle_view PV>
-  constexpr auto operator()(PV a, PV b) const noexcept {
+  constexpr auto operator()(PV a, PV b) const noexcept -> particle_vec_t<PV> {
     TIT_ASSERT(a != b, "Particles must be different!");
-    return zero(r[a, b]);
+    return {};
   }
 
 }; // class NoHeatConductivity
@@ -43,17 +47,21 @@ template<class Num>
 class HeatConductivity final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, r, v, u, kappa};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct heat conductivity with a constant coefficient.
   ///
   /// @param c_v Specific heat capacity of the fluid.
   constexpr explicit HeatConductivity(Num c_v) noexcept : c_v_{c_v} {
     TIT_ASSERT(c_v_ > 0.0, "Specific heat capacity must be positive!");
+  }
+
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{kappa};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho, r, v, u};
   }
 
   /// Heat conductivity term.
