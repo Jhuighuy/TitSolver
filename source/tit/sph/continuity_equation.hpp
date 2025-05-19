@@ -26,17 +26,28 @@ template<mass_source... MassSources>
 class ContinuityEquation final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      (MassSources::required_fields | ... | TypeSet{rho, drho_dt});
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      (MassSources::modified_fields | ... | TypeSet{});
-
   /// Construct the continuity equation.
   constexpr explicit ContinuityEquation(MassSources... mass_sources) noexcept
       : mass_sources_{std::move(mass_sources)...} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return std::apply(
+        [](const auto&... f) {
+          return (f.required_uniforms() | ... | TypeSet{});
+        },
+        mass_sources_);
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return std::apply(
+               [](const auto&... f) {
+                 return (f.required_varyings() | ... | TypeSet{});
+               },
+               mass_sources_) |
+           TypeSet{rho, drho_dt};
+  }
 
   /// Mass source terms.
   constexpr auto mass_sources() const noexcept -> const auto& {
