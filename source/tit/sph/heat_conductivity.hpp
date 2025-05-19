@@ -29,7 +29,7 @@ public:
   static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Heat conductivity term.
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto operator()(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     return zero(r[a, b]);
@@ -58,7 +58,7 @@ public:
   }
 
   /// Heat conductivity term.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto operator()(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto kappa_ab = kappa.havg(a, b);

@@ -29,14 +29,14 @@ public:
   static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Continuity equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     return zero(r[a, b]);
   }
 
   /// Momentum equation diffusive term.
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     return zero(rho[a, b]);
@@ -76,7 +76,7 @@ public:
   }
 
   /// Continuity equation diffusive term.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
@@ -86,7 +86,7 @@ public:
   }
 
   /// Momentum equation diffusive term.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
@@ -136,7 +136,7 @@ public:
   }
 
   /// Continuity equation diffusive term.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
@@ -148,7 +148,7 @@ public:
   }
 
   /// Momentum equation diffusive term.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto velocity_term(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto h_ab = h.avg(a, b);
