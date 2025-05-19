@@ -22,17 +22,21 @@ namespace tit::sph {
 class NoViscosity final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{/*empty*/};
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{/*empty*/};
+  }
 
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{/*empty*/};
+  }
 
   /// Compute viscosity term.
   template<particle_view PV>
-  constexpr auto operator()(PV a, PV b) const noexcept {
+  constexpr auto operator()(PV a, PV b) const noexcept -> particle_num_t<PV> {
     TIT_ASSERT(a != b, "Particles must be different!");
-    return 0;
+    return {};
   }
 
 }; // class NoViscosity
@@ -43,11 +47,15 @@ public:
 class LaplacianViscosity final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, r, v, mu};
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{mu};
+  }
 
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho, r, v};
+  }
 
   /// Compute viscosity term.
   template<particle_view PV>
