@@ -48,8 +48,7 @@ public:
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
 
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) {
@@ -121,8 +120,7 @@ public:
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
 
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) {
@@ -200,8 +198,7 @@ public:
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
 
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) {
@@ -235,8 +232,7 @@ public:
 private:
 
   // Do an explicit Euler substep.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void substep_(particle_num_t<ParticleArray> dt,
                 ParticleMesh& mesh,
                 ParticleArray& particles) {
@@ -257,7 +253,7 @@ private:
   }
 
   // Compute the linear combination of the two substeps.
-  template<particle_array<required_fields> ParticleArray>
+  template<particle_array ParticleArray>
   static void lincomb_(particle_num_t<ParticleArray> weight,
                        const ParticleArray& particles,
                        particle_num_t<ParticleArray> out_weight,
