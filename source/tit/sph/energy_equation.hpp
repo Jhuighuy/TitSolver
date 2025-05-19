@@ -27,11 +27,15 @@ concept energy_source = false; // No energy sources at the moment.
 class NoEnergyEquation {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{/*empty*/};
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{};
+  }
 
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{};
+  }
 
 }; // class NoEnergyEquation
 
@@ -42,21 +46,32 @@ template<heat_conductivity HeatConductivity, energy_source... EnergySources>
 class EnergyEquation final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      HeatConductivity::required_fields |
-      (EnergySources::required_fields | ... | TypeSet{u, du_dt});
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      HeatConductivity::modified_fields |
-      (EnergySources::modified_fields | ... | TypeSet{});
-
   /// Construct the energy equation.
   constexpr EnergyEquation(HeatConductivity heat_conductivity,
                            EnergySources... energy_sources) noexcept
       : heat_conductivity_{std::move(heat_conductivity)},
         energy_sources_{std::move(energy_sources)...} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return heat_conductivity_.required_uniforms() |
+           std::apply(
+               [](const auto&... f) {
+                 return (f.required_uniforms() | ... | TypeSet{});
+               },
+               energy_sources_);
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return heat_conductivity_.required_varyings() |
+           std::apply(
+               [](const auto&... f) {
+                 return (f.required_varyings() | ... | TypeSet{});
+               },
+               energy_sources_) |
+           TypeSet{u, du_dt};
+  }
 
   /// Heat conductivity term.
   constexpr auto heat_conductivity() const noexcept -> const auto& {
