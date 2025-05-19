@@ -35,7 +35,7 @@ public:
   constexpr explicit GravitySource(Num g_0) noexcept : g_0_{g_0} {}
 
   /// Source term value.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto operator()(PV /*a*/) const noexcept {
     return unit<1>(particle_vec_t<PV>{}, -g_0_);
   }
