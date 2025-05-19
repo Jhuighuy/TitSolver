@@ -22,24 +22,29 @@ namespace tit::sph {
 class NoArtificialViscosity final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{/*empty*/};
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{};
+  }
 
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{};
+  }
 
   /// Continuity equation diffusive term.
   template<particle_view PV>
-  constexpr auto density_term(PV a, PV b) const noexcept {
+  constexpr auto density_term(PV a, PV b) const noexcept -> particle_vec_t<PV> {
     TIT_ASSERT(a != b, "Particles must be different!");
-    return zero(r[a, b]);
+    return {};
   }
 
   /// Momentum equation diffusive term.
   template<particle_view PV>
-  constexpr auto velocity_term(PV a, PV b) const noexcept {
+  constexpr auto velocity_term(PV a, PV b) const noexcept
+      -> particle_num_t<PV> {
     TIT_ASSERT(a != b, "Particles must be different!");
-    return zero(rho[a, b]);
+    return {};
   }
 
 }; // class NoArtificialViscosity
@@ -51,12 +56,6 @@ public:
 template<class Num>
 class MolteniColagrossiArtificialViscosity final {
 public:
-
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, grad_rho, h, r, v};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Construct artificial viscosity scheme.
   ///
@@ -73,6 +72,16 @@ public:
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive.");
     TIT_ASSERT(alpha_ > 0.0, "Velocity coefficient must be positive.");
     TIT_ASSERT(xi_ > 0.0, "Density coefficient must be positive.");
+  }
+
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{h};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho, r, v};
   }
 
   /// Continuity equation diffusive term.
@@ -112,12 +121,6 @@ template<class Num>
 class DeltaSPHArtificialViscosity final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, grad_rho, h, r, L, v};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct artificial viscosity scheme.
   ///
   /// @param cs_0  Reference sound speed, as defined for equation of state.
@@ -133,6 +136,16 @@ public:
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive!");
     TIT_ASSERT(alpha_ > 0.0, "Velocity coefficient must be positive!");
     TIT_ASSERT(delta_ > 0.0, "Density coefficient must be positive!");
+  }
+
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{h};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho, grad_rho, r, L, v};
   }
 
   /// Continuity equation diffusive term.

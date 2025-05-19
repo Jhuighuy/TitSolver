@@ -32,20 +32,22 @@ template<explicit_equations Equations>
 class KickDriftIntegrator final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
-
   /// Construct time integrator.
   ///
   /// @param equations Equations to integrate.
   constexpr explicit KickDriftIntegrator(Equations equations,
                                          size_t mesh_update_freq = 10) noexcept
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return equations_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return equations_.required_varyings() | TypeSet{parinfo, r, v, dv_dt};
+  }
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh, particle_array ParticleArray>
@@ -103,14 +105,6 @@ template<explicit_equations Equations>
 class KickDriftKickIntegrator final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
-
   /// Construct time integrator.
   ///
   /// @param equations Equations to integrate.
@@ -118,6 +112,16 @@ public:
       Equations equations,
       size_t mesh_update_freq = 10) noexcept
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return equations_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return equations_.required_varyings() | TypeSet{parinfo, r, v, dv_dt};
+  }
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh, particle_array ParticleArray>
@@ -184,18 +188,20 @@ template<explicit_equations Equations>
 class RungeKuttaIntegrator final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
-
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(Equations equations,
                                           size_t mesh_update_freq = 10) noexcept
       : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return equations_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return equations_.required_varyings() | TypeSet{parinfo, r, v, dv_dt};
+  }
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh, particle_array ParticleArray>

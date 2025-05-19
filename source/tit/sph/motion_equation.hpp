@@ -19,11 +19,15 @@ namespace tit::sph {
 class NoParticleShifting final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields = TypeSet{};
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{};
+  }
 
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields = TypeSet{};
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{};
+  }
 
 }; // class NoParticleShifting
 
@@ -32,12 +36,6 @@ template<class Num>
 class ParticleShiftingTechnique final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields = TypeSet{dr, N, FS};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields = TypeSet{};
-
   /// Construct the particle shifting technique.
   ///
   /// @param R   `R` parameter. Typically 0.8.
@@ -45,6 +43,16 @@ public:
   /// @param CFL Expected CFL number.
   constexpr explicit ParticleShiftingTechnique(Num R, Num Ma, Num CFL) noexcept
       : R_{R}, Ma_{Ma}, CFL_{CFL} {}
+
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{dr, N, FS};
+  }
 
   /// `R` parameter.
   constexpr auto R() const noexcept -> Num {
@@ -81,17 +89,19 @@ template<particle_shifting ParticleShifting>
 class MotionEquation final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      ParticleShifting::required_fields | TypeSet{r, v};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      ParticleShifting::modified_fields | TypeSet{};
-
   /// Construct the motion equation.
   constexpr explicit MotionEquation(ParticleShifting particle_shifting) noexcept
       : particle_shifting_{std::move(particle_shifting)} {}
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return particle_shifting_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return particle_shifting_.required_varyings() | TypeSet{r, v};
+  }
 
   /// Particle shifting method.
   constexpr auto particle_shifting() const noexcept -> const auto& {
