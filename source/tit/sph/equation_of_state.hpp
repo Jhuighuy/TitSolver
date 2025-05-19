@@ -24,7 +24,7 @@ class NoCorrection final {
 public:
 
   /// Corrected density value.
-  template<particle_view<rho> PV>
+  template<particle_view PV>
   constexpr auto corrected_density(PV a, particle_num_t<PV> /*rho_0*/)
       const noexcept {
     return rho[a];
@@ -37,7 +37,7 @@ class HughesGrahamCorrection final {
 public:
 
   /// Corrected density value.
-  template<particle_view<rho> PV>
+  template<particle_view PV>
   constexpr auto corrected_density(PV a,
                                    particle_num_t<PV> rho_0) const noexcept {
     const auto rho_a = rho[a];
@@ -85,7 +85,7 @@ public:
   }
 
   /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto pressure(PV a) const noexcept {
     const auto B = rho_0_ * pow2(cs_0_) / gamma_;
     const auto rho_a = correction_.corrected_density(a, rho_0_);
@@ -93,7 +93,7 @@ public:
   }
 
   /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto sound_speed(PV a) const noexcept {
     const auto rho_a = correction_.corrected_density(a, rho_0_);
     return cs_0_ * pow(rho_a / rho_0_, gamma_);
@@ -138,14 +138,14 @@ public:
   }
 
   /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto pressure(PV a) const noexcept {
     const auto rho_a = correction_.corrected_density(a, rho_0_);
     return p_0_ + pow2(cs_0_) * (rho_a - rho_0_);
   }
 
   /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num> PV>
   constexpr auto sound_speed(PV /*a*/) const noexcept {
     return cs_0_;
   }
