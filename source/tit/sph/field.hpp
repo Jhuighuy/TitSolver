@@ -9,6 +9,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -237,6 +238,130 @@ TIT_DEFINE_MATRIX_FIELD(L)
 /// Particle free surface flag.
 TIT_DEFINE_SCALAR_FIELD(FS)
 
+namespace sph {
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Represents absence of an equation.
+class None {
+public:
+
+  /// Default constructor.
+  constexpr explicit None() = default;
+
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{/*empty*/};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{/*empty*/};
+  }
+
+}; // class None
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Represents a variant of equations.
+template<class... Equations>
+class Variant final {
+public:
+
+  /// Construct the variant.
+  template<class Equation>
+    requires contains_v<Equation, Equations...>
+  constexpr explicit(false) Variant(Equation equation) noexcept
+      : equation_variant_{std::move(equation)} {}
+
+  /// Visit the active equation.
+  template<class... Visitors>
+  constexpr auto visit(Visitors&&... visitors) const {
+    return std::visit(Overload{std::forward<Visitors>(visitors)...},
+                      equation_variant_);
+  }
+
+  /// Visit the active equation, if it is not `None`.
+  template<class... Visitors>
+  constexpr void and_then(Visitors&&... visitors) const {
+    visit([](None /*none*/) {}, std::forward<Visitors>(visitors)...);
+  }
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    decltype(TypeSubset{
+        (std::declval<Equations>().required_uniforms() | ...)}) result{};
+    visit([&result](const auto& equation) {
+      result = result | equation.required_uniforms();
+    });
+    return result;
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    decltype(TypeSubset{
+        (std::declval<Equations>().required_varyings() | ...)}) result{};
+    visit([&result](const auto& equation) {
+      result = result | equation.required_varyings();
+    });
+    return result;
+  }
+
+private:
+
+  std::variant<Equations...> equation_variant_;
+
+}; // class Variant
+
+template<class Equation>
+class Variant<Equation> final {
+public:
+
+  /// Construct the variant.
+  constexpr explicit(false) Variant(Equation equation) noexcept
+      : equation_{std::move(equation)} {}
+
+  /// Visit the active equation.
+  template<class... Visitors>
+  constexpr auto visit(Visitors&&... visitors) const {
+    return std::invoke(Overload{std::forward<Visitors>(visitors)...},
+                       equation_);
+  }
+
+  /// Visit the active equation, if it is not `None`.
+  template<class... Visitors>
+  constexpr void and_then(Visitors&&... visitors) const noexcept {
+    visit([](None /*none*/) {}, std::forward<Visitors>(visitors)...);
+  }
+
+  /// Set of required uniform fields.
+  constexpr auto required_uniforms() const noexcept {
+    return equation_.required_uniforms();
+  }
+
+  /// Set of required varying fields.
+  constexpr auto required_varyings() const noexcept {
+    return equation_.required_varyings();
+  }
+
+private:
+
+  [[no_unique_address]] Equation equation_;
+
+}; // class Variant
+
+template<class Equation>
+Variant(Equation) -> Variant<Equation>;
+
+/// Variant of equations or none.
+template<class... Equations>
+using OptionalVariant = Variant<None, Equations...>;
+
+/// Variant type.
+template<class V>
+concept variant = specialization_of<V, Variant>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace sph
 } // namespace tit
