@@ -5,30 +5,12 @@
 
 #pragma once
 
-#include <concepts>
-
 #include "tit/core/type.hpp"
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// No particle shifting.
-class NoParticleShifting final {
-public:
-
-  /// Set of required uniform fields.
-  static constexpr auto required_uniforms() noexcept {
-    return TypeSet{};
-  }
-
-  /// Set of required varying fields.
-  static constexpr auto required_varyings() noexcept {
-    return TypeSet{};
-  }
-
-}; // class NoParticleShifting
 
 /// Particle shifting technique.
 template<class Num>
@@ -76,15 +58,10 @@ private:
 
 }; // class ParticleShiftingTechnique
 
-/// Particle shifting type.
-template<class PS>
-concept particle_shifting = std::same_as<PS, NoParticleShifting> ||
-                            specialization_of<PS, ParticleShiftingTechnique>;
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Motion equation.
-template<particle_shifting ParticleShifting>
+template<variant ParticleShifting>
 class MotionEquation final {
 public:
 
@@ -103,7 +80,7 @@ public:
   }
 
   /// Particle shifting method.
-  constexpr auto particle_shifting() const noexcept -> const auto& {
+  constexpr auto particle_shifting() const noexcept -> const variant auto& {
     return particle_shifting_;
   }
 
