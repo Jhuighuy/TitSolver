@@ -226,12 +226,6 @@ TIT_DEFINE_VECTOR_FIELD(dr)
 TIT_DEFINE_VECTOR_FIELD(v)
 /// Particle acceleration.
 TIT_DEFINE_VECTOR_FIELD(dv_dt)
-/// Particle velocity gradient.
-TIT_DEFINE_MATRIX_FIELD(grad_v)
-/// Particle velocity divergence.
-TIT_DEFINE_SCALAR_FIELD(div_v)
-/// Particle velocity curl (always 3D).
-TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, 3>), curl_v)
 
 /// Particle mass.
 TIT_DEFINE_SCALAR_FIELD(m)
@@ -247,8 +241,6 @@ TIT_DEFINE_SCALAR_FIELD(h)
 
 /// Particle pressure.
 TIT_DEFINE_SCALAR_FIELD(p)
-/// Particle sound speed.
-TIT_DEFINE_SCALAR_FIELD(cs)
 
 /// Particle thermal energy.
 TIT_DEFINE_SCALAR_FIELD(u)
@@ -261,13 +253,6 @@ TIT_DEFINE_SCALAR_FIELD(mu)
 /// Particle heat conductivity coefficient.
 TIT_DEFINE_SCALAR_FIELD(kappa)
 
-/// Particle artificial viscosity switch.
-TIT_DEFINE_SCALAR_FIELD(alpha)
-/// Particle artificial viscosity switch time derivative.
-TIT_DEFINE_SCALAR_FIELD(dalpha_dt)
-
-/// Particle concentration value.
-TIT_DEFINE_SCALAR_FIELD(C)
 /// Particle normal vector.
 TIT_DEFINE_VECTOR_FIELD(N)
 /// Particle renormalization matrix.
@@ -279,5 +264,3 @@ TIT_DEFINE_SCALAR_FIELD(FS)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
