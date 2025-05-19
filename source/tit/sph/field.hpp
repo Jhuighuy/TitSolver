@@ -23,56 +23,32 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-namespace impl {
-
-template<class PV>
-concept with_fields_ =
-    requires { std::remove_cvref_t<PV>::fields; } && //
-    is_type_set_v<decltype(auto(std::remove_cvref_t<PV>::fields))>;
-
-template<class PV, class Field>
-concept has_field_ = with_fields_<PV> && empty_type<Field> &&
-                     std::remove_cvref_t<PV>::fields.contains(Field{});
-
-} // namespace impl
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Base field specification.
 class BaseField {
 public:
 
   /// Field value for the specified particle view.
-  template<class Self, impl::has_field_<Self> PV>
-  constexpr auto operator[](this const Self& self, PV&& a) noexcept
+  template<class PV>
+  constexpr auto operator[](this const auto& self, PV&& a) noexcept
       -> decltype(auto) {
     return std::forward<PV>(a)[self];
   }
 
-  /// Field value for the specified particle view or default value.
-  template<class Self, impl::with_fields_ PV, class Default>
-  constexpr auto get(this const Self& self,
-                     PV&& a,
-                     Default&& default_val) noexcept -> decltype(auto) {
-    if constexpr (impl::has_field_<PV, Self>) return std::forward<PV>(a)[self];
-    else return std::forward<Default>(default_val);
-  }
-
   /// Field value delta for the specified particle view.
-  template<class Self, impl::has_field_<Self> PVa, impl::has_field_<Self> PVb>
-  constexpr auto operator[](this const Self& self, PVa&& a, PVb&& b) noexcept {
+  template<class PVa, class PVb>
+  constexpr auto operator[](this const auto& self, PVa&& a, PVb&& b) noexcept {
     return std::forward<PVa>(a)[self] - std::forward<PVb>(b)[self];
   }
 
   /// Average of the field values over the specified particle views.
-  template<class Self, impl::has_field_<Self>... PVs>
-  constexpr auto avg(this const Self& self, PVs&&... ai) {
+  template<class... PVs>
+  constexpr auto avg(this const auto& self, PVs&&... ai) {
     return tit::avg(std::forward<PVs>(ai)[self]...);
   }
 
   /// Harmonic average of the field values over the specified particle views.
-  template<class Self, impl::has_field_<Self>... PVs>
-  constexpr auto havg(this const Self& self, PVs&&... ai) {
+  template<class... PVs>
+  constexpr auto havg(this const auto& self, PVs&&... ai) {
     return tit::havg(std::forward<PVs>(ai)[self]...);
   }
 

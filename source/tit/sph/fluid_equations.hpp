@@ -87,8 +87,7 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   auto setup_mesh(ParticleMesh& mesh, ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
     mesh.update(particles, [this](PV a) { return kernel_.radius(a); });
@@ -97,8 +96,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Setup boundary particles.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void setup_boundary(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
     using PV = ParticleView<ParticleArray>;
@@ -173,8 +171,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute density-related fields.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void compute_density(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
@@ -251,8 +248,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute velocity related fields.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   void compute_forces(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_forces()");
     using PV = ParticleView<ParticleArray>;
@@ -306,8 +302,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute particle shifts.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array ParticleArray>
   constexpr void compute_shifts(ParticleMesh& mesh,
                                 ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_shifts()");
