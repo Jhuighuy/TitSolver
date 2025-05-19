@@ -18,8 +18,6 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/continuity_equation.hpp"
-#include "tit/sph/energy_equation.hpp"
-#include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
@@ -35,8 +33,8 @@ namespace tit::sph {
 template<motion_equation MotionEquation,
          continuity_equation ContinuityEquation,
          momentum_equation MomentumEquation,
-         energy_equation EnergyEquation,
-         equation_of_state EquationOfState,
+         variant EnergyEquation,
+         variant EquationOfState,
          kernel Kernel>
 class FluidEquations final {
 public:
@@ -88,8 +86,7 @@ public:
 
   template<particle_mesh ParticleMesh, particle_array ParticleArray>
   auto setup_mesh(ParticleMesh& mesh, ParticleArray& particles) const {
-    using PV = ParticleView<ParticleArray>;
-    mesh.update(particles, [this](PV a) { return kernel_.radius(a); });
+    mesh.update(particles, [this](auto a) { return kernel_.radius(a); });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -130,23 +127,29 @@ public:
         clear(b, rho, v, u);
         const auto E = fact->solve(unit<0>(M[0]));
         for (const PV a : mesh.fixed_interp(b)) {
+          const auto V_a = m[a] / rho[a];
           const auto r_delta = r_ghost - r[a];
           const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
           const auto W_delta = dot(E, B_delta) * kernel_(r_delta, h_ghost);
           rho[b] += m[a] * W_delta;
-          v[b] += m[a] / rho[a] * v[a] * W_delta;
-          if constexpr (has<PV>(u)) u[b] += m[a] / rho[a] * u[a] * W_delta;
+          v[b] += V_a * v[a] * W_delta;
+          energy_equation_.and_then([&](const auto& /*energy_equation*/) {
+            u[b] += V_a * u[a] * W_delta;
+          });
         }
       } else if (!is_tiny(S)) {
         // Constant interpolation succeeds, use it.
         clear(b, rho, v, u);
         const auto E = inverse(S);
         for (const PV a : mesh.fixed_interp(b)) {
+          const auto V_a = m[a] / rho[a];
           const auto r_delta = r_ghost - r[a];
           const auto W_delta = E * kernel_(r_delta, h_ghost);
           rho[b] += m[a] * W_delta;
-          v[b] += m[a] / rho[a] * v[a] * W_delta;
-          if constexpr (has<PV>(u)) u[b] += m[a] / rho[a] * u[a] * W_delta;
+          v[b] += V_a * v[a] * W_delta;
+          energy_equation_.and_then([&](const auto& /*energy_equation*/) {
+            u[b] += V_a * u[a] * W_delta;
+          });
         }
       } else {
         // Both interpolations fail, leave the particle as it is.
@@ -181,8 +184,9 @@ public:
       clear(a, drho_dt, grad_rho, N, L);
 
       // Apply continuity equation source terms.
-      std::apply([a](const auto&... f) { ((drho_dt[a] += f(a)), ...); },
-                 continuity_equation_.mass_sources());
+      continuity_equation_.source_term().and_then([a](const auto& f) { //
+        drho_dt[a] += f(a);
+      });
     });
 
     // Compute density gradient and renormalization fields.
@@ -237,8 +241,11 @@ public:
       const auto grad_W_ab = kernel_.grad(a, b);
 
       // Update density time derivative.
-      const auto Psi_ab =
-          momentum_equation_.artificial_viscosity().density_term(a, b);
+      const auto Psi_ab = momentum_equation_.artificial_viscosity().visit(
+          [](None /*none*/) -> particle_vec_t<PV> { return {}; },
+          [a, b](const auto& artificial_viscosity) {
+            return artificial_viscosity.density_term(a, b);
+          });
       drho_dt[a] -= m[b] * dot(v[b, a] - Psi_ab / rho[b], grad_W_ab);
       drho_dt[b] -= m[a] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
     });
@@ -259,19 +266,21 @@ public:
       clear(a, dv_dt, du_dt);
 
       // Apply source terms.
-      std::apply(
-          [a](const auto&... g) {
-            ((dv_dt[a] += g(a)), ...);
-            if constexpr (has<PV>(du_dt)) ((du_dt[a] += dot(g(a), v[a])), ...);
-          },
-          momentum_equation_.momentum_sources());
-      if constexpr (has<PV>(du_dt)) {
-        std::apply([a](const auto&... q) { ((du_dt[a] += q(a)), ...); },
-                   energy_equation_.energy_sources());
-      }
+      momentum_equation_.source_term().and_then([&](const auto& source) {
+        const auto f_a = source(a);
+        dv_dt[a] += f_a;
+        energy_equation_.and_then([&](const auto& /*energy_equation*/) {
+          du_dt[a] += dot(f_a, v[a]);
+        });
+      });
+      energy_equation_.and_then([&](const auto& energy_equation) {
+        energy_equation.source_term().and_then([&](const auto& source) { //
+          du_dt[a] += source(a);
+        });
+      });
 
       // Compute pressure.
-      p[a] = eos_.pressure(a);
+      eos_.visit([&](const auto& eos) { p[a] = eos.pressure(a); });
     });
 
     // Compute velocity and internal energy time derivatives.
@@ -283,18 +292,28 @@ public:
       const auto P_a = p[a] / pow2(rho[a]);
       const auto P_b = p[b] / pow2(rho[b]);
       const auto Pi_ab =
-          momentum_equation_.viscosity()(a, b) +
-          momentum_equation_.artificial_viscosity().velocity_term(a, b);
+          momentum_equation_.viscosity().visit(
+              [](None /*none*/) -> particle_num_t<PV> { return {}; },
+              [&](const auto& viscosity) { return viscosity(a, b); }) +
+          momentum_equation_.artificial_viscosity().visit(
+              [](None /*none*/) -> particle_num_t<PV> { return {}; },
+              [&](const auto& artificial_viscosity) {
+                return artificial_viscosity.velocity_term(a, b);
+              });
       const auto v_flux = (-P_a - P_b + Pi_ab) * grad_W_ab;
       dv_dt[a] += m[b] * v_flux;
       dv_dt[b] -= m[a] * v_flux;
 
       // Update internal energy time derivative.
-      if constexpr (has<PV>(du_dt)) {
-        const auto Q_ab = energy_equation_.heat_conductivity()(a, b);
+      energy_equation_.and_then([&](const auto& energy_equation) {
+        const auto Q_ab = energy_equation.heat_conductivity().visit(
+            [](None /*none*/) -> particle_vec_t<PV> { return {}; },
+            [&](const auto& heat_conductivity) {
+              return heat_conductivity(a, b);
+            });
         du_dt[a] -= m[b] * dot((P_a - Pi_ab / 2) * v[b, a] - Q_ab, grad_W_ab);
         du_dt[b] -= m[a] * dot((P_b - Pi_ab / 2) * v[b, a] + Q_ab, grad_W_ab);
-      }
+      });
     });
   }
 
@@ -308,99 +327,103 @@ public:
     using PV = ParticleView<ParticleArray>;
     using Num = particle_num_t<PV>;
 
-    const auto R = motion_equation_.particle_shifting().R();
-    const auto Ma = motion_equation_.particle_shifting().Ma();
-    const auto CFL = motion_equation_.particle_shifting().CFL();
+    motion_equation_.particle_shifting().and_then([&](const auto&
+                                                          particle_shifting) {
+      const auto R = particle_shifting.R();
+      const auto Ma = particle_shifting.Ma();
+      const auto CFL = particle_shifting.CFL();
 
-    // Initialize the free surface flag values and clear the particle shifts.
-    // - Positive value `FS_FAR` means that the particle is far from the free
-    //   surface.
-    // - Any positive value in the range `(FS_FAR, FS_ON)` means that the
-    //   particle is near the free surface (has at least one neighbor that is on
-    //   the free surface).
-    // - Value `FS_ON` means that the particle is on the free surface. It is
-    //   essentially zero, but we use a very small number to avoid spurious
-    //   comparisons.
-    const auto a_0 = particles[0];
-    const auto FS_FAR = 2 * CFL * Ma * pow2(h[a_0]);
-    static constexpr auto FS_ON = std::numeric_limits<Num>::min();
-    par::for_each(particles.fluid(), [](PV a) { FS[a] = FS_ON, dr[a] = {}; });
-    par::for_each(particles.fixed(), [FS_FAR](PV a) { FS[a] = FS_FAR; });
+      // Initialize the free surface flag values and clear the particle shifts.
+      // - Positive value `FS_FAR` means that the particle is far from the free
+      //   surface.
+      // - Any positive value in the range `(FS_FAR, FS_ON)` means that the
+      //   particle is near the free surface (has at least one neighbor that is
+      //   on the free surface).
+      // - Value `FS_ON` means that the particle is on the free surface. It is
+      //   essentially zero, but we use a very small number to avoid spurious
+      //   comparisons.
+      const auto a_0 = particles[0];
+      const auto FS_FAR = 2 * CFL * Ma * pow2(h[a_0]);
+      static constexpr auto FS_ON = std::numeric_limits<Num>::min();
+      par::for_each(particles.fluid(), [](PV a) { FS[a] = FS_ON, dr[a] = {}; });
+      par::for_each(particles.fixed(), [FS_FAR](PV a) { FS[a] = FS_FAR; });
 
-    // Classify the particles into free surface and non-free surface.
-    //
-    // Here we are reading and writing the same field `FS` in the parallel loop.
-    // There is no race condition because we read the neighbor to compare it
-    // with `FS_ON`, and non-free-surface particles are updated in the loop.
-    par::block_for_each(mesh.block_pairs(particles), [FS_FAR](auto ab) {
-      const auto [a, b] = ab;
+      // Classify the particles into free surface and non-free surface.
+      //
+      // Here we are reading and writing the same field `FS` in the parallel
+      // loop. There is no race condition because we read the neighbor to
+      // compare it with `FS_ON`, and non-free-surface particles are updated in
+      // the loop.
+      par::block_for_each(mesh.block_pairs(particles), [FS_FAR](auto ab) {
+        const auto [a, b] = ab;
 
-      // Skip the particles that are too far away.
-      const auto r_ab = norm2(r[a, b]);
-      const auto dist_threshold = pow2(2 * h[a]);
-      if (r_ab > dist_threshold) return;
+        // Skip the particles that are too far away.
+        const auto r_ab = norm2(r[a, b]);
+        const auto dist_threshold = pow2(2 * h[a]);
+        if (r_ab > dist_threshold) return;
 
-      // Perform "visibility" test. The actual test is just an optimized
-      // version of `acos(n_{a,b} / sqrt(r_ab)) <= fov`.
-      constexpr auto cos_fov = static_cast<Num>(cos(std::numbers::pi / 4));
-      const auto fov_threshold = cos_fov * r_ab;
-      if (bitwise_equal(FS[a], FS_ON)) {
-        const auto n_a = dot(N[a], r[a, b]);
-        if (n_a > 0 && pow2(n_a) >= fov_threshold) FS[a] = FS_FAR;
-      }
-      if (bitwise_equal(FS[b], FS_ON)) {
-        const auto n_b = dot(N[b], r[a, b]);
-        if (n_b < 0 && pow2(n_b) >= fov_threshold) FS[b] = FS_FAR;
-      }
+        // Perform "visibility" test. The actual test is just an optimized
+        // version of `acos(n_{a,b} / sqrt(r_ab)) <= fov`.
+        constexpr auto cos_fov = static_cast<Num>(cos(std::numbers::pi / 4));
+        const auto fov_threshold = cos_fov * r_ab;
+        if (bitwise_equal(FS[a], FS_ON)) {
+          const auto n_a = dot(N[a], r[a, b]);
+          if (n_a > 0 && pow2(n_a) >= fov_threshold) FS[a] = FS_FAR;
+        }
+        if (bitwise_equal(FS[b], FS_ON)) {
+          const auto n_b = dot(N[b], r[a, b]);
+          if (n_b < 0 && pow2(n_b) >= fov_threshold) FS[b] = FS_FAR;
+        }
+      });
+
+      // Classify the non-free surface particles into near and far categories.
+      //
+      // Here we are reading and writing the same field `FS` in the parallel
+      // loop. There is no race condition because we update the field only when
+      // the particle has `FS_ON`, and read the field only to compare it with
+      // `FS_ON`.
+      //
+      // A distinct non-zero bit pattern of `FS_ON` is essential for
+      // correctness. We may read a garbage value while memory is being updated
+      // by some other thread, and the chances of a false positive comparison
+      // with distinct bits are very small, at least orders of magnitude smaller
+      // than if we used zero.
+      par::for_each(particles.fluid(), [FS_FAR, &mesh, this](PV a) {
+        if (!bitwise_equal(FS[a], FS_FAR)) return;
+
+        // Do not apply the shifts to the particles near the walls.
+        /// @todo No article mentions this. We shall investigate it.
+        if (std::ranges::any_of(mesh[a], [](PV b) { return b.is_fixed(); })) {
+          FS[a] = Num{1.0e-30} * FS_FAR;
+          return;
+        }
+
+        constexpr auto on_fs = [](PV b) { return bitwise_equal(FS[b], FS_ON); };
+        if (std::ranges::any_of(mesh[a], on_fs)) {
+          auto fs_neighbors = std::views::filter(mesh[a], on_fs);
+          const auto dist_to_a = [a](PV b) { return norm2(r[a, b]); };
+          const auto b = *std::ranges::min_element(fs_neighbors, {}, dist_to_a);
+          FS[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius(a);
+        }
+      });
+
+      // Compute the particle shifts.
+      const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h[a_0] / 2), h[a_0]));
+      par::block_for_each(
+          mesh.block_pairs(particles),
+          [inv_W_0, FS_FAR, R, this](auto ab) {
+            const auto [a, b] = ab;
+            const auto W_ab = kernel_(a, b);
+            const auto grad_W_ab = kernel_.grad(a, b);
+
+            // Update the particle shifts.
+            const auto Chi_ab = R * pow<4>(W_ab * inv_W_0);
+            const auto Xi_a = static_cast<Num>(bitwise_equal(FS[a], FS_FAR));
+            const auto Xi_b = static_cast<Num>(bitwise_equal(FS[b], FS_FAR));
+            dr[a] -= (Xi_a + Chi_ab) * FS[a] * m[b] / rho[b] * grad_W_ab;
+            dr[b] += (Xi_b + Chi_ab) * FS[b] * m[a] / rho[a] * grad_W_ab;
+          });
     });
-
-    // Classify the non-free surface particles into near and far categories.
-    //
-    // Here we are reading and writing the same field `FS` in the parallel loop.
-    // There is no race condition because we update the field only when
-    // the particle has `FS_ON`, and read the field only to compare it with
-    // `FS_ON`.
-    //
-    // A distinct non-zero bit pattern of `FS_ON` is essential for
-    // correctness. We may read a garbage value while memory is being updated by
-    // some other thread, and the chances of a false positive comparison with
-    // distinct bits are very small, at least orders of magnitude smaller than
-    // if we used zero.
-    par::for_each(particles.fluid(), [FS_FAR, &mesh, this](PV a) {
-      if (!bitwise_equal(FS[a], FS_FAR)) return;
-
-      // Do not apply the shifts to the particles near the walls.
-      /// @todo No article mentions this. We shall investigate it.
-      if (std::ranges::any_of(mesh[a], [](PV b) { return b.is_fixed(); })) {
-        FS[a] = Num{1.0e-30} * FS_FAR;
-        return;
-      }
-
-      constexpr auto on_fs = [](PV b) { return bitwise_equal(FS[b], FS_ON); };
-      if (std::ranges::any_of(mesh[a], on_fs)) {
-        auto fs_neighbors = std::views::filter(mesh[a], on_fs);
-        const auto dist_to_a = [a](PV b) { return norm2(r[a, b]); };
-        const auto b = *std::ranges::min_element(fs_neighbors, {}, dist_to_a);
-        FS[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius(a);
-      }
-    });
-
-    // Compute the particle shifts.
-    const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h[a_0] / 2), h[a_0]));
-    par::block_for_each(
-        mesh.block_pairs(particles),
-        [inv_W_0, FS_FAR, R, this](auto ab) {
-          const auto [a, b] = ab;
-          const auto W_ab = kernel_(a, b);
-          const auto grad_W_ab = kernel_.grad(a, b);
-
-          // Update the particle shifts.
-          const auto Chi_ab = R * pow<4>(W_ab * inv_W_0);
-          const auto Xi_a = static_cast<Num>(bitwise_equal(FS[a], FS_FAR));
-          const auto Xi_b = static_cast<Num>(bitwise_equal(FS[b], FS_FAR));
-          dr[a] -= (Xi_a + Chi_ab) * FS[a] * m[b] / rho[b] * grad_W_ab;
-          dr[b] += (Xi_b + Chi_ab) * FS[b] * m[a] / rho[a] * grad_W_ab;
-        });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <concepts>
-
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -15,31 +13,6 @@
 #include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// No heat conductivity.
-class NoHeatConductivity {
-public:
-
-  /// Set of required uniform fields.
-  static constexpr auto required_uniforms() noexcept {
-    return TypeSet{/*empty*/};
-  }
-
-  /// Set of required varying fields.
-  static constexpr auto required_varyings() noexcept {
-    return TypeSet{/*empty*/};
-  }
-
-  /// Heat conductivity term.
-  template<particle_view PV>
-  constexpr auto operator()(PV a, PV b) const noexcept -> particle_vec_t<PV> {
-    TIT_ASSERT(a != b, "Particles must be different!");
-    return {};
-  }
-
-}; // class NoHeatConductivity
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -79,13 +52,6 @@ private:
   Num c_v_;
 
 }; // class HeatConductivity
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Heat conductivity type.
-template<class HC>
-concept heat_conductivity = std::same_as<HC, NoHeatConductivity> ||
-                            specialization_of<HC, HeatConductivity>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
