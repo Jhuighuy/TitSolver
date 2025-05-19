@@ -123,13 +123,9 @@ private:
 }; // class ParticleView
 
 /// Particle view type.
-///
-/// @tparam fields Fields that the view should contain.
-template<class PV, auto... fields>
+template<class PV>
 concept particle_view =
-    specialization_of<std::remove_cvref_t<PV>, ParticleView> &&
-    field_set<decltype(TypeSet{fields...})> &&
-    (TypeSet{fields...} <= std::remove_cvref_t<PV>::fields);
+    specialization_of<std::remove_cvref_t<PV>, ParticleView>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -297,49 +293,48 @@ ParticleArray(Space, Equations) -> ParticleArray<
     decltype(Equations::required_fields & Equations::modified_fields)>;
 
 /// Particle array type.
-///
-/// @tparam fields Fields that the array should contain.
-template<class PA, auto... fields>
+template<class PA>
 concept particle_array =
-    specialization_of<std::remove_cvref_t<PA>, ParticleArray> &&
-    particle_view<ParticleView<PA>, fields...>;
+    specialization_of<std::remove_cvref_t<PA>, ParticleArray>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace impl {
-template<auto field, class P>
+
+template<field Field, class P>
 struct particle_field_reference;
-template<auto field, particle_view<field> PV>
-struct particle_field_reference<field, PV> {
-  using type = decltype(std::declval<PV>()[field]);
-};
-template<auto field, particle_array<r> PA>
-struct particle_field_reference<field, PA> {
-  using type = decltype(std::declval<PA&>()[0, field]);
-};
+
+template<field Field, particle_view PV>
+struct particle_field_reference<Field, PV> :
+    std::type_identity<decltype(std::declval<PV&>()[Field{}])> {};
+
+template<field Field, particle_array PA>
+struct particle_field_reference<Field, PA> :
+    std::type_identity<decltype(std::declval<PA&>()[0, Field{}])> {};
+
 } // namespace impl
 
 /// Particle field reference type.
-template<auto field, class P>
-  requires particle_view<P, field> || particle_array<P, field>
+template<field Field, class P>
+  requires particle_view<P> || particle_array<P>
 using particle_field_reference_t =
-    typename impl::particle_field_reference<field, P>::type;
+    typename impl::particle_field_reference<Field, P>::type;
 
 /// Particle field type.
-template<auto field, class P>
-  requires particle_view<P, field> || particle_array<P, field>
+template<field Field, class P>
+  requires particle_view<P> || particle_array<P>
 using particle_field_t =
-    std::remove_cvref_t<particle_field_reference_t<field, P>>;
+    std::remove_cvref_t<particle_field_reference_t<Field, P>>;
 
 /// Particle scalar type.
 template<class P>
   requires particle_view<P> || particle_array<P>
-using particle_num_t = particle_field_t<h, P>;
+using particle_num_t = particle_field_t<h_t, P>; // I'm sure `h` is present.
 
 /// Particle vector type.
 template<class P>
-  requires particle_view<P, r> || particle_array<P, r>
-using particle_vec_t = particle_field_t<r, P>;
+  requires particle_view<P> || particle_array<P>
+using particle_vec_t = particle_field_t<r_t, P>; // I'm sure `r` is present.
 
 /// Particle space dimension.
 template<class P>
@@ -347,9 +342,9 @@ template<class P>
 inline constexpr auto particle_dim_v = vec_dim_v<particle_vec_t<P>>;
 
 /// Particle view type with the specific number type.
-template<class PV, class Num, auto... fields>
+template<class PV, class Num>
 concept particle_view_n =
-    particle_view<PV, fields...> && std::same_as<particle_num_t<PV>, Num>;
+    particle_view<PV> && std::same_as<particle_num_t<PV>, Num>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
