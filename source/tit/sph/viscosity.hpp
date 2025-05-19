@@ -28,7 +28,7 @@ public:
   static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Compute viscosity term.
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto operator()(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     return 0;
@@ -49,7 +49,7 @@ public:
   static constexpr TypeSet modified_fields{/*empty*/};
 
   /// Compute viscosity term.
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto operator()(PV a, PV b) const noexcept {
     TIT_ASSERT(a != b, "Particles must be different!");
     const auto d = r[a].dim();
