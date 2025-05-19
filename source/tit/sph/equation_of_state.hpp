@@ -59,12 +59,6 @@ template<class Num, pressure_correction Correction = HughesGrahamCorrection>
 class TaitEquationOfState final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct an equation of state.
   ///
   /// @param cs_0       Reference sound speed, typically 10x of the expected
@@ -83,6 +77,16 @@ public:
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive!");
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive!");
     TIT_ASSERT(gamma_ > 1.0, "Polytropic index must be greater than 1!");
+  }
+
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{/*empty*/};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho};
   }
 
   /// Pressure value.
@@ -115,12 +119,6 @@ template<class Num, pressure_correction Correction = HughesGrahamCorrection>
 class LinearTaitEquationOfState final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct an equation of state.
   ///
   /// @param cs_0       Reference sound speed, typically 10x of the expected
@@ -136,6 +134,16 @@ public:
         correction_{std::move(correction)} {
     TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive!");
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive!");
+  }
+
+  /// Set of required uniform fields.
+  static constexpr auto required_uniforms() noexcept {
+    return TypeSet{/*empty*/};
+  }
+
+  /// Set of required varying fields.
+  static constexpr auto required_varyings() noexcept {
+    return TypeSet{rho};
   }
 
   /// Pressure value.
