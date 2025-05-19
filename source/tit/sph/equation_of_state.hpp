@@ -19,88 +19,6 @@ namespace tit::sph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Ideal gas equation of state.
-template<class Num>
-class IdealGasEquationOfState final {
-public:
-
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, u};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
-  /// Construct an equation of state.
-  ///
-  /// @param gamma Adiabatic index.
-  constexpr explicit IdealGasEquationOfState(Num gamma = 1.4) noexcept
-      : gamma_{gamma} {
-    TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1!");
-  }
-
-  /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
-    return (gamma_ - 1.0) * rho[a] * u[a];
-  }
-
-  /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV a) const noexcept {
-    return sqrt(gamma_ * (gamma_ - 1.0) * u[a]); // == sqrt(gamma * p / rho).
-  }
-
-private:
-
-  Num gamma_;
-
-}; // class IdealGasEquationOfState
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Adiabatic ideal gas equation of state.
-template<class Num>
-class AdiabaticIdealGasEquationOfState final {
-public:
-
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
-  /// Construct an equation of state.
-  ///
-  /// @param kappa Thermal conductivity coefficient.
-  /// @param gamma Adiabatic index.
-  constexpr explicit AdiabaticIdealGasEquationOfState(Num kappa = 1.0,
-                                                      Num gamma = 1.4) noexcept
-      : kappa_{kappa}, gamma_{gamma} {
-    TIT_ASSERT(kappa_ > 0.0, "Conductivity coefficient must be positive!");
-    TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1!");
-  }
-
-  /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
-    return kappa_ * pow(rho[a], gamma_);
-  }
-
-  /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV a) const noexcept {
-    return sqrt(kappa_ * pow(rho[a], gamma_)); // == sqrt(gamma * p / rho).
-  }
-
-private:
-
-  Num kappa_;
-  Num gamma_;
-
-}; // class GasEquationOfState
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// No pressure-density correction.
 class NoCorrection final {
 public:
@@ -132,6 +50,8 @@ public:
 template<class PC>
 concept pressure_correction = std::same_as<PC, NoCorrection> || //
                               std::same_as<PC, HughesGrahamCorrection>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Tait equation equation of state (for weakly-compressible fluids).
 template<class Num, pressure_correction Correction = HughesGrahamCorrection>
@@ -243,11 +163,8 @@ private:
 
 /// Equation of state type.
 template<class EOS>
-concept equation_of_state =
-    specialization_of<EOS, IdealGasEquationOfState> ||
-    specialization_of<EOS, AdiabaticIdealGasEquationOfState> ||
-    specialization_of<EOS, TaitEquationOfState> ||
-    specialization_of<EOS, LinearTaitEquationOfState>;
+concept equation_of_state = specialization_of<EOS, TaitEquationOfState> ||
+                            specialization_of<EOS, LinearTaitEquationOfState>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
