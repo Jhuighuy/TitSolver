@@ -170,11 +170,4 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Equation of state type.
-template<class EOS>
-concept equation_of_state = specialization_of<EOS, TaitEquationOfState> ||
-                            specialization_of<EOS, LinearTaitEquationOfState>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace tit::sph

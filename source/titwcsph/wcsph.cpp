@@ -15,13 +15,13 @@
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
+#include "tit/sph/heat_conductivity.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
 #include "tit/sph/motion_equation.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
-#include "tit/sph/viscosity.hpp"
 
 namespace tit::sph {
 namespace {
@@ -64,23 +64,31 @@ auto sph_main(CmdArgs /*args*/) -> int {
       // Standard motion equation.
       MotionEquation{
           // Enabled particle shifting technique.
-          ParticleShiftingTechnique{R, Ma, CFL},
+          Variant{ParticleShiftingTechnique{R, Ma, CFL}},
       },
       // Continuity equation with no source terms.
-      ContinuityEquation{},
+      ContinuityEquation{
+          // No mass source term.
+          Variant{None{}},
+      },
       // Momentum equation with gravity source term.
       MomentumEquation{
           // Inviscid flow.
-          NoViscosity{},
+          Variant{None{}},
           // δ-SPH artificial viscosity formulation.
-          DeltaSPHArtificialViscosity{cs_0, rho_0},
+          Variant{DeltaSPHArtificialViscosity{cs_0, rho_0}},
           // Gravity source term.
-          GravitySource{g},
+          Variant{GravitySource{g}},
       },
       // No energy equation.
-      NoEnergyEquation{},
+      Variant{EnergyEquation{
+          // No heat conductivity term.
+          Variant{HeatConductivity{c_v}},
+          // No energy source term.
+          Variant{None{}},
+      }},
       // Weakly compressible equation of state.
-      LinearTaitEquationOfState{cs_0, rho_0},
+      Variant{LinearTaitEquationOfState{cs_0, rho_0}},
       // C2 Wendland's spline kernel.
       QuarticWendlandKernel{},
   };

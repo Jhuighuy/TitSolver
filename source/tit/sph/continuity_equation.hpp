@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <tuple>
-
 #include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
@@ -15,48 +13,33 @@ namespace tit::sph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Mass source type.
-template<class MS>
-concept mass_source = false; // No mass sources at the moment.
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Continuity equation.
-template<mass_source... MassSources>
+template<variant SourceTerm>
 class ContinuityEquation final {
 public:
 
   /// Construct the continuity equation.
-  constexpr explicit ContinuityEquation(MassSources... mass_sources) noexcept
-      : mass_sources_{std::move(mass_sources)...} {}
+  constexpr explicit ContinuityEquation(SourceTerm source_term) noexcept
+      : source_term_{std::move(source_term)} {}
 
   /// Set of required uniform fields.
   constexpr auto required_uniforms() const noexcept {
-    return std::apply(
-        [](const auto&... f) {
-          return (f.required_uniforms() | ... | TypeSet{});
-        },
-        mass_sources_);
+    return source_term_.required_uniforms();
   }
 
   /// Set of required varying fields.
   constexpr auto required_varyings() const noexcept {
-    return std::apply(
-               [](const auto&... f) {
-                 return (f.required_varyings() | ... | TypeSet{});
-               },
-               mass_sources_) |
-           TypeSet{rho, drho_dt};
+    return source_term_.required_varyings() | TypeSet{rho, drho_dt};
   }
 
-  /// Mass source terms.
-  constexpr auto mass_sources() const noexcept -> const auto& {
-    return mass_sources_;
+  /// Mass source term.
+  constexpr auto source_term() const noexcept -> const variant auto& {
+    return source_term_;
   }
 
 private:
 
-  [[no_unique_address]] std::tuple<MassSources...> mass_sources_;
+  [[no_unique_address]] SourceTerm source_term_;
 
 }; // class ContinuityEquation
 

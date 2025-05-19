@@ -5,14 +5,12 @@
 
 #pragma once
 
-#include <tuple>
-
 #include "tit/core/type.hpp"
 
-#include "tit/sph/artificial_viscosity.hpp"
+#include "tit/sph/artificial_viscosity.hpp" // IWYU pragma: export
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
-#include "tit/sph/viscosity.hpp"
+#include "tit/sph/viscosity.hpp" // IWYU pragma: export
 
 namespace tit::sph {
 
@@ -50,71 +48,55 @@ private:
 
 }; // class GravitySource
 
-/// Momentum source type.
-template<class MS>
-concept momentum_source = specialization_of<MS, GravitySource>;
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Momentum equation.
-template<viscosity Viscosity,
-         artificial_viscosity ArtificialViscosity,
-         momentum_source... MomentumSources>
+template<variant Viscosity, variant ArtificialViscosity, variant SourceTerm>
 class MomentumEquation final {
 public:
 
   /// Construct the momentum equation.
-  constexpr explicit MomentumEquation(
-      Viscosity viscosity,
-      ArtificialViscosity artificial_viscosity,
-      MomentumSources... momentum_sources) noexcept
+  constexpr explicit MomentumEquation(Viscosity viscosity,
+                                      ArtificialViscosity artificial_viscosity,
+                                      SourceTerm source_term) noexcept
       : viscosity_{std::move(viscosity)},
         artificial_viscosity_{std::move(artificial_viscosity)},
-        momentum_sources_{std::move(momentum_sources)...} {}
+        source_term_{std::move(source_term)} {}
 
   /// Set of required uniform fields.
   constexpr auto required_uniforms() const noexcept {
     return viscosity_.required_uniforms() |
            artificial_viscosity_.required_uniforms() |
-           std::apply(
-               [](const auto&... f) {
-                 return (f.required_uniforms() | ... | TypeSet{});
-               },
-               momentum_sources_);
+           source_term_.required_uniforms();
   }
 
   /// Set of required varying fields.
   constexpr auto required_varyings() const noexcept {
     return viscosity_.required_varyings() |
            artificial_viscosity_.required_varyings() |
-           std::apply(
-               [](const auto&... f) {
-                 return (f.required_varyings() | ... | TypeSet{});
-               },
-               momentum_sources_) |
-           TypeSet{v, dv_dt};
+           source_term_.required_varyings() | TypeSet{v, dv_dt};
   }
 
   /// Viscosity term.
-  constexpr auto viscosity() const noexcept -> const auto& {
+  constexpr auto viscosity() const noexcept -> const variant auto& {
     return viscosity_;
   }
 
   /// Artificial viscosity term.
-  constexpr auto artificial_viscosity() const noexcept -> const auto& {
+  constexpr auto artificial_viscosity() const noexcept -> const variant auto& {
     return artificial_viscosity_;
   }
 
-  /// Mass source terms.
-  constexpr auto momentum_sources() const noexcept -> const auto& {
-    return momentum_sources_;
+  /// Mass source term.
+  constexpr auto source_term() const noexcept -> const variant auto& {
+    return source_term_;
   }
 
 private:
 
   [[no_unique_address]] Viscosity viscosity_;
   [[no_unique_address]] ArtificialViscosity artificial_viscosity_;
-  [[no_unique_address]] std::tuple<MomentumSources...> momentum_sources_;
+  [[no_unique_address]] SourceTerm source_term_;
 
 }; // class MomentumEquation
 
