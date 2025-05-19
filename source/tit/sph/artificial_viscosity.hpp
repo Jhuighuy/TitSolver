@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <concepts>
-
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -15,39 +13,6 @@
 #include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// No artificial viscosity, in case physical viscosity is strong enough.
-class NoArtificialViscosity final {
-public:
-
-  /// Set of required uniform fields.
-  static constexpr auto required_uniforms() noexcept {
-    return TypeSet{};
-  }
-
-  /// Set of required varying fields.
-  static constexpr auto required_varyings() noexcept {
-    return TypeSet{};
-  }
-
-  /// Continuity equation diffusive term.
-  template<particle_view PV>
-  constexpr auto density_term(PV a, PV b) const noexcept -> particle_vec_t<PV> {
-    TIT_ASSERT(a != b, "Particles must be different!");
-    return {};
-  }
-
-  /// Momentum equation diffusive term.
-  template<particle_view PV>
-  constexpr auto velocity_term(PV a, PV b) const noexcept
-      -> particle_num_t<PV> {
-    TIT_ASSERT(a != b, "Particles must be different!");
-    return {};
-  }
-
-}; // class NoArtificialViscosity
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -178,15 +143,6 @@ private:
   Num delta_;
 
 }; // class DeltaSPHArtificialViscosity
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Artificial viscosity type.
-template<class AV>
-concept artificial_viscosity = //
-    std::same_as<AV, NoArtificialViscosity> ||
-    specialization_of<AV, MolteniColagrossiArtificialViscosity> ||
-    specialization_of<AV, DeltaSPHArtificialViscosity>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
