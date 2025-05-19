@@ -37,19 +37,19 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Support radius for particle.
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto radius(this auto& self, PV a) noexcept {
     return self.radius(h[a]);
   }
 
   /// Value of the smoothing kernel for two particles.
   /// @{
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto operator()(this auto& self, PV a, PV b) noexcept {
     static_assert(has_uniform<PV>(h));
     return self(r[a, b], h[a]);
   }
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto operator()(this auto& self, PV a, PV b, auto h_ab) noexcept {
     static_assert(!has_uniform<PV>(h));
     return self(r[a, b], h_ab);
@@ -58,12 +58,12 @@ public:
 
   /// Value of the smoothing kernel for two particles.
   /// @{
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto grad(this auto& self, PV a, PV b) noexcept {
     static_assert(has_uniform<PV>(h));
     return self.grad(r[a, b], h[a]);
   }
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto grad(this auto& self, PV a, PV b, auto h_ab) noexcept {
     static_assert(!has_uniform<PV>(h));
     return self.grad(r[a, b], h_ab);
@@ -72,12 +72,12 @@ public:
 
   /// Width derivative of the smoothing kernel for two points.
   /// @{
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto width_deriv(this auto& self, PV a, PV b) noexcept {
     static_assert(has_uniform<PV>(h));
     return self.width_deriv(r[a, b], h[a]);
   }
-  template<particle_view<required_fields> PV>
+  template<particle_view PV>
   constexpr auto width_deriv(this auto& self, PV a, PV b, auto h_ab) noexcept {
     static_assert(!has_uniform<PV>(h));
     return self.width_deriv(r[a, b], h_ab);
