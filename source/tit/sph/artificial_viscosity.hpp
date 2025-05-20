@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -38,6 +40,14 @@ public:
     TIT_ASSERT(alpha_ > 0.0, "Velocity coefficient must be positive.");
     TIT_ASSERT(xi_ > 0.0, "Density coefficient must be positive.");
   }
+
+  /// Deserialize from JSON.
+  constexpr explicit MolteniColagrossiArtificialViscosity(
+      const nlohmann::json& params)
+      : MolteniColagrossiArtificialViscosity{Num{params.at("cs_0")},
+                                             Num{params.at("rho_0")},
+                                             Num{params.at("alpha")},
+                                             Num{params.at("xi")}} {}
 
   /// Set of required uniform fields.
   static constexpr auto required_uniforms() noexcept {
@@ -102,6 +112,13 @@ public:
     TIT_ASSERT(alpha_ > 0.0, "Velocity coefficient must be positive!");
     TIT_ASSERT(delta_ > 0.0, "Density coefficient must be positive!");
   }
+
+  /// Deserialize from JSON.
+  constexpr explicit DeltaSPHArtificialViscosity(const nlohmann::json& params)
+      : DeltaSPHArtificialViscosity{Num{params.at("cs_0")},
+                                    Num{params.at("rho_0")},
+                                    Num{params.at("alpha")},
+                                    Num{params.at("delta")}} {}
 
   /// Set of required uniform fields.
   static constexpr auto required_uniforms() noexcept {

@@ -9,6 +9,8 @@
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
 
@@ -27,6 +29,10 @@ public:
   constexpr explicit HeatConductivity(Num c_v) noexcept : c_v_{c_v} {
     TIT_ASSERT(c_v_ > 0.0, "Specific heat capacity must be positive!");
   }
+
+  /// Deserialize from JSON.
+  constexpr explicit HeatConductivity(const nlohmann::json& params)
+      : HeatConductivity{Num{params.at("c_v")}} {}
 
   /// Set of required uniform fields.
   static constexpr auto required_uniforms() noexcept {
