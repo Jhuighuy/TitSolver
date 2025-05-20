@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/core/type.hpp"
 #include "tit/sph/artificial_viscosity.hpp" // IWYU pragma: export
 #include "tit/sph/field.hpp"
@@ -23,7 +25,11 @@ public:
   /// Construct the gravity source.
   ///
   /// @param g Gravitational acceleration absolute value.
-  constexpr explicit GravitySource(Num g_0) noexcept : g_0_{g_0} {}
+  constexpr explicit GravitySource(Num g_0) noexcept : g_{g_0} {}
+
+  /// Deserialize from JSON.
+  constexpr explicit GravitySource(const nlohmann::json& params)
+      : g_{params.at("g")} {}
 
   /// Set of required uniform fields.
   static constexpr auto required_uniforms() noexcept {
@@ -38,12 +44,12 @@ public:
   /// Source term value.
   template<particle_view_n<Num> PV>
   constexpr auto operator()(PV /*a*/) const noexcept {
-    return unit<1>(particle_vec_t<PV>{}, -g_0_);
+    return unit<1>(particle_vec_t<PV>{}, -g_);
   }
 
 private:
 
-  Num g_0_;
+  Num g_;
 
 }; // class GravitySource
 
@@ -61,6 +67,12 @@ public:
       : viscosity_{std::move(viscosity)},
         artificial_viscosity_{std::move(artificial_viscosity)},
         source_term_{std::move(source_term)} {}
+
+  /// Deserialize from JSON.
+  constexpr explicit MomentumEquation(const nlohmann::json& params)
+      : MomentumEquation{Viscosity{params.at("viscosity")},
+                         ArtificialViscosity{params.at("artificial_viscosity")},
+                         SourceTerm{params.at("source_term")}} {}
 
   /// Set of required uniform fields.
   constexpr auto required_uniforms() const noexcept {
@@ -98,6 +110,16 @@ private:
   [[no_unique_address]] SourceTerm source_term_;
 
 }; // class MomentumEquation
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Motion equation (with runtime dispatch).
+template<class Num>
+using DMomentumEquation =
+    MomentumEquation<OptionalVariant<LaplacianViscosity>,
+                     OptionalVariant<MolteniColagrossiArtificialViscosity<Num>,
+                                     DeltaSPHArtificialViscosity<Num>>,
+                     OptionalVariant<GravitySource<Num>>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
