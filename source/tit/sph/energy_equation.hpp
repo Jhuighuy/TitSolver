@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/core/type.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/heat_conductivity.hpp" // IWYU pragma: export
@@ -23,6 +25,11 @@ public:
                            SourceTerm source_term) noexcept
       : heat_conductivity_{std::move(heat_conductivity)},
         source_term_{std::move(source_term)} {}
+
+  /// Deserialize from JSON.
+  constexpr explicit EnergyEquation(const nlohmann::json& params)
+      : EnergyEquation{HeatConductivity{params.at("heat_conductivity")},
+                       SourceTerm{params.at("source_term")}} {}
 
   /// Set of required uniform fields.
   constexpr auto required_uniforms() const noexcept {
@@ -52,6 +59,19 @@ private:
   [[no_unique_address]] SourceTerm source_term_;
 
 }; // class EnergyEquation
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Energy equation (with runtime dispatch).
+template<class Num>
+using DEnergyEquation =
+    EnergyEquation<OptionalVariant<HeatConductivity<Num>>, OptionalVariant<>>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Optional energy equation (with runtime dispatch).
+template<class Num>
+using DOptionalEnergyEquation = OptionalVariant<DEnergyEquation<Num>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

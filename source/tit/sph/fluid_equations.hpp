@@ -10,6 +10,8 @@
 #include <numbers>
 #include <ranges>
 
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
@@ -17,6 +19,8 @@
 #include "tit/core/vec.hpp"
 #include "tit/par/algorithms.hpp"
 #include "tit/sph/continuity_equation.hpp"
+#include "tit/sph/energy_equation.hpp"
+#include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
@@ -28,7 +32,7 @@ namespace tit::sph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Fluid equations with fixed kernel width and continuity equation.
+/// Weakly compressible SPH equations.
 template<motion_equation MotionEquation,
          continuity_equation ContinuityEquation,
          momentum_equation MomentumEquation,
@@ -60,6 +64,15 @@ public:
         energy_equation_{std::move(energy_equation)}, //
         eos_{std::move(eos)},                         //
         kernel_{std::move(kernel)} {}
+
+  /// Deserialize from JSON.
+  constexpr explicit FluidEquations(const nlohmann::json& params)
+      : FluidEquations{MotionEquation{params["motion_equation"]},
+                       ContinuityEquation{params["continuity_equation"]},
+                       MomentumEquation{params["momentum_equation"]},
+                       EnergyEquation{params["energy_equation"]},
+                       EquationOfState{params["equation_of_state"]},
+                       Kernel{params["kernel"]}} {}
 
   /// Set of required uniform fields.
   constexpr auto required_uniforms() const noexcept {
@@ -189,7 +202,7 @@ public:
     });
 
     // Compute density gradient and renormalization fields.
-    if constexpr (has_any<PV>(grad_rho, N, L)) {
+    if (particles.have_any(grad_rho, N, L)) {
       // Precompute the fields.
       par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
         const auto [a, b] = ab;
@@ -198,20 +211,20 @@ public:
         const auto grad_W_ab = kernel_.grad(a, b);
 
         // Update density gradient.
-        if constexpr (has<PV>(grad_rho)) {
+        if (a.has(grad_rho)) {
           const auto grad_flux = rho[b, a] * grad_W_ab;
           grad_rho[a] += V_b * grad_flux;
           grad_rho[b] += V_a * grad_flux;
         }
 
         // Update normal vector.
-        if constexpr (has<PV>(N)) {
+        if (a.has(N)) {
           N[a] += V_b * grad_W_ab;
           N[b] -= V_a * grad_W_ab;
         }
 
         // Update renormalization matrix.
-        if constexpr (has<PV>(L)) {
+        if (a.has(L)) {
           const auto L_flux = outer(r[b, a], grad_W_ab);
           L[a] += V_b * L_flux;
           L[b] += V_a * L_flux;
@@ -221,16 +234,15 @@ public:
       // Renormalize fields.
       par::for_each(particles.all(), [](PV a) {
         // Renormalize density gradient and normal vector, if possible.
-        if constexpr (has<PV>(L) && has_any<PV>(N, grad_rho)) {
+        if (a.has(L) && a.has_any(N, grad_rho)) {
           if (const auto fact = ldl(L[a]); fact) {
-            if constexpr (has<PV>(N)) N[a] = fact->solve(N[a]);
-            if constexpr (has<PV>(grad_rho))
-              grad_rho[a] = fact->solve(grad_rho[a]);
+            if (a.has(N)) N[a] = fact->solve(N[a]);
+            if (a.has(grad_rho)) grad_rho[a] = fact->solve(grad_rho[a]);
           }
         }
 
         // Finalize the normal vector.
-        if constexpr (has<PV>(N)) N[a] = normalize(N[a]);
+        if (a.has(N)) N[a] = normalize(N[a]);
       });
     }
 
@@ -437,6 +449,17 @@ private:
   [[no_unique_address]] Kernel kernel_;
 
 }; // class FluidEquations
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Weakly compressible SPH equations (with runtime dispatch).
+template<class Num>
+using DFluidEquations = FluidEquations<DMotionEquation<Num>,
+                                       DContinuityEquation<Num>,
+                                       DMomentumEquation<Num>,
+                                       DOptionalEnergyEquation<Num>,
+                                       DEquationOfState<Num>,
+                                       DKernel>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
