@@ -1,3 +1,7 @@
+#include <fstream>
+
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/cmd.hpp"
 #include "tit/core/print.hpp"
@@ -9,16 +13,8 @@
 
 #include "tit/data/storage.hpp"
 
-#include "tit/sph/artificial_viscosity.hpp"
-#include "tit/sph/continuity_equation.hpp"
-#include "tit/sph/energy_equation.hpp"
-#include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
-#include "tit/sph/heat_conductivity.hpp"
-#include "tit/sph/kernel.hpp"
-#include "tit/sph/momentum_equation.hpp"
-#include "tit/sph/motion_equation.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
@@ -49,49 +45,15 @@ auto sph_main(CmdArgs /*args*/) -> int {
   constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2);
-
-  constexpr Real R = 0.2;
-  constexpr Real Ma = 0.1;
   constexpr Real CFL = 0.8;
   constexpr Real dt = std::min(CFL * h_0 / cs_0, Real{0.25} * sqrt(h_0 / g));
 
-  // Parameters for the heat equation. Unused for now.
-  [[maybe_unused]] constexpr Real kappa_0 = 0.6;
-  [[maybe_unused]] constexpr Real c_v = 4184.0;
+  // Read the input file.
+  std::ifstream input_file{"./particles-config.json"};
+  const auto params = nlohmann::json::parse(input_file);
 
   // Setup the SPH equations.
-  const FluidEquations equations{
-      // Standard motion equation.
-      MotionEquation{
-          // Enabled particle shifting technique.
-          Variant{ParticleShiftingTechnique{R, Ma, CFL}},
-      },
-      // Continuity equation with no source terms.
-      ContinuityEquation{
-          // No mass source term.
-          Variant{None{}},
-      },
-      // Momentum equation with gravity source term.
-      MomentumEquation{
-          // Inviscid flow.
-          Variant{None{}},
-          // δ-SPH artificial viscosity formulation.
-          Variant{DeltaSPHArtificialViscosity{cs_0, rho_0}},
-          // Gravity source term.
-          Variant{GravitySource{g}},
-      },
-      // No energy equation.
-      Variant{EnergyEquation{
-          // No heat conductivity term.
-          Variant{HeatConductivity{c_v}},
-          // No energy source term.
-          Variant{None{}},
-      }},
-      // Weakly compressible equation of state.
-      Variant{LinearTaitEquationOfState{cs_0, rho_0}},
-      // C2 Wendland's spline kernel.
-      QuarticWendlandKernel{},
-  };
+  const DFluidEquations<Real> equations{params};
 
   // Setup the time integrator.
   RungeKuttaIntegrator time_integrator{equations};

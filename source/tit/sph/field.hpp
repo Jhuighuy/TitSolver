@@ -6,13 +6,18 @@
 #pragma once
 
 #include <concepts>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
 
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/type.hpp"
@@ -63,10 +68,16 @@ template<class Field>
 concept field = empty_type<Field> && std::derived_from<Field, BaseField>;
 
 namespace impl {
+
 template<class FieldSet>
 inline constexpr bool is_field_set_v = false;
+
 template<field... Fields>
 inline constexpr bool is_field_set_v<TypeSet<Fields...>> = true;
+
+template<field... Fields>
+inline constexpr bool is_field_set_v<TypeSubset<Fields...>> = true;
+
 } // namespace impl
 
 /// Field set specification type.
@@ -250,6 +261,9 @@ public:
   /// Default constructor.
   constexpr explicit None() = default;
 
+  /// Deserialize from JSON.
+  constexpr explicit None(const nlohmann::json& /*params*/) noexcept {}
+
   /// Set of required uniform fields.
   static constexpr auto required_uniforms() noexcept {
     return TypeSet{/*empty*/};
@@ -274,6 +288,24 @@ public:
     requires contains_v<Equation, Equations...>
   constexpr explicit(false) Variant(Equation equation) noexcept
       : equation_variant_{std::move(equation)} {}
+
+  /// Deserialize from JSON.
+  constexpr explicit Variant(const nlohmann::json& params)
+      : equation_variant_{
+            [&params,
+             equation_name = params.at("$variant").get<std::string>()]< //
+                class Eq,
+                class... RestEqs>(
+                this auto&& self) -> std::variant<Equations...> {
+              if (type_name_of<Eq>().starts_with(equation_name)) {
+                return Eq{params.at(equation_name)};
+              }
+              if constexpr (sizeof...(RestEqs) > 0) {
+                return self.template operator()<RestEqs...>();
+              } else {
+                TIT_THROW("Unknown equation type: {}", equation_name);
+              }
+            }.template operator()<Equations...>()} {}
 
   /// Visit the active equation.
   template<class... Visitors>
@@ -321,6 +353,12 @@ public:
   /// Construct the variant.
   constexpr explicit(false) Variant(Equation equation) noexcept
       : equation_{std::move(equation)} {}
+
+  /// Deserialize from JSON.
+  constexpr explicit Variant(const nlohmann::json& params)
+      : equation_{params.contains("$variant") ?
+                      Equation{params.at("$variant")} :
+                      Equation{params}} {}
 
   /// Visit the active equation.
   template<class... Visitors>

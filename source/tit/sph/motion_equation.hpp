@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/core/type.hpp"
 
 #include "tit/sph/field.hpp"
@@ -25,6 +27,10 @@ public:
   /// @param CFL Expected CFL number.
   constexpr explicit ParticleShiftingTechnique(Num R, Num Ma, Num CFL) noexcept
       : R_{R}, Ma_{Ma}, CFL_{CFL} {}
+
+  /// Deserialize from JSON.
+  constexpr explicit ParticleShiftingTechnique(const nlohmann::json& params)
+      : R_{params.at("R")}, Ma_{params.at("Ma")}, CFL_{params.at("CFL")} {}
 
   /// Set of required uniform fields.
   static constexpr auto required_uniforms() noexcept {
@@ -70,6 +76,10 @@ public:
   constexpr explicit MotionEquation(ParticleShifting particle_shifting) noexcept
       : particle_shifting_{std::move(particle_shifting)} {}
 
+  /// Deserialize from JSON.
+  constexpr explicit MotionEquation(const nlohmann::json& params)
+      : MotionEquation{ParticleShifting{params.at("particle_shifting")}} {}
+
   /// Set of required uniform fields.
   constexpr auto required_uniforms() const noexcept {
     return particle_shifting_.required_uniforms();
@@ -90,6 +100,13 @@ private:
   [[no_unique_address]] ParticleShifting particle_shifting_;
 
 }; // class MotionEquation
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Motion equation (with runtime dispatch).
+template<class Num>
+using DMotionEquation =
+    MotionEquation<OptionalVariant<ParticleShiftingTechnique<Num>>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
