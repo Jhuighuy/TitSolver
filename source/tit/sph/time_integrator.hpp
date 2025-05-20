@@ -67,7 +67,7 @@ public:
 
     // Update particle density.
     equations_.compute_density(mesh, particles);
-    if constexpr (has<PV>(drho_dt)) {
+    if (particles.have(drho_dt)) {
       par::for_each(particles.fluid(),
                     [dt](PV a) { rho[a] += dt * drho_dt[a]; });
     }
@@ -77,11 +77,11 @@ public:
     par::for_each(particles.fluid(), [dt](PV a) {
       v[a] += dt * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
+      if (a.has(u, du_dt)) u[a] += dt * du_dt[a];
     });
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
+    if (particles.have(dr)) {
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
@@ -146,12 +146,12 @@ public:
     par::for_each(particles.fluid(), [dt, dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
+      if (a.has(u, du_dt)) u[a] += dt_2 * du_dt[a];
     });
 
     // Update particle velocity to the full step.
     equations_.compute_density(mesh, particles);
-    if constexpr (has<PV>(drho_dt)) {
+    if (particles.have(drho_dt)) {
       par::for_each(particles.fluid(),
                     [dt](PV a) { rho[a] += dt * drho_dt[a]; });
     }
@@ -160,11 +160,11 @@ public:
     equations_.compute_forces(mesh, particles);
     par::for_each(particles.fluid(), [dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a]; // Kick.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
+      if (a.has(u, du_dt)) u[a] += dt_2 * du_dt[a];
     });
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
+    if (particles.have(dr)) {
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
@@ -226,7 +226,7 @@ public:
     lincomb_(1.0 / 3.0, old_particles, 2.0 / 3.0, particles);
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
+    if (particles.have(dr)) {
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
@@ -253,8 +253,8 @@ private:
     par::for_each(particles.fluid(), [dt](PV a) {
       r[a] += dt * v[a]; // Drift-Kick: position is updated before velocity.
       v[a] += dt * dv_dt[a];
-      if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
+      if (a.has(drho_dt)) rho[a] += dt * drho_dt[a];
+      if (a.has(u, du_dt)) u[a] += dt * du_dt[a];
     });
   }
 
@@ -272,7 +272,7 @@ private:
           r[out_a] = weight * r[a] + out_weight * r[out_a];
           v[out_a] = weight * v[a] + out_weight * v[out_a];
           rho[out_a] = weight * rho[a] + out_weight * rho[out_a];
-          if constexpr (has<PV>(u)) {
+          if (a.has(u)) {
             u[out_a] = weight * u[a] + out_weight * u[out_a];
           }
         });

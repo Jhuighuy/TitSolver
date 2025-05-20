@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <nlohmann/json_fwd.hpp>
+
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -29,6 +31,10 @@ public:
   static constexpr auto required_varyings() noexcept {
     return TypeSet{rho, r, v};
   }
+
+  /// Deserialize from JSON.
+  constexpr explicit LaplacianViscosity(
+      const nlohmann::json& /*params*/) noexcept {}
 
   /// Compute viscosity term.
   template<particle_view PV>

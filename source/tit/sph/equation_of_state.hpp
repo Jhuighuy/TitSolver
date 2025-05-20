@@ -6,8 +6,9 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
 #include <utility>
+
+#include <nlohmann/json_fwd.hpp>
 
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
@@ -24,6 +25,12 @@ namespace tit::sph {
 class NoCorrection final {
 public:
 
+  /// Default constructor.
+  constexpr explicit NoCorrection() = default;
+
+  /// Deserialize from JSON.
+  constexpr explicit NoCorrection(const nlohmann::json& /*params*/) noexcept {}
+
   /// Corrected density value.
   template<particle_view PV>
   constexpr auto corrected_density(PV a, particle_num_t<PV> /*rho_0*/)
@@ -37,6 +44,13 @@ public:
 class HughesGrahamCorrection final {
 public:
 
+  /// Default constructor.
+  constexpr explicit HughesGrahamCorrection() = default;
+
+  /// Deserialize from JSON.
+  constexpr explicit HughesGrahamCorrection(
+      const nlohmann::json& /*params*/) noexcept {}
+
   /// Corrected density value.
   template<particle_view PV>
   constexpr auto corrected_density(PV a,
@@ -47,15 +61,13 @@ public:
 
 }; // class NoCorrection
 
-/// Pressure correction type.
-template<class PC>
-concept pressure_correction = std::same_as<PC, NoCorrection> || //
-                              std::same_as<PC, HughesGrahamCorrection>;
+/// Pressure correction (with runtime dispatch).
+using DCorrection = Variant<NoCorrection, HughesGrahamCorrection>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Tait equation equation of state (for weakly-compressible fluids).
-template<class Num, pressure_correction Correction = HughesGrahamCorrection>
+template<class Num, variant Correction>
 class TaitEquationOfState final {
 public:
 
@@ -79,6 +91,14 @@ public:
     TIT_ASSERT(gamma_ > 1.0, "Polytropic index must be greater than 1!");
   }
 
+  /// Deserialize from JSON.
+  constexpr explicit TaitEquationOfState(const nlohmann::json& params)
+      : TaitEquationOfState{Num{params.at("cs_0")},
+                            Num{params.at("rho_0")},
+                            Num{params.at("p_0")},
+                            Num{params.at("gamma")},
+                            Correction{params.at("correction")}} {}
+
   /// Set of required uniform fields.
   static constexpr auto required_uniforms() noexcept {
     return TypeSet{/*empty*/};
@@ -93,7 +113,9 @@ public:
   template<particle_view_n<Num> PV>
   constexpr auto pressure(PV a) const noexcept {
     const auto B = rho_0_ * pow2(cs_0_) / gamma_;
-    const auto rho_a = correction_.corrected_density(a, rho_0_);
+    const auto rho_a = correction_.visit([&](const auto& correction) {
+      return correction.corrected_density(a, rho_0_);
+    });
     return p_0_ + B * (pow(rho_a / rho_0_, gamma_) - 1.0);
   }
 
@@ -115,7 +137,7 @@ private:
 }; // class TaitEquationOfState
 
 /// Linear Tait equation equation of state (for weakly-compressible fluids).
-template<class Num, pressure_correction Correction = HughesGrahamCorrection>
+template<class Num, variant Correction>
 class LinearTaitEquationOfState final {
 public:
 
@@ -136,6 +158,13 @@ public:
     TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive!");
   }
 
+  /// Deserialize from JSON.
+  constexpr explicit LinearTaitEquationOfState(const nlohmann::json& params)
+      : LinearTaitEquationOfState{Num{params.at("cs_0")},
+                                  Num{params.at("rho_0")},
+                                  Num{params.at("p_0")},
+                                  Correction{params.at("correction")}} {}
+
   /// Set of required uniform fields.
   static constexpr auto required_uniforms() noexcept {
     return TypeSet{/*empty*/};
@@ -149,7 +178,9 @@ public:
   /// Pressure value.
   template<particle_view_n<Num> PV>
   constexpr auto pressure(PV a) const noexcept {
-    const auto rho_a = correction_.corrected_density(a, rho_0_);
+    const auto rho_a = correction_.visit([&](const auto& correction) {
+      return correction.corrected_density(a, rho_0_);
+    });
     return p_0_ + pow2(cs_0_) * (rho_a - rho_0_);
   }
 
@@ -167,6 +198,13 @@ private:
   [[no_unique_address]] Correction correction_;
 
 }; // class LinearTaitEquationOfState
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Equation of state (with runtime dispatch).
+template<class Num>
+using DEquationOfState = Variant<TaitEquationOfState<Num, DCorrection>,
+                                 LinearTaitEquationOfState<Num, DCorrection>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
