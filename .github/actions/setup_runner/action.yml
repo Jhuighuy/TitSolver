@@ -18,7 +18,7 @@ runs:
       shell: bash
       run: |
         # Select the compiler from the arguments.
-        GCC_VERSION=${GCC_VERSION:-14}
+        GCC_VERSION=${GCC_VERSION:-15}
         LLVM_VERSION=${LLVM_VERSION:-20}
         case "${{ inputs.compiler }}" in
           GCC)
@@ -74,3 +74,13 @@ runs:
         # Add Sphinx to the path.
         SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
         echo "$SPHINX_PATH" >> "$GITHUB_PATH"
+
+        # On Linux GCC must use GNU Binutils provided by Homebrew.
+        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+          BINUTILS_PATH="$(brew --prefix binutils)/bin:$PATH"
+          echo "$BINUTILS_PATH" >> "$GITHUB_PATH"
+          LDFLAGS="-L$(brew --prefix binutils)/lib $LDFLAGS"
+          CPPFLAGS="-I$(brew --prefix binutils)/include $CPPFLAGS"
+          echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
+          echo "CPPFLAGS=$CPPFLAGS" >> "$GITHUB_ENV"
+        fi

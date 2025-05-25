@@ -37,6 +37,12 @@ set(
   -fno-builtin-std-forward_like
 )
 
+# On Linux LLVM tools use system libstdc++ by default, which may not be
+# up-to-date enough. So we want to always use bundled libc++.
+if(LINUX)
+  list(APPEND CLANG_COMPILE_OPTIONS -stdlib=libc++)
+endif()
+
 # On macOS LLVM tools use libc++ by default. When compiling with GCC, I want
 # the LLVM tools to use libstdc++ (during analysis and especially for clangd).
 if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
