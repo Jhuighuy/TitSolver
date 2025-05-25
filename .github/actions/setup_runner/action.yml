@@ -18,7 +18,7 @@ runs:
       shell: bash
       run: |
         # Select the compiler from the arguments.
-        GCC_VERSION=${GCC_VERSION:-14}
+        GCC_VERSION=${GCC_VERSION:-15}
         LLVM_VERSION=${LLVM_VERSION:-20}
         case "${{ inputs.compiler }}" in
           GCC)

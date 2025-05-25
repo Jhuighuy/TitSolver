@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <array>
 #include <csignal>
-#include <cstdlib>
 #include <initializer_list>
 #include <ranges>
 #include <string_view>
