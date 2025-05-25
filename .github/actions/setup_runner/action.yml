@@ -18,7 +18,7 @@ runs:
       shell: bash
       run: |
         # Select the compiler from the arguments.
-        GCC_VERSION=${GCC_VERSION:-14}
+        GCC_VERSION=${GCC_VERSION:-15}
         LLVM_VERSION=${LLVM_VERSION:-20}
         case "${{ inputs.compiler }}" in
           GCC)
@@ -73,6 +73,14 @@ runs:
         fi
         if [[ ! -f "$GCC_PATH/g++-$GCC_VERSION" ]]; then
           ln -s "$GCC_PATH/g++" "$GCC_PATH/g++-$GCC_VERSION"
+        fi
+        # System binutils might not be able to handle the latest GCC.
+        if [[ "$OSTYPE" == "linux-gnu"* &&
+              "${{ inputs.compiler }}" == "GCC" ]]; then
+          BINUTILS_PATH="$(brew --prefix binutils)/bin"
+          echo "$BINUTILS_PATH" >> "$GITHUB_PATH"
+          CPPFLAGS="-I$(brew --prefix binutils)/include $CPPFLAGS"
+          LDFLAGS="-L$(brew --prefix binutils)/lib $LDFLAGS"
         fi
 
         # Add LLVM tools to the path and create versioned symlinks.
