@@ -30,7 +30,7 @@
 !tsconfig*.json
 
 # Python configuration files.
-!pyproject.toml
+!/pyproject.toml
 
 # Output.
 .cache/
