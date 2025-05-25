@@ -3,25 +3,35 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# pylint: disable=import-error,no-name-in-module,invalid-name,unused-argument
-# pylint: disable=wrong-import-position
+# type: ignore
+# pylint: disable=import-error,no-name-in-module
 from collections.abc import Iterator
 from operator import attrgetter
 import os
 import sys
-from paraview.util.vtkAlgorithm import (  # type: ignore
-    smdomain, smhint, smproperty, smproxy, VTKPythonAlgorithmBase,
+from paraview.util.vtkAlgorithm import (
+    smdomain,
+    smhint,
+    smproperty,
+    smproxy,
+    VTKPythonAlgorithmBase,
 )
-from vtk import (  # type: ignore
-    vtkCellArray, vtkDataArraySelection, vtkPoints, vtkPolyData, vtkVertex,
+from vtk import (
+    vtkCellArray,
+    vtkDataArraySelection,
+    vtkPoints,
+    vtkPolyData,
+    vtkVertex,
 )
 from vtkmodules.util import numpy_support
 
 # ParaView does not know how to import `ttdb.py`.
 sys.path.append(os.path.dirname(__file__))
-from ttdb import Rank, Storage, TimeStep  # noqa: E402
+from ttdb import Rank, Storage, TimeStep, open_storage  # pylint: disable=wrong-import-position
 
 __all__ = ("TTDBReader",)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 READER_LABEL = "BlueTit Database Reader"
 FILE_DESCRIPTION = "BlueTit Database"
@@ -29,7 +39,7 @@ FILE_EXTENSIONS = "ttdb"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-@smproxy.reader(
+@smproxy.reader(  # type: ignore
     name="TTDBReader",
     label=READER_LABEL,
     extensions=FILE_EXTENSIONS,
@@ -39,6 +49,8 @@ class TTDBReader(VTKPythonAlgorithmBase):
   _file_path: str | None
   _storage: Storage | None
   _array_selection: vtkDataArraySelection
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   def __init__(self) -> None:
     super().__init__(nInputPorts=0, nOutputPorts=1)
@@ -54,12 +66,14 @@ class TTDBReader(VTKPythonAlgorithmBase):
     if self._storage is None:
       if not self._file_path or not os.path.exists(self._file_path):
         raise RuntimeError(f"File not found: {self._file_path}.")
-      self._storage = Storage(self._file_path)
+      self._storage = open_storage(self._file_path)
     return self._storage
 
   def time_steps(self) -> Iterator[TimeStep]:
     # Do not cache the last series and time steps, as they may change.
     return self.storage.last_series.time_steps()
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   @smproperty.stringvector(name="FileName")
   @smdomain.filelist()
@@ -71,6 +85,8 @@ class TTDBReader(VTKPythonAlgorithmBase):
     self._file_path = file_path
     self.Modified()
 
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   @smproperty.doublevector(
       name="TimestepValues",
       information_only="1",
@@ -79,11 +95,13 @@ class TTDBReader(VTKPythonAlgorithmBase):
   def GetTimestepValues(self) -> list[float]:
     return list(map(attrgetter("time"), self.time_steps()))
 
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   @smproperty.dataarrayselection(name="Arrays")
   def GetDataArraySelection(self) -> vtkDataArraySelection:
     return self._array_selection
 
-  def RequestInformation(self, request, inInfo, outInfo) -> bool:
+  def RequestInformation(self, request, inInfo, outInfo) -> bool:  # pylint: disable=unused-argument
     executive = self.GetExecutive()
 
     # Report the available time steps.
@@ -106,7 +124,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
 
     return True
 
-  def RequestData(self, request, inInfo, outInfo) -> bool:
+  def RequestData(self, request, inInfo, outInfo) -> bool:  # pylint: disable=unused-argument
     # Find the time step corresponding to the current time.
     time: float = outInfo.GetInformationObject(0).Get(
         self.GetExecutive().UPDATE_TIME_STEP())
