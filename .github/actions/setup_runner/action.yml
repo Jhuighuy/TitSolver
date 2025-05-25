@@ -18,7 +18,7 @@ runs:
       shell: bash
       run: |
         # Select the compiler from the arguments.
-        GCC_VERSION=${GCC_VERSION:-14}
+        GCC_VERSION=${GCC_VERSION:-15}
         LLVM_VERSION=${LLVM_VERSION:-20}
         case "${{ inputs.compiler }}" in
           GCC)
@@ -74,6 +74,14 @@ runs:
         if [[ ! -f "$GCC_PATH/g++-$GCC_VERSION" ]]; then
           ln -s "$GCC_PATH/g++" "$GCC_PATH/g++-$GCC_VERSION"
         fi
+        # System binutils might not be able to handle the latest GCC.
+        if [[ "$OSTYPE" == "linux-gnu"* &&
+              "${{ inputs.compiler }}" == "GCC" ]]; then
+          BINUTILS_PATH="$(brew --prefix binutils)/bin"
+          echo "$BINUTILS_PATH" >> "$GITHUB_PATH"
+          CPPFLAGS="-I$(brew --prefix binutils)/include $CPPFLAGS"
+          LDFLAGS="-L$(brew --prefix binutils)/lib $LDFLAGS"
+        fi
 
         # Add LLVM tools to the path and create versioned symlinks.
         LLVM_PATH="$(brew --prefix "llvm@$LLVM_VERSION")/bin"
@@ -94,6 +102,8 @@ runs:
           CXXFLAGS="-isystem $LIBSTDCPP_PLATFORM_PATH $CXXFLAGS"
           CFLAGS="-isystem $LIBSTDCPP_PATH $CFLAGS"
           CFLAGS="-isystem $LIBSTDCPP_PLATFORM_PATH $CFLAGS"
+          LDFLAGS="-L$GCC_INSTALLATION/lib/gcc/current -lstdc++ $LDFLAGS"
+          LD_LIBRARY_PATH="$GCC_INSTALLATION/lib/gcc/current:$LD_LIBRARY_PATH"
         fi
 
         # Add Sphinx to the path.
@@ -107,3 +117,4 @@ runs:
         echo "CFLAGS=$CFLAGS" >> "$GITHUB_ENV"
         echo "CXXFLAGS=$CXXFLAGS" >> "$GITHUB_ENV"
         echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"

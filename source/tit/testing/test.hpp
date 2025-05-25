@@ -9,7 +9,14 @@
 #include <initializer_list>
 #include <ranges>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
+#endif
 #include <doctest/doctest.h> // IWYU pragma: exports
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 namespace tit::testing {
 

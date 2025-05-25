@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <ranges>
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #ifdef _LIBCPP_VERSION
@@ -16,6 +14,7 @@
 #include <array>
 #include <cstdio>
 #include <functional>
+#include <ranges>
 #include <utility>
 
 #include "tit/core/uint_utils.hpp"
@@ -129,34 +128,5 @@ _LIBCPP_END_NAMESPACE_STD
 // NOLINTEND(*-include-cleaner)
 
 #endif // ifdef _LIBCPP_VERSION
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~≈
-
-#ifdef __GLIBCXX__
-
-#include <concepts>
-#include <format>
-#include <string>
-
-template<std::ranges::input_range Range>
-  requires (std::formattable<std::ranges::range_value_t<Range>, char> &&
-            !std::constructible_from<std::string, Range &&>)
-struct std::formatter<Range> {
-  static constexpr auto parse(const std::format_parse_context& context) {
-    return context.begin();
-  }
-  static constexpr auto format(const Range& range,
-                               std::format_context& context) {
-    auto out = context.out();
-    if (std::ranges::empty(range)) return std::format_to(out, "[]");
-    out = std::format_to(out, "[{}", *std::begin(range));
-    for (const auto& elem : range | std::views::drop(1)) {
-      out = std::format_to(out, ", {}", elem);
-    }
-    return std::format_to(out, "]");
-  }
-};
-
-#endif // ifdef __GLIBCXX__
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

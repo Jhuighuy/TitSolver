@@ -79,11 +79,10 @@ set(
   -ffp-contract=fast
   # Enable link time optimizations.
   -flto=auto
+  -ffat-lto-objects
+  # This warning produces a lot of false positives, disable it.
+  -Wno-maybe-uninitialized
 )
-if(NOT APPLE)
-  # Disable `-Wmaybe-uninitialized` warning, it produces many false positives.
-  list(APPEND GNU_OPTIMIZE_OPTIONS -Wno-maybe-uninitialized)
-endif()
 
 # Define compile options for "Release" configuration.
 set(GNU_COMPILE_OPTIONS_RELEASE ${GNU_COMPILE_OPTIONS} ${GNU_OPTIMIZE_OPTIONS})
