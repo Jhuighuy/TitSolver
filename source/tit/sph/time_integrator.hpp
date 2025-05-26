@@ -183,6 +183,11 @@ public:
   constexpr explicit RungeKuttaIntegrator(Equations equations) noexcept
       : equations_{std::move(equations)} {}
 
+  /// Reflect the time integrator.
+  constexpr void reflect(this auto& self, auto& refl) {
+    refl(self.equations_, {{"name", "Equations"}});
+  }
+
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
