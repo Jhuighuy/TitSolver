@@ -6,10 +6,11 @@
 #pragma once
 
 #include <exception>
-#include <format> // IWYU pragma: keep
+#include <format>
 #include <source_location>
 #include <stacktrace>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "tit/core/utils.hpp"
@@ -29,6 +30,12 @@ public:
       std::stacktrace stacktrace = std::stacktrace::current())
       : message_{std::move(message)}, location_{location},
         stacktrace_{std::move(stacktrace)} {}
+
+  /// Initialize exception from a different exception.
+  /// Source location and stack trace are taken from the other exception.
+  Exception(std::string_view context, const Exception& e)
+      : message_{std::format("{}: {}", context, e.message_)},
+        location_{e.location_}, stacktrace_{e.stacktrace_} {}
 
   /// Get the exception message.
   auto what() const noexcept -> const char* override {
@@ -58,6 +65,10 @@ private:
 /// Throw an exception.
 #define TIT_THROW(message, ...)                                                \
   throw tit::Exception(std::format((message) __VA_OPT__(, __VA_ARGS__)))
+
+/// Rethrow an exception.
+#define TIT_RETHROW(e, context, ...)                                           \
+  throw tit::Exception(std::format((context) __VA_OPT__(, __VA_ARGS__)), (e))
 
 /// Ensure that the condition is true, otherwise throw an exception.
 #define TIT_ENSURE(condition, message, ...)                                    \
