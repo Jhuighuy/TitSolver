@@ -3,12 +3,15 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("core")
-add_subdirectory("data")
-add_subdirectory("geom")
-add_subdirectory("par")
-add_subdirectory("prop")
-add_subdirectory("sph")
-add_subdirectory("testing")
+add_tit_test(
+  TARGET tit::prop_tests
+  INPUT_FILES
+    "array.json"
+    "array.yaml"
+    "bad-file.json"
+    "config.json"
+    "config.yaml"
+    "config.yml"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

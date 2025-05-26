@@ -1,0 +1,250 @@
+--------------------------------------------------------------------------------
+
+{
+  "fields": [
+    {
+      "id": "flag_1",
+      "name": "Required flag.",
+      "spec": {
+        "type": "bool"
+      }
+    },
+    {
+      "id": "flag_2",
+      "name": "Optional flag.",
+      "spec": {
+        "default": true,
+        "type": "bool"
+      }
+    },
+    {
+      "id": "int_1",
+      "name": "Required integer with bounds.",
+      "spec": {
+        "min": 1,
+        "type": "int"
+      }
+    },
+    {
+      "id": "optional_float",
+      "name": "Optional float with bounds.",
+      "spec": {
+        "default": 0.5,
+        "max": 10.0,
+        "type": "real"
+      }
+    },
+    {
+      "id": "optional_string",
+      "name": "Optional string.",
+      "spec": {
+        "default": "hello",
+        "type": "string"
+      }
+    },
+    {
+      "id": "required_enum",
+      "name": "Required enum.",
+      "spec": {
+        "options": [
+          {
+            "id": "a",
+            "name": "Option 1"
+          },
+          {
+            "id": "b",
+            "name": "Option 2"
+          },
+          {
+            "id": "c",
+            "name": "Option 3"
+          }
+        ],
+        "type": "enum"
+      }
+    },
+    {
+      "id": "record",
+      "name": "Record with required and optional fields.",
+      "spec": {
+        "fields": [
+          {
+            "id": "required_field",
+            "name": "Required field.",
+            "spec": {
+              "type": "int"
+            }
+          },
+          {
+            "id": "optional_field",
+            "name": "Optional field.",
+            "spec": {
+              "type": "int"
+            }
+          }
+        ],
+        "type": "record"
+      }
+    },
+    {
+      "id": "array",
+      "name": "Array of variants of records.",
+      "spec": {
+        "items": {
+          "options": {
+            "circle": {
+              "name": "Circle shape.",
+              "spec": {
+                "fields": [
+                  {
+                    "id": "radius",
+                    "name": "Radius.",
+                    "spec": {
+                      "type": "int"
+                    }
+                  }
+                ],
+                "type": "record"
+              }
+            },
+            "rectangle": {
+              "name": "Rectangle shape.",
+              "spec": {
+                "fields": [
+                  {
+                    "id": "width",
+                    "name": "Width.",
+                    "spec": {
+                      "type": "int"
+                    }
+                  },
+                  {
+                    "id": "height",
+                    "name": "Height.",
+                    "spec": {
+                      "type": "int"
+                    }
+                  }
+                ],
+                "type": "record"
+              }
+            },
+            "triangle": {
+              "name": "Triangle shape.",
+              "spec": {
+                "fields": [
+                  {
+                    "id": "width",
+                    "name": "Width.",
+                    "spec": {
+                      "type": "int"
+                    }
+                  },
+                  {
+                    "id": "height",
+                    "name": "Height.",
+                    "spec": {
+                      "type": "int"
+                    }
+                  },
+                  {
+                    "id": "base",
+                    "name": "Base.",
+                    "spec": {
+                      "type": "int"
+                    }
+                  }
+                ],
+                "type": "record"
+              }
+            }
+          },
+          "type": "variant"
+        },
+        "type": "array"
+      }
+    }
+  ],
+  "type": "record"
+}
+
+--------------------------------------------------------------------------------
+
+# Required flag.
+# Type: bool
+flag_1: null
+
+# Optional flag.
+# Type: bool, default=true
+flag_2: true
+
+# Required integer with bounds.
+# Type: int, min=1
+int_1: null
+
+# Optional float with bounds.
+# Type: real, max=10.0, default=0.5
+optional_float: 0.5
+
+# Optional string.
+# Type: string, default="hello"
+optional_string: "hello"
+
+# Required enum.
+# Type: enum
+required_enum: null
+
+# Record with required and optional fields.
+# Type: record
+record:
+  # Required field.
+  # Type: int
+  required_field: null
+
+  # Optional field.
+  # Type: int
+  optional_field: null
+
+# Array of variants of records.
+# Type: array
+array:
+  # Example item
+  -
+    _active: null
+    # Type: enum
+
+    # Circle shape.
+    # Type: record
+    circle:
+      # Radius.
+      # Type: int
+      radius: null
+
+    # Rectangle shape.
+    # Type: record
+    rectangle:
+      # Width.
+      # Type: int
+      width: null
+
+      # Height.
+      # Type: int
+      height: null
+
+    # Triangle shape.
+    # Type: record
+    triangle:
+      # Width.
+      # Type: int
+      width: null
+
+      # Height.
+      # Type: int
+      height: null
+
+      # Base.
+      # Type: int
+      base: null
+
+
+--------------------------------------------------------------------------------

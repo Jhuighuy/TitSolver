@@ -7,6 +7,7 @@
 
 #include <cstdio> // IWYU pragma: keep
 #include <format>
+#include <ostream>
 #include <print>
 #include <utility>
 
@@ -32,6 +33,28 @@ void eprintln(std::format_string<Args...> fmt, Args&&... args) {
 /// Print the newline to the standard error stream.
 inline void eprintln() {
   eprintln("");
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Print the formatted string with leading spaces.
+template<class... Args>
+void print_indented(std::ostream& stream,
+                    int indent,
+                    std::format_string<Args...> fmt,
+                    Args&&... args) {
+  print(stream, "{:>{}}", "", indent);
+  print(stream, fmt, std::forward<Args>(args)...);
+}
+
+/// Print the formatted string with leading spaces and a newline.
+template<class... Args>
+void println_indented(std::ostream& stream,
+                      int indent,
+                      std::format_string<Args...> fmt,
+                      Args&&... args) {
+  print_indented(stream, indent, fmt, std::forward<Args>(args)...);
+  println(stream);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

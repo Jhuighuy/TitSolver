@@ -13,6 +13,9 @@ Primary areas:
   - `data` – HDF5, SQLite, storage, schema/type helpers
   - `geom` – grids, partitions, searching, spatial sorting
   - `par` – TBB-based parallel utilities
+  - `prop` – general-purpose property/config management, including typed specs,
+    tree parsing, CLI/config loading, help generation, and config template
+    emission
   - `sph` – SPH kernels, equations, particle structures, integrators
   - `testing` – doctest-based test support
 - `source/titwcsph/` – WCSPH executable
@@ -95,11 +98,16 @@ There are four practical testing layers in this repo:
   - `tit::data_tests`
   - `tit::geom_tests`
   - `tit::par_tests`
+  - `tit::prop_tests`
   - `tit::sph_tests`
   - `tit::testing_tests`
 - Behavioral tests under `tests/tit/core/**` using `add_tit_test(...)` to
   validate assertions, exception handling, signal handling, profiler output, and
   stats output.
+- Property-library tests under `tests/tit/prop/**`, including:
+  - `tests/tit/prop/unit` for `tit::prop_tests`
+  - `tests/tit/prop/app/*` for end-to-end parser/app behavior
+  - `tests/tit/prop/dump` for help/JSON/YAML dump goldens
 - Test-driver self-tests under `tests/test_driver/` that validate the custom
   test harness behavior.
 - Application-level testing under `tests/titwcsph/`, currently including the
@@ -138,6 +146,7 @@ include:
 - `tit::data`
 - `tit::geom`
 - `tit::par`
+- `tit::prop`
 - `tit::sph`
 - `tit::testing`
 - `tit::ttdb`
@@ -148,6 +157,7 @@ Executable targets observed in-tree include:
 - `tit::data_tests`
 - `tit::geom_tests`
 - `tit::par_tests`
+- `tit::prop_tests`
 - `tit::sph_tests`
 - `tit::testing_tests`
 - `tit::titback`

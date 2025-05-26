@@ -1,0 +1,44 @@
+
+prop_app - Property system behavioral test application.
+
+USAGE
+
+  prop_app [OPTIONS]
+
+OPTIONS
+
+  --help, -h
+    Print this help and exit.
+
+  --version, -v
+    Print the application version and exit.
+
+  --config <file>
+    Load configuration from <file>. May be repeated.
+
+  --init <file>
+    Write a template configuration file and exit.
+    Default: "config.yaml".
+
+  --debug <bool>
+    Enable debug mode.
+    Default: false.
+
+  --workers <int>
+    Number of worker threads.
+    Default: 4. Range: 1..64.
+
+  --threshold <real>
+    Threshold value.
+    Default: 0.5. Range: 0.0..1.0.
+
+  --output <string>
+    Output file path.
+    Default: "./output".
+
+  --mode <enum>
+    Run mode.
+    Default: "fast". Values: "fast", "safe", "debug".
+
+  Advanced and nested options are configured in config files. Use --init <file>,
+  or refer to the user manual or current config to override them.
