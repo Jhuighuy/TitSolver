@@ -7,6 +7,8 @@ add_tit_library(
   NAME
     prop
   SOURCES
+    "spec.cpp"
+    "spec.hpp"
   DEPENDS
     tit::core
     nlohmann_json::nlohmann_json
