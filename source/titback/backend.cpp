@@ -61,7 +61,7 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
   crow::SimpleApp app;
 
-  const data::DataStorage storage{"particles.ttdb"};
+  data::DataStorage storage{"particles.ttdb"};
 
   const auto solver_path = exe_dir / "titwcsph";
   std::mutex solver_mutex;
@@ -180,6 +180,33 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
           }
 
           response["result"] = result;
+          send_response(response.dump());
+          return;
+        }
+
+        // ---------------------------------------------------------------------
+        if (type == "all-params") {
+          nlohmann::json result;
+          for (const auto& param : storage.last_series().params()) {
+            auto spec = param.spec()->to_json();
+            spec["id"] = param.id();
+            spec["parentID"] = param.parent_id();
+            spec["value"] = param.value();
+            result.push_back(spec);
+          }
+
+          response["result"] = result;
+          send_response(response.dump());
+          return;
+        }
+
+        // ---------------------------------------------------------------------
+        if (type == "set-param") {
+          const auto& param_id =
+              static_cast<data::DataParamID>(message["id"].get<uint64_t>());
+          const auto& value = message["value"].get<std::string>();
+          storage.param_set_value(param_id, value);
+
           send_response(response.dump());
           return;
         }
