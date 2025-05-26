@@ -186,6 +186,24 @@ public:
     TIT_ASSERT(delta_ > 0.0, "Density coefficient must be positive!");
   }
 
+  /// Reflect the artificial viscosity scheme.
+  constexpr void reflect(this auto& self, auto& refl) {
+    refl(self.alpha_,
+         {
+             {"name", "Velocity coefficient"},
+             {"min", 0.01},
+             {"max", 1.0},
+             {"default", 0.02},
+         });
+    refl(self.delta_,
+         {
+             {"name", "Density coefficient"},
+             {"min", 0.05},
+             {"max", 1.0},
+             {"default", 0.1},
+         });
+  }
+
   /// Continuity equation diffusive term.
   template<particle_view_n<Num, required_fields> PV>
   constexpr auto density_term(PV a, PV b) const noexcept {

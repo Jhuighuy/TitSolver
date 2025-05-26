@@ -82,6 +82,11 @@ public:
         riemann_solver_{std::move(riemann_solver)},
         reconstruction_{std::move(reconstruction)} {}
 
+  /// Reflect the fluid equations.
+  constexpr void reflect(this auto& /*self*/, auto& /*refl*/) {
+    // Nothing to do at the moment.
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   template<particle_mesh ParticleMesh,
