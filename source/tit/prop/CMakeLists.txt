@@ -3,12 +3,24 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("core")
-add_subdirectory("data")
-add_subdirectory("geom")
-add_subdirectory("graph")
-add_subdirectory("prop")
-add_subdirectory("sph")
-add_subdirectory("testing")
+add_tit_library(
+  NAME
+    prop
+  SOURCES
+  DEPENDS
+    tit::core
+    nlohmann_json::nlohmann_json
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    prop_tests
+  SOURCES
+  DEPENDS
+    tit::prop
+    tit::testing
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
