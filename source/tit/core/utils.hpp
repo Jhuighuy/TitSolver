@@ -6,7 +6,7 @@
 #pragma once
 
 #include <concepts>
-#include <utility> // IWYU pragma: keep
+#include <utility>
 
 namespace tit {
 
@@ -44,6 +44,21 @@ struct AlwaysTrue final {
     return true;
   }
 };
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Converter to a different type.
+template<class Val>
+struct To final {
+  template<class... Args>
+  static constexpr auto operator()(Args&&... args) noexcept -> Val {
+    return Val(std::forward<Args>(args)...);
+  }
+};
+
+/// Convert to a different type.
+template<class Val>
+inline constexpr To<Val> to{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

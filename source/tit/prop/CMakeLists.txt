@@ -5,34 +5,26 @@
 
 add_tit_library(
   NAME
-    data
+    prop
   SOURCES
-    "hdf5.cpp"
-    "hdf5.hpp"
-    "sqlite.cpp"
-    "sqlite.hpp"
-    "storage.cpp"
-    "storage.hpp"
-    "type.hpp"
+    "json.hpp"
+    "prop.cpp"
+    "prop.hpp"
+    "spec.cpp"
+    "spec.hpp"
   DEPENDS
     tit::core
-    HighFive::HighFive
     nlohmann_json::nlohmann_json
-    tinyxml2::tinyxml2
-    unofficial::sqlite3::sqlite3
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
   NAME
-    data_tests
+    prop_tests
   SOURCES
-    "sqlite.test.cpp"
-    "storage.test.cpp"
-    "type.test.cpp"
   DEPENDS
-    tit::data
+    tit::prop
     tit::testing
 )
 
