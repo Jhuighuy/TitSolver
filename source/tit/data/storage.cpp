@@ -43,6 +43,15 @@ DataStorage::DataStorage(const std::filesystem::path& path, bool read_only)
       name TEXT
     ) STRICT;
 
+    CREATE TABLE IF NOT EXISTS DataParams (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      series_id INTEGER NOT NULL,
+      parent_id INTEGER,
+      spec      TEXT NOT NULL,
+      value     TEXT,
+      FOREIGN KEY (series_id) REFERENCES DataSeries(id) ON DELETE CASCADE
+    ) STRICT;
+
     CREATE TABLE IF NOT EXISTS DataFrames (
       id        INTEGER PRIMARY KEY AUTOINCREMENT,
       series_id INTEGER NOT NULL,
@@ -132,6 +141,8 @@ auto DataStorage::create_series_id(std::string_view name) -> DataSeriesID {
   return DataSeriesID{db_.last_insert_row_id()};
 }
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 void DataStorage::delete_series(DataSeriesID series_id) {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
   sqlite::Statement statement{db_, R"SQL(
@@ -139,8 +150,6 @@ void DataStorage::delete_series(DataSeriesID series_id) {
   )SQL"};
   statement.run(series_id);
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto DataStorage::check_series(DataSeriesID series_id) const -> bool {
   sqlite::Statement statement{db_, R"SQL(
@@ -156,8 +165,51 @@ auto DataStorage::series_name(DataSeriesID series_id) const -> std::string {
     SELECT name FROM DataSeries WHERE id = ?
   )SQL"};
   statement.bind(series_id);
-  TIT_ENSURE(statement.step(), "Unable to get series parameters!");
+  TIT_ENSURE(statement.step(), "Unable to get series name!");
   return statement.column<std::string>();
+}
+
+auto DataStorage::series_num_params(DataSeriesID series_id) const -> size_t {
+  TIT_ASSERT(check_series(series_id), "Invalid series ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT COUNT(*) FROM DataParams WHERE series_id = ? AND parent_id IS NULL
+  )SQL"};
+  statement.bind(series_id);
+  TIT_ENSURE(statement.step(), "Unable to count data parameters!");
+  return statement.column<size_t>();
+}
+
+auto DataStorage::series_param_ids(DataSeriesID series_id) const
+    -> std::generator<DataParamID> {
+  TIT_ASSERT(check_series(series_id), "Invalid series ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT id
+    FROM DataParams
+    WHERE series_id = ? AND parent_id IS NULL
+    ORDER BY id ASC
+  )SQL"};
+  statement.bind(series_id);
+  while (statement.step()) co_yield statement.column<DataParamID>();
+}
+
+/// @todo Validate the parameter value against the specification.
+auto DataStorage::series_create_param_id(DataSeriesID series_id,
+                                         std::string_view spec,
+                                         std::string_view value,
+                                         std::optional<DataParamID> parent_id)
+    -> DataParamID {
+  TIT_ASSERT(check_series(series_id), "Invalid series ID!");
+  TIT_ASSERT(!spec.empty(), "Parameter specification must not be empty!");
+  TIT_ASSERT(!value.empty(), "Parameter value must not be empty!");
+  if (parent_id.has_value()) {
+    TIT_ASSERT(check_param(*parent_id), "Invalid parent parameter ID!");
+  }
+  sqlite::Statement statement{db_, R"SQL(
+    INSERT INTO DataParams (series_id, parent_id, spec, value)
+      VALUES (?, ?, ?, ?)
+  )SQL"};
+  statement.run(series_id, parent_id.value_or(DataParamID{0}), spec, value);
+  return DataParamID{db_.last_insert_row_id()};
 }
 
 auto DataStorage::series_num_frames(DataSeriesID series_id) const -> size_t {
@@ -166,7 +218,7 @@ auto DataStorage::series_num_frames(DataSeriesID series_id) const -> size_t {
     SELECT COUNT(*) FROM DataFrames WHERE series_id = ?
   )SQL"};
   statement.bind(series_id);
-  TIT_ENSURE(statement.step(), "Unable to count Dataframes!");
+  TIT_ENSURE(statement.step(), "Unable to count data frames!");
   return statement.column<size_t>();
 }
 
@@ -192,19 +244,103 @@ auto DataStorage::series_last_frame_id(DataSeriesID series_id) const
   return statement.column<DataFrameID>();
 }
 
-auto DataStorage::create_frame_id(DataSeriesID series_id, float64_t time)
+auto DataStorage::series_create_frame_id(DataSeriesID series_id, float64_t time)
     -> DataFrameID {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
   TIT_ASSERT((series_num_frames(series_id) == 0 ||
               time > series_last_frame(series_id).time()),
              "Frame time must be greater than the last frame time!");
   sqlite::Statement statement{db_, R"SQL(
-    INSERT INTO DataFrames (series_id, time)
-      VALUES (?, ?)
+    INSERT INTO DataFrames (series_id, time) VALUES (?, ?)
   )SQL"};
   statement.run(series_id, time);
   return DataFrameID{db_.last_insert_row_id()};
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// NOLINTNEXTLINE(misc-no-recursion)
+void DataStorage::delete_param(DataParamID param_id) {
+  TIT_ASSERT(check_param(param_id), "Invalid parameter ID!");
+  for (const auto child_id : param_child_ids(param_id)) delete_param(child_id);
+  sqlite::Statement statement{db_, R"SQL(
+    DELETE FROM DataParams WHERE id = ?
+  )SQL"};
+  statement.run(param_id);
+}
+
+auto DataStorage::check_param(DataParamID param_id) const -> bool {
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT id FROM DataParams WHERE id = ?
+  )SQL"};
+  statement.bind(param_id);
+  return statement.step();
+}
+
+auto DataStorage::param_spec(DataParamID param_id) const -> std::string {
+  TIT_ASSERT(check_param(param_id), "Invalid parameter ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT spec FROM DataParams WHERE id = ?
+  )SQL"};
+  statement.bind(param_id);
+  TIT_ENSURE(statement.step(), "Unable to get parameter specification!");
+  return statement.column<std::string>();
+}
+
+/// @todo Validate the parameter value against the specification.
+auto DataStorage::param_value(DataParamID param_id) const -> std::string {
+  TIT_ASSERT(check_param(param_id), "Invalid parameter ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT value FROM DataParams WHERE id = ?
+  )SQL"};
+  statement.bind(param_id);
+  TIT_ENSURE(statement.step(), "Unable to get parameter value!");
+  return statement.column<std::string>();
+}
+
+void DataStorage::param_set_value(DataParamID param_id,
+                                  std::string_view value) {
+  TIT_ASSERT(check_param(param_id), "Invalid parameter ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    UPDATE DataParams SET value = ? WHERE id = ?
+  )SQL"};
+  statement.run(value, param_id);
+}
+
+auto DataStorage::param_parent_id(DataParamID param_id) const
+    -> std::optional<DataParamID> {
+  TIT_ASSERT(check_param(param_id), "Invalid parameter ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT parent_id FROM DataParams WHERE id = ?
+  )SQL"};
+  statement.bind(param_id);
+  TIT_ENSURE(statement.step(), "Unable to get parameter parent!");
+  const auto parent_id = statement.column<sqlite::RowID>();
+  if (parent_id == 0) return std::nullopt;
+  return DataParamID{parent_id};
+}
+
+auto DataStorage::param_num_children(DataParamID param_id) const -> size_t {
+  TIT_ASSERT(check_param(param_id), "Invalid parameter ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT COUNT(*) FROM DataParams WHERE parent_id = ?
+  )SQL"};
+  statement.bind(param_id);
+  TIT_ENSURE(statement.step(), "Unable to count parameter children!");
+  return statement.column<size_t>();
+}
+
+auto DataStorage::param_child_ids(DataParamID param_id) const
+    -> std::generator<DataParamID> {
+  TIT_ASSERT(check_param(param_id), "Invalid parameter ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT id FROM DataParams WHERE parent_id = ? ORDER BY id ASC
+  )SQL"};
+  statement.bind(param_id);
+  while (statement.step()) co_yield statement.column<DataParamID>();
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void DataStorage::delete_frame(DataFrameID frame_id) {
   TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
@@ -213,8 +349,6 @@ void DataStorage::delete_frame(DataFrameID frame_id) {
   )SQL"};
   statement.run(frame_id);
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto DataStorage::check_frame(DataFrameID frame_id) const -> bool {
   sqlite::Statement statement{db_, R"SQL(
@@ -254,8 +388,8 @@ auto DataStorage::frame_array_ids(DataFrameID frame_id) const
   while (statement.step()) co_yield statement.column<DataArrayID>();
 }
 
-auto DataStorage::find_array_id(DataFrameID frame_id,
-                                std::string_view name) const
+auto DataStorage::frame_find_array_id(DataFrameID frame_id,
+                                      std::string_view name) const
     -> std::optional<DataArrayID> {
   TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
   sqlite::Statement statement{db_, R"SQL(
@@ -266,17 +400,19 @@ auto DataStorage::find_array_id(DataFrameID frame_id,
   return std::nullopt;
 }
 
-auto DataStorage::create_array_id(DataFrameID frame_id, std::string_view name)
-    -> DataArrayID {
+auto DataStorage::frame_create_array_id(DataFrameID frame_id,
+                                        std::string_view name) -> DataArrayID {
   TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
   TIT_ASSERT(!name.empty(), "Array name must not be empty!");
-  TIT_ASSERT(!find_array_id(frame_id, name), "Array already exists!");
+  TIT_ASSERT(!frame_find_array_id(frame_id, name), "Array already exists!");
   sqlite::Statement statement{db_, R"SQL(
     INSERT INTO DataArrays (frame_id, name) VALUES (?, ?)
   )SQL"};
   statement.run(frame_id, name);
   return DataArrayID{db_.last_insert_row_id()};
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void DataStorage::delete_array(DataArrayID array_id) {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
@@ -285,8 +421,6 @@ void DataStorage::delete_array(DataArrayID array_id) {
   )SQL"};
   statement.run(array_id);
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto DataStorage::check_array(DataArrayID array_id) const -> bool {
   sqlite::Statement statement{db_, R"SQL(
