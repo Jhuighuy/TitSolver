@@ -86,6 +86,11 @@ public:
         eos_{std::move(eos)},                         //
         kernel_{std::move(kernel)} {}
 
+  /// Reflect the fluid equations.
+  constexpr void reflect(this auto& self, auto& refl) {
+    refl(self.momentum_equation_, {{"name", "Momentum equation"}});
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   template<particle_mesh ParticleMesh,
