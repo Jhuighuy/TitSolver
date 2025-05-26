@@ -13,6 +13,7 @@ Primary areas:
   - `data` – HDF5, SQLite, storage, schema/type helpers
   - `geom` – grids, partitions, searching, spatial sorting
   - `par` – TBB-based parallel utilities
+  - `prop` – general-purpose property/config management
   - `sph` – SPH kernels, equations, particle structures, integrators
   - `testing` – doctest-based test support
 - `source/titwcsph/` – WCSPH executable
@@ -99,6 +100,7 @@ There are four practical testing layers in this repo:
   - `tit::data_tests`
   - `tit::geom_tests`
   - `tit::par_tests`
+  - `tit::prop_tests`
   - `tit::sph_tests`
   - `tit::testing_tests`
 - Behavioral tests under `tests/tit/core/**` using `add_tit_test(...)` to
@@ -142,6 +144,7 @@ include:
 - `tit::data`
 - `tit::geom`
 - `tit::par`
+- `tit::prop`
 - `tit::sph`
 - `tit::testing`
 - `tit::ttdb`
@@ -152,6 +155,7 @@ Executable targets observed in-tree include:
 - `tit::data_tests`
 - `tit::geom_tests`
 - `tit::par_tests`
+- `tit::prop_tests`
 - `tit::sph_tests`
 - `tit::testing_tests`
 - `tit::titback`
