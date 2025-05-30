@@ -71,11 +71,11 @@ runs:
         ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
         echo "$LLVM_PATH" >> "$GITHUB_PATH"
         if [[ ${{ inputs.compiler }} == "Clang" ]]; then
-          LDFLAGS="-L$(brew --prefix "llvm@$LLVM_VERSION")/lib/c++ $LDFLAGS"
-          echo ============================================================================
-          echo "LDFLAGS=$LDFLAGS"
-          ls $(brew --prefix "llvm@$LLVM_VERSION")/lib
-          echo ============================================================================
+          LIBCPP_PATH="$(brew --prefix "llvm@$LLVM_VERSION")/lib"
+          if [[ -d "$LIBCPP_PATH/c++" ]]; then
+            LIBCPP_PATH="$LIBCPP_PATH/c++"
+          fi
+          LDFLAGS="-L$LIBCPP_PATH $LDFLAGS"
           echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
         fi
 
