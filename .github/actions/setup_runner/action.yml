@@ -74,7 +74,7 @@ runs:
           LDFLAGS="-L$(brew --prefix "llvm@$LLVM_VERSION")/lib/c++ $LDFLAGS"
           echo ============================================================================
           echo "LDFLAGS=$LDFLAGS"
-          ls $(brew --prefix "llvm@$LLVM_VERSION")/lib/c++
+          ls $(brew --prefix "llvm@$LLVM_VERSION")/lib
           echo ============================================================================
           echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
         fi
