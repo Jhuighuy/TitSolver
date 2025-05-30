@@ -72,6 +72,10 @@ runs:
         echo "$LLVM_PATH" >> "$GITHUB_PATH"
         if [[ ${{ inputs.compiler }} == "Clang" ]]; then
           LDFLAGS="-L$(brew --prefix "llvm@$LLVM_VERSION")/lib/c++ $LDFLAGS"
+          echo ============================================================================
+          echo "LDFLAGS=$LDFLAGS"
+          ls $(brew --prefix "llvm@$LLVM_VERSION")/lib/c++
+          echo ============================================================================
           echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
         fi
 
