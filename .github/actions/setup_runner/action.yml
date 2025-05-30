@@ -70,6 +70,9 @@ runs:
         LLVM_PATH="$(brew --prefix "llvm@$LLVM_VERSION")/bin"
         ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
         echo "$LLVM_PATH" >> "$GITHUB_PATH"
+        if [[ ${{ inputs.compiler }} == "Clang" ]]; then
+          LDFLAGS="-L$(brew --prefix "llvm@$LLVM_VERSION")/lib/c++"
+        fi
 
         # Add Sphinx to the path.
         SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
