@@ -50,10 +50,10 @@ endif()
 
 # On Linux LLVM tools use system libstdc++ by default, which may not be
 # up-to-date enough. So we want to always use bundled libc++.
-if(LINUX)
-  list(APPEND CLANG_COMPILE_OPTIONS -stdlib=libc++)
-  list(APPEND CLANG_LINK_OPTIONS -lc++ -lc++abi -lm -lc -lgcc_s -lgcc)
-endif()
+# if(LINUX)
+#   list(APPEND CLANG_COMPILE_OPTIONS -stdlib=libc++)
+#   list(APPEND CLANG_LINK_OPTIONS -lc++ -lc++abi -lm -lc -lgcc_s -lgcc)
+# endif()
 
 # On macOS LLVM tools use libc++ by default. When compiling with GCC, I want
 # the LLVM tools to use libstdc++ (during analysis and especially for clangd).
