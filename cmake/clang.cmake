@@ -52,7 +52,7 @@ endif()
 # up-to-date enough. So we want to always use bundled libc++.
 if(LINUX)
   list(APPEND CLANG_COMPILE_OPTIONS -stdlib=libc++)
-  list(APPEND CLANG_LINK_OPTIONS -lc++abi)
+  list(APPEND CLANG_LINK_OPTIONS -lc++ -lc++abi -lm -lc -lgcc_s -lgcc)
 endif()
 
 # On macOS LLVM tools use libc++ by default. When compiling with GCC, I want
