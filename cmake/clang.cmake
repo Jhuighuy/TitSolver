@@ -37,10 +37,22 @@ set(
   -fno-builtin-std-forward_like
 )
 
+# Define common link options.
+set(CLANG_LINK_OPTIONS ${CLANG_COMPILE_OPTIONS})
+if(APPLE)
+  list(
+    APPEND
+    CLANG_LINK_OPTIONS
+    # Do not warn about duplicate libraries.
+    -Wl,-no_warn_duplicate_libraries
+  )
+endif()
+
 # On Linux LLVM tools use system libstdc++ by default, which may not be
 # up-to-date enough. So we want to always use bundled libc++.
 if(LINUX)
   list(APPEND CLANG_COMPILE_OPTIONS -stdlib=libc++)
+  list(APPEND CLANG_LINK_OPTIONS -lc++abi)
 endif()
 
 # On macOS LLVM tools use libc++ by default. When compiling with GCC, I want
@@ -74,17 +86,6 @@ if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
       -cxx-isystem "${LIBSTDCPP_SYS_INCLUDE_DIR}"
     )
   endif()
-endif()
-
-# Define common link options.
-set(CLANG_LINK_OPTIONS ${CLANG_COMPILE_OPTIONS})
-if(APPLE)
-  list(
-    APPEND
-    CLANG_LINK_OPTIONS
-    # Do not warn about duplicate libraries.
-    -Wl,-no_warn_duplicate_libraries
-  )
 endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
