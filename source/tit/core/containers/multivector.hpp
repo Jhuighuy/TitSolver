@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <functional>
 #include <initializer_list>
-#include <numeric>
 #include <ranges>
 #include <span>
 #include <utility>
@@ -18,7 +17,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/mdvector.hpp"
 #include "tit/core/par/algorithms.hpp"
-#include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"
@@ -122,38 +120,6 @@ public:
 
   /// Build the multivector from pairs of bucket indices and values.
   ///
-  /// This version runs sequentially.
-  ///
-  /// @param count Amount of the value buckets to be added.
-  /// @param pairs Range of the pairs of bucket indices and values.
-  template<tuple_range<size_t, Val> Pairs>
-  constexpr void assign_pairs_seq(size_t count, Pairs&& pairs) {
-    assign_pairs_tall_impl_(
-        count,
-        std::bind_front(std::ranges::for_each,
-                        std::views::all(std::forward<Pairs>(pairs))),
-        [](auto& cnt) { return cnt++; });
-  }
-
-  /// Build the multivector from pairs of bucket indices and values.
-  ///
-  /// This version of the function works best when array size is much larger
-  /// than typical size in bucket (multivector is "tall").
-  ///
-  /// @param count Amount of the value buckets to be added.
-  /// @param pairs Range of the pairs of bucket indices and values.
-  template<tuple_range<size_t, Val> Pairs>
-    requires par::range<Pairs>
-  constexpr void assign_pairs_par_tall(size_t count, Pairs&& pairs) {
-    assign_pairs_tall_impl_(
-        count,
-        std::bind_front(par::for_each,
-                        std::views::all(std::forward<Pairs>(pairs))),
-        [](auto& cnt) { return par::fetch_and_add(cnt, 1); });
-  }
-
-  /// Build the multivector from pairs of bucket indices and values.
-  ///
   /// This version of the function works best when array size is much less
   /// than typical size of a bucket (multivector is "wide").
   ///
@@ -183,37 +149,6 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 private:
-
-  template<class ForEachPair, class FetchInc>
-  constexpr void assign_pairs_tall_impl_(size_t count,
-                                         ForEachPair for_each_pair,
-                                         FetchInc fetch_inc) {
-    // Compute how many values there are per each index.
-    // Note: counts are shifted by two in order to avoid shifting the entire
-    // array after assigning the values.
-    val_ranges_.clear(), val_ranges_.resize(count + 2);
-    for_each_pair([&fetch_inc, count, this](const auto& pair) {
-      const auto& index = std::get<0>(pair);
-      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      fetch_inc(val_ranges_[index + 2]);
-    });
-
-    // Compute the bucket ranges from the bucket sizes.
-    std::partial_sum(val_ranges_.begin() + 2,
-                     val_ranges_.end(),
-                     val_ranges_.begin() + 2);
-
-    // Place each value into position of the first element of it's index
-    // range, then increment the position.
-    vals_.resize(val_ranges_.back());
-    for_each_pair([&fetch_inc, count, this](const auto& pair) {
-      const auto& [index, value] = pair;
-      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      auto& position = val_ranges_[index + 1];
-      vals_[fetch_inc(position)] = value;
-    });
-    val_ranges_.pop_back();
-  }
 
   template<class ForEachPair>
   constexpr void assign_pairs_wide_impl_(size_t count,
