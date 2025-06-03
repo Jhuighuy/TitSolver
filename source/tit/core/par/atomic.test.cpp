@@ -52,6 +52,14 @@ TEST_CASE("par::wait") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("par::exchange") {
+  constexpr auto expected = 10;
+  constexpr auto desired = 20;
+  auto val = expected;
+  CHECK(par::exchange(val, desired) == expected);
+  CHECK(val == desired);
+}
+
 TEST_CASE("par::compare_exchange") {
   constexpr auto expected = 10;
   constexpr auto desired = 20;
