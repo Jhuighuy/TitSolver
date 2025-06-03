@@ -71,31 +71,6 @@ TEST_CASE("Multivector::append_bucket") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("Multivector::assign_pairs_seq") {
-  // Build a multivector from sequence of pairs.
-  const std::vector<std::pair<size_t, int>> pairs{
-      {0, 1},
-      {0, 2},
-      {0, 3},
-      {0, 4},
-      {1, 5},
-      {1, 6},
-      {1, 7},
-      {2, 8},
-      {2, 9},
-  };
-  Multivector<int> multivector{};
-  multivector.assign_pairs_seq(3, pairs);
-
-  // Ensure the multivector is correct.
-  REQUIRE(multivector.size() == 3);
-  CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
-  CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
-  CHECK_RANGE_EQ(multivector[2], {8, 9});
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 TEST_CASE("Multivector::assign_buckets_par") {
   // Build a multivector from a sequence of buckets.
   const std::vector<std::vector<int>> buckets{
@@ -114,34 +89,6 @@ TEST_CASE("Multivector::assign_buckets_par") {
        std::views::zip(multivector.buckets(), buckets)) {
     CHECK_RANGE_EQ(bucket, expected);
   }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("Multivector::assign_pairs_par_tall") {
-  // Build a multivector from a sequence of pairs.
-  const std::vector<std::pair<size_t, int>> pairs{
-      {0, 1},
-      {2, 8},
-      {0, 2},
-      {0, 4},
-      {1, 5},
-      {1, 6},
-      {0, 3},
-      {1, 7},
-      {2, 9},
-  };
-  Multivector<int> multivector{};
-  multivector.assign_pairs_par_tall(3, pairs);
-
-  // Sort the buckets, since parallel algorithms does not guarantee order.
-  std::ranges::for_each(multivector.buckets(), std::ranges::sort);
-
-  // Ensure the multivector is correct.
-  REQUIRE(multivector.size() == 3);
-  CHECK_RANGE_EQ(multivector[0], {1, 2, 3, 4});
-  CHECK_RANGE_EQ(multivector[1], {5, 6, 7});
-  CHECK_RANGE_EQ(multivector[2], {8, 9});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

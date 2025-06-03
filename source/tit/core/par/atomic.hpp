@@ -72,6 +72,14 @@ inline auto wait(const Val& val, Val old) noexcept -> Val {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Atomically exchange the value.
+template<MemOrder Order = MemOrder::relaxed, atomic Val>
+[[gnu::always_inline]]
+inline auto exchange(Val& val, std::type_identity_t<Val> desired) noexcept
+    -> Val {
+  return __atomic_exchange_n(&val, desired, std::to_underlying(Order));
+}
+
 /// Atomically compare and exchange the value.
 template<MemOrder SuccessOrder = MemOrder::relaxed,
          MemOrder FailureOrder = MemOrder::relaxed,
