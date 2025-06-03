@@ -10,12 +10,14 @@
 #include <iterator>
 #include <ranges>
 #include <utility>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/containers/multivector.hpp"
 #include "tit/core/func.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/par/algorithms.hpp"
+#include "tit/core/par/atomic.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -34,10 +36,10 @@ template<point_range Points>
 class GridIndex final {
 public:
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   /// Point type.
   using Vec = std::ranges::range_value_t<Points>;
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Index the points for search using a grid.
   ///
@@ -45,19 +47,17 @@ public:
   GridIndex(Points points, vec_num_t<Vec> size_hint)
       : points_{std::move(points)} {
     TIT_ASSERT(size_hint > 0.0, "Cell size hint must be positive!");
-
-    // Compute bounding box and initialize the grid.
     const auto box = compute_bbox(points_).grow(size_hint / 2);
-    // NOLINTNEXTLINE(*-prefer-member-initializer)
     grid_ = Grid{box}.set_cell_extents(size_hint);
-
-    // Pack the points into a multivector.
-    cell_points_.assign_pairs_par_tall(
-        grid_.flat_num_cells(),
-        iota_perm(points_) | std::views::transform([this](size_t point) {
-          const auto cell = grid_.flat_cell_index(points_[point]);
-          return std::pair{cell, point};
-        }));
+    first_point_.assign(grid_.flat_num_cells(), npos);
+    next_point_.resize(std::ranges::size(points_));
+    par::transform(std::views::enumerate(points_),
+                   next_point_.begin(),
+                   [this](const auto& index_and_point) {
+                     const auto& [index, point] = index_and_point;
+                     const auto cell = grid_.flat_cell_index(point);
+                     return par::exchange(first_point_[cell], index);
+                   });
   }
 
   /// Find the points within the radius to the given point.
@@ -67,23 +67,19 @@ public:
               vec_num_t<Vec> search_radius,
               OutIter out,
               Pred pred = {}) const -> OutIter {
-    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
-
-    // Calculate the search box.
+    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive!");
     const auto search_box = BBox{search_point}.grow(search_radius);
-
-    // Collect points within the search box.
-    const auto search_dist = pow2(search_radius);
-    for (const auto& cell_index : grid_.cells_intersecting(search_box)) {
-      const auto flat_cell_index = grid_.flatten_cell_index(cell_index);
-      out = copy_points_near(points_,
-                             cell_points_[flat_cell_index],
-                             out,
-                             search_point,
-                             search_dist,
-                             pred);
+    const auto search_radius_sq = pow2(search_radius);
+    for (const auto& cell : grid_.cells_intersecting(search_box)) {
+      for (auto index = first_point_[grid_.flatten_cell_index(cell)];
+           index != npos;
+           index = next_point_[index]) {
+        if (pred(index) &&
+            norm2(points_[index] - search_point) < search_radius_sq) {
+          *out++ = index;
+        }
+      }
     }
-
     return out;
   }
 
@@ -93,7 +89,8 @@ private:
 
   Points points_;
   Grid<Vec> grid_;
-  Multivector<size_t> cell_points_;
+  std::vector<size_t> first_point_;
+  std::vector<size_t> next_point_;
 
 }; // class GridIndex
 
