@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <memory>
+#include <span>
 #include <type_traits>
 
 #ifndef TBB_PREVIEW_MEMORY_POOL
@@ -15,6 +16,7 @@
 
 #include <oneapi/tbb/memory_pool.h>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 
@@ -28,6 +30,11 @@ template<class Val>
 class MemoryPool final {
 public:
 
+  /// Reset the memory pool.
+  void reset() {
+    pool_ = std::make_unique<typename decltype(pool_)::element_type>();
+  }
+
   /// Allocate and initialize the new value from @p args.
   template<class... Args>
     requires std::constructible_from<Val, Args&&...>
@@ -38,6 +45,22 @@ public:
                "Memory pool failed to allocate {} bytes.",
                sizeof(Val));
     return std::construct_at(ptr, std::forward<Args>(args)...);
+  }
+
+  /// Allocate and initialize the new values from @p args.
+  template<class... Args>
+    requires std::constructible_from<Val, Args&&...>
+  [[nodiscard]] auto create_n(size_t count, Args&&... /*args*/)
+      -> std::span<Val> {
+    TIT_ASSERT(pool_ != nullptr, "Memory pool was moved away!");
+    auto* const ptr = static_cast<Val*>(pool_->malloc(sizeof(Val) * count));
+    TIT_ENSURE(ptr != nullptr,
+               "Memory pool failed to allocate {} bytes.",
+               sizeof(Val) * count);
+    std::span result{ptr, count};
+    // std::ranges::uninitialized_fill_n(result.begin(),
+    //                                   Val{std::forward<Args>(args)...});
+    return result;
   }
 
 private:

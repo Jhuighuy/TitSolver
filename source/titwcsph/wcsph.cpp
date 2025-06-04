@@ -174,7 +174,7 @@ void sph_main(CmdArgs /*args*/) {
       const StopwatchCycle cycle{exectime};
       time_integrator.step(dt, mesh, particles);
     }
-    const auto end = time * sqrt(g / H) >= 6.9;
+    const auto end = time * sqrt(g / H) >= 1.0;
     if ((n % 100 == 0 && n != 0) || end) {
       const StopwatchCycle cycle{printtime};
       particles.write(time * sqrt(g / H), series);

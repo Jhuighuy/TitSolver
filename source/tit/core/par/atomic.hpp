@@ -107,6 +107,13 @@ inline auto fetch_and_add(Val& val, difference_t<Val> delta) noexcept -> Val {
   return __atomic_fetch_add(&val, delta, std::to_underlying(Order));
 }
 
+/// Atomically perform subtraction and return what was stored before.
+template<MemOrder Order = MemOrder::relaxed, atomic Val>
+[[gnu::always_inline]]
+inline auto fetch_and_sub(Val& val, difference_t<Val> delta) noexcept -> Val {
+  return __atomic_fetch_sub(&val, delta, std::to_underlying(Order));
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // NOLINTEND(*-pro-type-vararg)
