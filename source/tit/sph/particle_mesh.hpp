@@ -10,6 +10,7 @@
 #include <iterator>
 #include <limits>
 #include <ranges>
+#include <span>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -19,6 +20,7 @@
 #include "tit/core/containers/multivector.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par/algorithms.hpp"
+#include "tit/core/par/arena.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
@@ -29,8 +31,6 @@
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
-
-#include "tit/graph/graph.hpp"
 
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -88,15 +88,6 @@ public:
                [&particles](size_t b) { return particles[b]; });
   }
 
-  /// Unique pairs of the adjacent particles.
-  template<particle_array ParticleArray>
-  constexpr auto pairs(ParticleArray& particles) const noexcept {
-    return adjacency_.edges() | std::views::transform([&particles](auto ab) {
-             const auto [a, b] = ab;
-             return std::pair{particles[a], particles[b]};
-           });
-  }
-
   /// Unique pairs of the adjacent particles partitioned by the block.
   template<particle_array ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
@@ -139,32 +130,34 @@ private:
     // Search for the neighbors.
     par::TaskGroup search_tasks{};
     search_tasks.run([&particles, &radius_func, &search_index, this] {
-      static std::vector<std::vector<size_t>> adjacency_buckets{};
-      adjacency_buckets.resize(particles.size());
-      par::for_each(particles.all(), [&radius_func, &search_index](PV a) {
+      adjacency_arena_.reset();
+      adjacency_.resize(particles.size());
+      par::for_each(particles.all(), [&radius_func, &search_index, this](PV a) {
         const auto& search_point = r[a];
         const auto search_radius = radius_func(a);
         TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
 
         // Search for the neighbors for the current particle and store the
         // sorted results.
-        auto& search_results = adjacency_buckets[a.index()];
-        search_results.clear();
-        search_index.search(search_point,
-                            search_radius,
-                            std::back_inserter(search_results));
+        const auto count_estimate =
+            search_index.estimate_count(search_point, search_radius);
+        const auto memory = adjacency_arena_.allocate(count_estimate);
+        const auto end_iter =
+            search_index.search(search_point, search_radius, memory.begin());
+
+        const std::span search_results{memory.begin(), end_iter};
         std::ranges::sort(search_results);
+        adjacency_[a.index()] = memory;
       });
-      adjacency_.assign_buckets_par(adjacency_buckets);
     });
 
     // Search for the interpolation points for the fixed particles.
     search_tasks.run([&particles, &radius_func, &search_index, this] {
-      static std::vector<std::vector<size_t>> interp_adjacency_buckets{};
-      interp_adjacency_buckets.resize(particles.fixed().size());
+      interp_adjacency_arena_.reset();
+      interp_adjacency_.resize(particles.fixed().size());
       par::for_each( //
           std::views::enumerate(particles.fixed()),
-          [&radius_func, &search_index, &particles](const auto& ia) {
+          [&radius_func, &search_index, &particles, this](const auto& ia) {
             const auto& [i, a] = ia;
 
             /// @todo Once we have a proper geometry library, we should use
@@ -177,7 +170,7 @@ private:
 
             // Search for the neighbors for the interpolation point and
             // store the sorted results.
-            auto& search_results = interp_adjacency_buckets[i];
+            thread_local std::vector<size_t> search_results{};
             search_results.clear();
             search_index.search( //
                 interp_point,
@@ -187,8 +180,12 @@ private:
                   return particles.has_type(b, ParticleType::fluid);
                 });
             std::ranges::sort(search_results);
+
+            const auto memory =
+                interp_adjacency_arena_.allocate(search_results.size());
+            std::ranges::copy(search_results, memory.begin());
+            interp_adjacency_[i] = memory;
           });
-      interp_adjacency_.assign_buckets_par(interp_adjacency_buckets);
     });
 
     search_tasks.wait();
@@ -255,13 +252,30 @@ private:
     }
 
     // Assemble the block adjacency graph.
-    block_edges_.assign_pairs_par_wide(
-        num_parts,
-        adjacency_.transform_edges([parts](const auto& ab) {
-          const auto [a, b] = ab;
-          const auto part_ab = PartVec::common(parts[a], parts[b]);
-          return std::pair{part_ab, ab};
-        }));
+    {
+      TIT_PROFILE_SECTION("ParticleMesh::partition()::assign_pairs_par_wide");
+      block_edges_.assign_pairs_par_wide(
+          num_parts,
+          (std::views::iota(0UZ, adjacency_.size()) |
+           std::views::transform([this, parts](size_t row_index) {
+             return adjacency_[row_index] |
+                    // Take only lower part of the row.
+                    std::views::take_while([row_index](size_t col_index) {
+                      return col_index < row_index;
+                    }) |
+                    // Pack row and column indices into a tuple.
+                    std::views::transform([row_index](size_t col_index) {
+                      return std::tuple{col_index, row_index};
+                    }) |
+                    // Apply the transformation function.
+                    std::views::transform([parts](const auto& ab) {
+                      const auto [a, b] = ab;
+                      const auto part_ab = PartVec::common(parts[a], parts[b]);
+                      return std::pair{part_ab, ab};
+                    });
+           }) |
+           std::views::join));
+    }
 
     // Report the block sizes.
     TIT_STATS("ParticleMesh::block_edges_", block_edges_.bucket_sizes());
@@ -269,8 +283,10 @@ private:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  graph::Graph adjacency_;
-  graph::Graph interp_adjacency_;
+  par::Arena<size_t> adjacency_arena_;
+  par::Arena<size_t> interp_adjacency_arena_;
+  std::vector<std::span<size_t>> adjacency_;
+  std::vector<std::span<size_t>> interp_adjacency_;
   Multivector<std::pair<size_t, size_t>> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;

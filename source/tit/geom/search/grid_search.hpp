@@ -51,13 +51,28 @@ public:
     grid_ = Grid{box}.set_cell_extents(size_hint);
     first_point_.assign(grid_.flat_num_cells(), npos);
     next_point_.resize(std::ranges::size(points_));
+    num_points_.resize(grid_.flat_num_cells());
     par::transform(std::views::enumerate(points_),
                    next_point_.begin(),
                    [this](const auto& index_and_point) {
                      const auto& [index, point] = index_and_point;
                      const auto cell = grid_.flat_cell_index(point);
+                     par::fetch_and_add(num_points_[cell], 1);
                      return par::exchange(first_point_[cell], index);
                    });
+  }
+
+  /// Calculate the upper bound on the number of points within the radius to the
+  /// given point.
+  auto estimate_count(const Vec& search_point,
+                      vec_num_t<Vec> search_radius) const -> size_t {
+    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive!");
+    size_t count = 0;
+    for (const auto search_box = BBox{search_point}.grow(search_radius);
+         const auto& cell : grid_.cells_intersecting(search_box)) {
+      count += num_points_[grid_.flatten_cell_index(cell)];
+    }
+    return count;
   }
 
   /// Find the points within the radius to the given point.
@@ -90,6 +105,7 @@ private:
   Grid<Vec> grid_;
   std::vector<size_t> first_point_;
   std::vector<size_t> next_point_;
+  std::vector<size_t> num_points_;
 
 }; // class GridIndex
 
