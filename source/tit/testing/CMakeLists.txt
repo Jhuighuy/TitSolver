@@ -13,6 +13,7 @@ add_tit_library(
     "test.hpp"
     "test_main.cpp"
   DEPENDS
+    tit::core
     doctest::doctest
 )
 

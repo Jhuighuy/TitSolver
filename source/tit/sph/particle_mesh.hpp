@@ -18,7 +18,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/multivector.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/par/task_group.hpp"
@@ -269,7 +268,7 @@ private:
 
   graph::Graph adjacency_;
   graph::Graph interp_adjacency_;
-  Multivector<std::pair<size_t, size_t>> block_edges_;
+  Multivector<graph::edge_t> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;
   [[no_unique_address]] InterfacePartitionFunc interface_partition_func_;

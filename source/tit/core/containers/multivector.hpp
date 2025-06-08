@@ -18,7 +18,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/mdvector.hpp"
-#include "tit/core/missing.hpp" // IWYU pragma: keep
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/atomic.hpp"
 #include "tit/core/par/control.hpp"
@@ -57,7 +56,7 @@ public:
 
   /// Range of bucket sizes.
   constexpr auto bucket_sizes() const noexcept {
-    return val_ranges_ | std::views::adjacent_transform<2>(
+    return val_ranges_ | std::views::pairwise_transform(
                              [](size_t a, size_t b) { return b - a; });
   }
 
@@ -109,7 +108,7 @@ public:
     size_t num_values = 0;
     val_ranges_.clear(), val_ranges_.resize(std::size(buckets) + 1);
     for (const auto& [index, bucket] :
-         std::views::as_const(std::views::enumerate(buckets))) {
+         std::views::enumerate(buckets) | std::views::as_const) {
       const auto bucket_size = std::size(bucket);
       val_ranges_[index + 1] = num_values + bucket_size;
       num_values += bucket_size;

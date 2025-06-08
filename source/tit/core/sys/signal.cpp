@@ -125,7 +125,7 @@ FatalSignalHandler::FatalSignalHandler()
              .option(SIGTRAP, "SIGTRAP (trace/breakpoint trap)")
              .option(SIGTERM, "SIGTERM")
              .fallback("unknown signal"));
-    dump(".\n\nStacktrace:\n");
+    dump(".\n\nStack trace:\n");
     dump_backtrace();
     fast_exit(ExitCode::failure);
   }

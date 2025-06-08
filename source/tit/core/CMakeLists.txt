@@ -3,6 +3,10 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+add_subdirectory("_cxx")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 add_tit_library(
   NAME
     core
@@ -25,9 +29,13 @@ add_tit_library(
     "checks.hpp"
     "cmd.cpp"
     "cmd.hpp"
-    "containers/boost.hpp"
+    "containers/inplace_vector.hpp"
+    "containers/inplace_flat_map.hpp"
     "containers/mdvector.hpp"
     "containers/multivector.hpp"
+    "containers/priority_queue.hpp"
+    "containers/small_flat_map.hpp"
+    "containers/small_vector.hpp"
     "enum_utils.hpp"
     "exception.cpp"
     "exception.hpp"
@@ -36,7 +44,6 @@ add_tit_library(
     "mat.hpp"
     "math.hpp"
     "meta.hpp"
-    "missing.hpp"
     "numbers/dual.hpp"
     "numbers/strict.hpp"
     "par/algorithms.hpp"
@@ -58,7 +65,6 @@ add_tit_library(
     "sys/malloc.cpp"
     "sys/signal.cpp"
     "sys/signal.hpp"
-    "sys/stacktrace.hpp"
     "sys/utils.cpp"
     "sys/utils.hpp"
     "time.hpp"
@@ -68,9 +74,9 @@ add_tit_library(
     "utils.hpp"
     "vec.hpp"
   DEPENDS
+    _cxx
     Boost::container
     Boost::core
-    Boost::stacktrace_addr2line
     gcem
     hwy::hwy
     mimalloc-static
@@ -96,6 +102,7 @@ add_tit_executable(
     "_vec/vec.test.cpp"
     "containers/mdvector.test.cpp"
     "containers/multivector.test.cpp"
+    "containers/priority_queue.test.cpp"
     "enum_utils.test.cpp"
     "math.test.cpp"
     "meta.test.cpp"
