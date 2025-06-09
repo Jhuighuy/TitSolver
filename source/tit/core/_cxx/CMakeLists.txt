@@ -3,31 +3,8 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_library(
-  NAME
-    testing
-  TYPE
-    OBJECT
-  SOURCES
-    "integrals.hpp"
-    "test.hpp"
-    "test_main.cpp"
-  DEPENDS
-    tit::core
-    doctest::doctest
-)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_tit_executable(
-  NAME
-    testing_tests
-  SOURCES
-    "integrals.test.cpp"
-  DEPENDS
-    tit::core
-    tit::geom
-    tit::testing
-)
+add_library(_cxx INTERFACE)
+target_include_directories(_cxx INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(_cxx INTERFACE Boost::stacktrace_addr2line)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
