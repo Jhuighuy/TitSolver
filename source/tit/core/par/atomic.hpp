@@ -13,17 +13,12 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/type_utils.hpp"
 
 namespace tit::par {
 
 // NOLINTBEGIN(*-pro-type-vararg)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Atomic type.
-template<class Val>
-concept atomic = std::integral<Val> || std::is_pointer_v<Val>;
 
 /// Memory order.
 enum class MemOrder : uint8_t {
@@ -37,23 +32,24 @@ enum class MemOrder : uint8_t {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Atomically load the value.
-template<MemOrder Order = MemOrder::acquire, atomic Val>
+template<MemOrder Order = MemOrder::acquire, std::integral Val>
 [[gnu::always_inline]]
 inline auto load(const Val& val) noexcept -> Val {
   return __atomic_load_n(&val, std::to_underlying(Order));
 }
 
 /// Atomically store the value.
-template<MemOrder Order = MemOrder::release, atomic Val>
+template<MemOrder Order = MemOrder::release, std::integral Val>
 [[gnu::always_inline]]
-inline void store(Val& val, Val desired) noexcept {
+inline void store(Val& val, std::type_identity_t<Val> desired) noexcept {
   __atomic_store_n(&val, desired, std::to_underlying(Order));
 }
 
 /// Atomically wait for the value to change.
-template<MemOrder Order = MemOrder::acquire, atomic Val>
+template<MemOrder Order = MemOrder::acquire, std::integral Val>
 [[gnu::always_inline]]
-inline auto wait(const Val& val, Val old) noexcept -> Val {
+inline auto wait(const Val& val, std::type_identity_t<Val> old) noexcept
+    -> Val {
   // Try a few quick spins with yield first.
   constexpr size_t max_spins = 16;
   for (size_t spin = 0; spin < max_spins; ++spin) {
@@ -75,7 +71,7 @@ inline auto wait(const Val& val, Val old) noexcept -> Val {
 /// Atomically compare and exchange the value.
 template<MemOrder SuccessOrder = MemOrder::relaxed,
          MemOrder FailureOrder = MemOrder::relaxed,
-         atomic Val>
+         std::integral Val>
 [[gnu::always_inline]]
 inline auto compare_exchange(Val& val,
                              std::type_identity_t<Val> expected,
@@ -93,9 +89,10 @@ inline auto compare_exchange(Val& val,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Atomically perform addition and return what was stored before.
-template<MemOrder Order = MemOrder::relaxed, atomic Val>
+template<MemOrder Order = MemOrder::relaxed, std::integral Val>
 [[gnu::always_inline]]
-inline auto fetch_and_add(Val& val, difference_t<Val> delta) noexcept -> Val {
+inline auto fetch_and_add(Val& val, std::type_identity_t<Val> delta) noexcept
+    -> Val {
   return __atomic_fetch_add(&val, delta, std::to_underlying(Order));
 }
 

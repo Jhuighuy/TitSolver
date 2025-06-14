@@ -20,8 +20,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/small_vector.hpp"
-#include "tit/core/log.hpp"
-#include "tit/core/utils.hpp"
+#include "tit/core/print.hpp"
+#include "tit/core/type.hpp"
 
 namespace tit {
 

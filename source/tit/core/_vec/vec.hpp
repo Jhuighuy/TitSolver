@@ -17,7 +17,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
-#include "tit/core/tuple_utils.hpp"
+#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -328,12 +328,6 @@ template<class Num, class... RestNums>
 Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Make a zero vector.
-template<class Num, size_t Dim>
-constexpr auto zero(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
-  return {};
-}
 
 /// Make a unit vector.
 template<size_t Axis = 0, class Num, size_t Dim>
@@ -664,7 +658,7 @@ constexpr auto approx_equal_to(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
 ///
 /// @returns 3D vector with a result of cross product.
 template<class Num, size_t Dim>
-  requires in_range_v<Dim, 1, 3>
+  requires (in_range(Dim, 1, 3))
 constexpr auto cross(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
     -> Vec<Num, 3> {
   Vec<Num, 3> r{};

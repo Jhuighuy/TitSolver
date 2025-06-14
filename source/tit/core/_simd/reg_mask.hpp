@@ -15,7 +15,7 @@
 #include "tit/core/_simd/traits.hpp"
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/type_utils.hpp"
+#include "tit/core/type.hpp"
 
 namespace tit::simd {
 
@@ -30,7 +30,7 @@ class alignas(sizeof(Num) * Size) RegMask final {
 public:
 
   /// Highway tag type.
-  using Tag = hn::FixedTag<impl::fixed_width_type_t<Num>, Size>;
+  using Tag = hn::FixedTag<normalize_type_t<Num>, Size>;
 
   /// Highway mask register type.
   using Base = hn::Mask<Tag>;

@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "tit/core/checks.hpp"
-#include "tit/core/io.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/str_utils.hpp"
+#include "tit/core/str.hpp"
 #include "tit/core/sys/utils.hpp"
 #include "tit/core/time.hpp"
 
