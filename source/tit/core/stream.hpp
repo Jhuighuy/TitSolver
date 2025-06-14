@@ -20,7 +20,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/small_vector.hpp"
-#include "tit/core/log.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/type.hpp"
 
 namespace tit {
@@ -132,7 +132,7 @@ struct FlushDeleter : std::default_delete<Flushable> {
     try {
       stream->flush();
     } catch (const std::exception& e) {
-      TIT_ERROR("Failed to flush: {}", e.what());
+      err("Failed to flush: {}", e.what());
     }
     std::default_delete<Flushable>::operator()(stream);
   }
@@ -302,7 +302,7 @@ public:
     try {
       callback_(written_);
     } catch (const std::exception& e) {
-      TIT_ERROR("Failed to call on_finish: {}", e.what());
+      err("Failed to call on_finish: {}", e.what());
     }
   }
 

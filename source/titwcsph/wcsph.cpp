@@ -1,6 +1,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/cmd.hpp"
-#include "tit/core/log.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 
@@ -113,8 +113,8 @@ auto sph_main(CmdArgs /*args*/) -> int {
       r[a] = dr * Vec{i + Real{0.5}, j + Real{0.5}};
     }
   }
-  TIT_INFO("Num. fixed particles: {}", num_fixed_particles);
-  TIT_INFO("Num. fluid particles: {}", num_fluid_particles);
+  log("Num. fixed particles: {}", num_fixed_particles);
+  log("Num. fluid particles: {}", num_fluid_particles);
 
   // Set global particle constants.
   m[particles] = m_0;
@@ -164,11 +164,11 @@ auto sph_main(CmdArgs /*args*/) -> int {
   Stopwatch exectime{};
   Stopwatch printtime{};
   for (size_t n = 0;; ++n) {
-    TIT_INFO("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
-             n,
-             time * sqrt(g / H),
-             exectime.cycle(),
-             printtime.cycle());
+    log("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
+        n,
+        time * sqrt(g / H),
+        exectime.cycle(),
+        printtime.cycle());
     {
       const StopwatchCycle cycle{exectime};
       time_integrator.step(dt, mesh, particles);
