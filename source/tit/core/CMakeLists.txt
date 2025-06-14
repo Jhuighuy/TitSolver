@@ -39,7 +39,6 @@ add_tit_library(
     "exception.cpp"
     "exception.hpp"
     "func.hpp"
-    "log.hpp"
     "mat.hpp"
     "math.hpp"
     "numbers/dual.hpp"

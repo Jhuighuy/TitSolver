@@ -17,7 +17,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/log.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
@@ -57,9 +57,9 @@ Database::Database(const std::filesystem::path& path, bool read_only) {
 void Database::Closer_::operator()(sqlite3* db) {
   if (const auto status = sqlite3_close_v2(db); status != SQLITE_OK) {
     // Let's not throw in destructors.
-    TIT_ERROR("SQLite database close failed ({}): {}",
-              status,
-              error_message(status, db));
+    err("SQLite database close failed ({}): {}",
+        status,
+        error_message(status, db));
   }
 }
 
@@ -126,9 +126,9 @@ void Statement::Finalizer_::operator()(sqlite3_stmt* stmt) {
     // `sqlite3_finalize` returns an error code if any usage of the statement
     // resulted in an error, so we've must have already thrown an exception.
     // So, let's just log the error here and return peacefully.
-    TIT_ERROR("SQLite statement close failed ({}): {}",
-              status,
-              error_message(status));
+    err("SQLite statement close failed ({}): {}",
+        status,
+        error_message(status));
   }
 }
 
@@ -362,9 +362,7 @@ void BlobReader::Finalizer_::operator()(sqlite3_blob* blob) {
   const auto status = sqlite3_blob_close(blob);
   if (status != SQLITE_OK) {
     // Let's not throw in destructors.
-    TIT_ERROR("SQLite blob close failed ({}): {}",
-              status,
-              error_message(status));
+    err("SQLite blob close failed ({}): {}", status, error_message(status));
   }
 }
 

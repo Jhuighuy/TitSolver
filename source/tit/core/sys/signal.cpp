@@ -9,6 +9,7 @@
 #include <initializer_list>
 #include <ranges>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <execinfo.h>
@@ -16,8 +17,8 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/log.hpp"
 #include "tit/core/par/control.hpp"
+#include "tit/core/print.hpp"
 #include "tit/core/sys/signal.hpp"
 #include "tit/core/sys/utils.hpp"
 #include "tit/core/utils.hpp"
@@ -55,8 +56,8 @@ SignalHandler::~SignalHandler() noexcept { // NOLINT(*-exception-escape)
   // Restore the old signal handlers or actions.
   for (const auto& [signal_number, prev_handler] : prev_handlers_) {
     if (std::signal(signal_number, prev_handler) == SIG_ERR) {
-      TIT_ERROR("Unable to restore the previous handler for signal {}!",
-                signal_number);
+      err("Unable to restore the previous handler for signal {}!",
+          signal_number);
     }
   }
 
@@ -85,8 +86,7 @@ namespace {
 
 // Dump a message in the "async-signal-safe" way.
 void dump(std::string_view message) noexcept {
-  const auto result = write(STDERR_FILENO, message.data(), message.size());
-  static_cast<void>(result); // Ignore the result.
+  std::ignore = write(STDERR_FILENO, message.data(), message.size());
 }
 
 // Dump backtrace in the "async-signal-safe" way.
