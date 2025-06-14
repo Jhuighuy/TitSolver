@@ -9,6 +9,7 @@
 #include <initializer_list>
 #include <ranges>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <execinfo.h>
@@ -85,8 +86,7 @@ namespace {
 
 // Dump a message in the "async-signal-safe" way.
 void dump(std::string_view message) noexcept {
-  const auto result = write(STDERR_FILENO, message.data(), message.size());
-  static_cast<void>(result); // Ignore the result.
+  std::ignore = write(STDERR_FILENO, message.data(), message.size());
 }
 
 // Dump backtrace in the "async-signal-safe" way.
