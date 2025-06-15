@@ -13,6 +13,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/func.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"

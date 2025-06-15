@@ -6,7 +6,6 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <charconv>
 #include <concepts>
@@ -39,23 +38,23 @@ concept str_like = std::is_object_v<Str> && //
 class CStrView final : public std::string_view {
 public:
 
-  /// Construct an empty string view.
-  constexpr CStrView() noexcept = default;
+  /// Construct a zero-terminated string view from a string literal.
+  template<size_t Size>
+    requires (Size > 0)
+  consteval explicit(false) CStrView(carr_ref_t<const char, Size> str) noexcept
+      : std::string_view{static_cast<const char*>(str), Size - 1} {
+    TIT_ASSERT(str[Size - 1] == '\0', "String is not zero-terminated!");
+  }
 
-  /// Construct a zero-terminated string view.
-  /// @{
-  constexpr explicit(false) CStrView(const std::string& str) noexcept
-      : std::string_view{str} {}
-  constexpr explicit(false) CStrView(const char* str) noexcept
+  /// Construct a zero-terminated string view from a raw pointer.
+  constexpr explicit CStrView(const char* str) noexcept
       : std::string_view{str} {
     TIT_ASSERT(str != nullptr, "String is null!");
   }
-  constexpr CStrView(const char* str, size_t size) noexcept
-      : std::string_view{str, size} {
-    // NOLINTNEXTLINE(*-pro-bounds-pointer-arithmetic)
-    TIT_ASSERT(c_str()[size] == '\0', "String is not zero-terminated!");
-  }
-  /// @}
+
+  /// Construct a zero-terminated string view from a string.
+  constexpr explicit(false) CStrView(const std::string& str) noexcept
+      : std::string_view{str} {}
 
   /// Get the underlying zero-terminated string.
   constexpr auto c_str() const noexcept -> const char* {
@@ -66,41 +65,6 @@ public:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Compile-time string literal.
-template<size_t Size>
-class StrLiteral final {
-public:
-
-  /// Construct a string literal.
-  constexpr explicit(false) StrLiteral( //
-      carr_ref_t<const char, Size + 1> str) noexcept
-      : data_{std::to_array(str)} {}
-
-  /// Construct a string literal from a C string view.
-  constexpr explicit(false) operator CStrView() const noexcept {
-    return {c_str(), size()};
-  }
-
-  /// Get the string size.
-  constexpr auto size() const noexcept -> size_t {
-    return Size;
-  }
-
-  /// Get the underlying zero-terminated string.
-  constexpr auto c_str() const noexcept -> const char* {
-    return data_.data();
-  }
-
-  // NOLINTNEXTLINE(*-non-private-member-variables-in-classes)
-  std::array<char, Size + 1> data_;
-
-}; // class StrLiteral
-
-template<size_t SizePlusOne>
-StrLiteral(carr_ref_t<const char, SizePlusOne>) -> StrLiteral<SizePlusOne - 1>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// String hash function.
 struct StrHash final {
   using is_transparent = void;
@@ -108,7 +72,7 @@ struct StrHash final {
     constexpr std::hash<std::string_view> hasher{};
     return hasher(str);
   }
-}; // struct StrHash
+};
 
 /// String hash set.
 using StrHashSet = std::unordered_set<std::string, StrHash, std::equal_to<>>;
@@ -120,7 +84,7 @@ using StrHashMap =
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// String case-insensitive comparison.
+/// String case-insensitive comparison function.
 struct StrNocaseEqual final {
   using is_transparent = void;
   constexpr auto operator()(char a, char b) const noexcept -> bool {
@@ -179,9 +143,5 @@ struct StrTo<bool> final {
 // Formatter for `CStrView`.
 template<>
 struct std::formatter<tit::CStrView> : std::formatter<std::string_view> {};
-
-// Formatter for `StrLiteral`.
-template<tit::size_t Size>
-struct std::formatter<tit::StrLiteral<Size>> : std::formatter<tit::CStrView> {};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

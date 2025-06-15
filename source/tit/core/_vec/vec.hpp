@@ -329,12 +329,6 @@ Vec(Num, RestNums...) -> Vec<Num, 1 + sizeof...(RestNums)>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Make a zero vector.
-template<class Num, size_t Dim>
-constexpr auto zero(const Vec<Num, Dim>& /*a*/) -> Vec<Num, Dim> {
-  return {};
-}
-
 /// Make a unit vector.
 template<size_t Axis = 0, class Num, size_t Dim>
 constexpr auto unit(const Vec<Num, Dim>& /*a*/, const Num& n = Num{1.0})
@@ -664,7 +658,7 @@ constexpr auto approx_equal_to(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
 ///
 /// @returns 3D vector with a result of cross product.
 template<class Num, size_t Dim>
-  requires in_range_v<Dim, 1, 3>
+  requires (in_range(Dim, 1, 3))
 constexpr auto cross(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
     -> Vec<Num, 3> {
   Vec<Num, 3> r{};

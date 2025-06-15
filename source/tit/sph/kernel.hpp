@@ -11,7 +11,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/meta.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/field.hpp"
@@ -29,10 +29,10 @@ class Kernel {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr meta::Set required_fields{r, h};
+  static constexpr TypeSet required_fields{r, h};
 
   /// Set of particle fields that are modified.
-  static constexpr meta::Set modified_fields{/*empty*/};
+  static constexpr TypeSet modified_fields{/*empty*/};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
