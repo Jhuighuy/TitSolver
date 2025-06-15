@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "tit/core/io.hpp" // IWYU pragma: keep
+#include "tit/core/print.hpp" // IWYU pragma: keep
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
