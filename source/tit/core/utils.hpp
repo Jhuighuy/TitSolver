@@ -37,13 +37,6 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Predicate that is always true.
-struct AlwaysTrue final {
-  constexpr auto operator()(const auto& /*arg*/) const noexcept -> bool {
-    return true;
-  }
-};
-
 /// Check if the given value is in the range [ @p a, @p b ].
 template<class T>
 constexpr auto in_range(T x,

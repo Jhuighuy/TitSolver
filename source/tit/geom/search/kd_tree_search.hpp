@@ -16,12 +16,12 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/func.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/par/memory_pool.hpp"
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
