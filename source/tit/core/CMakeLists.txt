@@ -32,6 +32,7 @@ add_tit_library(
     "containers/fixed_array.hpp"
     "containers/inplace_flat_map.hpp"
     "containers/inplace_vector.hpp"
+    "containers/inplace_vector2.hpp"
     "containers/mdvector.hpp"
     "containers/multivector.hpp"
     "containers/priority_queue.hpp"
