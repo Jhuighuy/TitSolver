@@ -9,6 +9,7 @@ add_tit_library(
   SOURCES
     "mapping.hpp"
     "solver.hpp"
+    "solver_bicgstab.hpp"
     "solver_cg.hpp"
     "solver_cgs.hpp"
     "solvers.hpp"
