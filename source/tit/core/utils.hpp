@@ -65,6 +65,12 @@ constexpr auto is_any_of(T x, Us... us) noexcept -> bool {
   return (... || (x == us));
 }
 
+/// Check that the value is equal to all of the given values.
+template<class T, std::same_as<T>... Us>
+constexpr auto is_all_of(T x, Us... us) noexcept -> bool {
+  return (... && (x == us));
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Translator for a given key.
