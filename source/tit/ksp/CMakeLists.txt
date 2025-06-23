@@ -7,6 +7,9 @@ add_tit_library(
   NAME
     ksp
   SOURCES
+    "mapping.hpp"
+    "solver.hpp"
+    "space.hpp"
   DEPENDS
     tit::core
 )
