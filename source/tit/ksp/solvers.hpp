@@ -9,6 +9,7 @@
 
 // IWYU pragma: begin_exports
 #include "tit/ksp/solver_cg.hpp"
+#include "tit/ksp/solver_cgs.hpp"
 // IWYU pragma: end_exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
