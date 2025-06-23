@@ -11,6 +11,7 @@
 #include "tit/ksp/solver_bicgstab.hpp"
 #include "tit/ksp/solver_cg.hpp"
 #include "tit/ksp/solver_cgs.hpp"
+#include "tit/ksp/solver_gmres.hpp"
 // IWYU pragma: end_exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

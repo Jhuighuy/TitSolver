@@ -12,6 +12,7 @@ add_tit_library(
     "solver_bicgstab.hpp"
     "solver_cg.hpp"
     "solver_cgs.hpp"
+    "solver_gmres.hpp"
     "solvers.hpp"
     "space.hpp"
   DEPENDS
