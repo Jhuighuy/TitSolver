@@ -27,6 +27,7 @@ add_tit_executable(
   NAME
     ksp_tests
   SOURCES
+    "solvers.test.cpp"
   DEPENDS
     tit::ksp
     tit::testing
