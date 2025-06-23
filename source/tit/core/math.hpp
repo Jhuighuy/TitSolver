@@ -11,6 +11,7 @@
 #include <initializer_list>
 #include <limits>
 #include <ranges>
+#include <tuple>
 #include <type_traits>
 
 #ifdef __clang__
@@ -137,6 +138,14 @@ template<class... Nums>
   requires (sizeof...(Nums) > 0)
 constexpr auto havg(Nums... vals) noexcept {
   return sizeof...(Nums) / (inverse(vals) + ...);
+}
+
+/// Generate the Givens rotation.
+template<class Num>
+constexpr auto sym_ortho(Num a, Num b) noexcept -> std::tuple<Num, Num, Num> {
+  const Num r = std::hypot(a, b);
+  if (r > Num{0}) return std::tuple{a / r, b / r, r};
+  return std::tuple{Num{1}, Num{0}, r};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
