@@ -12,6 +12,7 @@
 #include "tit/ksp/solver_cg.hpp"
 #include "tit/ksp/solver_cgs.hpp"
 #include "tit/ksp/solver_gmres.hpp"
+#include "tit/ksp/solver_idrs.hpp"
 // IWYU pragma: end_exports
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
