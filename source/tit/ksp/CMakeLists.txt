@@ -10,6 +10,7 @@ add_tit_library(
     "mapping.hpp"
     "solver.hpp"
     "solver_cg.hpp"
+    "solver_cgs.hpp"
     "solvers.hpp"
     "space.hpp"
   DEPENDS
