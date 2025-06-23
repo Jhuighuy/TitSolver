@@ -9,6 +9,8 @@ add_tit_library(
   SOURCES
     "mapping.hpp"
     "solver.hpp"
+    "solver_cg.hpp"
+    "solvers.hpp"
     "space.hpp"
   DEPENDS
     tit::core

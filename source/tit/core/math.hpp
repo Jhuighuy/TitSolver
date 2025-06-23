@@ -119,6 +119,12 @@ constexpr auto divide_up(UInt n, UInt d) noexcept -> UInt {
   return (n + d - UInt{1}) / d;
 }
 
+/// Divide two numbers and return zero if the denominator is zero.
+template<class Num>
+constexpr auto safe_divide(const Num& a, const Num& b) noexcept -> Num {
+  return b != Num{0} ? a / b : Num{0};
+}
+
 /// Arithmetic average function.
 template<class... Nums>
   requires (sizeof...(Nums) > 0)
