@@ -14,6 +14,7 @@ add_tit_library(
     "solver_cgs.hpp"
     "solver_gmres.hpp"
     "solver_idrs.hpp"
+    "solver_tfqmr.hpp"
     "solvers.hpp"
     "space.hpp"
   DEPENDS
