@@ -11,7 +11,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/rand.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit::ksp {
@@ -240,7 +239,7 @@ public:
   constexpr void rand_fill(this const auto& self, Vec& x_vec, uint64_t seed)
     requires std::floating_point<Num>
   {
-    SplitMix64                     rand{seed};
+    std::mt19937_64                rand{seed};
     std::uniform_real_distribution dist{Num{-1}, Num{1}};
     for (size_t i = 0; i < self.dim(x_vec); ++i) {
       self.at(x_vec, i) = dist(rand);
