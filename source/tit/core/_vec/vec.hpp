@@ -502,13 +502,17 @@ template<class Num, size_t Dim>
 constexpr auto sum(const Vec<Num, Dim>& a) -> Num {
   TIT_IF_SIMD_AVALIABLE(Num) {
     constexpr auto RegSize = Vec<Num, Dim>::RegSize;
-    constexpr auto FullRegCount = Dim / RegSize;
-    if constexpr (FullRegCount > 0) {
+    if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
+      return simd::sum(simd::take_n(Dim, a.reg(0)));
+    } else {
       auto r_reg = a.reg(0);
-      for (size_t i = 1; i < FullRegCount; ++i) r_reg += a.reg(i);
-      auto r = simd::sum(r_reg);
-      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) r += a[i];
-      return r;
+      for (size_t i = 1; i < NFullRegs; ++i) {
+        r_reg += a.reg(i);
+      }
+      if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
+        r_reg += simd::take_n(Rem, a.reg(NFullRegs));
+      }
+      return simd::sum(r_reg);
     }
   }
   auto r = a[0];
@@ -530,17 +534,18 @@ template<class Num, size_t Dim>
 constexpr auto min_value(const Vec<Num, Dim>& a) -> Num {
   TIT_IF_SIMD_AVALIABLE(Num) {
     constexpr auto RegSize = Vec<Num, Dim>::RegSize;
-    constexpr auto FullRegCount = Dim / RegSize;
-    if constexpr (FullRegCount > 0) {
+    if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
+      return simd::min_value(
+          simd::merge_n(Dim, a.reg(0), simd::broadcast(a.reg(0))));
+    } else {
       auto r_reg = a.reg(0);
-      for (size_t i = 1; i < FullRegCount; ++i) {
+      for (size_t i = 1; i < NFullRegs; ++i) {
         r_reg = simd::min(r_reg, a.reg(i));
       }
-      auto r = simd::min_value(r_reg);
-      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) {
-        r = std::min(r, a[i]);
+      if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
+        r_reg = simd::min(r_reg, simd::merge_n(Rem, a.reg(NFullRegs), r_reg));
       }
-      return r;
+      return simd::min_value(r_reg);
     }
   }
   auto r = a[0];
@@ -551,20 +556,20 @@ constexpr auto min_value(const Vec<Num, Dim>& a) -> Num {
 /// Maximal vector element.
 template<class Num, size_t Dim>
 constexpr auto max_value(const Vec<Num, Dim>& a) -> Num {
-  using std::max;
   TIT_IF_SIMD_AVALIABLE(Num) {
     constexpr auto RegSize = Vec<Num, Dim>::RegSize;
-    constexpr auto FullRegCount = Dim / RegSize;
-    if constexpr (FullRegCount > 0) {
+    if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
+      return simd::max_value(
+          simd::merge_n(Dim, a.reg(0), simd::broadcast(a.reg(0))));
+    } else {
       auto r_reg = a.reg(0);
-      for (size_t i = 1; i < FullRegCount; ++i) {
+      for (size_t i = 1; i < NFullRegs; ++i) {
         r_reg = simd::max(r_reg, a.reg(i));
       }
-      auto r = simd::max_value(r_reg);
-      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) {
-        r = std::max(r, a[i]);
+      if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
+        r_reg = simd::max(r_reg, simd::merge_n(Rem, a.reg(NFullRegs), r_reg));
       }
-      return r;
+      return simd::max_value(r_reg);
     }
   }
   auto r = a[0];
@@ -599,15 +604,17 @@ template<class Num, size_t Dim>
 constexpr auto dot(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b) -> Num {
   TIT_IF_SIMD_AVALIABLE(Num) {
     constexpr auto RegSize = Vec<Num, Dim>::RegSize;
-    constexpr auto FullRegCount = Dim / RegSize;
-    if constexpr (FullRegCount > 0) {
+    if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
+      return simd::sum(simd::take_n(Dim, a.reg(0) * b.reg(0)));
+    } else {
       auto r_reg = a.reg(0) * b.reg(0);
-      for (size_t i = 1; i < FullRegCount; ++i) {
+      for (size_t i = 1; i < NFullRegs; ++i) {
         r_reg = simd::fma(a.reg(i), b.reg(i), r_reg);
       }
-      auto r = simd::sum(r_reg);
-      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) r += a[i] * b[i];
-      return r;
+      if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
+        r_reg += simd::take_n(Rem, a.reg(NFullRegs) * b.reg(NFullRegs));
+      }
+      return simd::sum(r_reg);
     }
   }
   auto r = a[0] * b[0];

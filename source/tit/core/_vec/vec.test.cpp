@@ -3,12 +3,15 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <algorithm>
 #include <array>
 #include <format>
+#include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/numbers/strict.hpp"
+#include "tit/core/rand.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 
@@ -19,7 +22,7 @@ namespace tit {
 namespace {
 
 // To test implementations with and without SIMD.
-#define NUM_TYPES double, Strict<double>
+#define NUM_TYPES float, double, Strict<double>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -142,7 +145,11 @@ TEST_CASE_TEMPLATE("Vec::operator/", Num, NUM_TYPES) {
     SUBCASE("with assignment") {
       Vec v{Num{8}, Num{15}};
       v /= Vec{Num{2}, Num{3}};
+#if defined(__clang__) && defined(NDEBUG) && defined(__SSE__)
+      CHECK(approx_equal_to(v, Vec{Num{4}, Num{5}}));
+#else
       CHECK(v == Vec{Num{4}, Num{5}});
+#endif
     }
   }
 }
@@ -252,51 +259,81 @@ TEST_CASE_TEMPLATE("Vec::ceil", Num, NUM_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("Vec::sum", Num, NUM_TYPES) {
-  SUBCASE("basic") {
-    CHECK(sum(Vec{Num{1}, Num{2}}) == Num{3});
-    CHECK(sum(Vec{Num{1}, Num{2}, Num{3}}) == Num{6});
-    CHECK(sum(Vec{Num{1}, Num{2}, Num{3}, Num{4}}) == Num{10});
-    CHECK(sum(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}}) == Num{15});
-  }
-  SUBCASE("remainder") {
-    constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
-    CHECK(sum(Vec<Num, Dim>(Num{10})) == Num{Dim * 10});
-  }
+  const auto run = []<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+    FSUBCASE("Dim = {}", sizeof...(Axes)) {
+      const Vec v{Num{Axes + 1}...};
+      CHECK(sum(v) == Num{((Axes + 1) + ...)});
+    }
+  };
+  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+    (run(std::make_index_sequence<Dims + 1>{}), ...);
+  }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
+// Note: this function does not use SIMD, so we can test it lightly.
 TEST_CASE_TEMPLATE("Vec::prod", Num, NUM_TYPES) {
   CHECK(prod(Vec{Num{1}, Num{2}}) == Num{2});
   CHECK(prod(Vec{Num{1}, Num{2}, Num{3}}) == Num{6});
+  CHECK(prod(Vec{Num{1}, Num{2}, Num{3}, Num{4}}) == Num{24});
 }
 
 TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
-  SUBCASE("basic") {
-    CHECK(min_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{2});
-    CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{3});
-    CHECK(min_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{2});
-  }
-  SUBCASE("remainder") {
-    constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
-    Vec<Num, Dim> v(Num{2});
-    v[Dim / 2] = Num{1};
-    CHECK(min_value(v) == Num{1});
-  }
+  const auto run = []<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+    FSUBCASE("Dim = {}", sizeof...(Axes)) {
+      SUBCASE("all positive") {
+        Vec v{Num{Axes + 1}...};
+        std::ranges::shuffle(v.elems(), SplitMix64{0});
+        CHECK(min_value(v) == Num{1});
+      }
+      SUBCASE("all negative") {
+        Vec v{Num{-ssize_t{Axes} - 1}...};
+        std::ranges::shuffle(v.elems(), SplitMix64{0});
+        CHECK(min_value(v) == Num{-ssize_t{sizeof...(Axes)}});
+      }
+      SUBCASE("even positive") {
+        const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * ssize_t{Axes}}...};
+        CHECK(min_value(v) == Num{*std::ranges::min_element(v.elems())});
+      }
+      SUBCASE("even negative") {
+        const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * ssize_t{Axes}}...};
+        CHECK(min_value(v) == Num{*std::ranges::min_element(v.elems())});
+      }
+    }
+  };
+  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+    (run(std::make_index_sequence<Dims + 1>{}), ...);
+  }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
 TEST_CASE_TEMPLATE("Vec::max_value", Num, NUM_TYPES) {
-  SUBCASE("basic") {
-    CHECK(max_value(Vec{Num{3}, Num{2}, Num{4}}) == Num{4});
-    CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{3}}) == Num{6});
-    CHECK(max_value(Vec{Num{5}, Num{4}, Num{6}, Num{2}, Num{3}}) == Num{6});
-  }
-  SUBCASE("remainder") {
-    constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
-    Vec<Num, Dim> v(Num{1});
-    v[Dim / 2] = Num{2};
-    CHECK(max_value(v) == Num{2});
-  }
+  const auto run = []<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+    FSUBCASE("Dim = {}", sizeof...(Axes)) {
+      SUBCASE("all positive") {
+        Vec v{Num{Axes + 1}...};
+        std::ranges::shuffle(v.elems(), SplitMix64{0});
+        CHECK(max_value(v) == Num{sizeof...(Axes)});
+      }
+      SUBCASE("all negative") {
+        Vec v{Num{-ssize_t{Axes} - 1}...};
+        std::ranges::shuffle(v.elems(), SplitMix64{0});
+        CHECK(max_value(v) == Num{-1});
+      }
+      SUBCASE("even positive") {
+        const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * ssize_t{Axes}}...};
+        CHECK(max_value(v) == Num{*std::ranges::max_element(v.elems())});
+      }
+      SUBCASE("even negative") {
+        const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * ssize_t{Axes}}...};
+        CHECK(max_value(v) == Num{*std::ranges::max_element(v.elems())});
+      }
+    }
+  };
+  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+    (run(std::make_index_sequence<Dims + 1>{}), ...);
+  }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
+// Note: these functions do not use SIMD, so we can test them lightly.
 TEST_CASE_TEMPLATE("Vec::min_value_index", Num, NUM_TYPES) {
   CHECK(min_value_index(Vec{Num{2}, Num{3}}) == 0);
   CHECK(min_value_index(Vec{Num{3}, Num{2}, Num{4}}) == 1);
@@ -312,20 +349,16 @@ TEST_CASE_TEMPLATE("Vec::max_value_index", Num, NUM_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("Vec::dot", Num, NUM_TYPES) {
-  SUBCASE("basic") {
-    CHECK(dot(Vec{Num{1}, Num{2}}, Vec{Num{3}, Num{4}}) == Num{11});
-    CHECK(dot(Vec{Num{1}, Num{2}, Num{3}}, Vec{Num{4}, Num{5}, Num{6}}) ==
-          Num{32});
-    CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}},
-              Vec{Num{5}, Num{6}, Num{7}, Num{8}}) == Num{70});
-    CHECK(dot(Vec{Num{1}, Num{2}, Num{3}, Num{4}, Num{5}},
-              Vec{Num{6}, Num{7}, Num{8}, Num{9}, Num{10}}) == Num{130});
-  }
-  SUBCASE("remainder") {
-    constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
-    CHECK(dot(Vec<Num, Dim>(Num{3}), Vec<Num, Dim>(Num{4})) ==
-          Num{Dim * 3 * 4});
-  }
+  const auto run = []<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+    FSUBCASE("Dim = {}", sizeof...(Axes)) {
+      const Vec v{Num{Axes + 1}...};
+      const Vec w{Num{Axes + 2}...};
+      CHECK(dot(v, w) == Num{(((Axes + 1) * (Axes + 2)) + ...)});
+    }
+  };
+  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+    (run(std::make_index_sequence<Dims + 1>{}), ...);
+  }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
 TEST_CASE_TEMPLATE("Vec::norm2", Num, NUM_TYPES) {

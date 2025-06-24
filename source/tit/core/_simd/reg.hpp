@@ -88,7 +88,8 @@ public:
   /// SIMD addition with assignment operation.
   [[gnu::always_inline]]
   friend auto operator+=(Reg& a, const Reg& b) noexcept -> Reg& {
-    return a = a + b;
+    a.base += b.base;
+    return a;
   }
 
   /// SIMD negation operation.
@@ -106,7 +107,8 @@ public:
   /// SIMD subtraction with assignment operation.
   [[gnu::always_inline]]
   friend auto operator-=(Reg& a, const Reg& b) noexcept -> Reg& {
-    return a = a - b;
+    a.base -= b.base;
+    return a;
   }
 
   /// SIMD multiplication operation.
@@ -118,7 +120,8 @@ public:
   /// SIMD multiplication with assignment operation.
   [[gnu::always_inline]]
   friend auto operator*=(Reg& a, const Reg& b) noexcept -> Reg& {
-    return a = a * b;
+    a.base *= b.base;
+    return a;
   }
 
   /// SIMD division operation.
@@ -130,7 +133,8 @@ public:
   /// SIMD division with assignment operation.
   [[gnu::always_inline]]
   friend auto operator/=(Reg& a, const Reg& b) noexcept -> Reg& {
-    return a = a / b;
+    a.base /= b.base;
+    return a;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -224,6 +228,39 @@ inline auto select(const RegMask<Num, Size>& m,
   return hn::IfThenElse(m.base, a.base, b.base);
 }
 
+/// SIMD take first N elements, fill the rest with zeroes.
+template<class Num, size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto take_n(size_t n, const Reg<Num, Size>& a) noexcept
+    -> Reg<Num, Size> {
+  TIT_ASSERT(n <= Size, "'n' must be less than or equal to the vector size!");
+  return hn::IfThenElseZero(hn::FirstN(typename Reg<Num, Size>::Tag{}, n),
+                            a.base);
+}
+
+/// SIMD take first N elements from the first register, and the rest from the
+/// second register.
+template<class Num, size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto merge_n(size_t n,
+                    const Reg<Num, Size>& a,
+                    const Reg<Num, Size>& b) noexcept -> Reg<Num, Size> {
+  TIT_ASSERT(n <= Size, "'n' must be less than or equal to the vector size");
+  return hn::IfThenElse(hn::FirstN(typename Reg<Num, Size>::Tag{}, n),
+                        a.base,
+                        b.base);
+}
+
+/// Broadcast the first lane of the SIMD register to all lanes.
+template<class Num, size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto broadcast(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
+  return hn::Broadcast<0>(a.base);
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD `floor` function overload.
@@ -267,7 +304,7 @@ template<class Num, size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto sum(const Reg<Num, Size>& a) noexcept -> Num {
-  return hn::GetLane(hn::SumOfLanes(typename Reg<Num, Size>::Tag{}, a.base));
+  return hn::ReduceSum(typename Reg<Num, Size>::Tag{}, a.base);
 }
 
 /// SIMD horizontal minimum reduction.
@@ -275,7 +312,7 @@ template<class Num, size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto min_value(const Reg<Num, Size>& a) noexcept -> Num {
-  return hn::GetLane(hn::MinOfLanes(typename Reg<Num, Size>::Tag{}, a.base));
+  return hn::ReduceMin(typename Reg<Num, Size>::Tag{}, a.base);
 }
 
 /// SIMD horizontal maximum reduction.
@@ -283,7 +320,7 @@ template<class Num, size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto max_value(const Reg<Num, Size>& a) noexcept -> Num {
-  return hn::GetLane(hn::MaxOfLanes(typename Reg<Num, Size>::Tag{}, a.base));
+  return hn::ReduceMax(typename Reg<Num, Size>::Tag{}, a.base);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
