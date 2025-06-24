@@ -87,6 +87,77 @@ TEST_CASE("simd::RegMask::operator==") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("simd::RegMask::take_n") {
+  const FloatMaskArray m{true, true, true, true};
+  SUBCASE("n = 0") {
+    const auto r = simd::take_n(0, FloatRegMask{m});
+    FloatMaskArray out{false, false, false, false};
+    r.store(out);
+    CHECK(out == FloatMaskArray{false, false, false, false});
+  }
+  SUBCASE("n = 1") {
+    const auto r = simd::take_n(1, FloatRegMask{m});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{true, false, false, false});
+  }
+  SUBCASE("n = 2") {
+    const auto r = simd::take_n(2, FloatRegMask{m});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{true, true, false, false});
+  }
+  SUBCASE("n = 3") {
+    const auto r = simd::take_n(3, FloatRegMask{m});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{true, true, true, false});
+  }
+  SUBCASE("n = 4") {
+    const auto r = simd::take_n(4, FloatRegMask{m});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{true, true, true, true});
+  }
+}
+
+TEST_CASE("simd::RegMask::merge_n") {
+  const FloatMaskArray m{true, false, true, false};
+  const FloatMaskArray n{false, true, false, true};
+  SUBCASE("n = 0") {
+    const auto r = simd::merge_n(0, FloatRegMask{m}, FloatRegMask{n});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{false, true, false, true});
+  }
+  SUBCASE("n = 1") {
+    const auto r = simd::merge_n(1, FloatRegMask{m}, FloatRegMask{n});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{true, true, false, true});
+  }
+  SUBCASE("n = 2") {
+    const auto r = simd::merge_n(2, FloatRegMask{m}, FloatRegMask{n});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{true, false, false, true});
+  }
+  SUBCASE("n = 3") {
+    const auto r = simd::merge_n(3, FloatRegMask{m}, FloatRegMask{n});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{true, false, true, true});
+  }
+  SUBCASE("n = 4") {
+    const auto r = simd::merge_n(4, FloatRegMask{m}, FloatRegMask{n});
+    FloatMaskArray out{};
+    r.store(out);
+    CHECK(out == FloatMaskArray{true, false, true, false});
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("simd::RegMask::any_and_all") {
   SUBCASE("all") {
     const FloatRegMask m{FloatMaskArray{true, true, true, true}};
@@ -106,21 +177,6 @@ TEST_CASE("simd::RegMask::any_and_all") {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("simd::RegMask::count_true") {
-  SUBCASE("all") {
-    const FloatRegMask m{FloatMaskArray{true, true, true, true}};
-    CHECK(count_true(m) == 4);
-  }
-  SUBCASE("some") {
-    const FloatRegMask m{FloatMaskArray{true, false, true, false}};
-    CHECK(count_true(m) == 2);
-  }
-  SUBCASE("none") {
-    const FloatRegMask m{FloatMaskArray{false, false, false, false}};
-    CHECK(count_true(m) == 0);
-  }
-}
 
 TEST_CASE("simd::RegMask::find_true") {
   SUBCASE("first") {

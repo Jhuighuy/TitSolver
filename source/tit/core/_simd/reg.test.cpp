@@ -91,6 +91,83 @@ TEST_CASE("simd::Reg::select") {
   CHECK(out == FloatArray{5.0F, 2.0F, 7.0F, 4.0F});
 }
 
+TEST_CASE("simd::Reg::take_n") {
+  const FloatArray a{1.0F, 2.0F, 3.0F, 4.0F};
+  SUBCASE("n = 0") {
+    const auto r = simd::take_n(0, FloatReg{a});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{0.0F, 0.0F, 0.0F, 0.0F});
+  }
+  SUBCASE("n = 1") {
+    const auto r = simd::take_n(1, FloatReg{a});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{1.0F, 0.0F, 0.0F, 0.0F});
+  }
+  SUBCASE("n = 2") {
+    const auto r = simd::take_n(2, FloatReg{a});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{1.0F, 2.0F, 0.0F, 0.0F});
+  }
+  SUBCASE("n = 3") {
+    const auto r = simd::take_n(3, FloatReg{a});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{1.0F, 2.0F, 3.0F, 0.0F});
+  }
+  SUBCASE("n = 4") {
+    const auto r = simd::take_n(4, FloatReg{a});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{1.0F, 2.0F, 3.0F, 4.0F});
+  }
+}
+
+TEST_CASE("simd::Reg::merge_n") {
+  const FloatArray a{1.0F, 2.0F, 3.0F, 4.0F};
+  const FloatArray b{5.0F, 6.0F, 7.0F, 8.0F};
+  SUBCASE("n = 0") {
+    const auto r = simd::merge_n(0, FloatReg{a}, FloatReg{b});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{5.0F, 6.0F, 7.0F, 8.0F});
+  }
+  SUBCASE("n = 1") {
+    const auto r = simd::merge_n(1, FloatReg{a}, FloatReg{b});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{1.0F, 6.0F, 7.0F, 8.0F});
+  }
+  SUBCASE("n = 2") {
+    const auto r = simd::merge_n(2, FloatReg{a}, FloatReg{b});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{1.0F, 2.0F, 7.0F, 8.0F});
+  }
+  SUBCASE("n = 3") {
+    const auto r = simd::merge_n(3, FloatReg{a}, FloatReg{b});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{1.0F, 2.0F, 3.0F, 8.0F});
+  }
+  SUBCASE("n = 4") {
+    const auto r = simd::merge_n(4, FloatReg{a}, FloatReg{b});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == FloatArray{1.0F, 2.0F, 3.0F, 4.0F});
+  }
+}
+
+TEST_CASE("simd::Reg::broadcast") {
+  const FloatArray a{1.0F, 2.0F, 3.0F, 4.0F};
+  const FloatReg r = simd::broadcast(FloatReg{a});
+  FloatArray out{};
+  r.store(out);
+  CHECK(out == FloatArray{1.0F, 1.0F, 1.0F, 1.0F});
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("simd::Reg::operator+") {
