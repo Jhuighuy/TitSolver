@@ -190,15 +190,17 @@ template<class Num, size_t Dim>
 constexpr auto any(const VecMask<Num, Dim>& m) -> bool {
   TIT_IF_SIMD_AVALIABLE(Num) {
     constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
-    constexpr auto FullRegCount = Dim / RegSize;
-    if constexpr (FullRegCount > 0) {
+    if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
+      return simd::any(simd::take_n(Dim, m.reg(0)));
+    } else {
       auto r_reg = m.reg(0);
-      for (size_t i = 1; i < FullRegCount; ++i) r_reg = r_reg || m.reg(i);
-      if (simd::any(r_reg)) return true;
-      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) {
-        if (m[i]) return true;
+      for (size_t i = 1; i < NFullRegs; ++i) {
+        r_reg = r_reg || m.reg(i);
       }
-      return false;
+      if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
+        r_reg = r_reg || simd::take_n(Rem, m.reg(NFullRegs));
+      }
+      return simd::any(r_reg);
     }
   }
   for (size_t i = 0; i < Dim; ++i) {
@@ -211,16 +213,19 @@ constexpr auto any(const VecMask<Num, Dim>& m) -> bool {
 template<class Num, size_t Dim>
 constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
   TIT_IF_SIMD_AVALIABLE(Num) {
+    using RegMask = typename VecMask<Num, Dim>::RegMask;
     constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
-    constexpr auto FullRegCount = Dim / RegSize;
-    if constexpr (FullRegCount > 0) {
+    if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
+      return simd::all(simd::merge_n(Dim, m.reg(0), RegMask(true)));
+    } else {
       auto r_reg = m.reg(0);
-      for (size_t i = 1; i < FullRegCount; ++i) r_reg = r_reg && m.reg(i);
-      if (!simd::all(r_reg)) return false;
-      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) {
-        if (!m[i]) return false;
+      for (size_t i = 1; i < NFullRegs; ++i) {
+        r_reg = r_reg && m.reg(i);
       }
-      return true;
+      if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
+        r_reg = r_reg && simd::merge_n(Rem, m.reg(NFullRegs), RegMask(true));
+      }
+      return simd::all(r_reg);
     }
   }
   for (size_t i = 0; i < Dim; ++i) {
@@ -229,46 +234,23 @@ constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
   return true;
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Count the number of true values in the vector mask.
-template<class Num, size_t Dim>
-constexpr auto count_true(const VecMask<Num, Dim>& m) -> size_t {
-  TIT_IF_SIMD_AVALIABLE(Num) {
-    constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
-    constexpr auto FullRegCount = Dim / RegSize;
-    if constexpr (FullRegCount > 0) {
-      auto count = simd::count_true(m.reg(0));
-      for (size_t i = 1; i < FullRegCount; ++i) {
-        count += simd::count_true(m.reg(i));
-      }
-      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) {
-        if (m[i]) count += 1;
-      }
-      return count;
-    }
-  }
-  size_t count = 0;
-  for (size_t i = 0; i < Dim; ++i) {
-    if (m[i]) count += 1;
-  }
-  return count;
-}
-
 /// Find the first true value in the vector mask.
 /// Return `-1` if all values are false.
 template<class Num, size_t Dim>
 constexpr auto find_true(const VecMask<Num, Dim>& m) -> ssize_t {
   TIT_IF_SIMD_AVALIABLE(Num) {
     constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
-    constexpr auto FullRegCount = Dim / RegSize;
-    if constexpr (FullRegCount > 0) {
-      for (size_t i = 0; i < FullRegCount; ++i) {
+    if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
+      return simd::find_true(simd::take_n(Dim, m.reg(0)));
+    } else {
+      for (size_t i = 0; i < NFullRegs; ++i) {
         const auto true_index = simd::find_true(m.reg(i));
         if (true_index != -1) return true_index + i * RegSize;
       }
-      for (size_t i = FullRegCount * RegSize; i < Dim; ++i) {
-        if (m[i]) return static_cast<ssize_t>(i);
+      if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
+        const auto true_index =
+            simd::find_true(simd::take_n(Rem, m.reg(NFullRegs)));
+        if (true_index != -1) return true_index + NFullRegs * RegSize;
       }
       return -1;
     }

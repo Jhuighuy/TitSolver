@@ -3,6 +3,9 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <utility>
+
+#include "tit/core/basic_types.hpp"
 #include "tit/core/numbers/strict.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
@@ -13,7 +16,7 @@ namespace tit {
 namespace {
 
 // To test implementations with and without SIMD.
-#define NUM_TYPES double, Strict<double>
+#define NUM_TYPES float, double, Strict<double>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -87,98 +90,92 @@ TEST_CASE_TEMPLATE("VecMask::operator!=", Num, NUM_TYPES) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE_TEMPLATE("VecMask::all_and_any", Num, NUM_TYPES) {
-  constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
-  SUBCASE("all") {
-    const VecMask<Num, Dim> m(true);
-    CHECK(any(m));
-    CHECK(all(m));
-  }
-  SUBCASE("some") {
-    SUBCASE("true in registers") {
-      VecMask<Num, Dim> m(false);
-      m[Dim / 2] = true;
-      CHECK(any(m));
-      CHECK_FALSE(all(m));
+TEST_CASE_TEMPLATE("VecMask::any", Num, NUM_TYPES) {
+  const auto run = []<size_t Dim>(std::index_sequence<Dim> /*dim*/) {
+    FSUBCASE("Dim = {}", Dim) {
+      SUBCASE("all false") {
+        const VecMask<Num, Dim> m(false);
+        CHECK_FALSE(any(m));
+      }
+      SUBCASE("all true") {
+        const VecMask<Num, Dim> m(true);
+        CHECK(any(m));
+      }
+      SUBCASE("true in the middle") {
+        VecMask<Num, Dim> m(false);
+        m[Dim / 2] = true;
+        CHECK(any(m));
+      }
+      SUBCASE("true at the end") {
+        VecMask<Num, Dim> m(false);
+        m[Dim - 1] = true;
+        CHECK(any(m));
+      }
     }
-    SUBCASE("true in remainder") {
-      VecMask<Num, Dim> m(false);
-      m[Dim - 1] = true;
-      CHECK(any(m));
-      CHECK_FALSE(all(m));
-    }
-    SUBCASE("false in remainder") {
-      VecMask<Num, Dim> m(true);
-      m[Dim - 1] = false;
-      CHECK(any(m));
-      CHECK_FALSE(all(m));
-    }
-  }
-  SUBCASE("none") {
-    const VecMask<Num, Dim> m(false);
-    CHECK_FALSE(any(m));
-    CHECK_FALSE(all(m));
-  }
+  };
+  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+    (run(std::index_sequence<Dims + 1>{}), ...);
+  }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE_TEMPLATE("VecMask::count_true", Num, NUM_TYPES) {
-  constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
-  SUBCASE("all") {
-    const VecMask<Num, Dim> m(true);
-    CHECK(count_true(m) == Dim);
-  }
-  SUBCASE("some") {
-    SUBCASE("true in registers") {
-      VecMask<Num, Dim> m(false);
-      m[Dim / 2] = true;
-      CHECK(count_true(m) == 1);
+TEST_CASE_TEMPLATE("VecMask::all", Num, NUM_TYPES) {
+  const auto run = []<size_t Dim>(std::index_sequence<Dim> /*dim*/) {
+    FSUBCASE("Dim = {}", Dim) {
+      SUBCASE("all false") {
+        const VecMask<Num, Dim> m(false);
+        CHECK_FALSE(m);
+        CHECK_FALSE(all(m));
+      }
+      SUBCASE("all true") {
+        const VecMask<Num, Dim> m(true);
+        CHECK(m);
+        CHECK(all(m));
+      }
+      SUBCASE("false in the middle") {
+        VecMask<Num, Dim> m(true);
+        m[Dim / 2] = false;
+        CHECK_FALSE(m);
+        CHECK_FALSE(all(m));
+      }
+      SUBCASE("false at the end") {
+        VecMask<Num, Dim> m(true);
+        m[Dim - 1] = false;
+        CHECK_FALSE(m);
+        CHECK_FALSE(all(m));
+      }
     }
-    SUBCASE("true in remainder") {
-      VecMask<Num, Dim> m(false);
-      m[Dim - 1] = true;
-      CHECK(count_true(m) == 1);
-    }
-    SUBCASE("false in remainder") {
-      VecMask<Num, Dim> m(true);
-      m[Dim - 1] = false;
-      CHECK(count_true(m) == Dim - 1);
-    }
-  }
-  SUBCASE("none") {
-    const VecMask<Num, 17> m(false);
-    CHECK(count_true(m) == 0);
-  }
+  };
+  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+    (run(std::index_sequence<Dims + 1>{}), ...);
+  }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
 TEST_CASE_TEMPLATE("VecMask::find_true", Num, NUM_TYPES) {
-  constexpr auto Dim = 2 * simd::max_reg_size_v<double> + 1;
-  SUBCASE("all") {
-    const VecMask<Num, Dim> m(true);
-    CHECK(find_true(m) == 0);
-  }
-  SUBCASE("some") {
-    SUBCASE("true in registers") {
-      VecMask<Num, Dim> m(false);
-      m[Dim / 2] = true;
-      CHECK(find_true(m) == Dim / 2);
+  const auto run = []<size_t Dim>(std::index_sequence<Dim> /*dim*/) {
+    FSUBCASE("Dim = {}", Dim) {
+      SUBCASE("all true") {
+        const VecMask<Num, Dim> m(true);
+        CHECK(find_true(m) == 0);
+      }
+      SUBCASE("all false") {
+        const VecMask<Num, Dim> m(false);
+        CHECK(find_true(m) == -1);
+      }
+      SUBCASE("true in the middle") {
+        VecMask<Num, Dim> m(false);
+        m[Dim / 2] = true;
+        CHECK(find_true(m) == Dim / 2);
+      }
+      SUBCASE("true at the end") {
+        VecMask<Num, Dim> m(false);
+        m[Dim - 1] = true;
+        CHECK(find_true(m) == Dim - 1);
+      }
     }
-    SUBCASE("true in remainder") {
-      VecMask<Num, Dim> m(false);
-      m[Dim - 1] = true;
-      CHECK(find_true(m) == Dim - 1);
-    }
-    SUBCASE("false in remainder") {
-      VecMask<Num, Dim> m(true);
-      m[Dim - 1] = false;
-      CHECK(find_true(m) == 0);
-    }
-  }
-  SUBCASE("none") {
-    const VecMask<Num, Dim> m(false);
-    CHECK(find_true(m) == -1);
-  }
+  };
+  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+    (run(std::index_sequence<Dims + 1>{}), ...);
+  }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

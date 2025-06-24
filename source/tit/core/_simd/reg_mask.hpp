@@ -48,7 +48,7 @@ public:
   /// Fill-initialize the SIMD register mask with zeroes.
   [[gnu::always_inline]]
   RegMask() noexcept
-      : base{hn::MaskFromVec(hn::Zero(Tag{}))} {}
+      : base{hn::MaskFalse(Tag{})} {}
 
   /// Fill-initialize the SIMD register mask.
   [[gnu::always_inline]]
@@ -116,6 +116,32 @@ public:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// SIMD take first N elements, fill the rest with false.
+template<class Num, size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto take_n(size_t n, const RegMask<Num, Size>& a) noexcept
+    -> RegMask<Num, Size> {
+  TIT_ASSERT(n <= Size, "'n' must be less than or equal to the vector size");
+  return hn::And(hn::FirstN(typename RegMask<Num, Size>::Tag{}, n), a.base);
+}
+
+/// SIMD take first N elements from the first register, and the rest from the
+/// second register.
+template<class Num, size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto merge_n(size_t n,
+                    const RegMask<Num, Size>& a,
+                    const RegMask<Num, Size>& b) noexcept
+    -> RegMask<Num, Size> {
+  TIT_ASSERT(n <= Size, "'n' must be less than or equal to the vector size");
+  const auto fn = hn::FirstN(typename RegMask<Num, Size>::Tag{}, n);
+  return hn::Or(hn::And(fn, a.base), hn::AndNot(fn, b.base));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Check if any SIMD register mask element is set to true.
 template<class Num, size_t Size>
   requires supported<Num, Size>
@@ -130,16 +156,6 @@ template<class Num, size_t Size>
 [[gnu::always_inline]]
 inline auto all(const RegMask<Num, Size>& m) noexcept -> bool {
   return hn::AllTrue(typename RegMask<Num, Size>::Tag{}, m.base);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Count the number of true values in the SIMD register mask.
-template<class Num, size_t Size>
-  requires supported<Num, Size>
-[[gnu::always_inline]]
-inline auto count_true(const RegMask<Num, Size>& m) noexcept -> size_t {
-  return hn::CountTrue(typename RegMask<Num, Size>::Tag{}, m.base);
 }
 
 /// Try to find the first true value in the SIMD register mask.
