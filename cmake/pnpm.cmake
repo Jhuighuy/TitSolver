@@ -10,6 +10,11 @@ include_guard()
 # Find the PNPM executable.
 find_program(PNPM_EXE NAMES "pnpm" REQUIRED)
 
+# Setup the PNPM test runner executable.
+set(PNPM_TEST_CMDLINE "pnpm run $<IF:$<CONFIG:Coverage>,coverage,test>")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # A list of the PNPM package source file extensions. Fell free to add more.
 set(
   PNPM_SOURCE_EXTENSIONS

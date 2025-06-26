@@ -21,3 +21,11 @@ ignore = [
 disable = ["bad-indentation", "missing-docstring", "invalid-name"]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.coverage.paths]
+pytit = ["source/ttdb", "output/TIT_ROOT/ttdb"]
+
+[tool.coverage.run]
+branch = true
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
