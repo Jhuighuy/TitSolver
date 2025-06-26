@@ -5,15 +5,11 @@
 
 #pragma once
 
-#include <algorithm>
-#include <concepts>
 #include <expected>
 #include <iterator>
 #include <ranges>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/func.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"
@@ -156,30 +152,6 @@ constexpr auto compute_largest_inertia_axis(Points&& points, Perm&& perm)
   return compute_largest_inertia_axis(permuted_view(points, perm));
 }
 /// @}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Copy points that are close to the given point.
-template<point_range Points,
-         index_range Perm,
-         std::output_iterator<size_t> OutIter,
-         std::predicate<size_t> Pred = AlwaysTrue>
-constexpr auto copy_points_near(Points&& points,
-                                Perm&& perm,
-                                OutIter out,
-                                const point_range_vec_t<Points>& search_point,
-                                point_range_num_t<Points> r_sqr,
-                                Pred pred = {}) -> OutIter {
-  TIT_ASSUME_UNIVERSAL(Points, points);
-  TIT_ASSUME_UNIVERSAL(Perm, perm);
-  const auto result = std::ranges::copy_if(
-      perm,
-      out,
-      [&points, &search_point, r_sqr, &pred](size_t i) {
-        return pred(i) && norm2(points[i] - search_point) < r_sqr;
-      });
-  return result.out;
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
