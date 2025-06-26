@@ -3,7 +3,6 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-/// @todo Tests are missing for the entire plugin code.
 #include <array>
 #include <cstdint>
 #include <cstring>
