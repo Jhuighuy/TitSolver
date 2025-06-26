@@ -54,15 +54,8 @@ runs:
         fi
 
         # Install packages.
-        #
-        # Upon installation, Homebrew will automatically update itself and
-        # upgrade all installed packages that depend on those we are installing
-        # or upgrading. The below variables prevent Homebrew from doing this.
-        export HOMEBREW_NO_AUTO_UPDATE=1
-        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-        export HOMEBREW_NO_INSTALL_CLEANUP=1
         brew update -q
-        brew install -q "${PACKAGES[@]}" || true # Continue on failure.
+        brew install -q "${PACKAGES[@]}"
 
         # Add GCC tools to the path and create versioned symlinks.
         GCC_INSTALLATION="$(brew --prefix gcc@$GCC_VERSION)"
@@ -118,3 +111,16 @@ runs:
         echo "CXXFLAGS=$CXXFLAGS" >> "$GITHUB_ENV"
         echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+    - name: Setup Python packages
+      shell: bash
+      run: |
+        # Select packages to install.
+        PYTHON_PACKAGES=(
+          coverage
+          numpy
+        )
+
+        # Install Python packages.
+        python3 -m pip install --upgrade --break-system-packages \
+          "${PYTHON_PACKAGES[@]}"
