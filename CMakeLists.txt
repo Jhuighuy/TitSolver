@@ -65,7 +65,6 @@ add_tit_library(
     mimalloc-static
     nlohmann_json::nlohmann_json
     TBB::tbb
-    TBB::tbbmalloc
     unofficial::sqlite3::sqlite3
     zstd::libzstd
 )
