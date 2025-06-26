@@ -3,13 +3,20 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Allow all files with extensions.
-!*.*
+include_guard()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# But some files are not allowed.
-*-shm
-*-wal
+# Find the Python interpreter executable.
+find_program(PYTHON_EXE NAMES "python3" REQUIRED)
+
+# Find the coverage.py executable.
+find_program(COVERAGE_EXE NAMES "coverage" REQUIRED)
+
+# Setup the Python test runner executable.
+set(
+  PYTHON_TEST_CMDLINE
+  "$<IF:$<CONFIG:Coverage>,${COVERAGE_EXE} run,${PYTHON_EXE}>"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

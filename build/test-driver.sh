@@ -139,8 +139,9 @@ parse-args() {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 setup-path() {
-  echo "# Setting up the PATH..."
+  echo "# Setting up paths..."
   export PATH="$INSTALL_DIR/bin:$INSTALL_DIR/private/bin:$PATH"
+  export PYTHONPATH="$INSTALL_DIR/ttdb:$PYTHONPATH"
 }
 
 setup-work-dir() {

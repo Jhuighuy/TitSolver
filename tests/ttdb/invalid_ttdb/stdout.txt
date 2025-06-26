@@ -1,0 +1,1 @@
+Expected error: SQLite operation 'SELECT 0 WHERE 0' failed (26): file is not a database.

@@ -3,13 +3,10 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Allow all files with extensions.
-!*.*
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# But some files are not allowed.
-*-shm
-*-wal
+add_tit_test(
+  INPUT_FILES "test.py"
+  MATCH_FILES "output.csv.checksum"
+  COMMAND "${BASH_EXE}" -c "${PYTHON_TEST_CMDLINE} test.py"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
