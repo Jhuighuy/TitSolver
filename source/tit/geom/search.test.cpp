@@ -34,7 +34,9 @@ void match_search_results(const SearchResult& expected_result,
   for (const auto& [expected_row, actual_row] :
        std::views::zip(expected_result, actual_result)) {
     const auto expected_set = expected_row | std::ranges::to<std::set>();
+    REQUIRE(expected_set.size() == expected_row.size());
     const auto actual_set = actual_row | std::ranges::to<std::set>();
+    CHECK(actual_set.size() == actual_row.size());
     CHECK(expected_set == actual_set);
   }
 }
@@ -44,12 +46,12 @@ void match_search_results(const SearchResult& expected_result,
 // Naive O(N^2) implementation of a nearest neighbor search.
 auto search_naive(const std::vector<Vec3D>& points, double search_radius)
     -> SearchResult {
-  const auto search_radius_sqr = pow2(search_radius);
+  const auto search_radius_sq = pow2(search_radius);
   SearchResult result(points.size());
   for (size_t i = 0; i < points.size(); ++i) {
     result[i] = {i};
     for (size_t j = 0; j < i; ++j) {
-      if (norm2(points[i] - points[j]) < search_radius_sqr) {
+      if (norm2(points[i] - points[j]) < search_radius_sq) {
         result[i].push_back(j);
         result[j].push_back(i);
       }
@@ -79,11 +81,10 @@ auto search_grid(const std::vector<Vec3D>& points,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Nearest neighbor search via a K-dimensional tree.
-auto search_kd_tree(const std::vector<Vec3D>& points,
-                    double search_radius,
-                    size_t max_leaf_size) -> SearchResult {
+auto search_kd_tree(const std::vector<Vec3D>& points, double search_radius)
+    -> SearchResult {
   // Construct the K-dimensional tree.
-  const geom::KDTreeSearch kd_tree_search{max_leaf_size};
+  const geom::KDTreeSearch kd_tree_search{};
   const auto kd_tree_index = kd_tree_search(points);
 
   // Perform the nearest neighbor search.
@@ -131,14 +132,8 @@ TEST_CASE("geom::Search") {
 
   // Nearest neighbor search with a K-dimensional tree.
   SUBCASE("KD tree") {
-    SUBCASE("max leaf size = 1") {
-      const auto result_kd_tree = search_kd_tree(points, search_radius, 1);
-      match_search_results(result_naive, result_kd_tree);
-    }
-    SUBCASE("max leaf size = 10") {
-      const auto result_kd_tree = search_kd_tree(points, search_radius, 10);
-      match_search_results(result_naive, result_kd_tree);
-    }
+    const auto result_kd_tree = search_kd_tree(points, search_radius);
+    match_search_results(result_naive, result_kd_tree);
   }
 }
 

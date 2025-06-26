@@ -12,6 +12,7 @@ add_tit_test(
   COMMAND "titwcsph"
   MATCH_FILES "particles.ttdb.checksum"
   FLAGS RUN_SERIAL
+  ENVIRONMENT TIT_ENABLE_PROFILER=1
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
