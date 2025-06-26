@@ -42,7 +42,6 @@ add_tit_library(
     "par/atomic.hpp"
     "par/control.cpp"
     "par/control.hpp"
-    "par/memory_pool.hpp"
     "par/task_group.hpp"
     "print.hpp"
     "profiler.cpp"
@@ -69,7 +68,6 @@ add_tit_library(
     gcem
     hwy::hwy
     TBB::tbb
-    TBB::tbbmalloc
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +93,6 @@ add_tit_executable(
     "par/algorithms.test.cpp"
     "par/atomic.test.cpp"
     "par/control.test.cpp"
-    "par/memory_pool.test.cpp"
     "par/task_group.test.cpp"
     "rand.test.cpp"
     "serialization.test.cpp"
