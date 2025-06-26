@@ -4,10 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
-#include <iterator>
-#include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 
@@ -98,20 +95,6 @@ TEST_CASE("geom::compute_largest_inertia_axis") {
     REQUIRE(axis);
     CHECK_APPROX_EQ(normalize(*axis), expected_axis);
   }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("geom::copy_points_near") {
-  constexpr std::array points{Vec2D{0, 0}, Vec2D{1, 1}, Vec2D{2, 2}};
-  constexpr std::array perm{2, 1, 0};
-  std::vector<size_t> result;
-  geom::copy_points_near(points,
-                         perm,
-                         std::back_inserter(result),
-                         Vec2D{1.5, 1.5},
-                         0.6);
-  CHECK(result == std::vector<size_t>{2, 1});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
