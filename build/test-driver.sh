@@ -53,27 +53,85 @@ usage() {
 parse-args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      # Options.
-      --name)           TEST_NAME="$2";            shift 2;;
-      --name=*)         TEST_NAME="${1#*=}";       shift 1;;
-      --exit-code)      EXIT_CODE="$2";            shift 2;;
-      --exit-code=*)    EXIT_CODE="${1#*=}";       shift 1;;
-      --stdin)          STDIN_PATH="$2";           shift 2;;
-      --stdin=*)        STDIN_PATH="${1#*=}";      shift 1;;
-      --input-file)     INPUT_PATHS+=("$2");       shift 2;;
-      --input-file=*)   INPUT_PATHS+=("${1#*=}");  shift 1;;
-      --match-stdout)   STDOUT_PATH="$2";          shift 2;;
-      --match-stdout=*) STDOUT_PATH="${1#*=}";     shift 1;;
-      --match-stderr)   STDERR_PATH="$2";          shift 2;;
-      --match-stderr=*) STDERR_PATH="${1#*=}";     shift 1;;
-      --match-file)     OUTPUT_PATHS+=("$2");      shift 2;;
-      --match-file=*)   OUTPUT_PATHS+=("${1#*=}"); shift 1;;
-      --filter)         SED_FILTERS+=("$2");       shift 2;;
-      --filter=*)       SED_FILTERS+=("${1#*=}");  shift 1;;
-      --)               TEST_COMMAND=("${@:2}");   break;;
-      # Help.
-      -h | -help | --help)             usage; exit 0;;
-      *) echo "Invalid argument: $1."; usage; exit 1;;
+    # Options.
+    --name)
+      TEST_NAME="$2"
+      shift 2
+      ;;
+    --name=*)
+      TEST_NAME="${1#*=}"
+      shift 1
+      ;;
+    --exit-code)
+      EXIT_CODE="$2"
+      shift 2
+      ;;
+    --exit-code=*)
+      EXIT_CODE="${1#*=}"
+      shift 1
+      ;;
+    --stdin)
+      STDIN_PATH="$2"
+      shift 2
+      ;;
+    --stdin=*)
+      STDIN_PATH="${1#*=}"
+      shift 1
+      ;;
+    --input-file)
+      INPUT_PATHS+=("$2")
+      shift 2
+      ;;
+    --input-file=*)
+      INPUT_PATHS+=("${1#*=}")
+      shift 1
+      ;;
+    --match-stdout)
+      STDOUT_PATH="$2"
+      shift 2
+      ;;
+    --match-stdout=*)
+      STDOUT_PATH="${1#*=}"
+      shift 1
+      ;;
+    --match-stderr)
+      STDERR_PATH="$2"
+      shift 2
+      ;;
+    --match-stderr=*)
+      STDERR_PATH="${1#*=}"
+      shift 1
+      ;;
+    --match-file)
+      OUTPUT_PATHS+=("$2")
+      shift 2
+      ;;
+    --match-file=*)
+      OUTPUT_PATHS+=("${1#*=}")
+      shift 1
+      ;;
+    --filter)
+      SED_FILTERS+=("$2")
+      shift 2
+      ;;
+    --filter=*)
+      SED_FILTERS+=("${1#*=}")
+      shift 1
+      ;;
+    --)
+      TEST_COMMAND=("${@:2}")
+      break
+      ;;
+    # Help.
+    -h | -help | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Invalid argument: $1."
+      usage
+      exit 1
+      ;;
     esac
   done
 }
@@ -151,7 +209,7 @@ run-test() {
 
 match-exit-code() {
   local ACTUAL_EXIT_CODE="$1"
-  if (( (EXIT_CODE & 255) != ACTUAL_EXIT_CODE )); then
+  if (((EXIT_CODE & 255) != ACTUAL_EXIT_CODE)); then
     echo "# Exit codes do not match!"
     echo "# Note: expected $EXIT_CODE, actual $ACTUAL_EXIT_CODE."
     return 1
@@ -169,7 +227,7 @@ match-file-checksum() {
   # Get the actual checksum. P.S. Do we need to filter the file?
   local ACTUAL_CHECKSUM_FILE="$FILE.checksum.actual"
   local ACTUAL_CHECKSUM
-  shasum "$FILE" | cut -d' ' -f1 > "$ACTUAL_CHECKSUM_FILE"
+  shasum "$FILE" | cut -d' ' -f1 >"$ACTUAL_CHECKSUM_FILE"
   ACTUAL_CHECKSUM=$(cat "$ACTUAL_CHECKSUM_FILE")
 
   # Match them.
@@ -194,7 +252,7 @@ filter-file() {
 
     # Apply the filter.
     if [ $FIRST = true ]; then
-      "$SED_EXE" -rE "$FILTER" "$FILE" > "$FILTERED_FILE"
+      "$SED_EXE" -rE "$FILTER" "$FILE" >"$FILTERED_FILE"
       FIRST=false
     else
       "$SED_EXE" -rE "$FILTER" -i "$FILTERED_FILE"
@@ -212,12 +270,13 @@ match-file-contents() {
   local FILTERED_EXPECTED_FILE="$EXPECTED_FILE.filtered"
   local FILTERED_ACTUAL_FILE="$ACTUAL_FILE.filtered"
   filter-file "$EXPECTED_FILE" "$FILTERED_EXPECTED_FILE" &
-  filter-file "$ACTUAL_FILE" "$FILTERED_ACTUAL_FILE"; wait
+  filter-file "$ACTUAL_FILE" "$FILTERED_ACTUAL_FILE"
+  wait
 
   # Match them.
   local DIFF_FILE="$FILE.diff"
   "$DIFF_EXE" --ignore-blank-lines --ignore-trailing-space \
-      "$FILTERED_EXPECTED_FILE" "$FILTERED_ACTUAL_FILE" >"$DIFF_FILE"
+    "$FILTERED_EXPECTED_FILE" "$FILTERED_ACTUAL_FILE" >"$DIFF_FILE"
   local DIFF_EXIT_CODE=$?
   if [ $DIFF_EXIT_CODE != 0 ]; then
     echo "# File $FILE contents does not match:"
@@ -260,7 +319,8 @@ match() {
   # Match the output (in parallel).
   local PIDS=()
   for FILE in "${FILES_TO_MATCH[@]}"; do
-    match-file "$FILE" & PIDS+=($!)
+    match-file "$FILE" &
+    PIDS+=($!)
   done
   for PID in "${PIDS[@]}"; do wait "$PID" || PASSED=false; done
 
@@ -278,7 +338,8 @@ match() {
 echo-thin-separator
 parse-args "$@"
 setup-path
-setup-work-dir; cd "$WORK_DIR" || exit $?
+setup-work-dir
+cd "$WORK_DIR" || exit $?
 setup-input
 setup-output
 run-test

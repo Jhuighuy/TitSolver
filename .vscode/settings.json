@@ -27,6 +27,9 @@
   "[python]": {
     "editor.defaultFormatter": "eeyore.yapf"
   },
+  "[shellscript]": {
+    "editor.defaultFormatter": "mkhl.shfmt"
+  },
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },

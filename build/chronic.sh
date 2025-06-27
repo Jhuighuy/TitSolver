@@ -13,7 +13,7 @@
 OUTPUT=$(mktemp)
 
 # Run the command and record it's exit code.
-"$@" > "$OUTPUT" 2>&1
+"$@" >"$OUTPUT" 2>&1
 EXIT_CODE=$?
 
 # If exit code is not zero, print the output.
