@@ -70,13 +70,3 @@
 !/cmake/codespell.txt
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Test input and output files.
-!/tests/**/*stdin*
-!/tests/**/*stdout*
-!/tests/**/*stderr*
-!/tests/**/*input*
-!/tests/**/*output*
-!/tests/**/*checksum*
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

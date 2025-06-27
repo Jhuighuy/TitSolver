@@ -4,8 +4,11 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_test(
-  NAME "tit/data/unit"
-  COMMAND "tit_data_tests"
+  EXE SOURCES "test.cpp" DEPENDS tit::core
+  EXIT_CODE 1
+  MATCH_STDERR "stderr.txt"
+  FILTERS "s/SIG.+$/<SIGNAL>./g" # Simplify signal name.
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
