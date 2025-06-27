@@ -3,14 +3,9 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
-  NAME core_profiler_test
-  SOURCES "tit/core/profiler/test.cpp"
+add_tit_test_executable(
+  SOURCES "test.cpp"
   DEPENDS tit::core
-)
-
-add_tit_test(
-  COMMAND "tit_core_profiler_test"
   MATCH_STDOUT "stdout.txt"
   FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
   ENVIRONMENT

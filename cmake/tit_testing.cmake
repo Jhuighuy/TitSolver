@@ -114,3 +114,57 @@ function(add_tit_test)
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
+# Add a test executable and register it as a test.
+#
+function(add_tit_test_executable)
+  # Parse and check arguments.
+  cmake_parse_arguments(
+    TEST
+    ""
+    "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
+    "SOURCES;DEPENDS;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
+    ${ARGN}
+  )
+  if(NOT TEST_SOURCES)
+    message(FATAL_ERROR "List of sources must not be empty.")
+  endif()
+
+  # Build the test executable name.
+  # TODO: Do not duplicate the logic from `add_tit_test`!
+  set(TEST_DIR "${CMAKE_CURRENT_LIST_DIR}")
+  cmake_path(RELATIVE_PATH TEST_DIR)
+  if(TEST_NAME)
+    set(TEST_NAME "${TEST_DIR}/${TEST_NAME}")
+  else()
+    set(TEST_NAME "${TEST_DIR}")
+  endif()
+  string(REPLACE "/" "_" TEST_NAME "${TEST_NAME}")
+  set(TEST_NAME "${TEST_NAME}_test")
+
+  # Build the of sources.
+  list(TRANSFORM TEST_SOURCES PREPEND "${CMAKE_CURRENT_LIST_DIR}/")
+
+  # Create the test executable.
+  add_tit_executable(
+    NAME "${TEST_NAME}"
+    SOURCES ${TEST_SOURCES}
+    DEPENDS ${TEST_DEPENDS}
+  )
+
+  # Register the test.
+  add_tit_test(
+    COMMAND "${TEST_NAME}"
+    EXIT_CODE ${TEST_EXIT_CODE}
+    STDIN ${TEST_STDIN}
+    MATCH_STDOUT ${TEST_MATCH_STDOUT}
+    MATCH_STDERR ${TEST_MATCH_STDERR}
+    ENVIRONMENT ${TEST_ENVIRONMENT}
+    INPUT_FILES ${TEST_INPUT_FILES}
+    MATCH_FILES ${TEST_MATCH_FILES}
+    FILTERS ${TEST_FILTERS}
+  )
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
