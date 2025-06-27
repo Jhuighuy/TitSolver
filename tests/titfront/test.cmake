@@ -3,14 +3,17 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# This is just a stub for normal testing, since the whole executable in it's
-# actual stage is nothing more than a test itself. This test exists with a sole
-# reason of not breaking anything while doing some deep refactoring in the
-# library core.
+get_target_property(FRONT_SOURCE_DIR titfront SOURCE_DIR)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
+  set(RUN_SCRIPT "coverage")
+else()
+  set(RUN_SCRIPT "test")
+endif()
+
 add_tit_test(
-  NAME "titwcsph/dam_breaking[long]"
-  COMMAND "titwcsph"
-  MATCH_FILES "particles.ttdb.checksum"
+  COMMAND "${BASH_EXE}" -c "cd ${FRONT_SOURCE_DIR} && pnpm run ${RUN_SCRIPT}"
+  FLAGS RUN_SERIAL
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

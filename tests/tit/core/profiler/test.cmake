@@ -3,11 +3,11 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("core")
-add_subdirectory("data")
-add_subdirectory("geom")
-add_subdirectory("graph")
-add_subdirectory("sph")
-add_subdirectory("testing")
+add_tit_test(
+  EXE SOURCES "test.cpp" DEPENDS tit::core
+  MATCH_STDOUT "stdout.txt"
+  FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
+  ENVIRONMENT "TIT_ENABLE_PROFILER=1"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

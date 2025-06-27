@@ -4,8 +4,9 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_test(
-  NAME "tit/testing/unit"
-  COMMAND "tit_testing_tests"
+  EXE SOURCES "test.cpp" DEPENDS tit::core
+  MATCH_STDOUT "stdout.txt"
+  ENVIRONMENT "TIT_ENABLE_STATS=1"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

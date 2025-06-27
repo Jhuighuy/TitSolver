@@ -3,6 +3,11 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_all_tit_tests()
+add_tit_test(
+  EXE SOURCES "test.cpp" DEPENDS tit::core
+  EXIT_CODE 1
+  MATCH_STDERR "stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

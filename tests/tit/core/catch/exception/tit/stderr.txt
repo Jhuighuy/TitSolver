@@ -1,0 +1,23 @@
+func_1
+func_2
+func_3
+Throwing an exception...
+
+
+/home/jhuighuy/TitSolver/tests/tit/core/catch/exception/tit/test.cpp:18:67: Terminating due to an unhandled exception.
+
+  throw tit::Exception(...);
+  ^~~~~~~~~~~~~~~~~~~~~~~~~~ Test exception, Some arguments: 13, hello.
+
+
+Stack trace:
+
+  0 0x401704 tit::(anonymous namespace)::func_3()
+  1 0x401401 tit::(anonymous namespace)::func_2()
+  2 0x4013d1 tit::(anonymous namespace)::func_1()
+  3 0x4013a6 tit::(anonymous namespace)::run_test(tit::CmdArgs)
+  4 0x40eacd tit::run_main(int, char**, std::move_only_function<int (tit::CmdArgs)>)
+  5 0x401373 main
+  6 0x7f0e04be55f5
+  7 0x7f0e04be56a8 __libc_start_main
+  8 0x401275 _start

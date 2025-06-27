@@ -4,8 +4,8 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_test(
-  NAME "tit/geom/unit"
-  COMMAND "tit_geom_tests"
+  EXE SOURCES "test.cpp" DEPENDS tit::core
+  MATCH_STDERR "stderr.txt"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
