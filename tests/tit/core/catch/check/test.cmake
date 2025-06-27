@@ -3,9 +3,17 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+add_tit_executable(
+  NAME core_catch_check_test
+  SOURCES "tit/core/catch/check/test.cpp"
+  DEPENDS tit::core
+)
+
 add_tit_test(
-  NAME "tit/geom/unit"
-  COMMAND "tit_geom_tests"
+  COMMAND "tit_core_catch_check_test"
+  EXIT_CODE 1
+  MATCH_STDERR "stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

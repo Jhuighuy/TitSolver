@@ -36,8 +36,10 @@ function(add_pnpm_target TARGET)
     message(FATAL_ERROR "'package.json' file does not exist!")
   endif()
 
-  # Run PNPM install.
+  # Define the output directory for the node modules.
   set(TARGET_NODE_MODULES "${CMAKE_CURRENT_SOURCE_DIR}/node_modules")
+
+  # Run PNPM install.
   cmake_path(
     RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR
     BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
@@ -138,8 +140,10 @@ function(lint_pnpm_target TARGET)
   get_target_property(TARGET_SOURCE_DIR "${TARGET}" SOURCE_DIR)
   get_target_property(TARGET_BINARY_DIR "${TARGET}" BINARY_DIR)
 
-  # Run the PNPM lint.
+  # We'll need a stamp file to track the analysis.
   set(STAMP "${TARGET_BINARY_DIR}/${TARGET}.pnpm_lint_stamp")
+
+  # Run the PNPM lint.
   cmake_path(
     RELATIVE_PATH TARGET_SOURCE_DIR
     BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"

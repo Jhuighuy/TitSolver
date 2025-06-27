@@ -3,9 +3,17 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+add_tit_executable(
+  NAME core_catch_exception_tit_test
+  SOURCES "tit/core/catch/exception/tit/test.cpp"
+  DEPENDS tit::core
+)
+
 add_tit_test(
-  NAME "tit/graph/unit"
-  COMMAND "tit_graph_tests"
+  COMMAND "tit_core_catch_exception_tit_test"
+  EXIT_CODE 1
+  MATCH_STDERR "stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

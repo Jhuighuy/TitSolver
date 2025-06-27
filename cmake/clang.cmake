@@ -201,14 +201,27 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       continue()
     endif()
 
-    # Execute clang-tidy and update a stamp file on success.
-    # (wrapped with chronic to avoid annoying `N warnings generated` messages).
+    # We'll need a stamp file to track the analysis.
     string(REPLACE "/" "_" STAMP "${SOURCE}.tidy_stamp")
     set(STAMP "${TARGET_BINARY_DIR}/${STAMP}")
     list(APPEND ALL_STAMPS "${STAMP}")
-    set(SOURCE_PATH "${TARGET_SOURCE_DIR}/${SOURCE}")
+
+    # Setup path to the source file.
+    if(NOT EXISTS "${SOURCE}")
+      if(EXISTS "${TARGET_SOURCE_DIR}/${SOURCE}")
+        set(SOURCE "${TARGET_SOURCE_DIR}/${SOURCE}")
+      elseif(EXISTS "${TARGET_BINARY_DIR}/${SOURCE}")
+        set(SOURCE "${TARGET_BINARY_DIR}/${SOURCE}")
+      else()
+        message(WARNING "clang-tidy: source file '${SOURCE}' does not exist!")
+        continue()
+      endif()
+    endif()
+
+    # Execute clang-tidy and update a stamp file on success.
+    # (wrapped with chronic to avoid annoying `N warnings generated` messages).
     cmake_path(
-      RELATIVE_PATH SOURCE_PATH
+      RELATIVE_PATH SOURCE
       BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
       OUTPUT_VARIABLE RELATIVE_SOURCE_PATH
     )
@@ -218,12 +231,11 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       COMMAND
         "${CHRONIC_EXE}"
           "${CLANG_TIDY_EXE}"
-            "${SOURCE_PATH}"
-              ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_OPTIONS}
+            "${SOURCE}" ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_OPTIONS}
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
-      DEPENDS "${SOURCE_PATH}" "${CMAKE_SOURCE_DIR}/.clang-tidy"
-      IMPLICIT_DEPENDS CXX "${SOURCE_PATH}"
+      DEPENDS "${SOURCE}" "${CMAKE_SOURCE_DIR}/.clang-tidy"
+      IMPLICIT_DEPENDS CXX "${SOURCE}"
       COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
       VERBATIM
     )

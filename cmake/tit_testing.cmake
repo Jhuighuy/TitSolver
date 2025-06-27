@@ -21,6 +21,19 @@ find_program(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #
+# Register all the tests from `test.cmake` files in the current directory.
+#
+function(add_all_tit_tests)
+  # Find all the test files and execute them.
+  file(GLOB_RECURSE TEST_FILES "test.cmake")
+  foreach(TEST_FILE ${TEST_FILES})
+    include("${TEST_FILE}")
+  endforeach()
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
 # Register the test command.
 #
 function(add_tit_test)
@@ -32,11 +45,21 @@ function(add_tit_test)
     "COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
     ${ARGN}
   )
-  if(NOT TEST_NAME)
-    message(FATAL_ERROR "Test name must be specified.")
-  endif()
   if(NOT TEST_COMMAND)
     message(FATAL_ERROR "Command line must not be empty.")
+  endif()
+  set(TEST_NAME_REGEX "^[a-zA-Z0-9_]+(\\[[a-zA-Z0-9_]+\\])*$")
+  if(TEST_NAME AND NOT TEST_NAME MATCHES "${TEST_NAME_REGEX}")
+    message(FATAL_ERROR "Test name must be alphanumeric, with optional tags.")
+  endif()
+
+  # Build the test name.
+  set(TEST_DIR "${CMAKE_CURRENT_LIST_DIR}")
+  cmake_path(RELATIVE_PATH TEST_DIR)
+  if(TEST_NAME)
+    set(TEST_NAME "${TEST_DIR}/${TEST_NAME}")
+  else()
+    set(TEST_NAME "${TEST_DIR}")
   endif()
 
   # Build the list of arguments for the test driver.
@@ -45,22 +68,27 @@ function(add_tit_test)
     list(APPEND TEST_DRIVER_ARGS "--exit-code=${TEST_EXIT_CODE}")
   endif()
   if(TEST_STDIN)
+    set(TEST_STDIN "${CMAKE_CURRENT_LIST_DIR}/${TEST_STDIN}")
     cmake_path(ABSOLUTE_PATH TEST_STDIN NORMALIZE)
     list(APPEND TEST_DRIVER_ARGS "--stdin=${TEST_STDIN}")
   endif()
   foreach(FILE ${TEST_INPUT_FILES})
+    set(FILE "${CMAKE_CURRENT_LIST_DIR}/${FILE}")
     cmake_path(ABSOLUTE_PATH FILE NORMALIZE)
     list(APPEND TEST_DRIVER_ARGS "--input-file=${FILE}")
   endforeach()
   if(TEST_MATCH_STDOUT)
+    set(TEST_MATCH_STDOUT "${CMAKE_CURRENT_LIST_DIR}/${TEST_MATCH_STDOUT}")
     cmake_path(ABSOLUTE_PATH TEST_MATCH_STDOUT NORMALIZE)
     list(APPEND TEST_DRIVER_ARGS "--match-stdout=${TEST_MATCH_STDOUT}")
   endif()
   if(TEST_MATCH_STDERR)
+    set(TEST_MATCH_STDERR "${CMAKE_CURRENT_LIST_DIR}/${TEST_MATCH_STDERR}")
     cmake_path(ABSOLUTE_PATH TEST_MATCH_STDERR NORMALIZE)
     list(APPEND TEST_DRIVER_ARGS "--match-stderr=${TEST_MATCH_STDERR}")
   endif()
   foreach(FILE ${TEST_MATCH_FILES})
+    set(FILE "${CMAKE_CURRENT_LIST_DIR}/${FILE}")
     cmake_path(ABSOLUTE_PATH FILE NORMALIZE)
     list(APPEND TEST_DRIVER_ARGS "--match-file=${FILE}")
   endforeach()
