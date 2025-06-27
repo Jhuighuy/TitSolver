@@ -51,8 +51,9 @@ body {
   color: var(--text-color);
   background-color: var(--background-color);
   /* Same fonts that are used by the frontend. */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   font-size: var(--font-size);
   line-height: var(--line-height);
 }
