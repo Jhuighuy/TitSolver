@@ -3,9 +3,6 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_test(
-  NAME "tit/graph/unit"
-  COMMAND "tit_graph_tests"
-)
+add_tit_test(COMMAND "tit_geom_tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

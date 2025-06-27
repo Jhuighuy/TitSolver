@@ -16,8 +16,8 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang)
 include(codespell)
+include(testing)
 include(tit_target)
-include(tit_testing)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
