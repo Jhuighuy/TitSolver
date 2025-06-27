@@ -23,18 +23,28 @@ usage() {
 parse-args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      # Options.
-      -j | --jobs) JOBS="$2"; shift 2;;
-      # Help.
-      -h | -help | --help)             usage; exit 0;;
-      *) echo "Invalid argument: $1."; usage; exit 1;;
+    # Options.
+    -j | --jobs)
+      JOBS="$2"
+      shift 2
+      ;;
+    # Help.
+    -h | -help | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Invalid argument: $1."
+      usage
+      exit 1
+      ;;
     esac
   done
 }
 
 display-options() {
   echo "# Options:"
-  [ "$JOBS" -gt 1      ] && echo "#   JOBS = $JOBS"
+  [ "$JOBS" -gt 1 ] && echo "#   JOBS = $JOBS"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

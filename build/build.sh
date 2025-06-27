@@ -46,23 +46,66 @@ usage() {
 parse-args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      # Options.
-      -c | --config)  CONFIG="$2";            shift 2;;
-      --config=*)     CONFIG="${1#*=}";       shift 1;;
-      -f | --force)   FORCE=true;             shift;;
-      -t | --test)    RUN_TESTS=true;         shift;;
-      -j | --jobs)    JOBS="$2";              shift 2;;
-      --jobs=*)       JOBS="${1#*=}";         shift 1;;
-      # Advanced options.
-      --cc)           CC="$2";                shift 2;;
-      --cc=*)         CC="${1#*=}";           shift 1;;
-      --cxx)          CXX="$2";               shift 2;;
-      --cxx=*)        CXX="${1#*=}";          shift 1;;
-      --vcpkg-root)   VCPKG_ROOT="$2";        shift 2;;
-      --vcpkg-root=*) VCPKG_ROOT="${1#*=}";   shift 1;;
-      # Help.
-      -h | -help | --help)             usage; exit 0;;
-      *) echo "Invalid argument: $1."; usage; exit 1;;
+    # Options.
+    -c | --config)
+      CONFIG="$2"
+      shift 2
+      ;;
+    --config=*)
+      CONFIG="${1#*=}"
+      shift 1
+      ;;
+    -f | --force)
+      FORCE=true
+      shift
+      ;;
+    -t | --test)
+      RUN_TESTS=true
+      shift
+      ;;
+    -j | --jobs)
+      JOBS="$2"
+      shift 2
+      ;;
+    --jobs=*)
+      JOBS="${1#*=}"
+      shift 1
+      ;;
+    # Advanced options.
+    --cc)
+      CC="$2"
+      shift 2
+      ;;
+    --cc=*)
+      CC="${1#*=}"
+      shift 1
+      ;;
+    --cxx)
+      CXX="$2"
+      shift 2
+      ;;
+    --cxx=*)
+      CXX="${1#*=}"
+      shift 1
+      ;;
+    --vcpkg-root)
+      VCPKG_ROOT="$2"
+      shift 2
+      ;;
+    --vcpkg-root=*)
+      VCPKG_ROOT="${1#*=}"
+      shift 1
+      ;;
+    # Help.
+    -h | -help | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Invalid argument: $1."
+      usage
+      exit 1
+      ;;
     esac
   done
 }
@@ -162,7 +205,7 @@ configure() {
   export CXX
 
   # Use ccache (if available).
-  if command -v ccache &> /dev/null; then
+  if command -v ccache &>/dev/null; then
     echo "# Found ccache, using it."
     CMAKE_ARGS+=("-D" "CMAKE_C_COMPILER_LAUNCHER=ccache")
     CMAKE_ARGS+=("-D" "CMAKE_CXX_COMPILER_LAUNCHER=ccache")
