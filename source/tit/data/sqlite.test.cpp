@@ -69,8 +69,12 @@ TEST_CASE("data::sqlite::Database") {
                        Exception,
                        "unable to open database file");
     }
-    // Note: we cannot check for corrupt database files, since SQLite checks
-    // verifies the database file integrity on execution, not on opening.
+    SUBCASE("invalid database") {
+      // Our current executable definitely is not a valid SQLite database.
+      CHECK_THROWS_MSG(data::sqlite::Database{exe_path()},
+                       Exception,
+                       "file is not a database");
+    }
   }
 }
 
@@ -94,13 +98,6 @@ TEST_CASE("data::sqlite::Database::execute") {
           )SQL"),
           Exception,
           "datatype mismatch");
-    }
-    SUBCASE("invalid database") {
-      // Our current executable definitely is not a valid database file.
-      const data::sqlite::Database db{exe_path()};
-      CHECK_THROWS_MSG(db.execute("SELECT * FROM test"),
-                       Exception,
-                       "file is not a database");
     }
   }
 }

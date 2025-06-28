@@ -65,8 +65,7 @@ TEST_CASE("data::DataStorage") {
     }
     SUBCASE("invalid file") {
       // Our current executable definitely is not a valid `.ttdb` file.
-      const data::sqlite::Database db{exe_path()};
-      CHECK_THROWS_MSG(db.execute("SELECT * FROM test"),
+      CHECK_THROWS_MSG(data::sqlite::Database{exe_path()},
                        Exception,
                        "file is not a database");
     }
