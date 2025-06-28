@@ -6,6 +6,11 @@
 // IWYU pragma: private, include "tit/core/simd.hpp"
 #pragma once
 
+// See 'tit/core/_simd/traits.hpp' for details.
+#ifdef __AVX512F__
+#undef __AVX512F__
+#endif
+
 #include <span>
 
 #include <hwy/highway.h>
