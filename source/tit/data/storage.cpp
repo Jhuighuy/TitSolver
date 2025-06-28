@@ -413,7 +413,7 @@ auto DataStorage::array_data_open_write(DataArrayID array_id)
           sqlite::make_blob_writer(db_,
                                    "DataArrays",
                                    "data",
-                                   static_cast<sqlite::RowID>(array_id))),
+                                   std::to_underlying(array_id))),
       [this, array_id](size_t copied_bytes) {
         const auto byte_width = array_type(array_id).width();
         TIT_ASSERT(copied_bytes % byte_width == 0, "Truncated data!");
@@ -431,7 +431,7 @@ auto DataStorage::array_data_open_read(DataArrayID array_id) const
       sqlite::make_blob_reader(db_,
                                "DataArrays",
                                "data",
-                               static_cast<sqlite::RowID>(array_id)));
+                               std::to_underlying(array_id)));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
