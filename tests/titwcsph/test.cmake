@@ -11,6 +11,7 @@ add_tit_test(
   NAME "dam_breaking[long]"
   COMMAND "titwcsph"
   MATCH_FILES "particles.ttdb.checksum"
+  FLAGS RUN_SERIAL
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

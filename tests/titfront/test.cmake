@@ -13,6 +13,7 @@ endif()
 
 add_tit_test(
   COMMAND "${BASH_EXE}" -c "cd ${FRONT_SOURCE_DIR} && pnpm run ${RUN_SCRIPT}"
+  FLAGS RUN_SERIAL
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

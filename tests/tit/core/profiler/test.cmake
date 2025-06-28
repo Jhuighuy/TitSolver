@@ -8,9 +8,7 @@ add_tit_test_executable(
   DEPENDS tit::core
   MATCH_STDOUT "stdout.txt"
   FILTERS "s/\\s*\\d+\\.\\d+/ <number>/g"
-  ENVIRONMENT
-    "TIT_ENABLE_PROFILER=1"
-    "TIT_ENABLE_STATS=0"
+  ENVIRONMENT "TIT_ENABLE_PROFILER=1"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

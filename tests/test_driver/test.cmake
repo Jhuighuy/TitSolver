@@ -13,10 +13,7 @@ add_tit_test(
 add_tit_test(
   NAME "match_exit_code_failure"
   COMMAND "${BASH_EXE}" -c "exit -1"
-)
-set_tests_properties(
-  "test_driver/match_exit_code_failure"
-  PROPERTIES WILL_FAIL TRUE
+  FLAGS WILL_FAIL TRUE
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,10 +70,7 @@ add_tit_test(
   NAME "check_output_file_checksum_failure"
   MATCH_FILES "output_1.txt.checksum"
   COMMAND "${BASH_EXE}" -c "echo 'Some erroneous output.' > ./output_1.txt"
-)
-set_tests_properties(
-  "test_driver/check_output_file_checksum_failure"
-  PROPERTIES WILL_FAIL TRUE
+  FLAGS WILL_FAIL
 )
 
 # Check that the missing output files are detected.
@@ -84,20 +78,14 @@ add_tit_test(
   NAME "missing_output_file_1"
   MATCH_FILES "output_1.txt"
   COMMAND "${BASH_EXE}" -c "exit 0"
-)
-set_tests_properties(
-  "test_driver/missing_output_file_1"
-  PROPERTIES WILL_FAIL TRUE
+  FLAGS WILL_FAIL
 )
 
 add_tit_test(
   NAME "missing_output_file_2"
   MATCH_FILES "output_1.txt.checksum"
   COMMAND "${BASH_EXE}" -c "exit 0"
-)
-set_tests_properties(
-  "test_driver/missing_output_file_2"
-  PROPERTIES WILL_FAIL TRUE
+  FLAGS WILL_FAIL
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -155,10 +143,7 @@ add_tit_test(
   COMMAND "${BASH_EXE}" -c
     "echo 'Some output.' > ./output_1.txt &&
      echo 'Some different erroneous output.' > ./output_2.txt"
-)
-set_tests_properties(
-  "test_driver/integration_test_1"
-  PROPERTIES WILL_FAIL TRUE
+  FLAGS WILL_FAIL
 )
 
 # All output files are correct, but a file is missing.
@@ -168,10 +153,7 @@ add_tit_test(
   COMMAND "${BASH_EXE}" -c
     "echo 'Some output.' > ./output_1.txt &&
      echo 'Some different erroneous output.' > ./output_2.txt"
-)
-set_tests_properties(
-  "test_driver/integration_test_2"
-  PROPERTIES WILL_FAIL TRUE
+  FLAGS WILL_FAIL
 )
 
 # All output files are correct, but exit code is not.
@@ -182,10 +164,7 @@ add_tit_test(
     "echo 'Some output.' > ./output_1.txt &&
      echo 'Some different output.' > ./output_2.txt &&
      exit -1"
-)
-set_tests_properties(
-  "test_driver/integration_test_3"
-  PROPERTIES WILL_FAIL TRUE
+  FLAGS WILL_FAIL
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

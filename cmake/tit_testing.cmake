@@ -42,7 +42,7 @@ function(add_tit_test)
     TEST
     ""
     "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
-    "COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
+    "COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
     ${ARGN}
   )
   if(NOT TEST_COMMAND)
@@ -104,13 +104,26 @@ function(add_tit_test)
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   )
 
-  # Set test environment.
-  if(TEST_ENVIRONMENT)
-    set_tests_properties(
-      "${TEST_NAME}"
-      PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}"
-    )
-  endif()
+  # Setup test environment.
+  # TODO: We need proper environment sandboxing.
+  list(
+    PREPEND
+    TEST_ENVIRONMENT
+    "TEST_DATA_DIR=${CMAKE_CURRENT_SOURCE_DIR}/_data"
+    "TIT_ENABLE_PROFILER=0"
+    "TIT_ENABLE_STATS=0"
+  )
+  set_tests_properties(
+    "${TEST_NAME}"
+    PROPERTIES
+    ENVIRONMENT
+    "${TEST_ENVIRONMENT}"
+  )
+
+  # Setup test flags.
+  foreach(FLAG ${TEST_FLAGS})
+    set_tests_properties("${TEST_NAME}" PROPERTIES "${FLAG}" TRUE)
+  endforeach()
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,7 +137,7 @@ function(add_tit_test_executable)
     TEST
     ""
     "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
-    "SOURCES;DEPENDS;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS"
+    "SOURCES;DEPENDS;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
     ${ARGN}
   )
   if(NOT TEST_SOURCES)
@@ -153,7 +166,7 @@ function(add_tit_test_executable)
     DEPENDS ${TEST_DEPENDS}
   )
 
-  # Register the test.
+  # Add the test.
   add_tit_test(
     COMMAND "${TEST_NAME}"
     EXIT_CODE ${TEST_EXIT_CODE}
@@ -164,6 +177,7 @@ function(add_tit_test_executable)
     INPUT_FILES ${TEST_INPUT_FILES}
     MATCH_FILES ${TEST_MATCH_FILES}
     FILTERS ${TEST_FILTERS}
+    FLAGS ${TEST_FLAGS}
   )
 endfunction()
 
