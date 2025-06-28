@@ -42,22 +42,26 @@ auto error_message(int status, sqlite3* db = nullptr) -> std::string {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Database::Database(const std::filesystem::path& path, bool read_only) {
+  // Open the database.
   sqlite3* db = nullptr;
   const auto flags = read_only ? SQLITE_OPEN_READONLY :
                                  SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
   if (const auto status = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
       status != SQLITE_OK) {
-    TIT_THROW("SQLite database open failed ({}): {}",
+    TIT_THROW("SQLite database open failed ({}): {}.",
               status,
               error_message(status, db));
   }
   db_.reset(db);
+
+  // Execute a simple query to trigger the database integrity check.
+  execute("SELECT 0 WHERE 0");
 }
 
 void Database::Closer_::operator()(sqlite3* db) {
   if (const auto status = sqlite3_close_v2(db); status != SQLITE_OK) {
     // Let's not throw in destructors.
-    err("SQLite database close failed ({}): {}",
+    err("SQLite database close failed ({}): {}.",
         status,
         error_message(status, db));
   }
@@ -86,7 +90,7 @@ void Database::execute(CStrView sql) const {
       status != SQLITE_OK) {
     std::string error_message_str{error_message};
     sqlite3_free(error_message);
-    TIT_THROW("SQLite operation '{}' failed ({}): {}",
+    TIT_THROW("SQLite operation '{}' failed ({}): {}.",
               sql,
               status,
               error_message_str);
@@ -111,7 +115,7 @@ Statement::Statement(Database& db, std::string_view sql) : db_{&db} {
                                              &stmt,
                                              /*pzTail=*/nullptr);
       status != SQLITE_OK) {
-    TIT_THROW("SQLite statement '{}' prepare failed ({}): {}",
+    TIT_THROW("SQLite statement '{}' prepare failed ({}): {}.",
               sql,
               status,
               error_message(status, db_->base()));
@@ -126,7 +130,7 @@ void Statement::Finalizer_::operator()(sqlite3_stmt* stmt) {
     // `sqlite3_finalize` returns an error code if any usage of the statement
     // resulted in an error, so we've must have already thrown an exception.
     // So, let's just log the error here and return peacefully.
-    err("SQLite statement close failed ({}): {}",
+    err("SQLite statement close failed ({}): {}.",
         status,
         error_message(status));
   }
@@ -150,7 +154,7 @@ void Statement::bind_(size_t index, int64_t value) const {
   if (const auto status =
           sqlite3_bind_int64(base(), static_cast<int>(index), value);
       status != SQLITE_OK) {
-    TIT_THROW("SQLite statement bind integer argument #{} failed ({}): {}",
+    TIT_THROW("SQLite statement bind integer argument #{} failed ({}): {}.",
               index,
               status,
               error_message(status, db_->base()));
@@ -164,7 +168,7 @@ void Statement::bind_(size_t index, float64_t value) const {
   if (const auto status =
           sqlite3_bind_double(base(), static_cast<int>(index), value);
       status != SQLITE_OK) {
-    TIT_THROW("SQLite statement bind real argument #{} failed ({}): {}",
+    TIT_THROW("SQLite statement bind real argument #{} failed ({}): {}.",
               index,
               status,
               error_message(status, db_->base()));
@@ -183,7 +187,7 @@ void Statement::bind_(size_t index, std::string_view value) const {
                                             static_cast<int>(value.size()),
                                             SQLITE_STATIC);
       status != SQLITE_OK) {
-    TIT_THROW("SQLite statement bind text argument #{} failed ({}): {}",
+    TIT_THROW("SQLite statement bind text argument #{} failed ({}): {}.",
               index,
               status,
               error_message(status, db_->base()));
@@ -202,7 +206,7 @@ void Statement::bind_(size_t index, BlobView value) const {
                                             static_cast<int>(value.size()),
                                             SQLITE_STATIC);
       status != SQLITE_OK) {
-    TIT_THROW("SQLite statement bind blob argument #{} failed ({}): {}",
+    TIT_THROW("SQLite statement bind blob argument #{} failed ({}): {}.",
               index,
               status,
               error_message(status, db_->base()));
@@ -219,7 +223,7 @@ auto Statement::step() -> bool {
     case SQLITE_DONE: state_ = State_::finished; return false;
     case SQLITE_ROW:  state_ = State_::executing; return true;
     default:
-      TIT_THROW("SQLite statement step failed ({}): {}",
+      TIT_THROW("SQLite statement step failed ({}): {}.",
                 status,
                 error_message(status, db_->base()));
   }
@@ -247,7 +251,7 @@ auto Statement::num_columns_() const -> size_t {
 
   const auto count = sqlite3_column_count(base());
   if (count <= 0) {
-    TIT_THROW("SQLite statement's column count query failed: {}",
+    TIT_THROW("SQLite statement's column count query failed: {}.",
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
 
@@ -260,7 +264,7 @@ auto Statement::column_type_(size_t index) const -> int {
 
   const auto type = sqlite3_column_type(base(), static_cast<int>(index));
   if (type <= 0) {
-    TIT_THROW("SQLite statement's column type #{} query failed: {}",
+    TIT_THROW("SQLite statement's column type #{} query failed: {}.",
               index,
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
@@ -292,14 +296,14 @@ auto Statement::column_text_(size_t index) const -> std::string_view {
   const auto index_int = static_cast<int>(index);
   const auto* const value_uchar_ptr = sqlite3_column_text(base(), index_int);
   if (value_uchar_ptr == nullptr) {
-    TIT_THROW("SQLite statement failed to retrieve text column data #{}: {}",
+    TIT_THROW("SQLite statement failed to retrieve text column data #{}: {}.",
               index,
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
 
   const auto num_bytes_int = sqlite3_column_bytes(base(), index_int);
   if (num_bytes_int < 0) {
-    TIT_THROW("SQLite statement failed to retrieve text column size #{}: {}",
+    TIT_THROW("SQLite statement failed to retrieve text column size #{}: {}.",
               index,
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
@@ -317,14 +321,14 @@ auto Statement::column_blob_(size_t index) const -> BlobView {
   const auto index_int = static_cast<int>(index);
   const auto* const value_void_ptr = sqlite3_column_blob(base(), index_int);
   if (value_void_ptr == nullptr) {
-    TIT_THROW("SQLite statement failed to retrieve blob column data #{}: {}",
+    TIT_THROW("SQLite statement failed to retrieve blob column data #{}: {}.",
               index,
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
 
   const auto num_bytes_int = sqlite3_column_bytes(base(), index_int);
   if (num_bytes_int < 0) {
-    TIT_THROW("SQLite statement failed to retrieve blob column size #{}: {}",
+    TIT_THROW("SQLite statement failed to retrieve blob column size #{}: {}.",
               index,
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
@@ -349,7 +353,7 @@ BlobReader::BlobReader(const Database& db,
                                             /*flags=*/0, // read-only.
                                             &blob);
       status != SQLITE_OK) {
-    TIT_THROW("SQLite blob open failed ({}): {}",
+    TIT_THROW("SQLite blob open failed ({}): {}.",
               status,
               error_message(status, db.base()));
   }
@@ -362,7 +366,7 @@ void BlobReader::Finalizer_::operator()(sqlite3_blob* blob) {
   const auto status = sqlite3_blob_close(blob);
   if (status != SQLITE_OK) {
     // Let's not throw in destructors.
-    err("SQLite blob close failed ({}): {}", status, error_message(status));
+    err("SQLite blob close failed ({}): {}.", status, error_message(status));
   }
 }
 
@@ -382,7 +386,7 @@ auto BlobReader::read(std::span<byte_t> data) -> size_t {
                                             static_cast<int>(count),
                                             static_cast<int>(offset_));
       status != SQLITE_OK) {
-    TIT_THROW("SQLite blob read failed ({}): {}",
+    TIT_THROW("SQLite blob read failed ({}): {}.",
               status,
               error_message(status, db_->base()));
   }
