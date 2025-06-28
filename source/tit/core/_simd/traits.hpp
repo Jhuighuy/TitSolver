@@ -6,6 +6,12 @@
 // IWYU pragma: private, include "tit/core/simd.hpp"
 #pragma once
 
+/// @todo AVX-512 uses special 8/16 bit mask registers, which do not fit into
+///       our approach of dealing with masks. Let's disable AVX-512 for now.
+#ifdef __AVX512F__
+#undef __AVX512F__
+#endif
+
 #include <bit>
 #include <concepts>
 
