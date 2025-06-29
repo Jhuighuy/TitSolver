@@ -5,7 +5,7 @@
 
 add_tit_library(
   NAME
-    ttdb
+    titsdk
   TYPE
     MODULE
   PREFIX
@@ -13,23 +13,36 @@ add_tit_library(
   SUFFIX
     ".so"
   SOURCES
+    "_utils.hpp"
+    "lib.cpp"
+    "lib.hpp"
+    "titsdk.hpp"
     "ttdb.cpp"
     "ttdb.hpp"
   DEPENDS
     tit::data
   DESTINATION
-    "ttdb"
+    "sdk/titsdk"
+)
+
+install(
+  FILES
+    "lib.hpp"
+    "titsdk.hpp"
+    "ttdb.hpp"
+  DESTINATION
+    "sdk/titsdk"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 install(
   FILES
-    "TTDBReader.py"
-    "ttdb.hpp"
+    "__init__.py"
+    "lib.py"
     "ttdb.py"
   DESTINATION
-    "ttdb"
+    "sdk/titsdk"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

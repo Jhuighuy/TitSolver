@@ -18,12 +18,13 @@ ignore = [
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [tool.pylint]
-disable = ["bad-indentation", "missing-docstring", "invalid-name"]
+disable = ["bad-indentation", "missing-docstring", "invalid-name", "fixme"]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [tool.coverage.paths]
-pytit = ["source/ttdb", "output/TIT_ROOT/ttdb"]
+titsdk = ["source/titsdk", "output/TIT_ROOT/sdk/titsdk"]
+ttdbreader = ["source/ttdbreader", "output/TIT_ROOT/paraview/ttdbreader"]
 
 [tool.coverage.run]
 branch = true

@@ -1,4 +1,4 @@
-from ttdb import Error, open_storage
+from titsdk import Error, open_storage
 
 try:
   # Our current script definitely is not a valid `.ttdb` file.

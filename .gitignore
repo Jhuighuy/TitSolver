@@ -20,7 +20,7 @@
 
 # C++ configuration files.
 !/.clang-format
-!/.clang-tidy
+!.clang-tidy
 !/vcpkg.json
 
 # Web configuration files.
