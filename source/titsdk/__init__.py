@@ -3,11 +3,21 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titback")
-add_subdirectory("titfront")
-add_subdirectory("titsdk")
-add_subdirectory("titwcsph")
-add_subdirectory("ttdb")
+# TODO: Let's do something about VS Code complaining about unused imports.
+from .lib import Error
+from .ttdb import (
+    Kind,
+    Rank,
+    Type,
+    Array,
+    ArrayIter,
+    Dataset,
+    TimeStep,
+    TimeStepIter,
+    Series,
+    SeriesIter,
+    Storage,
+    open_storage,
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

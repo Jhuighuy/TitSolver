@@ -1,3 +1,3 @@
-# `ttdb_plugin`
+# `ttdb`
 
 This directory contains a ParaView plugin for reading BlueTit database files.

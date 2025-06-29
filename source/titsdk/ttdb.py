@@ -4,47 +4,13 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 from __future__ import annotations
-import os
 from collections.abc import Iterator
-from ctypes import CDLL, c_char_p, c_double, c_uint32, c_uint64, c_void_p
+from ctypes import c_char_p, c_double, c_uint32, c_uint64, c_void_p
 from enum import Enum
-from typing import Any, Final, Callable, NewType, cast, final
+from typing import Final, Callable, NewType, cast, final
 import numpy as np
 from numpy.typing import NDArray
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-@final
-class _Library:  # pylint: disable=too-few-public-methods
-  _dll: CDLL
-  _last_error: Callable[[], bytes | None]
-
-  def __init__(self) -> None:
-    self._dll = CDLL(os.path.join(os.path.dirname(__file__), "libttdb.so"))
-    self._last_error = self._dll.ttdb__last_error
-    self._last_error.restype = c_char_p
-
-  def func(self, name: str, arg_types: tuple[type, ...],
-           ret_type: type | None) -> Any:
-    func = getattr(self._dll, name)
-    func.argtypes = arg_types
-    func.restype = ret_type
-
-    def checked_func(*args: Any) -> Any:
-      result = func(*args)
-      if error := self._last_error():
-        raise Error(error.decode("utf-8"))
-      return result
-
-    return checked_func
-
-lib: Final = _Library()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-@final
-class Error(RuntimeError):
-  """BlueTit Particle Storage error."""
+from .lib import lib
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

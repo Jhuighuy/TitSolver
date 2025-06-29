@@ -1,5 +1,5 @@
 import os
-from ttdb import open_storage
+from titsdk import open_storage
 
 # Open the storage and access the varying dataset of the last time step.
 storage = open_storage(

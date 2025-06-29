@@ -3,11 +3,40 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+add_tit_library(
+  NAME
+    titsdk
+  TYPE
+    MODULE
+  PREFIX
+    "lib"
+  SUFFIX
+    ".so"
+  SOURCES
+    "ttdb.cpp"
+    "ttdb.hpp"
+  DEPENDS
+    tit::data
+  DESTINATION
+    "sdk/titsdk"
+)
+
 install(
   FILES
-    "TTDBReader.py"
+    "ttdb.hpp"
   DESTINATION
-    "ttdb"
+    "sdk/titsdk"
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+install(
+  FILES
+    "__init__.py"
+    "lib.py"
+    "ttdb.py"
+  DESTINATION
+    "sdk/titsdk"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
