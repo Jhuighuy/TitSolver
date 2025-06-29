@@ -25,9 +25,9 @@ from vtk import (
 )
 from vtkmodules.util import numpy_support
 
-# ParaView does not know how to import `ttdb.py`.
-sys.path.append(os.path.dirname(__file__))
-from ttdb import (  # pylint: disable=wrong-import-position # noqa: E402
+# ParaView does not know how to import titsdk.
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "sdk"))
+from titsdk import (  # pylint: disable=wrong-import-position # noqa: E402
     Rank, Storage, TimeStep, open_storage,
 )
 

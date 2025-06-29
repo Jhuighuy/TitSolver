@@ -3,11 +3,12 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titback")
-add_subdirectory("titfront")
-add_subdirectory("titsdk")
-add_subdirectory("titwcsph")
-add_subdirectory("ttdbreader")
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+InheritParentConfig: true
+Checks: |
+  -bugprone-reserved-identifier
+  -cert-dcl37-c
+  -cert-dcl51-cpp
+  -cppcoreguidelines-owning-memory
+  -modernize-deprecated-headers
+  -modernize-use-trailing-return-type
+  -modernize-use-using

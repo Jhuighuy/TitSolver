@@ -1,5 +1,5 @@
 import os
-from ttdb import Storage, Series, TimeStep, Dataset, open_storage
+from titsdk import Storage, Series, TimeStep, Dataset, open_storage
 
 #
 # Print the information about the storage.
