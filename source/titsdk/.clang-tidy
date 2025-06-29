@@ -3,11 +3,12 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_webapp(
-  NAME
-    titfront
-  DESTINATION
-    "lib/frontend"
-)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+InheritParentConfig: true
+Checks: |
+  -bugprone-reserved-identifier
+  -cert-dcl37-c
+  -cert-dcl51-cpp
+  -cppcoreguidelines-owning-memory
+  -modernize-deprecated-headers
+  -modernize-use-trailing-return-type
+  -modernize-use-using

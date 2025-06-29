@@ -6,7 +6,8 @@
 add_subdirectory("tit")
 add_subdirectory("titback")
 add_subdirectory("titfront")
+add_subdirectory("titsdk")
 add_subdirectory("titwcsph")
-add_subdirectory("ttdb")
+add_subdirectory("ttdbreader")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

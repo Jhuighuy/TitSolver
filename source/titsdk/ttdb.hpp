@@ -5,8 +5,6 @@
 
 #pragma once
 
-// NOLINTBEGIN(*-reserved-identifier,cert-*,modernize-*)
-
 #include <stddef.h>
 #include <stdint.h>
 
@@ -15,10 +13,6 @@ extern "C" {
 #endif
 
 #pragma GCC visibility push(default)
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-const char* ttdb__last_error();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -98,5 +92,3 @@ ttdb_series_iter_t* ttdb__series(ttdb_t* db);
 #ifdef __cplusplus
 } // extern "C"
 #endif
-
-// NOLINTEND(*-reserved-identifier,cert-*,modernize-*)

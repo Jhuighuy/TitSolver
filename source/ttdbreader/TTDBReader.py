@@ -4,7 +4,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # type: ignore
-# pylint: disable=import-error,no-name-in-module
+# pylint: disable=import-error
 from collections.abc import Iterator
 from operator import attrgetter
 import os
@@ -25,9 +25,9 @@ from vtk import (
 )
 from vtkmodules.util import numpy_support
 
-# ParaView does not know how to import `ttdb.py`.
-sys.path.append(os.path.dirname(__file__))
-from ttdb import (  # pylint: disable=wrong-import-position # noqa: E402
+# ParaView does not know how to import titsdk.
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "sdk"))
+from titsdk import (  # pylint: disable=wrong-import-position # noqa: E402
     Rank, Storage, TimeStep, open_storage,
 )
 
@@ -132,7 +132,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
 
     return True
 
-  def RequestData(  # pylint: disable=unused-argument,too-many-locals
+  def RequestData(  # pylint: disable=unused-argument
       self,
       request,
       inInfo,
