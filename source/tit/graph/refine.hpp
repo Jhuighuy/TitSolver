@@ -5,26 +5,22 @@
 
 #pragma once
 
-#include <functional>
-#include <utility>
+#include <concepts>
 
-#include <boost/container/flat_map.hpp>
+// IWYU pragma: begin_exports
+#include "tit/graph/refine/fm.hpp"
+#include "tit/graph/refine/noop.hpp"
+// IWYU pragma: end_exports
 
-#include "tit/core/basic_types.hpp"
-#include "tit/core/containers/small_vector.hpp"
-
-namespace tit {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Boost small flat map.
-template<class Key,
-         class Val,
-         size_t InplaceCapacity,
-         class Cmp = std::less<Key>>
-using SmallFlatMap = boost::container::
-    flat_map<Key, Val, Cmp, SmallVector<std::pair<Key, Val>, InplaceCapacity>>;
+namespace tit::graph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+/// Partitioning refinement function.
+template<class Refine>
+concept refine_func = std::same_as<Refine, RefinePartsFM> ||
+                      std::same_as<Refine, RefinePartsNoop>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit::graph
