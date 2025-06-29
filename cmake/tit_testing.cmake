@@ -4,6 +4,9 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
+include(python)
+include(tit_target)
+include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -175,6 +178,57 @@ function(add_tit_test_executable)
     MATCH_STDERR ${TEST_MATCH_STDERR}
     ENVIRONMENT ${TEST_ENVIRONMENT}
     INPUT_FILES ${TEST_INPUT_FILES}
+    MATCH_FILES ${TEST_MATCH_FILES}
+    FILTERS ${TEST_FILTERS}
+    FLAGS ${TEST_FLAGS}
+  )
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
+# Add a test Python script and register it as a test.
+#
+function(add_tit_python_test)
+  # Parse and check arguments.
+  cmake_parse_arguments(
+    TEST
+    ""
+    "SOURCE;NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
+    "ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
+    ${ARGN}
+  )
+  if(NOT TEST_SOURCE)
+    message(FATAL_ERROR "Source file must be specified.")
+  endif()
+
+  # Build the test target name.
+  # TODO: Do not duplicate the logic from `add_tit_test`!
+  set(TEST_DIR "${CMAKE_CURRENT_LIST_DIR}")
+  cmake_path(RELATIVE_PATH TEST_DIR)
+  if(TEST_NAME)
+    set(TEST_NAME "${TEST_DIR}/${TEST_NAME}")
+  else()
+    set(TEST_NAME "${TEST_DIR}")
+  endif()
+  string(REPLACE "/" "_" TEST_NAME "${TEST_NAME}")
+  set(TEST_NAME "${TEST_NAME}_test")
+
+  # Create the test module.
+  add_tit_python_module(
+    NAME "${TEST_NAME}"
+    SOURCES "${CMAKE_CURRENT_LIST_DIR}/${TEST_SOURCE}"
+  )
+
+  # Add the test.
+  add_tit_test(
+    COMMAND "${BASH_EXE}" -c "${PYTHON_TEST_CMDLINE} ${TEST_SOURCE}"
+    EXIT_CODE ${TEST_EXIT_CODE}
+    STDIN ${TEST_STDIN}
+    MATCH_STDOUT ${TEST_MATCH_STDOUT}
+    MATCH_STDERR ${TEST_MATCH_STDERR}
+    ENVIRONMENT ${TEST_ENVIRONMENT}
+    INPUT_FILES "${TEST_SOURCE}" ${TEST_INPUT_FILES}
     MATCH_FILES ${TEST_MATCH_FILES}
     FILTERS ${TEST_FILTERS}
     FLAGS ${TEST_FLAGS}

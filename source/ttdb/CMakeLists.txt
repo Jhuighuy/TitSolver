@@ -3,8 +3,10 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-install(
-  FILES
+add_tit_python_module(
+  NAME
+    ttdb
+  SOURCES
     "TTDBReader.py"
   DESTINATION
     "ttdb"

@@ -3,10 +3,9 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_test(
-  INPUT_FILES "test.py"
+add_tit_python_test(
+  SOURCE "test.py"
   MATCH_FILES "output.csv.checksum"
-  COMMAND "${BASH_EXE}" -c "${PYTHON_TEST_CMDLINE} test.py"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

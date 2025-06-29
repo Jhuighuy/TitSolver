@@ -229,6 +229,31 @@ endfunction()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #
+# Add a Python module target.
+#
+function(add_tit_python_module)
+  # Parse and check arguments.
+  cmake_parse_arguments(PY "" "NAME;DESTINATION" "SOURCES" ${ARGN})
+  if(NOT PY_NAME)
+    message(FATAL_ERROR "Python module name must be specified.")
+  endif()
+
+  # Create the target.
+  make_target_name(${PY_NAME} PY_TARGET)
+  add_python_target(${PY_TARGET} ${PY_SOURCES})
+
+  # Install the target.
+  if(PY_DESTINATION)
+    install_python_target(TARGET ${PY_TARGET} DESTINATION "${PY_DESTINATION}")
+  endif()
+
+  # Enable static analysis.
+  lint_python_target(${PY_TARGET})
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
 # Add a documentation target.
 #
 function(add_tit_documentation)
