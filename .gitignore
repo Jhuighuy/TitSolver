@@ -31,6 +31,7 @@
 !tsconfig*.json
 
 # Python configuration files.
+!py.typed
 !/pyproject.toml
 
 # Output.

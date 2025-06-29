@@ -32,8 +32,10 @@ install(
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-install(
-  FILES
+add_tit_python_target(
+  NAME
+    titsdk_py
+  SOURCES
     "__init__.py"
     "lib.py"
     "ttdb.py"
