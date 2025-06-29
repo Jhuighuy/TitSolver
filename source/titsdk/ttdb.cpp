@@ -3,14 +3,10 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <array>
 #include <cstdint>
-#include <cstring>
-#include <exception>
 #include <memory>
 #include <span>
 #include <string>
-#include <type_traits>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
@@ -20,37 +16,11 @@
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"
 
+#include "_utils.hpp"
 #include "ttdb.hpp"
-
-// NOLINTBEGIN(modernize-*,*-owning-memory)
 
 using namespace tit;
 using namespace tit::data;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-namespace {
-
-std::array<char, 1024> last_error;
-
-template<class Func>
-auto safe_call(Func func) noexcept -> std::invoke_result_t<Func> {
-  try {
-    last_error.front() = '\0';
-    return func();
-  } catch (const std::exception& e) {
-    std::strncpy(last_error.data(), e.what(), last_error.size() - 1);
-  } catch (...) {
-    std::strncpy(last_error.data(), "Unknown error.", last_error.size() - 1);
-  }
-  return {};
-}
-
-} // namespace
-
-const char* ttdb__last_error() {
-  return last_error.front() == '\0' ? nullptr : last_error.data();
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -148,6 +118,7 @@ void ttdb_dataset__close(ttdb_dataset_t* dataset) {
 
 uint64_t ttdb_dataset__num_arrays(ttdb_dataset_t* dataset) {
   return safe_call([dataset] {
+    TIT_ENSURE(dataset != nullptr, "Dataset pointer is null.");
     return dataset->storage->dataset_num_arrays(dataset->dataset_id);
   });
 }
@@ -339,5 +310,3 @@ ttdb_series_iter_t* ttdb__series(ttdb_t* db) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// NOLINTEND(modernize-*,*-owning-memory)

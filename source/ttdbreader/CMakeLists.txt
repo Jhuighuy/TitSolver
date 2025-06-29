@@ -3,11 +3,11 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titback")
-add_subdirectory("titfront")
-add_subdirectory("titsdk")
-add_subdirectory("titwcsph")
-add_subdirectory("ttdbreader")
+install(
+  FILES
+    "TTDBReader.py"
+  DESTINATION
+    "paraview/ttdbreader"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

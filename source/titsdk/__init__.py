@@ -3,33 +3,38 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_library(
-  NAME
-    ttdb
-  TYPE
-    MODULE
-  PREFIX
-    "lib"
-  SUFFIX
-    ".so"
-  SOURCES
-    "ttdb.cpp"
-    "ttdb.hpp"
-  DEPENDS
-    tit::data
-  DESTINATION
-    "ttdb"
+from .lib import Error
+from .ttdb import (
+    Array,
+    ArrayIter,
+    Dataset,
+    Kind,
+    open_storage,
+    Rank,
+    Series,
+    SeriesIter,
+    Storage,
+    TimeStep,
+    TimeStepIter,
+    Type,
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-install(
-  FILES
-    "TTDBReader.py"
-    "ttdb.hpp"
-    "ttdb.py"
-  DESTINATION
-    "ttdb"
-)
+__all__ = [
+    "Array",
+    "ArrayIter",
+    "Dataset",
+    "Error",
+    "Kind",
+    "open_storage",
+    "Rank",
+    "Series",
+    "SeriesIter",
+    "Storage",
+    "TimeStep",
+    "TimeStepIter",
+    "Type",
+]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
