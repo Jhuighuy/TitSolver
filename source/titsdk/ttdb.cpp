@@ -29,6 +29,7 @@ using namespace tit::data;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// @todo This logic should be moved to a common place.
 namespace {
 
 std::array<char, 1024> last_error;

@@ -3,11 +3,9 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titback")
-add_subdirectory("titfront")
-add_subdirectory("titsdk")
-add_subdirectory("titwcsph")
-add_subdirectory("ttdb")
+add_tit_python_test(
+  SOURCE "test.py"
+  MATCH_STDOUT "stdout.txt"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

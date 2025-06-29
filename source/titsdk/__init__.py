@@ -3,10 +3,21 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_test(
-  INPUT_FILES "test.py"
-  MATCH_FILES "output.csv.checksum"
-  COMMAND "${BASH_EXE}" -c "${PYTHON_TEST_CMDLINE} test.py"
+# TODO: Let's do something about VS Code complaining about unused imports.
+from .lib import Error
+from .ttdb import (
+    Kind,
+    Rank,
+    Type,
+    Array,
+    ArrayIter,
+    Dataset,
+    TimeStep,
+    TimeStepIter,
+    Series,
+    SeriesIter,
+    Storage,
+    open_storage,
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

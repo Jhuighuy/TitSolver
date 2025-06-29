@@ -42,8 +42,10 @@ runs:
           "gcc@$GCC_VERSION"
           gcovr
           "llvm@$LLVM_VERSION"
+          mypy
           node
           pnpm
+          pylint
           sphinx-doc
         )
         if [[ "$OSTYPE" == "darwin"* ]]; then

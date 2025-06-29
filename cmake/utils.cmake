@@ -97,3 +97,40 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
 endmacro()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
+# Install each file in the list.
+#
+function(install_each_file)
+  # Parse and check arguments.
+  cmake_parse_arguments(INSTALL "" "DESTINATION;BASE_DIR" "FILES" ${ARGN})
+  if(NOT INSTALL_DESTINATION)
+    message(FATAL_ERROR "Installation destination must be specified.")
+  endif()
+  if(NOT INSTALL_BASE_DIR)
+    message(FATAL_ERROR "Base directory must be specified.")
+  endif()
+
+  # Install the files.
+  foreach(FILE ${INSTALL_FILES})
+    # Get the directory of the file relative to the output directory,
+    # and append it to the installation destination. This is needed to
+    # properly handle the hierarchy of the files, otherwise CMake will
+    # install all the files in the destination directory in a flat manner.
+    get_filename_component(FILE_DIR "${FILE}" DIRECTORY)
+    cmake_path(
+      RELATIVE_PATH FILE_DIR
+      BASE_DIRECTORY "${INSTALL_BASE_DIR}"
+      OUTPUT_VARIABLE FILE_DESTINATION_DIR
+    )
+    if(FILE_DESTINATION_DIR STREQUAL ".")
+      set(FILE_DESTINATION_DIR "") # Just to provide a cleaner output.
+    endif()
+    set(FILE_DESTINATION_DIR "${INSTALL_DESTINATION}/${FILE_DESTINATION_DIR}")
+
+    # Install the file to the destination directory.
+    install(FILES "${FILE}" DESTINATION "${FILE_DESTINATION_DIR}")
+  endforeach()
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
