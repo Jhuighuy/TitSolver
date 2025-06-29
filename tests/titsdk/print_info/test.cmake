@@ -4,9 +4,8 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_test(
-  INPUT_FILES "test.py"
+  PYTHON SOURCE "test.py"
   MATCH_STDOUT "stdout.txt"
-  COMMAND "${SHELL_EXE}" -c "${PYTHON_RUN_CMD} test.py"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
