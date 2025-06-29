@@ -14,12 +14,14 @@ runs:
     - name: Setup Homebrew
       uses: Homebrew/actions/setup-homebrew@master
 
-    - name: Setup runner
+    - name: Setup Homebrew packages
       shell: bash
       run: |
-        # Select the compiler from the arguments.
         GCC_VERSION=${GCC_VERSION:-15}
         LLVM_VERSION=${LLVM_VERSION:-20}
+        PYTHON_VERSION=${PYTHON_VERSION:-3.13}
+
+        # Select the compiler from the arguments.
         case "${{ inputs.compiler }}" in
           GCC)
             CC="gcc-$GCC_VERSION"
@@ -38,13 +40,11 @@ runs:
         # Select packages to install.
         PACKAGES=(
           cmake
-          codespell
           "gcc@$GCC_VERSION"
-          gcovr
           "llvm@$LLVM_VERSION"
           node
           pnpm
-          sphinx-doc
+          "python@$PYTHON_VERSION"
         )
         if [[ "$OSTYPE" == "darwin"* ]]; then
           PACKAGES+=(
@@ -99,10 +99,6 @@ runs:
           LD_LIBRARY_PATH="$GCC_INSTALLATION/lib/gcc/current:$LD_LIBRARY_PATH"
         fi
 
-        # Add Sphinx to the path.
-        SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
-        echo "$SPHINX_PATH" >> "$GITHUB_PATH"
-
         # Export compiler configuration variables to the CI environment.
         echo "CC=$CC" >> "$GITHUB_ENV"
         echo "CXX=$CXX" >> "$GITHUB_ENV"
@@ -112,13 +108,24 @@ runs:
         echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
 
+        # Add Python to the path.
+        PYTHON_PATH="$(brew --prefix "python@$PYTHON_VERSION")/libexec/bin"
+        echo "$PYTHON_PATH" >> "$GITHUB_PATH"
+
     - name: Setup Python packages
       shell: bash
       run: |
         # Select packages to install.
         PYTHON_PACKAGES=(
+          codespell
           coverage
+          flake8
+          Flake8-pyproject
+          gcovr
+          mypy
           numpy
+          pylint
+          Sphinx
         )
 
         # Install Python packages.
