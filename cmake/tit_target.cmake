@@ -179,8 +179,8 @@ function(add_tit_executable)
   # Configure the target.
   configure_tit_target(${EXE_TARGET} PRIVATE)
 
-  # Link with the dependent libraries.
-  target_link_libraries(${EXE_TARGET} PRIVATE ${EXE_DEPENDS})
+  # Link with the allocator and the dependent libraries.
+  target_link_libraries(${EXE_TARGET} PRIVATE tit::core_malloc ${EXE_DEPENDS})
 
   # Install the executable.
   if(NOT EXE_DESTINATION)
