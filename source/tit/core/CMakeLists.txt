@@ -60,7 +60,6 @@ add_tit_library(
     "stats.hpp"
     "str.hpp"
     "stream.hpp"
-    "sys/malloc.cpp"
     "sys/signal.cpp"
     "sys/signal.hpp"
     "sys/utils.cpp"
@@ -76,9 +75,21 @@ add_tit_library(
     Boost::container
     gcem
     hwy::hwy
-    mimalloc-static
     TBB::tbb
     TBB::tbbmalloc
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_library(
+  NAME
+    core_malloc
+  TYPE
+    OBJECT
+  SOURCES
+    "sys/malloc.cpp"
+  DEPENDS
+    mimalloc-static
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
