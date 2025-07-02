@@ -80,8 +80,8 @@ function(_make_libstdcpp_options RESULT_VAR)
     return()
   endif()
 
-  message(STATUS "LLVM: using libstdc++ at path: ${FOUND_DIR}")
-  message(STATUS "LLVM: using libstdc++ platf. at path: ${FOUND_PLATFORM_DIR}")
+  message(STATUS "LLVM: using libstdc++ at: ${FOUND_DIR}")
+  message(STATUS "LLVM: using libstdc++ platform at: ${FOUND_PLATFORM_DIR}")
   set(
     ${RESULT_VAR}
     -stdlib++-isystem "${FOUND_DIR}"
@@ -137,38 +137,24 @@ set(CLANG_LINK_OPTIONS_DEBUG ${CLANG_LINK_OPTIONS} ${CLANG_DEBUG_OPTIONS})
 
 # Find clang-tidy. Prefer version-suffixed executables.
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy-20" "clang-tidy")
-if(NOT CLANG_TIDY_EXE)
-  message(WARNING "clang-tidy was not found!")
-endif()
+
+# Define clang-tidy options.
+set(
+  CLANG_TIDY_OPTIONS
+  # No annoying output.
+  --quiet
+  # Enable colors during piping through chronic.
+  --use-color
+)
 
 #
-# Analyze source files of a target with clang-tidy.
+# Analyze source files with clang-tidy.
 #
-function(enable_clang_tidy TARGET_OR_ALIAS)
-  # Should we skip analysis?
-  if(SKIP_ANALYSIS)
-    return()
-  endif()
-
+function(enable_clang_tidy TARGET)
   # Exit early in case sufficient clang-tidy was not found.
   if(NOT CLANG_TIDY_EXE)
     return()
   endif()
-
-  # Get the original target name if it is an alias.
-  get_target_property(TARGET ${TARGET_OR_ALIAS} ALIASED_TARGET)
-  if(NOT TARGET ${TARGET})
-    set(TARGET ${TARGET_OR_ALIAS})
-  endif()
-
-  # Setup common arguments for clang-tidy call.
-  set(
-    CLANG_TIDY_ARGS
-    # No annoying output.
-    --quiet
-    # Enable colors during piping through chronic.
-    --use-color
-  )
 
   # Setup "compilation" arguments for clang-tidy call.
   get_generated_compile_options(${TARGET} CLANG_TIDY_COMPILE_OPTIONS)
@@ -184,42 +170,43 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
 
   # Get the binary, source directory and sources of the target.
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
-  if(NOT TARGET_SOURCES)
-    message(WARNING "clang-tidy: no sources found for target ${TARGET}!")
-    return()
-  endif()
   get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
   get_target_property(TARGET_BINARY_DIR ${TARGET} BINARY_DIR)
 
   # Loop through the target sources and call clang-tidy.
   set(ALL_STAMPS)
   foreach(SOURCE ${TARGET_SOURCES})
-    # Skip non-C/C++ files.
-    is_cpp_file("${SOURCE}" SOURCE_IS_CPP)
-    if(NOT SOURCE_IS_CPP)
-      message(WARNING "clang-tidy: skipping a non C/C++ file: '${SOURCE}'.")
-      continue()
-    endif()
-
     # We'll need a stamp file to track the analysis.
-    string(REPLACE "/" "_" STAMP "${SOURCE}.tidy_stamp")
+    string(REPLACE "/" "_" STAMP "${SOURCE}.stamp")
     set(STAMP "${TARGET_BINARY_DIR}/${STAMP}")
     list(APPEND ALL_STAMPS "${STAMP}")
 
-    # Setup path to the source file.
+    # Locate the source file.
     if(NOT EXISTS "${SOURCE}")
       if(EXISTS "${TARGET_SOURCE_DIR}/${SOURCE}")
         set(SOURCE "${TARGET_SOURCE_DIR}/${SOURCE}")
       elseif(EXISTS "${TARGET_BINARY_DIR}/${SOURCE}")
         set(SOURCE "${TARGET_BINARY_DIR}/${SOURCE}")
       else()
-        message(WARNING "clang-tidy: source file '${SOURCE}' does not exist!")
+        message(WARNING "Source file '${SOURCE}' cannot be found.")
         continue()
       endif()
     endif()
 
-    # Execute clang-tidy and update a stamp file on success.
-    # (wrapped with chronic to avoid annoying `N warnings generated` messages).
+    # Find all the '.clang-tidy' files in the source tree.
+    set(CLANG_TIDY_CONFIG_FILES)
+    get_filename_component(CURRENT_DIR "${SOURCE}" DIRECTORY)
+    while(true)
+      if(EXISTS "${CURRENT_DIR}/.clang-tidy")
+        list(APPEND CLANG_TIDY_CONFIG_FILES "${CURRENT_DIR}/.clang-tidy")
+      endif()
+      if(CURRENT_DIR STREQUAL "${CMAKE_SOURCE_DIR}")
+        break() # Reached the root of the source tree.
+      endif()
+      get_filename_component(CURRENT_DIR "${CURRENT_DIR}" DIRECTORY)
+    endwhile()
+
+    # Run clang-tidy and update a stamp file on success.
     cmake_path(
       RELATIVE_PATH SOURCE
       BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
@@ -231,10 +218,10 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
       COMMAND
         "${CHRONIC_EXE}"
           "${CLANG_TIDY_EXE}"
-            "${SOURCE}" ${CLANG_TIDY_ARGS} -- ${CLANG_TIDY_COMPILE_OPTIONS}
+            "${SOURCE}" ${CLANG_TIDY_OPTIONS} -- ${CLANG_TIDY_COMPILE_OPTIONS}
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
-      DEPENDS "${SOURCE}" "${CMAKE_SOURCE_DIR}/.clang-tidy"
+      DEPENDS "${SOURCE}" ${CLANG_TIDY_CONFIG_FILES}
       IMPLICIT_DEPENDS CXX "${SOURCE}"
       COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
       VERBATIM
@@ -242,7 +229,7 @@ function(enable_clang_tidy TARGET_OR_ALIAS)
   endforeach()
 
   # Create a custom target that should "build" once all checks succeed.
-  add_custom_target("${TARGET}_tidy" ALL DEPENDS ${TARGET} ${ALL_STAMPS})
+  add_custom_target("${TARGET}_tidy" ALL DEPENDS ${ALL_STAMPS})
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -250,13 +237,12 @@ endfunction()
 #
 # Write the `compile_flags.txt` for the clangd language server.
 #
-function(write_compile_flags SAMPLE_TARGET)
-  # Setup "compilation" arguments for hypothetical "clang" call.
-  set(CLANG_COMPILE_ARGS)
-  get_generated_compile_options(${SAMPLE_TARGET} CLANG_COMPILE_ARGS)
+function(write_compile_flags TARGET)
+  # Setup "compilation" arguments for a hypothetical "clang" call.
+  get_generated_compile_options(${TARGET} CLANG_COMPILE_OPTIONS)
   list(
     APPEND
-    CLANG_COMPILE_ARGS
+    CLANG_COMPILE_OPTIONS
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
@@ -264,15 +250,15 @@ function(write_compile_flags SAMPLE_TARGET)
     -std=c++23
   )
 
-  # Remove `-Werror` from the compile flags, as it breaks clangd.
-  list(REMOVE_ITEM CLANG_COMPILE_ARGS "-Werror")
+  # Remove `-Werror` from the compile flags, as it crashes clangd sometimes.
+  list(REMOVE_ITEM CLANG_COMPILE_OPTIONS "-Werror")
 
   # Write the compile flags to a file, each on a new line.
   add_custom_target(
-    "${CMAKE_PROJECT_NAME}_clangd_compile_flags"
+    "${TARGET}_compile_flags"
     ALL # Execute on every build.
     COMMAND
-      "${CMAKE_COMMAND}" -E echo ${CLANG_COMPILE_ARGS} |
+      "${CMAKE_COMMAND}" -E echo ${CLANG_COMPILE_OPTIONS} |
       xargs -n 1 > "${CMAKE_SOURCE_DIR}/compile_flags.txt"
     COMMENT "Writing compile_flags.txt"
     COMMAND_EXPAND_LISTS # Needed for generator expressions to work.

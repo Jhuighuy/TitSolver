@@ -10,9 +10,6 @@ include(utils)
 
 # Find codespell.
 find_program(CODESPELL_EXE NAMES "codespell")
-if(NOT CODESPELL_EXE)
-  message(WARNING "codespell was not found!")
-endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

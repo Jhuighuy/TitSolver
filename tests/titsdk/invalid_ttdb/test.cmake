@@ -6,7 +6,7 @@
 add_tit_test(
   INPUT_FILES "test.py"
   MATCH_STDOUT "stdout.txt"
-  COMMAND "${BASH_EXE}" -c "${PYTHON_TEST_CMDLINE} test.py"
+  COMMAND "${SHELL_EXE}" -c "${PYTHON_RUN_CMD} test.py"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

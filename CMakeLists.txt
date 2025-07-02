@@ -16,7 +16,9 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang)
 include(codespell)
+include(pnpm)
 include(python)
+include(sphinx)
 include(testing)
 include(tit_target)
 
@@ -68,7 +70,7 @@ add_tit_library(
 )
 
 # Write "compile_flags.txt" based on the meta library.
-write_compile_flags(tit::all_flags)
+write_compile_flags(tit_all_flags)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
