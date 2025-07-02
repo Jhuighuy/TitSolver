@@ -7,8 +7,20 @@ add_tit_library(
   NAME
     graph
   SOURCES
+    "coarsen.hpp"
+    "coarsen/gem.hpp"
+    "coarsen/hem.hpp"
+    "coarsen/utils.hpp"
     "graph.hpp"
-    "simple_partition.hpp"
+    "partition.hpp"
+    "partition/greedy.hpp"
+    "partition/metis.hpp"
+    "partition/multilevel.hpp"
+    "partition/uniform.hpp"
+    "refine.hpp"
+    "refine/fm.hpp"
+    "refine/noop.hpp"
+    "utils.hpp"
   DEPENDS
     tit::core
     metis
