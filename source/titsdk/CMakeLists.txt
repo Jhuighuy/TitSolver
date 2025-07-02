@@ -7,11 +7,7 @@ add_tit_library(
   NAME
     titsdk
   TYPE
-    MODULE
-  PREFIX
-    "lib"
-  SUFFIX
-    ".so"
+    SHARED
   SOURCES
     "_utils.hpp"
     "lib.cpp"
