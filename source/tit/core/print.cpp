@@ -14,6 +14,7 @@
 #include <string_view>
 
 #include "tit/core/checks.hpp"
+#include "tit/core/opencl.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/sys/utils.hpp"
@@ -68,6 +69,7 @@ void println_logo_and_system_info() {
       std::format("OS ............. {}", os_info()),
       std::format("CPU ............ {}", cpu_info()),
       std::format("RAM ............ {}", fmt_memsize(ram_size())),
+      std::format("OpenCL ......... {}", ocl::Platform::default_().info()),
       std::format("Working dir .... {}", std::filesystem::current_path()),
       std::format("Disk space ..... {}", fmt_memsize(disk_space())),
   });

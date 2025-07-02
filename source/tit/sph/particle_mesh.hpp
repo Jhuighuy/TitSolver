@@ -111,6 +111,14 @@ public:
            });
   }
 
+  constexpr auto adjacency() noexcept -> auto& {
+    return adjacency_;
+  }
+
+  constexpr auto interp_adjacency() noexcept -> auto& {
+    return interp_adjacency_;
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Update the adjacency graph.
@@ -119,16 +127,14 @@ public:
     TIT_PROFILE_SECTION("ParticleMesh::update()");
 
     // Update the adjacency graphs.
-    search_(particles, radius_func);
+    search(particles, radius_func);
 
     // Partition the adjacency graph by the block.
-    partition_(particles);
+    partition(particles);
   }
 
-private:
-
   template<particle_array ParticleArray, class SearchRadiusFunc>
-  void search_(ParticleArray& particles, const SearchRadiusFunc& radius_func) {
+  void search(ParticleArray& particles, const SearchRadiusFunc& radius_func) {
     TIT_PROFILE_SECTION("ParticleMesh::search()");
     using PV = ParticleView<ParticleArray>;
 
@@ -195,7 +201,7 @@ private:
   }
 
   template<particle_array ParticleArray>
-  void partition_(ParticleArray& particles, size_t num_levels = 2) {
+  void partition(ParticleArray& particles, size_t num_levels = 2) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
     TIT_ASSERT(num_levels < PartVec::MaxNumLevels,
                "Number of levels exceeds the predefined maximum!");
