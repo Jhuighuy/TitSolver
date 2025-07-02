@@ -13,10 +13,7 @@ find_program(PYTHON_EXE NAMES "python3" REQUIRED)
 # Find the coverage.py executable.
 find_program(COVERAGE_EXE NAMES "coverage" REQUIRED)
 
-# Setup the Python test runner executable.
-set(
-  PYTHON_TEST_CMDLINE
-  "$<IF:$<CONFIG:Coverage>,${COVERAGE_EXE} run,${PYTHON_EXE}>"
-)
+# Setup Python run command.
+set(PYTHON_RUN_CMD "$<IF:$<CONFIG:Coverage>,${COVERAGE_EXE} run,${PYTHON_EXE}>")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -4,7 +4,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
-  PUBLIC
   NAME
     titback
   SOURCES
@@ -14,6 +13,8 @@ add_tit_executable(
     tit::data
     Crow::Crow
     nlohmann_json::nlohmann_json
+  DESTINATION
+    "bin"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

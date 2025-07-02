@@ -11,12 +11,7 @@ include_guard()
 enable_testing()
 
 # Find test driver executable.
-find_program(
-  TEST_DRIVER_EXE
-  NAMES "test-driver.sh"
-  PATHS "${CMAKE_SOURCE_DIR}/build"
-  REQUIRED
-)
+set(TEST_DRIVER_EXE "${CMAKE_SOURCE_DIR}/build/test-driver.sh")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
