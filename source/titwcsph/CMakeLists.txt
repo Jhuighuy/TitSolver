@@ -4,7 +4,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
-  PUBLIC
   NAME
     titwcsph
   SOURCES
@@ -13,6 +12,8 @@ add_tit_executable(
     tit::core
     tit::data
     tit::sph
+  DESTINATION
+    "bin"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
