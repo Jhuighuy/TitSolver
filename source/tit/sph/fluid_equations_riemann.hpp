@@ -15,7 +15,6 @@
 #include "tit/core/vec.hpp"
 
 #include "tit/sph/continuity_equation.hpp"
-#include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
@@ -30,7 +29,6 @@ namespace tit::sph {
 /// Fluid equations with fixed kernel width and continuity equation.
 template<continuity_equation ContinuityEquation,
          momentum_equation MomentumEquation,
-         equation_of_state EquationOfState,
          riemann_solver RiemannSolver,
          kernel Kernel>
 class FluidEquationsRiemann final {
@@ -40,18 +38,16 @@ public:
   static constexpr auto required_fields =   //
       ContinuityEquation::required_fields | //
       MomentumEquation::required_fields |   //
-      EquationOfState::required_fields |    //
       RiemannSolver::required_fields |      //
-      Kernel::required_fields | TypeSet{h, m, r, rho, p, v, dv_dt};
+      Kernel::required_fields | TypeSet{h, m, r, rho, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
       ContinuityEquation::modified_fields | //
       MomentumEquation::modified_fields |   //
-      EquationOfState::modified_fields |    //
       Kernel::modified_fields |             //
       RiemannSolver::modified_fields |      //
-      TypeSet{rho, drho_dt, grad_rho, p, v, dv_dt};
+      TypeSet{rho, drho_dt, grad_rho, v, dv_dt, grad_v, L};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -65,13 +61,11 @@ public:
   constexpr explicit FluidEquationsRiemann(
       ContinuityEquation continuity_equation = {},
       MomentumEquation momentum_equation = {},
-      EquationOfState eos = {},
       RiemannSolver riemann_solver = {},
       Kernel kernel = {}) noexcept
       : continuity_equation_{std::move(continuity_equation)},
         momentum_equation_{std::move(momentum_equation)},
         riemann_solver_{std::move(riemann_solver)}, //
-        eos_{std::move(eos)},                       //
         kernel_{std::move(kernel)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -188,17 +182,56 @@ public:
     // Prepare the fields and setup sources and pressure.
     par::for_each(particles.all(), [&](PV a) {
       // Clean-up density and momentum equation fields.
-      clear(a, drho_dt, dv_dt);
+      clear(a, drho_dt, grad_rho, dv_dt, grad_v, L);
 
       // Apply source terms.
       std::apply([a](const auto&... f) { ((drho_dt[a] += f(a)), ...); },
                  continuity_equation_.mass_sources());
       std::apply([a](const auto&... g) { ((dv_dt[a] += g(a)), ...); },
                  momentum_equation_.momentum_sources());
-
-      // Compute pressure and sound speed.
-      p[a] = eos_.pressure(a);
     });
+
+    // Compute gradients of the fields.
+    if constexpr (has_any<PV>(grad_rho, grad_v, L)) {
+      par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+        const auto [a, b] = ab;
+        const auto V_a = m[a] / rho[a];
+        const auto V_b = m[b] / rho[b];
+        const auto grad_W_ab = kernel_.grad(a, b);
+
+        // Update density gradient.
+        if constexpr (has<PV>(grad_rho)) {
+          const auto grad_flux = rho[b, a] * grad_W_ab;
+          grad_rho[a] += V_b * grad_flux;
+          grad_rho[b] += V_a * grad_flux;
+        }
+
+        // Update velocity gradient.
+        if constexpr (has<PV>(grad_v)) {
+          const auto grad_flux = outer(v[b, a], grad_W_ab);
+          grad_v[a] += V_b * grad_flux;
+          grad_v[b] += V_a * grad_flux;
+        }
+
+        // Update renormalization matrix.
+        if constexpr (has<PV>(L)) {
+          const auto L_flux = outer(r[b, a], grad_W_ab);
+          L[a] += V_b * L_flux;
+          L[b] += V_a * L_flux;
+        }
+      });
+
+      // Renormalize fields.
+      if constexpr (has<PV>(L) && has_any<PV>(grad_rho, grad_v)) {
+        par::for_each(particles.all(), [](PV a) {
+          if (const auto fact = ldl(L[a]); fact) {
+            const auto inv_L = fact->inverse();
+            if constexpr (has<PV>(grad_rho)) grad_rho[a] = inv_L * grad_rho[a];
+            if constexpr (has<PV>(grad_v)) grad_v[a] = inv_L * grad_v[a];
+          }
+        });
+      }
+    }
 
     // Compute velocity and internal energy time derivatives.
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
@@ -227,7 +260,6 @@ private:
   [[no_unique_address]] ContinuityEquation continuity_equation_;
   [[no_unique_address]] MomentumEquation momentum_equation_;
   [[no_unique_address]] RiemannSolver riemann_solver_;
-  [[no_unique_address]] EquationOfState eos_;
   [[no_unique_address]] Kernel kernel_;
 
 }; // class FluidEquationsRiemann

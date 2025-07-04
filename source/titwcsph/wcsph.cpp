@@ -76,10 +76,8 @@ auto sph_main(CmdArgs /*args*/) -> int {
               // Gravity source term.
               GravitySource{g},
           },
-          // Weakly compressible equation of state.
-          LinearTaitEquationOfState{cs_0, rho_0},
           // Riemann solver for the fluid equations.
-          ZhangRiemannSolver{cs_0},
+          ZhangRiemannSolver{cs_0, rho_0},
           // C2 Wendland's spline kernel.
           QuarticWendlandKernel{},
       };
@@ -156,16 +154,17 @@ auto sph_main(CmdArgs /*args*/) -> int {
     // Compute pressure from Poisson problem.
     const auto x = r[a][0];
     const auto y = r[a][1];
-    p[a] = rho_0 * g * (H - y);
+    auto p_a = rho_0 * g * (H - y);
     for (size_t N = 1; N < 100; N += 2) {
       constexpr auto pi = std::numbers::pi_v<Real>;
       const auto n = static_cast<Real>(N);
-      p[a] -= 8 * rho_0 * g * H / pow2(pi) *
-              (exp(n * pi * (x - L) / (2 * H)) * cos(n * pi * y / (2 * H))) /
-              pow2(n);
+      p_a -= 8 * rho_0 * g * H / pow2(pi) *
+             (exp(n * pi * (x - L) / (2 * H)) * cos(n * pi * y / (2 * H))) /
+             pow2(n);
     }
     // Recalculate density from EOS.
-    rho[a] = rho_0 + p[a] / pow2(cs_0);
+    rho[a] = rho_0 + p_a / pow2(cs_0);
+    if constexpr (has<decltype(auto{a})>(p)) p[a] = p_a;
   }
 
   // Setup the particle mesh structure.
