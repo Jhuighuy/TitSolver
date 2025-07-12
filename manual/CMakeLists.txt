@@ -8,6 +8,8 @@ add_tit_sphinx_target(
     manual
   DESTINATION
     "manual"
+  DEPENDS
+    titsdk_doxygen
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

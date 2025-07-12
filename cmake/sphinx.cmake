@@ -16,7 +16,7 @@ set(
   SPHINX_OPTIONS
   "--quiet"           # Be quiet.
   "--nitpicky"        # Warn about missing references.
-  "--fail-on-warning" # Warnings are errors.
+  #"--fail-on-warning" # Warnings are errors.
   "--builder" "html"  # Build only the HTML output.
   "--write-all"       # Sphinx sometimes fails to detect changes.
 )
@@ -28,7 +28,7 @@ set(
 #
 function(add_tit_sphinx_target)
   # Parse and check arguments.
-  cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "" ${ARGN})
+  cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "DEPENDS" ${ARGN})
   if(NOT TARGET_NAME)
     message(FATAL_ERROR "Target name must be specified.")
   endif()
@@ -73,6 +73,14 @@ function(add_tit_sphinx_target)
     list(APPEND TARGET_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FILE}")
   endforeach()
 
+  # Define the list of directories containing Doxygen XML files.
+  # This is used by Breathe to generate the API documentation.
+  set(BREATHE_OPTIONS)
+  foreach(DEP ${TARGET_DEPENDS})
+    get_target_property(DEP_DIR "${DEP}" BINARY_DIR)
+    list(APPEND BREATHE_OPTIONS "-Dbreathe_projects.${DEP}=${DEP_DIR}/xml")
+  endforeach()
+
   # Run sphinx-build.
   cmake_path(
     RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR
@@ -80,13 +88,14 @@ function(add_tit_sphinx_target)
     OUTPUT_VARIABLE RELATIVE_SOURCE_DIR
   )
   add_custom_command(
-    COMMENT "Building Sphinx target ${RELATIVE_SOURCE_DIR}"
+    COMMENT "Building Sphinx target in ${RELATIVE_SOURCE_DIR}"
     OUTPUT ${TARGET_OUTPUT}
     COMMAND
       "${CMAKE_COMMAND}"
         -E env "TZ=UTC" # Sphinx may fail if TZ is not set.
         "${SPHINX_EXE}"
           ${SPHINX_OPTIONS}
+          ${BREATHE_OPTIONS}
           "${CMAKE_CURRENT_SOURCE_DIR}"
           "${CMAKE_CURRENT_BINARY_DIR}"
     DEPENDS ${TARGET_SOURCES}

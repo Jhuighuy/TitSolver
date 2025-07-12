@@ -39,6 +39,7 @@ runs:
         PACKAGES=(
           cmake
           codespell
+          doxygen
           "gcc@$GCC_VERSION"
           gcovr
           "llvm@$LLVM_VERSION"

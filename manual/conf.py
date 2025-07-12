@@ -26,6 +26,7 @@ release = "0.1"
 # General configuration.
 #
 
+extensions: list[str] = []
 exclude_patterns = ["Thumbs.db", ".DS_Store", "README.md"]
 templates_path = ["_templates"]
 numfig = True
@@ -34,6 +35,15 @@ numfig_format = {
     "table": "Table %s.",
     "code-block": "Code %s.",
 }
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Breathe configuration.
+#
+
+extensions.append("breathe")
+breathe_default_project = "titsdk_doxygen"
+breathe_domain_by_extension = {"py": "py"}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #

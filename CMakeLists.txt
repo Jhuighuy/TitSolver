@@ -16,6 +16,7 @@ project(tit VERSION 0.1 LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang)
 include(codespell)
+include(doxygen)
 include(pnpm)
 include(python)
 include(sphinx)
@@ -40,8 +41,8 @@ find_package(zstd CONFIG REQUIRED)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Add the actual sources.
-add_subdirectory("manual")
 add_subdirectory("source")
+add_subdirectory("manual")
 add_subdirectory("tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -17,3 +17,6 @@ Welcome to the |product| user manual. This documentation provides comprehensive
 guidance for using and understanding |product|.
 
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygengroup:: titsdk_ttdb
+   :no-link:
