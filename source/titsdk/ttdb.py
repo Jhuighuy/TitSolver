@@ -70,11 +70,11 @@ class Rank(Enum):
 class Type:
   """Type of data in an array."""
 
-  _type: ttdb_type_t
+  __type: ttdb_type_t
 
   def __init__(self, type_: ttdb_type_t) -> None:
     """Initialize the type with a C type value."""
-    self._type = type_
+    self.__type = type_
 
   def __repr__(self) -> str:
     """Get the string representation of the type."""
@@ -89,17 +89,17 @@ class Type:
   @property
   def kind(self) -> Kind:
     """Get the kind of the type."""
-    return Kind(ttdb_type__kind(self._type).decode("utf-8"))
+    return Kind(ttdb_type__kind(self.__type).decode("utf-8"))
 
   @property
   def rank(self) -> Rank:
     """Get the rank of the type."""
-    return Rank(ttdb_type__rank(self._type))
+    return Rank(ttdb_type__rank(self.__type))
 
   @property
   def dim(self) -> int:
     """Get the dimension of the type."""
-    return ttdb_type__dim(self._type)
+    return ttdb_type__dim(self.__type)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -129,34 +129,34 @@ ttdb_array__read: Final = cast(
 class Array:
   """Array of data."""
 
-  _array: ttdb_array_t
+  __array: ttdb_array_t
 
   def __init__(self, array: ttdb_array_t) -> None:
     """Initialize the array with a C pointer."""
-    self._array = array
+    self.__array = array
 
   def __del__(self) -> None:
     """Close the array."""
-    ttdb_array__close(self._array)
+    ttdb_array__close(self.__array)
 
   @property
   def name(self) -> str:
     """Get the name of the array."""
-    return ttdb_array__name(self._array).decode("utf-8")
+    return ttdb_array__name(self.__array).decode("utf-8")
 
   @property
   def size(self) -> int:
     """Get the size of the array."""
-    return ttdb_array__size(self._array)
+    return ttdb_array__size(self.__array)
 
   @property
   def type(self) -> Type:
     """Get the type of the array."""
-    return Type(ttdb_array__type(self._array))
+    return Type(ttdb_array__type(self.__array))
 
   def read(self, data: c_void_p) -> None:
     """Read the array data into the provided buffer."""
-    ttdb_array__read(self._array, data)
+    ttdb_array__read(self.__array, data)
 
   @property
   def data(self) -> NDArray[np.generic]:
@@ -180,15 +180,15 @@ ttdb_array_iter__next: Final = cast(
 class ArrayIter(Iterator[Array]):
   """Iterator over arrays in a dataset."""
 
-  _iter: ttdb_array_iter_t
+  __iter: ttdb_array_iter_t
 
   def __init__(self, iterator: ttdb_array_iter_t) -> None:
     """Initialize the iterator with a C pointer."""
-    self._iter = iterator
+    self.__iter = iterator
 
   def __del__(self) -> None:
     """Close the iterator."""
-    ttdb_array_iter__close(self._iter)
+    ttdb_array_iter__close(self.__iter)
 
   def __iter__(self) -> ArrayIter:
     """Return the iterator itself."""
@@ -196,7 +196,7 @@ class ArrayIter(Iterator[Array]):
 
   def __next__(self) -> Array:
     """Get the next array from the iterator."""
-    if (array := ttdb_array_iter__next(self._iter)) is None:
+    if (array := ttdb_array_iter__next(self.__iter)) is None:
       raise StopIteration
     return Array(array)
 
@@ -224,29 +224,29 @@ ttdb_dataset__arrays: Final = cast(
 class Dataset:
   """Dataset containing arrays of data."""
 
-  _dataset: ttdb_dataset_t
+  __dataset: ttdb_dataset_t
 
   def __init__(self, dataset: ttdb_dataset_t) -> None:
     """Initialize the dataset with a C pointer."""
-    self._dataset = dataset
+    self.__dataset = dataset
 
   def __del__(self) -> None:
     """Close the dataset."""
-    ttdb_dataset__close(self._dataset)
+    ttdb_dataset__close(self.__dataset)
 
   @property
   def num_arrays(self) -> int:
     """Number of arrays in the dataset."""
-    return ttdb_dataset__num_arrays(self._dataset)
+    return ttdb_dataset__num_arrays(self.__dataset)
 
   def find_array(self, name: str) -> Array | None:
     """Find an array by name in the dataset."""
-    array = ttdb_dataset__find_array(self._dataset, name.encode("utf-8"))
+    array = ttdb_dataset__find_array(self.__dataset, name.encode("utf-8"))
     return Array(array) if array is not None else None
 
   def arrays(self) -> ArrayIter:
     """Iterate over all arrays in the dataset."""
-    return ArrayIter(ttdb_dataset__arrays(self._dataset))
+    return ArrayIter(ttdb_dataset__arrays(self.__dataset))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -272,30 +272,30 @@ ttdb_time_step__varyings: Final = cast(
 class TimeStep:
   """Time step in a series."""
 
-  _time_step: ttdb_time_step_t
+  __time_step: ttdb_time_step_t
 
   def __init__(self, time_step: ttdb_time_step_t) -> None:
     """Initialize the time step with a C pointer."""
-    self._time_step = time_step
+    self.__time_step = time_step
 
   def __del__(self) -> None:
     """Close the time step."""
-    ttdb_time_step__close(self._time_step)
+    ttdb_time_step__close(self.__time_step)
 
   @property
   def time(self) -> float:
     """Get the time of the time step."""
-    return ttdb_time_step__time(self._time_step)
+    return ttdb_time_step__time(self.__time_step)
 
   @property
   def uniforms(self) -> Dataset:
     """Get the uniform dataset of the time step."""
-    return Dataset(ttdb_time_step__uniforms(self._time_step))
+    return Dataset(ttdb_time_step__uniforms(self.__time_step))
 
   @property
   def varyings(self) -> Dataset:
     """Get the varying dataset of the time step."""
-    return Dataset(ttdb_time_step__varyings(self._time_step))
+    return Dataset(ttdb_time_step__varyings(self.__time_step))
 
 ttdb_time_step_iter_t = NewType("ttdb_time_step_iter_t", c_void_p)
 ttdb_time_step_iter__close = cast(
@@ -311,15 +311,15 @@ ttdb_time_step_iter__next = cast(
 class TimeStepIter(Iterator[TimeStep]):
   """Iterator over time steps in a series."""
 
-  _iter: ttdb_time_step_iter_t
+  __iter: ttdb_time_step_iter_t
 
   def __init__(self, iterator: ttdb_time_step_iter_t) -> None:
     """Initialize the iterator with a C pointer."""
-    self._iter = iterator
+    self.__iter = iterator
 
   def __del__(self) -> None:
     """Close the iterator."""
-    ttdb_time_step_iter__close(self._iter)
+    ttdb_time_step_iter__close(self.__iter)
 
   def __iter__(self) -> TimeStepIter:
     """Return the iterator itself."""
@@ -327,7 +327,7 @@ class TimeStepIter(Iterator[TimeStep]):
 
   def __next__(self) -> TimeStep:
     """Get the next time step from the iterator."""
-    if (time_step := ttdb_time_step_iter__next(self._iter)) is None:
+    if (time_step := ttdb_time_step_iter__next(self.__iter)) is None:
       raise StopIteration
     return TimeStep(time_step)
 
@@ -355,29 +355,29 @@ ttdb_series__time_steps: Final = cast(
 class Series:
   """Time series in a storage."""
 
-  _series: ttdb_series_t
+  __series: ttdb_series_t
 
   def __init__(self, series: ttdb_series_t) -> None:
     """Initialize the series with a C pointer."""
-    self._series = series
+    self.__series = series
 
   def __del__(self) -> None:
     """Close the series."""
-    ttdb_series__close(self._series)
+    ttdb_series__close(self.__series)
 
   @property
   def num_time_steps(self) -> int:
     """Number of time steps in the series."""
-    return ttdb_series__num_time_steps(self._series)
+    return ttdb_series__num_time_steps(self.__series)
 
   @property
   def last_time_step(self) -> TimeStep:
     """Last time step in the series."""
-    return TimeStep(ttdb_series__last_time_step(self._series))
+    return TimeStep(ttdb_series__last_time_step(self.__series))
 
   def time_steps(self) -> TimeStepIter:
     """Iterate over all time steps in the series."""
-    return TimeStepIter(ttdb_series__time_steps(self._series))
+    return TimeStepIter(ttdb_series__time_steps(self.__series))
 
 ttdb_series_iter_t = NewType("ttdb_series_iter_t", c_void_p)
 ttdb_series_iter__next: Final = cast(
@@ -393,15 +393,15 @@ ttdb_series_iter__close: Final = cast(
 class SeriesIter(Iterator[Series]):
   """Iterator over series in a storage."""
 
-  _iter: ttdb_series_iter_t
+  __iter: ttdb_series_iter_t
 
   def __init__(self, iterator: ttdb_series_iter_t) -> None:
     """Initialize the iterator with a C pointer."""
-    self._iter = iterator
+    self.__iter = iterator
 
   def __del__(self) -> None:
     """Close the iterator."""
-    ttdb_series_iter__close(self._iter)
+    ttdb_series_iter__close(self.__iter)
 
   def __iter__(self) -> SeriesIter:
     """Return the iterator itself."""
@@ -409,7 +409,7 @@ class SeriesIter(Iterator[Series]):
 
   def __next__(self) -> Series:
     """Get the next series from the iterator."""
-    if (series := ttdb_series_iter__next(self._iter)) is None:
+    if (series := ttdb_series_iter__next(self.__iter)) is None:
       raise StopIteration
     return Series(series)
 
@@ -441,29 +441,29 @@ ttdb__series: Final = cast(
 class Storage:
   """BlueTit particle storage."""
 
-  _ttdb: ttdb_t
+  __ttdb: ttdb_t
 
   def __init__(self, ttdb: ttdb_t) -> None:
     """Initialize the storage with a C pointer."""
-    self._ttdb = ttdb
+    self.__ttdb = ttdb
 
   def __del__(self) -> None:
     """Close the storage."""
-    ttdb__close(self._ttdb)
+    ttdb__close(self.__ttdb)
 
   @property
   def num_series(self) -> int:
     """Number of series in the storage."""
-    return ttdb__num_series(self._ttdb)
+    return ttdb__num_series(self.__ttdb)
 
   @property
   def last_series(self) -> Series:
     """Last series in the storage."""
-    return Series(ttdb__last_series(self._ttdb))
+    return Series(ttdb__last_series(self.__ttdb))
 
   def series(self) -> SeriesIter:
     """Iterate over all series in the storage."""
-    return SeriesIter(ttdb__series(self._ttdb))
+    return SeriesIter(ttdb__series(self.__ttdb))
 
 def open_storage(path: str) -> Storage:
   """Open the storage at the given path."""

@@ -48,30 +48,30 @@ FILE_EXTENSIONS = "ttdb"
     file_description=FILE_DESCRIPTION,
 )
 class TTDBReader(VTKPythonAlgorithmBase):
-  _file_path: str | None
-  _storage: Storage | None
-  _array_selection: vtkDataArraySelection
+  __file_path: str | None
+  __storage: Storage | None
+  __array_selection: vtkDataArraySelection
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   def __init__(self) -> None:
     super().__init__(nInputPorts=0, nOutputPorts=1)
-    self._file_path = None
-    self._storage = None
+    self.__file_path = None
+    self.__storage = None
     self._series = None
-    self._array_selection = vtkDataArraySelection()
-    self._array_selection.AddObserver(
+    self.__array_selection = vtkDataArraySelection()
+    self.__array_selection.AddObserver(
         "ModifiedEvent",
         lambda *_: self.Modified(),
     )
 
   @property
   def storage(self) -> Storage:
-    if self._storage is None:
-      if not self._file_path or not os.path.exists(self._file_path):
-        raise RuntimeError(f"File not found: {self._file_path}.")
-      self._storage = open_storage(self._file_path)
-    return self._storage
+    if self.__storage is None:
+      if not self.__file_path or not os.path.exists(self.__file_path):
+        raise RuntimeError(f"File not found: {self.__file_path}.")
+      self.__storage = open_storage(self.__file_path)
+    return self.__storage
 
   def time_steps(self) -> Iterator[TimeStep]:
     # Do not cache the last series and time steps, as they may change.
@@ -84,9 +84,9 @@ class TTDBReader(VTKPythonAlgorithmBase):
   @smhint.filechooser(extensions=FILE_EXTENSIONS,
                       file_description=FILE_DESCRIPTION)
   def SetFileName(self, file_path: str) -> None:
-    if self._file_path == file_path:
+    if self.__file_path == file_path:
       return
-    self._file_path = file_path
+    self.__file_path = file_path
     self.Modified()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,7 +103,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
 
   @smproperty.dataarrayselection(name="Arrays")
   def GetDataArraySelection(self) -> vtkDataArraySelection:
-    return self._array_selection
+    return self.__array_selection
 
   def RequestInformation(  # pylint: disable=unused-argument
       self,
@@ -129,7 +129,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
     if (probe_time_step := next(self.time_steps(), None)) is not None:
       for array in probe_time_step.varyings.arrays():
         if array.type.rank in (Rank.scalar, Rank.vector):
-          self._array_selection.AddArray(array.name)
+          self.__array_selection.AddArray(array.name)
 
     return True
 
@@ -148,9 +148,8 @@ class TTDBReader(VTKPythonAlgorithmBase):
 
     # Extract the data arrays.
     arrays = {
-        array.name: array.data
-        for array in time_step.varyings.arrays()
-        if array.name == "r" or self._array_selection.ArrayIsEnabled(array.name)
+        array.name: array.data for array in time_step.varyings.arrays() if
+        array.name == "r" or self.__array_selection.ArrayIsEnabled(array.name)
     }
     points = arrays["r"]
 

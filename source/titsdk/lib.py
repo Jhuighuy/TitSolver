@@ -10,9 +10,9 @@ from typing import Any, Callable, Final, final
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @final
-class _Library:  # pylint: disable=too-few-public-methods
-  _dll: CDLL
-  _last_error: Callable[[], bytes | None]
+class __Library:  # pylint: disable=too-few-public-methods
+  __dll: CDLL
+  __last_error: Callable[[], bytes | None]
 
   def __init__(self) -> None:
     dirname = os.path.dirname(__file__)
@@ -22,9 +22,9 @@ class _Library:  # pylint: disable=too-few-public-methods
     else:
       raise Error("Unable to find the titsdk library.")
 
-    self._dll = CDLL(path)
-    self._last_error = self._dll.titsdk__last_error
-    self._last_error.restype = c_char_p
+    self.__dll = CDLL(path)
+    self.__last_error = self.__dll.titsdk__last_error
+    self.__last_error.restype = c_char_p
 
   def func(
       self,
@@ -32,19 +32,19 @@ class _Library:  # pylint: disable=too-few-public-methods
       arg_types: tuple[type, ...],
       ret_type: type | None,
   ) -> Any:
-    func = getattr(self._dll, name)
+    func = getattr(self.__dll, name)
     func.argtypes = arg_types
     func.restype = ret_type
 
     def checked_func(*args: Any) -> Any:
       result = func(*args)
-      if error := self._last_error():
+      if error := self.__last_error():
         raise Error(error.decode("utf-8"))
       return result
 
     return checked_func
 
-lib: Final = _Library()
+lib: Final = __Library()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
