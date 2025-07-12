@@ -3,14 +3,8 @@
 .. Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-User Manual
-===========
+C API Reference
+===============
 
-.. toctree::
-  :maxdepth: 2
-
-  theory/index
-  sdk/index
-
-Welcome to the |product| user manual. This documentation provides comprehensive
-guidance for using and understanding |product|.
+.. doxygengroup:: titsdk
+  :content-only:

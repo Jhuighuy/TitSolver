@@ -21,12 +21,15 @@ class __Library:
   __last_error: Callable[[], bytes | None]
 
   def __init__(self) -> None:
-    dirname = os.path.dirname(__file__)
-    for filename in ("libtitsdk.so", "libtitsdk.dylib", "titsdk.dll"):
-      if os.path.exists(path := os.path.join(dirname, filename)):
-        break
+    if isinstance(CDLL, type):  # pyright: ignore[reportUnnecessaryIsInstance]
+      dirname = os.path.dirname(__file__)
+      for filename in ("libtitsdk.so", "libtitsdk.dylib", "titsdk.dll"):
+        if os.path.exists(path := os.path.join(dirname, filename)):
+          break
+      else:
+        raise Error("Unable to find the titsdk library.")
     else:
-      raise Error("Unable to find the titsdk library.")
+      path = "mock-titsdk"
 
     self.__dll = CDLL(path)
     self.__last_error = self.__dll.titsdk__last_error
