@@ -12,6 +12,8 @@
 import datetime
 import json
 import os
+import sys
+from unittest import mock
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -20,6 +22,9 @@ import os
 
 MANUAL_ROOT_DIR = os.path.dirname(__file__)
 PROJECT_ROOT_DIR = os.path.abspath(os.path.join(MANUAL_ROOT_DIR, ".."))
+SOURCE_DIR = os.path.abspath(os.path.join(PROJECT_ROOT_DIR, "source"))
+sys.path.insert(0, SOURCE_DIR)
+sys.modules["ctypes"] = mock.Mock()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -37,6 +42,8 @@ with open(os.path.join(PROJECT_ROOT_DIR, "vcpkg.json"), encoding="utf-8") as f:
 # General configuration.
 #
 
+extensions: list[str] = []
+nitpick_ignore_regex: list[tuple[str, str]] = []
 exclude_patterns = ["Thumbs.db", ".DS_Store", "README.md"]
 templates_path = ["_templates"]
 numfig = True
@@ -48,6 +55,24 @@ numfig_format = {
 rst_prolog = r"""
 .. |product| replace:: :math:`\mathsf{BlueTit\text{ }Solver}`
 """
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Autodoc configuration.
+#
+
+extensions.append("sphinx.ext.autodoc")
+nitpick_ignore_regex.append(('py:class', '.*'))
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Breathe configuration.
+#
+
+extensions.append("breathe")
+breathe_default_project = "titsdk_doxygen"
+breathe_default_members = ("members",)
+nitpick_ignore_regex.append(('cpp:identifier', '.*'))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #

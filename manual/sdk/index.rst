@@ -3,14 +3,11 @@
 .. Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-User Manual
-===========
+SDK API Reference
+=================
 
 .. toctree::
-  :maxdepth: 2
+  :maxdepth: 1
 
-  theory/index
-  sdk/index
-
-Welcome to the |product| user manual. This documentation provides comprehensive
-guidance for using and understanding |product|.
+  api-c
+  api-python
