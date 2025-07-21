@@ -18,7 +18,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/cmd.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/sys/env.hpp"
+#include "tit/core/sys/path.hpp"
 
 #include "tit/core/type.hpp"
 #include "tit/data/storage.hpp"

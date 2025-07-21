@@ -4,15 +4,14 @@ func_3
 Creating a joinable thread...
 
 
-Terminating due to a call to std::terminate().
-
+/Users/jhuighuy/TitSolver/source/tit/core/exception.cpp:56:26: Terminating due to a call to std::terminate().
 
 Stack trace:
 
-  0 0x100ab46d4 tit::TerminateHandler::handle_terminate_()
-  1 0x100e828cc __cxxabiv1::__terminate(void (*)())
-  2 0x100f97dbc std::unexpected()
-  3 0x100aab554 tit::(anonymous namespace)::func_3()
-  4 0x100aab6d4 tit::(anonymous namespace)::run_test(int, char**)
-  5 0x100ab4c70 tit::run_main(int, char**, std::function<int (int, char**)> const&)
-  6 0x100ade298 main
+  0 0x10494064c tit::TerminateHandler::handle_terminate_()
+  1 0x1055da8cc __cxxabiv1::__terminate(void (*)())
+  2 0x1056efdbc std::unexpected()
+  3 0x10492ed04 tit::(anonymous namespace)::func_2()
+  4 0x10492ed6c tit::(anonymous namespace)::run_test(tit::CmdArgs)
+  5 0x10493add4 tit::run_main(int, char**, std::move_only_function<int (tit::CmdArgs)>)
+  6 0x10499bdf8 main

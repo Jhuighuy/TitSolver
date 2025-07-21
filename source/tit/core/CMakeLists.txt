@@ -7,6 +7,10 @@ add_subdirectory("_cxx")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+configure_file("version.cpp.in" "version.cpp" @ONLY)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 add_tit_library(
   NAME
     core
@@ -35,6 +39,8 @@ add_tit_library(
     "containers/multivector.hpp"
     "containers/small_flat_map.hpp"
     "containers/small_vector.hpp"
+    "containers/str_hash_map.hpp"
+    "containers/str_hash_set.hpp"
     "enum.hpp"
     "exception.cpp"
     "exception.hpp"
@@ -49,6 +55,7 @@ add_tit_library(
     "par/control.hpp"
     "par/memory_pool.hpp"
     "par/task_group.hpp"
+    "print.cpp"
     "print.hpp"
     "profiler.cpp"
     "profiler.hpp"
@@ -58,8 +65,20 @@ add_tit_library(
     "simd.hpp"
     "stats.cpp"
     "stats.hpp"
+    "str.cpp"
     "str.hpp"
     "stream.hpp"
+    "sys/env.cpp"
+    "sys/env.hpp"
+    "sys/info-linux.cpp"
+    "sys/info-macos.cpp"
+    "sys/info.cpp"
+    "sys/info.hpp"
+    "sys/io.cpp"
+    "sys/io.hpp"
+    "sys/path-linux.cpp"
+    "sys/path-macos.cpp"
+    "sys/path.hpp"
     "sys/signal.cpp"
     "sys/signal.hpp"
     "sys/utils.cpp"
@@ -70,6 +89,8 @@ add_tit_library(
     "type.hpp"
     "utils.hpp"
     "vec.hpp"
+    "version.cpp"
+    "version.hpp"
   DEPENDS
     _cxx
     Boost::container
@@ -122,8 +143,9 @@ add_tit_executable(
     "serialization.test.cpp"
     "serialization.testing.hpp"
     "str.test.cpp"
+    "sys/env.test.cpp"
+    "sys/path.test.cpp"
     "sys/signal.test.cpp"
-    "sys/utils.test.cpp"
     "time.test.cpp"
     "type.test.cpp"
   DEPENDS

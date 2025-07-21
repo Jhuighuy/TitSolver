@@ -125,6 +125,24 @@ struct StrTo<bool> final {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Format memory size in bytes as a pretty string.
+auto fmt_memsize(uint64_t value, size_t precision = 1) -> std::string;
+
+/// Format measurement as a pretty string with SI prefix.
+/// @{
+auto fmt_measurement(long double value,
+                     std::string_view unit,
+                     size_t precision = 1) -> std::string;
+template<class Val>
+  requires std::integral<Val> || std::floating_point<Val>
+auto fmt_measurement(Val value, std::string_view unit, size_t precision = 1)
+    -> std::string {
+  return fmt_measurement(static_cast<long double>(value), unit, precision);
+}
+/// @}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace tit
 
 // Formatter for `CStrView`.
