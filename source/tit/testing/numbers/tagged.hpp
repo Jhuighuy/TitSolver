@@ -18,20 +18,20 @@ namespace tit {
 /// for the built-in numerical types.
 ///
 /// @tparam Num Underlying numerical type.
-/// @tparam Tag Tag type. Strict numbers with different tags considered
+/// @tparam Tag Tag type. Tagged numbers with different tags considered
 ///             different types, operations between such numbers are not
 ///             defined.
 template<class Num, class Tag = void>
-class Strict final {
+class Tagged final {
 public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct a number.
-  constexpr Strict() noexcept = default;
+  constexpr Tagged() noexcept = default;
 
   /// Initialize a number with a built-in numerical value.
-  constexpr explicit Strict(Num val) : val_{val} {}
+  constexpr explicit Tagged(Num val) : val_{val} {}
 
   /// Get the underlying value.
   constexpr auto get(this auto&& self) noexcept -> auto&& {
@@ -48,55 +48,55 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Number unary plus operator.
-  friend constexpr auto operator+(const Strict& a) -> Strict {
-    return Strict{+a.get()};
+  friend constexpr auto operator+(const Tagged& a) -> Tagged {
+    return Tagged{+a.get()};
   }
 
   /// Number addition.
-  friend constexpr auto operator+(const Strict& a, const Strict& b) -> Strict {
-    return Strict{a.get() + b.get()};
+  friend constexpr auto operator+(const Tagged& a, const Tagged& b) -> Tagged {
+    return Tagged{a.get() + b.get()};
   }
 
   /// Number addition with assignment.
-  friend constexpr auto operator+=(Strict& a, const Strict& b) -> Strict& {
+  friend constexpr auto operator+=(Tagged& a, const Tagged& b) -> Tagged& {
     a.get() += b.get();
     return a;
   }
 
   /// Number negation.
-  friend constexpr auto operator-(const Strict& a) -> Strict {
-    return Strict{-a.get()};
+  friend constexpr auto operator-(const Tagged& a) -> Tagged {
+    return Tagged{-a.get()};
   }
 
   /// Number subtraction.
-  friend constexpr auto operator-(const Strict& a, const Strict& b) -> Strict {
-    return Strict{a.get() - b.get()};
+  friend constexpr auto operator-(const Tagged& a, const Tagged& b) -> Tagged {
+    return Tagged{a.get() - b.get()};
   }
 
   /// Number subtraction with assignment.
-  friend constexpr auto operator-=(Strict& a, const Strict& b) -> Strict& {
+  friend constexpr auto operator-=(Tagged& a, const Tagged& b) -> Tagged& {
     a.get() -= b.get();
     return a;
   }
 
   /// Number multiplication.
-  friend constexpr auto operator*(const Strict& a, const Strict& b) -> Strict {
-    return Strict{a.get() * b.get()};
+  friend constexpr auto operator*(const Tagged& a, const Tagged& b) -> Tagged {
+    return Tagged{a.get() * b.get()};
   }
 
   /// Number multiplication with assignment.
-  friend constexpr auto operator*=(Strict& a, const Strict& b) -> Strict& {
+  friend constexpr auto operator*=(Tagged& a, const Tagged& b) -> Tagged& {
     a.get() *= b.get();
     return a;
   }
 
   /// Number division.
-  friend constexpr auto operator/(const Strict& a, const Strict& b) -> Strict {
-    return Strict{a.get() / b.get()};
+  friend constexpr auto operator/(const Tagged& a, const Tagged& b) -> Tagged {
+    return Tagged{a.get() / b.get()};
   }
 
   /// Number division with assignment.
-  friend constexpr auto operator/=(Strict& a, const Strict& b) -> Strict& {
+  friend constexpr auto operator/=(Tagged& a, const Tagged& b) -> Tagged& {
     a.get() /= b.get();
     return a;
   }
@@ -104,7 +104,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compare two numbers by value.
-  constexpr auto operator<=>(const Strict&) const noexcept = default;
+  constexpr auto operator<=>(const Tagged&) const noexcept = default;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -112,43 +112,43 @@ private:
 
   Num val_;
 
-}; // class Strict
+}; // class Tagged
 
 template<std::floating_point Float>
-constexpr auto tiny_v<Strict<Float>> = Strict{tiny_v<Float>};
+constexpr auto tiny_v<Tagged<Float>> = Tagged{tiny_v<Float>};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Number absolute value.
 template<class Num>
-constexpr auto abs(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{abs(a.get())};
+constexpr auto abs(const Tagged<Num>& a) -> Tagged<Num> {
+  return Tagged{abs(a.get())};
 }
 
 /// Compute the largest integer value not greater than the number.
 template<class Num>
-constexpr auto floor(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{floor(a.get())};
+constexpr auto floor(const Tagged<Num>& a) -> Tagged<Num> {
+  return Tagged{floor(a.get())};
 }
 
 /// Compute the nearest integer value to the number.
 template<class Num>
-constexpr auto round(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{round(a.get())};
+constexpr auto round(const Tagged<Num>& a) -> Tagged<Num> {
+  return Tagged{round(a.get())};
 }
 
 /// Compute the smallest integer value not less than the number.
 template<class Num>
-constexpr auto ceil(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{ceil(a.get())};
+constexpr auto ceil(const Tagged<Num>& a) -> Tagged<Num> {
+  return Tagged{ceil(a.get())};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Compute the square root of the number.
 template<class Num>
-constexpr auto sqrt(const Strict<Num>& a) -> Strict<Num> {
-  return Strict{sqrt(a.get())};
+constexpr auto sqrt(const Tagged<Num>& a) -> Tagged<Num> {
+  return Tagged{sqrt(a.get())};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
