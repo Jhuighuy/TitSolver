@@ -31,7 +31,7 @@ template<continuity_equation ContinuityEquation,
          momentum_equation MomentumEquation,
          riemann_solver RiemannSolver,
          kernel Kernel>
-class FluidEquationsRiemann final {
+class RiemannFluidEquations final {
 public:
 
   /// Set of particle fields that are required.
@@ -55,10 +55,9 @@ public:
   ///
   /// @param motion_equation     Motion equation.
   /// @param continuity_equation Continuity equation.
-  /// @param eos                 Equation of state.
   /// @param riemann_solver      Riemann solver.
   /// @param kernel              Kernel.
-  constexpr explicit FluidEquationsRiemann(
+  constexpr explicit RiemannFluidEquations(
       ContinuityEquation continuity_equation = {},
       MomentumEquation momentum_equation = {},
       RiemannSolver riemann_solver = {},
@@ -90,7 +89,7 @@ public:
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void setup_boundary(ParticleMesh& mesh, ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquationsRiemann::setup_boundary()");
+    TIT_PROFILE_SECTION("RiemannFluidEquations::setup_boundary()");
     using PV = ParticleView<ParticleArray>;
     using Num = particle_num_t<ParticleArray>;
     static constexpr auto Dim = particle_dim_v<ParticleArray>;
@@ -176,7 +175,7 @@ public:
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void compute_forces(ParticleMesh& mesh, ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquationsRiemann::compute_density()");
+    TIT_PROFILE_SECTION("RiemannFluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
 
     // Prepare the fields and setup sources and pressure.
@@ -262,7 +261,7 @@ private:
   [[no_unique_address]] RiemannSolver riemann_solver_;
   [[no_unique_address]] Kernel kernel_;
 
-}; // class FluidEquationsRiemann
+}; // class RiemannFluidEquations
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
