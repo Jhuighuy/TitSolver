@@ -9,9 +9,11 @@ add_tit_library(
   TYPE
     OBJECT
   SOURCES
-    "integrals.hpp"
-    "test.hpp"
+    "math/integrals.hpp"
+    "numbers/dual.hpp"
+    "numbers/tagged.hpp"
     "test_main.cpp"
+    "test.hpp"
   DEPENDS
     tit::core
     doctest::doctest
@@ -23,7 +25,8 @@ add_tit_executable(
   NAME
     testing_tests
   SOURCES
-    "integrals.test.cpp"
+    "math/integrals.test.cpp"
+    "numbers/dual.test.cpp"
   DEPENDS
     tit::core
     tit::geom
