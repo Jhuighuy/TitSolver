@@ -6,17 +6,17 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/numbers/strict.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 
+#include "tit/testing/numbers/tagged.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
 namespace {
 
 // To test implementations with and without SIMD.
-#define NUM_TYPES float, double, Strict<double>
+#define NUM_TYPES float, double, Tagged<double>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
