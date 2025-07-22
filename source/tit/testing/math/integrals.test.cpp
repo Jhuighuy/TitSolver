@@ -10,7 +10,7 @@
 
 #include "tit/geom/bbox.hpp"
 
-#include "tit/testing/integrals.hpp"
+#include "tit/testing/math/integrals.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
