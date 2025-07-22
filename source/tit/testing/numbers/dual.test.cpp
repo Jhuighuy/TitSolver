@@ -5,8 +5,7 @@
 
 #include <numbers>
 
-#include "tit/core/numbers/dual.hpp"
-
+#include "tit/testing/numbers/dual.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
