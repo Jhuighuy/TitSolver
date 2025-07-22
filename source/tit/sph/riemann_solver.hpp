@@ -6,8 +6,10 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <tuple>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 

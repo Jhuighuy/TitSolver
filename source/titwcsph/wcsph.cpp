@@ -14,12 +14,12 @@
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
-#include "tit/sph/fluid_equations_riemann.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
 #include "tit/sph/motion_equation.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
+#include "tit/sph/riemann_fluid_equations.hpp"
 #include "tit/sph/riemann_solver.hpp"
 #include "tit/sph/time_integrator.hpp"
 #include "tit/sph/viscosity.hpp"
@@ -65,7 +65,7 @@ auto sph_main(CmdArgs /*args*/) -> int {
   // Setup the SPH equations.
   const auto equations = [&] {
     if constexpr (Riemann) {
-      return FluidEquationsRiemann{
+      return RiemannFluidEquations{
           // Continuity equation with no source terms.
           ContinuityEquation{},
           // Momentum equation with gravity source term.
