@@ -3,20 +3,24 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <string>
+#include <csignal>
 
-#include "tit/core/cmd.hpp"
 #include "tit/core/print.hpp"
+#include "tit/core/sys/signal.hpp"
+#include "tit/core/sys/utils.hpp"
+
+#include "tit/main/main.hpp"
 
 namespace tit {
-namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace {
+
 [[gnu::noinline]] void func_3() {
   eprintln("func_3");
-  eprintln("Doing something bad...");
-  static_cast<void>(std::string().at(1));
+  eprintln("Simulating Ctrl+C...");
+  checked_raise(SIGINT);
 }
 
 [[gnu::noinline]] void func_2() {
@@ -29,16 +33,14 @@ namespace {
   func_2();
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+} // namespace
 
-auto run_test(CmdArgs /*args*/) -> int {
+void tit_main(CmdArgs /*args*/) {
+  checked_atexit([] { eprintln("At exit..."); });
   func_1();
-  return 0;
+  eprintln("This line should not be executed.");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace
 } // namespace tit
-
-TIT_IMPLEMENT_MAIN(run_test)

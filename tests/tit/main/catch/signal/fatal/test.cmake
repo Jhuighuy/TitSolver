@@ -4,7 +4,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_test(
-  EXE SOURCES "test.cpp" DEPENDS tit::core
+  EXE SOURCES "test.cpp" DEPENDS tit::core tit::main
   EXIT_CODE 1
   MATCH_STDERR "stderr.txt"
   FILTERS "s/SIG.+$/<SIGNAL>./g" # Simplify signal name.

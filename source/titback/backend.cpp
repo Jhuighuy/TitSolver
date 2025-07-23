@@ -17,21 +17,21 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/cmd.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/path.hpp"
-
 #include "tit/core/type.hpp"
+
 #include "tit/data/storage.hpp"
 
-namespace tit::back {
-namespace {
+#include "tit/main/main.hpp"
+
+namespace tit {
 
 namespace json = nlohmann;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_backend(CmdArgs /*args*/) -> int {
+void tit_main(CmdArgs /*args*/) {
   const auto exe_dir = exe_path().parent_path();
   const auto root_dir = exe_dir.parent_path();
 
@@ -80,13 +80,8 @@ auto run_backend(CmdArgs /*args*/) -> int {
 
   /// @todo Pass port as a command line argument.
   app.port(get_env<uint16_t>("TIT_BACKEND_PORT", 18080)).run();
-
-  return 0;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace
-} // namespace tit::back
-
-TIT_IMPLEMENT_MAIN(back::run_backend)
+} // namespace tit

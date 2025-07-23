@@ -3,19 +3,20 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/cmd.hpp"
-#include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
 
+#include "tit/main/main.hpp"
+
 namespace tit {
-namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace {
+
 [[gnu::noinline]] void func_3() {
   eprintln("func_3");
-  eprintln("Throwing an exception...");
-  TIT_THROW("Test exception, Some arguments: {}, {}.", 13, "hello");
+  eprintln("Doing something bad...");
+  throw 0xDEADBEEF;
 }
 
 [[gnu::noinline]] void func_2() {
@@ -28,17 +29,13 @@ namespace {
   func_2();
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+} // namespace
 
-auto run_test(CmdArgs /*args*/) -> int {
+void tit_main(CmdArgs /*args*/) {
   func_1();
   eprintln("This line should not be executed.");
-  return 0;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace
 } // namespace tit
-
-TIT_IMPLEMENT_MAIN(run_test)

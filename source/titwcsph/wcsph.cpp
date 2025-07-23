@@ -1,5 +1,4 @@
 #include "tit/core/basic_types.hpp"
-#include "tit/core/cmd.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
@@ -22,6 +21,8 @@
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
 #include "tit/sph/viscosity.hpp"
+
+#include "tit/main/main.hpp"
 
 namespace tit::sph {
 namespace {
@@ -189,4 +190,6 @@ auto sph_main(CmdArgs /*args*/) -> int {
 } // namespace
 } // namespace tit::sph
 
-TIT_IMPLEMENT_MAIN(sph::sph_main<tit::float64_t>)
+void tit::tit_main(CmdArgs args) {
+  sph::sph_main<float64_t>(args);
+}
