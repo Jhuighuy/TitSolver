@@ -7,7 +7,6 @@
 #include <thread>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/cmd.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 
@@ -38,14 +37,13 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_test(CmdArgs /*args*/) -> int {
-  func_1();
+} // namespace
+} // namespace tit
+
+auto main() noexcept(false) -> int {
+  tit::Profiler::enable();
+  tit::func_1();
   return 0;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-} // namespace
-} // namespace tit
-
-TIT_IMPLEMENT_MAIN(run_test)
