@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <functional>
-
 #include "tit/core/checks.hpp"
 
 namespace tit {
@@ -42,19 +40,8 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Main function pointer.
-using MainFunc = std::move_only_function<int(CmdArgs)>;
-
-/// Wrapper for the main function that should run sets up the
-/// environment: initialized threading, error handlers, etc.
-auto run_main(int argc, char** argv, MainFunc main_func) -> int;
-
-/// Implement the actual `main` function.
-#define TIT_IMPLEMENT_MAIN(main_func)                                          \
-  auto main(int argc, char** argv) -> int {                                    \
-    using namespace tit;                                                       \
-    return run_main(argc, argv, &(main_func));                                 \
-  }
+/// Forward declaration of the entry point for the application.
+void tit_main(tit::CmdArgs args);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
