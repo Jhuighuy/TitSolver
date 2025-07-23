@@ -4,7 +4,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_test(
-  EXE SOURCES "test.cpp" DEPENDS tit::core
+  EXE SOURCES "test.cpp" DEPENDS tit::core tit::main
   MATCH_STDERR "stderr.txt"
 )
 

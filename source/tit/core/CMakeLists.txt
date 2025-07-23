@@ -31,8 +31,6 @@ add_tit_library(
     "build_info.hpp"
     "checks.cpp"
     "checks.hpp"
-    "cmd.cpp"
-    "cmd.hpp"
     "containers/inplace_vector.hpp"
     "containers/mdvector.hpp"
     "containers/str_hash_map.hpp"
@@ -85,19 +83,6 @@ add_tit_library(
     gcem
     hwy::hwy
     TBB::tbb
-)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_tit_library(
-  NAME
-    core_malloc
-  TYPE
-    OBJECT
-  SOURCES
-    "sys/malloc.cpp"
-  DEPENDS
-    mimalloc-static
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
