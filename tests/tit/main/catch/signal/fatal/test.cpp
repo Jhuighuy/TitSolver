@@ -7,12 +7,13 @@
 // segfault from the `backtrace` function in the signal handler.
 #include <iostream>
 
-#include "tit/core/cmd.hpp"
+#include "tit/main/main.hpp"
 
 namespace tit {
-namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace {
 
 [[gnu::noinline]] void func_3() {
   std::cerr << "func_3\n";
@@ -31,17 +32,13 @@ namespace {
   func_2();
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+} // namespace
 
-auto run_test(CmdArgs /*args*/) -> int {
+void tit_main(CmdArgs /*args*/) {
   func_1();
   std::cerr << "This line should not be executed.\n";
-  return 0;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace
 } // namespace tit
-
-TIT_IMPLEMENT_MAIN(run_test)
