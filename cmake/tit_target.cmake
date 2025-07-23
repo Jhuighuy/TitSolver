@@ -128,7 +128,7 @@ function(add_tit_executable)
 
   # Configure the target.
   configure_tit_target("${TARGET}" PRIVATE)
-  target_link_libraries("${TARGET}" PRIVATE tit::core_malloc ${TARGET_DEPENDS})
+  target_link_libraries("${TARGET}" PRIVATE ${TARGET_DEPENDS})
 
   # Run linters.
   if(TARGET_SOURCES AND NOT SKIP_ANALYSIS)
