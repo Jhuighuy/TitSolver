@@ -5,26 +5,21 @@
 
 #pragma once
 
-#include <algorithm>
 #include <concepts>
 #include <iterator>
+#include <memory>
 #include <ranges>
 #include <span>
-#include <tuple>
-#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/func.hpp"
-#include "tit/core/math.hpp"
-#include "tit/core/par/memory_pool.hpp"
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
-#include "tit/geom/bbox.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
 
@@ -33,7 +28,6 @@ namespace tit::geom {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// K-dimensional tree spatial search index.
-/// Inspired by nanoflann: https://github.com/jlblancoc/nanoflann
 template<point_range Points>
   requires std::ranges::view<Points>
 class KDTreeIndex final {
@@ -45,11 +39,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Index the points for search using a K-dimensional tree.
-  ///
-  /// @param max_leaf_size Maximum amount of points in the leaf node.
-  explicit KDTreeIndex(Points points, size_t max_leaf_size = 1)
-      : points_{std::move(points)}, max_leaf_size_{max_leaf_size} {
-    TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive.");
+  explicit KDTreeIndex(Points points) : points_{std::move(points)} {
     if (std::ranges::empty(points_)) return;
 
     // Initialize identity points permutation.
@@ -57,44 +47,31 @@ public:
 
     // Compute the root tree node (and bounding box).
     par::TaskGroup tasks{};
-    const auto impl = [max_leaf_size_ = max_leaf_size,
-                       &points = points_,
-                       &pool = pool_,
-                       &tasks](this const auto& self, std::span<size_t> perm) {
-      // Compute bounding box.
+    root_node_ = [&points = points_, &tasks](
+                     this const auto& self,
+                     std::span<size_t> perm) -> std::unique_ptr<KDTreeNode_> {
+      // Fill the leaf node and end partitioning.
+      if (perm.empty()) return nullptr;
+      if (perm.size() == 1) return std::make_unique<KDTreeNode_>(perm.front());
+
+      // Split the points into the roughly equal halves.
       const auto box = compute_bbox(points, perm);
-
-      // Is leaf node reached?
-      const auto node = pool.create();
-      if (perm.size() <= max_leaf_size_) {
-        // Fill the leaf node and end partitioning.
-        node->perm = perm;
-        node->left_subtree = node->right_subtree = nullptr;
-        return std::pair{node, box};
-      }
-
-      // Split the points based on the "widest" bounding box dimension.
-      const auto cut_axis = max_value_index(box.extents());
-      const auto center_coord = box.clamp(box.center())[cut_axis];
+      const auto axis = max_value_index(box.extents());
+      const auto median = perm.begin() + static_cast<ssize_t>(perm.size() / 2);
       const auto [left_perm, right_perm] =
-          coord_bisection(points, perm, center_coord, cut_axis);
+          coord_median_split(points, perm, median, axis);
 
-      // Build subtrees.
-      node->cut_axis = cut_axis;
-      tasks.run(is_async_(left_perm), [left_perm, node, &self] {
-        const auto [left_tree, left_box] = self(left_perm);
-        node->left_subtree = left_tree;
-        node->cut_left = left_box.high()[node->cut_axis];
+      // Recursively partition the halves.
+      auto node = std::make_unique<KDTreeNode_>(*median, axis);
+      tasks.run(is_async_(left_perm), [left_perm, node = node.get(), &self] {
+        node->left = self(left_perm);
       });
-      tasks.run(is_async_(right_perm), [right_perm, node, &self] {
-        const auto [right_tree, right_box] = self(right_perm);
-        node->right_subtree = right_tree;
-        node->cut_right = right_box.low()[node->cut_axis];
+      tasks.run(is_async_(right_perm), [right_perm, node = node.get(), &self] {
+        node->right = self(right_perm);
       });
 
-      return std::pair{node, box};
-    };
-    std::tie(root_node_, tree_box_) = impl(perm_);
+      return node;
+    }(perm_);
     tasks.wait();
   }
 
@@ -107,68 +84,33 @@ public:
               vec_num_t<Vec> search_radius,
               OutIter out,
               Pred pred = {}) const -> OutIter {
-    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive.");
+    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive!");
+    const auto search_radius_sq = pow2(search_radius);
+    [&search_point, &search_radius_sq, &pred, &points = points_, &out](
+        this const auto& self,
+        const KDTreeNode_* node) -> void {
+      if (node == nullptr) return;
+      const auto& [index, axis, left, right] = *node;
 
-    // Compute distance from the query point to the root bounding box
-    // per each dimension. (By "dist" square distances are meant.)
-    const auto search_dist = pow2(search_radius);
-    auto dists = pow2(search_point - tree_box_.clamp(search_point));
-
-    // Recursively search the tree.
-    const auto impl = [&points = points_, //
-                       &dists,
-                       &search_point,
-                       &search_dist,
-                       &out,
-                       &pred](this const auto& self,
-                              const KDTreeNode_* node) -> void {
-      TIT_ASSERT(node != nullptr, "Invalid tree node!");
-
-      const auto* const first_node = node->left_subtree;
-      const auto* const second_node = node->right_subtree;
-      if (first_node == nullptr) {
-        TIT_ASSERT(second_node == nullptr, "Invalid leaf node!");
-
-        // Collect points within the leaf node.
-        out = copy_points_near(points,
-                               node->perm,
-                               out,
-                               search_point,
-                               search_dist,
-                               pred);
-        return;
+      // Check if the point is within the search radius.
+      const auto& point = points[index];
+      if (pred(index) && norm2(point - search_point) < search_radius_sq) {
+        *out++ = index;
       }
 
-      // Determine which branch should be taken first.
-      const auto cut_axis = node->cut_axis;
-      // const auto delta_left = search_point[cut_axis] - node->cut_left;
-      // const auto delta_right = node->cut_right - search_point[cut_axis];
-      // const auto [cut_dist, first_node, second_node] =
-      //     delta_left < delta_right ?
-      //         // Point is on the left to the cut plane, so the
-      //         // corresponding subtree should be searched first.
-      //         std::tuple{pow2(delta_right),
-      //                    node->left_subtree,
-      //                    node->right_subtree} :
-      //         // Point is on the right to the cut plane, so the
-      //         // corresponding subtree should be searched first.
-      //         std::tuple{pow2(delta_left),
-      //                    node->right_subtree,
-      //                    node->left_subtree};
-      vec_num_t<Vec> cut_dist{};
-
-      // Search in the first subtree.
-      self(first_node);
-
-      // Search in the second subtree (if it not too far).
-      if (sum(dists) < search_dist) {
-        const auto old_cut_dist = std::exchange(dists[cut_axis], cut_dist);
-        self(second_node);
-        dists[cut_axis] = old_cut_dist;
+      // Recursively search the subtrees.
+      if (axis != npos) {
+        const auto delta = search_point[axis] - point[axis];
+        const auto delta_sq = pow2(delta);
+        if (delta <= vec_num_t<Vec>{}) {
+          self(left.get());
+          if (delta_sq <= search_radius_sq) self(right.get());
+        } else {
+          self(right.get());
+          if (delta_sq <= search_radius_sq) self(left.get());
+        }
       }
-    };
-    impl(root_node_);
-
+    }(root_node_.get());
     return out;
   }
 
@@ -182,28 +124,16 @@ private:
     return std::size(perm) >= parallel_threshold;
   }
 
-  struct KDTreeNode_ {
-    KDTreeNode_* left_subtree = nullptr;
-    KDTreeNode_* right_subtree = nullptr;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-    union {
-      std::span<const size_t> perm{};
-      struct {
-        size_t cut_axis;
-        vec_num_t<Vec> cut_left;
-        vec_num_t<Vec> cut_right;
-      };
-    };
-#pragma GCC diagnostic pop
+  struct KDTreeNode_ final {
+    size_t index = npos;
+    size_t axis = npos;
+    std::unique_ptr<const KDTreeNode_> left;
+    std::unique_ptr<const KDTreeNode_> right;
   };
 
   Points points_;
-  size_t max_leaf_size_;
-  par::MemoryPool<KDTreeNode_> pool_;
-  const KDTreeNode_* root_node_ = nullptr;
-  BBox<Vec> tree_box_;
   std::vector<size_t> perm_;
+  std::unique_ptr<KDTreeNode_> root_node_;
 
 }; // class KDTreeIndex
 
@@ -217,25 +147,13 @@ KDTreeIndex(Points&&, Args...) -> KDTreeIndex<std::views::all_t<Points>>;
 class KDTreeSearch final {
 public:
 
-  /// Construct a K-dimensional tree search indexing function.
-  ///
-  /// @param max_leaf_size Maximum amount of points in the leaf node.
-  constexpr explicit KDTreeSearch(size_t max_leaf_size = 1)
-      : max_leaf_size_{max_leaf_size} {
-    TIT_ASSERT(max_leaf_size_ > 0, "Maximal leaf size should be positive!");
-  }
-
   /// Index the points for search using a K-dimensional tree.
   template<std::ranges::viewable_range Points>
-    requires deduce_constructible_from<KDTreeIndex, Points&&, size_t>
-  [[nodiscard]] auto operator()(Points&& points) const {
-    TIT_PROFILE_SECTION("KDTreeIndex::KDTreeSearch()");
-    return KDTreeIndex{std::forward<Points>(points), max_leaf_size_};
+    requires deduce_constructible_from<KDTreeIndex, Points&&>
+  [[nodiscard]] static auto operator()(Points&& points) {
+    TIT_PROFILE_SECTION("KDTreeIndex::operator()");
+    return KDTreeIndex{std::forward<Points>(points)};
   }
-
-private:
-
-  size_t max_leaf_size_;
 
 }; // class KDTreeSearch
 
