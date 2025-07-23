@@ -5,7 +5,6 @@
 
 #include <vector>
 
-#include "tit/core/cmd.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/stats.hpp"
 
@@ -43,16 +42,20 @@ void stat_empty_vector() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_test(CmdArgs /*args*/) -> int {
-  stat_scalar();
-  stat_vector();
-  stat_empty_vector();
-  return 0;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace
 } // namespace tit
 
-TIT_IMPLEMENT_MAIN(run_test)
+auto main() noexcept(false) -> int {
+  try {
+    tit::Stats::enable();
+    tit::stat_scalar();
+    tit::stat_vector();
+    tit::stat_empty_vector();
+    return 0;
+  } catch (...) {
+    tit::eprintln("An exception was thrown.");
+    return 1;
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

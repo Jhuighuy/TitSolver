@@ -3,8 +3,6 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/checks.hpp"
-#include "tit/core/cmd.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/profiler.hpp"
@@ -12,11 +10,13 @@
 #include "tit/core/sys/signal.hpp"
 #include "tit/core/sys/utils.hpp"
 
-namespace tit {
+#include "tit/main/main.hpp"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto run_main(int argc, char** argv, MainFunc main_func) -> int {
+auto main(int argc, char** argv) -> int {
+  using namespace tit;
+
   // Setup error handlers.
   const TerminateHandler terminate_handler{};
   const FatalSignalHandler signal_handler{};
@@ -29,10 +29,8 @@ auto run_main(int argc, char** argv, MainFunc main_func) -> int {
   par::set_num_threads(get_env("TIT_NUM_THREADS", 8UZ));
 
   // Run the main function.
-  TIT_ASSERT(main_func != nullptr, "Main function must be specified!");
-  return main_func({argc, argv});
+  tit_main({argc, argv});
+  return 0;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-} // namespace tit
