@@ -4,22 +4,21 @@ func_3
 Doing something bad...
 
 
-Terminating due to an unhandled exception.
+/home/jhuighuy/TitSolver/source/tit/main/main.cpp:142:30: Terminating due to an unhandled exception.
 
-  throw std::out_of_range(...);
+  throw std::out_of_range{...};
   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~ basic_string::at: __n (which is 1) >= this->size() (which is 0)
 
 
 Stack trace:
 
-  0 0x1041b8b68 tit::TerminateHandler::handle_terminate_()
-  1 0x1045868cc __cxxabiv1::__terminate(void (*)())
-  2 0x10469bdbc std::unexpected()
-  3 0x104586bc0 __cxa_rethrow
-  4 0x10469c20c std::__throw_out_of_range_fmt(char const*, ...)
-  5 0x1041e1fb4 tit::(anonymous namespace)::func_3()
-  6 0x1041afe64 tit::(anonymous namespace)::func_1()
-  7 0x1041afe88 tit::(anonymous namespace)::run_test(int, char**)
-  8 0x1041afe94 tit::(anonymous namespace)::run_test(int, char**)
-  9 0x1041b8d10 tit::run_main(int, char**, std::function<int (int, char**)> const&)
- 10 0x1041e2398 main
+  0 0x102dd3d14 tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::operator()() const [clone .constprop.0]
+  1 0x102dd3ed4 tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::_FUN()
+  2 0x1036cbaec __cxxabiv1::__terminate(void (*)())
+  3 0x1037dfa1c std::unexpected()
+  4 0x1036cbdfc __cxa_throw
+  5 0x1037e05b8 std::__throw_out_of_range_fmt(char const*, ...)
+  6 0x102e2cbb0 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .isra.0]
+  7 0x102dd2d48 tit::(anonymous namespace)::func_1() [clone .lto_priv.0]
+  8 0x102dd2d70 tit::(anonymous namespace)::func_1() [clone .lto_priv.0]
+  9 0x102e2d2a4 main
