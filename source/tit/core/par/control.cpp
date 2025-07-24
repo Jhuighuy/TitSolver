@@ -3,7 +3,6 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <mutex>
 #include <optional>
 
 #include <oneapi/tbb/global_control.h>
@@ -26,13 +25,6 @@ void set_num_threads(size_t value) {
   if (num_threads() == value) return;
   static std::optional<tbb::global_control> control{};
   control.emplace(tbb::global_control::max_allowed_parallelism, value);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto global_mutex() noexcept -> std::recursive_mutex& {
-  static std::recursive_mutex mutex{};
-  return mutex;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

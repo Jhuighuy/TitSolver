@@ -14,7 +14,7 @@
 #include "tit/core/containers/str_hash_map.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/runtime.hpp"
 #include "tit/core/time.hpp"
 
 namespace tit {

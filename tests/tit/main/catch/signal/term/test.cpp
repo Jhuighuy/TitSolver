@@ -3,9 +3,10 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// Here I am using <iostream> instead of our routines to avoid the weird
-// segfault from the `backtrace` function in the signal handler.
-#include <iostream>
+#include <csignal>
+
+#include "tit/core/print.hpp"
+#include "tit/core/runtime.hpp"
 
 #include "tit/main/main.hpp"
 
@@ -16,27 +17,27 @@ namespace tit {
 namespace {
 
 [[gnu::noinline]] void func_3() {
-  std::cerr << "func_3\n";
-  std::cerr << "Doing something bad...\n";
-  int* const null_pointer = nullptr;
-  *null_pointer = 0; // NOLINT
+  eprintln("func_3");
+  eprintln("Sending SIGTERM...");
+  static_cast<void>(std::raise(SIGTERM));
 }
 
 [[gnu::noinline]] void func_2() {
-  std::cerr << "func_2\n";
+  eprintln("func_2");
   func_3();
 }
 
 [[gnu::noinline]] void func_1() {
-  std::cerr << "func_1\n";
+  eprintln("func_1");
   func_2();
 }
 
 } // namespace
 
 void tit_main(CmdArgs /*args*/) {
+  checked_atexit([] { eprintln("At exit..."); });
   func_1();
-  std::cerr << "This line should not be executed.\n";
+  eprintln("This line should not be executed.");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

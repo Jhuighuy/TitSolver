@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "tit/core/basic_types.hpp"
-
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,10 +16,7 @@ using atexit_callback_t = void (*)();
 void checked_atexit(atexit_callback_t callback);
 
 /// Exit code.
-enum class ExitCode : uint8_t {
-  success = 0, ///< Success.
-  failure = 1, ///< Failure.
-};
+enum class ExitCode : int {};
 
 /// Exit from the current process.
 [[noreturn]] void exit(ExitCode exit_code) noexcept;

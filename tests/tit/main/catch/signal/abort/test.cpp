@@ -6,8 +6,7 @@
 #include <csignal>
 
 #include "tit/core/print.hpp"
-#include "tit/core/sys/signal.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/runtime.hpp"
 
 #include "tit/main/main.hpp"
 
@@ -19,8 +18,8 @@ namespace {
 
 [[gnu::noinline]] void func_3() {
   eprintln("func_3");
-  eprintln("Simulating Ctrl+C...");
-  checked_raise(SIGINT);
+  eprintln("Sending SIGABRT...");
+  static_cast<void>(std::raise(SIGABRT));
 }
 
 [[gnu::noinline]] void func_2() {

@@ -1,0 +1,8 @@
+func_1
+func_2
+func_3
+Sending SIGTERM...
+
+
+Terminated by signal (SIGTERM).
+At exit...

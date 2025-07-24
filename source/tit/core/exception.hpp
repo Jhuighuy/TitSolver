@@ -13,7 +13,6 @@
 #include <string>
 #include <utility>
 
-#include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -66,28 +65,6 @@ private:
   std::stacktrace stacktrace_;
 
 }; // class Exception
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Terminate handler that catches exceptions and exits the process.
-class TerminateHandler {
-public:
-
-  TIT_NOT_COPYABLE_OR_MOVABLE(TerminateHandler);
-
-  /// Initialize the terminate handler.
-  TerminateHandler() noexcept;
-
-  /// Reset terminate handling.
-  ~TerminateHandler() noexcept;
-
-private:
-
-  [[noreturn]] static void handle_terminate_();
-
-  std::terminate_handler prev_handler_;
-
-}; // class TerminateHandler
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

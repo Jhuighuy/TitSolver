@@ -8,9 +8,8 @@
 #include <string_view>
 
 #include "tit/core/checks.hpp"
-#include "tit/core/par/control.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/runtime.hpp"
 
 namespace tit::impl {
 
@@ -20,8 +19,6 @@ namespace tit::impl {
     std::string_view expression,
     std::string_view message,
     std::source_location location) noexcept {
-  const par::GlobalLock lock{};
-
   // Report the check failure.
   eprintln();
   eprintln();
@@ -39,7 +36,7 @@ namespace tit::impl {
   eprintln("{}", std::stacktrace::current());
 
   // Fast-exit with failure.
-  fast_exit(ExitCode::failure);
+  fast_exit(ExitCode{1});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

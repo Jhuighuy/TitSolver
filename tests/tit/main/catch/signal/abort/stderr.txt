@@ -1,0 +1,18 @@
+func_1
+func_2
+func_3
+Sending SIGABRT...
+
+
+Aborted (SIGABRT).
+
+
+Stack trace:
+
+0   tit_main_catch_signal_test          0x000000010033f68c _ZZN3tit12_GLOBAL__N_1L21setup_signal_handlersEvENKUliE_clEi.constprop.0 + 300
+1   tit_main_catch_signal_test          0x000000010033f7b0 _ZNSt16basic_format_argISt20basic_format_contextINSt8__format10_Sink_iterIcEEcEE6handle9_S_formatIKN3tit8CStrViewEEEvRSt26basic_format_parse_contextIcERS4_PKv + 0
+2   libsystem_platform.dylib            0x000000018c92c624 _sigtramp + 56
+3   libsystem_pthread.dylib             0x000000018c8f288c pthread_kill + 296
+4   libsystem_c.dylib                   0x000000018c7c3d04 raise + 32
+5   tit_main_catch_signal_test          0x0000000100398cf8 main + 1048
+6   dyld                                0x000000018c552b98 start + 6076
