@@ -5,7 +5,9 @@
 
 add_tit_test(
   EXE SOURCES "test.cpp" DEPENDS tit::core tit::main
+  EXIT_CODE 250
   MATCH_STDERR "stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
