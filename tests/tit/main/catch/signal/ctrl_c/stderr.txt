@@ -1,8 +1,0 @@
-func_1
-func_2
-func_3
-Simulating Ctrl+C...
-
-
-Interrupted by Ctrl+C.
-At exit...
