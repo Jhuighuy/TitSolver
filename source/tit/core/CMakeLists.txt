@@ -49,6 +49,8 @@ add_tit_library(
     "math.hpp"
     "numbers/dual.hpp"
     "numbers/strict.hpp"
+    "opencl.cpp"
+    "opencl.hpp"
     "par/algorithms.hpp"
     "par/atomic.hpp"
     "par/control.cpp"
@@ -82,6 +84,7 @@ add_tit_library(
     Boost::container
     gcem
     hwy::hwy
+    OpenCL::OpenCL
     TBB::tbb
 )
 
