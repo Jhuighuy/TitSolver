@@ -6,12 +6,12 @@
 #include <algorithm>
 #include <array>
 #include <format>
+#include <random>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/numbers/strict.hpp"
-#include "tit/core/rand.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 
@@ -282,12 +282,12 @@ TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
     FSUBCASE("Dim = {}", sizeof...(Axes)) {
       SUBCASE("all positive") {
         Vec v{Num{Axes + 1}...};
-        std::ranges::shuffle(v.elems(), SplitMix64{0});
+        std::ranges::shuffle(v.elems(), std::mt19937_64{});
         CHECK(min_value(v) == Num{1});
       }
       SUBCASE("all negative") {
         Vec v{Num{-ssize_t{Axes} - 1}...};
-        std::ranges::shuffle(v.elems(), SplitMix64{0});
+        std::ranges::shuffle(v.elems(), std::mt19937_64{});
         CHECK(min_value(v) == Num{-ssize_t{sizeof...(Axes)}});
       }
       SUBCASE("even positive") {
@@ -310,12 +310,12 @@ TEST_CASE_TEMPLATE("Vec::max_value", Num, NUM_TYPES) {
     FSUBCASE("Dim = {}", sizeof...(Axes)) {
       SUBCASE("all positive") {
         Vec v{Num{Axes + 1}...};
-        std::ranges::shuffle(v.elems(), SplitMix64{0});
+        std::ranges::shuffle(v.elems(), std::mt19937_64{});
         CHECK(max_value(v) == Num{sizeof...(Axes)});
       }
       SUBCASE("all negative") {
         Vec v{Num{-ssize_t{Axes} - 1}...};
-        std::ranges::shuffle(v.elems(), SplitMix64{0});
+        std::ranges::shuffle(v.elems(), std::mt19937_64{});
         CHECK(max_value(v) == Num{-1});
       }
       SUBCASE("even positive") {
