@@ -11,7 +11,7 @@ add_tit_library(
     "bipartition.hpp"
     "grid.hpp"
     "partition.hpp"
-    "partition/grid_graph_partition.hpp"
+    "partition/pixelated_partition.hpp"
     "partition/recursive_bisection.hpp"
     "partition/sort_partition.hpp"
     "point_range.hpp"
@@ -23,7 +23,6 @@ add_tit_library(
     "sort/morton_curve_sort.hpp"
   DEPENDS
     tit::core
-    tit::graph
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,7 +35,6 @@ add_tit_executable(
     "bipartition.test.cpp"
     "grid.test.cpp"
     "point_range.test.cpp"
-    "partition/grid_graph_partition.test.cpp"
     "partition/recursive_bisection.test.cpp"
     "partition/sort_partition.test.cpp"
     "search.test.cpp"

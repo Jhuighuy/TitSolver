@@ -165,7 +165,8 @@ private:
       par::for_each( //
           std::views::enumerate(particles.fixed()),
           [&radius_func, &search_index, &particles](const auto& ia) {
-            const auto& [i, a] = ia;
+            const auto& [i_, a] = ia;
+            const auto i = static_cast<size_t>(i_);
 
             /// @todo Once we have a proper geometry library, we should use
             ///       here and clean up the code.
@@ -222,12 +223,15 @@ private:
           parts | std::views::transform(
                       [level](PartVec& part) -> auto& { return part[level]; });
       if (is_first_level) {
-        partition_func_(positions, level_parts, num_threads);
+        partition_func_(positions,
+                        level_parts,
+                        static_cast<PartIndex>(num_threads));
       } else {
-        interface_partition_func_(permuted_view(positions, interface),
-                                  permuted_view(level_parts, interface),
-                                  num_threads,
-                                  /*init_part=*/level * num_threads);
+        interface_partition_func_(
+            permuted_view(positions, interface),
+            permuted_view(level_parts, interface),
+            static_cast<PartIndex>(num_threads),
+            /*init_part=*/static_cast<PartIndex>(level * num_threads));
       }
 
       // Update the interface particles.
