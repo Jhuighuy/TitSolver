@@ -13,7 +13,6 @@
 #include <thread>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/control.hpp"
 
@@ -81,34 +80,6 @@ TEST_CASE("par::for_each") {
                                     if (i == 7) throw ThreadError{};
                                   }}),
                     ThreadError);
-  }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("par::static_for_each") {
-  par::set_num_threads(4);
-  std::vector data{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-  std::vector<size_t> indices(data.size());
-  SUBCASE("basic") {
-    // Ensure the loop is executed and the thread distribution is correct.
-    par::static_for_each( //
-        std::views::zip(indices, data),
-        SleepFunc{[](size_t thread_index, auto out_pair) {
-          auto& [out_thread_index, i] = out_pair;
-          out_thread_index = thread_index, i += 1;
-        }});
-    CHECK(data == std::vector{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-    CHECK(indices == std::vector<size_t>{0, 0, 0, 1, 1, 1, 2, 2, 3, 3});
-  }
-  SUBCASE("exceptions") {
-    // Ensure the exceptions from worker threads are caught.
-    CHECK_THROWS_AS(
-        par::static_for_each(data,
-                             SleepFunc{[](size_t /*thread_index*/, int i) {
-                               if (i == 7) throw ThreadError{};
-                             }}),
-        ThreadError);
   }
 }
 

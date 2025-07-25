@@ -5,10 +5,7 @@
 
 #pragma once
 
-#include <algorithm>
-#include <chrono>
 #include <concepts>
-#include <thread>
 #include <type_traits>
 #include <utility>
 
@@ -48,26 +45,6 @@ template<MemOrder Order = MemOrder::release, atomic Val>
 [[gnu::always_inline]]
 inline void store(Val& val, Val desired) noexcept {
   __atomic_store_n(&val, desired, std::to_underlying(Order));
-}
-
-/// Atomically wait for the value to change.
-template<MemOrder Order = MemOrder::acquire, atomic Val>
-[[gnu::always_inline]]
-inline auto wait(const Val& val, Val old) noexcept -> Val {
-  // Try a few quick spins with yield first.
-  constexpr size_t max_spins = 16;
-  for (size_t spin = 0; spin < max_spins; ++spin) {
-    if (const auto current = load<Order>(val); current != old) return current;
-    std::this_thread::yield();
-  }
-
-  // Switch to exponential backoff.
-  static constexpr std::chrono::microseconds max_wait_time{1000};
-  for (std::chrono::microseconds wait_time{1};;
-       wait_time = std::min(wait_time * 2, max_wait_time)) {
-    if (const auto current = load<Order>(val); current != old) return current;
-    std::this_thread::sleep_for(wait_time);
-  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
