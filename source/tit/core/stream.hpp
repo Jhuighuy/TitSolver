@@ -19,7 +19,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/containers/small_vector.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/type.hpp"
 
@@ -362,7 +361,7 @@ public:
 private:
 
   InputStreamPtr<SourceItem> stream_;
-  SmallVector<SourceItem, 4> buffer_;
+  std::vector<SourceItem> buffer_;
   [[no_unique_address]] Proj proj_;
 
 }; // class ProjInputStream
