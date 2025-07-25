@@ -11,8 +11,6 @@
 
 #include "tit/geom/partition/grid_graph_partition.hpp"
 
-#include "tit/graph/simple_partition.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -31,9 +29,7 @@ TEST_CASE("geom::GridGraphPartition") {
   // Since here we are testing the geometrical partitioning, we'll use the
   // simplest possible graph partitioning algorithm.
   std::array<size_t, 128> parts{};
-  const geom::GridGraphPartition grid_graph_partition{
-      /*size_hint=*/2.0,
-      graph::UniformPartition{}};
+  const geom::GridGraphPartition grid_graph_partition{/*size_hint=*/2.0};
   grid_graph_partition(points, parts, 8);
 
   // Ensure the resulting partitioning is correct.
