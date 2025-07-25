@@ -7,9 +7,9 @@
 #include <ranges>
 #include <thread>
 
-#include "tit/core/par/algorithms.hpp"
-#include "tit/core/par/atomic.hpp"
-#include "tit/core/par/control.hpp"
+#include "tit/par/algorithms.hpp"
+#include "tit/par/atomic.hpp"
+#include "tit/par/control.hpp"
 
 #include "tit/testing/test.hpp"
 

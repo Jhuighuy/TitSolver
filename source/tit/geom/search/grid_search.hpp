@@ -16,8 +16,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/func.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/par/algorithms.hpp"
-#include "tit/core/par/atomic.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -25,6 +23,9 @@
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/grid.hpp"
 #include "tit/geom/point_range.hpp"
+
+#include "tit/par/algorithms.hpp"
+#include "tit/par/atomic.hpp"
 
 namespace tit::geom {
 
