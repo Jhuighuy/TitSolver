@@ -14,14 +14,15 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/func.hpp"
-#include "tit/core/par/atomic.hpp"
-#include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
+
+#include "tit/par/atomic.hpp"
+#include "tit/par/task_group.hpp"
 
 namespace tit::geom {
 
