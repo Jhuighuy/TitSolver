@@ -6,18 +6,14 @@
 #pragma once
 
 #include <algorithm>
-#include <functional>
 #include <initializer_list>
 #include <ranges>
 #include <span>
-#include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/mdvector.hpp"
-#include "tit/core/par/algorithms.hpp"
-#include "tit/core/par/control.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"
 
@@ -89,103 +85,7 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Build the multivector from a range of buckets.
-  template<value_multirange<Val> Buckets>
-    requires par::range<Buckets>
-  void assign_buckets_par(Buckets&& buckets) {
-    TIT_ASSUME_UNIVERSAL(Buckets, buckets);
-
-    // Compute the total number of values.
-    size_t num_values = 0;
-    val_ranges_.clear(), val_ranges_.resize(std::size(buckets) + 1);
-    for (const auto& [index, bucket] :
-         std::views::enumerate(buckets) | std::views::as_const) {
-      const auto bucket_size = std::size(bucket);
-      val_ranges_[index + 1] = num_values + bucket_size;
-      num_values += bucket_size;
-    }
-
-    // Copy the values.
-    vals_.resize(num_values);
-    par::for_each( //
-        std::views::enumerate(buckets),
-        [this](const auto& index_and_bucket) {
-          const auto& [index, bucket] = index_and_bucket;
-          std::ranges::copy(bucket,
-                            std::next(vals_.begin(), val_ranges_[index]));
-        });
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /// Build the multivector from pairs of bucket indices and values.
-  ///
-  /// This version of the function works best when array size is much less
-  /// than typical size of a bucket (multivector is "wide").
-  ///
-  /// @param count Amount of the value buckets to be added.
-  /// @param pairs Range of the pairs of bucket indices and values.
-  /// @{
-  template<tuple_range<size_t, Val> Pairs>
-    requires par::range<Pairs>
-  constexpr void assign_pairs_par_wide(size_t count, Pairs&& pairs) {
-    assign_pairs_wide_impl_(
-        count,
-        std::bind_front(par::static_for_each,
-                        std::views::all(std::forward<Pairs>(pairs))));
-  }
-  template<tuple_multirange<size_t, Val> Range>
-    requires par::range<Range>
-  constexpr void assign_pairs_par_wide(size_t count,
-                                       std::ranges::join_view<Range> pairs) {
-    assign_pairs_wide_impl_(count, [base = std::move(pairs).base()](auto func) {
-      par::static_for_each(base, [&func](size_t thread, const auto& range) {
-        std::ranges::for_each(range, std::bind_front(std::ref(func), thread));
-      });
-    });
-  }
-  /// @}
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 private:
-
-  template<class ForEachPair>
-  constexpr void assign_pairs_wide_impl_(size_t count,
-                                         ForEachPair for_each_pair) {
-    // Compute how many values there are per each index per each thread.
-    static Mdvector<size_t, 2> per_thread_ranges{};
-    const auto num_threads = par::num_threads();
-    per_thread_ranges.assign(num_threads, count + 1);
-    for_each_pair([count](size_t thread, const auto& pair) {
-      const auto index = std::get<0>(pair);
-      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      per_thread_ranges[thread, index] += 1;
-    });
-
-    // Compute the bucket ranges from the bucket sizes.
-    val_ranges_.clear(), val_ranges_.resize(count + 1);
-    for (size_t offset = 0, index = 0; index < count; ++index) {
-      for (size_t thread = 0; thread < num_threads; ++thread) {
-        per_thread_ranges[thread, index] =
-            std::exchange(offset, offset + per_thread_ranges[thread, index]);
-      }
-      val_ranges_[index + 1] = offset;
-    }
-
-    // Place each value into position of the first element of it's index
-    // range, then increment the position.
-    vals_.resize(val_ranges_.back());
-    for_each_pair([count, this](size_t thread, const auto& pair) {
-      const auto& [index, value] = pair;
-      TIT_ASSERT(index < count, "Index of the value is out of expected range!");
-      auto& position = per_thread_ranges[thread, index];
-      vals_[position] = value;
-      position += 1;
-    });
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   std::vector<size_t> val_ranges_{0};
   std::vector<Val> vals_;
