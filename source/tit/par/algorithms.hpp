@@ -16,7 +16,6 @@
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_reduce.h>
-#include <oneapi/tbb/parallel_sort.h>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/inplace_vector.hpp"
@@ -242,31 +241,6 @@ struct Transform final {
 
 /// @copydoc Transform
 inline constexpr Transform transform{};
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Sorting operations.
-//
-
-/// Parallel sort.
-struct Sort final {
-  template<range Range, class Compare = std::less<>, class Proj = std::identity>
-    requires std::sortable<std::ranges::iterator_t<Range>, Compare, Proj>
-  static void operator()(Range&& range, Compare compare = {}, Proj proj = {}) {
-    TIT_ASSUME_UNIVERSAL(Range, range);
-    using Ref = std::ranges::range_reference_t<Range>;
-    tbb::parallel_sort(std::begin(range),
-                       std::end(range),
-                       [&compare, &proj](Ref& a, Ref& b) {
-                         return std::invoke(compare,
-                                            std::invoke(proj, a),
-                                            std::invoke(proj, b));
-                       });
-  }
-};
-
-/// @copydoc Sort
-inline constexpr Sort sort{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

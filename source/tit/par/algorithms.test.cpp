@@ -7,7 +7,6 @@
 #include <chrono>
 #include <concepts>
 #include <functional>
-#include <random>
 #include <ranges>
 #include <stdexcept>
 #include <thread>
@@ -177,29 +176,6 @@ TEST_CASE("par::transform") {
                                      if (i == 7) throw ThreadError{};
                                      return 2 * i + 1;
                                    }}),
-                    ThreadError);
-  }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("par::sort") {
-  par::set_num_threads(4);
-  constexpr auto sorted = std::views::iota(0, 1000);
-  auto data = sorted | std::ranges::to<std::vector>();
-  std::ranges::shuffle(data, std::mt19937{123});
-  SUBCASE("basic") {
-    // Ensure the loop is executed.
-    par::sort(data);
-    CHECK_RANGE_EQ(data, sorted);
-  }
-  SUBCASE("exceptions") {
-    // Ensure the exceptions from the worker threads are caught.
-    CHECK_THROWS_AS(par::sort(data,
-                              [](int a, int b) {
-                                if (a == 123) throw ThreadError{};
-                                return a < b;
-                              }),
                     ThreadError);
   }
 }
