@@ -38,8 +38,8 @@ public:
   template<point_range Points, output_index_range Parts>
   void operator()(Points&& points,
                   Parts&& parts,
-                  size_t num_parts,
-                  size_t init_part = 0) const {
+                  std::ranges::range_value_t<Parts> num_parts,
+                  std::ranges::range_value_t<Parts> init_part = 0) const {
     TIT_PROFILE_SECTION("SortPartition::operator()");
     TIT_ASSUME_UNIVERSAL(Points, points);
     TIT_ASSUME_UNIVERSAL(Parts, parts);
@@ -61,9 +61,11 @@ public:
     // Assign the partitions.
     const auto part_size = num_points / num_parts;
     const auto remainder = num_points % num_parts;
-    for (size_t part = 0; part < num_parts; ++part) {
-      const auto first = part * part_size + std::min(part, remainder);
-      const auto last = (part + 1) * part_size + std::min(part + 1, remainder);
+    for (std::ranges::range_value_t<Parts> part = 0; part < num_parts; ++part) {
+      const auto first = part * part_size + //
+                         std::min(static_cast<size_t>(part), remainder);
+      const auto last = (part + 1) * part_size +
+                        std::min(static_cast<size_t>(part + 1), remainder);
       for (size_t i = first; i < last; ++i) parts[perm[i]] = init_part + part;
     }
   }

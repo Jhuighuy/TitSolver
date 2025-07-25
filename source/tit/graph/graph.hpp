@@ -113,11 +113,6 @@ public:
 using WeightedGraph =
     BaseWeightedGraph<Multivector<std::tuple<node_t, weight_t>>>;
 
-/// Alias for a weighted graph with a capped number of edges.
-template<size_t MaxNumEdges>
-using CapWeightedGraph = BaseWeightedGraph<
-    CapMultivector<std::tuple<node_t, weight_t>, MaxNumEdges>>;
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::graph
