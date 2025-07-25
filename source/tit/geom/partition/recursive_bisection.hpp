@@ -42,8 +42,8 @@ public:
   template<point_range Points, output_index_range Parts>
   void operator()(Points&& points,
                   Parts&& parts,
-                  size_t num_parts,
-                  size_t init_part = 0) const {
+                  std::ranges::range_value_t<Parts> num_parts,
+                  std::ranges::range_value_t<Parts> init_part = 0) const {
     TIT_PROFILE_SECTION("RecursiveBisection::operator()");
     TIT_ASSUME_UNIVERSAL(Points, points);
     TIT_ASSUME_UNIVERSAL(Parts, parts);
@@ -62,8 +62,8 @@ public:
     par::TaskGroup tasks{};
     const auto impl = [&points, &parts, &tasks, &bisection = this->bisection_](
                           this const auto& self,
-                          size_t my_num_parts,
-                          size_t my_part,
+                          std::ranges::range_value_t<Parts> my_num_parts,
+                          std::ranges::range_value_t<Parts> my_part,
                           std::span<size_t> my_perm) {
       TIT_ASSERT(my_perm.size() >= my_num_parts,
                  "Number of points cannot be less than the number of parts!");

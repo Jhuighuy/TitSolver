@@ -12,7 +12,6 @@
     "doctest",
     "gcem",
     "highway",
-    "metis",
     "mimalloc",
     "nlohmann-json",
     "sqlite3",
