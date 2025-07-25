@@ -271,7 +271,7 @@ private:
 
   graph::Graph adjacency_;
   graph::Graph interp_adjacency_;
-  Multivector<std::pair<size_t, size_t>> block_edges_;
+  Multivector<graph::edge_t> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;
   [[no_unique_address]] InterfacePartitionFunc interface_partition_func_;
