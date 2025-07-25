@@ -14,6 +14,7 @@ add_tit_library(
     "malloc.cpp"
   DEPENDS
     tit::core
+    tit::par
     mimalloc-static
 )
 

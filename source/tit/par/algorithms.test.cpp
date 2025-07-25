@@ -13,8 +13,8 @@
 #include <thread>
 #include <vector>
 
-#include "tit/core/par/algorithms.hpp"
-#include "tit/core/par/control.hpp"
+#include "tit/par/algorithms.hpp"
+#include "tit/par/control.hpp"
 
 #include "tit/testing/test.hpp"
 

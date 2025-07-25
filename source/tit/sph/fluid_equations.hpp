@@ -12,10 +12,11 @@
 
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/par/algorithms.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
+
+#include "tit/par/algorithms.hpp"
 
 #include "tit/sph/continuity_equation.hpp"
 #include "tit/sph/energy_equation.hpp"

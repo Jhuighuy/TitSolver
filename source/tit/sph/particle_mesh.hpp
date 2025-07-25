@@ -17,13 +17,14 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/par/algorithms.hpp"
-#include "tit/core/par/control.hpp"
-#include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
+
+#include "tit/par/algorithms.hpp"
+#include "tit/par/control.hpp"
+#include "tit/par/task_group.hpp"
 
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/partition.hpp"

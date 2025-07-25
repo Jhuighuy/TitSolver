@@ -3,7 +3,7 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/par/control.hpp"
+#include "tit/par/control.hpp"
 
 #include "tit/testing/test.hpp"
 
