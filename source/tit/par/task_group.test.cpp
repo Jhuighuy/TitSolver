@@ -5,8 +5,8 @@
 
 #include <thread>
 
-#include "tit/core/par/control.hpp"
-#include "tit/core/par/task_group.hpp"
+#include "tit/par/control.hpp"
+#include "tit/par/task_group.hpp"
 
 #include "tit/testing/test.hpp"
 
