@@ -23,7 +23,6 @@ add_tit_library(
     "sort/morton_curve_sort.hpp"
   DEPENDS
     tit::core
-    tit::graph
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
