@@ -20,19 +20,16 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/inplace_vector.hpp"
-#include "tit/core/par/atomic.hpp"
-#include "tit/core/par/control.hpp"
 #include "tit/core/utils.hpp"
 
-// Mark the `tbb::blocked_range` as a view.
-template<std::random_access_iterator Iter>
-inline constexpr bool std::ranges::enable_view<tbb::blocked_range<Iter>> = true;
+#include "tit/par/atomic.hpp"
+#include "tit/par/control.hpp"
 
 namespace tit::par {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Ranges and partitioners.
+// Range and partitioner.
 //
 
 /// Range that could be processed in parallel.
@@ -45,17 +42,15 @@ concept range =
 template<range Range>
 using blocked_range_t = tbb::blocked_range<std::ranges::iterator_t<Range>>;
 
-/// Automatic parallelization partitioning.
-struct AutoPartition final {
-  template<range Range>
-  static auto operator()(Range&& range) noexcept -> blocked_range_t<Range&&> {
-    TIT_ASSUME_UNIVERSAL(Range, range);
-    return {std::begin(range), std::end(range)};
-  }
-};
+namespace impl {
 
-/// @copydoc AutoPartition
-inline constexpr AutoPartition partition{};
+template<range Range>
+static auto make_blocked(Range&& range) noexcept -> blocked_range_t<Range&&> {
+  TIT_ASSUME_UNIVERSAL(Range, range);
+  return {std::begin(range), std::end(range)};
+}
+
+} // namespace impl
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
@@ -66,8 +61,8 @@ inline constexpr AutoPartition partition{};
 struct ForEachRange final {
   template<range Range, std::regular_invocable<blocked_range_t<Range>> Func>
   static void operator()(Range&& range, Func func) {
-    TIT_ASSUME_UNIVERSAL(Range, range);
-    tbb::parallel_for(partition(range), std::move(func));
+    tbb::parallel_for(impl::make_blocked(std::forward<Range>(range)),
+                      std::move(func));
   }
 };
 
@@ -110,33 +105,6 @@ inline constexpr BlockForEach block_for_each{};
 // Fold operations.
 //
 
-/// Parallel range-wise fold.
-struct FoldRange final {
-  template<range Range,
-           class Result = std::ranges::range_value_t<Range>,
-           std::regular_invocable<blocked_range_t<Range>, Result> Func,
-           std::regular_invocable<Result, Result> ResultFunc>
-    requires (
-        std::assignable_from<
-            Result&,
-            std::invoke_result_t<Func&, blocked_range_t<Range>, Result>> &&
-        std::assignable_from<Result&,
-                             std::invoke_result_t<ResultFunc&, Result, Result>>)
-  static auto operator()(Range&& range,
-                         Result init,
-                         Func func,
-                         ResultFunc result_func) -> Result {
-    TIT_ASSUME_UNIVERSAL(Range, range);
-    return tbb::parallel_reduce(partition(range),
-                                std::move(init),
-                                std::move(func),
-                                std::move(result_func));
-  }
-};
-
-/// @copydoc FoldRange
-inline constexpr FoldRange fold_range{};
-
 /// Parallel fold.
 struct Fold final {
   template<range Range,
@@ -156,10 +124,11 @@ struct Fold final {
                          Result init = {},
                          Func func = {},
                          ResultFunc result_func = {}) -> Result {
-    return fold_range(std::forward<Range>(range),
-                      std::move(init),
-                      std::bind_back(std::ranges::fold_left, std::move(func)),
-                      std::move(result_func));
+    return tbb::parallel_reduce(
+        impl::make_blocked(std::forward<Range>(range)),
+        std::move(init),
+        std::bind_back(std::ranges::fold_left, std::move(func)),
+        std::move(result_func));
   }
 };
 
@@ -253,14 +222,15 @@ struct Sort final {
     requires std::sortable<std::ranges::iterator_t<Range>, Compare, Proj>
   static void operator()(Range&& range, Compare compare = {}, Proj proj = {}) {
     TIT_ASSUME_UNIVERSAL(Range, range);
-    using Ref = std::ranges::range_reference_t<Range>;
-    tbb::parallel_sort(std::begin(range),
-                       std::end(range),
-                       [&compare, &proj](Ref& a, Ref& b) {
-                         return std::invoke(compare,
-                                            std::invoke(proj, a),
-                                            std::invoke(proj, b));
-                       });
+    tbb::parallel_sort(
+        std::begin(range),
+        std::end(range),
+        [&compare, &proj](std::ranges::range_reference_t<Range> a,
+                          std::ranges::range_reference_t<Range> b) {
+          return std::invoke(compare,
+                             std::invoke(proj, a),
+                             std::invoke(proj, b));
+        });
   }
 };
 
@@ -270,3 +240,6 @@ inline constexpr Sort sort{};
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::par
+
+template<std::random_access_iterator Iter>
+inline constexpr bool std::ranges::enable_view<tbb::blocked_range<Iter>> = true;
