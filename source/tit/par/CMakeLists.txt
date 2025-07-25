@@ -5,38 +5,30 @@
 
 add_tit_library(
   NAME
-    sph
+    par
   SOURCES
-    "artificial_viscosity.hpp"
-    "continuity_equation.hpp"
-    "energy_equation.hpp"
-    "equation_of_state.hpp"
-    "field.hpp"
-    "fluid_equations.hpp"
-    "heat_conductivity.hpp"
-    "kernel.hpp"
-    "momentum_equation.hpp"
-    "motion_equation.hpp"
-    "particle_array.hpp"
-    "particle_mesh.hpp"
-    "time_integrator.hpp"
-    "viscosity.hpp"
+    "algorithms.hpp"
+    "atomic.hpp"
+    "control.cpp"
+    "control.hpp"
+    "task_group.hpp"
   DEPENDS
     tit::core
-    tit::data
-    tit::geom
-    tit::par
+    TBB::tbb
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(
   NAME
-    sph_tests
+    par_tests
   SOURCES
-    "kernel.test.cpp"
+    "algorithms.test.cpp"
+    "atomic.test.cpp"
+    "control.test.cpp"
+    "task_group.test.cpp"
   DEPENDS
-    tit::sph
+    tit::par
     tit::testing
 )
 
