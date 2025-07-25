@@ -136,6 +136,20 @@ TEST_CASE("geom::Grid::cells") {
     const geom::Grid grid{box, {4, 4}};
     CHECK_RANGE_EQ(grid.cells(1), {{1, 1}, {1, 2}, {2, 1}, {2, 2}});
   }
+  SUBCASE("near") {
+    const geom::BBox box{Vec{0.0, 0.0}, Vec{4.0, 4.0}};
+    const geom::Grid grid{box, {4, 4}};
+    CHECK_RANGE_EQ(grid.cells_inclusive({1, 1}, 1),
+                   {{0, 0},
+                    {0, 1},
+                    {0, 2},
+                    {1, 0},
+                    {1, 1},
+                    {1, 2},
+                    {2, 0},
+                    {2, 1},
+                    {2, 2}});
+  }
   SUBCASE("range") {
     const geom::BBox box{Vec{0.0, 0.0}, Vec{8.0, 8.0}};
     const geom::Grid grid{box, {8, 8}};

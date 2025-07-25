@@ -30,7 +30,6 @@ find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
-find_package(metis CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
@@ -60,7 +59,6 @@ add_tit_library(
     doctest::doctest
     gcem
     hwy::hwy
-    metis
     mimalloc-static
     nlohmann_json::nlohmann_json
     TBB::tbb

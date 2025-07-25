@@ -152,6 +152,12 @@ public:
     return cells(low, high + VecIndex(1));
   }
 
+  /// Range of cell indices, such that `center - n <= index <= center + n`.
+  constexpr auto cells_inclusive(const VecIndex& center,
+                                 size_t n) const noexcept {
+    return cells_inclusive(center - VecIndex(n), center + VecIndex(n));
+  }
+
   /// Range of cell indices, such that `n <= index < num_cells - n`.
   constexpr auto cells(size_t n = 0) const noexcept {
     return cells(VecIndex(n), num_cells_ - VecIndex(n));
