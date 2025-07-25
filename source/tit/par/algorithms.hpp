@@ -20,9 +20,10 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/inplace_vector.hpp"
-#include "tit/core/par/atomic.hpp"
-#include "tit/core/par/control.hpp"
 #include "tit/core/utils.hpp"
+
+#include "tit/par/atomic.hpp"
+#include "tit/par/control.hpp"
 
 // Mark the `tbb::blocked_range` as a view.
 template<std::random_access_iterator Iter>

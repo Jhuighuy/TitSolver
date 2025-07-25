@@ -29,7 +29,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/par/control.hpp"
 #include "tit/core/posix.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
@@ -40,6 +39,8 @@
 #include "tit/core/type.hpp"
 
 #include "tit/main/main.hpp"
+
+#include "tit/par/control.hpp"
 
 namespace tit {
 namespace {
