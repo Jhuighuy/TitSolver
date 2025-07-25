@@ -16,21 +16,18 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/containers/multivector.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/par/task_group.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/stats.hpp"
 #include "tit/core/type.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
-
-#include "tit/graph/graph.hpp"
 
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -91,21 +88,19 @@ public:
   /// Unique pairs of the adjacent particles.
   template<particle_array ParticleArray>
   constexpr auto pairs(ParticleArray& particles) const noexcept {
-    return adjacency_.edges() | std::views::transform([&particles](auto ab) {
+    return adjacency_ | std::views::transform([&particles](auto ab) {
              const auto [a, b] = ab;
-             return std::pair{particles[a], particles[b]};
+             return std::tuple{particles[a], particles[b]};
            });
   }
 
   /// Unique pairs of the adjacent particles partitioned by the block.
   template<particle_array ParticleArray>
   constexpr auto block_pairs(ParticleArray& particles) const noexcept {
-    return block_edges_.buckets() |
-           std::views::transform([&particles](auto block) {
+    return std::views::all(block_edges_) |
+           std::views::transform([&particles](const auto& block) {
              return block | std::views::transform([&particles](auto ab) {
                       const auto [a, b] = ab;
-                      /// @todo I have zero idea why, but using pair here
-                      /// instead of a tuple causes a massive performance hit.
                       return std::tuple{particles[a], particles[b]};
                     });
            });
@@ -139,32 +134,29 @@ private:
     // Search for the neighbors.
     par::TaskGroup search_tasks{};
     search_tasks.run([&particles, &radius_func, &search_index, this] {
-      static std::vector<std::vector<size_t>> adjacency_buckets{};
-      adjacency_buckets.resize(particles.size());
-      par::for_each(particles.all(), [&radius_func, &search_index](PV a) {
+      adjacency_.resize(particles.size());
+      par::for_each(particles.all(), [&radius_func, &search_index, this](PV a) {
         const auto& search_point = r[a];
         const auto search_radius = radius_func(a);
         TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
 
         // Search for the neighbors for the current particle and store the
         // sorted results.
-        auto& search_results = adjacency_buckets[a.index()];
+        auto& search_results = adjacency_[a.index()];
         search_results.clear();
         search_index.search(search_point,
                             search_radius,
                             std::back_inserter(search_results));
         std::ranges::sort(search_results);
       });
-      adjacency_.assign_buckets_par(adjacency_buckets);
     });
 
     // Search for the interpolation points for the fixed particles.
     search_tasks.run([&particles, &radius_func, &search_index, this] {
-      static std::vector<std::vector<size_t>> interp_adjacency_buckets{};
-      interp_adjacency_buckets.resize(particles.fixed().size());
+      interp_adjacency_.resize(particles.fixed().size());
       par::for_each( //
           std::views::enumerate(particles.fixed()),
-          [&radius_func, &search_index, &particles](const auto& ia) {
+          [&radius_func, &search_index, &particles, this](const auto& ia) {
             const auto& [i_, a] = ia;
             const auto i = static_cast<size_t>(i_);
 
@@ -178,7 +170,7 @@ private:
 
             // Search for the neighbors for the interpolation point and
             // store the sorted results.
-            auto& search_results = interp_adjacency_buckets[i];
+            auto& search_results = interp_adjacency_[i];
             search_results.clear();
             search_index.search( //
                 interp_point,
@@ -189,7 +181,6 @@ private:
                 });
             std::ranges::sort(search_results);
           });
-      interp_adjacency_.assign_buckets_par(interp_adjacency_buckets);
     });
 
     search_tasks.wait();
@@ -198,22 +189,23 @@ private:
   template<particle_array ParticleArray>
   void partition_(ParticleArray& particles, size_t num_levels = 2) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
-    TIT_ASSERT(num_levels < PartVec::MaxNumLevels,
+    TIT_ASSERT(in_range_ex(num_levels, 0, PartVec::MaxNumLevels),
                "Number of levels exceeds the predefined maximum!");
 
     // Initialize the partitioning.
     const auto num_threads = par::num_threads();
     const auto num_parts = num_levels * num_threads + 1;
-    if (auto max_num_parts = std::numeric_limits<PartIndex>::max();
-        num_parts >= max_num_parts) {
-      TIT_THROW("Number of parts exceeded the limit of {}.", max_num_parts);
-    }
+    constexpr auto max_num_parts = std::numeric_limits<PartIndex>::max();
+    TIT_ENSURE(num_parts < max_num_parts,
+               "Number of parts exceeded the limit of {}.",
+               max_num_parts);
     const auto parts = parinfo[particles];
     std::ranges::fill(parts, PartVec(static_cast<PartIndex>(num_parts - 1)));
 
     // Build the multi-level partitioning.
     const auto positions = r[particles];
-    static std::vector<size_t> interface{};
+    std::vector<size_t> interface{};
+    std::vector<size_t> prev_interface{};
     for (size_t level = 0; level < num_levels; ++level) {
       const auto is_first_level = level == 0;
       const auto is_last_level = level == (num_levels - 1);
@@ -233,49 +225,49 @@ private:
             static_cast<PartIndex>(num_threads),
             /*init_part=*/static_cast<PartIndex>(level * num_threads));
       }
+      if (is_last_level) break;
 
       // Update the interface particles.
-      if (is_last_level) break;
       const auto is_interface = [level_parts, this](size_t a) {
         return std::ranges::any_of(
             permuted_view(level_parts, adjacency_[a]),
             std::bind_front(std::not_equal_to{}, level_parts[a]));
       };
+      const auto update_interface = [&interface,
+                                     &is_interface](const auto& current) {
+        interface.resize(std::ranges::size(current));
+        interface.erase(
+            par::unstable_copy_if(current, interface.begin(), is_interface),
+            interface.end());
+      };
       if (is_first_level) {
-        interface.resize(particles.size());
         const auto all_particles = iota_perm(particles.all());
-        const auto not_interface_iter = par::unstable_copy_if(all_particles,
-                                                              interface.begin(),
-                                                              is_interface);
-        interface.erase(not_interface_iter, interface.end());
+        update_interface(all_particles);
       } else {
-        // Note: `std::ranges::partition` is faster than `std::erase_if`
-        //       because it does not preserve the order of the elements.
-        /// @todo Parallelize this code.
-        const auto non_interface =
-            std::ranges::partition(interface, is_interface);
-        interface.erase(std::begin(non_interface), interface.end());
+        interface.swap(prev_interface);
+        update_interface(prev_interface);
       }
     }
 
     // Assemble the block adjacency graph.
-    block_edges_.assign_pairs_par_wide(
-        num_parts,
-        adjacency_.transform_edges([parts](const auto& ab) {
-          const auto [a, b] = ab;
-          const auto part_ab = PartVec::common(parts[a], parts[b]);
-          return std::pair{part_ab, ab};
-        }));
-
-    // Report the block sizes.
-    TIT_STATS("ParticleMesh::block_edges_", block_edges_.bucket_sizes());
+    block_edges_.resize(num_parts);
+    for (auto& block : block_edges_) block.clear();
+    for (const auto& [index_, neighbors] :
+         std::views::enumerate(adjacency_) | std::views::as_const) {
+      const auto index = static_cast<size_t>(index_);
+      for (const auto neighbor : neighbors) {
+        if (neighbor >= index) break;
+        const auto part = PartVec::common(parts[index], parts[neighbor]);
+        block_edges_[part].emplace_back(index, neighbor);
+      }
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  graph::Graph adjacency_;
-  graph::Graph interp_adjacency_;
-  Multivector<std::pair<size_t, size_t>> block_edges_;
+  std::vector<std::vector<size_t>> adjacency_;
+  std::vector<std::vector<size_t>> interp_adjacency_;
+  std::vector<std::vector<std::pair<size_t, size_t>>> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;
   [[no_unique_address]] InterfacePartitionFunc interface_partition_func_;

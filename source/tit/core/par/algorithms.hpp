@@ -17,7 +17,6 @@
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_reduce.h>
 #include <oneapi/tbb/parallel_sort.h>
-#include <oneapi/tbb/partitioner.h>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/inplace_vector.hpp"
@@ -87,54 +86,6 @@ struct ForEach final {
 
 /// @copydoc ForEach
 inline constexpr ForEach for_each{};
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Iterate through the blocks of the range in parallel.
-/// Per-thread range partition will always be the same.
-struct StaticForEachRange final {
-  template<range Range,
-           std::regular_invocable<size_t, blocked_range_t<Range>> Func>
-  static void operator()(Range&& range, Func func) {
-    TIT_ASSUME_UNIVERSAL(Range, range);
-    const auto count = num_threads();
-    tbb::parallel_for(
-        size_t{0},
-        count,
-        [iter = std::begin(range),
-         quotient = static_cast<size_t>(std::size(range)) / count,
-         remainder = static_cast<size_t>(std::size(range)) % count,
-         &func](size_t thread) {
-          const std::ranges::subrange subrange{
-              iter + thread * quotient + std::min(thread, remainder),
-              iter + (thread + 1) * quotient + std::min(thread + 1, remainder)};
-          std::invoke(func, thread, subrange);
-        },
-        tbb::static_partitioner{});
-  }
-};
-
-/// @copydoc StaticForEachRange
-inline constexpr StaticForEachRange static_for_each_range{};
-
-/// Iterate through the range in parallel.
-/// Per-thread range partition will always be the same.
-struct StaticForEach final {
-  template<range Range,
-           std::regular_invocable<size_t,
-                                  std::ranges::range_reference_t<Range&&>> Func>
-  static void operator()(Range&& range, Func func) {
-    static_for_each_range(
-        std::forward<Range>(range),
-        [&func](size_t thread, std::ranges::view auto subrange) {
-          std::ranges::for_each(std::move(subrange),
-                                std::bind_front(std::ref(func), thread));
-        });
-  }
-};
-
-/// @copydoc StaticForEach
-inline constexpr StaticForEach static_for_each{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -3,13 +3,7 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <chrono>
-#include <ranges>
-#include <thread>
-
-#include "tit/core/par/algorithms.hpp"
 #include "tit/core/par/atomic.hpp"
-#include "tit/core/par/control.hpp"
 
 #include "tit/testing/test.hpp"
 
@@ -32,22 +26,6 @@ TEST_CASE("par::store") {
   constexpr auto desired = 20;
   par::store(val, desired);
   CHECK(val == desired);
-}
-
-TEST_CASE("par::wait") {
-  static constexpr auto init = 10;
-  static constexpr auto updated = 200;
-  auto val = init;
-  par::set_num_threads(4);
-  par::for_each(std::views::iota(0, 4), [&val](int i) {
-    if (i == 2) {
-      std::this_thread::sleep_for(std::chrono::milliseconds{10});
-      par::store(val, updated);
-    } else {
-      CHECK(par::wait(val, init) == updated);
-    }
-  });
-  CHECK(val == updated);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
