@@ -11,6 +11,7 @@ add_tit_library(
     "bipartition.hpp"
     "grid.hpp"
     "partition.hpp"
+    "partition/kmeans_clustering.hpp"
     "partition/pixelated_partition.hpp"
     "partition/recursive_bisection.hpp"
     "partition/sort_partition.hpp"
