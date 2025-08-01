@@ -3,10 +3,6 @@
 .. Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. include:: ../_shared.rst
-
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Theory Guide
 ============
 
@@ -15,6 +11,4 @@ Theory Guide
 
 This guide provides detailed theoretical background for the numerical methods
 implemented in |product|. It covers the Smoothed Particle Hydrodynamics (SPH)
-framework and ...
-
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+framework and the specific schemes used in |product|.
