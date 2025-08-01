@@ -3,10 +3,6 @@
 .. Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. include:: ../_shared.rst
-
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 SPH framework
 =============
 
@@ -38,7 +34,7 @@ following:
 
 Therefore, :math:`\delta` is a function that is zero everywhere except the
 origin, where it is limits to reciprocal of the volume differential :math:`dV'`.
-Replacing :math:`\delta` with it's finite-valued approximation :math:`W` in
+Replacing :math:`\delta` with its finite-valued approximation :math:`W` in
 :eq:`dirac-delta` we obtain the smoothed function :math:`\langle f \rangle`:
 
 .. math::
@@ -222,7 +218,7 @@ equation:
 
   \nabla f(\vec{r}) = \sum_{b} f_{b} \nabla W(\vec{r} - \vec{r}_{b}, h) V_{b}.
 
-Descreet gradient operator can be defined by projecting the equation
+Discrete gradient operator can be defined by projecting the equation
 :eq:`sph-interpolation-gradient` onto the set of points
 :math:`\{ \vec{r}_{a} \}`:
 
@@ -233,7 +229,7 @@ Descreet gradient operator can be defined by projecting the equation
 
 It is easy to show that the gradient operator :eq:`sph-gradient-0`, computed
 over the constant function does not vanish (subscript :math:`_{0}` stands for
-zeroth order of polynomial approximation). To fix this, the a simple correction
+zeroth order of polynomial approximation). To fix this, a simple correction
 can be applied by subtracting the :math:`f_{a} \nabla 1_{a}` from
 the gradient operator :eq:`sph-gradient-0`:
 
@@ -242,9 +238,9 @@ the gradient operator :eq:`sph-gradient-0`:
 
   \nabla_{1} f_{a} = \sum_{b} f_{ba} \nabla W_{ab} V_{b}.
 
-Although the gradient operator :eq:`sph-gradient-1` vanishes for the constant,
-it fails to compute the gradient of the linear function exactly. To fix this,
-the following correction is applied:
+Although the gradient operator :eq:`sph-gradient-1` vanishes for the constant
+function, it fails to compute the gradient of the linear function exactly.
+To fix this, the following correction is applied:
 
 .. math::
   :label: sph-gradient-2
@@ -279,5 +275,3 @@ the divergence operators can be defined as:
 
   \nabla_{2} \cdot \vec{F}_{a} =
   \sum_{b} \vec{F}_{ba} \cdot L_{a} \nabla W_{ab} V_{b}.
-
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
