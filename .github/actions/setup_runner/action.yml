@@ -40,6 +40,7 @@ runs:
         # Select packages to install.
         PACKAGES=(
           cmake
+          doxygen
           "gcc@$GCC_VERSION"
           "llvm@$LLVM_VERSION"
           node
@@ -117,6 +118,7 @@ runs:
       run: |
         # Select packages to install.
         PYTHON_PACKAGES=(
+          breathe
           codespell
           coverage
           flake8
