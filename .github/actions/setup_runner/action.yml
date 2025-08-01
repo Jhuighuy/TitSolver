@@ -39,6 +39,7 @@ runs:
         PACKAGES=(
           cmake
           codespell
+          doxygen
           "gcc@$GCC_VERSION"
           gcovr
           "llvm@$LLVM_VERSION"
@@ -119,6 +120,7 @@ runs:
       run: |
         # Select packages to install.
         PYTHON_PACKAGES=(
+          breathe
           coverage
           Flake8-pyproject
           numpy

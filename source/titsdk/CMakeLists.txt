@@ -21,6 +21,14 @@ add_tit_library(
     "sdk/titsdk"
 )
 
+add_tit_doxygen_target(
+  NAME
+    titsdk_doxygen
+  SOURCES
+    "lib.hpp"
+    "ttdb.hpp"
+)
+
 install(
   FILES
     "lib.hpp"
