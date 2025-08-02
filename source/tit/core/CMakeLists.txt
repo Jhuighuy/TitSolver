@@ -7,6 +7,8 @@ add_subdirectory("_cxx")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+configure_file("build_info.cpp.in" "build_info.cpp" @ONLY)
+
 add_tit_library(
   NAME
     core
@@ -25,6 +27,8 @@ add_tit_library(
     "_vec/vec_mask.hpp"
     "_vec/vec.hpp"
     "basic_types.hpp"
+    "build_info.cpp"
+    "build_info.hpp"
     "checks.cpp"
     "checks.hpp"
     "cmd.cpp"
@@ -35,7 +39,11 @@ add_tit_library(
     "containers/multivector.hpp"
     "containers/small_flat_map.hpp"
     "containers/small_vector.hpp"
+    "containers/str_hash_map.hpp"
+    "containers/str_hash_set.hpp"
     "enum.hpp"
+    "env.cpp"
+    "env.hpp"
     "exception.cpp"
     "exception.hpp"
     "func.hpp"
@@ -49,6 +57,11 @@ add_tit_library(
     "par/control.hpp"
     "par/memory_pool.hpp"
     "par/task_group.hpp"
+    "path-linux.cpp"
+    "path-macos.cpp"
+    "path.hpp"
+    "posix.cpp"
+    "posix.hpp"
     "print.hpp"
     "profiler.cpp"
     "profiler.hpp"
@@ -58,8 +71,13 @@ add_tit_library(
     "simd.hpp"
     "stats.cpp"
     "stats.hpp"
+    "str.cpp"
     "str.hpp"
     "stream.hpp"
+    "sys_info-linux.cpp"
+    "sys_info-macos.cpp"
+    "sys_info.cpp"
+    "sys_info.hpp"
     "sys/signal.cpp"
     "sys/signal.hpp"
     "sys/utils.cpp"
@@ -111,6 +129,7 @@ add_tit_executable(
     "containers/mdvector.test.cpp"
     "containers/multivector.test.cpp"
     "enum.test.cpp"
+    "env.test.cpp"
     "math.test.cpp"
     "numbers/dual.test.cpp"
     "par/algorithms.test.cpp"
@@ -118,12 +137,12 @@ add_tit_executable(
     "par/control.test.cpp"
     "par/memory_pool.test.cpp"
     "par/task_group.test.cpp"
+    "path.test.cpp"
     "rand.test.cpp"
     "serialization.test.cpp"
     "serialization.testing.hpp"
     "str.test.cpp"
     "sys/signal.test.cpp"
-    "sys/utils.test.cpp"
     "time.test.cpp"
     "type.test.cpp"
   DEPENDS

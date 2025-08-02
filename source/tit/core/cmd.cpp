@@ -5,12 +5,13 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/cmd.hpp"
+#include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/par/control.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/sys/signal.hpp"
-#include "tit/core/sys/utils.hpp"
+#include "tit/core/sys_info.hpp"
 
 namespace tit {
 
@@ -26,7 +27,7 @@ auto run_main(int argc, char** argv, MainFunc main_func) -> int {
   if (get_env("TIT_ENABLE_PROFILER", false)) Profiler::enable();
 
   // Setup parallelism.
-  par::set_num_threads(get_env("TIT_NUM_THREADS", 8UZ));
+  par::set_num_threads(get_env("TIT_NUM_THREADS", sys_info::cpu_perf_cores()));
 
   // Run the main function.
   TIT_ASSERT(main_func != nullptr, "Main function must be specified!");

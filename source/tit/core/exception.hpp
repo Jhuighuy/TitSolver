@@ -5,6 +5,7 @@
 
 #pragma once
 
+/// @todo Various exception types!
 #include <exception>
 #include <format> // IWYU pragma: keep
 #include <source_location>
