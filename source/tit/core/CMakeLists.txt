@@ -31,6 +31,8 @@ add_tit_library(
     "cmd.hpp"
     "containers/inplace_vector.hpp"
     "containers/mdvector.hpp"
+    "containers/str_hash_map.hpp"
+    "containers/str_hash_set.hpp"
     "enum.hpp"
     "env.cpp"
     "env.hpp"
@@ -61,6 +63,10 @@ add_tit_library(
     "str.cpp"
     "str.hpp"
     "stream.hpp"
+    "sys_info-linux.cpp"
+    "sys_info-macos.cpp"
+    "sys_info.cpp"
+    "sys_info.hpp"
     "sys/signal.cpp"
     "sys/signal.hpp"
     "sys/utils.cpp"
@@ -76,6 +82,7 @@ add_tit_library(
     Boost::container
     gcem
     hwy::hwy
+    nlohmann_json::nlohmann_json
     TBB::tbb
 )
 
