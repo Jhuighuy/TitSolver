@@ -65,6 +65,12 @@ if(APPLE)
     GNU_LINK_OPTIONS
     # Do not warn about duplicate libraries.
     -Wl,-no_warn_duplicate_libraries
+    # Even though we are using recent macOS SDK, version information is not
+    # propagated to the linker. Without this option, the linker assumes we are
+    # targeting to some ancient macOS version (predating 11.0), forcing our
+    # binaries to run in "10.16 compatibility" mode. This results in incorrect
+    # macOS version reported by `sysctlbyname("kern.osproductversion")`.
+    -Wl,-macos_version_min -Wl,15.0
   )
 endif()
 
