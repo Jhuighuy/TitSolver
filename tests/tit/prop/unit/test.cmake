@@ -3,12 +3,6 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("core")
-add_subdirectory("data")
-add_subdirectory("geom")
-add_subdirectory("graph")
-add_subdirectory("prop")
-add_subdirectory("sph")
-add_subdirectory("testing")
+add_tit_test(COMMAND "tit_prop_tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
