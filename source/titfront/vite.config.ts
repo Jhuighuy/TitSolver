@@ -21,7 +21,7 @@ export default defineConfig({
       },
     }),
     tailwindcss(),
-    titback(),
+    titapp(),
   ],
   resolve: {
     alias: {
@@ -44,10 +44,10 @@ export default defineConfig({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Vite plugin to run the backend server alongside the development server.
-function titback(): Plugin {
+// Vite plugin to run the application server alongside the development server.
+function titapp(): Plugin {
   return {
-    name: "run-tit-backend",
+    name: "tit-app",
     async configureServer(server) {
       if (!server.httpServer) return; // No development server.
       const { cleanup } = await setupBackend({

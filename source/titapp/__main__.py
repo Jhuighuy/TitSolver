@@ -3,12 +3,12 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titapp")
-add_subdirectory("titback")
-add_subdirectory("titfront")
-add_subdirectory("titsdk")
-add_subdirectory("titwcsph")
-add_subdirectory("ttdbreader")
+import signal
+from .application import Application
+
+if __name__ == "__main__":
+  signal.signal(signal.SIGINT, signal.SIG_DFL)
+  app = Application()
+  app.exec()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -35,6 +35,7 @@ disable = [
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [tool.coverage.paths]
+titapp = ["source/titapp", "output/TIT_ROOT/lib/titapp"]
 titsdk = ["source/titsdk", "output/TIT_ROOT/lib/titsdk"]
 ttdbreader = ["source/ttdbreader", "output/TIT_ROOT/paraview/ttdbreader"]
 
