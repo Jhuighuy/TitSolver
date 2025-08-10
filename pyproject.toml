@@ -22,7 +22,15 @@ ignore = [
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [tool.pylint]
-disable = ["bad-indentation", "missing-docstring", "invalid-name", "fixme"]
+disable = [
+  "bad-indentation",
+  "fixme",
+  "invalid-name",
+  "missing-docstring",
+  "no-name-in-module",
+  "too-few-public-methods",
+  "too-many-locals",
+]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

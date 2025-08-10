@@ -4,7 +4,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # type: ignore
-# pylint: disable=import-error,no-name-in-module
+# pylint: disable=import-error
 from collections.abc import Iterator
 from operator import attrgetter
 import os
@@ -132,7 +132,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
 
     return True
 
-  def RequestData(  # pylint: disable=unused-argument,too-many-locals
+  def RequestData(  # pylint: disable=unused-argument
       self,
       request,
       inInfo,

@@ -10,7 +10,13 @@ from typing import Any, Callable, Final, final
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @final
-class __Library:  # pylint: disable=too-few-public-methods
+class Error(RuntimeError):
+  """BlueTit SDK error."""
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+@final
+class __Library:
   __dll: CDLL
   __last_error: Callable[[], bytes | None]
 
@@ -48,11 +54,5 @@ class __Library:  # pylint: disable=too-few-public-methods
     return checked_func
 
 lib: Final = __Library()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-@final
-class Error(RuntimeError):
-  """BlueTit SDK error."""
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
