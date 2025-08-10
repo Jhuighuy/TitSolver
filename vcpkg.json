@@ -8,12 +8,10 @@
       "name": "boost-stacktrace",
       "default-features": false
     },
-    "crow",
     "doctest",
     "gcem",
     "highway",
     "mimalloc",
-    "nlohmann-json",
     "sqlite3",
     "tbb",
     "zstd"
