@@ -13,7 +13,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/path.hpp"
 #include "tit/core/range.hpp"
 #include "tit/data/sqlite.hpp"
 #include "tit/testing/test.hpp"
@@ -68,8 +67,8 @@ TEST_CASE("data::sqlite::Database") {
                        "unable to open database file");
     }
     SUBCASE("invalid database") {
-      // Our current executable definitely is not a valid SQLite database.
-      CHECK_THROWS_MSG(data::sqlite::Database{exe_path()},
+      // Current source file is not a valid SQLite database.
+      CHECK_THROWS_MSG(data::sqlite::Database{__FILE__},
                        Exception,
                        "file is not a database");
     }

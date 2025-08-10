@@ -17,6 +17,7 @@ ignore = [
   "E114", # indentation is not a multiple of 4 (comment)
   "E302", # expected 2 blank lines, found 1
   "E305", # expected 2 blank lines after class or function definition, found 1
+  "E501", # line too long
 ]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,7 +35,13 @@ disable = [
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+[tool.pyright]
+reportMissingModuleSource = false
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 [tool.coverage.paths]
+titapp = ["source/titapp", "output/TIT_ROOT/lib/titapp"]
 titsdk = ["source/titsdk", "output/TIT_ROOT/lib/titsdk"]
 ttdbreader = ["source/ttdbreader", "output/TIT_ROOT/paraview/ttdbreader"]
 
