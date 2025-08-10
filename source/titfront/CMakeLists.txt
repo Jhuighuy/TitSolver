@@ -7,7 +7,7 @@ add_tit_pnpm_target(
   NAME
     titfront
   DESTINATION
-    frontend
+    "lib/frontend"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

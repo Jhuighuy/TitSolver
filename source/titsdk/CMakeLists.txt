@@ -18,7 +18,7 @@ add_tit_library(
   DEPENDS
     tit::data
   DESTINATION
-    "sdk/titsdk"
+    "lib/titsdk"
 )
 
 add_tit_doxygen_target(
@@ -35,7 +35,7 @@ install(
     "titsdk.hpp"
     "ttdb.hpp"
   DESTINATION
-    "sdk/titsdk"
+    "lib/titsdk"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,7 +48,7 @@ add_tit_python_target(
     "lib.py"
     "ttdb.py"
   DESTINATION
-    "sdk/titsdk"
+    "lib/titsdk"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

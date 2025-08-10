@@ -63,7 +63,7 @@ auto run_backend(CmdArgs /*args*/) -> int {
 
   CROW_ROUTE(app, "/")
   ([&root_dir](const crow::request& /*request*/, crow::response& response) {
-    const auto index_html = root_dir / "frontend" / "index.html";
+    const auto index_html = root_dir / "lib" / "frontend" / "index.html";
     response.set_static_file_info_unsafe(index_html.native());
     response.end();
   });
@@ -71,7 +71,7 @@ auto run_backend(CmdArgs /*args*/) -> int {
   ([&root_dir](const crow::request& /*request*/,
                crow::response& response,
                const std::filesystem::path& file_name) {
-    auto file_path = root_dir / "frontend" / file_name;
+    auto file_path = root_dir / "lib" / "frontend" / file_name;
     if (std::filesystem::is_directory(file_path)) file_path /= "index.html";
     response.set_static_file_info_unsafe(file_path.native());
     response.end();
