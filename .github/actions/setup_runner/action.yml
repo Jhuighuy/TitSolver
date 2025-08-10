@@ -11,6 +11,38 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Setup system packages
+      shell: bash
+      run: |
+        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+          # Select packages to install.
+          PACKAGES=(
+            libdbus-1-3
+            libegl1
+            libgl1
+            libx11-xcb1
+            libxcb-cursor0
+            libxcb-glx0
+            libxcb-icccm4
+            libxcb-image0
+            libxcb-keysyms1
+            libxcb-randr0
+            libxcb-render-util0
+            libxcb-shape0
+            libxcb-shm0
+            libxcb-sync1
+            libxcb-xfixes0
+            libxcb-xinerama0
+            libxcb1
+            libxkbcommon-x11-0
+            libxrender1
+          )
+
+          # Install system packages.
+          sudo apt-get update -q
+          sudo apt-get install -q -y "${PACKAGES[@]}"
+        fi
+
     - name: Setup Homebrew
       uses: Homebrew/actions/setup-homebrew@master
 
@@ -113,6 +145,10 @@ runs:
         PYTHON_PATH="$(brew --prefix "python@$PYTHON_VERSION")/libexec/bin"
         echo "$PYTHON_PATH" >> "$GITHUB_PATH"
 
+        # Configure Qt to render offscreen.
+        export QT_QPA_PLATFORM=offscreen
+        echo "QT_QPA_PLATFORM=$QT_QPA_PLATFORM" >> "$GITHUB_ENV"
+
     - name: Setup Python packages
       shell: bash
       run: |
@@ -127,6 +163,8 @@ runs:
           mypy
           numpy
           pylint
+          pyside6
+          PySide6-stubs
           Sphinx
         )
 

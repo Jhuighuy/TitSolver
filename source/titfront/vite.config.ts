@@ -14,6 +14,7 @@ import { setupBackend } from "./setupBackend";
 
 // See https://vitejs.dev/config/ for options.
 export default defineConfig({
+  base: "./", // For correct relative paths in built files, needed for Qt.
   plugins: [
     react({
       babel: {
@@ -44,10 +45,10 @@ export default defineConfig({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Vite plugin to run the backend server alongside the development server.
+// Vite plugin to run the application server alongside the development server.
 function titback(): Plugin {
   return {
-    name: "run-tit-backend",
+    name: "tit-app",
     async configureServer(server) {
       if (!server.httpServer) return; // No development server.
       const { cleanup } = await setupBackend({

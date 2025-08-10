@@ -3,28 +3,17 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-install(
-  PROGRAMS
-    "titback.sh"
-  RENAME
-    "titback"
-  DESTINATION
-    "bin/"
-)
+import signal
+import sys
+from .application import Application
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_python_target(
-  NAME
-    titapp_py
-  SOURCES
-    "__init__.py"
-    "__main__.py"
-    "application.py"
-    "server.py"
-    "window.py"
-  DESTINATION
-    "lib/titback"
-)
+# Allow Ctrl+C to exit.
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+# Run the application.
+app = Application()
+sys.exit(app.exec())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

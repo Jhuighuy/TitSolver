@@ -5,11 +5,7 @@
   "builtin-baseline": "25d20d679f8ce2b062d951b07c976dfca8f2aaa3",
   "dependencies": [
     "boost-container",
-    {
-      "name": "boost-stacktrace",
-      "default-features": false
-    },
-    "crow",
+    { "name": "boost-stacktrace", "default-features": false },
     "doctest",
     "gcem",
     "highway",

@@ -34,7 +34,13 @@ disable = [
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+[tool.pyright]
+reportMissingModuleSource = false
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 [tool.coverage.paths]
+titback = ["source/titback", "output/TIT_ROOT/lib/titback"]
 titsdk = ["source/titsdk", "output/TIT_ROOT/lib/titsdk"]
 ttdbreader = ["source/ttdbreader", "output/TIT_ROOT/paraview/ttdbreader"]
 
