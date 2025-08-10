@@ -47,17 +47,24 @@ export async function setupBackend(
   options: BackendOptions = {}
 ): Promise<BackendConfig> {
   const backendPort = options.backendPort ?? (await randomFreePort());
-  process.env.TIT_BACKEND_PORT = backendPort.toString();
-  const backendProcess = spawn("./output/TIT_ROOT/bin/titback", {
-    cwd: "../../",
-  });
+  const backendProcess = spawn(
+    "./output/TIT_ROOT/bin/titapp",
+    ["--headless", "--port", backendPort.toString()],
+    {
+      cwd: "../../",
+    }
+  );
   backendProcess.on("exit", (code, signal) => {
     if (code === 0) return;
-    console.error(`titback exited with code ${code} / signal ${signal}`);
+    console.error(`titapp exited with code ${code} / signal ${signal}`);
   });
   await new Promise<void>((resolve) => {
+    backendProcess.stdout?.on("data", (data: Buffer) => {
+      if (data.toString().includes("Running")) resolve();
+      console.log(data.toString());
+    });
     backendProcess.stderr?.on("data", (data: Buffer) => {
-      if (data.toString().includes("running")) resolve();
+      console.error(data.toString());
     });
   });
 
@@ -85,7 +92,7 @@ export async function setupBackend(
   });
   const proxyPort = options.proxyPort ?? (await randomFreePort());
   proxyServer.listen(proxyPort, () => {});
-  console.info(`titback started [${backendProcess.pid}].`);
+  console.info(`titapp started [${backendProcess.pid}].`);
 
   return {
     backendPort,
@@ -93,7 +100,7 @@ export async function setupBackend(
     cleanup() {
       proxyServer.close();
       backendProcess.kill();
-      console.info(`titback closed [${backendProcess.pid}].`);
+      console.info(`titapp closed [${backendProcess.pid}].`);
     },
   };
 }
@@ -101,7 +108,7 @@ export async function setupBackend(
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Find a random free port.
-async function randomFreePort() {
+async function randomFreePort(): Promise<number> {
   const minPort = 1025;
   const maxPort = 65535;
   return new Promise<number>((resolve, reject) => {

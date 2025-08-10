@@ -3,12 +3,18 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titesph")
-add_subdirectory("titfront")
-add_subdirectory("titapp")
-add_subdirectory("titsdk")
-add_subdirectory("titwcsph")
-add_subdirectory("ttdbreader")
+import signal
+import sys
+from . import resources  # noqa: F401 # pylint: disable=unused-import # pyright: ignore[reportUnusedImport]
+from .application import Application
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Allow Ctrl+C to exit.
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+# Run the application.
+app = Application()
+sys.exit(app.exec())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -72,7 +72,9 @@ export const ConnectionProvider: FC<{ children: ReactNode }> = ({
   const pendingRequests = useRef(new Map<string, Callback>());
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://${window.location.host}/ws`);
+    const ws = new WebSocket(
+      `ws://${window.location.host || "localhost:8080"}/ws`
+    );
     ws.onopen = () => setWebSocket(ws);
     ws.onclose = () => setWebSocket(null);
     ws.onmessage = (event: MessageEvent) => {

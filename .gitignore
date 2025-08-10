@@ -58,6 +58,7 @@
 
 # Python files.
 !*.py
+!*.pyi
 
 # Documentation files.
 !*.md

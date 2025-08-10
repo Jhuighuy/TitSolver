@@ -58,24 +58,25 @@ function(add_tit_pnpm_target)
   )
 
   # Run `pnpm run build`.
+  make_target_name(${TARGET_NAME} TARGET)
   set(TARGET_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/dist")
+  set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.stamp")
   add_custom_command(
     COMMENT "Building PNPM package ${RELATIVE_SOURCE_DIR}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${TARGET_OUTPUT_DIR}"
     COMMAND
       "${CMAKE_COMMAND}" -E env "PNPM_OUTPUT_DIR=${TARGET_OUTPUT_DIR}"
         "${CHRONIC_EXE}" "${PNPM_EXE}" run build
+    COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS ${TARGET_SOURCES} "${TARGET_NODE_MODULES_DIR}"
-    OUTPUT "${TARGET_OUTPUT_DIR}"
+    OUTPUT "${STAMP}"
   )
-
-  # Create the target.
-  make_target_name(${TARGET_NAME} TARGET)
-  add_custom_target("${TARGET}" ALL DEPENDS "${TARGET_OUTPUT_DIR}")
+  add_custom_target("${TARGET}" ALL DEPENDS "${STAMP}")
 
   # Run the linters.
   if(NOT SKIP_ANALYSIS)
-    set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.stamp")
+    set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_lint.stamp")
     add_custom_command(
       COMMENT "Linting PNPM package ${RELATIVE_SOURCE_DIR}"
       COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" run lint
