@@ -124,6 +124,8 @@ runs:
           coverage
           Flake8-pyproject
           numpy
+          pyside6
+          PySide6-stubs
         )
 
         # Install Python packages.

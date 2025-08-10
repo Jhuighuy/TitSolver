@@ -38,9 +38,6 @@ add_tit_library(
     "func.hpp"
     "mat.hpp"
     "math.hpp"
-    "path-linux.cpp"
-    "path-macos.cpp"
-    "path.hpp"
     "print.cpp"
     "print.hpp"
     "profiler.cpp"
@@ -69,6 +66,7 @@ add_tit_library(
     Boost::container
     gcem
     hwy::hwy
+    nlohmann_json::nlohmann_json
     TBB::tbb
 )
 
@@ -92,7 +90,6 @@ add_tit_executable(
     "enum.test.cpp"
     "env.test.cpp"
     "math.test.cpp"
-    "path.test.cpp"
     "serialization.test.cpp"
     "serialization.testing.hpp"
     "str.test.cpp"

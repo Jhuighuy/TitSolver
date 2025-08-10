@@ -89,8 +89,8 @@ function(add_tit_sphinx_target)
     list(APPEND TARGET_DEP_FILES ${DEP_SOURCES})
   endforeach()
   foreach(DEP ${TARGET_DEPS_DOXYGEN})
-    get_target_property(DEP_DIR "${DEP}" BINARY_DIR)
-    list(APPEND TARGET_DEP_FILES "${DEP}" "${DEP_DIR}/${DEP}.stamp")
+    get_target_property(DEP_BINARY_DIR "${DEP}" BINARY_DIR)
+    list(APPEND TARGET_DEP_FILES "${DEP}" "${DEP_BINARY_DIR}/${DEP}.stamp")
   endforeach()
 
   # Run sphinx-build.
@@ -117,8 +117,6 @@ function(add_tit_sphinx_target)
       ${TARGET_TEMPLATES}
       ${TARGET_DEP_FILES}
   )
-
-  # Create the target.
   make_target_name(${TARGET_NAME} TARGET)
   add_custom_target("${TARGET}" ALL DEPENDS ${TARGET_OUTPUT})
 
