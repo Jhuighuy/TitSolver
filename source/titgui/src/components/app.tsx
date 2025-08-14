@@ -10,6 +10,7 @@ import {
   TbLogs as LogsIcon,
   TbServer as ServerIcon,
   TbSettings as SettingsIcon,
+  TbAdjustmentsHorizontal as ConfigIcon,
   TbDatabase as StorageIcon,
   TbTerminal as TerminalIcon,
 } from "react-icons/tb";
@@ -18,6 +19,7 @@ import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
 import { LogsMenu } from "~/components/menu-logs";
+import { ConfigMenu } from "~/components/menu-config";
 import { RunMenu } from "~/components/menu-run";
 import { SettingsMenu } from "~/components/menu-settings";
 import { SolverProvider } from "~/components/solver";
@@ -65,6 +67,9 @@ function Page() {
     <Flex direction="row" width="100%" height="100%" minHeight="0" gap="1px">
       <Menu side="left">
         <Menu.Item group={0} name="Storage" icon={<StorageIcon size={32} />} />
+        <Menu.Item group={0} name="Config" icon={<ConfigIcon size={32} />}>
+          <ConfigMenu />
+        </Menu.Item>
         <Menu.Item
           group={0}
           name="Dashboard"
