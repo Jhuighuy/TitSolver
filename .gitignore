@@ -54,6 +54,7 @@
 !*.html
 !*.css
 !*.svg
+.vite
 dist/
 coverage/
 !__snapshots__/*.snap

@@ -9,6 +9,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 import { setupBackend } from "./setupBackend";
+import { titapp2 } from "./titapp2";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -22,7 +23,7 @@ export default defineConfig({
       },
     }),
     tailwindcss(),
-    titapp(),
+    titapp2(),
   ],
   resolve: {
     alias: {
@@ -46,7 +47,7 @@ export default defineConfig({
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Vite plugin to run the application server alongside the development server.
-function titapp(): Plugin {
+export function titapp(): Plugin {
   return {
     name: "tit-app",
     async configureServer(server) {
