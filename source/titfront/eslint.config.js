@@ -21,6 +21,7 @@ export default tseslint.config(
       ...tseslint.configs.recommendedTypeChecked,
     ],
     files: ["**/*.{ts,tsx}"],
+    settings: { react: { version: "detect" } },
     languageOptions: {
       ecmaVersion: 2023,
       globals: globals.browser,

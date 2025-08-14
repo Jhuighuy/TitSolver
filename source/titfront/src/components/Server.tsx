@@ -5,7 +5,6 @@
 
 import {
   createContext,
-  type FC,
   type ReactNode,
   useCallback,
   useContext,
@@ -49,11 +48,7 @@ const ResponseSchema = z.union([
   z.object({
     requestID: z.string(),
     status: z.literal("error"),
-    result: z.object({
-      type: z.string(),
-      error: z.string(),
-      traceback: z.string().optional(),
-    }),
+    result: z.string(),
   }),
   z.object({
     requestID: z.string(),
@@ -62,12 +57,16 @@ const ResponseSchema = z.union([
   }),
 ]);
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type ServerProps = {
+  children: ReactNode;
+};
+
 /**
  * Provide a connection to the server to the child components.
  */
-export const ConnectionProvider: FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+export function ConnectionProvider({ children }: ServerProps) {
   const [webSocket, setWebSocket] = useState<WebSocket | null>(null);
   const pendingRequests = useRef(new Map<string, Callback>());
 
@@ -90,8 +89,7 @@ export const ConnectionProvider: FC<{ children: ReactNode }> = ({
         callback(result);
       } else {
         assert(status === "error");
-        const { type, error, traceback } = result;
-        callback(new Error(`${type}: ${error}\n${traceback}`));
+        callback(new Error(result));
       }
       pendingRequests.current.delete(requestID);
     };
@@ -122,6 +120,6 @@ export const ConnectionProvider: FC<{ children: ReactNode }> = ({
       {children}
     </ConnectionContext.Provider>
   );
-};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
