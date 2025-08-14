@@ -4,11 +4,12 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { Box, Flex, Theme } from "@radix-ui/themes";
-import { TbHelp as HelpIcon } from "react-icons/tb";
+import { TbCamera as CameraIcon, TbHelp as HelpIcon } from "react-icons/tb";
 
 import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
+import { ViewMenu } from "~/components/menu-view";
 import { StorageProvider } from "~/components/storage";
 import { Timeline } from "~/components/timeline";
 import { Viewport } from "~/components/viewport";
@@ -33,6 +34,9 @@ function Page() {
   return (
     <Flex direction="row" height="100vh" gap="1px">
       <Menu>
+        <Menu.Item group={1} name="View" icon={<CameraIcon size={32} />}>
+          <ViewMenu />
+        </Menu.Item>
         <Menu.Item group={1} name="Help" icon={<HelpIcon size={32} />}>
           <HelpMenu />
         </Menu.Item>
