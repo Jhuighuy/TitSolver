@@ -4,12 +4,17 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { Box, Flex, Theme } from "@radix-ui/themes";
-import { TbHelp as HelpIcon, TbRun as RunIcon } from "react-icons/tb";
+import {
+  TbCamera as CameraIcon,
+  TbHelp as HelpIcon,
+  TbRun as RunIcon,
+} from "react-icons/tb";
 
 import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
 import { RunMenu } from "~/components/menu-run";
+import { ViewMenu } from "~/components/menu-view";
 import { SolverProvider } from "~/components/solver";
 import { StorageProvider } from "~/components/storage";
 import { Timeline } from "~/components/timeline";
@@ -39,6 +44,9 @@ function Page() {
       <Menu>
         <Menu.Item group={0} name="Run" icon={<RunIcon size={32} />}>
           <RunMenu />
+        </Menu.Item>
+        <Menu.Item group={1} name="View" icon={<CameraIcon size={32} />}>
+          <ViewMenu />
         </Menu.Item>
         <Menu.Item group={1} name="Help" icon={<HelpIcon size={32} />}>
           <HelpMenu />
