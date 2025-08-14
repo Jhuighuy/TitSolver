@@ -5,14 +5,18 @@
 
 from abc import ABCMeta, abstractmethod
 import asyncio
+import io
 import json
 import http
 import mimetypes
 from pathlib import Path
+import sys
 import threading
+import traceback
 from typing import Any, final, override
 import websockets as ws
 import websockets.exceptions as wse
+import titsdk
 from titsdk import open_storage
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,22 +101,62 @@ class BasicServer(metaclass=ABCMeta):
 @final
 class Server(BasicServer):
 
+  __globals: dict[str, Any]
+  __locals: dict[str, Any]
+
   def __init__(self) -> None:
     super().__init__()
     self.__storage = open_storage("particles.ttdb")
+    self.__globals = {"titsdk": titsdk, "storage": self.__storage}
+    self.__locals = self.__globals
 
   @override
   async def on_message(self, message: str, /) -> str:
     request = json.loads(message)
-    response: Any = {
-        "status": "success",
-        "requestID": request.get("requestID"),
-        "result": {},
-    }
-    varyings = self.__storage.last_series.last_time_step.varyings
-    for array in varyings.arrays():
-      assert array is not None
-      response["result"][array.name] = array.data.ravel().tolist()
+    response: Any = {"requestID": request.get("requestID")}
+    message = request.get("message")
+    if message and message.startswith("#"):
+      iterator = self.__storage.last_series.time_steps()
+      if (index := int(message[1:])) > 0:
+        while index > 0:
+          next(iterator)
+          index -= 1
+      varyings = next(iterator).varyings
+      result = {}
+      for array in varyings.arrays():
+        data = array.data
+        result[array.name] = {
+            "min": float(data.min()),
+            "max": float(data.max()),
+            "data": data.ravel().tolist()
+        }
+      response["status"] = "success"
+      response["result"] = result
+    elif not message:
+      response["status"] = "success"
+      response["result"] = self.__storage.last_series.num_time_steps
+    else:
+      stdout_capture = io.StringIO()
+      stderr_capture = io.StringIO()
+
+      old_stdout, old_stderr = sys.stdout, sys.stderr
+      sys.stdout, sys.stderr = stdout_capture, stderr_capture
+
+      ok = True
+      try:
+        exec(message, self.__globals, self.__locals)
+      except Exception:
+        ok = False
+        traceback.print_exc(file=sys.stderr)
+      finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
+
+      response["status"] = "success" if ok else "error"
+      response["result"] = '\n'.join((
+          stdout_capture.getvalue(),
+          stderr_capture.getvalue(),
+      ))
+
     return json.dumps(response)
 
   @override

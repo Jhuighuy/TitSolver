@@ -3,19 +3,20 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "@radix-ui/themes/styles.css";
-
-import { App } from "~/components/App";
-import "~/index.css";
+import { create } from "zustand";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+export type Appearance = "dark" | "light";
+
+type SettingsState = {
+  appearance: Appearance;
+  setAppearance: (appearance: Appearance) => void;
+};
+
+export const useSettingsStore = create<SettingsState>((set) => ({
+  appearance: "dark",
+  setAppearance: (appearance) => set({ appearance }),
+}));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
