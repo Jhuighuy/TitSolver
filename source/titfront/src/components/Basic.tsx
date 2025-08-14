@@ -3,19 +3,19 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "@radix-ui/themes/styles.css";
+import { Text } from "@radix-ui/themes";
+import type { ComponentProps } from "react";
 
-import { App } from "~/components/App";
-import "~/index.css";
+import { cn } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+type TechnicalTextProps = ComponentProps<typeof Text> & {
+  className?: string;
+};
+
+export function TechnicalText({ className, ...props }: TechnicalTextProps) {
+  return <Text {...props} className={cn("font-mono italic", className)} />;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
