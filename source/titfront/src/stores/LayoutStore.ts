@@ -18,7 +18,7 @@ type MenuState = {
 
 const createMenuStore = () =>
   create<MenuState>((set) => ({
-    size: 320,
+    size: 400,
     setSize(size) {
       assert(size > 0, "Menu size must be positive!");
       set({ size });
@@ -39,7 +39,7 @@ const menuStoreInstances: Record<Side, () => MenuState> = {
   bottom: createMenuStore(),
 };
 
-/** @todo Add tests once needed. Right not the logic it too simple. */
+/** @todo Add tests once needed. Right now the logic it too simple. */
 export function useMenuStore(side: Side) {
   return menuStoreInstances[side]();
 }
