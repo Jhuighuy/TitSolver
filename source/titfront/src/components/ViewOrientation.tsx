@@ -3,7 +3,7 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { type FC, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Euler, Quaternion, Vector3 } from "three";
 
 import { useViewer } from "~/components/Viewer";
@@ -12,12 +12,16 @@ import { cn } from "~/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type Axis = "x" | "y" | "z";
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 type AxisSpec = {
   unit: Vector3;
   colorCn: string;
   darkerColorCn: string;
   borderColorCn: string;
 };
+
 const axes: Record<Axis, AxisSpec> = {
   x: {
     unit: new Vector3(+1, 0, 0),
@@ -39,11 +43,15 @@ const axes: Record<Axis, AxisSpec> = {
   },
 };
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 const baseZ = 20;
 const diamPx = 30;
 const distPx = 45;
 
-export const Orientation: FC = () => {
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export function Orientation() {
   const viewer = useViewer();
   const [rotation, setRotation] = useState<Euler | null>(null);
 
@@ -76,12 +84,20 @@ export const Orientation: FC = () => {
       <OrientAxis axis="z" q={q} />
     </div>
   );
-};
+}
 
-const OrientAxis = ({ axis, q }: { axis: Axis; q: Quaternion }) => {
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface OrientAxisProps {
+  axis: Axis;
+  q: Quaternion;
+}
+
+function OrientAxis({ axis, q }: OrientAxisProps) {
   const { unit } = axes[axis];
-  const e = new Vector3().copy(unit).applyQuaternion(q);
+  const e = unit.clone().applyQuaternion(q);
   e.y *= -1;
+
   return (
     <>
       <Head axis={axis} sign={+1} e={e} />
@@ -90,10 +106,19 @@ const OrientAxis = ({ axis, q }: { axis: Axis; q: Quaternion }) => {
       <Head axis={axis} sign={-1} e={e} />
     </>
   );
-};
+}
 
-const Head = ({ axis, sign, e }: { axis: Axis; sign: number; e: Vector3 }) => {
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface HeadProps {
+  axis: Axis;
+  sign: number;
+  e: Vector3;
+}
+
+function Head({ axis, sign, e }: HeadProps) {
   const { colorCn, darkerColorCn, borderColorCn } = axes[axis];
+
   return (
     <button
       type="button"
@@ -101,8 +126,8 @@ const Head = ({ axis, sign, e }: { axis: Axis; sign: number; e: Vector3 }) => {
         "absolute flex items-center justify-center",
         "rounded-full",
         sign > 0
-          ? cn("text-gray-700 font-black", colorCn)
-          : cn("border-4", darkerColorCn, borderColorCn)
+          ? ["text-gray-700 font-black", colorCn]
+          : ["border-4", darkerColorCn, borderColorCn]
       )}
       style={{
         width: diamPx,
@@ -117,12 +142,22 @@ const Head = ({ axis, sign, e }: { axis: Axis; sign: number; e: Vector3 }) => {
       {sign > 0 ? axis.toUpperCase() : ""}
     </button>
   );
-};
+}
 
-const Line = ({ axis, sign, e }: { axis: Axis; sign: number; e: Vector3 }) => {
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface LineProps {
+  axis: Axis;
+  sign: number;
+  e: Vector3;
+}
+
+function Line({ axis, sign, e }: LineProps) {
   const { colorCn } = axes[axis];
+
   const angleRad = Math.atan2(e.y, e.x);
   const angledDistPx = distPx * Math.hypot(e.x, e.y) - diamPx / 2;
+
   return (
     Math.abs(angledDistPx) > 2 && (
       <div
@@ -140,6 +175,6 @@ const Line = ({ axis, sign, e }: { axis: Axis; sign: number; e: Vector3 }) => {
       />
     )
   );
-};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

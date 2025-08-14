@@ -3,8 +3,10 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import { Theme } from "@radix-ui/themes";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "@radix-ui/themes/styles.css";
 
 import { App } from "~/components/App";
 import { ConnectionProvider } from "~/components/Server";
@@ -15,11 +17,13 @@ import "~/index.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <ConnectionProvider>
-      <ViewerProvider>
-        <App />
-      </ViewerProvider>
-    </ConnectionProvider>
+    <Theme appearance="dark">
+      <ConnectionProvider>
+        <ViewerProvider>
+          <App />
+        </ViewerProvider>
+      </ConnectionProvider>
+    </Theme>
   </React.StrictMode>
 );
 

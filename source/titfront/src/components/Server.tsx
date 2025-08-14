@@ -4,7 +4,6 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import {
-  type FC,
   type ReactNode,
   createContext,
   useCallback,
@@ -62,12 +61,16 @@ const ResponseSchema = z.union([
   }),
 ]);
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export interface ServerProps {
+  children: ReactNode;
+}
+
 /**
  * Provide a connection to the server to the child components.
  */
-export const ConnectionProvider: FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+export function ConnectionProvider({ children }: ServerProps) {
   const [webSocket, setWebSocket] = useState<WebSocket | null>(null);
   const pendingRequests = useRef(new Map<string, Callback>());
 
@@ -121,6 +124,6 @@ export const ConnectionProvider: FC<{ children: ReactNode }> = ({
       {children}
     </ConnectionContext.Provider>
   );
-};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
