@@ -3,77 +3,84 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import type { FC, ReactNode } from "react";
-
-import { cn, type Side } from "~/utils";
+import { Box, Flex, VisuallyHidden } from "@radix-ui/themes";
+import type { ReactNode } from "react";
+import { type Side, sideToFlexDirection } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface ResizableDivProps {
+type ResizableDivProps = {
   side: Side;
   size: number;
   setSize: (size: number) => void;
   minSize?: number;
   maxSize?: number;
-  children: ReactNode;
-}
+  children?: ReactNode;
+};
 
-export const Resizable: FC<ResizableDivProps> = ({
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export function Resizable({
   side,
   size,
   setSize,
   minSize = 120,
   maxSize = 720,
   children,
-}) => {
+}: Readonly<ResizableDivProps>) {
   const horizontal = side === "left" || side === "right";
   const reversed = side === "right" || side === "bottom";
+
   const cursor = horizontal ? "ew-resize" : "ns-resize";
   const dimension = horizontal ? "width" : "height";
   const axisProp = horizontal ? "clientX" : "clientY";
-  const flexDirection = {
-    left: "flex-row",
-    right: "flex-row-reverse",
-    top: "flex-col",
-    bottom: "flex-col-reverse",
-  }[side];
 
-  const handleMouseDown = (event: React.MouseEvent) => {
-    event.preventDefault();
+  if (size < minSize) setSize(minSize);
+  if (size > maxSize) setSize(maxSize);
+
+  function handleMouseDown(downEvent: React.MouseEvent) {
+    downEvent.preventDefault();
+
     const prevCursor = document.body.style.cursor;
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const delta = moveEvent[axisProp] - event[axisProp];
+    document.body.style.cursor = cursor;
+
+    function handleMouseMove(moveEvent: MouseEvent) {
+      const delta = moveEvent[axisProp] - downEvent[axisProp];
       const newSize = reversed ? size - delta : size + delta;
       setSize(Math.max(minSize, Math.min(newSize, maxSize)));
-    };
-    const onMouseUp = () => {
+    }
+
+    function handleMouseUp() {
       document.body.style.cursor = prevCursor;
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-    document.body.style.cursor = cursor;
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  };
+      globalThis.removeEventListener("mousemove", handleMouseMove);
+      globalThis.removeEventListener("mouseup", handleMouseUp);
+    }
+
+    globalThis.addEventListener("mousemove", handleMouseMove);
+    globalThis.addEventListener("mouseup", handleMouseUp);
+  }
 
   return (
-    <div className={cn("flex", flexDirection)}>
+    <Flex direction={sideToFlexDirection(side)}>
       <div
         data-testid="resizable-content"
-        className="flex-grow size-full overflow-auto"
-        style={{ [dimension]: `${size}px` }}
+        style={{
+          width: horizontal ? `${size}px` : "full",
+          height: horizontal ? "full" : `${size}px`,
+        }}
       >
         {children}
       </div>
-      <button
+      <Box
         data-testid="resizable-resizer"
-        type="button"
-        className="bg-gray-900"
+        className="bg-gray-700"
         style={{ cursor: cursor, [dimension]: "2px" }}
         onMouseDown={handleMouseDown}
-      />
-    </div>
+      >
+        <VisuallyHidden>Resize</VisuallyHidden>
+      </Box>
+    </Flex>
   );
-};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
