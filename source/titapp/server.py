@@ -107,12 +107,21 @@ class Server(BasicServer):
     response: Any = {
         "status": "success",
         "requestID": request.get("requestID"),
-        "result": {},
+        "result": None,
     }
-    varyings = self.__storage.last_series.last_time_step.varyings
-    for array in varyings.arrays():
-      assert array is not None
-      response["result"][array.name] = array.data.ravel().tolist()
+    if request.get("message"):
+      iterator = self.__storage.last_series.time_steps()
+      if (index := int(request["message"])) > 0:
+        while index > 0:
+          next(iterator)
+          index -= 1
+      varyings = next(iterator).varyings
+      result = {}
+      for array in varyings.arrays():
+        result[array.name] = array.data.ravel().tolist()
+      response["result"] = result
+    else:
+      response["result"] = self.__storage.last_series.num_time_steps
     return json.dumps(response)
 
   @override

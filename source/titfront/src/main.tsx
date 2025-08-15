@@ -10,7 +10,6 @@ import "@radix-ui/themes/styles.css";
 
 import { App } from "~/components/App";
 import { ConnectionProvider } from "~/components/Server";
-import { ViewerProvider } from "~/components/Viewer";
 import "~/index.css";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,9 +18,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <Theme appearance="dark">
       <ConnectionProvider>
-        <ViewerProvider>
-          <App />
-        </ViewerProvider>
+        <App />
       </ConnectionProvider>
     </Theme>
   </React.StrictMode>

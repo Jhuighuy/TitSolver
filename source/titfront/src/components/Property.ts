@@ -35,6 +35,12 @@ export type EnumProperty = TypedProperty<string> & {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+export type ColorMapProperty = TypedProperty<ColorMapType> & {
+  type: "colormap";
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 export type StringProperty = TypedProperty<string> & {
   type: "string";
 };
@@ -87,6 +93,7 @@ export type RecordProperty = (NestedProperty | TypedProperty<Vector3>) & {
 export type ScalarProperty =
   | BoolProperty
   | EnumProperty
+  | ColorMapProperty
   | StringProperty
   | IntProperty
   | FloatProperty

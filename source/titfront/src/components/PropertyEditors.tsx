@@ -3,7 +3,7 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex, Select, Switch, TextField } from "@radix-ui/themes";
+import { Box, Flex, Select, Switch, Text, TextField } from "@radix-ui/themes";
 import {
   type ChangeEvent,
   type KeyboardEvent,
@@ -18,12 +18,15 @@ import { FaCaretDown as DownIcon, FaCaretUp as UpIcon } from "react-icons/fa";
 import {
   MdDataArray as ArrayIcon,
   MdOutlineNumbers as NumbersIcon,
+  MdOutlinePalette as PaletteIcon,
 } from "react-icons/md";
 import { PiTreeStructure as TreeIcon } from "react-icons/pi";
 import { TbDecimal as DecimalIcon } from "react-icons/tb";
 
+import { ColorBar } from "~/components/ColorBar";
 import {
   type BoolProperty,
+  type ColorMapProperty,
   type EnumProperty,
   type FloatProperty,
   type HandleProperty,
@@ -34,6 +37,7 @@ import {
   getNestedItems,
 } from "~/components/Property";
 import { assert } from "~/utils";
+import { type ColorMapType, colorMaps } from "~/visual/ColorMap";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -47,6 +51,8 @@ export function PropertyEditor({ property }: PropertyEditorProps) {
       return <BoolPropertyEditor property={property} />;
     case "enum":
       return <EnumPropertyEditor property={property} />;
+    case "colormap":
+      return <ColorMapPropertyEditor property={property} />;
     case "string":
       return <StringPropertyEditor property={property} />;
     case "int":
@@ -95,6 +101,43 @@ function EnumPropertyEditor({ property }: EnumPropertyEditorProps) {
         {property.options.map((option) => (
           <Select.Item key={option} value={option}>
             {option}
+          </Select.Item>
+        ))}
+      </Select.Content>
+    </Select.Root>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface ColorMapPropertyEditorProps {
+  property: ColorMapProperty;
+}
+
+function ColorMapPropertyEditor({ property }: ColorMapPropertyEditorProps) {
+  return (
+    <Select.Root
+      value={property.value}
+      onValueChange={property.setValue}
+      size="1"
+    >
+      <Select.Trigger style={{ width: "100%" }}>
+        <Flex align="center" gap="2">
+          <PaletteIcon size={10} />
+          {colorMaps[property.value].name}
+        </Flex>
+      </Select.Trigger>
+      <Select.Content position="popper">
+        {Object.entries(colorMaps).map(([key, value]) => (
+          <Select.Item key={key} value={key}>
+            <Flex direction="row" align="center" gap="1">
+              <ColorBar
+                colorMap={key as ColorMapType}
+                widthPx={80}
+                heightPx={16}
+              />
+              <Text>{value.name}</Text>
+            </Flex>
           </Select.Item>
         ))}
       </Select.Content>
