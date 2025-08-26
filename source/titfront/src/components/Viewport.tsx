@@ -3,23 +3,27 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Spinner } from "@radix-ui/themes";
-import { useEffect, useRef } from "react";
+import { Box, DropdownMenu, Flex, IconButton, Spinner } from "@radix-ui/themes";
+import { useEffect, useRef, useState } from "react";
+import { FaCaretDown as DownIcon } from "react-icons/fa";
+import { Vector3 } from "three";
 
 import { ColorBarWithTicks } from "~/components/ColorBar";
 import { ViewCube } from "~/components/ViewCube";
 import { useDataStore } from "~/stores/DataStore";
 import { useCameraStore, useColorsStore } from "~/stores/ViewStore";
-import { assert } from "~/utils";
+import { assert, iota } from "~/utils";
 import { backgroundColors } from "~/visual/BackroundColor";
 import { Frame } from "~/visual/Frame";
 import { Renderer } from "~/visual/Renderer";
 
-import { Vector3 } from "three";
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export function Viewport() {
+export interface ViewportProps {
+  setLayout: (layout: MultiViewportLayout) => void;
+}
+
+export function Viewport({ setLayout }: ViewportProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // ---- Renderer. ------------------------------------------------------------
@@ -155,34 +159,122 @@ export function Viewport() {
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <div className="size-full relative overflow-hidden bg-gradient-to-bl from-gray-700 to-gray-800">
-      {/* ---- Top right: view cube. --------------------------------------- */}
-      <div className="absolute top-12 right-12 z-10">
-        <ViewCube rotation={cameraRotation} setRotation={setCameraRotation} />
-      </div>
-
-      {/* ---- Bottom left: color legend. ---------------------------------- */}
-      <div className="absolute bottom-10 left-10 z-10">
-        <ColorBarWithTicks
-          colorMap={colorMap}
-          min={0}
-          max={100}
-          widthPx={20}
-          heightPx={300}
-          dark={backgroundColors[backgroundColor].isDark}
-        />
-      </div>
-
-      {/* ---- Center: loading indicator. ---------------------------------- */}
-      {requestedTimeStep !== null && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <Spinner size="3" />
+    <Flex
+      width="100%"
+      height="100%"
+      direction="column"
+      className="overflow-hidden rounded"
+    >
+      <Flex
+        width="100%"
+        height="24px"
+        px="2"
+        direction="row"
+        align="center"
+        className="bg-gray-800"
+      >
+        <Flex flexGrow="1"></Flex>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <IconButton variant="ghost" color="gray">
+              <DownIcon size={8} />
+            </IconButton>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+            <DropdownMenu.Item onClick={() => setLayout("1")}>
+              1
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => setLayout("1x2")}>
+              1x2
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => setLayout("2x1")}>
+              2x1
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => setLayout("(1+1)x1")}>
+              (1+1)x1
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => setLayout("2x2")}>
+              2x2
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </Flex>
+      <Box
+        flexGrow="1"
+        width="100%"
+        height="100%"
+        className="relative overflow-hidden bg-gradient-to-bl from-gray-700 to-gray-800"
+      >
+        {/* ---- Top right: view cube. ------------------------------------- */}
+        <div className="absolute top-12 right-12 z-10">
+          <ViewCube rotation={cameraRotation} setRotation={setCameraRotation} />
         </div>
-      )}
 
-      {/* ---- Canvas. ----------------------------------------------------- */}
-      <canvas ref={canvasRef} className="absolute top-0 left-0" />
-    </div>
+        {/* ---- Bottom left: color legend. -------------------------------- */}
+        <div className="absolute bottom-10 left-10 z-10">
+          <ColorBarWithTicks
+            colorMap={colorMap}
+            min={0}
+            max={100}
+            widthPx={20}
+            heightPx={300}
+            dark={backgroundColors[backgroundColor].isDark}
+          />
+        </div>
+
+        {/* ---- Center: loading indicator. -------------------------------- */}
+        {requestedTimeStep !== null && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center">
+            <Spinner size="3" />
+          </div>
+        )}
+
+        {/* ---- Canvas. --------------------------------------------------- */}
+        <canvas ref={canvasRef} className="absolute top-0 left-0" />
+      </Box>
+    </Flex>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export type MultiViewportLayout = "1" | "1x2" | "2x1" | "(1+1)x1" | "2x2";
+
+export function MultiViewport() {
+  const [layout, setLayout] = useState<MultiViewportLayout>("1");
+
+  const grid = {
+    "1": [[1]],
+    "1x2": [[2]],
+    "2x1": [[1], [1]],
+    "(1+1)x1": [[2], [1]],
+    "2x2": [[2], [2]],
+  }[layout];
+
+  if (layout === "1") {
+    return <Viewport setLayout={setLayout} />;
+  }
+
+  return (
+    <Flex
+      direction="column"
+      gap="2"
+      px="1"
+      py="2"
+      width="100%"
+      height="100%"
+      className="bg-gray-900"
+    >
+      {grid.map((row, i) => (
+        <Flex key={i} direction="row" gap="2" height={`${100 / grid.length}%`}>
+          {iota(row[0]).map((j) => (
+            <Flex asChild key={j} direction="row" gap="2">
+              <Viewport setLayout={setLayout} />
+            </Flex>
+          ))}
+        </Flex>
+      ))}
+    </Flex>
   );
 }
 

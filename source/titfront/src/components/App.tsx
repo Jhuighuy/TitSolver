@@ -17,7 +17,7 @@ import { PiGraph as GraphIcon } from "react-icons/pi";
 import { Menu } from "~/components/Menu";
 import { PythonShell } from "~/components/PythonShell";
 import { ViewTimeline } from "~/components/ViewTimeline";
-import { Viewport } from "~/components/Viewport";
+import { MultiViewport } from "~/components/Viewport";
 import { VisualSetup } from "~/components/ViewSetup";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,7 +36,7 @@ export function App() {
       </Menu>
       <Flex flexGrow="1" direction="column">
         <Box flexGrow="1">
-          <Viewport />
+          <MultiViewport />
         </Box>
         <ViewTimeline />
         <Menu side="bottom" iconSize={16}>
