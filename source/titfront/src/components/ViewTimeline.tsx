@@ -202,7 +202,7 @@ export function ViewTimeline({
   /** @todo This is probably not the best place to handle this logic. */
   useEffect(() => {
     if (requestedTimeStep === null) return;
-    runCode(`${requestedTimeStep}`, (result) => {
+    runCode(`#${requestedTimeStep}`, (result) => {
       const dataset = result as DataSet;
       resolveTimeStep(requestedTimeStep, dataset);
     });

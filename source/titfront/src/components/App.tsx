@@ -15,6 +15,7 @@ import {
 import { PiGraph as GraphIcon } from "react-icons/pi";
 
 import { Menu } from "~/components/Menu";
+import { PythonShell } from "~/components/PythonShell";
 import { ViewTimeline } from "~/components/ViewTimeline";
 import { Viewport } from "~/components/Viewport";
 import { VisualSetup } from "~/components/ViewSetup";
@@ -40,7 +41,9 @@ export function App() {
         <ViewTimeline />
         <Menu side="bottom" iconSize={16}>
           <Menu.Item name="Console" icon={TerminalIcon} group={0} />
-          <Menu.Item name="Python shell" icon={PythonIcon} group={0} />
+          <Menu.Item name="Python shell" icon={PythonIcon} group={0}>
+            <PythonShell />
+          </Menu.Item>
         </Menu>
       </Flex>
     </Flex>

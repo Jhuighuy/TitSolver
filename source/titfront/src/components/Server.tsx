@@ -48,11 +48,7 @@ const ResponseSchema = z.union([
   z.object({
     requestID: z.string(),
     status: z.literal("error"),
-    result: z.object({
-      type: z.string(),
-      error: z.string(),
-      traceback: z.string().optional(),
-    }),
+    result: z.string(),
   }),
   z.object({
     requestID: z.string(),
@@ -92,8 +88,7 @@ export function ConnectionProvider({ children }: ServerProps) {
         callback(result);
       } else {
         assert(status === "error");
-        const { type, error, traceback } = result;
-        callback(new Error(`${type}: ${error}\n${traceback}`));
+        callback(new Error(result));
       }
       pendingRequests.current.delete(requestID);
     };
