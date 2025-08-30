@@ -64,7 +64,7 @@ public:
   [[gnu::always_inline]]
   explicit RegMask(std::span<const Mask<Num>> span) noexcept {
     TIT_ASSERT(span.size() >= Size, "Span size is too small!");
-    base = hn::MaskFromVec( // NOLINT(*-prefer-member-initializer)
+    base = hn::MaskFromVec(
         hn::LoadU(Tag{}, safe_bit_ptr_cast<const Num*>(span.data())));
   }
 

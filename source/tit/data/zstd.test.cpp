@@ -212,7 +212,7 @@ TEST_CASE("data::zstd::errors") {
       std::ranges::generate( //
           compressed_data.begin() + static_cast<ssize_t>(old_size),
           compressed_data.end(),
-          []() { return static_cast<byte_t>(rng()); });
+          [] { return static_cast<byte_t>(rng()); });
       CHECK_THROWS_MSG(
           make_stream_decompressor(make_range_input_stream(compressed_data))
               ->read(result),
