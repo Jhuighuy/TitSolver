@@ -173,22 +173,20 @@ public:
     TIT_ASSERT(sizeof...(Columns) == num_columns_(),
                "Number of return values does not match the number of columns!");
     size_t index = npos;
-    return {
-      [&index, this]<class Column>() {
-        index += 1; // Columns are zero-based.
-        if constexpr (std::integral<Column> || std::is_enum_v<Column>) {
-          return static_cast<Column>(column_int_(index));
-        } else if constexpr (std::floating_point<Column>) {
-          return static_cast<Column>(column_real_(index));
-        } else if constexpr (str_like<Column>) {
-          return Column{column_text_(index)};
-        } else if constexpr (blob_column<Column>) {
-          const auto blob = column_blob_(index);
-          if constexpr (std::same_as<Column, BlobView>) return blob;
-          else return blob | std::ranges::to<Column>();
-        } else static_assert(false);
-      }.template operator()<Columns>()...
-    };
+    return {[&index, this]<class Column>() {
+      index += 1; // Columns are zero-based.
+      if constexpr (std::integral<Column> || std::is_enum_v<Column>) {
+        return static_cast<Column>(column_int_(index));
+      } else if constexpr (std::floating_point<Column>) {
+        return static_cast<Column>(column_real_(index));
+      } else if constexpr (str_like<Column>) {
+        return Column{column_text_(index)};
+      } else if constexpr (blob_column<Column>) {
+        const auto blob = column_blob_(index);
+        if constexpr (std::same_as<Column, BlobView>) return blob;
+        else return blob | std::ranges::to<Column>();
+      } else static_assert(false);
+    }.template operator()<Columns>()...};
   }
 
   /// Shorthand for a single column query.
