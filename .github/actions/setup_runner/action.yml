@@ -18,7 +18,7 @@ runs:
       shell: bash
       run: |
         GCC_VERSION=${GCC_VERSION:-15}
-        LLVM_VERSION=${LLVM_VERSION:-20}
+        LLVM_VERSION=${LLVM_VERSION:-21}
         PYTHON_VERSION=${PYTHON_VERSION:-3.13}
 
         # Select the compiler from the arguments.
