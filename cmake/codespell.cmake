@@ -4,7 +4,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
-include(utils)
+include(git)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -27,20 +27,8 @@ function(check_spelling)
     return()
   endif()
 
-  # We'll check indexed files only. The best way to do this is to ask git
-  # what files are indexed in the directory, and pass those to codespell.
-  execute_process(
-    COMMAND "${GIT_EXE}" ls-files
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE INDEXED_FILES
-  )
-  string(STRIP "${INDEXED_FILES}" INDEXED_FILES)
-  string(REPLACE "\n" ";" INDEXED_FILES "${INDEXED_FILES}")
-  list(TRANSFORM INDEXED_FILES STRIP)
-  list(TRANSFORM INDEXED_FILES PREPEND "${CMAKE_SOURCE_DIR}/")
-
-  # Create a stamp.
-  set(STAMP "${CMAKE_BINARY_DIR}/${TARGET}.spell_stamp")
+  # We'll need a stamp file to track the analysis.
+  set(STAMP "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.spell_stamp")
 
   # Run codespell.
   add_custom_command(
@@ -50,13 +38,13 @@ function(check_spelling)
       "${CODESPELL_EXE}"
         --ignore-words="${CMAKE_SOURCE_DIR}/cmake/codespell.txt"
         --check-filenames
-        ${INDEXED_FILES}
+        ${GIT_INDEXED_FILES}
     COMMAND
       "${CMAKE_COMMAND}" -E touch "${STAMP}"
-    DEPENDS ${INDEXED_FILES}
+    DEPENDS ${GIT_INDEXED_FILES}
   )
 
-  # Add target that would be built once documentation files are updated.
+  # Create a custom target that should "build" once the check succeeds.
   add_custom_target("${CMAKE_PROJECT_NAME}_codespell" ALL DEPENDS "${STAMP}")
 endfunction()
 
