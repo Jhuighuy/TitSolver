@@ -11,6 +11,9 @@
 #   There are many easily-swappable parameters in the solver code, we cannot
 #   avoid that without introducing structures almost for any function.
 #
+# * cert-err58-cpp:
+#   Bogus check, false-positives and crashes.
+#
 # * cert-dcl58-cpp:
 #   This checks threats specializations of `std::` classes as modifying the
 #   standard library.
@@ -43,6 +46,10 @@
 # * cppcoreguidelines-pro-bounds-constant-array-index:
 #   This check does not works correctly with our asserts.
 #
+# * cppcoreguidelines-pro-bounds-pointer-arithmetic:
+#   It is impossible to avoid pointer arithmetic, especially when iterators
+#   of some standard containers are just raw pointers.
+#
 # * misc-no-recursion:
 #   We need recusion in some templated recurred lambdas.
 #
@@ -73,11 +80,11 @@ Checks: |
   bugprone-*
   -bugprone-easily-swappable-parameters
   cert-*
+  -cert-err58-cpp
   -cert-dcl58-cpp
   -cert-msc32-c
   -cert-msc51-cpp
   -clang-analyzer-optin.core.EnumCastOutOfRange
-  -clang-analyzer-cplusplus.NewDeleteLeaks
   concurrency-*
   cppcoreguidelines-*
   -cppcoreguidelines-avoid-do-while
@@ -85,6 +92,7 @@ Checks: |
   -cppcoreguidelines-avoid-non-const-global-variables
   -cppcoreguidelines-macro-usage
   -cppcoreguidelines-pro-bounds-constant-array-index
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic
   misc-*
   -misc-no-recursion
   modernize-*
@@ -102,3 +110,7 @@ Checks: |
 # Treat all warning as errors.
 WarningsAsErrors: |
   *
+
+# Do not require lambdas to specify a return type.
+CheckOptions:
+  modernize-use-trailing-return-type.TransformLambdas: none

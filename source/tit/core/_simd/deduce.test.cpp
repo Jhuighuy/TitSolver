@@ -21,7 +21,7 @@ using DeducedRegArray = std::array<simd::deduce_reg_t<float, Dim>,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#if defined __AVX512F__
+#ifdef __AVX512F__
 
 // Can be fitted into a single 128 bit register.
 static_assert(std::is_same_v<DeducedRegArray<1>, RegArray<4, 1>>);
@@ -46,7 +46,7 @@ static_assert(std::is_same_v<DeducedRegArray<20>, RegArray<16, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<32>, RegArray<16, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<36>, RegArray<16, 3>>);
 
-#elif defined __AVX__
+#elifdef __AVX__
 
 // Can be fitted into a single 128 bit register.
 static_assert(std::is_same_v<DeducedRegArray<1>, RegArray<4, 1>>);
@@ -66,7 +66,7 @@ static_assert(std::is_same_v<DeducedRegArray<16>, RegArray<8, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<17>, RegArray<8, 3>>);
 static_assert(std::is_same_v<DeducedRegArray<24>, RegArray<8, 3>>);
 
-#elif defined __SSE__
+#elifdef __SSE__
 
 // Can be fitted into a single 128 bit register.
 static_assert(std::is_same_v<DeducedRegArray<1>, RegArray<4, 1>>);
@@ -79,7 +79,7 @@ static_assert(std::is_same_v<DeducedRegArray<8>, RegArray<4, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<9>, RegArray<4, 3>>);
 static_assert(std::is_same_v<DeducedRegArray<12>, RegArray<4, 3>>);
 
-#elif defined __ARM_NEON
+#elifdef __ARM_NEON
 
 // Can be fitted into a single 64 bit register.
 static_assert(std::is_same_v<DeducedRegArray<1>, RegArray<2, 1>>);

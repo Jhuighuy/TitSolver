@@ -19,7 +19,7 @@ runs:
       run: |
         # Select the compiler from the arguments.
         GCC_VERSION=${GCC_VERSION:-15}
-        LLVM_VERSION=${LLVM_VERSION:-20}
+        LLVM_VERSION=${LLVM_VERSION:-21}
         case "${{ inputs.compiler }}" in
           GCC)
             CC="gcc-$GCC_VERSION"

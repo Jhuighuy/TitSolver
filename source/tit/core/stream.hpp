@@ -19,6 +19,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/type.hpp"
 
@@ -301,7 +302,9 @@ public:
     try {
       callback_(written_);
     } catch (const std::exception& e) {
-      err("Failed to call on_finish: {}", e.what());
+      terminate_on_exception([&e] { //
+        err("Failed to call on_finish: {}", e.what());
+      });
     }
   }
 

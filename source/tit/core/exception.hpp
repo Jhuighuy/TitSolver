@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <exception>
 #include <format> // IWYU pragma: keep
 #include <source_location>
@@ -16,6 +17,18 @@
 #include "tit/core/utils.hpp"
 
 namespace tit {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Terminate the application if an exception was thrown.
+template<std::invocable Func>
+constexpr auto terminate_on_exception(Func func) noexcept {
+  try {
+    return std::invoke(func);
+  } catch (...) {
+    std::terminate();
+  }
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -59,12 +59,13 @@ Database::Database(const std::filesystem::path& path, bool read_only) {
 }
 
 void Database::Closer_::operator()(sqlite3* db) {
-  if (const auto status = sqlite3_close_v2(db); status != SQLITE_OK) {
-    // Let's not throw in destructors.
-    err("SQLite database close failed ({}): {}.",
-        status,
-        error_message(status, db));
-  }
+  terminate_on_exception([db] {
+    if (const auto status = sqlite3_close_v2(db); status != SQLITE_OK) {
+      TIT_THROW("SQLite database close failed ({}): {}.",
+                status,
+                error_message(status, db));
+    }
+  });
 }
 
 auto Database::base() const noexcept -> sqlite3* {
@@ -126,14 +127,16 @@ Statement::Statement(Database& db, std::string_view sql) : db_{&db} {
 }
 
 void Statement::Finalizer_::operator()(sqlite3_stmt* stmt) {
-  if (const auto status = sqlite3_finalize(stmt); status != SQLITE_OK) {
-    // `sqlite3_finalize` returns an error code if any usage of the statement
-    // resulted in an error, so we've must have already thrown an exception.
-    // So, let's just log the error here and return peacefully.
-    err("SQLite statement close failed ({}): {}.",
-        status,
-        error_message(status));
-  }
+  terminate_on_exception([stmt] {
+    if (const auto status = sqlite3_finalize(stmt); status != SQLITE_OK) {
+      // `sqlite3_finalize` returns an error code if any usage of the statement
+      // resulted in an error, so we've must have already thrown an exception.
+      // So, let's just log the error here and return peacefully.
+      err("SQLite statement close failed ({}): {}.",
+          status,
+          error_message(status));
+    }
+  });
 }
 
 auto Statement::base() const noexcept -> sqlite3_stmt* {
@@ -363,11 +366,13 @@ BlobReader::BlobReader(const Database& db,
 }
 
 void BlobReader::Finalizer_::operator()(sqlite3_blob* blob) {
-  const auto status = sqlite3_blob_close(blob);
-  if (status != SQLITE_OK) {
-    // Let's not throw in destructors.
-    err("SQLite blob close failed ({}): {}.", status, error_message(status));
-  }
+  terminate_on_exception([blob] {
+    if (const auto status = sqlite3_blob_close(blob); status != SQLITE_OK) {
+      TIT_THROW("SQLite blob close failed ({}): {}.",
+                status,
+                error_message(status));
+    }
+  });
 }
 
 auto BlobReader::base() const noexcept -> sqlite3_blob* {

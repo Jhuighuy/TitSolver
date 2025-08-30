@@ -50,9 +50,9 @@ concept castable_to_type =
 ///
 /// That is 16 bytes for all supported instruction sets.
 inline constexpr size_t min_reg_byte_width_v{
-#if defined __SSE__
+#ifdef __SSE__
     16
-#elif defined __ARM_NEON
+#elifdef __ARM_NEON
     8
 #else
 #error Unknown SIMD instruction set!
@@ -65,9 +65,9 @@ inline constexpr size_t min_reg_byte_width_v{
 /// That is 16 bytes for NEON and SSE instruction set, 32 and 64 bytes for
 /// AVX and AVX-512 respectively.
 inline constexpr size_t max_reg_byte_width_v{
-#if defined __AVX512F__
+#ifdef __AVX512F__
     64
-#elif defined __AVX__
+#elifdef __AVX__
     32
 #elif defined __SSE__ || defined __ARM_NEON
     16
