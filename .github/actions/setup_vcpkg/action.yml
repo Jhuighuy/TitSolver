@@ -11,7 +11,7 @@ runs:
       run: |
         # Install vcpkg.
         VCPKG_ROOT="$HOME/vcpkg"
-        git clone --depth=1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+        git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
         eval "$VCPKG_ROOT/bootstrap-vcpkg.sh"
         echo "VCPKG_ROOT=$VCPKG_ROOT" >> "$GITHUB_ENV"
 
