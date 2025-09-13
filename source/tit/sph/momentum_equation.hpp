@@ -8,7 +8,6 @@
 #include <tuple>
 
 #include "tit/core/type.hpp"
-
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"

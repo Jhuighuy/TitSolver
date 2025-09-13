@@ -8,11 +8,8 @@
 #include "tit/core/math.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/bbox.hpp"
-
 #include "tit/sph/kernel.hpp"
-
 #include "tit/testing/math/integrals.hpp"
 #include "tit/testing/numbers/dual.hpp"
 #include "tit/testing/test.hpp"

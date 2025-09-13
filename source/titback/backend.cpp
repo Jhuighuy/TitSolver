@@ -20,9 +20,7 @@
 #include "tit/core/env.hpp"
 #include "tit/core/path.hpp"
 #include "tit/core/type.hpp"
-
 #include "tit/data/storage.hpp"
-
 #include "tit/main/main.hpp"
 
 namespace tit {

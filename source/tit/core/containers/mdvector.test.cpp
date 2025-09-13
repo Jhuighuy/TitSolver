@@ -7,7 +7,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/mdvector.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

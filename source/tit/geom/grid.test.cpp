@@ -4,10 +4,8 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/grid.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

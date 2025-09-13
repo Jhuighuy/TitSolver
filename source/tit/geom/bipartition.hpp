@@ -17,7 +17,6 @@
 #include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/point_range.hpp"
 
 namespace tit::geom {

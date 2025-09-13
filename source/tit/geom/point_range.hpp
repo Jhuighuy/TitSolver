@@ -14,7 +14,6 @@
 #include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/bbox.hpp"
 
 namespace tit::geom {
