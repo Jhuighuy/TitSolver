@@ -4,7 +4,6 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/par/atomic.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

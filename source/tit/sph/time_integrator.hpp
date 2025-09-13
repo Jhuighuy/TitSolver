@@ -10,9 +10,7 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
-
 #include "tit/par/algorithms.hpp"
-
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/particle_array.hpp"

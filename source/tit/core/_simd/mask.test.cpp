@@ -4,7 +4,6 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/core/simd.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

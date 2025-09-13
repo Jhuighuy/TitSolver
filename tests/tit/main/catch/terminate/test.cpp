@@ -7,7 +7,6 @@
 #include <thread>
 
 #include "tit/core/print.hpp"
-
 #include "tit/main/main.hpp"
 
 namespace tit {

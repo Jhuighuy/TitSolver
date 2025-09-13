@@ -19,7 +19,6 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"
-
 #include "tit/geom/point_range.hpp"
 
 namespace tit::geom {
