@@ -21,15 +21,12 @@
 #include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
-
-#include "tit/par/algorithms.hpp"
-#include "tit/par/control.hpp"
-#include "tit/par/task_group.hpp"
-
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
-
+#include "tit/par/algorithms.hpp"
+#include "tit/par/control.hpp"
+#include "tit/par/task_group.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
 

@@ -8,7 +8,6 @@
 #include <tuple>
 
 #include "tit/core/type.hpp"
-
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {

@@ -18,9 +18,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/data/storage.hpp"
-
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {

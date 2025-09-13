@@ -9,7 +9,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-
 #include "tit/par/control.hpp"
 
 namespace tit::par {

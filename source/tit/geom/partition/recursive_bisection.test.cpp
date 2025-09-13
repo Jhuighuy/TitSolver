@@ -8,9 +8,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/partition/recursive_bisection.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

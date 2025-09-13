@@ -5,7 +5,6 @@
 
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

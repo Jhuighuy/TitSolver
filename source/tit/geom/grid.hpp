@@ -11,7 +11,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/bbox.hpp"
 
 namespace tit::geom {

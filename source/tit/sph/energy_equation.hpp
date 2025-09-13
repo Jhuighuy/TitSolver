@@ -9,7 +9,6 @@
 #include <tuple>
 
 #include "tit/core/type.hpp"
-
 #include "tit/sph/field.hpp"
 #include "tit/sph/heat_conductivity.hpp"
 

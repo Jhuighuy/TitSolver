@@ -21,7 +21,6 @@
 #include "tit/core/str.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
-
 #include "tit/data/sqlite.hpp"
 
 namespace tit::data::sqlite {

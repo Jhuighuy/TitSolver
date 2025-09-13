@@ -7,7 +7,6 @@
 
 #include "tit/par/control.hpp"
 #include "tit/par/task_group.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

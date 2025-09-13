@@ -36,9 +36,7 @@
 #include "tit/core/str.hpp"
 #include "tit/core/sys_info.hpp"
 #include "tit/core/type.hpp"
-
 #include "tit/main/main.hpp"
-
 #include "tit/par/control.hpp"
 
 namespace tit {

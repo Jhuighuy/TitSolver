@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "tit/core/type.hpp"
-
 #include "tit/testing/test.hpp"
 
 template<class>

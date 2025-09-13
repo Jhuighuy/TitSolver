@@ -7,9 +7,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/data/type.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

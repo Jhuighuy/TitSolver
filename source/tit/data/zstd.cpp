@@ -14,7 +14,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
-
 #include "tit/data/zstd.hpp"
 
 namespace tit::data::zstd {

@@ -15,7 +15,6 @@
 
 #include "tit/par/algorithms.hpp"
 #include "tit/par/control.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

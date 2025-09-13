@@ -15,10 +15,8 @@
 #include "tit/core/range.hpp"
 #include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
-
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
-
 #include "tit/par/task_group.hpp"
 
 namespace tit::geom {

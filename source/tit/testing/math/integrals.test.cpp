@@ -7,9 +7,7 @@
 
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/bbox.hpp"
-
 #include "tit/testing/math/integrals.hpp"
 #include "tit/testing/test.hpp"
 

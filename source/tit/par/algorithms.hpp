@@ -21,7 +21,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/inplace_vector.hpp"
 #include "tit/core/utils.hpp"
-
 #include "tit/par/atomic.hpp"
 #include "tit/par/control.hpp"
 

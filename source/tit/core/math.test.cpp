@@ -6,7 +6,6 @@
 #include <limits>
 
 #include "tit/core/math.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {
