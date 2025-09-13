@@ -10,10 +10,8 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

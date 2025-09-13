@@ -11,10 +11,9 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/serialization.testing.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
-
-#include "tit/core/serialization.testing.hpp"
 #include "tit/testing/numbers/tagged.hpp"
 #include "tit/testing/test.hpp"
 

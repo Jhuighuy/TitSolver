@@ -14,7 +14,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
-
 #include "tit/data/sqlite.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"

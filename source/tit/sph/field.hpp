@@ -17,7 +17,6 @@
 #include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/data/type.hpp"
 
 namespace tit {

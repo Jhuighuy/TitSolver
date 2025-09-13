@@ -7,9 +7,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/sort/morton_curve_sort.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

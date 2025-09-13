@@ -11,7 +11,6 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/core/stream.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit::testing {

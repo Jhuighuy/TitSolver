@@ -2,12 +2,10 @@
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
-
+#include "tit/data/storage.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
-
-#include "tit/data/storage.hpp"
-
+#include "tit/main/main.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/continuity_equation.hpp"
 #include "tit/sph/energy_equation.hpp"
@@ -21,8 +19,6 @@
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
 #include "tit/sph/viscosity.hpp"
-
-#include "tit/main/main.hpp"
 
 namespace tit::sph {
 namespace {
