@@ -7,10 +7,8 @@
 
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/point_range.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

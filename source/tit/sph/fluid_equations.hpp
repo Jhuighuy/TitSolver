@@ -15,9 +15,7 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/par/algorithms.hpp"
-
 #include "tit/sph/continuity_equation.hpp"
 #include "tit/sph/energy_equation.hpp"
 #include "tit/sph/equation_of_state.hpp"

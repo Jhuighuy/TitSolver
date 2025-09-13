@@ -17,10 +17,8 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
-
 #include "tit/par/atomic.hpp"
 #include "tit/par/task_group.hpp"
 

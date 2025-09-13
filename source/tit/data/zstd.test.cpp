@@ -11,11 +11,9 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/stream.hpp"
-
 #include "tit/core/range.hpp"
+#include "tit/core/stream.hpp"
 #include "tit/data/zstd.hpp"
-
 #include "tit/testing/test.hpp"
 
 namespace tit {

@@ -10,7 +10,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
-
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
 

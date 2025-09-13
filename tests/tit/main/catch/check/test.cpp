@@ -6,7 +6,6 @@
 #define TIT_ENABLE_ASSERTS
 #include "tit/core/checks.hpp"
 #include "tit/core/print.hpp"
-
 #include "tit/main/main.hpp"
 
 namespace tit {

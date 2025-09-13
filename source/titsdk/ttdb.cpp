@@ -12,7 +12,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
-
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"
 
