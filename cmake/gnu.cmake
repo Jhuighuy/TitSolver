@@ -70,7 +70,7 @@ if(APPLE)
     # targeting to some ancient macOS version (predating 11.0), forcing our
     # binaries to run in "10.16 compatibility" mode. This results in incorrect
     # macOS version reported by `sysctlbyname("kern.osproductversion")`.
-    -Wl,-macos_version_min -Wl,15.0
+    -Wl,-macos_version_min -Wl,16.0
   )
 endif()
 
