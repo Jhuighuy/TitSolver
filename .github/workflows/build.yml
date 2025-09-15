@@ -23,7 +23,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        os: [ubuntu-24.04, macos-26]
         compiler: [GCC, Clang]
         configuration: [Debug, Release]
       fail-fast: false
