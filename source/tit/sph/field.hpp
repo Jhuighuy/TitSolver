@@ -228,10 +228,6 @@ TIT_DEFINE_VECTOR_FIELD(v)
 TIT_DEFINE_VECTOR_FIELD(dv_dt)
 /// Particle velocity gradient.
 TIT_DEFINE_MATRIX_FIELD(grad_v)
-/// Particle velocity divergence.
-TIT_DEFINE_SCALAR_FIELD(div_v)
-/// Particle velocity curl (always 3D).
-TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, 3>), curl_v)
 
 /// Particle mass.
 TIT_DEFINE_SCALAR_FIELD(m)
@@ -257,17 +253,9 @@ TIT_DEFINE_SCALAR_FIELD(du_dt)
 
 /// Particle dynamic viscosity.
 TIT_DEFINE_SCALAR_FIELD(mu)
-
 /// Particle heat conductivity coefficient.
 TIT_DEFINE_SCALAR_FIELD(kappa)
 
-/// Particle artificial viscosity switch.
-TIT_DEFINE_SCALAR_FIELD(alpha)
-/// Particle artificial viscosity switch time derivative.
-TIT_DEFINE_SCALAR_FIELD(dalpha_dt)
-
-/// Particle concentration value.
-TIT_DEFINE_SCALAR_FIELD(C)
 /// Particle normal vector.
 TIT_DEFINE_VECTOR_FIELD(N)
 /// Particle renormalization matrix.
