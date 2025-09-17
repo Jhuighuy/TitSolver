@@ -149,81 +149,6 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Artificial viscosity with Rosswog switch (Rosswog, 2000).
-template<class Num,
-         class BaseArtificialViscosity =
-             BalsaraArtificialViscosity<AlphaBetaArtificialViscosity<Num>>>
-class RosswogArtificialViscosity final {
-public:
-
-  /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      TypeSet{h, cs, div_v, alpha, dalpha_dt} |
-      BaseArtificialViscosity::required_fields;
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      BaseArtificialViscosity::modified_fields;
-
-  /// Construct artificial viscosity scheme.
-  ///
-  /// @param base      Base artificial viscosity.
-  /// @param alpha_min Minimal value of the switch coefficient.
-  /// @param alpha_max Maximal value of the switch coefficient.
-  /// @param sigma     Decay time inverse scale factor.
-  constexpr explicit RosswogArtificialViscosity(BaseArtificialViscosity base,
-                                                Num alpha_min = 0.1,
-                                                Num alpha_max = 2.0,
-                                                Num sigma = 0.1) noexcept
-      : base_{std::move(base)}, //
-        alpha_min_{alpha_min}, alpha_max_{alpha_max}, sigma_{sigma} {
-    TIT_ASSERT(alpha_min_ > 0.0, "Switch minimal value must be positive.");
-    TIT_ASSERT(alpha_max_ > alpha_min_,
-               "Switch maximal value must be "
-               "greater than minimal.");
-    TIT_ASSERT(sigma_ > 0.0,
-               "Switch decay time inverse scale factor "
-               "must be positive.");
-  }
-
-  /// Continuity equation diffusive term.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto density_term(PV a, PV b) const noexcept {
-    TIT_ASSERT(a != b, "Particles must be different!");
-    return base_.density_term(a, b);
-  }
-
-  /// Momentum equation diffusive term.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto velocity_term(PV a, PV b) const noexcept {
-    TIT_ASSERT(a != b, "Particles must be different!");
-    auto Pi_ab = base_.velocity_term(a, b);
-    if (is_tiny(Pi_ab)) return Pi_ab;
-    const auto alpha_ab = alpha.avg(a, b);
-    Pi_ab *= alpha_ab;
-    return Pi_ab;
-  }
-
-  /// Switch equation source term.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto switch_source(PV a) const noexcept {
-    const auto S_a = std::max(-div_v[a], decltype(div_v[a]){0.0});
-    const auto tau_a = h[a] / (sigma_ * cs[a]);
-    return (alpha_max_ - alpha[a]) * S_a - //
-           (alpha[a] - alpha_min_) / tau_a;
-  }
-
-private:
-
-  [[no_unique_address]] BaseArtificialViscosity base_;
-  Num alpha_min_;
-  Num alpha_max_;
-  Num sigma_;
-
-}; // class RosswogArtificialViscosity
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// ξ-SPH artificial viscosity (Molteni, Colagrossi, 2009).
 /// Weakly-compressible SPH formulation is assumed.
 template<class Num>
@@ -352,7 +277,6 @@ concept artificial_viscosity = //
     std::same_as<AV, NoArtificialViscosity> ||
     specialization_of<AV, AlphaBetaArtificialViscosity> ||
     specialization_of<AV, BalsaraArtificialViscosity> ||
-    specialization_of<AV, RosswogArtificialViscosity> ||
     specialization_of<AV, MolteniColagrossiArtificialViscosity> ||
     specialization_of<AV, DeltaSPHArtificialViscosity>;
 
