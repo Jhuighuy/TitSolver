@@ -8,6 +8,7 @@ add_tit_library(
     sph
   SOURCES
     "artificial_viscosity.hpp"
+    "bcs.hpp"
     "continuity_equation.hpp"
     "energy_equation.hpp"
     "equation_of_state.hpp"

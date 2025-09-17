@@ -37,7 +37,7 @@ public:
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
+      Equations::modified_fields | TypeSet{parinfo, r, v, u};
 
   /// Construct time integrator.
   ///
@@ -55,8 +55,7 @@ public:
     TIT_PROFILE_SECTION("EulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Initialize particles, build the mesh.
-    if (step_index_ == 0) equations_.init(particles);
+    // Setup the mesh.
     if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
 
     // Setup boundary conditions.
@@ -75,7 +74,6 @@ public:
       v[a] += dt * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
       if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
 
     // Apply particle shifting.
@@ -109,7 +107,7 @@ public:
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
+      Equations::modified_fields | TypeSet{parinfo, r, v, u};
 
   /// Construct time integrator.
   ///
@@ -128,8 +126,7 @@ public:
     TIT_PROFILE_SECTION("LeapfrogIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Initialize and index particles.
-    if (step_index_ == 0) equations_.init(particles);
+    // Setup the mesh.
     if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
 
     // Setup boundary conditions.
@@ -143,7 +140,6 @@ public:
       v[a] += dt_2 * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
       if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
     });
 
     // Update particle velocity to the full step.
@@ -158,7 +154,6 @@ public:
     par::for_each(particles.fluid(), [dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a]; // Kick.
       if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt_2 * dalpha_dt[a];
     });
 
     // Apply particle shifting.
@@ -192,7 +187,7 @@ public:
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u, alpha};
+      Equations::modified_fields | TypeSet{parinfo, r, v, u};
 
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(Equations equations,
@@ -208,8 +203,7 @@ public:
     TIT_PROFILE_SECTION("RungeKuttaIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Initialize and index particles.
-    if (step_index_ == 0) equations_.init(particles);
+    // Setup the mesh.
     if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
 
     // Run the SSPRK(3,3) substeps.
@@ -252,7 +246,6 @@ private:
       v[a] += dt * dv_dt[a];
       if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
       if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
-      if constexpr (has<PV>(alpha, dalpha_dt)) alpha[a] += dt * dalpha_dt[a];
     });
   }
 
@@ -272,9 +265,6 @@ private:
           rho[out_a] = weight * rho[a] + out_weight * rho[out_a];
           if constexpr (has<PV>(u)) {
             u[out_a] = weight * u[a] + out_weight * u[out_a];
-          }
-          if constexpr (has<PV>(alpha)) {
-            alpha[out_a] = weight * alpha[a] + out_weight * alpha[out_a];
           }
         });
   }
