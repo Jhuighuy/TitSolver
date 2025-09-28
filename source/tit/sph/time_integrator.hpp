@@ -7,7 +7,6 @@
 
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/par/algorithms.hpp"
@@ -42,21 +41,20 @@ public:
   /// Construct time integrator.
   ///
   /// @param equations Equations to integrate.
-  constexpr explicit KickDriftIntegrator(Equations equations,
-                                         size_t mesh_update_freq = 10) noexcept
-      : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
+  constexpr explicit KickDriftIntegrator(Equations equations) noexcept
+      : equations_{std::move(equations)} {}
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
-            ParticleArray& particles) {
+            ParticleArray& particles) const {
     TIT_PROFILE_SECTION("EulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
     // Setup the mesh.
-    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+    equations_.index(mesh, particles);
 
     // Setup boundary conditions.
     equations_.setup_boundary(mesh, particles);
@@ -81,16 +79,11 @@ public:
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
-
-    // Increment step index.
-    step_index_ += 1;
   }
 
 private:
 
   [[no_unique_address]] Equations equations_{};
-  size_t mesh_update_freq_;
-  size_t step_index_ = 0;
 
 }; // class KickDriftIntegrator
 
@@ -112,22 +105,20 @@ public:
   /// Construct time integrator.
   ///
   /// @param equations Equations to integrate.
-  constexpr explicit KickDriftKickIntegrator(
-      Equations equations,
-      size_t mesh_update_freq = 10) noexcept
-      : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
+  constexpr explicit KickDriftKickIntegrator(Equations equations) noexcept
+      : equations_{std::move(equations)} {}
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
-            ParticleArray& particles) {
+            ParticleArray& particles) const {
     TIT_PROFILE_SECTION("LeapfrogIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
     // Setup the mesh.
-    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+    equations_.index(mesh, particles);
 
     // Setup boundary conditions.
     equations_.setup_boundary(mesh, particles);
@@ -161,16 +152,11 @@ public:
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
-
-    // Increment step index.
-    step_index_ += 1;
   }
 
 private:
 
   [[no_unique_address]] Equations equations_{};
-  size_t mesh_update_freq_;
-  size_t step_index_ = 0;
 
 }; // class KickDriftKickIntegrator
 
@@ -190,21 +176,20 @@ public:
       Equations::modified_fields | TypeSet{parinfo, r, v, u};
 
   /// Construct time integrator.
-  constexpr explicit RungeKuttaIntegrator(Equations equations,
-                                          size_t mesh_update_freq = 10) noexcept
-      : equations_{std::move(equations)}, mesh_update_freq_{mesh_update_freq} {}
+  constexpr explicit RungeKuttaIntegrator(Equations equations) noexcept
+      : equations_{std::move(equations)} {}
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
-            ParticleArray& particles) {
+            ParticleArray& particles) const {
     TIT_PROFILE_SECTION("RungeKuttaIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
     // Setup the mesh.
-    if (step_index_ % mesh_update_freq_ == 0) equations_.index(mesh, particles);
+    equations_.index(mesh, particles);
 
     // Run the SSPRK(3,3) substeps.
     /// @todo We should copy only the needed fields, and not the whole array.
@@ -220,9 +205,6 @@ public:
       equations_.compute_shifts(mesh, particles);
       par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
     }
-
-    // Increment step index.
-    step_index_ += 1;
   }
 
 private:
@@ -232,7 +214,7 @@ private:
            particle_array<required_fields> ParticleArray>
   void substep_(particle_num_t<ParticleArray> dt,
                 ParticleMesh& mesh,
-                ParticleArray& particles) {
+                ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
 
     // Calculate right hand sides for the given particle array.
@@ -270,8 +252,6 @@ private:
   }
 
   [[no_unique_address]] Equations equations_;
-  size_t mesh_update_freq_;
-  size_t step_index_ = 0;
 
 }; // class RungeKuttaIntegrator
 
