@@ -83,7 +83,7 @@ auto sph_main(CmdArgs /*args*/) -> int {
   };
 
   // Setup the time integrator.
-  RungeKuttaIntegrator time_integrator{equations};
+  const RungeKuttaIntegrator time_integrator{equations};
 
   // Setup the particles array:
   ParticleArray particles{
