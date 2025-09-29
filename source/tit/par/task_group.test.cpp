@@ -27,12 +27,14 @@ TEST_CASE("par::TaskGroup") {
     bool task_2_ran = false;
     bool task_3_ran = false;
     group.run([&task_1_ran] { task_1_ran = true; });
-    group.run(/*parallel=*/true, [&task_2_ran] { task_2_ran = true; });
+    group.run([&task_2_ran] { task_2_ran = true; }, par::RunMode::sequential);
     const auto main_thread_id = std::this_thread::get_id();
-    group.run(/*parallel=*/false, [&task_3_ran, main_thread_id] {
-      CHECK(std::this_thread::get_id() == main_thread_id);
-      task_3_ran = true;
-    });
+    group.run(
+        [&task_3_ran, main_thread_id] {
+          CHECK(std::this_thread::get_id() == main_thread_id);
+          task_3_ran = true;
+        },
+        par::RunMode::parallel);
     group.wait();
     CHECK(task_1_ran);
     CHECK(task_2_ran);
