@@ -85,15 +85,24 @@ public:
       node->index = *median_iter;
 
       // Recursively partition the halves.
-      tasks.run(is_async_(left_perm), [node, left_perm, self] {
-        if (left_perm.empty()) return;
-        node->left = self(left_perm);
-      });
-      tasks.run(is_async_(right_perm), [node, right_perm, self] {
-        // Median point is already accounted for, so we need to skip it.
-        if (right_perm.size() == 1) return;
-        node->right = self(std::span{right_perm}.subspan(1));
-      });
+      constexpr size_t min_par_size = 50;
+      tasks.run(
+          [node, left_perm, self] {
+            if (left_perm.empty()) return;
+            node->left = self(left_perm);
+          },
+          std::ranges::size(left_perm) >= min_par_size ?
+              par::RunMode::parallel :
+              par::RunMode::sequential);
+      tasks.run(
+          [node, right_perm, self] {
+            // Median point is already accounted for, so we need to skip it.
+            if (right_perm.size() == 1) return;
+            node->right = self(std::span{right_perm}.subspan(1));
+          },
+          std::ranges::size(right_perm) >= min_par_size ?
+              par::RunMode::parallel :
+              par::RunMode::sequential);
       return node;
     }(perm);
     tasks.wait();
@@ -141,12 +150,6 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 private:
-
-  // Should the building be done in parallel?
-  static auto is_async_(std::span<size_t> perm) noexcept -> bool {
-    constexpr size_t parallel_threshold = 50; // Empirical value.
-    return std::size(perm) >= parallel_threshold;
-  }
 
   struct KDTreeNode_ final {
     size_t index = 0;
