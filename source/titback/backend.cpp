@@ -3,6 +3,11 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+// Note: False-positives from Crow internals on Fedora 43.
+#if defined(__linux__) && defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
+
 #include <filesystem>
 #include <string>
 #include <utility>
