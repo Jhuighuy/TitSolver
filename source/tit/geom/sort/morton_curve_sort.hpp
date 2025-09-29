@@ -37,6 +37,7 @@ public:
     iota_perm(points, perm);
 
     // Recursively partition the points along the Morton curve.
+    // Initial axis is set to Y to match the classic Morton curve definition.
     par::TaskGroup tasks{};
     const auto impl = [&points, &tasks](this const auto& self,
                                         const Box& my_box,
@@ -52,22 +53,18 @@ public:
 
       // Recursively sort the parts along the next axis.
       const auto next_axis = (axis + 1) % point_range_dim_v<Points>;
-      tasks.run(is_async_(left_perm),
-                std::bind_front(self, left_box, left_perm, next_axis));
-      tasks.run(is_async_(right_perm),
-                std::bind_front(self, right_box, right_perm, next_axis));
+      constexpr size_t min_par_size = 50;
+      tasks.run(std::bind_front(self, left_box, left_perm, next_axis),
+                std::ranges::size(left_perm) >= min_par_size ?
+                    par::RunMode::parallel :
+                    par::RunMode::sequential);
+      tasks.run(std::bind_front(self, right_box, right_perm, next_axis),
+                std::ranges::size(right_perm) >= min_par_size ?
+                    par::RunMode::parallel :
+                    par::RunMode::sequential);
     };
-    // Initial axis is set to Y to match the classic Morton curve definition.
     impl(box, std::views::all(perm), /*axis=*/1);
     tasks.wait();
-  }
-
-private:
-
-  // Should the sorting be done in parallel?
-  static auto is_async_(const auto& perm) noexcept -> bool {
-    constexpr size_t parallel_threshold = 50; // Empirical value.
-    return std::size(perm) >= parallel_threshold;
   }
 
 }; // class MortonCurveSort

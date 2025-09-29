@@ -179,21 +179,18 @@ public:
 
       // Recursively sort the parts along the next axis.
       const auto [left_state, right_state] = state.next();
-      tasks.run(is_async_(left_perm),
-                std::bind_front(self, left_box, left_perm, left_state));
-      tasks.run(is_async_(right_perm),
-                std::bind_front(self, right_box, right_perm, right_state));
+      constexpr size_t min_par_size = 50;
+      tasks.run(std::bind_front(self, left_box, left_perm, left_state),
+                std::ranges::size(left_perm) >= min_par_size ?
+                    par::RunMode::parallel :
+                    par::RunMode::sequential);
+      tasks.run(std::bind_front(self, right_box, right_perm, right_state),
+                std::ranges::size(right_perm) >= min_par_size ?
+                    par::RunMode::parallel :
+                    par::RunMode::sequential);
     };
     impl(box, std::views::all(perm), /*state=*/{});
     tasks.wait();
-  }
-
-private:
-
-  // Should the sorting be done in parallel?
-  static auto is_async_(const auto& perm) noexcept -> bool {
-    constexpr size_t parallel_threshold = 50; // Empirical value.
-    return std::size(perm) >= parallel_threshold;
   }
 
 }; // class HilbertCurveSort

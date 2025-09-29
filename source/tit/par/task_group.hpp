@@ -12,6 +12,7 @@
 
 #include <oneapi/tbb/task_group.h>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 
 namespace tit::par {
@@ -25,31 +26,34 @@ concept task =
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Task run mode.
+enum class RunMode : uint8_t {
+  parallel,
+  sequential,
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Parallel task group.
 class TaskGroup final {
 public:
 
   /// Run the task.
-  /// @{
   template<class Task>
     requires task<Task&&>
-  void run(Task&& task) {
+  void run(Task&& task, RunMode mode = RunMode::parallel) {
     TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
-    group_->run(std::forward<Task>(task));
+    switch (mode) {
+      case RunMode::parallel:   group_->run(std::forward<Task>(task)); break;
+      case RunMode::sequential: std::invoke(std::forward<Task>(task)); break;
+      default:                  std::unreachable();
+    }
   }
-  template<class Task>
-    requires task<Task&&>
-  void run(bool parallel, Task&& task) {
-    TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
-    if (parallel) group_->run(std::forward<Task>(task));
-    else std::invoke(std::forward<Task>(task));
-  }
-  /// @}
 
   /// Wait for the group to finish.
   void wait() {
     TIT_ASSERT(group_ != nullptr, "Task group was moved away!");
-    this->group_->wait();
+    group_->wait();
   }
 
 private:
