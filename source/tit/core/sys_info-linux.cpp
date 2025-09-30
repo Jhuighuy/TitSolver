@@ -20,7 +20,6 @@
 #include "tit/core/containers/str_hash_set.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/sys_info.hpp"
-#include "tit/core/utils.hpp"
 
 namespace tit::sys_info {
 
@@ -112,9 +111,6 @@ auto cpu_perf_core_frequency() -> uint64_t {
   TIT_ENSURE(stream.good() && result_kHz > 0,
              "Failed to read valid CPU frequency from '{}'.",
              path);
-  TIT_ENSURE(in_range(result_kHz, 1'000'000, 10'000'000),
-             "CPU frequency {} kHz is outside reasonable bounds.",
-             result_kHz);
 
   return result_kHz * 1000;
 }

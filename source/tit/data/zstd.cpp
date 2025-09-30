@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <cstddef>
 #include <iterator>
 #include <span>
 #include <utility>
@@ -25,7 +26,7 @@ const size_t StreamCompressor::in_chunk_size_ = ZSTD_CStreamInSize();
 const size_t StreamCompressor::out_chunk_size_ = ZSTD_CStreamOutSize();
 // NOLINTEND(cert-err58-cpp)
 
-StreamCompressor::StreamCompressor(OutputStreamPtr<byte_t> stream)
+StreamCompressor::StreamCompressor(OutputStreamPtr<std::byte> stream)
     : stream_{std::move(stream)}, context_{ZSTD_createCCtx()} {
   TIT_ASSERT(stream_ != nullptr, "Stream is null!");
 }
@@ -34,7 +35,7 @@ void StreamCompressor::Deleter_::operator()(ZSTD_CCtx_s* context) noexcept {
   ZSTD_freeCCtx(context);
 }
 
-void StreamCompressor::write(std::span<const byte_t> data) {
+void StreamCompressor::write(std::span<const std::byte> data) {
   // Prepare the buffer.
   if (in_buffer_.capacity() == 0) in_buffer_.reserve(in_chunk_size_);
 
@@ -107,7 +108,7 @@ const size_t StreamDecompressor::in_chunk_size_ = ZSTD_DStreamInSize();
 const size_t StreamDecompressor::out_chunk_size_ = ZSTD_DStreamOutSize();
 // NOLINTEND(cert-err58-cpp)
 
-StreamDecompressor::StreamDecompressor(InputStreamPtr<byte_t> stream)
+StreamDecompressor::StreamDecompressor(InputStreamPtr<std::byte> stream)
     : stream_{std::move(stream)}, context_{ZSTD_createDCtx()} {
   TIT_ASSERT(stream_ != nullptr, "Stream is null!");
 }
@@ -116,7 +117,7 @@ void StreamDecompressor::Deleter_::operator()(ZSTD_DCtx_s* context) noexcept {
   ZSTD_freeDCtx(context);
 }
 
-auto StreamDecompressor::read(std::span<byte_t> data) -> size_t {
+auto StreamDecompressor::read(std::span<std::byte> data) -> size_t {
   TIT_ASSERT(context_ != nullptr, "ZSTD context is null!");
   TIT_ASSERT(stream_ != nullptr, "Stream is null!");
 

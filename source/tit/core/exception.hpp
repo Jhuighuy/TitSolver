@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <exception>
+#include <functional>
 #include <source_location>
 #include <string>
 #include <utility>
