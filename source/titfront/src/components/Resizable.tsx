@@ -5,7 +5,7 @@
 
 import type { FC, ReactNode } from "react";
 
-import { type Side, cn } from "~/utils";
+import { cn, type Side } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

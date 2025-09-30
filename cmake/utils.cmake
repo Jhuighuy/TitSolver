@@ -7,14 +7,8 @@ include_guard()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find chronic, either system one, either our simple implementation. It is used
-# by some analysis tools that does not provide (proper) quiet mode.
-find_program(
-  CHRONIC_EXE
-  NAMES "chronic" "chronic.sh"
-  PATHS "${CMAKE_SOURCE_DIR}/build"
-  REQUIRED
-)
+# Find chronic.
+find_program(CHRONIC_EXE NAMES "chronic" REQUIRED)
 
 # Find shell.
 find_program(SHELL_EXE NAMES "bash" "zsh" "sh" REQUIRED)
