@@ -8,7 +8,6 @@
 #include <concepts>
 
 #include "tit/core/math.hpp"
-#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -34,8 +33,8 @@ public:
   constexpr explicit Tagged(Num val) : val_{val} {}
 
   /// Get the underlying value.
-  constexpr auto get(this auto&& self) noexcept -> auto&& {
-    return TIT_FORWARD_LIKE(self, self.val_);
+  constexpr auto get() const noexcept -> const Num& {
+    return val_;
   }
 
   /// Cast number to a different type.
@@ -59,7 +58,7 @@ public:
 
   /// Number addition with assignment.
   friend constexpr auto operator+=(Tagged& a, const Tagged& b) -> Tagged& {
-    a.get() += b.get();
+    a = a + b;
     return a;
   }
 
@@ -75,7 +74,7 @@ public:
 
   /// Number subtraction with assignment.
   friend constexpr auto operator-=(Tagged& a, const Tagged& b) -> Tagged& {
-    a.get() -= b.get();
+    a = a - b;
     return a;
   }
 
@@ -86,7 +85,7 @@ public:
 
   /// Number multiplication with assignment.
   friend constexpr auto operator*=(Tagged& a, const Tagged& b) -> Tagged& {
-    a.get() *= b.get();
+    a = a * b;
     return a;
   }
 
@@ -97,7 +96,7 @@ public:
 
   /// Number division with assignment.
   friend constexpr auto operator/=(Tagged& a, const Tagged& b) -> Tagged& {
-    a.get() /= b.get();
+    a = a / b;
     return a;
   }
 

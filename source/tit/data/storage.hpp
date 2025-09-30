@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <ranges>
@@ -96,7 +97,7 @@ public:
 
   /// Open an output stream to write the data.
   /// @{
-  auto open_write() const -> OutputStreamPtr<byte_t>
+  auto open_write() const -> OutputStreamPtr<std::byte>
     requires (!std::is_const_v<Storage>)
   {
     return storage().array_data_open_write(array_id_);
@@ -111,7 +112,7 @@ public:
 
   /// Open an input stream to read the data.
   /// @{
-  auto open_read() const -> InputStreamPtr<byte_t> {
+  auto open_read() const -> InputStreamPtr<std::byte> {
     return storage().array_data_open_read(array_id_);
   }
   template<known_type_of Val>
@@ -505,7 +506,7 @@ public:
   auto create_array_id(DataSetID dataset_id,
                        std::string_view name,
                        DataType type,
-                       std::span<const byte_t> data) -> DataArrayID;
+                       std::span<const std::byte> data) -> DataArrayID;
   template<std::ranges::input_range Vals>
     requires known_type_of<std::ranges::range_value_t<Vals>>
   auto create_array_id(DataSetID dataset_id, std::string_view name, Vals&& vals)
@@ -541,7 +542,8 @@ public:
 
   /// Open an output stream to write the data of a data array.
   /// @{
-  auto array_data_open_write(DataArrayID array_id) -> OutputStreamPtr<byte_t>;
+  auto array_data_open_write(DataArrayID array_id)
+      -> OutputStreamPtr<std::byte>;
   template<known_type_of Val>
   auto array_data_open_write(DataArrayID array_id) -> OutputStreamPtr<Val> {
     TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");
@@ -552,7 +554,7 @@ public:
   /// Open an input stream to read the data of a data array.
   /// @{
   auto array_data_open_read(DataArrayID array_id) const
-      -> InputStreamPtr<byte_t>;
+      -> InputStreamPtr<std::byte>;
   template<known_type_of Val>
   auto array_data_open_read(DataArrayID array_id) const -> InputStreamPtr<Val> {
     TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");

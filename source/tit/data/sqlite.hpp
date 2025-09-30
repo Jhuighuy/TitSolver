@@ -6,7 +6,9 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <ranges>
 #include <span>
@@ -50,7 +52,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Execute a SQL statement.
-  void execute(CStrView sql) const;
+  void execute(const std::string& sql) const;
 
   /// Get the last insert row ID.
   auto last_insert_row_id() const -> RowID;
@@ -70,7 +72,7 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Blob view type.
-using BlobView = std::span<const byte_t>;
+using BlobView = std::span<const std::byte>;
 
 /// Blob argument type.
 template<class Blob>
@@ -113,9 +115,9 @@ public:
     TIT_ASSERT(sizeof...(Args) == num_params_(),
                "Number of arguments does not match the number of parameters!");
     if (state_ == State_::finished) reset();
-    size_t index = 0;
+    auto index = std::numeric_limits<size_t>::max();
     (..., [&index, this]<class Arg>(const Arg& arg) {
-      index += 1; // Statement arguments are one-based.
+      index += 1;
       if constexpr (std::integral<Arg> || std::is_enum_v<Arg>) {
         bind_(index, static_cast<int64_t>(arg));
       } else if constexpr (std::floating_point<Arg>) {
@@ -174,9 +176,9 @@ public:
   auto columns() const -> std::tuple<Columns...> {
     TIT_ASSERT(sizeof...(Columns) == num_columns_(),
                "Number of return values does not match the number of columns!");
-    size_t index = npos;
+    size_t index = std::numeric_limits<size_t>::max();
     return {[&index, this]<class Column>() {
-      index += 1; // Columns are zero-based.
+      index += 1;
       if constexpr (std::integral<Column> || std::is_enum_v<Column>) {
         return static_cast<Column>(column_int_(index));
       } else if constexpr (std::floating_point<Column>) {
@@ -238,20 +240,20 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SQLite blob reader.
-class BlobReader final : public InputStream<byte_t> {
+class BlobReader final : public InputStream<std::byte> {
 public:
 
   /// Open a blob from a database.
   BlobReader(const Database& db,
-             CStrView table_name,
-             CStrView column_name,
+             const std::string& table_name,
+             const std::string& column_name,
              RowID row_id);
 
   /// SQLite blob object.
   auto base() const noexcept -> sqlite3_blob*;
 
   /// Read the next bytes from the blob.
-  auto read(std::span<byte_t> data) -> size_t override;
+  auto read(std::span<std::byte> data) -> size_t override;
 
 private:
 
@@ -268,16 +270,16 @@ private:
 
 /// Make a blob reader.
 constexpr auto make_blob_reader(const Database& db,
-                                CStrView table_name,
-                                CStrView column_name,
-                                RowID row_id) -> InputStreamPtr<byte_t> {
+                                const std::string& table_name,
+                                const std::string& column_name,
+                                RowID row_id) -> InputStreamPtr<std::byte> {
   return std::make_unique<BlobReader>(db, table_name, column_name, row_id);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SQLite blob writer.
-class BlobWriter final : public OutputStream<byte_t> {
+class BlobWriter final : public OutputStream<std::byte> {
 public:
 
   /// Open a blob in a database.
@@ -287,7 +289,7 @@ public:
              RowID row_id);
 
   /// Write the next bytes to the blob.
-  void write(std::span<const byte_t> data) override;
+  void write(std::span<const std::byte> data) override;
 
   /// Flush the stream.
   void flush() override;
@@ -298,7 +300,7 @@ private:
   std::string table_name_;
   std::string column_name_;
   RowID row_id_;
-  std::vector<byte_t> buffer_;
+  std::vector<std::byte> buffer_;
 
 }; // class BlobWriter
 
@@ -306,7 +308,7 @@ private:
 constexpr auto make_blob_writer(Database& db,
                                 std::string_view table_name,
                                 std::string_view column_name,
-                                RowID row_id) -> OutputStreamPtr<byte_t> {
+                                RowID row_id) -> OutputStreamPtr<std::byte> {
   return make_flushable<BlobWriter>(db, table_name, column_name, row_id);
 }
 

@@ -8,7 +8,9 @@
 #include <expected>
 #include <iterator>
 #include <ranges>
+#include <span>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/range.hpp"
@@ -67,11 +69,10 @@ constexpr auto compute_center(Points&& points) -> point_range_vec_t<Points> {
   for (const auto& point : points | std::views::drop(1)) sum += point;
   return sum / count_points(points);
 }
-template<point_range Points, index_range Perm>
-constexpr auto compute_center(Points&& points, Perm&& perm)
+template<point_range Points>
+constexpr auto compute_center(Points&& points, std::span<const size_t> perm)
     -> point_range_vec_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
-  TIT_ASSUME_UNIVERSAL(Perm, perm);
   return compute_center(permuted_view(points, perm));
 }
 /// @}
@@ -88,11 +89,10 @@ constexpr auto compute_bbox(Points&& points) -> point_range_bbox_t<Points> {
   for (const auto& point : points | std::views::drop(1)) box.expand(point);
   return box;
 }
-template<point_range Points, index_range Perm>
-constexpr auto compute_bbox(Points&& points, Perm&& perm)
+template<point_range Points>
+constexpr auto compute_bbox(Points&& points, std::span<const size_t> perm)
     -> point_range_bbox_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
-  TIT_ASSUME_UNIVERSAL(Perm, perm);
   return compute_bbox(permuted_view(points, perm));
 }
 /// @}
@@ -119,11 +119,11 @@ constexpr auto compute_inertia_tensor(Points&& points)
   inertia_tensor -= outer(sum, center);
   return inertia_tensor;
 }
-template<point_range Points, index_range Perm>
-constexpr auto compute_inertia_tensor(Points&& points, Perm&& perm)
+template<point_range Points>
+constexpr auto compute_inertia_tensor(Points&& points,
+                                      std::span<const size_t> perm)
     -> point_range_mat_t<Points> {
   TIT_ASSUME_UNIVERSAL(Points, points);
-  TIT_ASSUME_UNIVERSAL(Perm, perm);
   return compute_inertia_tensor(permuted_view(points, perm));
 }
 /// @}
@@ -143,11 +143,11 @@ constexpr auto compute_largest_inertia_axis(Points&& points)
     return V[max_value_index(d)];
   });
 }
-template<point_range Points, index_range Perm>
-constexpr auto compute_largest_inertia_axis(Points&& points, Perm&& perm)
+template<point_range Points>
+constexpr auto compute_largest_inertia_axis(Points&& points,
+                                            std::span<const size_t> perm)
     -> std::expected<point_range_vec_t<Points>, MatEigError> {
   TIT_ASSUME_UNIVERSAL(Points, points);
-  TIT_ASSUME_UNIVERSAL(Perm, perm);
   return compute_largest_inertia_axis(permuted_view(points, perm));
 }
 /// @}

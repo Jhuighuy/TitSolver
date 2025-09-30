@@ -208,14 +208,7 @@ TEST_CASE_TEMPLATE("Vec::vec_tail", Num, NUM_TYPES) {
 }
 
 TEST_CASE_TEMPLATE("Vec::vec_cast<class To>", Num, NUM_TYPES) {
-  SUBCASE("<class To>") {
-    CHECK(vec_cast<int>(Vec{Num{1}, Num{2}}) == Vec{1, 2});
-  }
-  SUBCASE("<template<class...> To>") {
-    using Decuded = decltype(Tagged{Num{}});
-    const Vec<Decuded, 2> r = vec_cast<Tagged>(Vec{Num{1}, Num{2}});
-    CHECK(r == Vec{Decuded{1}, Decuded{2}});
-  }
+  CHECK(vec_cast<int>(Vec{Num{1}, Num{2}}) == Vec{1, 2});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

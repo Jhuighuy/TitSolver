@@ -5,6 +5,7 @@
 
 #include <array>
 
+#include "tit/core/basic_types.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
@@ -40,7 +41,7 @@ TEST_CASE("geom::compute_center") {
     CHECK(geom::compute_center(points) == expected_center);
   }
   SUBCASE("permuted") {
-    constexpr std::array perm{1, 2, 0};
+    constexpr auto perm = std::to_array<size_t>({1, 2, 0});
     CHECK(geom::compute_center(points, perm) == expected_center);
   }
 }
@@ -56,7 +57,7 @@ TEST_CASE("geom::compute_bbox") {
     CHECK(box.high() == expected_bbox.high());
   }
   SUBCASE("permuted") {
-    constexpr std::array perm{1, 2, 0};
+    constexpr auto perm = std::to_array<size_t>({1, 2, 0});
     const auto box = geom::compute_bbox(points, perm);
     CHECK(box.low() == expected_bbox.low());
     CHECK(box.high() == expected_bbox.high());
@@ -73,7 +74,7 @@ TEST_CASE("geom::compute_inertia_tensor") {
     CHECK(tensor == expected_tensor);
   }
   SUBCASE("permuted") {
-    constexpr std::array perm{1, 2, 0};
+    constexpr auto perm = std::to_array<size_t>({1, 2, 0});
     const auto tensor = geom::compute_inertia_tensor(points, perm);
     CHECK(tensor == expected_tensor);
   }
@@ -88,7 +89,7 @@ TEST_CASE("geom::compute_largest_inertia_axis") {
     CHECK_APPROX_EQ(normalize(*axis), expected_axis);
   }
   SUBCASE("permuted") {
-    constexpr std::array perm{1, 2, 0};
+    constexpr auto perm = std::to_array<size_t>({1, 2, 0});
     const auto axis = geom::compute_largest_inertia_axis(points, perm);
     REQUIRE(axis);
     CHECK_APPROX_EQ(normalize(*axis), expected_axis);
