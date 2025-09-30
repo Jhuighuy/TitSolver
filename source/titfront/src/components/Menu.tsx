@@ -5,11 +5,11 @@
 
 import { cva } from "class-variance-authority";
 import {
+  createContext,
   type FC,
   Fragment,
   type ReactElement,
   type ReactNode,
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -21,7 +21,7 @@ import { FiMinimize as MinimizeIcon } from "react-icons/fi";
 
 import { Resizable } from "~/components/Resizable";
 import { useMenuStore } from "~/stores/LayoutStore";
-import { assert, type Side, cn, iota } from "~/utils";
+import { assert, cn, iota, type Side } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -147,7 +147,7 @@ export const Menu: FC<MenuProps> & { Item: FC<MenuItemProps> } = ({
             {children.map(
               (item, index) =>
                 item.props.group === group && (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                  // biome-ignore lint/suspicious/noArrayIndexKey: .
                   <Fragment key={index}>
                     <button
                       type="button"
