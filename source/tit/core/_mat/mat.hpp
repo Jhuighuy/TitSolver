@@ -260,20 +260,6 @@ constexpr auto approx_equal_to(const Mat<Num, Dim>& A,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Serialize a matrix into the output stream.
-template<class Stream, class Num, size_t Dim>
-constexpr void serialize(Stream& out, const Mat<Num, Dim>& mat) {
-  serialize(out, mat.rows());
-}
-
-/// Deserialize a matrix from the input stream.
-template<class Stream, class Num, size_t Dim>
-constexpr auto deserialize(Stream& in, Mat<Num, Dim>& mat) -> bool {
-  return deserialize(in, mat.rows());
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace tit
 
 // Matrix formatter.

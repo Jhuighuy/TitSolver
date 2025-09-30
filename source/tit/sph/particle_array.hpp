@@ -196,14 +196,10 @@ public:
   /// Write a particle array into a data series.
   void write(field_value_t<h_t, Space> time,
              data::DataSeriesView<data::DataStorage> series) const {
-    auto time_step = series.create_time_step(static_cast<float64_t>(time));
-    auto uniforms = time_step.uniforms();
-    ParticleArray::uniform_fields.for_each([&uniforms, this](auto field) {
-      uniforms.create_array(field.field_name, std::span{&field[*this], 1});
-    });
-    auto varyings = time_step.varyings();
-    ParticleArray::varying_fields.for_each([&varyings, this](auto field) {
-      varyings.create_array(field.field_name, field[*this]);
+    auto frame = series.create_frame(static_cast<float64_t>(time));
+    ParticleArray::varying_fields.for_each([&frame, this](auto field) {
+      const auto array = frame.create_array(field.field_name);
+      array.write(field[*this]);
     });
   }
 

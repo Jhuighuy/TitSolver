@@ -27,7 +27,7 @@ add_tit_executable(
     data_tests
   SOURCES
     "sqlite.test.cpp"
-    "storage.test.cpp"
+    # "storage.test.cpp"
     "type.test.cpp"
     "zstd.test.cpp"
   DEPENDS

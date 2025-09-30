@@ -95,9 +95,9 @@ class Server(QObject):
     message = request.get("message")
     response: Any = {"requestID": request.get("requestID")}
     if message and message.startswith("#"):
-      response.update(self.__process_get_time_step_message(message))
+      response.update(self.__process_get_frame_message(message))
     elif not message:
-      response.update(self.__process_get_num_time_steps_message(message))
+      response.update(self.__process_get_num_frames_message(message))
     else:
       response.update(self.__process_execute_message(message))
 
@@ -105,7 +105,7 @@ class Server(QObject):
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  def __process_get_num_time_steps_message(self, message: str) -> Response:
+  def __process_get_num_frames_message(self, message: str) -> Response:
     assert not message
 
     if self.__storage is None:
@@ -113,12 +113,12 @@ class Server(QObject):
 
     return {
         "status": "success",
-        "result": self.__storage.last_series.num_time_steps,
+        "result": self.__storage.last_series.num_frames,
     }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  def __process_get_time_step_message(self, message: str) -> Response:
+  def __process_get_frame_message(self, message: str) -> Response:
     assert message.startswith("#")
 
     if self.__storage is None:
@@ -127,24 +127,24 @@ class Server(QObject):
     try:
       index = int(message[1:])
     except ValueError:
-      return {"status": "error", "result": "Invalid time step index."}
+      return {"status": "error", "result": "Invalid frame index."}
 
-    num_steps = self.__storage.last_series.num_time_steps
+    num_steps = self.__storage.last_series.num_frames
     if index < 0 or index >= num_steps:
       return {
           "status": "error",
           "result": f"Index {index} out of range [0, {num_steps})."
       }
 
-    iterator = self.__storage.last_series.time_steps()
+    iterator = self.__storage.last_series.frames()
     if index > 0:
       while index > 0:
         next(iterator)
         index -= 1
 
-    varyings = next(iterator).varyings
+    frame = next(iterator)
     result = {}
-    for array in varyings.arrays():
+    for array in frame.arrays():
       data = array.data
       result[array.name] = {
           "min": float(data.min()),

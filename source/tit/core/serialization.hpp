@@ -5,22 +5,53 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <ranges>
 #include <span>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/range.hpp"
+#include "tit/core/mat.hpp"
 #include "tit/core/stream.hpp"
-#include "tit/core/tuple.hpp"
+#include "tit/core/vec.hpp"
 
 namespace tit {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Convert a value to a byte array.
+template<class T>
+  requires std::is_trivially_copyable_v<T>
+constexpr auto to_byte_array(const T& value)
+    -> std::array<std::byte, sizeof(T)> {
+  return std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
+}
+
+/// Convert a value to a byte vector.
+template<class T>
+  requires std::is_trivially_copyable_v<T>
+constexpr auto to_bytes(const T& value) -> std::vector<std::byte> {
+  const auto bytes_array = to_byte_array(value);
+  return {bytes_array.begin(), bytes_array.end()};
+}
+
+/// Convert a byte array to a value.
+template<class T>
+  requires std::is_trivially_copyable_v<T>
+constexpr auto from_bytes(std::span<const std::byte> bytes) -> T {
+  TIT_ASSERT(bytes.size() >= sizeof(T), "Invalid byte array size!");
+  std::array<std::byte, sizeof(T)> bytes_array{};
+  std::ranges::copy(bytes, bytes_array.begin());
+  return std::bit_cast<T>(bytes_array);
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,6 +86,91 @@ constexpr auto deserialize(Stream& in, Item& item) -> bool {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace impl {
+
+template<class Tuple>
+concept has_tuple_size =
+    requires { typename std::tuple_size<Tuple>::type; } &&
+    std::derived_from<std::tuple_size<Tuple>,
+                      std::integral_constant<size_t, std::tuple_size_v<Tuple>>>;
+
+template<class Tuple, size_t Index>
+concept has_tuple_element = //
+    requires {
+      typename std::tuple_element_t<Index, std::remove_const_t<Tuple>>;
+    } && requires (Tuple& tuple) {
+      {
+        std::get<Index>(tuple)
+      } -> std::convertible_to<const std::tuple_element_t<Index, Tuple>&>;
+    };
+
+template<class Tuple, size_t Size>
+concept tuple_size_is =
+    has_tuple_size<Tuple> && (std::tuple_size_v<Tuple> == Size);
+
+template<class Tuple, size_t Index, class Elem>
+concept tuple_element_is =
+    has_tuple_element<Tuple, Index> &&
+    std::constructible_from<Elem, std::tuple_element_t<Index, Tuple>>;
+
+template<class Tuple, class... Items>
+concept tuple_like =
+    std::is_object_v<Tuple> && impl::has_tuple_size<Tuple> &&
+    []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
+      return (impl::has_tuple_element<Tuple, Indices> && ...);
+    }(std::make_index_sequence<std::tuple_size_v<Tuple>>()) &&
+    ((sizeof...(Items) == 0) ||
+     (impl::tuple_size_is<Tuple, sizeof...(Items)> &&
+      []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
+        return (impl::tuple_element_is<Tuple, Indices, Items> && ...);
+      }(std::make_index_sequence<sizeof...(Items)>())));
+
+} // namespace impl
+
+/// Serialize a tuple of values into the output stream.
+template<impl::tuple_like Tuple, class Stream>
+constexpr void serialize(Stream& out, const Tuple& tuple) {
+  std::apply([&out](const auto&... items) { serialize(out, items...); }, tuple);
+}
+
+/// Deserialize a tuple of values from the input stream.
+template<impl::tuple_like Tuple, class Stream>
+constexpr auto deserialize(Stream& in, Tuple& tuple) -> bool {
+  return std::apply(
+      [&in](auto&... items) { return (deserialize(in, items...)); },
+      tuple);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Serialize a vector into the output stream.
+template<class Stream, class Num, size_t Dim>
+constexpr void serialize(Stream& out, const Vec<Num, Dim>& vec) {
+  serialize(out, vec.elems());
+}
+
+/// Deserialize a vector from the input stream.
+template<class Stream, class Num, size_t Dim>
+constexpr auto deserialize(Stream& in, Vec<Num, Dim>& vec) -> bool {
+  return deserialize(in, vec.elems());
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Serialize a matrix into the output stream.
+template<class Stream, class Num, size_t Dim>
+constexpr void serialize(Stream& out, const Mat<Num, Dim>& mat) {
+  serialize(out, mat.rows());
+}
+
+/// Deserialize a matrix from the input stream.
+template<class Stream, class Num, size_t Dim>
+constexpr auto deserialize(Stream& in, Mat<Num, Dim>& mat) -> bool {
+  return deserialize(in, mat.rows());
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Serialize multiple values into the output stream.
 template<class Stream, class... Items>
   requires (sizeof...(Items) > 1)
@@ -71,22 +187,6 @@ constexpr auto deserialize(Stream& in,
   if (!deserialize(in, first_item)) return false;
   if ((deserialize(in, rest_items) && ...)) return true;
   deserialization_failed();
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Serialize a tuple of values into the output stream.
-template<tuple_like Tuple, class Stream>
-constexpr void serialize(Stream& out, const Tuple& tuple) {
-  std::apply([&out](const auto&... items) { serialize(out, items...); }, tuple);
-}
-
-/// Deserialize a tuple of values from the input stream.
-template<tuple_like Tuple, class Stream>
-constexpr auto deserialize(Stream& in, Tuple& tuple) -> bool {
-  return std::apply(
-      [&in](auto&... items) { return (deserialize(in, items...)); },
-      tuple);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
