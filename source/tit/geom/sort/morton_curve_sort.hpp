@@ -6,11 +6,12 @@
 #pragma once
 
 #include <functional>
+#include <numeric>
 #include <ranges>
+#include <span>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
@@ -25,16 +26,15 @@ class MortonCurveSort final {
 public:
 
   /// Order the points along the Morton space filling curve.
-  template<point_range Points, output_index_range Perm>
-  void operator()(Points&& points, Perm&& perm) const {
+  template<point_range Points>
+  void operator()(Points&& points, std::span<size_t> perm) const {
     TIT_PROFILE_SECTION("MortonCurveSort::operator()");
     TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Perm, perm);
     using Box = point_range_bbox_t<Points>;
 
     // Initialize sorting.
     const auto box = compute_bbox(points);
-    iota_perm(points, perm);
+    std::ranges::iota(perm, size_t{0});
 
     // Recursively partition the points along the Morton curve.
     // Initial axis is set to Y to match the classic Morton curve definition.

@@ -3,13 +3,13 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstdlib>
 #include <source_location>
 #include <string_view>
 
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/runtime.hpp"
 
 namespace tit::impl {
 
@@ -35,8 +35,8 @@ namespace tit::impl {
   eprintln();
   eprintln("{}", boost::stacktrace::stacktrace{});
 
-  // Fast-exit with failure.
-  fast_exit(ExitCode{1});
+  // Abort execution.
+  std::abort();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

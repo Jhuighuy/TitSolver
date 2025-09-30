@@ -19,7 +19,6 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/partition.hpp"
@@ -187,7 +186,8 @@ private:
   template<particle_array ParticleArray>
   void partition_(ParticleArray& particles, size_t num_levels = 2) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
-    TIT_ASSERT(in_range_ex(num_levels, 0, PartVec::MaxNumLevels),
+    TIT_ASSERT(num_levels > 0, "Number of levels must be positive!");
+    TIT_ASSERT(num_levels < PartVec::MaxNumLevels,
                "Number of levels exceeds the predefined maximum!");
 
     // Initialize the partitioning.
@@ -239,8 +239,7 @@ private:
             interface.end());
       };
       if (is_first_level) {
-        const auto all_particles = iota_perm(particles.all());
-        update_interface(all_particles);
+        update_interface(std::views::iota(size_t{0}, particles.size()));
       } else {
         interface.swap(prev_interface);
         update_interface(prev_interface);

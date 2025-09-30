@@ -4,14 +4,15 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <cstdlib>
 #include <memory>
 #include <ranges>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/containers/str_hash_map.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/runtime.hpp"
 #include "tit/core/stats.hpp"
 
 namespace tit {
@@ -21,10 +22,11 @@ namespace tit {
 bool Stats::enabled_ = false;
 StrHashMap<std::unique_ptr<BaseStatsVar>> Stats::vars_;
 
-void Stats::enable() noexcept {
+void Stats::enable() {
   // Report at exit.
   enabled_ = true;
-  checked_atexit(&report_);
+  const auto status = std::atexit(&report_);
+  TIT_ENSURE(status == 0, "Unable to register at-exit callback!");
 }
 
 void Stats::report_() {

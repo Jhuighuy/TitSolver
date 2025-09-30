@@ -3,6 +3,7 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
 #include <filesystem>
 #include <string>
 #include <utility>
@@ -18,7 +19,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
-#include "tit/core/path.hpp"
 #include "tit/core/type.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/main/main.hpp"
@@ -29,8 +29,8 @@ namespace json = nlohmann;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void tit_main(CmdArgs /*args*/) {
-  const auto exe_dir = exe_path().parent_path();
+void tit_main(CmdArgs args) {
+  const auto exe_dir = std::filesystem::path{args.argv()[0]}.parent_path();
   const auto root_dir = exe_dir.parent_path();
 
   // Load the storage.
@@ -51,7 +51,7 @@ void tit_main(CmdArgs /*args*/) {
         const auto varyings = storage.last_series().last_time_step().varyings();
         for (const auto* var : {"r", "rho"}) {
           const auto r = varyings.find_array(var);
-          std::vector<byte_t> r_data(r->size() * r->type().width());
+          std::vector<std::byte> r_data(r->size() * r->type().width());
           r->open_read()->read(r_data);
           response["result"][var] = std::span{
               safe_bit_ptr_cast<const double*>(std::as_const(r_data).data()),

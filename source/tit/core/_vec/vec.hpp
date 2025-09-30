@@ -17,7 +17,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
-#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -84,11 +83,11 @@ public:
   }
 
   /// Construct a vector with elements @p qs.
+  /// @todo We should get rid of conversion `Num(std::forward<Args>(qs))`.
   template<class... Args>
     requires (Dim > 1) && (sizeof...(Args) == Dim) &&
              (std::constructible_from<Num, Args &&> && ...)
-  constexpr Vec(Args&&... qs) // NOSONAR
-      : col_{make_array<Dim, Num>(std::forward<Args>(qs)...)} {}
+  constexpr Vec(Args&&... qs) : col_{Num(std::forward<Args>(qs))...} {}
 
   /// Vector dimensionality.
   constexpr auto dim() const -> ssize_t {
@@ -368,7 +367,6 @@ constexpr auto vec_tail(const Vec<Num, Dim>& a) -> Vec<Num, Dim - HeadDim> {
 }
 
 /// Element-wise vector cast.
-/// @{
 template<class To, class From, size_t Dim>
 constexpr auto vec_cast(const Vec<From, Dim>& a) -> Vec<To, Dim> {
   Vec<To, Dim> r;
@@ -381,12 +379,6 @@ constexpr auto vec_cast(const Vec<From, Dim>& a) -> Vec<To, Dim> {
   for (size_t i = 0; i < Dim; ++i) r[i] = static_cast<To>(a[i]);
   return r;
 }
-template<template<class...> class To, class From, size_t Dim>
-constexpr auto vec_cast(const Vec<From, Dim>& a)
-    -> Vec<decltype(To{std::declval<From>()}), Dim> {
-  return vec_cast<decltype(To{std::declval<From>()})>(a);
-}
-/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -664,15 +656,14 @@ constexpr auto approx_equal_to(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
 /// Vector cross product.
 ///
 /// @returns 3D vector with a result of cross product.
-template<class Num, size_t Dim>
-  requires (in_range(Dim, 1, 3))
-constexpr auto cross(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+template<class Num>
+constexpr auto cross(const Vec<Num, 3>& a, const Vec<Num, 3>& b)
     -> Vec<Num, 3> {
-  Vec<Num, 3> r{};
-  if constexpr (Dim == 3) r[0] = a[1] * b[2] - a[2] * b[1];
-  if constexpr (Dim == 3) r[1] = a[2] * b[0] - a[0] * b[2];
-  if constexpr (Dim >= 2) r[2] = a[0] * b[1] - a[1] * b[0];
-  return r;
+  return Vec<Num, 3>{
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+  };
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

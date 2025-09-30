@@ -23,3 +23,22 @@ Stack trace:
   8 0x7f7ac86115f5
   9 0x7f7ac86116a8 __libc_start_main
  10 0x401275 _start
+
+
+
+Aborted (SIGABRT).
+
+
+Stack trace:
+
+0   tit_main_catch_check_test           0x0000000100d34a58 _ZZN3tit12_GLOBAL__N_1L21setup_signal_handlersEvENKUliE_clEi.constprop.0 + 312
+1   tit_main_catch_check_test           0x0000000100d34b94 _ZZN3tit12_GLOBAL__N_1L21setup_signal_handlersEvENUliE_4_FUNEi + 12
+2   libsystem_platform.dylib            0x00000001813a56a4 _sigtramp + 56
+3   libsystem_pthread.dylib             0x000000018136b848 pthread_kill + 296
+4   libsystem_c.dylib                   0x00000001812749e4 abort + 124
+5   tit_main_catch_check_test           0x0000000100d445ac _ZN3tit4impl20report_check_failureESt17basic_string_viewIcSt11char_traitsIcEES4_St15source_location + 1612
+6   tit_main_catch_check_test           0x0000000100d33660 _ZN3tit12_GLOBAL__N_1L6func_2Ev + 0
+7   tit_main_catch_check_test           0x0000000100d33688 _ZN3tit12_GLOBAL__N_1L6func_1Ev.lto_priv.0 + 0
+8   tit_main_catch_check_test           0x0000000100d336b0 _ZN3tit12_GLOBAL__N_1L6func_1Ev.lto_priv.0 + 40
+9   tit_main_catch_check_test           0x0000000100d9a4e8 main + 680
+10  dyld                                0x0000000180fcab98 start + 6076
