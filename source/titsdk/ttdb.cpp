@@ -41,8 +41,8 @@ uint32_t ttdb_type__dim(ttdb_type_t type) {
 
 struct ttdb_array {
   std::shared_ptr<DataStorage> storage;
-  std::string name;
   DataArrayID array_id;
+  std::string name;
 };
 
 void ttdb_array__close(ttdb_array_t* array) {
@@ -76,15 +76,16 @@ void ttdb_array__read(ttdb_array_t* array, void* data) {
     TIT_ENSURE(data != nullptr, "Data pointer is null.");
     const auto type = array->storage->array_type(array->array_id);
     const auto size = array->storage->array_size(array->array_id);
-    array->storage->array_data_open_read(array->array_id)
-        ->read(std::span{static_cast<std::byte*>(data), size * type.width()});
+    array->storage->array_read(
+        array->array_id,
+        std::span{static_cast<std::byte*>(data), size * type.width()});
     return 0;
   });
 }
 
 struct ttdb_array_iter {
   std::shared_ptr<DataStorage> storage;
-  InputStreamPtr<std::pair<std::string, DataArrayID>> array_ids;
+  InputStreamPtr<DataArrayID> array_ids;
 };
 
 void ttdb_array_iter__close(ttdb_array_iter_t* iter) {
@@ -94,114 +95,81 @@ void ttdb_array_iter__close(ttdb_array_iter_t* iter) {
 ttdb_array_t* ttdb_array_iter__next(ttdb_array_iter_t* iter) {
   return safe_call([iter] -> ttdb_array_t* {
     TIT_ENSURE(iter != nullptr, "Array iterator pointer is null.");
-    std::pair<std::string, DataArrayID> name_and_id{};
-    if (iter->array_ids->read({&name_and_id, 1}) != 1) return nullptr;
+    DataArrayID id{0};
+    if (iter->array_ids->read({&id, 1}) != 1) return nullptr;
     return new ttdb_array{
         .storage = iter->storage,
-        .name = std::move(name_and_id.first),
-        .array_id = name_and_id.second,
+        .array_id = id,
+        .name = iter->storage->array_name(id),
     };
   });
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-struct ttdb_dataset {
+struct ttdb_frame {
   std::shared_ptr<DataStorage> storage;
-  DataSetID dataset_id;
+  DataFrameID frame_id;
 };
 
-void ttdb_dataset__close(ttdb_dataset_t* dataset) {
-  delete dataset;
+void ttdb_frame__close(ttdb_frame_t* frame) {
+  delete frame;
 }
 
-uint64_t ttdb_dataset__num_arrays(ttdb_dataset_t* dataset) {
-  return safe_call([dataset] {
-    TIT_ENSURE(dataset != nullptr, "Dataset pointer is null.");
-    return dataset->storage->dataset_num_arrays(dataset->dataset_id);
+double ttdb_frame__time(ttdb_frame_t* frame) {
+  return safe_call([frame] {
+    TIT_ENSURE(frame != nullptr, "Frame pointer is null.");
+    return frame->storage->frame_time(frame->frame_id);
   });
 }
 
-ttdb_array_t* ttdb_dataset__find_array(ttdb_dataset_t* dataset,
-                                       const char* name) {
-  return safe_call([dataset, name] -> ttdb_array_t* {
-    TIT_ENSURE(dataset != nullptr, "Dataset pointer is null.");
+uint64_t ttdb_frame__num_arrays(ttdb_frame_t* frame) {
+  return safe_call([frame] {
+    TIT_ENSURE(frame != nullptr, "Frame pointer is null.");
+    return frame->storage->frame_num_arrays(frame->frame_id);
+  });
+}
+
+ttdb_array_t* ttdb_frame__find_array(ttdb_frame_t* frame, const char* name) {
+  return safe_call([frame, name] -> ttdb_array_t* {
+    TIT_ENSURE(frame != nullptr, "Frame pointer is null.");
     TIT_ENSURE(name != nullptr, "Name pointer is null.");
-    const auto id = dataset->storage->find_array_id(dataset->dataset_id, name);
+    const auto id = frame->storage->frame_find_array_id(frame->frame_id, name);
     if (!id.has_value()) return nullptr;
     return new ttdb_array{
-        .storage = dataset->storage,
-        .name = name,
+        .storage = frame->storage,
         .array_id = id.value(),
+        .name = name,
     };
   });
 }
 
-ttdb_array_iter_t* ttdb_dataset__arrays(ttdb_dataset_t* dataset) {
-  return safe_call([dataset] {
-    TIT_ENSURE(dataset != nullptr, "Dataset pointer is null.");
+ttdb_array_iter_t* ttdb_frame__arrays(ttdb_frame_t* frame) {
+  return safe_call([frame] {
+    TIT_ENSURE(frame != nullptr, "Frame pointer is null.");
     return new ttdb_array_iter{
-        .storage = dataset->storage,
-        .array_ids = dataset->storage->dataset_array_ids(dataset->dataset_id),
+        .storage = frame->storage,
+        .array_ids = make_range_input_stream(
+            frame->storage->frame_array_ids(frame->frame_id)),
     };
   });
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-struct ttdb_time_step {
+struct ttdb_frame_iter {
   std::shared_ptr<DataStorage> storage;
-  DataTimeStepID time_step_id;
+  InputStreamPtr<DataFrameID> frame_ids;
 };
 
-void ttdb_time_step__close(ttdb_time_step_t* time_step) {
-  delete time_step;
-}
-
-double ttdb_time_step__time(ttdb_time_step_t* time_step) {
-  return safe_call([time_step] {
-    TIT_ENSURE(time_step != nullptr, "Time step pointer is null.");
-    return time_step->storage->time_step_time(time_step->time_step_id);
-  });
-}
-
-ttdb_dataset_t* ttdb_time_step__uniforms(ttdb_time_step_t* time_step) {
-  return safe_call([time_step] {
-    TIT_ENSURE(time_step != nullptr, "Time step pointer is null.");
-    return new ttdb_dataset{
-        .storage = time_step->storage,
-        .dataset_id =
-            time_step->storage->time_step_uniforms_id(time_step->time_step_id),
-    };
-  });
-}
-
-ttdb_dataset_t* ttdb_time_step__varyings(ttdb_time_step_t* time_step) {
-  return safe_call([time_step] {
-    TIT_ENSURE(time_step != nullptr, "Time step pointer is null.");
-    return new ttdb_dataset{
-        .storage = time_step->storage,
-        .dataset_id =
-            time_step->storage->time_step_varyings_id(time_step->time_step_id),
-    };
-  });
-}
-
-struct ttdb_time_step_iter {
-  std::shared_ptr<DataStorage> storage;
-  InputStreamPtr<DataTimeStepID> time_step_ids;
-};
-
-void ttdb_time_step_iter__close(ttdb_time_step_iter_t* iter) {
+void ttdb_frame_iter__close(ttdb_frame_iter_t* iter) {
   delete iter;
 }
 
-ttdb_time_step_t* ttdb_time_step_iter__next(ttdb_time_step_iter_t* iter) {
-  return safe_call([iter] -> ttdb_time_step_t* {
-    TIT_ENSURE(iter != nullptr, "Time step iterator pointer is null.");
-    DataTimeStepID id{0};
-    if (iter->time_step_ids->read({&id, 1}) != 1) return nullptr;
-    return new ttdb_time_step{.storage = iter->storage, .time_step_id = id};
+ttdb_frame_t* ttdb_frame_iter__next(ttdb_frame_iter_t* iter) {
+  return safe_call([iter] -> ttdb_frame_t* {
+    TIT_ENSURE(iter != nullptr, "Frame iterator pointer is null.");
+    DataFrameID id{0};
+    if (iter->frame_ids->read({&id, 1}) != 1) return nullptr;
+    return new ttdb_frame{.storage = iter->storage, .frame_id = id};
   });
 }
 
@@ -216,31 +184,30 @@ void ttdb_series__close(ttdb_series_t* series) {
   delete series;
 }
 
-uint64_t ttdb_series__num_time_steps(ttdb_series_t* series) {
+uint64_t ttdb_series__num_frames(ttdb_series_t* series) {
   return safe_call([series] {
     TIT_ENSURE(series != nullptr, "Series pointer is null.");
-    return series->storage->series_num_time_steps(series->series_id);
+    return series->storage->series_num_frames(series->series_id);
   });
 }
 
-ttdb_time_step_t* ttdb_series__last_time_step(ttdb_series_t* series) {
+ttdb_frame_t* ttdb_series__last_frame(ttdb_series_t* series) {
   return safe_call([series] {
     TIT_ENSURE(series != nullptr, "Series pointer is null.");
-    return new ttdb_time_step{
+    return new ttdb_frame{
         .storage = series->storage,
-        .time_step_id =
-            series->storage->series_last_time_step_id(series->series_id),
+        .frame_id = series->storage->series_last_frame_id(series->series_id),
     };
   });
 }
 
-ttdb_time_step_iter_t* ttdb_series__time_steps(ttdb_series_t* series) {
+ttdb_frame_iter_t* ttdb_series__frames(ttdb_series_t* series) {
   return safe_call([series] {
     TIT_ENSURE(series != nullptr, "Series pointer is null.");
-    return new ttdb_time_step_iter{
+    return new ttdb_frame_iter{
         .storage = series->storage,
-        .time_step_ids =
-            series->storage->series_time_step_ids(series->series_id),
+        .frame_ids = make_range_input_stream(
+            series->storage->series_frame_ids(series->series_id)),
     };
   });
 }
@@ -303,7 +270,7 @@ ttdb_series_iter_t* ttdb__series(ttdb_t* db) {
     TIT_ENSURE(db != nullptr, "Database pointer is null.");
     return new ttdb_series_iter{
         .storage = db->storage,
-        .series_ids = db->storage->series_ids(),
+        .series_ids = make_range_input_stream(db->storage->series_ids()),
     };
   });
 }

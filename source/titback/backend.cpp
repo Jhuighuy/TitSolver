@@ -8,10 +8,9 @@
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
 
-#include <cstddef>
 #include <filesystem>
+#include <span>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <crow/app.h>
@@ -53,13 +52,12 @@ void tit_main(CmdArgs args) {
         json::json response;
         response["status"] = "success";
         response["requestID"] = request["requestID"];
-        const auto varyings = storage.last_series().last_time_step().varyings();
+        const auto frame = storage.last_series().last_frame();
         for (const auto* var : {"r", "rho"}) {
-          const auto r = varyings.find_array(var);
-          std::vector<std::byte> r_data(r->size() * r->type().width());
-          r->open_read()->read(r_data);
+          const auto r = frame.find_array(var);
+          const auto r_data = r->read();
           response["result"][var] = std::span{
-              safe_bit_ptr_cast<const double*>(std::as_const(r_data).data()),
+              safe_bit_ptr_cast<const double*>(r_data.data()),
               r_data.size() / sizeof(double),
           };
         }

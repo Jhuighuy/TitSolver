@@ -1,6 +1,6 @@
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
- * Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
- * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+ * Part of BlueTit Solver, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #pragma once
@@ -8,19 +8,19 @@
 #include <concepts>
 #include <cstddef>
 #include <filesystem>
+#include <generator>
 #include <optional>
 #include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <utility>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/core/stream.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/data/sqlite.hpp"
 #include "tit/data/type.hpp"
 
@@ -31,11 +31,8 @@ namespace tit::data {
 /// Data series ID type.
 enum class DataSeriesID : sqlite::RowID {};
 
-/// Data time step ID type.
-enum class DataTimeStepID : sqlite::RowID {};
-
-/// Dataset ID type.
-enum class DataSetID : sqlite::RowID {};
+/// Data frame ID type.
+enum class DataFrameID : sqlite::RowID {};
 
 /// Data array ID type.
 enum class DataArrayID : sqlite::RowID {};
@@ -85,6 +82,11 @@ public:
     return lhs.array_id_ == rhs.array_id_;
   }
 
+  /// Get the name of the data array.
+  auto name() const -> std::string {
+    return storage().array_name(array_id_);
+  }
+
   /// Get the data type of the data array.
   auto type() const -> DataType {
     return storage().array_type(array_id_);
@@ -95,29 +97,36 @@ public:
     return storage().array_size(array_id_);
   }
 
-  /// Open an output stream to write the data.
+  /// Write data to the data array.
   /// @{
-  auto open_write() const -> OutputStreamPtr<std::byte>
-    requires (!std::is_const_v<Storage>)
-  {
-    return storage().array_data_open_write(array_id_);
+  void write(DataType type, std::span<const std::byte> data) const {
+    storage().array_write(array_id_, type, data);
   }
-  template<known_type_of Val>
-  auto open_write() const -> OutputStreamPtr<Val>
-    requires (!std::is_const_v<Storage>)
-  {
-    return storage().template array_data_open_write<Val>(array_id_);
+  template<std::ranges::sized_range Range>
+    requires std::ranges::contiguous_range<Range> &&
+             known_type_of<std::ranges::range_value_t<Range>>
+  void write(Range&& data) const {
+    storage().array_write(array_id_, std::forward<Range>(data));
   }
   /// @}
 
-  /// Open an input stream to read the data.
+  /// Read data from the data array.
   /// @{
-  auto open_read() const -> InputStreamPtr<std::byte> {
-    return storage().array_data_open_read(array_id_);
+  void read(std::span<std::byte> data) const {
+    storage().array_read(array_id_, data);
+  }
+  auto read() const -> std::vector<std::byte> {
+    return storage().array_read(array_id_);
+  }
+  template<std::ranges::sized_range Range>
+    requires std::ranges::contiguous_range<Range> &&
+             known_type_of<std::ranges::range_value_t<Range>>
+  void read(Range&& data) const {
+    storage().array_read(array_id_, std::forward<Range>(data));
   }
   template<known_type_of Val>
-  auto open_read() const -> InputStreamPtr<Val> {
-    return storage().template array_data_open_read<Val>(array_id_);
+  auto read() const -> std::vector<Val> {
+    return storage().template array_read<Val>(array_id_);
   }
   /// @}
 
@@ -130,18 +139,18 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Dataset view.
+/// Data frame view.
 template<data_storage Storage>
-class DataSetView final {
+class DataFrameView final {
 public:
 
-  /// Construct a null data set view.
-  constexpr DataSetView() noexcept = default;
+  /// Construct a null data frame view.
+  constexpr DataFrameView() noexcept = default;
 
-  /// Construct a dataset view.
-  constexpr explicit DataSetView(Storage& storage, DataSetID dataset_id)
-      : storage_{&storage}, dataset_id_{dataset_id} {
-    TIT_ASSERT(storage.check_dataset(dataset_id_), "Invalid dataset ID!");
+  /// Construct a data frame view.
+  constexpr explicit DataFrameView(Storage& storage, DataFrameID frame_id)
+      : storage_{&storage}, frame_id_{frame_id} {
+    TIT_ASSERT(storage.check_frame(frame_id_), "Invalid frame ID!");
   }
 
   /// Get the data storage.
@@ -150,119 +159,57 @@ public:
     return *storage_;
   }
 
-  /// Get the dataset ID.
+  /// Get the frame ID.
   /// @{
-  constexpr auto id() const noexcept -> DataSetID {
-    TIT_ASSERT(dataset_id_ != DataSetID{0}, "Data set ID is null!");
-    return dataset_id_;
+  constexpr auto id() const noexcept -> DataFrameID {
+    TIT_ASSERT(frame_id_ != DataFrameID{0}, "Frame ID is null!");
+    return frame_id_;
   }
-  constexpr explicit(false) operator DataSetID() const noexcept {
+  constexpr explicit(false) operator DataFrameID() const noexcept {
     return id();
   }
   /// @}
 
-  /// Compare dataset views by ID.
-  friend constexpr auto operator==(DataSetView lhs, DataSetView rhs) noexcept
-      -> bool {
+  /// Compare data frame views by ID.
+  friend constexpr auto operator==(DataFrameView lhs,
+                                   DataFrameView rhs) noexcept -> bool {
     TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
-    return lhs.dataset_id_ == rhs.dataset_id_;
+    return lhs.frame_id_ == rhs.frame_id_;
   }
 
-  /// Get the number of data arrays in the dataset.
+  /// Get the time of the data frame.
+  auto time() const -> float64_t {
+    return storage().frame_time(frame_id_);
+  }
+
+  /// Get the number of data arrays in the frame.
   auto num_arrays() const -> size_t {
-    return storage().dataset_num_arrays(dataset_id_);
+    return storage().frame_num_arrays(frame_id_);
   }
 
-  /// Enumerate all data arrays in the dataset.
+  /// Enumerate all data arrays in the frame.
   auto arrays() const {
-    return storage().dataset_arrays(dataset_id_);
+    return storage().frame_arrays(frame_id_);
   }
 
   /// Find the data array with the given name.
   auto find_array(std::string_view name) const {
-    return storage().find_array(dataset_id_, name);
+    return storage().frame_find_array(frame_id_, name);
   }
 
-  /// Create a new data array in the dataset.
-  template<class... Args>
-  auto create_array(std::string_view name, Args&&... args) const
-      -> DataArrayView<Storage>
+  /// Create a new data array in the frame.
+  auto create_array(std::string_view name) const -> DataArrayView<Storage>
     requires (!std::is_const_v<Storage>)
   {
-    return storage().create_array(dataset_id_,
-                                  name,
-                                  std::forward<Args>(args)...);
+    return storage().frame_create_array(frame_id_, name);
   }
 
 private:
 
   Storage* storage_ = nullptr;
-  DataSetID dataset_id_{0};
+  DataFrameID frame_id_{0};
 
-}; // class DataSetView
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Data time step view.
-template<data_storage Storage>
-class DataTimeStepView final {
-public:
-
-  /// Construct a null data time step view.
-  constexpr DataTimeStepView() noexcept = default;
-
-  /// Construct a data time step view.
-  constexpr explicit DataTimeStepView(Storage& storage,
-                                      DataTimeStepID time_step_id)
-      : storage_{&storage}, time_step_id_{time_step_id} {
-    TIT_ASSERT(storage.check_time_step(time_step_id_), "Invalid time step ID!");
-  }
-
-  /// Get the data storage.
-  constexpr auto storage() const noexcept -> Storage& {
-    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
-    return *storage_;
-  }
-
-  /// Get the data time step ID.
-  /// @{
-  constexpr auto id() const noexcept -> DataTimeStepID {
-    TIT_ASSERT(time_step_id_ != DataTimeStepID{0}, "Time step ID is null!");
-    return time_step_id_;
-  }
-  constexpr explicit(false) operator DataTimeStepID() const noexcept {
-    return id();
-  }
-  /// @}
-
-  /// Compare data time step views by ID.
-  friend constexpr auto operator==(DataTimeStepView lhs,
-                                   DataTimeStepView rhs) noexcept -> bool {
-    TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
-    return lhs.time_step_id_ == rhs.time_step_id_;
-  }
-
-  /// Get the time of the data time step.
-  auto time() const -> float64_t {
-    return storage().time_step_time(time_step_id_);
-  }
-
-  /// Get the uniform dataset of the data time step.
-  auto uniforms() const -> DataSetView<Storage> {
-    return storage().time_step_uniforms(time_step_id_);
-  }
-
-  /// Get the varying dataset of the data time step.
-  auto varyings() const -> DataSetView<Storage> {
-    return storage().time_step_varyings(time_step_id_);
-  }
-
-private:
-
-  Storage* storage_ = nullptr;
-  DataTimeStepID time_step_id_{0};
-
-}; // class DataTimeStepView
+}; // class DataFrameView
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -304,32 +251,31 @@ public:
     return lhs.series_id_ == rhs.series_id_;
   }
 
-  /// Get the parameters of the data series.
-  auto parameters() const -> std::string {
-    return storage().series_parameters(series_id_);
+  /// Get the name of the data series.
+  auto name() const -> std::string {
+    return storage().series_name(series_id_);
   }
 
-  /// Get the number of time steps in the data series.
-  auto num_time_steps() const -> size_t {
-    return storage().series_num_time_steps(series_id_);
+  /// Get the number of frames in the data series.
+  auto num_frames() const -> size_t {
+    return storage().series_num_frames(series_id_);
   }
 
-  /// Enumerate all time steps in the data series.
-  auto time_steps() const {
-    return storage().series_time_steps(series_id_);
+  /// Enumerate all frames in the data series.
+  auto frames() const {
+    return storage().series_frames(series_id_);
   }
 
-  /// Get the last time step in the series.
-  auto last_time_step() const {
-    return storage().series_last_time_step(series_id_);
+  /// Get the last frame in the series.
+  auto last_frame() const {
+    return storage().series_last_frame(series_id_);
   }
 
-  /// Create a new time step in the data series.
-  auto create_time_step(float64_t time) const -> DataTimeStepView<Storage>
+  /// Create a new frame in the data series.
+  auto create_frame(float64_t time) const -> DataFrameView<Storage>
     requires (!std::is_const_v<Storage>)
   {
-    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
-    return storage().create_time_step(series_id_, time);
+    return storage().series_create_frame(series_id_, time);
   }
 
 private:
@@ -368,11 +314,11 @@ public:
 
   /// Enumerate all data series.
   /// @{
-  auto series_ids() const -> InputStreamPtr<DataSeriesID>;
+  auto series_ids() const -> std::generator<DataSeriesID>;
   auto series(this auto& self) {
-    return transform_stream(self.series_ids(), [&self](DataSeriesID id) {
-      return DataSeriesView{self, id};
-    });
+    return self.series_ids() | //
+           std::views::transform(
+               [&self](DataSeriesID id) { return DataSeriesView{self, id}; });
   }
   /// @}
 
@@ -386,153 +332,114 @@ public:
 
   /// Create a new data series.
   /// @{
-  auto create_series_id(std::string_view parameters = "") -> DataSeriesID;
-  auto create_series(std::string_view parameters = "")
+  auto create_series_id(std::string_view name = "") -> DataSeriesID;
+  auto create_series(std::string_view name = "")
       -> DataSeriesView<DataStorage> {
-    return DataSeriesView{*this, create_series_id(parameters)};
+    return DataSeriesView{*this, create_series_id(name)};
   }
   /// @}
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Delete a data series.
   void delete_series(DataSeriesID series_id);
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   /// Check if a data series with the given ID exists.
   auto check_series(DataSeriesID series_id) const -> bool;
 
-  /// Get the parameters of a data series.
-  auto series_parameters(DataSeriesID series_id) const -> std::string;
+  /// Get the name of a data series.
+  auto series_name(DataSeriesID series_id) const -> std::string;
 
-  /// Number of time steps in the series.
-  auto series_num_time_steps(DataSeriesID series_id) const -> size_t;
+  /// Number of frames in the series.
+  auto series_num_frames(DataSeriesID series_id) const -> size_t;
 
-  /// Enumerate all time steps in the series.
+  /// Enumerate all frames in the data series.
   /// @{
-  auto series_time_step_ids(DataSeriesID series_id) const
-      -> InputStreamPtr<DataTimeStepID>;
-  auto series_time_steps(this auto& self, DataSeriesID series_id) {
-    return transform_stream(
-        self.series_time_step_ids(series_id),
-        [&self](DataTimeStepID id) { return DataTimeStepView{self, id}; });
+  auto series_frame_ids(DataSeriesID series_id) const
+      -> std::generator<DataFrameID>;
+  auto series_frames(this auto& self, DataSeriesID series_id) {
+    return self.series_frame_ids(series_id) |
+           std::views::transform(
+               [&self](DataFrameID id) { return DataFrameView{self, id}; });
   }
   /// @}
 
-  /// Get the last time step in the series.
+  /// Get the last frame in the series.
   /// @{
-  auto series_last_time_step_id(DataSeriesID series_id) const -> DataTimeStepID;
-  auto series_last_time_step(this auto& self, DataSeriesID series_id) {
-    return DataTimeStepView{self, self.series_last_time_step_id(series_id)};
+  auto series_last_frame_id(DataSeriesID series_id) const -> DataFrameID;
+  auto series_last_frame(this auto& self, DataSeriesID series_id) {
+    return DataFrameView{self, self.series_last_frame_id(series_id)};
   }
   /// @}
 
-  /// Create a new time step in the series.
+  /// Create a new frame in the series.
   /// @{
-  auto create_time_step_id(DataSeriesID series_id, float64_t time)
-      -> DataTimeStepID;
-  auto create_time_step(DataSeriesID series_id, float64_t time)
-      -> DataTimeStepView<DataStorage> {
-    return DataTimeStepView{*this, create_time_step_id(series_id, time)};
-  }
-  /// @}
-
-  /// Delete a time step.
-  void delete_time_step(DataTimeStepID time_step_id);
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /// Check if a time step with the given ID exists.
-  auto check_time_step(DataTimeStepID time_step_id) const -> bool;
-
-  /// Get the time of a time step.
-  auto time_step_time(DataTimeStepID time_step_id) const -> float64_t;
-
-  /// Get the uniform dataset of a time step.
-  /// @{
-  auto time_step_uniforms_id(DataTimeStepID time_step_id) const -> DataSetID;
-  auto time_step_uniforms(this auto& self, DataTimeStepID time_step_id) {
-    return DataSetView{self, self.time_step_uniforms_id(time_step_id)};
-  }
-  /// @}
-
-  /// Get the varying dataset of a time step.
-  /// @{
-  auto time_step_varyings_id(DataTimeStepID time_step_id) const -> DataSetID;
-  auto time_step_varyings(this auto& self, DataTimeStepID time_step_id) {
-    return DataSetView{self, self.time_step_varyings_id(time_step_id)};
+  auto series_create_frame_id(DataSeriesID series_id, float64_t time)
+      -> DataFrameID;
+  auto series_create_frame(DataSeriesID series_id, float64_t time)
+      -> DataFrameView<DataStorage> {
+    return DataFrameView{*this, series_create_frame_id(series_id, time)};
   }
   /// @}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Check if a dataset with the given ID exists.
-  auto check_dataset(DataSetID dataset_id) const -> bool;
+  /// Delete a frame.
+  void delete_frame(DataFrameID frame_id);
 
-  /// Number of data arrays in the dataset.
-  auto dataset_num_arrays(DataSetID dataset_id) const -> size_t;
+  /// Check if a frame with the given ID exists.
+  auto check_frame(DataFrameID frame_id) const -> bool;
 
-  /// Enumerate all data arrays in the dataset.
+  /// Get the time of a frame.
+  auto frame_time(DataFrameID frame_id) const -> float64_t;
+
+  /// Number of data arrays in the frame.
+  auto frame_num_arrays(DataFrameID frame_id) const -> size_t;
+
+  /// Enumerate all data arrays in the frame.
   /// @{
-  auto dataset_array_ids(DataSetID dataset_id) const
-      -> InputStreamPtr<std::pair<std::string, DataArrayID>>;
-  auto dataset_arrays(this auto& self, DataSetID dataset_id) {
-    return transform_stream( //
-        self.dataset_array_ids(dataset_id),
-        [&self](auto name_and_id) {
-          auto [name, id] = std::move(name_and_id);
-          return std::pair{std::move(name), DataArrayView{self, id}};
-        });
+  auto frame_array_ids(DataFrameID frame_id) const
+      -> std::generator<DataArrayID>;
+  auto frame_arrays(this auto& self, DataFrameID frame_id) {
+    return self.frame_array_ids(frame_id) |
+           std::views::transform(
+               [&self](auto id) { return DataArrayView{self, id}; });
   }
   /// @}
 
   /// Find the data array with the given name.
   /// @{
-  auto find_array_id(DataSetID dataset_id, std::string_view name) const
+  auto frame_find_array_id(DataFrameID frame_id, std::string_view name) const
       -> std::optional<DataArrayID>;
-  auto find_array(this auto& self,
-                  DataSetID dataset_id,
-                  std::string_view name) {
-    return self.find_array_id(dataset_id, name).transform([&self](auto id) {
+  auto frame_find_array(this auto& self,
+                        DataFrameID frame_id,
+                        std::string_view name) {
+    return self.frame_find_array_id(frame_id, name).transform([&self](auto id) {
       return DataArrayView{self, id};
     });
   }
   /// @}
 
-  /// Create a new data array in the dataset.
+  /// Create a new data array in the frame.
   /// @{
-  auto create_array_id(DataSetID dataset_id,
-                       std::string_view name,
-                       DataType type) -> DataArrayID;
-  auto create_array_id(DataSetID dataset_id,
-                       std::string_view name,
-                       DataType type,
-                       std::span<const std::byte> data) -> DataArrayID;
-  template<std::ranges::input_range Vals>
-    requires known_type_of<std::ranges::range_value_t<Vals>>
-  auto create_array_id(DataSetID dataset_id, std::string_view name, Vals&& vals)
-      -> DataArrayID {
-    TIT_ASSUME_UNIVERSAL(Vals, vals);
-    using Val = std::ranges::range_value_t<Vals>;
-    const auto array_id = create_array_id(dataset_id, name, type_of<Val>);
-    array_data_open_write<Val>(array_id)->write(vals);
-    return array_id;
-  }
-  template<class... Args>
-  auto create_array(DataSetID dataset_id, std::string_view name, Args&&... args)
+  auto frame_create_array_id(DataFrameID frame_id, std::string_view name)
+      -> DataArrayID;
+  auto frame_create_array(DataFrameID frame_id, std::string_view name)
       -> DataArrayView<DataStorage> {
-    return DataArrayView{
-        *this,
-        create_array_id(dataset_id, name, std::forward<Args>(args)...)};
+    return DataArrayView{*this, frame_create_array_id(frame_id, name)};
   }
   /// @}
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Delete a data array.
   void delete_array(DataArrayID array_id);
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   /// Check if a data array with the given ID exists.
   auto check_array(DataArrayID array_id) const -> bool;
+
+  /// Get the name of a data array.
+  auto array_name(DataArrayID array_id) const -> std::string;
 
   /// Get the data type of the data array.
   auto array_type(DataArrayID array_id) const -> DataType;
@@ -540,25 +447,41 @@ public:
   /// Get the number of elements in the data array.
   auto array_size(DataArrayID array_id) const -> size_t;
 
-  /// Open an output stream to write the data of a data array.
+  /// Write data to a data array.
   /// @{
-  auto array_data_open_write(DataArrayID array_id)
-      -> OutputStreamPtr<std::byte>;
-  template<known_type_of Val>
-  auto array_data_open_write(DataArrayID array_id) -> OutputStreamPtr<Val> {
-    TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");
-    return make_stream_serializer<Val>(array_data_open_write(array_id));
+  void array_write(DataArrayID array_id,
+                   DataType type,
+                   std::span<const std::byte> data);
+  template<std::ranges::sized_range Range>
+    requires std::ranges::contiguous_range<Range> &&
+             known_type_of<std::ranges::range_value_t<Range>>
+  void array_write(DataArrayID array_id, Range&& data) {
+    using Val = std::ranges::range_value_t<Range>;
+    make_stream_serializer<Val>(
+        array_open_write_(array_id, type_of<Val>, data.size()))
+        ->write(std::forward<Range>(data));
   }
   /// @}
 
-  /// Open an input stream to read the data of a data array.
+  /// Read data from a data array.
   /// @{
-  auto array_data_open_read(DataArrayID array_id) const
-      -> InputStreamPtr<std::byte>;
-  template<known_type_of Val>
-  auto array_data_open_read(DataArrayID array_id) const -> InputStreamPtr<Val> {
+  void array_read(DataArrayID array_id, std::span<std::byte> data) const;
+  auto array_read(DataArrayID array_id) const -> std::vector<std::byte>;
+  template<std::ranges::sized_range Range>
+    requires std::ranges::contiguous_range<Range> &&
+             known_type_of<std::ranges::range_value_t<Range>>
+  void array_read(DataArrayID array_id, Range&& data) const {
+    using Val = std::ranges::range_value_t<Range>;
     TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");
-    return make_stream_deserializer<Val>(array_data_open_read(array_id));
+    TIT_ASSERT(data.size() == array_size(array_id), "Data size mismatch!");
+    make_stream_deserializer<Val>(array_open_read_(array_id))
+        ->read(std::forward<Range>(data));
+  }
+  template<known_type_of Val>
+  auto array_read(DataArrayID array_id) const -> std::vector<Val> {
+    std::vector<Val> result(array_size(array_id));
+    array_read(array_id, result);
+    return result;
   }
   /// @}
 
@@ -566,10 +489,13 @@ public:
 
 private:
 
-  // Create a new dataset.
-  auto create_set_() -> DataSetID;
+  // Open an output stream to write the data of a data array.
+  auto array_open_write_(DataArrayID array_id, DataType type, size_t size)
+      -> OutputStreamPtr<std::byte>;
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // Open an input stream to read the data of a data array.
+  auto array_open_read_(DataArrayID array_id) const
+      -> InputStreamPtr<std::byte>;
 
   mutable sqlite::Database db_;
 

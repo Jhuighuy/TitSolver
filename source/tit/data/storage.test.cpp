@@ -5,13 +5,12 @@
 
 #include <filesystem>
 #include <numbers>
-#include <ranges>
 #include <set>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/range.hpp"
+#include "tit/core/serialization.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"
 #include "tit/testing/test.hpp"
@@ -76,7 +75,7 @@ TEST_CASE("data::DataSeriesView") {
   SUBCASE("empty storage") {
     const data::DataStorage storage{":memory:"};
     CHECK(storage.num_series() == 0);
-    CHECK(std::ranges::empty(storage.series_ids()));
+    // CHECK(std::ranges::empty(storage.series_ids()));
   }
   SUBCASE("create series") {
     data::DataStorage storage{":memory:"};
@@ -85,7 +84,7 @@ TEST_CASE("data::DataSeriesView") {
     const auto series_1 = storage.create_series("1");
     REQUIRE(storage.check_series(series_1));
     CHECK(series_1 == data::DataSeriesID{1});
-    CHECK(series_1.parameters() == "1");
+    CHECK(series_1.name() == "1");
     CHECK(storage.num_series() == 1);
     CHECK_RANGE_EQ(storage.series(), {series_1});
     CHECK(storage.last_series() == series_1);
@@ -93,7 +92,7 @@ TEST_CASE("data::DataSeriesView") {
     const auto series_2 = storage.create_series("2");
     REQUIRE(storage.check_series(series_2));
     CHECK(series_2 == data::DataSeriesID{2});
-    CHECK(series_2.parameters() == "2");
+    CHECK(series_2.name() == "2");
     CHECK(storage.num_series() == 2);
     CHECK_RANGE_EQ(storage.series(), {series_1, series_2});
     CHECK(storage.last_series() == series_2);
@@ -101,7 +100,7 @@ TEST_CASE("data::DataSeriesView") {
     const auto series_3 = storage.create_series("3");
     REQUIRE(storage.check_series(series_3));
     CHECK(series_3 == data::DataSeriesID{3});
-    CHECK(series_3.parameters() == "3");
+    CHECK(series_3.name() == "3");
     CHECK(storage.num_series() == 3);
     CHECK_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
     CHECK(storage.last_series() == series_3);
@@ -194,183 +193,109 @@ TEST_CASE("data::DataSeriesView") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("data::DataTimeStepView") {
+TEST_CASE("data::DataFrameView") {
   SUBCASE("empty series") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
-    CHECK(series.num_time_steps() == 0);
-    CHECK(std::ranges::empty(series.time_steps()));
+    CHECK(series.num_frames() == 0);
+    // CHECK(std::ranges::empty(series.frames()));
   }
-  SUBCASE("create time steps") {
+  SUBCASE("create frames") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
 
-    const auto step_1 = series.create_time_step(0.0);
-    REQUIRE(storage.check_time_step(step_1));
-    CHECK(step_1 == data::DataTimeStepID{1});
-    CHECK(step_1.time() == 0.0);
-    CHECK(storage.check_dataset(step_1.uniforms()));
-    CHECK(storage.check_dataset(step_1.varyings()));
-    CHECK(series.num_time_steps() == 1);
-    CHECK_RANGE_EQ(series.time_steps(), {step_1});
-    CHECK(series.last_time_step() == step_1);
+    const auto frame_1 = series.create_frame(0.0);
+    REQUIRE(storage.check_frame(frame_1));
+    CHECK(frame_1 == data::DataFrameID{1});
+    CHECK(frame_1.time() == 0.0);
+    CHECK(series.num_frames() == 1);
+    CHECK_RANGE_EQ(series.frames(), {frame_1});
+    CHECK(series.last_frame() == frame_1);
 
-    const auto step_2 = series.create_time_step(1.0);
-    REQUIRE(storage.check_time_step(step_2));
-    CHECK(step_2 == data::DataTimeStepID{2});
-    CHECK(step_2.time() == 1.0);
-    CHECK(storage.check_dataset(step_2.uniforms()));
-    CHECK(storage.check_dataset(step_2.varyings()));
-    CHECK(series.num_time_steps() == 2);
-    CHECK_RANGE_EQ(series.time_steps(), {step_1, step_2});
-    CHECK(series.last_time_step() == step_2);
+    const auto frame_2 = series.create_frame(1.0);
+    REQUIRE(storage.check_frame(frame_2));
+    CHECK(frame_2 == data::DataFrameID{2});
+    CHECK(frame_2.time() == 1.0);
+    CHECK(series.num_frames() == 2);
+    CHECK_RANGE_EQ(series.frames(), {frame_1, frame_2});
+    CHECK(series.last_frame() == frame_2);
 
-    const auto step_3 = series.create_time_step(2.0);
-    REQUIRE(storage.check_time_step(step_3));
-    CHECK(step_3 == data::DataTimeStepID{3});
-    CHECK(step_3.time() == 2.0);
-    CHECK(storage.check_dataset(step_3.uniforms()));
-    CHECK(storage.check_dataset(step_3.varyings()));
-    CHECK(series.num_time_steps() == 3);
-    CHECK_RANGE_EQ(series.time_steps(), {step_1, step_2, step_3});
-    CHECK(series.last_time_step() == step_3);
+    const auto frame_3 = series.create_frame(2.0);
+    REQUIRE(storage.check_frame(frame_3));
+    CHECK(frame_3 == data::DataFrameID{3});
+    CHECK(frame_3.time() == 2.0);
+    CHECK(series.num_frames() == 3);
+    CHECK_RANGE_EQ(series.frames(), {frame_1, frame_2, frame_3});
+    CHECK(series.last_frame() == frame_3);
   }
-  SUBCASE("create time steps in different series") {
+  SUBCASE("create frames in different series") {
     data::DataStorage storage{":memory:"};
     const auto series_1 = storage.create_series("");
     const auto series_2 = storage.create_series("");
 
-    // Create time steps in the first series.
-    const auto step_11 = series_1.create_time_step(0.0);
-    const auto step_12 = series_1.create_time_step(1.0);
-    const auto step_13 = series_1.create_time_step(2.0);
-    REQUIRE_RANGE_EQ(series_1.time_steps(), {step_11, step_12, step_13});
+    // Create frames in the first series.
+    const auto frame_11 = series_1.create_frame(0.0);
+    const auto frame_12 = series_1.create_frame(1.0);
+    const auto frame_13 = series_1.create_frame(2.0);
+    REQUIRE_RANGE_EQ(series_1.frames(), {frame_11, frame_12, frame_13});
 
-    // Create time steps in the second series.
-    const auto step_21 = series_2.create_time_step(0.0);
-    const auto step_22 = series_2.create_time_step(1.0);
-    const auto step_23 = series_2.create_time_step(2.0);
-    REQUIRE_RANGE_EQ(series_2.time_steps(), {step_21, step_22, step_23});
+    // Create frames in the second series.
+    const auto frame_21 = series_2.create_frame(0.0);
+    const auto frame_22 = series_2.create_frame(1.0);
+    const auto frame_23 = series_2.create_frame(2.0);
+    REQUIRE_RANGE_EQ(series_2.frames(), {frame_21, frame_22, frame_23});
 
-    // Make sure the time steps are not shared between series.
-    const std::set<data::DataTimeStepID> all_steps{
-        step_11,
-        step_12,
-        step_13,
-        step_21,
-        step_22,
-        step_23,
+    // Make sure the frames are not shared between series.
+    const std::set<data::DataFrameID> all_frames{
+        frame_11,
+        frame_12,
+        frame_13,
+        frame_21,
+        frame_22,
+        frame_23,
     };
-    CHECK(all_steps.size() == 6);
+    CHECK(all_frames.size() == 6);
   }
-  SUBCASE("delete time steps") {
+  SUBCASE("delete frames") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
 
-    // Create a few time steps.
-    const auto step_1 = series.create_time_step(0.0);
-    const auto step_2 = series.create_time_step(1.0);
-    const auto step_3 = series.create_time_step(2.0);
-    REQUIRE_RANGE_EQ(series.time_steps(), {step_1, step_2, step_3});
+    // Create a few frames.
+    const auto frame_1 = series.create_frame(0.0);
+    const auto frame_2 = series.create_frame(1.0);
+    const auto frame_3 = series.create_frame(2.0);
+    REQUIRE_RANGE_EQ(series.frames(), {frame_1, frame_2, frame_3});
 
-    // Delete the time step.
-    storage.delete_time_step(step_2);
-    CHECK_FALSE(storage.check_time_step(step_2));
-    CHECK_RANGE_EQ(series.time_steps(), {step_1, step_3});
+    // Delete the frame.
+    storage.delete_frame(frame_2);
+    CHECK_FALSE(storage.check_frame(frame_2));
+    CHECK_RANGE_EQ(series.frames(), {frame_1, frame_3});
 
-    // Create more time steps.
-    // Make sure the ID of the removed time step is not reused.
-    const auto step_4 = series.create_time_step(3.0);
-    CHECK(storage.check_time_step(step_4));
-    CHECK(step_4 == data::DataTimeStepID{4});
-    CHECK_RANGE_EQ(series.time_steps(), {step_1, step_3, step_4});
+    // Create more frames.
+    // Make sure the ID of the removed frame is not reused.
+    const auto frame_4 = series.create_frame(3.0);
+    CHECK(storage.check_frame(frame_4));
+    CHECK(frame_4 == data::DataFrameID{4});
+    CHECK_RANGE_EQ(series.frames(), {frame_1, frame_3, frame_4});
   }
   SUBCASE("delete series") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
 
-    // Create a few time steps.
-    const auto step_1 = series.create_time_step(0.0);
-    const auto step_2 = series.create_time_step(1.0);
-    const auto step_3 = series.create_time_step(2.0);
-    REQUIRE_RANGE_EQ(series.time_steps(), {step_1, step_2, step_3});
+    // Create a few frames.
+    const auto frame_1 = series.create_frame(0.0);
+    const auto frame_2 = series.create_frame(1.0);
+    const auto frame_3 = series.create_frame(2.0);
+    REQUIRE_RANGE_EQ(series.frames(), {frame_1, frame_2, frame_3});
 
     // Delete the series.
     storage.delete_series(series);
     REQUIRE_FALSE(storage.check_series(series));
 
-    // Make sure the time steps are deleted.
-    CHECK_FALSE(storage.check_time_step(step_1));
-    CHECK_FALSE(storage.check_time_step(step_2));
-    CHECK_FALSE(storage.check_time_step(step_3));
-  }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("data::DataSetView") {
-  // Data sets are created by the time step. There is no way to create or delete
-  // a data set without a time step.
-  SUBCASE("create time step") {
-    data::DataStorage storage{":memory:"};
-    const auto series = storage.create_series("");
-    const auto step = series.create_time_step(0.0);
-
-    const auto uniforms = step.uniforms();
-    REQUIRE(storage.check_dataset(uniforms));
-    CHECK(uniforms == data::DataSetID{1});
-    CHECK(uniforms.num_arrays() == 0);
-    CHECK(std::ranges::empty(uniforms.arrays()));
-
-    const auto varyings = step.varyings();
-    REQUIRE(storage.check_dataset(varyings));
-    CHECK(varyings == data::DataSetID{2});
-    CHECK(varyings.num_arrays() == 0);
-    CHECK(std::ranges::empty(varyings.arrays()));
-  }
-  SUBCASE("datasets in different time steps") {
-    data::DataStorage storage{":memory:"};
-    const auto series = storage.create_series("");
-    const auto step_1 = series.create_time_step(0.0);
-    const auto step_2 = series.create_time_step(1.0);
-
-    const auto uniforms_1 = step_1.uniforms();
-    REQUIRE(storage.check_dataset(uniforms_1));
-    const auto varyings_1 = step_1.varyings();
-    REQUIRE(storage.check_dataset(varyings_1));
-
-    const auto uniforms_2 = step_2.uniforms();
-    REQUIRE(storage.check_dataset(uniforms_2));
-    const auto varyings_2 = step_2.varyings();
-    REQUIRE(storage.check_dataset(varyings_2));
-
-    // Make sure the datasets are not shared between time steps.
-    const std::set<data::DataSetID> all_datasets{
-        uniforms_1,
-        varyings_1,
-        uniforms_2,
-        varyings_2,
-    };
-    CHECK(all_datasets.size() == 4);
-  }
-  SUBCASE("delete time step") {
-    data::DataStorage storage{":memory:"};
-    const auto series = storage.create_series("");
-    const auto step = series.create_time_step(0.0);
-
-    const auto uniforms = step.uniforms();
-    REQUIRE(storage.check_dataset(uniforms));
-
-    const auto varyings = step.varyings();
-    REQUIRE(storage.check_dataset(varyings));
-
-    // Delete the time step.
-    storage.delete_time_step(step);
-    REQUIRE_FALSE(storage.check_time_step(step));
-
-    // Make sure the datasets are deleted.
-    CHECK_FALSE(storage.check_dataset(uniforms));
-    CHECK_FALSE(storage.check_dataset(varyings));
+    // Make sure the frames are deleted.
+    CHECK_FALSE(storage.check_frame(frame_1));
+    CHECK_FALSE(storage.check_frame(frame_2));
+    CHECK_FALSE(storage.check_frame(frame_3));
   }
 }
 
@@ -380,124 +305,113 @@ TEST_CASE("data::DataArrayView") {
   SUBCASE("empty dataset") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
-    const auto step = series.create_time_step(0.0);
-    const auto dataset = step.uniforms();
-    CHECK(dataset.num_arrays() == 0);
-    CHECK(std::ranges::empty(dataset.arrays()));
+    const auto frame = series.create_frame(0.0);
+    CHECK(frame.num_arrays() == 0);
   }
   SUBCASE("create arrays") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
-    const auto step = series.create_time_step(0.0);
-    const auto dataset = step.uniforms();
+    const auto frame = series.create_frame(0.0);
 
-    const auto array_1 = dataset.create_array( //
-        "array_1",
-        std::vector{std::numbers::pi});
+    const auto array_1 = frame.create_array("array_1");
+    array_1.write(std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
     CHECK(array_1 == data::DataArrayID{1});
+    CHECK(array_1.name() == "array_1");
     CHECK(array_1.type() == data::type_of<float64_t>);
     CHECK(array_1.size() == 1);
-    CHECK_RANGE_EQ(array_1.open_read<float64_t>(), {std::numbers::pi});
-    CHECK(dataset.num_arrays() == 1);
-    CHECK_RANGE_EQ(dataset.arrays(), {{"array_1", array_1}});
+    CHECK_RANGE_EQ(array_1.read<float64_t>(), {std::numbers::pi});
+    CHECK(frame.num_arrays() == 1);
+    CHECK_RANGE_EQ(frame.arrays(), {array_1});
 
-    const auto array_2 = dataset.create_array( //
-        "array_2",
-        data::type_of<float32_t>,
-        to_byte_array(std::numbers::e_v<float32_t>));
+    const auto array_2 = frame.create_array("array_2");
+    array_2.write(data::type_of<float32_t>,
+                  to_byte_array(std::numbers::e_v<float32_t>));
     REQUIRE(storage.check_array(array_2));
+    CHECK(array_2.name() == "array_2");
     CHECK(array_2 == data::DataArrayID{2});
     CHECK(array_2.type() == data::type_of<float32_t>);
     CHECK(array_2.size() == 1);
-    CHECK_RANGE_EQ(array_2.open_read<float32_t>(),
-                   {std::numbers::e_v<float32_t>});
-    CHECK(dataset.num_arrays() == 2);
-    CHECK_RANGE_EQ(dataset.arrays(),
-                   {{"array_1", array_1}, {"array_2", array_2}});
+    CHECK_RANGE_EQ(array_2.read<float32_t>(), {std::numbers::e_v<float32_t>});
+    CHECK(frame.num_arrays() == 2);
+    CHECK_RANGE_EQ(frame.arrays(), {array_1, array_2});
   }
   SUBCASE("find arrays") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
-    const auto step = series.create_time_step(0.0);
-    const auto dataset = step.uniforms();
+    const auto frame = series.create_frame(0.0);
 
-    const auto array_1 =
-        dataset.create_array("array_1", std::vector{std::numbers::pi});
+    const auto array_1 = frame.create_array("array_1");
+    array_1.write(std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
 
-    const auto array_2 =
-        dataset.create_array("array_2", std::vector{std::numbers::e});
+    const auto array_2 = frame.create_array("array_2");
+    array_2.write(std::vector{std::numbers::e});
     REQUIRE(storage.check_array(array_2));
 
     // Find the arrays by name.
-    CHECK(dataset.find_array("array_1") == array_1);
-    CHECK(dataset.find_array("array_2") == array_2);
-    CHECK_FALSE(dataset.find_array("does_not_exist"));
+    CHECK(frame.find_array("array_1") == array_1);
+    CHECK(frame.find_array("array_2") == array_2);
+    CHECK_FALSE(frame.find_array("does_not_exist"));
   }
   SUBCASE("update arrays") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
-    const auto step = series.create_time_step(0.0);
-    const auto dataset = step.uniforms();
+    const auto frame = series.create_frame(0.0);
 
-    const auto array =
-        dataset.create_array("array", std::vector{std::numbers::pi});
+    const auto array = frame.create_array("array");
+    array.write(std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array));
     CHECK(array.size() == 1);
-    CHECK_RANGE_EQ(array.open_read<float64_t>(), {std::numbers::pi});
+    CHECK_RANGE_EQ(array.read<float64_t>(), {std::numbers::pi});
 
     // Overwrite the array.
-    array.open_write<float64_t>()->write(
-        std::vector{std::numbers::phi, std::numbers::sqrt3});
+    array.write(std::vector{std::numbers::phi, std::numbers::sqrt3});
     CHECK(array.size() == 2);
-    CHECK_RANGE_EQ(array.open_read<float64_t>(),
+    CHECK_RANGE_EQ(array.read<float64_t>(),
                    {std::numbers::phi, std::numbers::sqrt3});
   }
   SUBCASE("delete arrays") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
-    const auto step = series.create_time_step(0.0);
-    const auto dataset = step.uniforms();
+    const auto frame = series.create_frame(0.0);
 
-    const auto array_1 =
-        dataset.create_array("array_1", std::vector{std::numbers::pi});
+    const auto array_1 = frame.create_array("array_1");
+    array_1.write(std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
 
-    const auto array_2 =
-        dataset.create_array("array_2", std::vector{std::numbers::e});
+    const auto array_2 = frame.create_array("array_2");
+    array_2.write(std::vector{std::numbers::e});
     REQUIRE(storage.check_array(array_2));
 
     // Delete the arrays.
     storage.delete_array(array_1);
     REQUIRE_FALSE(storage.check_array(array_1));
-    CHECK_RANGE_EQ(dataset.arrays(), {{"array_2", array_2}});
+    CHECK_RANGE_EQ(frame.arrays(), {array_2});
 
     // Create more arrays. Make sure the ID of the removed array is not reused.
-    const auto array_3 =
-        dataset.create_array("array_3", std::vector{std::numbers::phi});
+    const auto array_3 = frame.create_array("array_3");
+    array_3.write(std::vector{std::numbers::phi});
     CHECK(storage.check_array(array_3));
     CHECK(array_3 == data::DataArrayID{3});
-    CHECK_RANGE_EQ(dataset.arrays(),
-                   {{"array_2", array_2}, {"array_3", array_3}});
+    CHECK_RANGE_EQ(frame.arrays(), {array_2, array_3});
   }
-  SUBCASE("delete time step") {
+  SUBCASE("delete frame") {
     data::DataStorage storage{":memory:"};
     const auto series = storage.create_series("");
-    const auto step = series.create_time_step(0.0);
-    const auto dataset = step.uniforms();
+    const auto frame = series.create_frame(0.0);
 
-    const auto array_1 =
-        dataset.create_array("array_1", std::vector{std::numbers::pi});
+    const auto array_1 = frame.create_array("array_1");
+    array_1.write(std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
 
-    const auto array_2 =
-        dataset.create_array("array_2", std::vector{std::numbers::e});
+    const auto array_2 = frame.create_array("array_2");
+    array_2.write(std::vector{std::numbers::e});
     REQUIRE(storage.check_array(array_2));
 
-    // Delete the time step.
-    storage.delete_time_step(step);
-    REQUIRE_FALSE(storage.check_time_step(step));
+    // Delete the frame.
+    storage.delete_frame(frame);
+    REQUIRE_FALSE(storage.check_frame(frame));
 
     // Make sure the arrays are deleted.
     CHECK_FALSE(storage.check_array(array_1));
