@@ -6,17 +6,11 @@
 /// @todo Tests are missing.
 #pragma once
 
-#include <algorithm>
-#include <array>
-#include <cstddef>
 #include <ranges>
 #include <span>
-#include <type_traits>
 #include <utility>
-#include <vector>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -36,34 +30,6 @@ constexpr auto permuted_view(Range&& range, std::span<const size_t> perm) {
   return perm | std::views::transform(
                     [range_view = std::views::all(std::forward<Range>(range))](
                         size_t index) -> auto&& { return range_view[index]; });
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Convert a value to a byte array.
-template<class T>
-  requires std::is_trivially_copyable_v<T>
-constexpr auto to_byte_array(const T& value)
-    -> std::array<std::byte, sizeof(T)> {
-  return std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
-}
-
-/// Convert a value to a byte vector.
-template<class T>
-  requires std::is_trivially_copyable_v<T>
-constexpr auto to_bytes(const T& value) -> std::vector<std::byte> {
-  const auto bytes_array = to_byte_array(value);
-  return {bytes_array.begin(), bytes_array.end()};
-}
-
-/// Convert a byte array to a value.
-template<class T>
-  requires std::is_trivially_copyable_v<T>
-constexpr auto from_bytes(std::span<const std::byte> bytes) -> T {
-  TIT_ASSERT(bytes.size() >= sizeof(T), "Invalid byte array size!");
-  std::array<std::byte, sizeof(T)> bytes_array{};
-  std::ranges::copy(bytes, bytes_array.begin());
-  return std::bit_cast<T>(bytes_array);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

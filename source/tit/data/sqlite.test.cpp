@@ -14,7 +14,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/range.hpp"
+#include "tit/core/serialization.hpp"
 #include "tit/data/sqlite.hpp"
 #include "tit/testing/test.hpp"
 

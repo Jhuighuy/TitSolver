@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <generator>
 #include <optional>
 #include <span>
 #include <string>
@@ -38,33 +39,25 @@ DataStorage::DataStorage(const std::filesystem::path& path, bool read_only)
     INSERT OR IGNORE INTO Settings (id, max_series) VALUES (0, 5);
 
     CREATE TABLE IF NOT EXISTS DataSeries (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      parameters  TEXT
+      id   INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT
     ) STRICT;
 
-    CREATE TABLE IF NOT EXISTS TimeSteps (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      series_id   INTEGER NOT NULL,
-      time        REAL NOT NULL,
-      uniform_id  INTEGER NOT NULL,
-      varying_id  INTEGER NOT NULL,
+    CREATE TABLE IF NOT EXISTS DataFrames (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      series_id INTEGER NOT NULL,
+      time      REAL NOT NULL,
       FOREIGN KEY (series_id) REFERENCES DataSeries(id) ON DELETE CASCADE
     ) STRICT;
 
-    CREATE TABLE IF NOT EXISTS DataSets (
-      id INTEGER   PRIMARY KEY AUTOINCREMENT,
-      time_step_id INTEGER,
-      FOREIGN KEY (time_step_id) REFERENCES TimeSteps(id) ON DELETE CASCADE
-    ) STRICT;
-
     CREATE TABLE IF NOT EXISTS DataArrays (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      data_set_id INTEGER NOT NULL,
-      name        TEXT NOT NULL,
-      type        INTEGER NOT NULL,
-      size        INTEGER,
-      data        BLOB,
-      FOREIGN KEY (data_set_id) REFERENCES DataSets(id) ON DELETE CASCADE
+      id       INTEGER PRIMARY KEY AUTOINCREMENT,
+      frame_id INTEGER NOT NULL,
+      name     TEXT NOT NULL,
+      type     INTEGER,
+      size     INTEGER,
+      data     BLOB,
+      FOREIGN KEY (frame_id) REFERENCES DataFrames(id) ON DELETE CASCADE
     ) STRICT;
   )SQL");
 }
@@ -107,16 +100,11 @@ auto DataStorage::num_series() const -> size_t {
   return statement.column<size_t>();
 }
 
-auto DataStorage::series_ids() const -> InputStreamPtr<DataSeriesID> {
+auto DataStorage::series_ids() const -> std::generator<DataSeriesID> {
   sqlite::Statement statement{db_, R"SQL(
     SELECT id FROM DataSeries ORDER BY id ASC
   )SQL"};
-  return make_generator_input_stream<DataSeriesID>(
-      [statement = std::move(statement)](DataSeriesID& out) mutable {
-        if (!statement.step()) return false;
-        out = statement.column<DataSeriesID>();
-        return true;
-      });
+  while (statement.step()) co_yield statement.column<DataSeriesID>();
 }
 
 auto DataStorage::last_series_id() const -> DataSeriesID {
@@ -128,8 +116,7 @@ auto DataStorage::last_series_id() const -> DataSeriesID {
   return statement.column<DataSeriesID>();
 }
 
-auto DataStorage::create_series_id(std::string_view parameters)
-    -> DataSeriesID {
+auto DataStorage::create_series_id(std::string_view name) -> DataSeriesID {
   if (num_series() >= max_series()) {
     // Delete the oldest series if the maximum number of series is reached.
     db_.execute(R"SQL(
@@ -139,9 +126,9 @@ auto DataStorage::create_series_id(std::string_view parameters)
     )SQL");
   }
   sqlite::Statement statement{db_, R"SQL(
-    INSERT INTO DataSeries (parameters) VALUES (?)
+    INSERT INTO DataSeries (name) VALUES (?)
   )SQL"};
-  statement.run(parameters);
+  statement.run(name);
   return DataSeriesID{db_.last_insert_row_id()};
 }
 
@@ -163,209 +150,132 @@ auto DataStorage::check_series(DataSeriesID series_id) const -> bool {
   return statement.step();
 }
 
-auto DataStorage::series_parameters(DataSeriesID series_id) const
-    -> std::string {
+auto DataStorage::series_name(DataSeriesID series_id) const -> std::string {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
   sqlite::Statement statement{db_, R"SQL(
-    SELECT parameters FROM DataSeries WHERE id = ?
+    SELECT name FROM DataSeries WHERE id = ?
   )SQL"};
   statement.bind(series_id);
   TIT_ENSURE(statement.step(), "Unable to get series parameters!");
   return statement.column<std::string>();
 }
 
-auto DataStorage::series_num_time_steps(DataSeriesID series_id) const
-    -> size_t {
+auto DataStorage::series_num_frames(DataSeriesID series_id) const -> size_t {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
   sqlite::Statement statement{db_, R"SQL(
-    SELECT COUNT(*) FROM TimeSteps WHERE series_id = ?
+    SELECT COUNT(*) FROM DataFrames WHERE series_id = ?
   )SQL"};
   statement.bind(series_id);
-  TIT_ENSURE(statement.step(), "Unable to count time steps!");
+  TIT_ENSURE(statement.step(), "Unable to count Dataframes!");
   return statement.column<size_t>();
 }
 
-auto DataStorage::series_time_step_ids(DataSeriesID series_id) const
-    -> InputStreamPtr<DataTimeStepID> {
+auto DataStorage::series_frame_ids(DataSeriesID series_id) const
+    -> std::generator<DataFrameID> {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
   sqlite::Statement statement{db_, R"SQL(
-        SELECT id FROM TimeSteps WHERE series_id = ? ORDER BY id ASC
-      )SQL"};
+    SELECT id FROM DataFrames WHERE series_id = ? ORDER BY id ASC
+  )SQL"};
   statement.bind(series_id);
-  return make_generator_input_stream<DataTimeStepID>(
-      [statement = std::move(statement)](DataTimeStepID& out) mutable {
-        if (!statement.step()) return false;
-        out = statement.column<DataTimeStepID>();
-        return true;
-      });
+  while (statement.step()) co_yield statement.column<DataFrameID>();
 }
 
-auto DataStorage::series_last_time_step_id(DataSeriesID series_id) const
-    -> DataTimeStepID {
+auto DataStorage::series_last_frame_id(DataSeriesID series_id) const
+    -> DataFrameID {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
-  TIT_ASSERT(series_num_time_steps(series_id) > 0, "Series is empty!");
+  TIT_ASSERT(series_num_frames(series_id) > 0, "Series is empty!");
   sqlite::Statement statement{db_, R"SQL(
-    SELECT id FROM TimeSteps WHERE series_id = ? ORDER BY id DESC LIMIT 1
+    SELECT id FROM DataFrames WHERE series_id = ? ORDER BY id DESC LIMIT 1
   )SQL"};
   statement.bind(series_id);
   TIT_ENSURE(statement.step(), "Unable to get last time step!");
-  return statement.column<DataTimeStepID>();
+  return statement.column<DataFrameID>();
 }
 
-auto DataStorage::create_time_step_id(DataSeriesID series_id, float64_t time)
-    -> DataTimeStepID {
+auto DataStorage::create_frame_id(DataSeriesID series_id, float64_t time)
+    -> DataFrameID {
   TIT_ASSERT(check_series(series_id), "Invalid series ID!");
-  TIT_ASSERT((series_num_time_steps(series_id) == 0 ||
-              time > series_last_time_step(series_id).time()),
-             "Time step time must be greater than the last time step!");
-
-  const auto uniforms_id = create_set_();
-  const auto varyings_id = create_set_();
+  TIT_ASSERT((series_num_frames(series_id) == 0 ||
+              time > series_last_frame(series_id).time()),
+             "Frame time must be greater than the last frame time!");
   sqlite::Statement statement{db_, R"SQL(
-    INSERT INTO TimeSteps (series_id, time, uniform_id, varying_id)
-      VALUES (?, ?, ?, ?)
+    INSERT INTO DataFrames (series_id, time)
+      VALUES (?, ?)
   )SQL"};
-  statement.run(series_id, time, uniforms_id, varyings_id);
-  const DataTimeStepID time_step_id{db_.last_insert_row_id()};
-
-  // Associate the data sets with the time step.
-  sqlite::Statement associate_statement{db_, R"SQL(
-    UPDATE DataSets SET time_step_id = ? WHERE id = ?
-  )SQL"};
-  associate_statement.run(time_step_id, uniforms_id);
-  associate_statement.run(time_step_id, varyings_id);
-
-  return time_step_id;
+  statement.run(series_id, time);
+  return DataFrameID{db_.last_insert_row_id()};
 }
 
-void DataStorage::delete_time_step(DataTimeStepID time_step_id) {
-  TIT_ASSERT(check_time_step(time_step_id), "Invalid time step ID!");
+void DataStorage::delete_frame(DataFrameID frame_id) {
+  TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
   sqlite::Statement statement{db_, R"SQL(
-    DELETE FROM TimeSteps WHERE id = ?
+    DELETE FROM DataFrames WHERE id = ?
   )SQL"};
-  statement.run(time_step_id);
+  statement.run(frame_id);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto DataStorage::check_time_step(DataTimeStepID time_step_id) const -> bool {
+auto DataStorage::check_frame(DataFrameID frame_id) const -> bool {
   sqlite::Statement statement{db_, R"SQL(
-    SELECT id FROM TimeSteps WHERE id = ?
+    SELECT id FROM DataFrames WHERE id = ?
   )SQL"};
-  statement.bind(time_step_id);
+  statement.bind(frame_id);
   return statement.step();
 }
 
-auto DataStorage::time_step_time(DataTimeStepID time_step_id) const
-    -> float64_t {
-  TIT_ASSERT(check_time_step(time_step_id), "Invalid time step ID!");
+auto DataStorage::frame_time(DataFrameID frame_id) const -> float64_t {
+  TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
   sqlite::Statement statement{db_, R"SQL(
-    SELECT time FROM TimeSteps WHERE id = ?
+    SELECT time FROM DataFrames WHERE id = ?
   )SQL"};
-  statement.bind(time_step_id);
-  TIT_ENSURE(statement.step(), "Unable to get time step time!");
+  statement.bind(frame_id);
+  TIT_ENSURE(statement.step(), "Unable to get frame time!");
   return statement.column<float64_t>();
 }
 
-auto DataStorage::time_step_uniforms_id(DataTimeStepID time_step_id) const
-    -> DataSetID {
-  TIT_ASSERT(check_time_step(time_step_id), "Invalid time step ID!");
+auto DataStorage::frame_num_arrays(DataFrameID frame_id) const -> size_t {
+  TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
   sqlite::Statement statement{db_, R"SQL(
-    SELECT uniform_id FROM TimeSteps WHERE id = ?
+    SELECT COUNT(*) FROM DataArrays WHERE frame_id = ?
   )SQL"};
-  statement.bind(time_step_id);
-  TIT_ENSURE(statement.step(), "Unable to get time step uniform data set ID!");
-  return statement.column<DataSetID>();
-}
-
-auto DataStorage::time_step_varyings_id(DataTimeStepID time_step_id) const
-    -> DataSetID {
-  TIT_ASSERT(check_time_step(time_step_id), "Invalid time step ID!");
-  sqlite::Statement statement{db_, R"SQL(
-    SELECT varying_id FROM TimeSteps WHERE id = ?
-  )SQL"};
-  statement.bind(time_step_id);
-  TIT_ENSURE(statement.step(), "Unable to get time step varying data set ID!");
-  return statement.column<DataSetID>();
-}
-
-auto DataStorage::create_set_() -> DataSetID {
-  sqlite::Statement statement{db_, R"SQL(
-    INSERT INTO DataSets DEFAULT VALUES
-  )SQL"};
-  statement.run();
-  return DataSetID{db_.last_insert_row_id()};
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto DataStorage::check_dataset(DataSetID dataset_id) const -> bool {
-  sqlite::Statement statement{db_, R"SQL(
-    SELECT id FROM DataSets WHERE id = ?
-  )SQL"};
-  statement.bind(dataset_id);
-  return statement.step();
-}
-
-auto DataStorage::dataset_num_arrays(DataSetID dataset_id) const -> size_t {
-  TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
-  sqlite::Statement statement{db_, R"SQL(
-    SELECT COUNT(*) FROM DataArrays WHERE data_set_id = ?
-  )SQL"};
-  statement.bind(dataset_id);
+  statement.bind(frame_id);
   TIT_ENSURE(statement.step(), "Unable to count data arrays!");
   return statement.column<size_t>();
 }
 
-auto DataStorage::dataset_array_ids(DataSetID dataset_id) const
-    -> InputStreamPtr<std::pair<std::string, DataArrayID>> {
-  TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
+auto DataStorage::frame_array_ids(DataFrameID frame_id) const
+    -> std::generator<DataArrayID> {
+  TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
   sqlite::Statement statement{db_, R"SQL(
-    SELECT name, id FROM DataArrays WHERE data_set_id = ? ORDER BY id ASC
+    SELECT id FROM DataArrays WHERE frame_id = ? ORDER BY id ASC
   )SQL"};
-  statement.bind(dataset_id);
-  return make_generator_input_stream<std::pair<std::string, DataArrayID>>(
-      [statement = std::move(statement)](
-          std::pair<std::string, DataArrayID>& out) mutable {
-        if (!statement.step()) return false;
-        out = statement.columns<std::string, DataArrayID>();
-        return true;
-      });
+  statement.bind(frame_id);
+  while (statement.step()) co_yield statement.column<DataArrayID>();
 }
 
-auto DataStorage::find_array_id(DataSetID dataset_id,
+auto DataStorage::find_array_id(DataFrameID frame_id,
                                 std::string_view name) const
     -> std::optional<DataArrayID> {
-  TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
+  TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
   sqlite::Statement statement{db_, R"SQL(
-    SELECT id FROM DataArrays WHERE data_set_id = ? AND name = ?
+    SELECT id FROM DataArrays WHERE frame_id = ? AND name = ?
   )SQL"};
-  statement.bind(dataset_id, name);
+  statement.bind(frame_id, name);
   if (statement.step()) return DataArrayID{statement.column<sqlite::RowID>()};
   return std::nullopt;
 }
 
-auto DataStorage::create_array_id(DataSetID dataset_id,
-                                  std::string_view name,
-                                  DataType type) -> DataArrayID {
-  TIT_ASSERT(check_dataset(dataset_id), "Invalid data set ID!");
-  TIT_ASSERT(!name.empty(), "Array name must not be empty!");
-  TIT_ASSERT(!find_array_id(dataset_id, name), "Array already exists!");
-  sqlite::Statement statement{db_, R"SQL(
-    INSERT INTO DataArrays (data_set_id, name, type) VALUES (?, ?, ?)
-  )SQL"};
-  statement.run(dataset_id, name, type.id());
-  return DataArrayID{db_.last_insert_row_id()};
-}
-
-auto DataStorage::create_array_id(DataSetID dataset_id,
-                                  std::string_view name,
-                                  DataType type,
-                                  std::span<const std::byte> data)
+auto DataStorage::create_array_id(DataFrameID frame_id, std::string_view name)
     -> DataArrayID {
-  const auto array_id = create_array_id(dataset_id, name, type);
-  array_data_open_write(array_id)->write(data);
-  return array_id;
+  TIT_ASSERT(check_frame(frame_id), "Invalid frame ID!");
+  TIT_ASSERT(!name.empty(), "Array name must not be empty!");
+  TIT_ASSERT(!find_array_id(frame_id, name), "Array already exists!");
+  sqlite::Statement statement{db_, R"SQL(
+    INSERT INTO DataArrays (frame_id, name) VALUES (?, ?)
+  )SQL"};
+  statement.run(frame_id, name);
+  return DataArrayID{db_.last_insert_row_id()};
 }
 
 void DataStorage::delete_array(DataArrayID array_id) {
@@ -384,6 +294,16 @@ auto DataStorage::check_array(DataArrayID array_id) const -> bool {
   )SQL"};
   statement.bind(array_id);
   return statement.step();
+}
+
+auto DataStorage::array_name(DataArrayID array_id) const -> std::string {
+  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT name FROM DataArrays WHERE id = ?
+  )SQL"};
+  statement.bind(array_id);
+  TIT_ENSURE(statement.step(), "Unable to get data array name!");
+  return statement.column<std::string>();
 }
 
 auto DataStorage::array_type(DataArrayID array_id) const -> DataType {
@@ -406,26 +326,22 @@ auto DataStorage::array_size(DataArrayID array_id) const -> size_t {
   return statement.column<size_t>();
 }
 
-auto DataStorage::array_data_open_write(DataArrayID array_id)
-    -> OutputStreamPtr<std::byte> {
+auto DataStorage::array_open_write_(DataArrayID array_id,
+                                    DataType type,
+                                    size_t size) -> OutputStreamPtr<std::byte> {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
-  return make_counting_output_stream(
-      zstd::make_stream_compressor(
-          sqlite::make_blob_writer(db_,
-                                   "DataArrays",
-                                   "data",
-                                   std::to_underlying(array_id))),
-      [this, array_id](size_t copied_bytes) {
-        const auto byte_width = array_type(array_id).width();
-        TIT_ASSERT(copied_bytes % byte_width == 0, "Truncated data!");
-        sqlite::Statement statement{db_, R"SQL(
-          UPDATE DataArrays SET size = ? WHERE id = ?
-        )SQL"};
-        statement.run(copied_bytes / byte_width, array_id);
-      });
+  sqlite::Statement statement{db_, R"SQL(
+    UPDATE DataArrays SET type = ?, size = ? WHERE id = ?
+  )SQL"};
+  statement.run(type.id(), size, array_id);
+  return zstd::make_stream_compressor(
+      sqlite::make_blob_writer(db_,
+                               "DataArrays",
+                               "data",
+                               std::to_underlying(array_id)));
 }
 
-auto DataStorage::array_data_open_read(DataArrayID array_id) const
+auto DataStorage::array_open_read_(DataArrayID array_id) const
     -> InputStreamPtr<std::byte> {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
   return zstd::make_stream_decompressor(
@@ -433,6 +349,22 @@ auto DataStorage::array_data_open_read(DataArrayID array_id) const
                                "DataArrays",
                                "data",
                                std::to_underlying(array_id)));
+}
+
+void DataStorage::array_write(DataArrayID array_id,
+                              DataType type,
+                              std::span<const std::byte> data) {
+  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(data.size() % type.width() == 0, "Data size mismatch!");
+  array_open_write_(array_id, type, data.size() / type.width())->write(data);
+}
+
+void DataStorage::array_read(DataArrayID array_id,
+                             std::span<std::byte> data) const {
+  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(data.size() == array_size(array_id) * array_type(array_id).width(),
+             "Data size mismatch!");
+  array_open_read_(array_id)->read(data);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
