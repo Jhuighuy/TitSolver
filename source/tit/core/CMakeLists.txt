@@ -85,7 +85,6 @@ add_tit_executable(
     "env.test.cpp"
     "math.test.cpp"
     "serialization.test.cpp"
-    "serialization.testing.hpp"
     "str.test.cpp"
     "time.test.cpp"
     "type.test.cpp"

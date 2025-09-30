@@ -81,14 +81,14 @@ class Server(QObject):
     response: Any = {"requestID": request.get("requestID")}
     message = request.get("message")
     if message and message.startswith("#"):
-      iterator = self.__storage.last_series.time_steps()
+      iterator = self.__storage.last_series.frames()
       if (index := int(message[1:])) > 0:
         while index > 0:
           next(iterator)
           index -= 1
-      varyings = next(iterator).varyings
+      frame = next(iterator)
       result = {}
-      for array in varyings.arrays():
+      for array in frame.arrays():
         data = array.data
         result[array.name] = {
             "min": float(data.min()),
@@ -99,7 +99,7 @@ class Server(QObject):
       response["result"] = result
     elif not message:
       response["status"] = "success"
-      response["result"] = self.__storage.last_series.num_time_steps
+      response["result"] = self.__storage.last_series.num_frames
     else:
       stdout_capture = io.StringIO()
       stderr_capture = io.StringIO()
