@@ -7,15 +7,16 @@
 
 #include <concepts>
 #include <iterator>
+#include <numeric>
 #include <ranges>
 #include <span>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/func.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
@@ -37,8 +38,6 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  TIT_MOVE_ONLY(KDTreeIndex);
-
   /// Move-construct from another index.
   constexpr KDTreeIndex(KDTreeIndex&&) noexcept = default;
 
@@ -48,6 +47,12 @@ public:
   /// Destroy the index.
   constexpr ~KDTreeIndex() noexcept = default;
 
+  /// This class is not copy-constructible.
+  constexpr KDTreeIndex(const KDTreeIndex&) = delete;
+
+  /// This class is not copy-assignable.
+  constexpr auto operator=(const KDTreeIndex&) -> KDTreeIndex& = delete;
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Index the points for search using a K-dimensional tree.
@@ -55,7 +60,8 @@ public:
     if (std::ranges::empty(points_)) return;
 
     // Initialize the permutation.
-    auto perm = iota_perm(points_) | std::ranges::to<std::vector>();
+    std::vector<size_t> perm(std::ranges::size(points));
+    std::ranges::iota(perm, size_t{0});
 
     // Initialize the node storage.
     nodes_.resize(std::ranges::size(points_));
@@ -78,11 +84,10 @@ public:
       // Split the points into the roughly equal halves.
       const auto box = compute_bbox(my_points, my_perm);
       node->axis = max_value_index(box.extents());
-      const auto median_iter =
-          my_perm.begin() + static_cast<ssize_t>(my_perm.size() / 2);
+      const auto median_index = my_perm.size() / 2;
       const auto [left_perm, right_perm] =
-          coord_median_split(my_points, my_perm, median_iter, node->axis);
-      node->index = *median_iter;
+          coord_median_split(my_points, my_perm, median_index, node->axis);
+      node->index = my_perm[median_index];
 
       // Recursively partition the halves.
       constexpr size_t min_par_size = 50;

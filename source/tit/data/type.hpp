@@ -14,9 +14,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/str.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit::data {
@@ -29,7 +27,6 @@ public:
 
   /// Kind IDs.
   enum class ID : uint8_t {
-    unknown_,
     int8,
     uint8,
     int16,
@@ -40,12 +37,12 @@ public:
     uint64,
     float32,
     float64,
-    count_,
+    unknown_,
   };
 
   /// Construct a data kind.
   constexpr explicit DataKind(ID id) : id_{id} {
-    TIT_ENSURE(ID::unknown_ < id_ && id < ID::count_,
+    TIT_ENSURE(id_ < ID::unknown_,
                "Invalid data kind ID: {}.",
                std::to_underlying(id_));
   }
@@ -58,33 +55,39 @@ public:
   /// Data kind width (in bytes).
   constexpr auto width() const -> size_t {
     using enum ID;
-    return translate<size_t>(id_)
-        .option(int8, 1)
-        .option(uint8, 1)
-        .option(int16, 2)
-        .option(uint16, 2)
-        .option(int32, 4)
-        .option(uint32, 4)
-        .option(int64, 8)
-        .option(uint64, 8)
-        .option(float32, 4)
-        .option(float64, 8);
+    switch (id_) {
+      case unknown_: return 0;
+      case int8:     [[fallthrough]];
+      case uint8:    return 1;
+      case int16:    [[fallthrough]];
+      case uint16:   return 2;
+      case int32:    [[fallthrough]];
+      case uint32:   [[fallthrough]];
+      case float32:  return 4;
+      case int64:    [[fallthrough]];
+      case uint64:   [[fallthrough]];
+      case float64:  return 8;
+      default:       std::unreachable();
+    }
   }
 
   /// Data kind name.
-  constexpr auto name() const -> CStrView {
+  constexpr auto name() const -> const char* {
     using enum ID;
-    return translate<CStrView>(id_)
-        .option(int8, "int8_t")
-        .option(uint8, "uint8_t")
-        .option(int16, "int16_t")
-        .option(uint16, "uint16_t")
-        .option(int32, "int32_t")
-        .option(uint32, "uint32_t")
-        .option(int64, "int64_t")
-        .option(uint64, "uint64_t")
-        .option(float32, "float32_t")
-        .option(float64, "float64_t");
+    switch (id_) {
+      case unknown_: return "unknown";
+      case int8:     return "int8_t";
+      case uint8:    return "uint8_t";
+      case int16:    return "int16_t";
+      case uint16:   return "uint16_t";
+      case int32:    return "int32_t";
+      case uint32:   return "uint32_t";
+      case float32:  return "float32_t";
+      case int64:    return "int64_t";
+      case uint64:   return "uint64_t";
+      case float64:  return "float64_t";
+      default:       std::unreachable();
+    }
   }
 
   /// Compare data kinds.
@@ -135,10 +138,9 @@ inline constexpr auto kind_id_of<float64_t> = DataKind::ID::float64;
 
 /// Class that has a known data kind.
 template<class Val>
-concept known_kind_of = std::is_object_v<Val> &&
-                        in_range_ex(impl::kind_id_of<normalize_type_t<Val>>,
-                                    DataKind::ID::unknown_,
-                                    DataKind::ID::count_);
+concept known_kind_of =
+    std::is_object_v<Val> &&
+    (impl::kind_id_of<normalize_type_t<Val>> < DataKind::ID::unknown_);
 
 /// Data kind of a class.
 template<known_kind_of Val>
@@ -177,13 +179,13 @@ public:
   /// Construct a data type from integer identifier.
   constexpr explicit DataType(uint32_t id)
       : DataType{// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
-                 DataKind{static_cast<DataKind::ID>(id & 0xFF)},
+                 DataKind{static_cast<DataKind::ID>((id - 1) & 0xFF)},
                  static_cast<DataRank>((id >> 8) & 0xFF),
                  static_cast<uint8_t>((id >> 16) & 0xFF)} {}
 
   /// Data type integer identifier.
   constexpr auto id() const -> uint32_t {
-    return static_cast<uint32_t>(std::to_underlying(kind_.id())) |
+    return static_cast<uint32_t>(std::to_underlying(kind_.id()) + 1) |
            static_cast<uint32_t>(std::to_underlying(rank_)) << 8 |
            static_cast<uint32_t>(dim_) << 16;
   }

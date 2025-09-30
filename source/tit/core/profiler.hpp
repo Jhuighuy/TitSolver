@@ -26,7 +26,7 @@ public:
   static auto section(std::string_view section_name) -> Stopwatch&;
 
   /// Enable profiling. Report will be printed at exit.
-  static void enable() noexcept;
+  static void enable();
 
 private:
 

@@ -122,7 +122,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::width_deriv", Kernel, KERNEL_TYPES) {
   for (const double h : {1.0, 0.1, 0.01}) {
     REQUIRE(w.radius(h) >= h * std::numbers::sqrt3);
     const auto x = pow2(h) * Vec{0.1, 0.1, 0.1};
-    const auto value = w(vec_cast<Dual>(x), Dual{h, 1.0});
+    const auto value = w(vec_cast<Dual<double>>(x), Dual{h, 1.0});
     const auto dw_dh = w.width_deriv(x, h);
     CHECK(approx_equal_to(value.deriv(), dw_dh));
   }

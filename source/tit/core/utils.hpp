@@ -5,12 +5,8 @@
 
 #pragma once
 
-#include <algorithm>
 #include <concepts>
-#include <functional>
-#include <optional>
-#include <type_traits>
-#include <utility>
+#include <utility> // IWYU pragma: keep
 
 namespace tit {
 
@@ -43,77 +39,14 @@ constexpr auto zero(const T& /*a*/) -> T {
   return T{};
 }
 
-/// Check if the given value is in the range [ @p a, @p b ].
-template<class T>
-constexpr auto in_range(const T& x,
-                        const std::type_identity_t<T>& a,
-                        const std::type_identity_t<T>& b) noexcept -> bool {
-  return a <= x && x <= b;
-}
-
-/// Check if the given value is in the range ( @p a, @p b ).
-template<class T>
-constexpr auto in_range_ex(const T& x,
-                           const std::type_identity_t<T>& a,
-                           const std::type_identity_t<T>& b) noexcept -> bool {
-  return a < x && x < b;
-}
-
-/// Check that the value is equal to any of the given values.
-template<class T, std::same_as<T>... Us>
-constexpr auto is_any_of(T x, Us... us) noexcept -> bool {
-  return (... || (x == us));
-}
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Translator for a given key.
-template<class Key, class Val>
-class Translator final {
-public:
-
-  /// Construct a translator for the given key.
-  constexpr explicit Translator(Key key) : key_{std::move(key)} {}
-
-  /// Add an option for the given key and value.
-  constexpr auto option(const Key& key, const Val& value) -> Translator& {
-    if (!result_ && key == key_) result_ = value;
-    return *this;
+/// Predicate that is always true.
+struct AlwaysTrue final {
+  constexpr auto operator()(const auto& /*arg*/) const noexcept -> bool {
+    return true;
   }
-
-  /// Fall back to the given value if no value was set, and return it.
-  constexpr auto fallback(const Val& value) -> Val {
-    return result_ ? std::move(*result_) : value;
-  }
-
-  /// Fall back to the given function result if no value was set, and return it.
-  template<std::invocable<const Key&> Func>
-  constexpr auto fallback(Func func) -> Val {
-    if (result_) return std::move(*result_);
-    if constexpr (std::same_as<std::invoke_result_t<Func, const Key&>, void>) {
-      std::invoke(std::move(func), key_), std::unreachable();
-    } else {
-      return std::invoke(std::move(func), key_);
-    }
-  }
-
-  /// Convert the translator to a result.
-  constexpr explicit(false) operator Val() {
-    return fallback([](const Key& /*key*/) { std::unreachable(); });
-  }
-
-private:
-
-  Key key_;
-  std::optional<Val> result_;
-
-}; // class Translator
-
-/// Make a translator for the given key.
-template<class Val, class Key>
-constexpr auto translate(Key key) -> Translator<Key, Val> {
-  return Translator<Key, Val>{std::move(key)};
-}
+};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

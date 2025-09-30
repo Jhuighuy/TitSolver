@@ -291,7 +291,10 @@ template<class Item, std::invocable<size_t> Callback>
 class CountingOutputStream final : public OutputStream<Item> {
 public:
 
-  TIT_NOT_COPYABLE_OR_MOVABLE(CountingOutputStream);
+  CountingOutputStream(const CountingOutputStream&) = delete;
+  CountingOutputStream(CountingOutputStream&&) = default;
+  auto operator=(const CountingOutputStream&) -> CountingOutputStream& = delete;
+  auto operator=(CountingOutputStream&&) -> CountingOutputStream& = default;
 
   /// Construct a tracking output stream.
   explicit CountingOutputStream(OutputStreamPtr<Item> stream, Callback callback)

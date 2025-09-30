@@ -13,7 +13,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/simd.hpp"
-#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -81,12 +80,11 @@ public:
     col_.fill(Mask(b));
   }
 
-  /// Construct a vector mask with elements @p bi.
+  /// Construct a vector mask with elements @p bs.
   template<class... Args>
     requires (Dim > 1) && (sizeof...(Args) == Dim) &&
              (std::constructible_from<bool, Args &&> && ...)
-  constexpr VecMask(Args&&... bs) // NOSONAR
-      : col_{make_array<Dim, Mask>(std::forward<Args>(bs)...)} {}
+  constexpr VecMask(Args&&... bs) : col_{Mask{std::forward<Args>(bs)}...} {}
 
   /// Vector mask element at index.
   constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {

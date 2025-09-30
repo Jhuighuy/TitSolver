@@ -10,7 +10,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/type.hpp"
 
 namespace tit {
 
@@ -79,8 +78,6 @@ private:
 class StopwatchCycle final {
 public:
 
-  TIT_MOVE_ONLY(StopwatchCycle);
-
   /// Start the new stopwatch cycle.
   explicit StopwatchCycle(Stopwatch& stopwatch) noexcept
       : stopwatch_{&stopwatch} {
@@ -101,6 +98,12 @@ public:
     if (this != &other) stopwatch_ = std::exchange(other.stopwatch_, nullptr);
     return *this;
   }
+
+  /// This class is not copy-constructible.
+  constexpr StopwatchCycle(const StopwatchCycle&) = delete;
+
+  /// This class is not copy-assignable.
+  constexpr auto operator=(const StopwatchCycle&) -> StopwatchCycle& = delete;
 
 private:
 
