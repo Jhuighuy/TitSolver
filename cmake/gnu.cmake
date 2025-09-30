@@ -77,9 +77,6 @@ set(
   -Ofast
   # Enable aggressive floating-point expression contraction.
   -ffp-contract=fast
-  # Enable link time optimizations.
-  -flto=auto
-  -ffat-lto-objects
   # This warning produces a lot of false positives, disable it.
   -Wno-maybe-uninitialized
 )
@@ -121,7 +118,7 @@ set(
   -fno-default-inline
   -fno-inline
   -fno-inline-small-functions
-  -fno-elide-constructors
+  # -fno-elide-constructors
   # Inform our code that we are compiling with gcov.
   -DTIT_HAVE_GCOV=1
 )

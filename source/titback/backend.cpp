@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -53,11 +54,11 @@ void tit_main(CmdArgs args) {
         json::json response;
         response["status"] = "success";
         response["requestID"] = request["requestID"];
-        const auto varyings = storage.last_series().last_time_step().varyings();
+        const auto frame = storage.last_series().last_frame();
         for (const auto* var : {"r", "rho"}) {
-          const auto r = varyings.find_array(var);
+          const auto r = frame.find_array(var);
           std::vector<std::byte> r_data(r->size() * r->type().width());
-          r->open_read()->read(r_data);
+          r->read(std::span{r_data});
           response["result"][var] = std::span{
               safe_bit_ptr_cast<const double*>(std::as_const(r_data).data()),
               r_data.size() / sizeof(double),

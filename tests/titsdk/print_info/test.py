@@ -1,5 +1,5 @@
 import os
-from titsdk import Storage, Series, TimeStep, Dataset, open_storage
+from titsdk import Storage, Series, Frame, open_storage
 
 #
 # Print the information about the storage.
@@ -16,31 +16,22 @@ def print_storage_info(storage: Storage, spaces: str = '') -> None:
 # Print the information about the series.
 #
 def print_series_info(series: Series, spaces: str = '') -> None:
-  print(f"{spaces}Num. time steps:", series.num_time_steps)
-  print(f"{spaces}Time steps:")
+  print(f"{spaces}Num. frames:", series.num_frames)
+  print(f"{spaces}Frames:")
   spaces += "  "
-  for i, time_step in enumerate(series.time_steps()):
-    print(f"{spaces}Time step {i}:")
-    print_time_step_info(time_step, spaces + "  ")
+  for i, frame in enumerate(series.frames()):
+    print(f"{spaces}Frame {i}:")
+    print_frame_info(frame, spaces + "  ")
 
 #
-# Print the information about the time step.
+# Print the information about the frame.
 #
-def print_time_step_info(time_step: TimeStep, spaces: str = '') -> None:
-  print(f"{spaces}Time:", time_step.time)
-  print(f"{spaces}Uniforms:")
-  print_dataset_info(time_step.uniforms, spaces + "  ")
-  print(f"{spaces}Varyings:")
-  print_dataset_info(time_step.varyings, spaces + "  ")
-
-#
-# Print the information about the dataset.
-#
-def print_dataset_info(dataset: Dataset, spaces: str = '') -> None:
-  print(f"{spaces}Num. arrays:", dataset.num_arrays)
+def print_frame_info(frame: Frame, spaces: str = '') -> None:
+  print(f"{spaces}Time:", frame.time)
+  print(f"{spaces}Num. arrays:", frame.num_arrays)
   print(f"{spaces}Arrays:")
   spaces += "  "
-  for array in dataset.arrays():
+  for array in frame.arrays():
     print(f"{spaces}{array.name}: {array.type}[{array.size}]")
 
 # Open the storage and print its information.
