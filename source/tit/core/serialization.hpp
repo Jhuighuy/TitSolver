@@ -15,9 +15,11 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/mat.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/stream.hpp"
 #include "tit/core/tuple.hpp"
+#include "tit/core/vec.hpp"
 
 namespace tit {
 
@@ -54,6 +56,50 @@ constexpr auto deserialize(Stream& in, Item& item) -> bool {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Serialize a tuple of values into the output stream.
+template<tuple_like Tuple, class Stream>
+constexpr void serialize(Stream& out, const Tuple& tuple) {
+  std::apply([&out](const auto&... items) { serialize(out, items...); }, tuple);
+}
+
+/// Deserialize a tuple of values from the input stream.
+template<tuple_like Tuple, class Stream>
+constexpr auto deserialize(Stream& in, Tuple& tuple) -> bool {
+  return std::apply(
+      [&in](auto&... items) { return (deserialize(in, items...)); },
+      tuple);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Serialize a vector into the output stream.
+template<class Stream, class Num, size_t Dim>
+constexpr void serialize(Stream& out, const Vec<Num, Dim>& vec) {
+  serialize(out, vec.elems());
+}
+
+/// Deserialize a vector from the input stream.
+template<class Stream, class Num, size_t Dim>
+constexpr auto deserialize(Stream& in, Vec<Num, Dim>& vec) -> bool {
+  return deserialize(in, vec.elems());
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Serialize a matrix into the output stream.
+template<class Stream, class Num, size_t Dim>
+constexpr void serialize(Stream& out, const Mat<Num, Dim>& mat) {
+  serialize(out, mat.rows());
+}
+
+/// Deserialize a matrix from the input stream.
+template<class Stream, class Num, size_t Dim>
+constexpr auto deserialize(Stream& in, Mat<Num, Dim>& mat) -> bool {
+  return deserialize(in, mat.rows());
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Serialize multiple values into the output stream.
 template<class Stream, class... Items>
   requires (sizeof...(Items) > 1)
@@ -70,22 +116,6 @@ constexpr auto deserialize(Stream& in,
   if (!deserialize(in, first_item)) return false;
   if ((deserialize(in, rest_items) && ...)) return true;
   deserialization_failed();
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Serialize a tuple of values into the output stream.
-template<tuple_like Tuple, class Stream>
-constexpr void serialize(Stream& out, const Tuple& tuple) {
-  std::apply([&out](const auto&... items) { serialize(out, items...); }, tuple);
-}
-
-/// Deserialize a tuple of values from the input stream.
-template<tuple_like Tuple, class Stream>
-constexpr auto deserialize(Stream& in, Tuple& tuple) -> bool {
-  return std::apply(
-      [&in](auto&... items) { return (deserialize(in, items...)); },
-      tuple);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
