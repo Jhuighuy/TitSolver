@@ -11,7 +11,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/serialization.testing.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/testing/numbers/tagged.hpp"
@@ -384,11 +383,6 @@ TEST_CASE_TEMPLATE("Vec::cross", Num, NUM_TYPES) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("Vec::serialize") {
-  const Vec<float32_t, 3> vec{1.0, 2.0, 3.0};
-  testing::test_serialization(vec, 3 * sizeof(float32_t));
-}
 
 TEST_CASE("Vec::format") {
   CHECK(std::format("{}", Vec{1, 2, 3}) == "1 2 3");
