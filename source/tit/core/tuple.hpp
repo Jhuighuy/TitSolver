@@ -6,7 +6,6 @@
 /// @todo Tests are missing.
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <concepts>
 #include <tuple>
@@ -60,65 +59,6 @@ concept tuple_like =
       []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
         return (impl::tuple_element_is<Tuple, Indices, Items> && ...);
       }(std::make_index_sequence<sizeof...(Items)>())));
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Array type that is deduced from the given argument.
-/// If the argument is not an array, it is wrapped into an array of size 1.
-template<class Arg>
-using array_from_arg_t = decltype(std::array{std::declval<Arg>()});
-
-/// Size of the array that is constructed by packing the given values
-/// or arrays of values into a single array.
-template<class... Args>
-inline constexpr auto packed_array_size_v =
-    std::tuple_size_v<decltype(std::tuple_cat(array_from_arg_t<Args>{}...))>;
-
-/// Check if the given values or arrays of values can be packed into a single
-/// array of the given size and type.
-template<size_t Size, class R, class... Args>
-concept can_pack_array =
-    (... &&
-     std::constructible_from<R, typename array_from_arg_t<Args>::value_type>) &&
-    (((... + std::tuple_size_v<array_from_arg_t<Args>>) == Size) ||
-     (((... + std::tuple_size_v<array_from_arg_t<Args>>) < Size) &&
-      std::default_initializable<R>) );
-
-/// Pack values and arrays of values into an array of the given size and type.
-template<size_t Size, class R, class... Args>
-  requires can_pack_array<Size, R, Args...>
-constexpr auto make_array(Args&&... args) -> std::array<R, Size> {
-  return std::apply(
-      []<class... Elems>(Elems&&... elems) {
-        return std::array<R, Size>{R(std::forward<Elems>(elems))...};
-      },
-      std::tuple_cat(std::array{std::forward<Args>(args)}...));
-}
-
-/// Concatenate arrays.
-template<size_t... Sizes, class T>
-  requires std::copy_constructible<T>
-constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
-    -> std::array<T, (... + Sizes)> {
-  std::array<T, (... + Sizes)> result{};
-  auto out_iter = result.begin();
-  (..., [&out_iter](const auto& array) {
-    out_iter = std::ranges::copy(array, out_iter).out;
-  }(arrays));
-  return result;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// A pair of values of the same type.
-template<class T>
-using pair_of_t = std::pair<T, T>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// C-style array reference.
-template<class T, size_t Size>
-using carr_ref_t = T (&)[Size]; // NOLINT(*-c-arrays)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -8,6 +8,7 @@
 #include <concepts>
 #include <exception>
 #include <format>
+#include <functional>
 #include <ranges>
 #include <source_location>
 #include <string>

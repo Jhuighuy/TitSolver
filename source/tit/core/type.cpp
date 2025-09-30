@@ -5,33 +5,28 @@
 
 #include <cstdlib>
 #include <memory>
-#include <optional>
 #include <string>
 
 #include <cxxabi.h>
 
-#include "tit/core/exception.hpp"
-#include "tit/core/str.hpp"
+#include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 
 namespace tit::impl {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto try_demangle(CStrView mangled_name) -> std::optional<std::string> {
+auto demangle(const char* mangled_name) -> std::string {
+  TIT_ASSERT(mangled_name != nullptr, "Mangled name must not be null");
   int status = 0;
   const std::unique_ptr<char, void (*)(char*)> result{
-      abi::__cxa_demangle(mangled_name.c_str(),
+      abi::__cxa_demangle(mangled_name,
                           /*buffer=*/nullptr,
                           /*length=*/nullptr,
                           &status),
-      [](char* ptr) { std::free(ptr); }}; // NOLINT(*-no-malloc,*-owning-memory)
-  if (status != 0) return std::nullopt;
-  TIT_ENSURE(result != nullptr,
-             "Demanging reported status code of success ({}), "
-             "but returned null pointer.",
-             status);
-  return result.get();
+      [](char* ptr) { std::free(ptr); }, // NOLINT(*-no-malloc,*-owning-memory)
+  };
+  return status == 0 ? result.get() : mangled_name;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

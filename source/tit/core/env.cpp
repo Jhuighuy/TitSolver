@@ -5,24 +5,24 @@
 
 #include <cstdlib>
 #include <optional>
+#include <string>
 
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/str.hpp"
 
 namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto get_env(CStrView name) noexcept -> std::optional<CStrView> {
+auto get_env(const std::string& name) noexcept -> std::optional<std::string> {
   const auto* const value = std::getenv(name.c_str()); // NOLINT(*-mt-unsafe)
   if (value == nullptr) return std::nullopt;
-  return CStrView{value};
+  return value;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void set_env(CStrView name, CStrView val) {
+void set_env(const std::string& name, const std::string& val) {
   // NOLINTNEXTLINE(*-mt-unsafe,*-include-cleaner)
   const auto status = setenv(name.c_str(), val.c_str(), /*overwrite=*/1);
   TIT_ENSURE(status == 0,
@@ -33,7 +33,7 @@ void set_env(CStrView name, CStrView val) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void unset_env(CStrView name) {
+void unset_env(const std::string& name) {
   // NOLINTNEXTLINE(*-mt-unsafe,*-include-cleaner)
   const auto status = unsetenv(name.c_str());
   TIT_ENSURE(status == 0, "Unable to unset environment variable '{}'.", name);

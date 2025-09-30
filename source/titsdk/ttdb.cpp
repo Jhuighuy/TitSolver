@@ -3,13 +3,13 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <span>
 #include <string>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
 #include "tit/data/storage.hpp"
@@ -24,7 +24,7 @@ using namespace tit::data;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const char* ttdb_type__kind(ttdb_type_t type) {
-  return safe_call([type] { return DataType{type}.kind().name().c_str(); });
+  return safe_call([type] { return DataType{type}.kind().name(); });
 }
 
 uint32_t ttdb_type__rank(ttdb_type_t type) {
@@ -77,7 +77,7 @@ void ttdb_array__read(ttdb_array_t* array, void* data) {
     const auto type = array->storage->array_type(array->array_id);
     const auto size = array->storage->array_size(array->array_id);
     array->storage->array_data_open_read(array->array_id)
-        ->read(std::span{static_cast<byte_t*>(data), size * type.width()});
+        ->read(std::span{static_cast<std::byte*>(data), size * type.width()});
     return 0;
   });
 }

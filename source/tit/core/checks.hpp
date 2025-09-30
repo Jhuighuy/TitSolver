@@ -21,7 +21,7 @@
 /// compilation, if the expression is evaluated in `constexpr` context).
 ///
 /// Use this macro to check the internal logic, do not use it for to check the
-/// status of any operation (in such case, use ``TIT_ENSURE` instead).
+/// status of any operation (in such case, use `TIT_ENSURE` instead).
 #ifdef TIT_ENABLE_ASSERTS
 #define TIT_ASSERT(expr, message) tit::impl::check((expr), (#expr), message)
 #else

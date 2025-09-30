@@ -3,6 +3,7 @@
  * Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <span>
@@ -360,7 +361,8 @@ auto DataStorage::create_array_id(DataSetID dataset_id,
 auto DataStorage::create_array_id(DataSetID dataset_id,
                                   std::string_view name,
                                   DataType type,
-                                  std::span<const byte_t> data) -> DataArrayID {
+                                  std::span<const std::byte> data)
+    -> DataArrayID {
   const auto array_id = create_array_id(dataset_id, name, type);
   array_data_open_write(array_id)->write(data);
   return array_id;
@@ -405,7 +407,7 @@ auto DataStorage::array_size(DataArrayID array_id) const -> size_t {
 }
 
 auto DataStorage::array_data_open_write(DataArrayID array_id)
-    -> OutputStreamPtr<byte_t> {
+    -> OutputStreamPtr<std::byte> {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
   return make_counting_output_stream(
       zstd::make_stream_compressor(
@@ -424,7 +426,7 @@ auto DataStorage::array_data_open_write(DataArrayID array_id)
 }
 
 auto DataStorage::array_data_open_read(DataArrayID array_id) const
-    -> InputStreamPtr<byte_t> {
+    -> InputStreamPtr<std::byte> {
   TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
   return zstd::make_stream_decompressor(
       sqlite::make_blob_reader(db_,

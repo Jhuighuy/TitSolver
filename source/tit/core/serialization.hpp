@@ -7,6 +7,7 @@
 
 #include <array>
 #include <concepts>
+#include <cstddef>
 #include <span>
 #include <tuple>
 #include <type_traits>
@@ -44,7 +45,7 @@ template<class Stream, class Item>
   requires (std::is_trivially_copyable_v<Item> &&
             (std::integral<Item> || std::floating_point<Item>) )
 constexpr auto deserialize(Stream& in, Item& item) -> bool {
-  std::array<byte_t, sizeof(Item)> bytes{};
+  std::array<std::byte, sizeof(Item)> bytes{};
   const auto copied = in.read(bytes);
   if (copied == 0) return false;
   if (copied != bytes.size()) deserialization_failed();
@@ -96,7 +97,8 @@ class StreamSerializer final : public OutputStream<Item> {
 public:
 
   /// Construct a stream serializer.
-  constexpr explicit StreamSerializer(OutputStreamPtr<byte_t> stream) noexcept
+  constexpr explicit StreamSerializer(
+      OutputStreamPtr<std::byte> stream) noexcept
       : stream_{std::move(stream)} {}
 
   /// Serialize the items and write them to the stream.
@@ -112,13 +114,13 @@ public:
 
 private:
 
-  OutputStreamPtr<byte_t> stream_;
+  OutputStreamPtr<std::byte> stream_;
 
 }; // class StreamSerializer
 
 /// Make a stream serializer.
 template<class Item>
-constexpr auto make_stream_serializer(OutputStreamPtr<byte_t> stream)
+constexpr auto make_stream_serializer(OutputStreamPtr<std::byte> stream)
     -> OutputStreamPtr<Item> {
   return make_flushable<StreamSerializer<Item>>(std::move(stream));
 }
@@ -132,7 +134,8 @@ class StreamDeserializer final : public InputStream<Item> {
 public:
 
   /// Construct a stream deserializer.
-  constexpr explicit StreamDeserializer(InputStreamPtr<byte_t> stream) noexcept
+  constexpr explicit StreamDeserializer(
+      InputStreamPtr<std::byte> stream) noexcept
       : stream_{std::move(stream)} {}
 
   /// Read the bytes from the stream and deserialize thems.
@@ -140,7 +143,7 @@ public:
     TIT_ASSERT(stream_ != nullptr, "Stream is null!");
     for (size_t i = 0; i < items.size(); ++i) {
       if (!deserialize(*stream_, items[i])) {
-        if (byte_t probe{}; stream_->read({&probe, 1}) != 1) return i;
+        if (std::byte probe{}; stream_->read({&probe, 1}) != 1) return i;
         deserialization_failed();
       }
     }
@@ -149,13 +152,13 @@ public:
 
 private:
 
-  InputStreamPtr<byte_t> stream_;
+  InputStreamPtr<std::byte> stream_;
 
 }; // class StreamDeserializer
 
 /// Make a stream deserializer.
 template<class Item>
-constexpr auto make_stream_deserializer(InputStreamPtr<byte_t> stream)
+constexpr auto make_stream_deserializer(InputStreamPtr<std::byte> stream)
     -> InputStreamPtr<Item> {
   return std::make_unique<StreamDeserializer<Item>>(std::move(stream));
 }

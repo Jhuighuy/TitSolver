@@ -167,7 +167,7 @@ public:
   }
 
   /// Enable statistics. Report will be printed at exit.
-  static void enable() noexcept;
+  static void enable();
 
   /// Is statistics enabled?
   static auto enabled() noexcept -> bool {
