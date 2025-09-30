@@ -202,134 +202,94 @@ class ArrayIter(Iterator[Array]):
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ttdb_dataset_t = NewType("ttdb_dataset_t", c_void_p)
-ttdb_dataset__close: Final = cast(
-    Callable[[ttdb_dataset_t], None],
-    lib.func("ttdb_dataset__close", (c_void_p,), None),
+ttdb_frame_t = NewType("ttdb_frame_t", c_void_p)
+ttdb_frame__close: Final = cast(
+    Callable[[ttdb_frame_t], None],
+    lib.func("ttdb_frame__close", (c_void_p,), None),
 )
-ttdb_dataset__num_arrays: Final = cast(
-    Callable[[ttdb_dataset_t], int],
-    lib.func("ttdb_dataset__num_arrays", (c_void_p,), c_uint64),
+ttdb_frame__time: Final = cast(
+    Callable[[ttdb_frame_t], float],
+    lib.func("ttdb_frame__time", (c_void_p,), c_double),
 )
-ttdb_dataset__find_array: Final = cast(
-    Callable[[ttdb_dataset_t, bytes], ttdb_array_t | None],
-    lib.func("ttdb_dataset__find_array", (c_void_p, c_char_p), c_void_p),
+ttdb_frame__num_arrays: Final = cast(
+    Callable[[ttdb_frame_t], int],
+    lib.func("ttdb_frame__num_arrays", (c_void_p,), c_uint64),
 )
-ttdb_dataset__arrays: Final = cast(
-    Callable[[ttdb_dataset_t], ttdb_array_iter_t],
-    lib.func("ttdb_dataset__arrays", (c_void_p,), c_void_p),
+ttdb_frame__find_array: Final = cast(
+    Callable[[ttdb_frame_t, bytes], ttdb_array_t | None],
+    lib.func("ttdb_frame__find_array", (c_void_p, c_char_p), c_void_p),
 )
-
-@final
-class Dataset:
-  """Dataset containing arrays of data."""
-
-  __dataset: ttdb_dataset_t
-
-  def __init__(self, dataset: ttdb_dataset_t) -> None:
-    """Initialize the dataset with a C pointer."""
-    self.__dataset = dataset
-
-  def __del__(self) -> None:
-    """Close the dataset."""
-    ttdb_dataset__close(self.__dataset)
-
-  @property
-  def num_arrays(self) -> int:
-    """Number of arrays in the dataset."""
-    return ttdb_dataset__num_arrays(self.__dataset)
-
-  def find_array(self, name: str) -> Array | None:
-    """Find an array by name in the dataset."""
-    array = ttdb_dataset__find_array(self.__dataset, name.encode("utf-8"))
-    return Array(array) if array is not None else None
-
-  def arrays(self) -> ArrayIter:
-    """Iterate over all arrays in the dataset."""
-    return ArrayIter(ttdb_dataset__arrays(self.__dataset))
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-ttdb_time_step_t = NewType("ttdb_time_step_t", c_void_p)
-ttdb_time_step__close: Final = cast(
-    Callable[[ttdb_time_step_t], None],
-    lib.func("ttdb_time_step__close", (c_void_p,), None),
-)
-ttdb_time_step__time: Final = cast(
-    Callable[[ttdb_time_step_t], float],
-    lib.func("ttdb_time_step__time", (c_void_p,), c_double),
-)
-ttdb_time_step__uniforms: Final = cast(
-    Callable[[ttdb_time_step_t], ttdb_dataset_t],
-    lib.func("ttdb_time_step__uniforms", (c_void_p,), c_void_p),
-)
-ttdb_time_step__varyings: Final = cast(
-    Callable[[ttdb_time_step_t], ttdb_dataset_t],
-    lib.func("ttdb_time_step__varyings", (c_void_p,), c_void_p),
+ttdb_frame__arrays: Final = cast(
+    Callable[[ttdb_frame_t], ttdb_array_iter_t],
+    lib.func("ttdb_frame__arrays", (c_void_p,), c_void_p),
 )
 
 @final
-class TimeStep:
-  """Time step in a series."""
+class Frame:
+  """Frame containing arrays of data."""
 
-  __time_step: ttdb_time_step_t
+  __frame: ttdb_frame_t
 
-  def __init__(self, time_step: ttdb_time_step_t) -> None:
-    """Initialize the time step with a C pointer."""
-    self.__time_step = time_step
+  def __init__(self, frame: ttdb_frame_t) -> None:
+    """Initialize the frame with a C pointer."""
+    self.__frame = frame
 
   def __del__(self) -> None:
-    """Close the time step."""
-    ttdb_time_step__close(self.__time_step)
+    """Close the frame."""
+    ttdb_frame__close(self.__frame)
 
   @property
   def time(self) -> float:
     """Get the time of the time step."""
-    return ttdb_time_step__time(self.__time_step)
+    return ttdb_frame__time(self.__frame)
 
   @property
-  def uniforms(self) -> Dataset:
-    """Get the uniform dataset of the time step."""
-    return Dataset(ttdb_time_step__uniforms(self.__time_step))
+  def num_arrays(self) -> int:
+    """Number of arrays in the frame."""
+    return ttdb_frame__num_arrays(self.__frame)
 
-  @property
-  def varyings(self) -> Dataset:
-    """Get the varying dataset of the time step."""
-    return Dataset(ttdb_time_step__varyings(self.__time_step))
+  def find_array(self, name: str) -> Array | None:
+    """Find an array by name in the frame."""
+    array = ttdb_frame__find_array(self.__frame, name.encode("utf-8"))
+    return Array(array) if array is not None else None
 
-ttdb_time_step_iter_t = NewType("ttdb_time_step_iter_t", c_void_p)
-ttdb_time_step_iter__close = cast(
-    Callable[[ttdb_time_step_iter_t], None],
-    lib.func("ttdb_time_step_iter__close", (c_void_p,), None),
+  def arrays(self) -> ArrayIter:
+    """Iterate over all arrays in the frame."""
+    return ArrayIter(ttdb_frame__arrays(self.__frame))
+
+ttdb_frame_iter_t = NewType("ttdb_frame_iter_t", c_void_p)
+ttdb_frame_iter__next: Final = cast(
+    Callable[[ttdb_frame_iter_t], ttdb_frame_t | None],
+    lib.func("ttdb_frame_iter__next", (c_void_p,), c_void_p),
 )
-ttdb_time_step_iter__next = cast(
-    Callable[[ttdb_time_step_iter_t], ttdb_time_step_t | None],
-    lib.func("ttdb_time_step_iter__next", (c_void_p,), c_void_p),
+ttdb_frame_iter__close: Final = cast(
+    Callable[[ttdb_frame_iter_t], None],
+    lib.func("ttdb_frame_iter__close", (c_void_p,), None),
 )
 
 @final
-class TimeStepIter(Iterator[TimeStep]):
-  """Iterator over time steps in a series."""
+class FrameIter(Iterator[Frame]):
+  """Iterator over frames in a series."""
 
-  __iter: ttdb_time_step_iter_t
+  __iter: ttdb_frame_iter_t
 
-  def __init__(self, iterator: ttdb_time_step_iter_t) -> None:
+  def __init__(self, iterator: ttdb_frame_iter_t) -> None:
     """Initialize the iterator with a C pointer."""
     self.__iter = iterator
 
   def __del__(self) -> None:
     """Close the iterator."""
-    ttdb_time_step_iter__close(self.__iter)
+    ttdb_frame_iter__close(self.__iter)
 
-  def __iter__(self) -> TimeStepIter:
+  def __iter__(self) -> FrameIter:
     """Return the iterator itself."""
     return self
 
-  def __next__(self) -> TimeStep:
-    """Get the next time step from the iterator."""
-    if (time_step := ttdb_time_step_iter__next(self.__iter)) is None:
+  def __next__(self) -> Frame:
+    """Get the next frame from the iterator."""
+    if (frame := ttdb_frame_iter__next(self.__iter)) is None:
       raise StopIteration
-    return TimeStep(time_step)
+    return Frame(frame)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -338,17 +298,17 @@ ttdb_series__close: Final = cast(
     Callable[[ttdb_series_t], None],
     lib.func("ttdb_series__close", (c_void_p,), None),
 )
-ttdb_series__num_time_steps: Final = cast(
+ttdb_series__num_frames: Final = cast(
     Callable[[ttdb_series_t], int],
-    lib.func("ttdb_series__num_time_steps", (c_void_p,), c_uint64),
+    lib.func("ttdb_series__num_frames", (c_void_p,), c_uint64),
 )
-ttdb_series__last_time_step: Final = cast(
-    Callable[[ttdb_series_t], ttdb_time_step_t],
-    lib.func("ttdb_series__last_time_step", (c_void_p,), c_void_p),
+ttdb_series__last_frame: Final = cast(
+    Callable[[ttdb_series_t], ttdb_frame_t],
+    lib.func("ttdb_series__last_frame", (c_void_p,), c_void_p),
 )
-ttdb_series__time_steps: Final = cast(
-    Callable[[ttdb_series_t], ttdb_time_step_iter_t],
-    lib.func("ttdb_series__time_steps", (c_void_p,), c_void_p),
+ttdb_series__frames: Final = cast(
+    Callable[[ttdb_series_t], ttdb_frame_iter_t],
+    lib.func("ttdb_series__frames", (c_void_p,), c_void_p),
 )
 
 @final
@@ -366,18 +326,18 @@ class Series:
     ttdb_series__close(self.__series)
 
   @property
-  def num_time_steps(self) -> int:
-    """Number of time steps in the series."""
-    return ttdb_series__num_time_steps(self.__series)
+  def num_frames(self) -> int:
+    """Number of frames in the series."""
+    return ttdb_series__num_frames(self.__series)
 
   @property
-  def last_time_step(self) -> TimeStep:
-    """Last time step in the series."""
-    return TimeStep(ttdb_series__last_time_step(self.__series))
+  def last_frame(self) -> Frame:
+    """Last frame in the series."""
+    return Frame(ttdb_series__last_frame(self.__series))
 
-  def time_steps(self) -> TimeStepIter:
-    """Iterate over all time steps in the series."""
-    return TimeStepIter(ttdb_series__time_steps(self.__series))
+  def frames(self) -> FrameIter:
+    """Iterate over all frames in the series."""
+    return FrameIter(ttdb_series__frames(self.__series))
 
 ttdb_series_iter_t = NewType("ttdb_series_iter_t", c_void_p)
 ttdb_series_iter__next: Final = cast(

@@ -14,18 +14,10 @@
 #include <string>
 #include <string_view>
 #include <system_error>
-#include <type_traits>
 
 #include "tit/core/basic_types.hpp"
 
 namespace tit {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// String-like type.
-template<class Str>
-concept str_like = std::is_object_v<Str> && //
-                   std::constructible_from<std::string_view, Str>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
