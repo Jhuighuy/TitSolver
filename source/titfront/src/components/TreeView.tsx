@@ -99,6 +99,7 @@ export const TreeView = ({ nodes }: { nodes: TreeNode[] }) => {
   };
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: .
     <div tabIndex={-1} onKeyDown={handleKeyDown} className="outline-none">
       {visibleNodes.map(([depth, node]) => (
         <div
@@ -111,6 +112,7 @@ export const TreeView = ({ nodes }: { nodes: TreeNode[] }) => {
             <div key={depth} className="ml-2.5 mr-0 w-0.5 bg-gray-500" />
           ))}
           <div className="flex-grow">
+            {/** biome-ignore lint/a11y/noStaticElementInteractions: . */}
             <div
               className="flex items-center px-1.5"
               onKeyDown={() => {}}

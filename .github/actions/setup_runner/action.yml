@@ -43,6 +43,7 @@ runs:
           doxygen
           "gcc@$GCC_VERSION"
           "llvm@$LLVM_VERSION"
+          moreutils
           node
           pnpm
           "python@$PYTHON_VERSION"
