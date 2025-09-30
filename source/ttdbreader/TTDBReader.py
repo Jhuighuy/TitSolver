@@ -28,7 +28,7 @@ from vtkmodules.util import numpy_support
 # ParaView does not know how to import titsdk.
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "lib"))
 from titsdk import (  # pylint: disable=wrong-import-position # noqa: E402
-    Rank, Storage, TimeStep, open_storage,
+    Rank, Storage, Frame, open_storage,
 )
 
 __all__ = ("TTDBReader",)
@@ -72,9 +72,9 @@ class TTDBReader(VTKPythonAlgorithmBase):
       self.__storage = open_storage(self.__file_path)
     return self.__storage
 
-  def time_steps(self) -> Iterator[TimeStep]:
-    # Do not cache the last series and time steps, as they may change.
-    return self.storage.last_series.time_steps()
+  def frames(self) -> Iterator[Frame]:
+    # Do not cache the last series and its frames, as they may change.
+    return self.storage.last_series.frames()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -96,7 +96,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
       si_class="vtkSITimeStepsProperty",
   )
   def GetTimestepValues(self) -> list[float]:
-    return list(map(attrgetter("time"), self.time_steps()))
+    return list(map(attrgetter("time"), self.frames()))
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -115,18 +115,18 @@ class TTDBReader(VTKPythonAlgorithmBase):
     # Report the available time steps.
     info = outInfo.GetInformationObject(0)
     info.Remove(executive.TIME_STEPS())
-    num_time_steps = 0
-    for ts in self.time_steps():
-      num_time_steps += 1
-      info.Append(executive.TIME_STEPS(), ts.time)
+    num_frames = 0
+    for frame in self.frames():
+      num_frames += 1
+      info.Append(executive.TIME_STEPS(), frame.time)
     info.Remove(executive.TIME_RANGE())
     info.Append(executive.TIME_RANGE(), 0)
-    info.Append(executive.TIME_RANGE(), num_time_steps)
+    info.Append(executive.TIME_RANGE(), num_frames)
 
     # Report the available arrays.
     # ParaView does not support matrix arrays, so we do not report them.
-    if (probe_time_step := next(self.time_steps(), None)) is not None:
-      for array in probe_time_step.varyings.arrays():
+    if (probe_frame := next(self.frames(), None)) is not None:
+      for array in probe_frame.arrays():
         if array.type.rank in (Rank.scalar, Rank.vector):
           self.__array_selection.AddArray(array.name)
 
@@ -141,13 +141,13 @@ class TTDBReader(VTKPythonAlgorithmBase):
     # Find the time step corresponding to the current time.
     time: float = outInfo.GetInformationObject(0).Get(
         self.GetExecutive().UPDATE_TIME_STEP())
-    time_step = next((ts for ts in self.time_steps() if ts.time == time), None)
-    if time_step is None:
+    frame = next((f for f in self.frames() if f.time == time), None)
+    if frame is None:
       return False
 
     # Extract the data arrays.
     arrays = {
-        array.name: array.data for array in time_step.varyings.arrays() if
+        array.name: array.data for array in frame.arrays() if
         array.name == "r" or self.__array_selection.ArrayIsEnabled(array.name)
     }
     points = arrays["r"]

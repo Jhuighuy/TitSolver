@@ -668,20 +668,6 @@ constexpr auto cross(const Vec<Num, 3>& a, const Vec<Num, 3>& b)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Serialize a vector into the output stream.
-template<class Stream, class Num, size_t Dim>
-constexpr void serialize(Stream& out, const Vec<Num, Dim>& vec) {
-  serialize(out, vec.elems());
-}
-
-/// Deserialize a vector from the input stream.
-template<class Stream, class Num, size_t Dim>
-constexpr auto deserialize(Stream& in, Vec<Num, Dim>& vec) -> bool {
-  return deserialize(in, vec.elems());
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace tit
 
 // Vector formatter.

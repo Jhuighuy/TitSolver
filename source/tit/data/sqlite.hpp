@@ -20,7 +20,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/str.hpp"
 #include "tit/core/stream.hpp"
 
 struct sqlite3;
@@ -70,6 +69,11 @@ private:
 }; // class Database
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// String argument or column type.
+template<class Str>
+concept str_like = std::is_object_v<Str> && //
+                   std::constructible_from<std::string_view, Str>;
 
 /// Blob view type.
 using BlobView = std::span<const std::byte>;

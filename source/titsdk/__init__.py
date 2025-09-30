@@ -7,15 +7,14 @@ from .lib import Error
 from .ttdb import (
     Array,
     ArrayIter,
-    Dataset,
+    Frame,
+    FrameIter,
     Kind,
     open_storage,
     Rank,
     Series,
     SeriesIter,
     Storage,
-    TimeStep,
-    TimeStepIter,
     Type,
 )
 
@@ -24,16 +23,15 @@ from .ttdb import (
 __all__ = [
     "Array",
     "ArrayIter",
-    "Dataset",
     "Error",
+    "Frame",
+    "FrameIter",
     "Kind",
     "open_storage",
     "Rank",
     "Series",
     "SeriesIter",
     "Storage",
-    "TimeStep",
-    "TimeStepIter",
     "Type",
 ]
 

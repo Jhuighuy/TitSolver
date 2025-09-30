@@ -56,18 +56,17 @@ public:
   constexpr auto width() const -> size_t {
     using enum ID;
     switch (id_) {
-      case unknown_: return 0;
-      case int8:     [[fallthrough]];
-      case uint8:    return 1;
-      case int16:    [[fallthrough]];
-      case uint16:   return 2;
-      case int32:    [[fallthrough]];
-      case uint32:   [[fallthrough]];
-      case float32:  return 4;
-      case int64:    [[fallthrough]];
-      case uint64:   [[fallthrough]];
-      case float64:  return 8;
-      default:       std::unreachable();
+      case int8:    [[fallthrough]];
+      case uint8:   return 1;
+      case int16:   [[fallthrough]];
+      case uint16:  return 2;
+      case int32:   [[fallthrough]];
+      case uint32:  [[fallthrough]];
+      case float32: return 4;
+      case int64:   [[fallthrough]];
+      case uint64:  [[fallthrough]];
+      case float64: return 8;
+      default:      std::unreachable();
     }
   }
 
@@ -75,18 +74,17 @@ public:
   constexpr auto name() const -> const char* {
     using enum ID;
     switch (id_) {
-      case unknown_: return "unknown";
-      case int8:     return "int8_t";
-      case uint8:    return "uint8_t";
-      case int16:    return "int16_t";
-      case uint16:   return "uint16_t";
-      case int32:    return "int32_t";
-      case uint32:   return "uint32_t";
-      case float32:  return "float32_t";
-      case int64:    return "int64_t";
-      case uint64:   return "uint64_t";
-      case float64:  return "float64_t";
-      default:       std::unreachable();
+      case int8:    return "int8_t";
+      case uint8:   return "uint8_t";
+      case int16:   return "int16_t";
+      case uint16:  return "uint16_t";
+      case int32:   return "int32_t";
+      case uint32:  return "uint32_t";
+      case float32: return "float32_t";
+      case int64:   return "int64_t";
+      case uint64:  return "uint64_t";
+      case float64: return "float64_t";
+      default:      std::unreachable();
     }
   }
 

@@ -123,102 +123,71 @@ ttdb_array_t* ttdb_array_iter__next(ttdb_array_iter_t* iter);
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * Dataset containing arrays of data.
+ * Frame containing arrays of data.
  */
-typedef struct ttdb_dataset ttdb_dataset_t;
+typedef struct ttdb_frame ttdb_frame_t;
 
 /**
- * Close the dataset.
+ * Close the frame.
  *
- * @param dataset Dataset to close.
+ * @param frame Frame to close.
  */
-void ttdb_dataset__close(ttdb_dataset_t* dataset);
+void ttdb_frame__close(ttdb_frame_t* frame);
 
 /**
- * Get the number of arrays in the dataset.
+ * Get the time of the frame.
  *
- * @param dataset Dataset to get the number of arrays of.
- * @returns Number of arrays in the dataset.
+ * @param frame Frame to get the time of.
+ * @returns Time of the frame.
  */
-uint64_t ttdb_dataset__num_arrays(ttdb_dataset_t* dataset);
+double ttdb_frame__time(ttdb_frame_t* frame);
 
 /**
- * Find an array by name in the dataset.
+ * Get the number of arrays in the frame.
  *
- * @param dataset Dataset to find the array in.
+ * @param frame Frame to get the number of arrays of.
+ * @returns Number of arrays in the frame.
+ */
+uint64_t ttdb_frame__num_arrays(ttdb_frame_t* frame);
+
+/**
+ * Find an array by name in the frame.
+ *
+ * @param frame Frame to find the array in.
  * @param name Name of the array to find.
  * @returns Pointer to the array with the given name. If the array does not
  *          exist, returns null.
  */
-ttdb_array_t* ttdb_dataset__find_array(ttdb_dataset_t* dataset,
-                                       const char* name);
+ttdb_array_t* ttdb_frame__find_array(ttdb_frame_t* frame, const char* name);
 
 /**
- * Iterate over all arrays in the dataset.
+ * Iterate over all arrays in the frame.
  *
- * @param dataset Dataset to iterate over.
- * @returns Iterator over all arrays in the dataset.
+ * @param frame Frame to iterate over.
+ * @returns Iterator over all arrays in the frame.
  */
-ttdb_array_iter_t* ttdb_dataset__arrays(ttdb_dataset_t* dataset);
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ttdb_array_iter_t* ttdb_frame__arrays(ttdb_frame_t* frame);
 
 /**
- * Time step in a series.
+ * Iterator over frames in a series.
  */
-typedef struct ttdb_time_step ttdb_time_step_t;
-
-/**
- * Close the time step.
- *
- * @param time_step Time step to close.
- */
-void ttdb_time_step__close(ttdb_time_step_t* time_step);
-
-/**
- * Get the time of the time step.
- *
- * @param time_step Time step to get the time of.
- * @returns Time of the time step.
- */
-double ttdb_time_step__time(ttdb_time_step_t* time_step);
-
-/**
- * Get the uniform dataset of the time step.
- *
- * @param time_step Time step to get the uniform dataset of.
- * @returns Pointer to the uniform dataset of the time step.
- */
-ttdb_dataset_t* ttdb_time_step__uniforms(ttdb_time_step_t* time_step);
-
-/**
- * Get the varying dataset of the time step.
- *
- * @param time_step Time step to get the varying dataset of.
- * @returns Pointer to the varying dataset of the time step.
- */
-ttdb_dataset_t* ttdb_time_step__varyings(ttdb_time_step_t* time_step);
-
-/**
- * Iterator over time steps in a series.
- */
-typedef struct ttdb_time_step_iter ttdb_time_step_iter_t;
+typedef struct ttdb_frame_iter ttdb_frame_iter_t;
 
 /**
  * Close the iterator.
  *
  * @param iter Iterator to close.
  */
-void ttdb_time_step_iter__close(ttdb_time_step_iter_t* iter);
+void ttdb_frame_iter__close(ttdb_frame_iter_t* iter);
 
 /**
- * Get the current time step from the iterator and advance the iterator.
+ * Get the current frame from the iterator and advance the iterator.
  *
- * @param iter Iterator to get the current time step from.
- * @returns Pointer to the current time step from the iterator.
- *          If there are no more time steps, returns null.
+ * @param iter Iterator to get the current frame from.
+ * @returns Pointer to the current frame from the iterator.
+ *          If there are no more frames, returns null.
  */
-ttdb_time_step_t* ttdb_time_step_iter__next(ttdb_time_step_iter_t* iter);
+ttdb_frame_t* ttdb_frame_iter__next(ttdb_frame_iter_t* iter);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -235,28 +204,28 @@ typedef struct ttdb_series ttdb_series_t;
 void ttdb_series__close(ttdb_series_t* series);
 
 /**
- * Get the number of time steps in the series.
+ * Get the number of frames in the series.
  *
- * @param series Series to get the number of time steps of.
- * @returns Number of time steps in the series.
+ * @param series Series to get the number of frames of.
+ * @returns Number of frames in the series.
  */
-uint64_t ttdb_series__num_time_steps(ttdb_series_t* series);
+uint64_t ttdb_series__num_frames(ttdb_series_t* series);
 
 /**
- * Get the last time step in the series.
+ * Get the last frame in the series.
  *
- * @param series Series to get the last time step of.
- * @returns Pointer to the last time step in the series.
+ * @param series Series to get the last frame of.
+ * @returns Pointer to the last frame in the series.
  */
-ttdb_time_step_t* ttdb_series__last_time_step(ttdb_series_t* series);
+ttdb_frame_t* ttdb_series__last_frame(ttdb_series_t* series);
 
 /**
- * Iterate over all time steps in the series.
+ * Iterate over all frames in the series.
  *
  * @param series Series to iterate over.
- * @returns Iterator over all time steps in the series.
+ * @returns Iterator over all frames in the series.
  */
-ttdb_time_step_iter_t* ttdb_series__time_steps(ttdb_series_t* series);
+ttdb_frame_iter_t* ttdb_series__frames(ttdb_series_t* series);
 
 /**
  * Iterator over series in a storage.
