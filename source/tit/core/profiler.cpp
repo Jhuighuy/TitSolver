@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <cstdlib>
 #include <functional>
 #include <ranges>
 #include <string>
@@ -12,9 +13,9 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/containers/str_hash_map.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/runtime.hpp"
 #include "tit/core/time.hpp"
 
 namespace tit {
@@ -29,16 +30,17 @@ auto Profiler::section(std::string_view section_name) -> Stopwatch& {
   return sections_[std::string{section_name}];
 }
 
-void Profiler::enable() noexcept {
+void Profiler::enable() {
   // Start profiling.
   constexpr const auto* root_section_name = "main";
   section(root_section_name).start();
 
   // Stop profiling and report at exit.
-  checked_atexit([] {
+  const auto status = std::atexit([] {
     section(root_section_name).stop();
     report_();
   });
+  TIT_ENSURE(status == 0, "Unable to register at-exit callback!");
 }
 
 void Profiler::report_() {

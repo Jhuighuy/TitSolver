@@ -6,7 +6,6 @@
 /// @todo Tests are missing.
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <concepts>
 #include <tuple>
@@ -93,19 +92,6 @@ constexpr auto make_array(Args&&... args) -> std::array<R, Size> {
         return std::array<R, Size>{R(std::forward<Elems>(elems))...};
       },
       std::tuple_cat(std::array{std::forward<Args>(args)}...));
-}
-
-/// Concatenate arrays.
-template<size_t... Sizes, class T>
-  requires std::copy_constructible<T>
-constexpr auto array_cat(const std::array<T, Sizes>&... arrays)
-    -> std::array<T, (... + Sizes)> {
-  std::array<T, (... + Sizes)> result{};
-  auto out_iter = result.begin();
-  (..., [&out_iter](const auto& array) {
-    out_iter = std::ranges::copy(array, out_iter).out;
-  }(arrays));
-  return result;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

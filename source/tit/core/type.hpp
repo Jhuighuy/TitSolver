@@ -7,7 +7,7 @@
 
 #include <bit>
 #include <concepts>
-#include <optional>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -15,8 +15,6 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/func.hpp"
-#include "tit/core/str.hpp"
 
 namespace tit {
 
@@ -301,48 +299,51 @@ public:
   /// @returns A set that contains all the elements of @p lhs followed by the
   ///          elements of @p rhs that are not already present in @p lhs. The
   ///          relative order of the elements in both sets is preserved.
-  template<empty_type... Us>
-  friend constexpr auto operator|(TypeSet lhs, TypeSet<Us...> rhs) noexcept {
-    return Overload{
-        [lhs](TypeSet<> /*rhs*/) { return lhs; },
-        [lhs]<class X, class... Xs>(TypeSet<X, Xs...> /*rhs*/) {
-          if constexpr (contains_v<X, Ts...>) return lhs | TypeSet<Xs...>{};
-          else return TypeSet<Ts..., X>{} | TypeSet<Xs...>{};
-        },
-    }(rhs);
+  /// @{
+  friend constexpr auto operator|(TypeSet lhs, TypeSet<> /*rhs*/) noexcept {
+    return lhs;
   }
+  template<empty_type U, empty_type... Us>
+  friend constexpr auto operator|(TypeSet lhs,
+                                  TypeSet<U, Us...> /*rhs*/) noexcept {
+    if constexpr (contains_v<U, Ts...>) return lhs | TypeSet<Us...>{};
+    else return TypeSet<Ts..., U>{} | TypeSet<Us...>{};
+  }
+  /// @}
 
   /// Set intersection.
   ///
   /// @returns A set that contains the elements of @p lhs that are also present
   ///          in @p rhs. The relative order of the elements in LHS is
   ///          preserved.
-  template<empty_type... Us>
-  friend constexpr auto operator&(TypeSet<Us...> lhs, TypeSet rhs) noexcept {
-    return Overload{
-        [](TypeSet<> lhs_) { return lhs_; },
-        [rhs]<class X, class... Xs>(TypeSet<X, Xs...> /*lhs*/) {
-          if constexpr (!contains_v<X, Ts...>) return TypeSet<Xs...>{} & rhs;
-          else return TypeSet<X>{} | (TypeSet<Xs...>{} & rhs);
-        },
-    }(lhs);
+  /// @{
+  friend constexpr auto operator&(TypeSet<> lhs, TypeSet /*rhs*/) noexcept {
+    return lhs;
   }
+  template<empty_type U, empty_type... Us>
+  friend constexpr auto operator&(TypeSet<U, Us...> /*lhs*/,
+                                  TypeSet rhs) noexcept {
+    if constexpr (!contains_v<U, Ts...>) return TypeSet<Us...>{} & rhs;
+    else return TypeSet<U>{} | (TypeSet<Us...>{} & rhs);
+  }
+  /// @}
 
   /// Set difference.
   ///
   /// @returns A set that contains all the elements of @p lhs excluding elements
   ///          that are contained in @p rhs. The relative order of the elements
   ///          in LHS is preserved.
-  template<empty_type... Us>
-  friend constexpr auto operator-(TypeSet<Us...> lhs, TypeSet rhs) noexcept {
-    return Overload{
-        [](TypeSet<> lhs_) { return lhs_; },
-        [rhs]<class X, class... Xs>(TypeSet<X, Xs...> /*lhs*/) {
-          if constexpr (contains_v<X, Ts...>) return (TypeSet<Xs...>{} - rhs);
-          else return TypeSet<X>{} | (TypeSet<Xs...>{} - rhs);
-        },
-    }(lhs);
+  /// @{
+  friend constexpr auto operator-(TypeSet<> lhs, TypeSet /*rhs*/) noexcept {
+    return lhs;
   }
+  template<empty_type U, empty_type... Us>
+  friend constexpr auto operator-(TypeSet<U, Us...> /*lhs*/,
+                                  TypeSet rhs) noexcept {
+    if constexpr (contains_v<U, Ts...>) return (TypeSet<Us...>{} - rhs);
+    else return TypeSet<U>{} | (TypeSet<Us...>{} - rhs);
+  }
+  /// @}
 
 }; // class TypeSet
 
@@ -355,7 +356,7 @@ inline constexpr bool is_type_set_v<TypeSet<Ts...>> = true;
 
 namespace impl {
 
-auto try_demangle(CStrView mangled_name) -> std::optional<std::string>;
+auto demangle(const char* mangled_name) -> std::string;
 
 template<class T>
 consteval auto type_name_of_helper() noexcept -> const char* {
@@ -379,8 +380,7 @@ consteval auto type_name_of() noexcept -> std::string_view {
 template<class T>
 constexpr auto type_name_of(const T& arg) -> std::string {
   if constexpr (std::is_polymorphic_v<std::remove_cvref_t<T>>) {
-    std::string mangled_name{typeid(arg).name()};
-    return impl::try_demangle(mangled_name).value_or(std::move(mangled_name));
+    return impl::demangle(typeid(arg).name());
   }
   return std::string{type_name_of<T>()};
 }

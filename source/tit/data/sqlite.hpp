@@ -50,7 +50,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Execute a SQL statement.
-  void execute(CStrView sql) const;
+  void execute(const std::string& sql) const;
 
   /// Get the last insert row ID.
   auto last_insert_row_id() const -> RowID;
@@ -113,9 +113,9 @@ public:
     TIT_ASSERT(sizeof...(Args) == num_params_(),
                "Number of arguments does not match the number of parameters!");
     if (state_ == State_::finished) reset();
-    size_t index = 0;
+    size_t index = npos;
     (..., [&index, this]<class Arg>(const Arg& arg) {
-      index += 1; // Statement arguments are one-based.
+      index += 1;
       if constexpr (std::integral<Arg> || std::is_enum_v<Arg>) {
         bind_(index, static_cast<int64_t>(arg));
       } else if constexpr (std::floating_point<Arg>) {
@@ -176,7 +176,7 @@ public:
                "Number of return values does not match the number of columns!");
     size_t index = npos;
     return {[&index, this]<class Column>() {
-      index += 1; // Columns are zero-based.
+      index += 1;
       if constexpr (std::integral<Column> || std::is_enum_v<Column>) {
         return static_cast<Column>(column_int_(index));
       } else if constexpr (std::floating_point<Column>) {
@@ -243,8 +243,8 @@ public:
 
   /// Open a blob from a database.
   BlobReader(const Database& db,
-             CStrView table_name,
-             CStrView column_name,
+             const std::string& table_name,
+             const std::string& column_name,
              RowID row_id);
 
   /// SQLite blob object.
@@ -268,8 +268,8 @@ private:
 
 /// Make a blob reader.
 constexpr auto make_blob_reader(const Database& db,
-                                CStrView table_name,
-                                CStrView column_name,
+                                const std::string& table_name,
+                                const std::string& column_name,
                                 RowID row_id) -> InputStreamPtr<byte_t> {
   return std::make_unique<BlobReader>(db, table_name, column_name, row_id);
 }

@@ -9,7 +9,6 @@
 #include <cctype>
 #include <charconv>
 #include <concepts>
-#include <format>
 #include <functional>
 #include <optional>
 #include <string>
@@ -18,8 +17,6 @@
 #include <type_traits>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
-#include "tit/core/tuple.hpp"
 
 namespace tit {
 
@@ -29,37 +26,6 @@ namespace tit {
 template<class Str>
 concept str_like = std::is_object_v<Str> && //
                    std::constructible_from<std::string_view, Str>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Zero-terminated string view.
-class CStrView final : public std::string_view {
-public:
-
-  /// Construct a zero-terminated string view from a string literal.
-  template<size_t Size>
-    requires (Size > 0)
-  consteval explicit(false) CStrView(carr_ref_t<const char, Size> str) noexcept
-      : std::string_view{static_cast<const char*>(str), Size - 1} {
-    TIT_ASSERT(str[Size - 1] == '\0', "String is not zero-terminated!");
-  }
-
-  /// Construct a zero-terminated string view from a raw pointer.
-  constexpr explicit CStrView(const char* str) noexcept
-      : std::string_view{str} {
-    TIT_ASSERT(str != nullptr, "String is null!");
-  }
-
-  /// Construct a zero-terminated string view from a string.
-  constexpr explicit(false) CStrView(const std::string& str) noexcept
-      : std::string_view{str} {}
-
-  /// Get the underlying zero-terminated string.
-  constexpr auto c_str() const noexcept -> const char* {
-    return data();
-  }
-
-}; // class CStrView
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -144,9 +110,3 @@ auto fmt_quantity(Val value, std::string_view unit, size_t precision = 1)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
-
-// Formatter for `CStrView`.
-template<>
-struct std::formatter<tit::CStrView> : std::formatter<std::string_view> {};
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -24,7 +24,7 @@ using namespace tit::data;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const char* ttdb_type__kind(ttdb_type_t type) {
-  return safe_call([type] { return DataType{type}.kind().name().c_str(); });
+  return safe_call([type] { return DataType{type}.kind().name(); });
 }
 
 uint32_t ttdb_type__rank(ttdb_type_t type) {

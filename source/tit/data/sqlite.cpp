@@ -18,9 +18,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
-#include "tit/core/str.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/data/sqlite.hpp"
 
 namespace tit::data::sqlite {
@@ -80,7 +78,7 @@ auto Database::path() const -> std::filesystem::path {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void Database::execute(CStrView sql) const {
+void Database::execute(const std::string& sql) const {
   char* error_message = nullptr;
   if (const auto status = sqlite3_exec(base(),
                                        sql.c_str(),
@@ -151,10 +149,10 @@ auto Statement::num_params_() const -> size_t {
 
 void Statement::bind_(size_t index, int64_t value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
-  TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
+  TIT_ASSERT(index < num_params_(), "Param index is out of range!");
 
   if (const auto status =
-          sqlite3_bind_int64(base(), static_cast<int>(index), value);
+          sqlite3_bind_int64(base(), static_cast<int>(index) + 1, value);
       status != SQLITE_OK) {
     TIT_THROW("SQLite statement bind integer argument #{} failed ({}): {}.",
               index,
@@ -165,10 +163,10 @@ void Statement::bind_(size_t index, int64_t value) const {
 
 void Statement::bind_(size_t index, float64_t value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
-  TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
+  TIT_ASSERT(index < num_params_(), "Param index is out of range!");
 
   if (const auto status =
-          sqlite3_bind_double(base(), static_cast<int>(index), value);
+          sqlite3_bind_double(base(), static_cast<int>(index) + 1, value);
       status != SQLITE_OK) {
     TIT_THROW("SQLite statement bind real argument #{} failed ({}): {}.",
               index,
@@ -179,12 +177,12 @@ void Statement::bind_(size_t index, float64_t value) const {
 
 void Statement::bind_(size_t index, std::string_view value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
-  TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
+  TIT_ASSERT(index < num_params_(), "Param index is out of range!");
   TIT_ASSERT(value.size() <= std::numeric_limits<int>::max(),
              "Statement string argument is too large!");
 
   if (const auto status = sqlite3_bind_text(base(),
-                                            static_cast<int>(index),
+                                            static_cast<int>(index) + 1,
                                             value.data(),
                                             static_cast<int>(value.size()),
                                             SQLITE_STATIC);
@@ -198,12 +196,12 @@ void Statement::bind_(size_t index, std::string_view value) const {
 
 void Statement::bind_(size_t index, BlobView value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
-  TIT_ASSERT(in_range(index, 1, num_params_()), "Param index is out of range!");
+  TIT_ASSERT(index < num_params_(), "Param index is out of range!");
   TIT_ASSERT(value.size() <= std::numeric_limits<int>::max(),
              "Statement blob argument is too large!");
 
   if (const auto status = sqlite3_bind_blob(base(),
-                                            static_cast<int>(index),
+                                            static_cast<int>(index) + 1,
                                             value.data(),
                                             static_cast<int>(value.size()),
                                             SQLITE_STATIC);
@@ -218,7 +216,7 @@ void Statement::bind_(size_t index, BlobView value) const {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto Statement::step() -> bool {
-  TIT_ASSERT(is_any_of(state_, State_::prepared, State_::executing),
+  TIT_ASSERT(state_ == State_::prepared || state_ == State_::executing,
              "Statement was already executed!");
 
   switch (const auto status = sqlite3_step(base()); status) {
@@ -239,7 +237,7 @@ void Statement::reset() {
 }
 
 void Statement::run() {
-  TIT_ASSERT(is_any_of(state_, State_::prepared, State_::finished),
+  TIT_ASSERT(state_ == State_::prepared || state_ == State_::finished,
              "Statement must be either prepared or finished!");
 
   const auto more_rows = step();
@@ -342,8 +340,8 @@ auto Statement::column_blob_(size_t index) const -> BlobView {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 BlobReader::BlobReader(const Database& db,
-                       CStrView table_name,
-                       CStrView column_name,
+                       const std::string& table_name,
+                       const std::string& column_name,
                        RowID row_id)
     : db_{&db} {
   sqlite3_blob* blob = nullptr;

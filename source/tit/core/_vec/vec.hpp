@@ -664,15 +664,14 @@ constexpr auto approx_equal_to(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
 /// Vector cross product.
 ///
 /// @returns 3D vector with a result of cross product.
-template<class Num, size_t Dim>
-  requires (in_range(Dim, 1, 3))
-constexpr auto cross(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
+template<class Num>
+constexpr auto cross(const Vec<Num, 3>& a, const Vec<Num, 3>& b)
     -> Vec<Num, 3> {
-  Vec<Num, 3> r{};
-  if constexpr (Dim == 3) r[0] = a[1] * b[2] - a[2] * b[1];
-  if constexpr (Dim == 3) r[1] = a[2] * b[0] - a[0] * b[2];
-  if constexpr (Dim >= 2) r[2] = a[0] * b[1] - a[1] * b[0];
-  return r;
+  return Vec<Num, 3>{
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+  };
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
