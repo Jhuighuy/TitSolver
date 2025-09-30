@@ -10,7 +10,6 @@
 #include "tit/core/_mat/traits.hpp"
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/enum.hpp"
 
 namespace tit {
 
@@ -29,8 +28,15 @@ enum class MatPart : uint8_t {
   transposed = 1 << 7,       ///< Transpose the matrix.
 };
 
-template<>
-inline constexpr bool is_flags_enum_v<MatPart> = true;
+/// Check if two matrix part flags enums intersect.
+constexpr auto operator&(MatPart f, MatPart g) noexcept -> bool {
+  return (std::to_underlying(f) & std::to_underlying(g)) != 0;
+}
+
+/// Merge two matrix part flags enums.
+constexpr auto operator|(MatPart f, MatPart g) noexcept -> MatPart {
+  return static_cast<MatPart>(std::to_underlying(f) | std::to_underlying(g));
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
