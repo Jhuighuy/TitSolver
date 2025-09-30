@@ -8,13 +8,11 @@
 #include <algorithm>
 #include <array>
 #include <functional>
-#include <ranges>
+#include <span>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/range.hpp"
-#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/point_range.hpp"
@@ -28,17 +26,16 @@ class CoordBisection final {
 public:
 
   /// Bisect the points along axis, spaned by the given coordinate axis.
-  template<point_range Points, output_index_range Perm>
+  template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            Perm&& perm,
+                            std::span<size_t> perm,
                             point_range_num_t<Points> pivot,
                             size_t axis,
                             bool reverse = false) const
-      -> pair_of_t<std::ranges::borrowed_subrange_t<Perm>> {
+      -> std::pair<std::span<size_t>, std::span<size_t>> {
     TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Perm, perm);
     TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
-    std::ranges::borrowed_subrange_t<Perm> right_perm;
+    std::span<size_t> right_perm;
     if (reverse) {
       right_perm = std::ranges::partition(
           perm,
@@ -50,7 +47,7 @@ public:
           std::bind_back(std::less{}, pivot),
           [&points, axis](size_t index) { return points[index][axis]; });
     }
-    return {{std::begin(perm), std::begin(right_perm)}, std::move(right_perm)};
+    return {{std::begin(perm), std::begin(right_perm)}, right_perm};
   }
 
 }; // class CoordBisection
@@ -65,16 +62,15 @@ class DirBisection final {
 public:
 
   /// Bisect the points along axis, spaned by the given direction.
-  template<point_range Points, output_index_range Perm>
+  template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            Perm&& perm,
+                            std::span<size_t> perm,
                             point_range_num_t<Points> pivot,
                             const point_range_vec_t<Points>& dir,
                             bool reverse = false) const
-      -> pair_of_t<std::ranges::borrowed_subrange_t<Perm>> {
+      -> std::pair<std::span<size_t>, std::span<size_t>> {
     TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Perm, perm);
-    std::ranges::borrowed_subrange_t<Perm> right_perm;
+    std::span<size_t> right_perm;
     if (reverse) {
       right_perm = std::ranges::partition(
           perm,
@@ -86,7 +82,7 @@ public:
           std::bind_back(std::less{}, pivot),
           [&points, &dir](size_t index) { return dot(points[index], dir); });
     }
-    return {{std::begin(perm), std::begin(right_perm)}, std::move(right_perm)};
+    return {{std::begin(perm), std::begin(right_perm)}, right_perm};
   }
 
 }; // class DirBisection
@@ -102,15 +98,15 @@ public:
 
   /// Split the points into two parts by the median along the
   /// given coordinate axis.
-  template<point_range Points, output_index_range Perm>
+  template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            Perm&& perm,
-                            std::ranges::iterator_t<Perm> median,
+                            std::span<size_t> perm,
+                            size_t median_index,
                             size_t axis) const
-      -> pair_of_t<std::ranges::borrowed_subrange_t<Perm>> {
+      -> std::pair<std::span<size_t>, std::span<size_t>> {
     TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Perm, perm);
     TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
+    const auto median = perm.begin() + static_cast<ssize_t>(median_index);
     std::ranges::nth_element(
         perm,
         median,
@@ -121,16 +117,15 @@ public:
 
   /// Split the points into two parts by the median along the longest axis
   /// of the points bounding box.
-  template<point_range Points, output_index_range Perm>
+  template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            Perm&& perm,
-                            std::ranges::iterator_t<Perm> median) const
-      -> pair_of_t<std::ranges::borrowed_subrange_t<Perm>> {
+                            std::span<size_t> perm,
+                            size_t median_index) const
+      -> std::pair<std::span<size_t>, std::span<size_t>> {
     TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Perm, perm);
     const auto box = compute_bbox(points, perm);
     const auto axis = max_value_index(box.extents());
-    return (*this)(points, perm, median, axis);
+    return (*this)(points, perm, median_index, axis);
   }
 
 }; // class CoordMedianSplit
@@ -146,14 +141,14 @@ public:
 
   /// Split the points into two parts by the median along the axis, spaned by
   /// the given direction.
-  template<point_range Points, output_index_range Perm>
+  template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            Perm&& perm,
-                            std::ranges::iterator_t<Perm> median,
+                            std::span<size_t> perm,
+                            size_t median_index,
                             const point_range_vec_t<Points>& dir) const
-      -> pair_of_t<std::ranges::borrowed_subrange_t<Perm>> {
+      -> std::pair<std::span<size_t>, std::span<size_t>> {
     TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Perm, perm);
+    const auto median = perm.begin() + static_cast<ssize_t>(median_index);
     std::ranges::nth_element( //
         perm,
         median,
@@ -177,18 +172,17 @@ public:
   /// Split the points into two parts by the median along the axis, spaned by
   /// "largest" inertial axis of the point cloud. If the inertia analysis fails,
   /// the given fallback vector is used instead.
-  template<point_range Points, output_index_range Perm>
+  template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            Perm&& perm,
-                            std::ranges::iterator_t<Perm> median,
+                            std::span<size_t> perm,
+                            size_t median_index,
                             const point_range_vec_t<Points>& fallback_dir =
                                 unit(point_range_vec_t<Points>{})) const
-      -> pair_of_t<std::ranges::borrowed_subrange_t<Perm>> {
+      -> std::pair<std::span<size_t>, std::span<size_t>> {
     TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Perm, perm);
     const auto dir =
         compute_largest_inertia_axis(points, perm).value_or(fallback_dir);
-    return dir_median_split(points, perm, median, dir);
+    return dir_median_split(points, perm, median_index, dir);
   }
 
 }; // class InertialMedianSplit

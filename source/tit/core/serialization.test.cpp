@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstddef>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -45,7 +46,7 @@ TEST_CASE("serialize<std::array<...>>") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("StreamSerializer") {
-  std::vector<byte_t> bytes{};
+  std::vector<std::byte> bytes{};
   make_stream_serializer<int32_t>(make_container_output_stream(bytes))
       ->write(std::array{1, 2, 3});
 

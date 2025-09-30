@@ -8,16 +8,17 @@
 #include <algorithm>
 #include <concepts>
 #include <iterator>
+#include <limits>
 #include <ranges>
 #include <utility>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/func.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
 #include "tit/geom/grid.hpp"
@@ -48,7 +49,7 @@ public:
     TIT_ASSERT(size_hint > 0.0, "Cell size hint must be positive!");
     const auto box = compute_bbox(points_).grow(size_hint / 2);
     grid_ = Grid{box}.set_cell_extents(size_hint);
-    first_point_.assign(grid_.flat_num_cells(), npos);
+    first_point_.assign(grid_.flat_num_cells(), sentinel_);
     next_point_.resize(std::ranges::size(points_));
     par::transform(std::views::enumerate(points_),
                    next_point_.begin(),
@@ -71,7 +72,7 @@ public:
     const auto search_radius_sq = pow2(search_radius);
     for (const auto& cell : grid_.cells_intersecting(search_box)) {
       for (auto index = first_point_[grid_.flatten_cell_index(cell)];
-           index != npos;
+           index != sentinel_;
            index = next_point_[index]) {
         if (pred(index) &&
             norm2(points_[index] - search_point) < search_radius_sq) {
@@ -90,6 +91,7 @@ private:
   Grid<Vec> grid_;
   std::vector<size_t> first_point_;
   std::vector<size_t> next_point_;
+  static constexpr auto sentinel_ = std::numeric_limits<size_t>::max();
 
 }; // class GridIndex
 

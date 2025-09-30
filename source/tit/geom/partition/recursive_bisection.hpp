@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <numeric>
 #include <ranges>
 #include <span>
 #include <utility>
@@ -55,7 +56,8 @@ public:
     }
 
     // Initialize the permutation.
-    auto perm = iota_perm(points) | std::ranges::to<std::vector>();
+    std::vector<size_t> perm(std::ranges::size(points));
+    std::ranges::iota(perm, size_t{0});
 
     // Partition the points.
     par::TaskGroup tasks{};
@@ -78,8 +80,8 @@ public:
       const auto left_part = my_part;
       const auto right_part = my_part + left_num_parts;
       const auto median_index = left_num_parts * my_perm.size() / my_num_parts;
-      const auto median = my_perm.begin() + static_cast<ssize_t>(median_index);
-      const auto [left_perm, right_perm] = bisection(points, my_perm, median);
+      const auto [left_perm, right_perm] =
+          bisection(points, my_perm, median_index);
 
       // Recursively partition the halves.
       tasks.run(std::bind_front(self, left_num_parts, left_part, left_perm));

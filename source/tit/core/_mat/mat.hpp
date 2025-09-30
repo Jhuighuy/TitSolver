@@ -14,7 +14,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
@@ -180,10 +179,14 @@ private:
 template<class Row, class... RestRows>
 Mat(Row, RestRows...) -> Mat<vec_num_t<Row>, 1 + sizeof...(RestRows)>;
 
+// NOLINTBEGIN(*-c-arrays)
+
 template<class Num, class... RestNums>
-Mat(carr_ref_t<const Num, 1 + sizeof...(RestNums)>,
-    carr_ref_t<const RestNums, 1 + sizeof...(RestNums)>...)
+Mat(const Num (&row)[1 + sizeof...(RestNums)],
+    const RestNums (&... rest_rows)[1 + sizeof...(RestNums)])
     -> Mat<Num, 1 + sizeof...(RestNums)>;
+
+// NOLINTEND(*-c-arrays)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

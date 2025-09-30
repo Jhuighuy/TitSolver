@@ -9,6 +9,7 @@
 #include <array>
 #include <concepts>
 #include <deque>
+#include <limits>
 #include <ranges>
 #include <span>
 #include <vector>
@@ -68,7 +69,7 @@ public:
 
     // Identify the active pixels and collect their coordinates.
     struct Pixel {
-      size_t index = npos;
+      size_t index = std::numeric_limits<size_t>::max();
       bool active = false;
     };
     Mdvector<Pixel, point_range_dim_v<Points>> pixels{grid.num_cells().elems()};

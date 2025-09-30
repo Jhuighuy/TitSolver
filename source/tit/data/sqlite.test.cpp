@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstddef>
 #include <filesystem>
 #include <numbers>
 #include <ranges>
@@ -13,7 +14,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/path.hpp"
 #include "tit/core/range.hpp"
 #include "tit/data/sqlite.hpp"
 #include "tit/testing/test.hpp"
@@ -21,7 +21,7 @@
 namespace tit {
 namespace {
 
-using Blob = std::vector<byte_t>;
+using Blob = std::vector<std::byte>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -68,8 +68,8 @@ TEST_CASE("data::sqlite::Database") {
                        "unable to open database file");
     }
     SUBCASE("invalid database") {
-      // Our current executable definitely is not a valid SQLite database.
-      CHECK_THROWS_MSG(data::sqlite::Database{exe_path()},
+      // Our current source file definitely is not a valid SQLite database.
+      CHECK_THROWS_MSG(data::sqlite::Database{__FILE__},
                        Exception,
                        "file is not a database");
     }
@@ -282,14 +282,14 @@ TEST_CASE("data::sqlite::BlobReader") {
   SUBCASE("success") {
     SUBCASE("exact size") {
       auto reader = data::sqlite::make_blob_reader(db, "Constants", "value", 1);
-      std::vector<byte_t> result(sizeof(float));
+      std::vector<std::byte> result(sizeof(float));
       REQUIRE(reader->read(result) == sizeof(float));
       CHECK(result == to_bytes(std::numbers::pi_v<float>));
       CHECK(reader->read(result) == 0);
     }
     SUBCASE("smaller size") {
       auto reader = data::sqlite::make_blob_reader(db, "Constants", "value", 2);
-      std::vector<byte_t> result(sizeof(long double) / 2);
+      std::vector<std::byte> result(sizeof(long double) / 2);
       REQUIRE(reader->read(result) == sizeof(long double) / 2);
       CHECK(result <= to_bytes(std::numbers::e_v<long double>));
       CHECK(reader->read(result) == sizeof(long double) / 2);
@@ -297,7 +297,7 @@ TEST_CASE("data::sqlite::BlobReader") {
     }
     SUBCASE("larger size") {
       auto reader = data::sqlite::make_blob_reader(db, "Constants", "value", 3);
-      std::vector<byte_t> result(sizeof(double) * 2);
+      std::vector<std::byte> result(sizeof(double) * 2);
       REQUIRE(reader->read(result) == sizeof(double));
       CHECK(result >= to_bytes(std::numbers::phi_v<double>));
       CHECK(reader->read(result) == 0);

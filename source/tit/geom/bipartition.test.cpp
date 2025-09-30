@@ -5,10 +5,10 @@
 
 #include <algorithm>
 #include <array>
+#include <numeric>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/range.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
@@ -28,7 +28,7 @@ TEST_CASE("geom::CoordBisection") {
 
   // Initialize the permutation.
   std::array<size_t, 16> perm{};
-  iota_perm(points, perm);
+  std::ranges::iota(perm, size_t{0});
 
   // Partition and ensure the result is correct.
   constexpr size_t axis = 0;
@@ -57,7 +57,7 @@ TEST_CASE("geom::DirBisection") {
 
   // Initialize the permutation.
   std::array<size_t, 16> perm{};
-  iota_perm(points, perm);
+  std::ranges::iota(perm, size_t{0});
 
   // Partition and ensure the result is correct.
   const auto dir = normalize(Vec2D{1, 1});
@@ -87,12 +87,12 @@ TEST_CASE("geom::CoordMedianSplit") {
 
     // Initialize the permutation.
     std::array<size_t, 16> perm{};
-    iota_perm(points, perm);
+    std::ranges::iota(perm, size_t{0});
 
     // Partition the points.
     constexpr size_t axis = 0;
     const auto [left_perm, right_perm] =
-        geom::coord_median_split(points, perm, perm.begin() + 8, axis);
+        geom::coord_median_split(points, perm, 8, axis);
 
     // Sort the permutations, since the exact order is not guaranteed.
     std::ranges::sort(left_perm), std::ranges::sort(right_perm);
@@ -108,11 +108,11 @@ TEST_CASE("geom::CoordMedianSplit") {
 
     // Initialize the permutation.
     std::array<size_t, 20> perm{};
-    iota_perm(points, perm);
+    std::ranges::iota(perm, size_t{0});
 
     // Partition the points.
     const auto [left_perm, right_perm] =
-        geom::coord_median_split(points, perm, perm.begin() + 12);
+        geom::coord_median_split(points, perm, 12);
 
     // Sort the permutations, since the exact order is not guaranteed.
     std::ranges::sort(left_perm), std::ranges::sort(right_perm);
@@ -132,12 +132,12 @@ TEST_CASE("geom::DirMedianSplit") {
 
   // Initialize the permutation.
   std::array<size_t, 16> perm{};
-  iota_perm(points, perm);
+  std::ranges::iota(perm, size_t{0});
 
   // Partition the points.
   const auto dir = normalize(Vec2D{1, 1});
   const auto [left_perm, right_perm] =
-      geom::dir_median_split(points, perm, perm.begin() + 6, dir);
+      geom::dir_median_split(points, perm, 6, dir);
 
   // Sort the permutations, since the exact order is not guaranteed.
   std::ranges::sort(left_perm), std::ranges::sort(right_perm);
@@ -168,11 +168,11 @@ TEST_CASE("geom::InertialMedianSplit") {
 
   // Initialize the permutation.
   std::array<size_t, 20> perm{};
-  iota_perm(rotated_points, perm);
+  std::ranges::iota(perm, size_t{0});
 
   // Partition the points.
   const auto [left_perm, right_perm] =
-      geom::inertial_median_split(rotated_points, perm, perm.begin() + 12);
+      geom::inertial_median_split(rotated_points, perm, 12);
 
   // Sort the permutations, since the exact order is not guaranteed.
   std::ranges::sort(left_perm), std::ranges::sort(right_perm);

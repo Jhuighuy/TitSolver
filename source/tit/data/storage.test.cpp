@@ -11,7 +11,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/path.hpp"
 #include "tit/core/range.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"
@@ -62,8 +61,8 @@ TEST_CASE("data::DataStorage") {
                        "unable to open database file");
     }
     SUBCASE("invalid file") {
-      // Our current executable definitely is not a valid `.ttdb` file.
-      CHECK_THROWS_MSG(data::sqlite::Database{exe_path()},
+      // Our current source file definitely is not a valid `.ttdb` file.
+      CHECK_THROWS_MSG(data::sqlite::Database{__FILE__},
                        Exception,
                        "file is not a database");
     }
