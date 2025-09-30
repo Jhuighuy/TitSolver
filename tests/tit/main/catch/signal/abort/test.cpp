@@ -6,7 +6,6 @@
 #include <csignal>
 
 #include "tit/core/print.hpp"
-#include "tit/core/runtime.hpp"
 #include "tit/main/main.hpp"
 
 namespace tit {
@@ -34,7 +33,6 @@ namespace {
 } // namespace
 
 void tit_main(CmdArgs /*args*/) {
-  checked_atexit([] { eprintln("At exit..."); });
   func_1();
   eprintln("This line should not be executed.");
 }
