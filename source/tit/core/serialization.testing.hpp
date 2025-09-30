@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -20,7 +21,7 @@ namespace tit::testing {
 // Test serialization of a type.
 template<class T>
 void test_serialization(const T& input, size_t expected_size) {
-  std::vector<byte_t> bytes{};
+  std::vector<std::byte> bytes{};
   serialize(*make_container_output_stream(bytes), input);
   CHECK(bytes.size() == expected_size);
   SUBCASE("success") {

@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <chrono>
 #include <csignal>
+#include <cstdlib>
 #include <cstring>
 #include <exception>
 #include <filesystem>
@@ -30,7 +31,6 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/runtime.hpp"
 #include "tit/core/stacktrace.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/str.hpp"
@@ -39,6 +39,10 @@
 #include "tit/main/main.hpp"
 #include "tit/par/control.hpp"
 
+#ifdef TIT_HAVE_GCOV
+extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
+#endif
+
 namespace tit {
 namespace {
 
@@ -46,6 +50,15 @@ namespace {
 
 void ewrite(std::string_view message) noexcept {
   static_cast<void>(write(STDERR_FILENO, message.data(), message.size()));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[[noreturn]] void fast_exit(int exit_code) noexcept {
+#ifdef TIT_HAVE_GCOV
+  __gcov_dump();
+#endif
+  std::_Exit(exit_code);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,8 +117,9 @@ void println_logo_and_system_info() {
       R"(               ############               )",
   });
 
+  /// @todo In C++26 there would be no need for `std::string{...}`.
   std::chrono::year_month_day commit_date{};
-  std::istringstream{build_info::commit_date().c_str()} >>
+  std::istringstream{std::string{build_info::commit_date()}} >>
       std::chrono::parse("%F", commit_date);
 
   std::vector<std::string> info_lines{
@@ -199,7 +213,8 @@ void setup_signal_handlers() noexcept {
 
   // Define descriptions for a subset of signals.
   // NOLINTBEGIN(*-include-cleaner) -- Some of these are not in C++ standard.
-  static constexpr auto signals = std::to_array<std::pair<int, CStrView>>({
+  using SigDescr = std::pair<int, std::string_view>;
+  static constexpr auto signals = std::to_array<SigDescr>({
       {SIGHUP, "Hangup (SIGHUP).\n"},
       {SIGINT, "Interrupted by Ctrl+C (SIGINT).\n"},
       {SIGQUIT, "Quit (SIGQUIT).\n"},
@@ -231,7 +246,7 @@ void setup_signal_handlers() noexcept {
 
       // Print the stack trace, if needed, and exit.
       if (sig == SIGINT || sig == SIGTERM) {
-        exit(static_cast<ExitCode>(-sig));
+        std::exit(-sig); // NOLINT(concurrency-mt-unsafe)
       } else {
         ewrite("\n");
         ewrite("\n");
@@ -243,7 +258,7 @@ void setup_signal_handlers() noexcept {
         backtrace_symbols_fd(trace.data(), depth, STDERR_FILENO);
 
         // Since we consider this a crash, let's not invoke at-exit handlers.
-        fast_exit(static_cast<ExitCode>(-sig));
+        fast_exit(-sig);
       }
     });
     if (prev_handler == SIG_ERR) {
@@ -291,7 +306,7 @@ void setup_terminate_handler() noexcept {
         // simple one beforehand.
         if (default_terminate_handler != nullptr) {
           static_cast<void>(std::signal(SIGABRT, [] [[noreturn]] (int /*sig*/) {
-            fast_exit(ExitCode{1});
+            fast_exit(1);
           }));
           default_terminate_handler();
           std::unreachable(); // Should not return.
@@ -304,7 +319,7 @@ void setup_terminate_handler() noexcept {
     }
 
     // Since we consider this a crash, let's not invoke at-exit handlers.
-    fast_exit(ExitCode{1});
+    fast_exit(1);
   });
   if (default_terminate_handler == nullptr) {
     terminate_on_exception([] { //

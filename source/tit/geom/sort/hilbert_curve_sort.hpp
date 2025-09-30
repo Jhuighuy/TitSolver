@@ -6,14 +6,14 @@
 #pragma once
 
 #include <array>
+#include <numeric>
 #include <ranges>
+#include <span>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/range.hpp"
-#include "tit/core/tuple.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
@@ -120,7 +120,8 @@ public:
   }
 
   // Compute a pair of next states.
-  constexpr auto next() const noexcept -> pair_of_t<HilbertState> {
+  constexpr auto next() const noexcept
+      -> std::pair<HilbertState, HilbertState> {
     const auto next_rot = curr_rot_.shift();
     if (next_rot.axis() != init_rot_.axis()) {
       // Rotate the current state.
@@ -149,18 +150,17 @@ class HilbertCurveSort final {
 public:
 
   /// Order the points along the Hilbert space filling curve.
-  template<point_range Points, output_index_range Perm>
-  void operator()(Points&& points, Perm&& perm) const {
+  template<point_range Points>
+  void operator()(Points&& points, std::span<size_t> perm) const {
     TIT_PROFILE_SECTION("HilbertCurveSort::operator()");
     TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Perm, perm);
     using Box = point_range_bbox_t<Points>;
     static constexpr auto Dim = point_range_dim_v<Points>;
     using State = impl::HilbertState<Dim>;
 
     // Initialize sorting.
     const auto box = compute_bbox(points);
-    iota_perm(points, perm);
+    std::ranges::iota(perm, size_t{0});
 
     // Recursively partition the points along the Hilbert curve.
     par::TaskGroup tasks{};

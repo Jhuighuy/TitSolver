@@ -16,7 +16,6 @@
 #include <concepts>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/utils.hpp"
 
 namespace tit::simd {
 
@@ -90,9 +89,10 @@ inline constexpr size_t max_reg_size_v = max_reg_byte_width_v / sizeof(Num);
 
 /// Is SIMD supported for the specified numeric type and size?
 template<class Num, size_t Size>
-concept supported = supported_type<Num> &&
-                    in_range(Size, min_reg_size_v<Num>, max_reg_size_v<Num>) &&
-                    (Size % min_reg_size_v<Num> == 0);
+concept supported =
+    supported_type<Num> &&
+    (min_reg_size_v<Num> <= Size && Size <= max_reg_size_v<Num>) &&
+    (Size % min_reg_size_v<Num> == 0);
 
 // Is SIMD castable from one type to another?
 template<class From, class To, size_t Size>

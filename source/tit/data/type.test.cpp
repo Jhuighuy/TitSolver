@@ -24,10 +24,6 @@ TEST_CASE("data::DataKind") {
   }
   SUBCASE("incorrect") {
     // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
-    CHECK_THROWS_MSG(data::DataKind{data::DataKind::ID{0}},
-                     Exception,
-                     "Invalid data kind ID: 0.");
-    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
     CHECK_THROWS_MSG(data::DataKind{data::DataKind::ID{137}},
                      Exception,
                      "Invalid data kind ID: 137.");

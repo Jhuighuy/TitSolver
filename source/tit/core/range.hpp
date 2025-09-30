@@ -8,8 +8,7 @@
 
 #include <algorithm>
 #include <array>
-#include <concepts>
-#include <iterator>
+#include <cstddef>
 #include <ranges>
 #include <span>
 #include <type_traits>
@@ -24,69 +23,35 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Contiguous range with fixed size.
-template<class Range>
-concept contiguous_fixed_size_range =
-    std::ranges::contiguous_range<Range> && std::ranges::sized_range<Range> &&
-    decltype(std::span{std::declval<Range&>()})::extent != std::dynamic_extent;
-
-/// Size of the contiguous fixed size range.
-template<contiguous_fixed_size_range Range>
-inline constexpr auto range_fixed_size_v =
-    decltype(std::span{std::declval<Range&>()})::extent;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Range of indices.
-template<class Indices>
-concept index_range = std::ranges::random_access_range<Indices> &&
-                      std::integral<std::ranges::range_value_t<Indices>>;
-
 /// Range of indices that can be used as output for various algorithms.
 template<class Indices>
 concept output_index_range = std::ranges::random_access_range<Indices> &&
                              std::ranges::output_range<Indices, size_t>;
 
 /// Permuted range view.
-template<std::ranges::random_access_range Range, index_range Perm>
-  requires std::ranges::viewable_range<Range> &&
-           std::ranges::viewable_range<Perm>
-constexpr auto permuted_view(Range&& range, Perm&& perm) {
+template<std::ranges::random_access_range Range>
+  requires std::ranges::viewable_range<Range>
+constexpr auto permuted_view(Range&& range, std::span<const size_t> perm) {
   TIT_ASSUME_UNIVERSAL(Range, range);
-  return std::ranges::transform_view{
-      std::forward<Perm>(perm),
-      [range_view = std::views::all(std::forward<Range>(range))](
-          size_t index) -> auto&& { return range_view[index]; }};
+  return perm | std::views::transform(
+                    [range_view = std::views::all(std::forward<Range>(range))](
+                        size_t index) -> auto&& { return range_view[index]; });
 }
-
-/// Initialize the permutation with the identity permutation.
-/// @{
-template<std::ranges::sized_range Range>
-[[nodiscard]] constexpr auto iota_perm(Range&& range) noexcept {
-  TIT_ASSUME_UNIVERSAL(Range, range);
-  return std::views::iota(size_t{0}, std::size(range));
-}
-template<std::ranges::sized_range Range, output_index_range Perm>
-constexpr void iota_perm(Range&& range, Perm&& perm) {
-  TIT_ASSUME_UNIVERSAL(Range, range);
-  TIT_ASSUME_UNIVERSAL(Perm, perm);
-  std::ranges::copy(iota_perm(range), std::begin(perm));
-}
-/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Convert a value to a byte array.
 template<class T>
   requires std::is_trivially_copyable_v<T>
-constexpr auto to_byte_array(const T& value) -> std::array<byte_t, sizeof(T)> {
-  return std::bit_cast<std::array<byte_t, sizeof(T)>>(value);
+constexpr auto to_byte_array(const T& value)
+    -> std::array<std::byte, sizeof(T)> {
+  return std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
 }
 
 /// Convert a value to a byte vector.
 template<class T>
   requires std::is_trivially_copyable_v<T>
-constexpr auto to_bytes(const T& value) -> std::vector<byte_t> {
+constexpr auto to_bytes(const T& value) -> std::vector<std::byte> {
   const auto bytes_array = to_byte_array(value);
   return {bytes_array.begin(), bytes_array.end()};
 }
@@ -94,9 +59,9 @@ constexpr auto to_bytes(const T& value) -> std::vector<byte_t> {
 /// Convert a byte array to a value.
 template<class T>
   requires std::is_trivially_copyable_v<T>
-constexpr auto from_bytes(std::span<const byte_t> bytes) -> T {
+constexpr auto from_bytes(std::span<const std::byte> bytes) -> T {
   TIT_ASSERT(bytes.size() >= sizeof(T), "Invalid byte array size!");
-  std::array<byte_t, sizeof(T)> bytes_array{};
+  std::array<std::byte, sizeof(T)> bytes_array{};
   std::ranges::copy(bytes, bytes_array.begin());
   return std::bit_cast<T>(bytes_array);
 }
