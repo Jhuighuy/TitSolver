@@ -24,7 +24,6 @@
 !/vcpkg.json
 
 # Web configuration files.
-!/.prettierrc
 !biome.json
 !package.json
 !*.config.json
