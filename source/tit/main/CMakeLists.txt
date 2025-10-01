@@ -11,11 +11,9 @@ add_tit_library(
   SOURCES
     "main.cpp"
     "main.hpp"
-    "malloc.cpp"
   DEPENDS
     tit::core
     tit::par
-    mimalloc-static
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

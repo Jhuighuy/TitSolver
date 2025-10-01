@@ -12,7 +12,6 @@
     "doctest",
     "gcem",
     "highway",
-    "mimalloc",
     "sqlite3",
     "tbb",
     "zstd"
