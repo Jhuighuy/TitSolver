@@ -3,10 +3,6 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("_cxx")
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 configure_file("build_info.cpp.in" "build_info.cpp" @ONLY)
 
 add_tit_library(
@@ -70,7 +66,6 @@ add_tit_library(
     "utils.hpp"
     "vec.hpp"
   DEPENDS
-    _cxx
     Boost::container
     gcem
     hwy::hwy
