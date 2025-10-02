@@ -136,7 +136,7 @@ set(CLANG_LINK_OPTIONS_DEBUG ${CLANG_LINK_OPTIONS} ${CLANG_DEBUG_OPTIONS})
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find clang-tidy. Prefer version-suffixed executables.
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy-20" "clang-tidy")
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-21" "clang-tidy")
 
 # Define clang-tidy options.
 set(
