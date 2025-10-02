@@ -4,12 +4,12 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <source_location>
-#include <stacktrace>
 #include <string_view>
 
 #include "tit/core/checks.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/runtime.hpp"
+#include "tit/core/stacktrace.hpp"
 
 namespace tit::impl {
 
@@ -33,7 +33,7 @@ namespace tit::impl {
   eprintln();
   eprintln("Stack trace:");
   eprintln();
-  eprintln("{}", std::stacktrace::current());
+  eprintln("{}", Stacktrace::current());
 
   // Fast-exit with failure.
   fast_exit(ExitCode{1});

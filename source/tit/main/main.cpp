@@ -15,7 +15,6 @@
 #include <mutex>
 #include <ranges>
 #include <source_location>
-#include <stacktrace>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -32,6 +31,7 @@
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/runtime.hpp"
+#include "tit/core/stacktrace.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/sys_info.hpp"
@@ -57,7 +57,7 @@ void eprintln_crash_report(
     std::string_view cause = "",
     std::string_view cause_description = "",
     std::source_location loc = std::source_location::current(),
-    std::stacktrace trace = std::stacktrace::current()) {
+    Stacktrace stacktrace = Stacktrace::current()) {
   eprintln();
   eprintln();
   eprint("{}:{}:{}: {}", loc.file_name(), loc.line(), loc.column(), message);
@@ -75,7 +75,7 @@ void eprintln_crash_report(
   eprintln();
   eprintln("Stack trace:");
   eprintln();
-  eprintln("{}", trace);
+  eprintln("{}", stacktrace);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -147,7 +147,9 @@ void println_logo_and_system_info() {
 
   const auto current_path = std::filesystem::current_path();
   try {
-    info_lines.push_back(std::format("Work Dir ....... {}", current_path));
+    /// @todo In C++26 there would be no need for `.string()`.
+    info_lines.push_back(
+        std::format("Work Dir ....... {}", current_path.string()));
   } catch (const Exception& e) {
     err("Unable to get working directory: {}.", e.what());
   }
@@ -163,7 +165,10 @@ void println_logo_and_system_info() {
   TIT_ASSERT(info_lines.size() <= logo_lines.size(), "Too many lines!");
   const auto padding = (logo_lines.size() - info_lines.size()) / 2;
   info_lines.resize(logo_lines.size());
-  std::ranges::shift_right(info_lines, static_cast<ssize_t>(padding));
+  /// @todo `std::ranges::shift_right` is not available in libstdc++ yet.
+  std::shift_right(info_lines.begin(), // NOLINT(modernize-use-ranges)
+                   info_lines.end(),
+                   static_cast<ssize_t>(padding));
 
   println();
   println_separator('~');

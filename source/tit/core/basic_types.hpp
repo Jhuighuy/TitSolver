@@ -7,7 +7,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <stdfloat>
 
 namespace tit {
 
@@ -51,11 +50,15 @@ inline constexpr size_t npos = SIZE_MAX;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+static_assert(sizeof(float) == 4, "'float' must be 32 bits");
+
 /// 32-bit floating point type.
-using std::float32_t;
+using float32_t = float;
+
+static_assert(sizeof(double) == 8, "'double' must be 64 bits");
 
 /// 64-bit floating point type.
-using std::float64_t;
+using float64_t = double;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
