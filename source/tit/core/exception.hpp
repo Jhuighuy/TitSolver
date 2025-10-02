@@ -7,11 +7,14 @@
 
 #include <concepts>
 #include <exception>
-#include <format> // IWYU pragma: keep
+#include <format>
+#include <ranges>
 #include <source_location>
-#include <stacktrace>
 #include <string>
 #include <utility>
+
+#define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+#include <boost/stacktrace/stacktrace.hpp> // IWYU pragma: export
 
 #include "tit/core/utils.hpp"
 
@@ -39,7 +42,7 @@ public:
   [[gnu::always_inline]] explicit Exception(
       std::string message,
       std::source_location location = std::source_location::current(),
-      std::stacktrace stacktrace = std::stacktrace::current())
+      boost::stacktrace::stacktrace stacktrace = {})
       : message_{std::move(message)}, location_{location},
         stacktrace_{std::move(stacktrace)} {}
 
@@ -54,7 +57,7 @@ public:
   }
 
   /// Retrieve the exception stack trace.
-  auto when() const noexcept -> const std::stacktrace& {
+  auto when() const noexcept -> const boost::stacktrace::stacktrace& {
     return stacktrace_;
   }
 
@@ -62,7 +65,7 @@ private:
 
   std::string message_;
   std::source_location location_;
-  std::stacktrace stacktrace_;
+  boost::stacktrace::stacktrace stacktrace_;
 
 }; // class Exception
 
@@ -82,3 +85,24 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
+
+template<>
+struct std::formatter<boost::stacktrace::stacktrace> {
+  static constexpr auto parse(const format_parse_context& context) {
+    return context.begin();
+  }
+  static auto format(const boost::stacktrace::stacktrace& stacktrace,
+                     std::format_context& context) {
+    auto out = context.out();
+    for (const auto& [i, frame] : std::views::enumerate(stacktrace)) {
+      out = std::format_to(out,
+                           "{:>3} {} {}\n",
+                           i,
+                           frame.address(),
+                           frame.name());
+    }
+    return out;
+  }
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

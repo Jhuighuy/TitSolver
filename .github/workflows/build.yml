@@ -26,6 +26,10 @@ jobs:
         os: [ubuntu-24.04, macos-26]
         compiler: [GCC, Clang]
         configuration: [Debug, Release]
+        # libc++ has incomplete support for C++23, so we only use Clang on Linux.
+        exclude:
+          - os: macos-26
+            compiler: Clang
       fail-fast: false
 
     runs-on: ${{ matrix.os }}

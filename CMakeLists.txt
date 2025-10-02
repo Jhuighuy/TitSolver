@@ -56,7 +56,6 @@ add_tit_library(
   NAME
     all_flags
   DEPENDS
-    _cxx
     Boost::container
     Boost::stacktrace_addr2line
     Crow::Crow
