@@ -105,7 +105,9 @@ constexpr void part_solve_inplace(const Mat<Num, Dim>& A, Mult& x) {
     }
   } else if constexpr (Part & diag) {
     for (size_t i = 0; i < Dim; ++i) x[i] /= at(A, i, i);
-  } else static_assert(Part & unit);
+  } else {
+    static_assert(Part & unit);
+  }
 }
 
 /// Partially solve a sequence of matrix equations inplace:

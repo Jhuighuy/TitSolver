@@ -69,7 +69,9 @@ public:
         constexpr std::array shifts{2, 1, 1, 0, 0, 1, 1, 2};
         constexpr std::array flips{0, 0, 0, 0b110, 0b110, 0b011, 0b011, 0b101};
         return {shifts[index], flips[index]};
-      } else static_assert(false);
+      } else {
+        static_assert(false);
+      }
     }();
     return {(axis_ + shift) % Dim, dirs_ ^ flip};
   }
