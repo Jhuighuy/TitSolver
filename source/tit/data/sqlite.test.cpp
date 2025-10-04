@@ -157,7 +157,7 @@ TEST_CASE("data::sqlite::Statement::step") {
     data::sqlite::Statement statement{db, R"SQL(
       INSERT INTO Constants (id, name, value) VALUES (?, ?, ?)
     )SQL"};
-    statement.bind(4, "sqrt2", 1.41);
+    statement.bind(4, "sqrt2", std::numbers::sqrt2);
     CHECK_FALSE(statement.step());
   }
   SUBCASE("delete rows") {
@@ -198,14 +198,14 @@ TEST_CASE("data::sqlite::Statement::run") {
   )SQL"};
   SUBCASE("success") {
     SUBCASE("bind, run") {
-      statement.bind(4, "sqrt2", 1.41);
+      statement.bind(4, "sqrt2", std::numbers::sqrt2);
       statement.run();
-      statement.bind(5, "sqrt3", 1.73);
+      statement.bind(5, "sqrt3", std::numbers::sqrt3);
       statement.run();
     }
     SUBCASE("bind-run") {
-      statement.run(4, "sqrt2", 1.41);
-      statement.run(5, "sqrt3", 1.73);
+      statement.run(4, "sqrt2", std::numbers::sqrt2);
+      statement.run(5, "sqrt3", std::numbers::sqrt3);
     }
   }
   SUBCASE("failure") {

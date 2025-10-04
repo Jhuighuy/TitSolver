@@ -23,9 +23,11 @@ TEST_CASE("data::DataKind") {
     CHECK(kind.width() == 4);
   }
   SUBCASE("incorrect") {
+    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
     CHECK_THROWS_MSG(data::DataKind{data::DataKind::ID{0}},
                      Exception,
                      "Invalid data kind ID: 0.");
+    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
     CHECK_THROWS_MSG(data::DataKind{data::DataKind::ID{137}},
                      Exception,
                      "Invalid data kind ID: 137.");
@@ -74,7 +76,11 @@ TEST_CASE("data::DataType") {
   SUBCASE("incorrect") {
     SUBCASE("invalid rank") {
       CHECK_THROWS_MSG(
-          data::DataType(data::kind_of<float32_t>, data::DataRank{137}, 3),
+          data::DataType(
+              data::kind_of<float32_t>,
+              // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+              data::DataRank{137},
+              3),
           Exception,
           "Invalid data type rank: 137.");
     }
