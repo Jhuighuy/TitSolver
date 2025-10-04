@@ -695,7 +695,7 @@ constexpr auto deserialize(Stream& in, Vec<Num, Dim>& vec) -> bool {
 
 // Vector formatter.
 template<class Num, tit::size_t Dim>
-struct std::formatter<tit::Vec<Num, Dim>> {
+struct std::formatter<tit::Vec<Num, Dim>> { // NOLINT(cert-dcl58-cpp)
   static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }

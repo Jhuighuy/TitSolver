@@ -290,7 +290,9 @@ public:
       return std::get<uniform_fields.find(Field{})>(self.uniform_data_);
     } else if constexpr (varying_fields.contains(Field{})) {
       return std::get<varying_fields.find(Field{})>(self.varying_data_)[index];
-    } else static_assert(false);
+    } else {
+      static_assert(false);
+    }
   }
 
   /// Values for the specified field.
@@ -303,7 +305,9 @@ public:
     } else if constexpr (varying_fields.contains(Field{})) {
       return std::span{
           std::get<varying_fields.find(Field{})>(self.varying_data_)};
-    } else static_assert(false);
+    } else {
+      static_assert(false);
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
