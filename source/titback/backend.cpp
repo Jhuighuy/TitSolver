@@ -38,6 +38,7 @@ void tit_main(CmdArgs /*args*/) {
 
   crow::SimpleApp app;
 
+  // NOLINTNEXTLINE(modernize-type-traits)
   CROW_WEBSOCKET_ROUTE(app, "/ws")
       .onmessage([&storage](crow::websocket::connection& connection,
                             const std::string& data,

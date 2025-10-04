@@ -176,7 +176,8 @@ public:
 
   /// Construct a data type from integer identifier.
   constexpr explicit DataType(uint32_t id)
-      : DataType{DataKind{static_cast<DataKind::ID>(id & 0xFF)},
+      : DataType{// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+                 DataKind{static_cast<DataKind::ID>(id & 0xFF)},
                  static_cast<DataRank>((id >> 8) & 0xFF),
                  static_cast<uint8_t>((id >> 16) & 0xFF)} {}
 

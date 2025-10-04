@@ -3,114 +3,66 @@
 # Commercial use, including SaaS, requires a separate license, see /LICENSE.md
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Enable almost all non-vendor-specific checks.
-#
 # Rational on disabled checks:
 #
 # * bugprone-easily-swappable-parameters:
-#   There are many easily-swappable parameters in the solver code, we cannot
-#   avoid that without introducing structures almost for any function.
-#
-# * cert-err58-cpp:
-#   Bogus check, false-positives and crashes.
-#
-# * cert-dcl58-cpp:
-#   This checks threats specializations of `std::` classes as modifying the
-#   standard library.
+#   Very strict check, but I wish to re-enable this check in the future.
 #
 # * cert-msc32-c, cert-msc51-cpp:
-#   Those are crypography-related. We are not doing anything that requires
-#   any level of sequerity right now.
-#
-# * clang-analyzer-optin.core.EnumCastOutOfRange:
-#   False-positives on flag enums.
-#
-# * clang-analyzer-cplusplus.NewDeleteLeaks:
-#   Bogus check, false-positives and crashes.
-#
-# * cppcoreguidelines-avoid-do-while:
-#   Doctest uses do-while loops in it's assert macros. Apart from that, the
-#   check is definitely useful.
+#   We are fine with fixed seed for random number generators.
 #
 # * cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers:
-#   We have a few, I would like to re-enable this check in the future.
-#
-# * cppcoreguidelines-avoid-non-const-global-variables
-#   We have a few of those, and I do not want to wrap them into `// NOLINT`
-#   everytime. Also this check does not recognize `thread_local` variables,
-#   that are also considered global.
+#   Very strict check, but I wish to re-enable this check in the future.
+#   Will take time to properly configure and fix all issues.
 #
 # * cppcoreguidelines-macro-usage:
-#   Macros are part of the language, I am not feeling bad about using them.
+#   Excessively strict check.
 #
 # * cppcoreguidelines-pro-bounds-constant-array-index:
-#   This check does not works correctly with our asserts.
+#   Excessively strict check, also does not work correctly with doctest macros.
 #
 # * cppcoreguidelines-pro-bounds-pointer-arithmetic:
 #   It is impossible to avoid pointer arithmetic, especially when iterators
 #   of some standard containers are just raw pointers.
 #
-# * misc-no-recursion:
-#   We need recusion in some templated recurred lambdas.
-#
-# * modernize-use-constraints:
-#   Bogus check, non-deterministic crashes from inside Boost.
-#
 # * modernize-use-nodiscard:
-#   I do not want to put `[[nodiscard]]` everywhere, especially on functions
-#   like `size()`. I want to use `[[nodiscard]]` only when it is really needed,
-#   like memory allocation functions or system calls.
-#
-# * modernize-type-traits:
-#   Several libraries use C++11 type traits in their macros (doctest, Crow).
-#
-# * readability-braces-around-statements:
-#   I do not like braces around short single-line statements.
+#   Excessively strict check, I do not want to put `[[nodiscard]]` everywhere.
 #
 # * readability-function-cognitive-complexity:
-#   This check does not works correctly with doctest macros.
+#   Does not work correctly with doctest macros.
 #
 # * readability-identifier-length:
-#   We have a lot of short identifiers, since we are doing a lot of math.
+#   We are doing a lot of math, so have a lot of short identifiers.
 #
 # * readability-math-missing-parentheses:
-#   I do not like to put parentheses around everything, especially when we have
-#   a lot of math.
+#   Excessively strict check, also does not work correctly with doctest macros.
+#   Maybe reconsider this check once it will be configurable.
 Checks: |
   bugprone-*
   -bugprone-easily-swappable-parameters
   cert-*
-  -cert-err58-cpp
-  -cert-dcl58-cpp
   -cert-msc32-c
   -cert-msc51-cpp
-  -clang-analyzer-optin.core.EnumCastOutOfRange
   concurrency-*
   cppcoreguidelines-*
-  -cppcoreguidelines-avoid-do-while
   -cppcoreguidelines-avoid-magic-numbers
-  -cppcoreguidelines-avoid-non-const-global-variables
   -cppcoreguidelines-macro-usage
   -cppcoreguidelines-pro-bounds-constant-array-index
   -cppcoreguidelines-pro-bounds-pointer-arithmetic
   misc-*
-  -misc-no-recursion
   modernize-*
-  -modernize-use-constraints
   -modernize-use-nodiscard
-  -modernize-type-traits
   performance-*
   readability-*
-  -readability-braces-around-statements
   -readability-function-cognitive-complexity
   -readability-identifier-length
   -readability-magic-numbers
   -readability-math-missing-parentheses
 
-# Treat all warning as errors.
+CheckOptions:
+  cppcoreguidelines-avoid-do-while.IgnoreMacros: true
+  modernize-use-trailing-return-type.TransformLambdas: none
+  readability-braces-around-statements.ShortStatementLines: 2
+
 WarningsAsErrors: |
   *
-
-# Do not require lambdas to specify a return type.
-CheckOptions:
-  modernize-use-trailing-return-type.TransformLambdas: none

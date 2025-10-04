@@ -275,7 +275,7 @@ constexpr auto deserialize(Stream& in, Mat<Num, Dim>& mat) -> bool {
 
 // Matrix formatter.
 template<class Num, tit::size_t Dim>
-struct std::formatter<tit::Mat<Num, Dim>> {
+struct std::formatter<tit::Mat<Num, Dim>> { // NOLINT(cert-dcl58-cpp)
   static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }

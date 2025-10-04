@@ -122,7 +122,9 @@ public:
         bind_(index, static_cast<float64_t>(arg));
       } else if constexpr (str_like<Arg> || blob_arg<Arg>) {
         bind_(index, arg);
-      } else static_assert(false);
+      } else {
+        static_assert(false);
+      }
     }(args));
   }
 
@@ -185,7 +187,9 @@ public:
         const auto blob = column_blob_(index);
         if constexpr (std::same_as<Column, BlobView>) return blob;
         else return blob | std::ranges::to<Column>();
-      } else static_assert(false);
+      } else {
+        static_assert(false);
+      }
     }.template operator()<Columns>()...};
   }
 
