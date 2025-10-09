@@ -17,9 +17,11 @@ runs:
     - name: Setup runner
       shell: bash
       run: |
-        # Select the compiler from the arguments.
         GCC_VERSION=${GCC_VERSION:-15}
         LLVM_VERSION=${LLVM_VERSION:-21}
+        PYTHON_VERSION=${PYTHON_VERSION:-3.13}
+
+        # Select the compiler from the arguments.
         case "${{ inputs.compiler }}" in
           GCC)
             CC="gcc-$GCC_VERSION"
@@ -38,16 +40,12 @@ runs:
         # Select packages to install.
         PACKAGES=(
           cmake
-          codespell
           doxygen
           "gcc@$GCC_VERSION"
-          gcovr
           "llvm@$LLVM_VERSION"
-          mypy
           node
           pnpm
-          pylint
-          sphinx-doc
+          "python@$PYTHON_VERSION"
         )
         if [[ "$OSTYPE" == "darwin"* ]]; then
           PACKAGES+=(
@@ -121,11 +119,17 @@ runs:
         # Select packages to install.
         PYTHON_PACKAGES=(
           breathe
+          codespell
           coverage
+          flake8
           Flake8-pyproject
+          gcovr
+          mypy
           numpy
+          pylint
           pyside6
           PySide6-stubs
+          Sphinx
         )
 
         # Install Python packages.
