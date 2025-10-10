@@ -110,7 +110,7 @@ runs:
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
 
         # Add Python to the path.
-        PYTHON_PATH="$(brew --prefix "python@$PYTHON_VERSION")/bin"
+        PYTHON_PATH="$(brew --prefix "python@$PYTHON_VERSION")/libexec/bin"
         echo "$PYTHON_PATH" >> "$GITHUB_PATH"
 
     - name: Setup Python packages
