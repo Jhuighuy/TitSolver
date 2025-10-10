@@ -37,7 +37,7 @@ class Server(QObject):
 
     try:
       self.__storage = open_storage("particles.ttdb")
-    except Exception:
+    except Exception: # pylint: disable=broad-except
       self.__storage = None
     self.__globals = {"titsdk": titsdk, "storage": self.__storage}
 
