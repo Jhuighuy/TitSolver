@@ -100,10 +100,6 @@ runs:
           LD_LIBRARY_PATH="$GCC_INSTALLATION/lib/gcc/current:$LD_LIBRARY_PATH"
         fi
 
-        # Add Sphinx to the path.
-        SPHINX_PATH="$(brew --prefix sphinx-doc)/bin"
-        echo "$SPHINX_PATH" >> "$GITHUB_PATH"
-
         # Export compiler configuration variables to the CI environment.
         echo "CC=$CC" >> "$GITHUB_ENV"
         echo "CXX=$CXX" >> "$GITHUB_ENV"
@@ -112,6 +108,10 @@ runs:
         echo "CXXFLAGS=$CXXFLAGS" >> "$GITHUB_ENV"
         echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+        # Add Python to the path.
+        PYTHON_PATH="$(brew --prefix "python@$PYTHON_VERSION")/bin"
+        echo "$PYTHON_PATH" >> "$GITHUB_PATH"
 
     - name: Setup Python packages
       shell: bash
