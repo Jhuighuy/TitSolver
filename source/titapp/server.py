@@ -22,7 +22,7 @@ class Server(QObject):
   __client: QWebSocket | None = None
   __server: QWebSocketServer
 
-  __storage: Storage
+  __storage: Storage | None
   __globals: dict[str, Any]
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,7 +35,10 @@ class Server(QObject):
         QWebSocketServer.SslMode.NonSecureMode,
     )
 
-    self.__storage = open_storage("particles.ttdb")
+    try:
+      self.__storage = open_storage("particles.ttdb")
+    except Exception:
+      self.__storage = None
     self.__globals = {"titsdk": titsdk, "storage": self.__storage}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -80,7 +83,7 @@ class Server(QObject):
     request = json.loads(message)
     response: Any = {"requestID": request.get("requestID")}
     message = request.get("message")
-    if message and message.startswith("#"):
+    if message and message.startswith("#") and self.__storage is not None:
       iterator = self.__storage.last_series.time_steps()
       if (index := int(message[1:])) > 0:
         while index > 0:
@@ -97,7 +100,7 @@ class Server(QObject):
         }
       response["status"] = "success"
       response["result"] = result
-    elif not message:
+    elif not message and self.__storage is not None:
       response["status"] = "success"
       response["result"] = self.__storage.last_series.num_time_steps
     else:
