@@ -133,5 +133,7 @@ runs:
         )
 
         # Install Python packages.
+        which python3
+        python3 --version
         python3 -m pip install --upgrade --break-system-packages \
           "${PYTHON_PACKAGES[@]}"
