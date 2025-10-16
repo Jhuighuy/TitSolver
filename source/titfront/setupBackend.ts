@@ -47,17 +47,30 @@ export async function setupBackend(
   options: BackendOptions = {}
 ): Promise<BackendConfig> {
   const backendPort = options.backendPort ?? (await randomFreePort());
-  process.env.TIT_BACKEND_PORT = backendPort.toString();
-  const backendProcess = spawn("./output/TIT_ROOT/bin/titback", {
-    cwd: "../../",
-  });
+  const backendProcess = spawn(
+    "./output/TIT_ROOT/bin/titback",
+    ["--headless", "--port", backendPort.toString()],
+    {
+      cwd: "../../",
+    }
+  );
   backendProcess.on("exit", (code, signal) => {
     if (code === 0) return;
     console.error(`titback exited with code ${code} / signal ${signal}`);
   });
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("Backend startup timed out after 3 seconds."));
+    }, 3000);
+    backendProcess.stdout?.on("data", (data: Buffer) => {
+      if (data.toString().includes("Running")) {
+        clearTimeout(timeout);
+        resolve();
+      }
+      console.log(data.toString());
+    });
     backendProcess.stderr?.on("data", (data: Buffer) => {
-      if (data.toString().includes("running")) resolve();
+      console.error(data.toString());
     });
   });
 
@@ -101,7 +114,7 @@ export async function setupBackend(
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Find a random free port.
-async function randomFreePort() {
+async function randomFreePort(): Promise<number> {
   const minPort = 1025;
   const maxPort = 65535;
   return new Promise<number>((resolve, reject) => {
