@@ -12,7 +12,7 @@ import httpProxy from "http-proxy";
 /**
  * Backend process options.
  */
-interface BackendOptions {
+type BackendOptions = {
   /**
    * Port of the backend process.
    * @default randomFreePort()
@@ -24,28 +24,38 @@ interface BackendOptions {
    * @default randomFreePort()
    */
   proxyPort?: number;
-}
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
  * Backend process and proxy server (actual) configuration.
  */
-interface BackendConfig {
-  /** Port of the backend process. */
+export type Backend = {
+  /**
+   * Port of the backend process.
+   */
   backendPort: number;
 
-  /** Port of the proxy HTTP server. */
+  /**
+   * Port of the proxy HTTP server.
+   */
   proxyPort: number;
 
-  /** Cleanup function to stop the backend process and proxy server. */
+  /**
+   * Cleanup function to stop the backend process and proxy server.
+   */
   cleanup: () => void;
-}
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
  * Setup the backend process and remap it to a proxy server.
  */
 export async function setupBackend(
   options: BackendOptions = {}
-): Promise<BackendConfig> {
+): Promise<Backend> {
   const backendPort = options.backendPort ?? (await randomFreePort());
   const backendProcess = spawn(
     "./output/TIT_ROOT/bin/titback",

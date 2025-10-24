@@ -58,6 +58,9 @@
 # Python files.
 !*.py
 
+# Shaders.
+!*.glsl
+
 # Documentation files.
 !*.md
 !*.rst
