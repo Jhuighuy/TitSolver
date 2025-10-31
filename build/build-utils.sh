@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Part of BlueTit Solver, licensed under Apache 2.0 with Commons Clause.
-# Commercial use, including SaaS, requires a separate license, see /LICENSE.md
+# Part of BlueTit Solver, under the MIT License.
+# See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Various build-related utilities.
@@ -11,8 +11,8 @@
 # Check if we are in the project root directory.
 SOURCE_DIR=$(pwd)
 if [ ! -f "$SOURCE_DIR/build/build-utils.sh" ]; then
-  echo "# Build script must be executed from the project root directory!"
-  exit 1
+	echo "# Build script must be executed from the project root directory!"
+	exit 1
 fi
 
 # Common paths to the various build-related locations.
@@ -30,26 +30,26 @@ export COLUMNS
 
 # Print a separator.
 echo-separator() {
-  CHAR=${1:-"~"}
-  for _ in $(seq 1 "$COLUMNS"); do echo -n "$CHAR"; done
-  echo
+	CHAR=${1:-"~"}
+	for _ in $(seq 1 "$COLUMNS"); do echo -n "$CHAR"; done
+	echo
 }
 
 # Print thick banner.
 echo-thick-separator() {
-  echo-separator "="
+	echo-separator "="
 }
 
 # Print thin banner.
 echo-thin-separator() {
-  echo-separator "-"
+	echo-separator "-"
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Print the number of logical CPUs.
 get-num-cpus() {
-  getconf _NPROCESSORS_ONLN
+	getconf _NPROCESSORS_ONLN
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
