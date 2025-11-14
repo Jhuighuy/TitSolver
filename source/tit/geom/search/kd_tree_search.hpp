@@ -91,23 +91,21 @@ public:
 
       // Recursively partition the halves.
       constexpr size_t min_par_size = 50;
+      using enum par::RunMode;
       tasks.run(
           [node, left_perm, self] {
             if (left_perm.empty()) return;
             node->left = self(left_perm);
           },
-          std::ranges::size(left_perm) >= min_par_size ?
-              par::RunMode::parallel :
-              par::RunMode::sequential);
+          std::ranges::size(left_perm) >= min_par_size ? parallel : sequential);
       tasks.run(
           [node, right_perm, self] {
             // Median point is already accounted for, so we need to skip it.
             if (right_perm.size() == 1) return;
             node->right = self(std::span{right_perm}.subspan(1));
           },
-          std::ranges::size(right_perm) >= min_par_size ?
-              par::RunMode::parallel :
-              par::RunMode::sequential);
+          std::ranges::size(right_perm) >= min_par_size ? parallel :
+                                                          sequential);
       return node;
     }(perm);
     tasks.wait();

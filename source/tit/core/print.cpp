@@ -26,9 +26,9 @@ auto terminal_width(int fd) -> size_t {
 
   winsize window_size = {}; // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
   const auto status = ioctl(fd, TIOCGWINSZ, &window_size);
-  TIT_ENSURE(status == 0,
-             "Unable to query terminal window size with fileno {}!",
-             fd);
+  TIT_ENSURE_ERRNO(status == 0,
+                   "Unable to query terminal window size with fileno {}!",
+                   fd);
 
   return window_size.ws_col;
 }

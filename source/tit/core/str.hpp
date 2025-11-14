@@ -14,6 +14,8 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "tit/core/basic_types.hpp"
 
@@ -28,6 +30,14 @@ struct StrHash final : std::hash<std::string_view> {
 
 /// Hash the string.
 inline constexpr StrHash str_hash{};
+
+/// String hash set.
+using StrHashSet = std::unordered_set<std::string, StrHash, std::equal_to<>>;
+
+/// String hash map.
+template<class Val>
+using StrHashMap =
+    std::unordered_map<std::string, Val, StrHash, std::equal_to<>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

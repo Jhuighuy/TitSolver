@@ -13,13 +13,13 @@
 #include <type_traits>
 #include <utility>
 
+#include <boost/container/static_vector.hpp>
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_reduce.h>
 #include <oneapi/tbb/parallel_sort.h>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/containers/inplace_vector.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/par/atomic.hpp"
 #include "tit/par/control.hpp"
@@ -159,7 +159,7 @@ struct UnstableCopyIf final {
           // number of atomic operations.
           using Val = std::ranges::range_value_t<Range>;
           static constexpr size_t BufferCap = 64;
-          InplaceVector<Val, BufferCap> buffer{};
+          boost::container::static_vector<Val, BufferCap> buffer{};
           for (const auto& chunk :
                std::views::chunk(std::move(subrange), BufferCap)) {
             std::ranges::copy_if(chunk,

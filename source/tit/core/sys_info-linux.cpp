@@ -17,8 +17,8 @@
 #include <nlohmann/json_fwd.hpp>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/containers/str_hash_set.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/str.hpp"
 #include "tit/core/sys_info.hpp"
 
 namespace tit::sys_info {
