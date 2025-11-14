@@ -14,7 +14,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit {
@@ -49,23 +48,40 @@ public:
   }
 
   /// Matrix rows array.
-  constexpr auto rows(this auto&& self) noexcept -> auto&& {
-    return TIT_FORWARD_LIKE(self, self.rows_);
+  /// @{
+  constexpr auto rows() noexcept -> std::array<Row, Dim>& {
+    return rows_;
   }
+  constexpr auto rows() const noexcept -> const std::array<Row, Dim>& {
+    return rows_;
+  }
+  /// @}
 
   /// Matrix row at index.
-  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
+  /// @{
+  constexpr auto operator[](size_t i) noexcept -> Row& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return TIT_FORWARD_LIKE(self, self.rows_[i]);
+    return rows_[i];
   }
+  constexpr auto operator[](size_t i) const noexcept -> const Row& {
+    TIT_ASSERT(i < Dim, "Row index is out of range!");
+    return rows_[i];
+  }
+  /// @}
 
   /// Matrix element at index.
-  constexpr auto operator[](this auto&& self, size_t i, size_t j) noexcept
-      -> auto&& {
+  /// @{
+  constexpr auto operator[](size_t i, size_t j) noexcept -> Num& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
-    return TIT_FORWARD_LIKE(self, self.rows_[i][j]);
+    return rows_[i][j];
   }
+  constexpr auto operator[](size_t i, size_t j) const noexcept -> const Num& {
+    TIT_ASSERT(i < Dim, "Row index is out of range!");
+    TIT_ASSERT(j < Dim, "Column index is out of range!");
+    return rows_[i][j];
+  }
+  /// @}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
