@@ -14,6 +14,7 @@ add_tit_library(
     "numbers/tagged.hpp"
     "test_main.cpp"
     "test.hpp"
+    "utils.hpp"
   DEPENDS
     tit::core
     doctest::doctest

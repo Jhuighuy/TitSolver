@@ -24,13 +24,13 @@ namespace {
 #define checked_sysconf(name)                                                  \
   [] {                                                                         \
     const auto result = sysconf(name);                                         \
-    TIT_ENSURE(result != -1, "`sysconf({})` failed.", #name);                  \
+    TIT_ENSURE_ERRNO(result != -1, "`sysconf({})` failed.", #name);            \
     return result;                                                             \
   }()
 
 void checked_uname(utsname& uts) {
   const auto status = uname(&uts);
-  TIT_ENSURE(status == 0, "`uname()` failed.");
+  TIT_ENSURE_ERRNO(status == 0, "`uname()` failed.");
 }
 
 } // namespace
@@ -40,7 +40,7 @@ void checked_uname(utsname& uts) {
 auto host_name() -> std::string {
   std::array<char, 256> buffer{};
   const auto status = gethostname(buffer.data(), buffer.size() - 1);
-  TIT_ENSURE(status == 0, "Unable to query the host name.");
+  TIT_ENSURE_ERRNO(status == 0, "Unable to query the host name.");
   return buffer.data();
 }
 

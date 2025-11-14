@@ -22,9 +22,7 @@ set(PNPM_TEST_CMD "pnpm run $<IF:$<CONFIG:Coverage>,coverage,test>")
 function(add_tit_pnpm_target)
   # Parse and check arguments.
   cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "" ${ARGN})
-  if(NOT TARGET_NAME)
-    message(FATAL_ERROR "Target name must be specified.")
-  endif()
+  make_target_name(${TARGET_NAME} TARGET)
 
   # Find "package.json".
   set(TARGET_PACKAGE_JSON "${CMAKE_CURRENT_SOURCE_DIR}/package.json")
@@ -42,34 +40,29 @@ function(add_tit_pnpm_target)
   endforeach()
 
   # Run `pnpm install`.
-  cmake_path(
-    RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR
-    BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE RELATIVE_SOURCE_DIR
-  )
-  set(TARGET_NODE_MODULES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/node_modules")
+  set(STAMP "${CMAKE_CURRENT_SOURCE_DIR}/node_modules/.modules.yaml")
   add_custom_command(
     COMMENT
-      "Installing dependencies for PNPM package ${RELATIVE_SOURCE_DIR}"
+      "Installing dependencies for PNPM package ${TARGET}"
     COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" install
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS "${TARGET_PACKAGE_JSON}"
-    OUTPUT "${TARGET_NODE_MODULES_DIR}"
+    OUTPUT "${STAMP}"
   )
+  add_custom_target("${TARGET}_install" ALL DEPENDS "${STAMP}")
 
   # Run `pnpm run build`.
-  make_target_name(${TARGET_NAME} TARGET)
   set(TARGET_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/dist")
   set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.stamp")
   add_custom_command(
-    COMMENT "Building PNPM package ${RELATIVE_SOURCE_DIR}"
+    COMMENT "Building PNPM package ${TARGET}"
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${TARGET_OUTPUT_DIR}"
     COMMAND
       "${CMAKE_COMMAND}" -E env "PNPM_OUTPUT_DIR=${TARGET_OUTPUT_DIR}"
         "${CHRONIC_EXE}" "${PNPM_EXE}" run build
     COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    DEPENDS ${TARGET_SOURCES} "${TARGET_NODE_MODULES_DIR}"
+    DEPENDS ${TARGET_SOURCES} "${TARGET_NAME}_install"
     OUTPUT "${STAMP}"
   )
   add_custom_target("${TARGET}" ALL DEPENDS "${STAMP}")
@@ -78,11 +71,11 @@ function(add_tit_pnpm_target)
   if(NOT SKIP_ANALYSIS)
     set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_lint.stamp")
     add_custom_command(
-      COMMENT "Linting PNPM package ${RELATIVE_SOURCE_DIR}"
+      COMMENT "Linting PNPM package ${TARGET}"
       COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" run lint
       COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      DEPENDS ${TARGET_SOURCES} "${TARGET_NODE_MODULES_DIR}"
+      DEPENDS ${TARGET_SOURCES} "${TARGET_NAME}_install"
       OUTPUT "${STAMP}"
     )
     add_custom_target("${TARGET}_lint" ALL DEPENDS "${STAMP}")

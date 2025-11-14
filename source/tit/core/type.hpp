@@ -216,9 +216,6 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// @todo I do not like these functions and wish to remove/refactor them.
-  ///       Also, these functions add an `empty_type` constraint to the class.
-
   /// Call a function for each element.
   template<class Func>
     requires (std::invocable<Func, Ts> && ...)
@@ -367,6 +364,14 @@ constexpr auto type_name_of(const T& arg) -> std::string {
     return impl::demangle(typeid(arg).name());
   }
   return std::string{type_name_of<T>()};
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Check if an integer can be safely converted to a different integer type.
+template<std::integral To, std::integral Num>
+constexpr auto is_safe_cast(Num a) noexcept -> bool {
+  return static_cast<Num>(static_cast<To>(a)) == a;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

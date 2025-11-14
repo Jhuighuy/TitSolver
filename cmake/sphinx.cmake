@@ -32,6 +32,7 @@ function(add_tit_sphinx_target)
   if(NOT TARGET_NAME)
     message(FATAL_ERROR "Target name must be specified.")
   endif()
+  make_target_name(${TARGET_NAME} TARGET)
 
   # Find all the source files.
   set(TARGET_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/conf.py")
@@ -94,13 +95,8 @@ function(add_tit_sphinx_target)
   endforeach()
 
   # Run sphinx-build.
-  cmake_path(
-    RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR
-    BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE RELATIVE_SOURCE_DIR
-  )
   add_custom_command(
-    COMMENT "Building Sphinx target in ${RELATIVE_SOURCE_DIR}"
+    COMMENT "Building Sphinx target ${TARGET}"
     OUTPUT ${TARGET_OUTPUT}
     COMMAND
       "${CMAKE_COMMAND}"
@@ -117,7 +113,6 @@ function(add_tit_sphinx_target)
       ${TARGET_TEMPLATES}
       ${TARGET_DEP_FILES}
   )
-  make_target_name(${TARGET_NAME} TARGET)
   add_custom_target("${TARGET}" ALL DEPENDS ${TARGET_OUTPUT})
 
   # Install the target.

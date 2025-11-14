@@ -67,13 +67,10 @@ list(JOIN MYPY_OPTIONS " " MYPY_OPTIONS)
 function(add_tit_python_target)
   # Parse and check arguments.
   cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "SOURCES" ${ARGN})
-  if(NOT TARGET_NAME)
-    message(FATAL_ERROR "Python target name must be specified.")
-  endif()
+  make_target_name("${TARGET_NAME}" TARGET)
 
   # Create the target.
   # This will be a no-op target, since we are not compiling Python code anyhow.
-  make_target_name("${TARGET_NAME}" TARGET)
   add_custom_target("${TARGET}" ALL DEPENDS ${TARGET_SOURCES})
 
   # Run linters.

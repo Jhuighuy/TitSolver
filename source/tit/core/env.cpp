@@ -25,10 +25,10 @@ auto get_env(const std::string& name) noexcept -> std::optional<std::string> {
 void set_env(const std::string& name, const std::string& val) {
   // NOLINTNEXTLINE(*-mt-unsafe,*-include-cleaner)
   const auto status = setenv(name.c_str(), val.c_str(), /*overwrite=*/1);
-  TIT_ENSURE(status == 0,
-             "Unable to set environment variable '{}' value to '{}'.",
-             name,
-             val);
+  TIT_ENSURE_ERRNO(status == 0,
+                   "Unable to set environment variable '{}' value to '{}'.",
+                   name,
+                   val);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,7 +36,9 @@ void set_env(const std::string& name, const std::string& val) {
 void unset_env(const std::string& name) {
   // NOLINTNEXTLINE(*-mt-unsafe,*-include-cleaner)
   const auto status = unsetenv(name.c_str());
-  TIT_ENSURE(status == 0, "Unable to unset environment variable '{}'.", name);
+  TIT_ENSURE_ERRNO(status == 0,
+                   "Unable to unset environment variable '{}'.",
+                   name);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

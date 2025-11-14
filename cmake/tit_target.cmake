@@ -52,9 +52,7 @@ function(add_tit_library)
     "SOURCES;DEPENDS"
     ${ARGN}
   )
-  if(NOT TARGET_NAME)
-    message(FATAL_ERROR "Library name must be specified.")
-  endif()
+  make_target_name(${TARGET_NAME} TARGET)
 
   # Setup the library type and visibility parameter.
   if(TARGET_TYPE)
@@ -88,7 +86,6 @@ function(add_tit_library)
   endif()
 
   # Create the library.
-  make_target_name(${TARGET_NAME} TARGET)
   add_library(${TARGET} ${TARGET_TYPE} ${TARGET_SOURCES})
   add_library("${TARGET_NAME_PREFIX}::${TARGET_NAME}" ALIAS ${TARGET})
 
@@ -118,12 +115,9 @@ endfunction()
 function(add_tit_executable)
   # Parse and check arguments.
   cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "SOURCES;DEPENDS" ${ARGN})
-  if(NOT TARGET_NAME)
-    message(FATAL_ERROR "Executable name must be specified.")
-  endif()
+  make_target_name("${TARGET_NAME}" TARGET)
 
   # Create the executable and the alias.
-  make_target_name("${TARGET_NAME}" TARGET)
   add_executable("${TARGET}" ${TARGET_SOURCES})
 
   # Configure the target.

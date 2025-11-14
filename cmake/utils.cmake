@@ -25,6 +25,9 @@ set(TARGET_NAME_PREFIX "tit")
 # Make a target name.
 #
 function(make_target_name NAME RESULT_VAR)
+  if(NOT NAME)
+    message(FATAL_ERROR "Target name must be specified.")
+  endif()
   if(NAME MATCHES "^${TARGET_NAME_PREFIX}")
     set(${RESULT_VAR} "${NAME}" PARENT_SCOPE)
   else()
