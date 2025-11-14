@@ -7,7 +7,7 @@
 
 #include <string_view>
 
-#include "tit/core/containers/str_hash_map.hpp"
+#include "tit/core/str.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/utils.hpp"
 

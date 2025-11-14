@@ -27,15 +27,13 @@ add_tit_library(
     "build_info.hpp"
     "checks.cpp"
     "checks.hpp"
-    "containers/inplace_vector.hpp"
-    "containers/mdvector.hpp"
-    "containers/str_hash_map.hpp"
-    "containers/str_hash_set.hpp"
     "env.cpp"
     "env.hpp"
+    "exception.cpp"
     "exception.hpp"
     "mat.hpp"
     "math.hpp"
+    "mdvector.hpp"
     "print.cpp"
     "print.hpp"
     "profiler.cpp"
@@ -59,7 +57,6 @@ add_tit_library(
     "utils.hpp"
     "vec.hpp"
   DEPENDS
-    Boost::container
     gcem
     hwy::hwy
     nlohmann_json::nlohmann_json
@@ -82,9 +79,9 @@ add_tit_executable(
     "_simd/reg.test.cpp"
     "_vec/vec_mask.test.cpp"
     "_vec/vec.test.cpp"
-    "containers/mdvector.test.cpp"
     "env.test.cpp"
     "math.test.cpp"
+    "mdvector.test.cpp"
     "serialization.test.cpp"
     "str.test.cpp"
     "time.test.cpp"
