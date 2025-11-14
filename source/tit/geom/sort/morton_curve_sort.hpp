@@ -54,14 +54,13 @@ public:
       // Recursively sort the parts along the next axis.
       const auto next_axis = (axis + 1) % point_range_dim_v<Points>;
       constexpr size_t min_par_size = 50;
+      using enum par::RunMode;
       tasks.run(std::bind_front(self, left_box, left_perm, next_axis),
-                std::ranges::size(left_perm) >= min_par_size ?
-                    par::RunMode::parallel :
-                    par::RunMode::sequential);
+                std::ranges::size(left_perm) >= min_par_size ? parallel :
+                                                               sequential);
       tasks.run(std::bind_front(self, right_box, right_perm, next_axis),
-                std::ranges::size(right_perm) >= min_par_size ?
-                    par::RunMode::parallel :
-                    par::RunMode::sequential);
+                std::ranges::size(right_perm) >= min_par_size ? parallel :
+                                                                sequential);
     };
     impl(box, std::views::all(perm), /*axis=*/1);
     tasks.wait();

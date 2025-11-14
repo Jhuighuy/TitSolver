@@ -6,13 +6,13 @@
 /// @todo Tests are missing.
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <format>
 #include <iterator>
 #include <string>
 #include <string_view>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/math.hpp"
 #include "tit/core/str.hpp"
 
 namespace tit {
@@ -20,7 +20,6 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto fmt_memsize(uint64_t value, size_t precision) -> std::string {
-  if (value == 0) return "0 bytes";
   static constexpr const auto prefixes = std::to_array<std::string_view>({
       "bytes", // 1024^0
       "KiB",   // 1024^1, kibi
@@ -32,18 +31,21 @@ auto fmt_memsize(uint64_t value, size_t precision) -> std::string {
       "ZiB",   // 1024^7, zebi
       "YiB",   // 1024^8, yobi
   });
+
+  if (value == 0) return "0 bytes";
+
   constexpr long double base = 1024.0;
   const auto val_float = static_cast<long double>(value);
-  const auto exp_float = floor(log2(val_float) / log2(base));
+  const auto exp_float = std::floor(std::log2(val_float) / std::log2(base));
   const auto exp_index = static_cast<size_t>(exp_float);
-  const auto scaled = val_float / pow(base, exp_float);
+  const auto scaled = val_float / std::pow(base, exp_float);
   const auto index = std::min(exp_index, prefixes.size() - 1);
+
   return std::format("{:.{}f} {}", scaled, precision, prefixes[index]);
 }
 
 auto fmt_quantity(long double value, std::string_view unit, size_t precision)
     -> std::string {
-  if (value == 0.0) return std::format("0 {}", unit);
   constexpr const auto prefixes = std::to_array<std::string_view>({
       "y", // 10^-24, yocto
       "z", // 10^-21, zepto
@@ -63,12 +65,17 @@ auto fmt_quantity(long double value, std::string_view unit, size_t precision)
       "Z", // 10^+21, zetta
       "Y", // 10^+24, yotta
   });
+
+  if (value == 0.0) return std::format("0 {}", unit);
+
   constexpr const auto center = std::ssize(prefixes) / 2;
   constexpr long double base = 1000.0;
-  const auto exp_float = floor(log10(abs(value)) / log10(base));
+  const auto exp_float =
+      std::floor(std::log10(std::abs(value)) / std::log10(base));
   const auto exp_index = center + static_cast<ssize_t>(exp_float);
-  const auto scaled = value / pow(base, exp_float);
+  const auto scaled = value / std::pow(base, exp_float);
   const auto index = std::clamp(exp_index, 0Z, std::ssize(prefixes) - 1);
+
   return std::format("{:.{}f} {}{}", scaled, precision, prefixes[index], unit);
 }
 
