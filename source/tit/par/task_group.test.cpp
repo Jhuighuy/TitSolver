@@ -8,6 +8,7 @@
 #include "tit/par/control.hpp"
 #include "tit/par/task_group.hpp"
 #include "tit/testing/test.hpp"
+#include "tit/testing/utils.hpp"
 
 namespace tit {
 namespace {
@@ -21,24 +22,34 @@ namespace {
 TEST_CASE("par::TaskGroup") {
   par::set_num_threads(4);
   SUBCASE("basic") {
+    par::set_num_threads(2);
+
     // Ensure the tasks are executed.
     par::TaskGroup group{};
-    bool task_1_ran = false;
-    bool task_2_ran = false;
-    bool task_3_ran = false;
-    group.run([&task_1_ran] { task_1_ran = true; });
-    group.run([&task_2_ran] { task_2_ran = true; }, par::RunMode::sequential);
-    const auto main_thread_id = std::this_thread::get_id();
-    group.run(
-        [&task_3_ran, main_thread_id] {
-          CHECK(std::this_thread::get_id() == main_thread_id);
-          task_3_ran = true;
-        },
-        par::RunMode::parallel);
+
+    std::thread::id task_1_thread_id{};
+    group.run(SleepFunc{SleepFunc{[&task_1_thread_id] {
+      task_1_thread_id = std::this_thread::get_id();
+    }}});
+
+    std::thread::id task_2_thread_id{};
+    group.run(SleepFunc{[&task_2_thread_id] {
+                task_2_thread_id = std::this_thread::get_id();
+              }},
+              par::RunMode::sequential);
+
+    std::thread::id task_3_thread_id{};
+    group.run(SleepFunc{[&task_3_thread_id] {
+                task_3_thread_id = std::this_thread::get_id();
+              }},
+              par::RunMode::parallel);
+
     group.wait();
-    CHECK(task_1_ran);
-    CHECK(task_2_ran);
-    CHECK(task_3_ran);
+
+    const auto main_thread_id = std::this_thread::get_id();
+    CHECK(task_2_thread_id == main_thread_id);
+    CHECK((task_1_thread_id != main_thread_id ||
+           task_3_thread_id != main_thread_id));
   }
   SUBCASE("exceptions") {
     // Ensure the exceptions from worker threads are caught.

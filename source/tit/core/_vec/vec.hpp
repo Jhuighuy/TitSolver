@@ -17,7 +17,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
-#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -87,7 +86,8 @@ public:
   template<class... Args>
     requires (Dim > 1) && (sizeof...(Args) == Dim) &&
              (std::constructible_from<Num, Args &&> && ...)
-  constexpr Vec(Args&&... qs) : col_{Num(std::forward<Args>(qs))...} {}
+  constexpr explicit(false) Vec(Args&&... qs)
+      : col_{Num(std::forward<Args>(qs))...} {}
 
   /// Vector dimensionality.
   constexpr auto dim() const -> ssize_t {
@@ -95,21 +95,38 @@ public:
   }
 
   /// Vector elements array.
-  constexpr auto elems(this auto&& self) noexcept -> auto&& {
-    return TIT_FORWARD_LIKE(self, self.col_);
+  /// @{
+  constexpr auto elems() noexcept -> std::array<Num, Dim>& {
+    return col_;
   }
+  constexpr auto elems() const noexcept -> const std::array<Num, Dim>& {
+    return col_;
+  }
+  /// @}
 
   /// Vector element at index.
-  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
+  /// @{
+  constexpr auto operator[](size_t i) noexcept -> Num& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return TIT_FORWARD_LIKE(self, self.col_[i]);
+    return col_[i];
   }
+  constexpr auto operator[](size_t i) const noexcept -> const Num& {
+    TIT_ASSERT(i < Dim, "Row index is out of range!");
+    return col_[i];
+  }
+  /// @}
 
   /// Vector register at index.
-  auto reg(this auto&& self, size_t i) noexcept -> auto&& {
+  /// @{
+  auto reg(size_t i) noexcept -> Reg& {
     TIT_ASSERT(i < RegCount, "Register index is out of range!");
-    return TIT_FORWARD_LIKE(self, self.regs_[i]);
+    return regs_[i];
   }
+  auto reg(size_t i) const noexcept -> const Reg& {
+    TIT_ASSERT(i < RegCount, "Register index is out of range!");
+    return regs_[i];
+  }
+  /// @}
 
   // NOLINTEND(*-type-union-access)
 

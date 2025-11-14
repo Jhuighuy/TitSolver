@@ -14,6 +14,7 @@ add_tit_library(
     "task_group.hpp"
   DEPENDS
     tit::core
+    Boost::container
     TBB::tbb
 )
 

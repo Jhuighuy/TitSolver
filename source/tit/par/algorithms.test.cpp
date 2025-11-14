@@ -4,18 +4,16 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
-#include <chrono>
-#include <concepts>
 #include <functional>
 #include <random>
 #include <ranges>
 #include <stdexcept>
-#include <thread>
 #include <vector>
 
 #include "tit/par/algorithms.hpp"
 #include "tit/par/control.hpp"
 #include "tit/testing/test.hpp"
+#include "tit/testing/utils.hpp"
 
 namespace tit {
 namespace {
@@ -34,34 +32,6 @@ public:
   ThreadError() : std::runtime_error{"thread error"} {}
 
 }; // class ThreadError
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// A wrapper for a function that sleeps for a given amount of time.
-template<class Func>
-class SleepFunc final {
-public:
-
-  // Initialize a sleep function.
-  constexpr explicit SleepFunc(Func func,
-                               std::chrono::milliseconds duration =
-                                   std::chrono::milliseconds(10)) noexcept
-      : func_{std::move(func)}, duration_{duration} {}
-
-  // Sleep for the specified amount of time and call the function.
-  template<class... Args>
-    requires std::invocable<Func&, Args&&...>
-  constexpr auto operator()(Args&&... args) const -> decltype(auto) {
-    std::this_thread::sleep_for(duration_);
-    return func_(std::forward<Args>(args)...);
-  }
-
-private:
-
-  Func func_;
-  std::chrono::milliseconds duration_;
-
-}; // class SleepFunc
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
