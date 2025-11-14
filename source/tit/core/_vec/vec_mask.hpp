@@ -13,7 +13,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/simd.hpp"
-#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -84,19 +83,32 @@ public:
   template<class... Args>
     requires (Dim > 1) && (sizeof...(Args) == Dim) &&
              (std::constructible_from<bool, Args &&> && ...)
-  constexpr VecMask(Args&&... bs) : col_{Mask{std::forward<Args>(bs)}...} {}
+  constexpr explicit(false) VecMask(Args&&... bs)
+      : col_{Mask{std::forward<Args>(bs)}...} {}
 
   /// Vector mask element at index.
-  constexpr auto operator[](this auto&& self, size_t i) noexcept -> auto&& {
+  /// @{
+  constexpr auto operator[](size_t i) noexcept -> Mask& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
-    return TIT_FORWARD_LIKE(self, self.col_[i]);
+    return col_[i];
   }
+  constexpr auto operator[](size_t i) const noexcept -> const Mask& {
+    TIT_ASSERT(i < Dim, "Row index is out of range!");
+    return col_[i];
+  }
+  /// @}
 
   /// Underlying register at index.
-  auto reg(this auto&& self, size_t i) noexcept -> auto&& {
+  /// @{
+  auto reg(size_t i) noexcept -> RegMask& {
     TIT_ASSERT(i < RegCount, "Register index is out of range!");
-    return TIT_FORWARD_LIKE(self, self.regs_[i]);
+    return regs_[i];
   }
+  auto reg(size_t i) const noexcept -> const RegMask& {
+    TIT_ASSERT(i < RegCount, "Register index is out of range!");
+    return regs_[i];
+  }
+  /// @}
 
   // NOLINTEND(*-type-union-access)
 

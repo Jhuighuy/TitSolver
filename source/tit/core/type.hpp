@@ -216,9 +216,6 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// @todo I do not like these functions and wish to remove/refactor them.
-  ///       Also, these functions add an `empty_type` constraint to the class.
-
   /// Call a function for each element.
   template<class Func>
     requires (std::invocable<Func, Ts> && ...)

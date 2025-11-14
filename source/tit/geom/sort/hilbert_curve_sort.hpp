@@ -182,14 +182,13 @@ public:
       // Recursively sort the parts along the next axis.
       const auto [left_state, right_state] = state.next();
       constexpr size_t min_par_size = 50;
+      using enum par::RunMode;
       tasks.run(std::bind_front(self, left_box, left_perm, left_state),
-                std::ranges::size(left_perm) >= min_par_size ?
-                    par::RunMode::parallel :
-                    par::RunMode::sequential);
+                std::ranges::size(left_perm) >= min_par_size ? parallel :
+                                                               sequential);
       tasks.run(std::bind_front(self, right_box, right_perm, right_state),
-                std::ranges::size(right_perm) >= min_par_size ?
-                    par::RunMode::parallel :
-                    par::RunMode::sequential);
+                std::ranges::size(right_perm) >= min_par_size ? parallel :
+                                                                sequential);
     };
     impl(box, std::views::all(perm), /*state=*/{});
     tasks.wait();
