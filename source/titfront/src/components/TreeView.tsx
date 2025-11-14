@@ -108,7 +108,7 @@ export const TreeView = ({ nodes }: { nodes: TreeNode[] }) => {
             node === selectedNode ? "bg-gray-900" : ""
           }`}
         >
-          {[...Array<number>(depth)].map(() => (
+          {new Array<number>(depth).map(() => (
             <div key={depth} className="ml-2.5 mr-0 w-0.5 bg-gray-500" />
           ))}
           <div className="flex-grow">

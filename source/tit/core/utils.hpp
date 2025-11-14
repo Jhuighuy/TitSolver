@@ -28,9 +28,6 @@ namespace tit {
 /// to avoid false alarms from analysis tools.
 #define TIT_ASSUME_UNIVERSAL(T, ref) static_cast<void>(std::forward<T>(ref))
 
-/// Forward a member of a class.
-#define TIT_FORWARD_LIKE(self, member) std::forward_like<decltype(self)>(member)
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Default-initialize a type.
