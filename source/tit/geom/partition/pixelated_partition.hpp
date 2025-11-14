@@ -16,7 +16,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/containers/mdvector.hpp"
+#include "tit/core/mdvector.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/utils.hpp"
