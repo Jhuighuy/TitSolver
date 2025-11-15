@@ -34,7 +34,6 @@ find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
-find_package(mimalloc CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
@@ -62,7 +61,6 @@ add_tit_library(
     doctest::doctest
     gcem
     hwy::hwy
-    mimalloc-static
     nlohmann_json::nlohmann_json
     TBB::tbb
     unofficial::sqlite3::sqlite3

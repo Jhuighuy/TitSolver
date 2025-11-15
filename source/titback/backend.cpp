@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <span>
 #include <string>
@@ -17,21 +18,18 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
+#include "tit/core/main.hpp"
 #include "tit/core/type.hpp"
 #include "tit/data/storage.hpp"
-#include "tit/main/main.hpp"
-
-namespace tit {
-
-namespace json = nlohmann;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void tit_main(CmdArgs args) {
-  const auto exe_dir = std::filesystem::path{args.argv()[0]}.parent_path();
+TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
+  namespace json = nlohmann;
+
+  const auto exe_dir = std::filesystem::path{argv[0]}.parent_path();
   const auto root_dir = exe_dir.parent_path();
 
   // Load the storage.
@@ -80,8 +78,6 @@ void tit_main(CmdArgs args) {
 
   /// @todo Pass port as a command line argument.
   app.port(get_env<uint16_t>("TIT_BACKEND_PORT", 18080)).run();
-}
+});
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-} // namespace tit

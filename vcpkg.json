@@ -13,7 +13,6 @@
     "doctest",
     "gcem",
     "highway",
-    "mimalloc",
     "nlohmann-json",
     "sqlite3",
     "tbb",

@@ -11,7 +11,6 @@ add_tit_executable(
   DEPENDS
     tit::core
     tit::data
-    tit::main
     Crow::Crow
     nlohmann_json::nlohmann_json
   DESTINATION
