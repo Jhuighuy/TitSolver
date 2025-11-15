@@ -11,8 +11,8 @@
 #include <span>
 #include <utility>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/geom/bipartition.hpp"

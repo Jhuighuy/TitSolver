@@ -12,8 +12,8 @@
 #include <string_view>
 #include <utility>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
 #include "tit/data/sqlite.hpp"

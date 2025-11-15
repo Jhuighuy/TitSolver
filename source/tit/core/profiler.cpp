@@ -11,7 +11,7 @@
 #include <string_view>
 #include <vector>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/containers/str_hash_map.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"

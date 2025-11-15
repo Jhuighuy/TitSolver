@@ -1,13 +1,19 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
 #include <string_view>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
-#include "tit/main/main.hpp"
+#include "tit/par/control.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/continuity_equation.hpp"
 #include "tit/sph/energy_equation.hpp"
@@ -31,7 +37,7 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Real, bool Riemann>
-auto sph_main(CmdArgs /*args*/) -> int {
+auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real H = 0.6;   // Water column height.
   constexpr Real L = 2 * H; // Water column length.
 
@@ -221,10 +227,11 @@ auto sph_main(CmdArgs /*args*/) -> int {
 } // namespace
 } // namespace tit::sph
 
-void tit::tit_main(CmdArgs args) {
-  if (args.argc() > 1 && std::string_view{args.argv()[1]} == "riemann") {
-    sph::sph_main<float64_t, true>(args);
+TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
+  par::init();
+  if (argc > 1 && std::string_view{argv[1]} == "riemann") {
+    sph::sph_main<float64_t, true>(argc, argv);
   } else {
-    sph::sph_main<float64_t, false>(args);
+    sph::sph_main<float64_t, false>(argc, argv);
   }
-}
+});

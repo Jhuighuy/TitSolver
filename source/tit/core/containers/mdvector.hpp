@@ -14,8 +14,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 
 namespace tit {
 

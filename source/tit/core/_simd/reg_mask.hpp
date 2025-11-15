@@ -18,8 +18,8 @@
 
 #include "tit/core/_simd/mask.hpp"
 #include "tit/core/_simd/traits.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 
 namespace tit::simd {

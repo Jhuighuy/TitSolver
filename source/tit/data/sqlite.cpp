@@ -15,8 +15,8 @@
 
 #include <sqlite3.h>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/type.hpp"

@@ -10,8 +10,8 @@
 
 #include "tit/core/_mat/mat.hpp"
 #include "tit/core/_mat/traits.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 
 namespace tit {
 

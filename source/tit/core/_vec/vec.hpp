@@ -13,8 +13,8 @@
 #include <utility>
 
 #include "tit/core/_vec/vec_mask.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
 

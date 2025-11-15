@@ -1,0 +1,22 @@
+func_1
+func_2
+func_3
+Checking how floating point arithmetic works...
+
+
+/Users/jhuighuy/TitSolver/tests/tit/core/catch/check/test.cpp:19:3: Internal consistency check failed!
+
+  0.1 + 0.2 == 0.3
+  ^~~~~~~~~~~~~~~~ Right?!
+
+
+Stack trace:
+
+  0 0x1049f7284 tit::impl::report_assert_failure(std::basic_string_view<char, std::char_traits<char> >, std::basic_string_view<char, std::char_traits<char> >, std::source_location)
+  1 0x1049e6340 tit::(anonymous namespace)::func_2()
+  2 0x1049e6368 tit::(anonymous namespace)::func_1()
+  3 0x1049e6390 void std::move_only_function<void ()>::_S_invoke<main::{lambda()#1}>(std::_Mofunc_base*)
+  4 0x1049e639c void std::move_only_function<void ()>::_S_invoke<main::{lambda()#1}>(std::_Mofunc_base*)
+  5 0x1049f6b58 tit::run_main(int, char**, std::move_only_function<void (int, char**)>)
+  6 0x1049f6dd4 tit::run_main(int, char**, std::move_only_function<void ()>)
+  7 0x104a05c8c main

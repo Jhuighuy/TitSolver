@@ -12,8 +12,8 @@
 
 #include <oneapi/tbb/task_group.h>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 
 namespace tit::par {
 

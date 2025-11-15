@@ -9,7 +9,7 @@
 
 #include <cxxabi.h>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/type.hpp"
 
 namespace tit::impl {

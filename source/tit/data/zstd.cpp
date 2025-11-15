@@ -11,8 +11,8 @@
 
 #include <zstd.h>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
 #include "tit/data/zstd.hpp"

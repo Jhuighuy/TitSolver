@@ -11,8 +11,8 @@
 #include <format>
 #include <initializer_list>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
 
