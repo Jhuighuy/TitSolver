@@ -3,19 +3,11 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_library(
-  NAME
-    main
-  TYPE
-    OBJECT
-  SOURCES
-    "main.cpp"
-    "main.hpp"
-    "malloc.cpp"
-  DEPENDS
-    tit::core
-    tit::par
-    mimalloc-static
+add_tit_test(
+  EXE SOURCES "test.cpp" DEPENDS tit::core
+  EXIT_CODE 1
+  MATCH_STDERR "stderr.txt"
+  FILTERS "/0x*/d" # Remove everything related to the stack trace.
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

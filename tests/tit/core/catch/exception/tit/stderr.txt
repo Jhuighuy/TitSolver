@@ -15,8 +15,8 @@ Stack trace:
   0 0x401704 tit::(anonymous namespace)::func_3()
   1 0x401401 tit::(anonymous namespace)::func_2()
   2 0x4013d1 tit::(anonymous namespace)::func_1()
-  3 0x4013a6 tit::(anonymous namespace)::run_test(tit::CmdArgs)
-  4 0x40eacd tit::run_main(int, char**, std::move_only_function<int (tit::CmdArgs)>)
+  3 0x4013a6 tit::(anonymous namespace)::run_test(int, char**)
+  4 0x40eacd tit::run_main(int, char**, std::move_only_function<int (int, char**)>)
   5 0x401373 main
   6 0x7f0e04be55f5
   7 0x7f0e04be56a8 __libc_start_main
