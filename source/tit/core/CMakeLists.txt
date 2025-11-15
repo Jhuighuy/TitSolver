@@ -25,12 +25,14 @@ add_tit_library(
     "basic_types.hpp"
     "build_info.cpp"
     "build_info.hpp"
-    "checks.cpp"
     "checks.hpp"
     "env.cpp"
     "env.hpp"
     "exception.cpp"
     "exception.hpp"
+    "main.cpp"
+    "main.hpp"
+    "malloc.cpp"
     "mat.hpp"
     "math.hpp"
     "mdvector.hpp"
@@ -59,6 +61,7 @@ add_tit_library(
   DEPENDS
     gcem
     hwy::hwy
+    mimalloc-static
     nlohmann_json::nlohmann_json
     TBB::tbb
 )
