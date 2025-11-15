@@ -3,28 +3,18 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-install(
-  PROGRAMS
-    "titback.sh"
-  RENAME
-    "titback"
-  DESTINATION
-    "bin/"
-)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_tit_python_target(
+add_tit_executable(
   NAME
-    titapp_py
+    titback
   SOURCES
-    "__init__.py"
-    "__main__.py"
-    "application.py"
-    "server.py"
-    "window.py"
+    "backend.cpp"
+  DEPENDS
+    tit::core
+    tit::data
+    Crow::Crow
+    nlohmann_json::nlohmann_json
   DESTINATION
-    "lib/titback"
+    "bin"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

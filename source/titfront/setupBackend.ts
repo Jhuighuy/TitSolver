@@ -49,7 +49,7 @@ export async function setupBackend(
   const backendPort = options.backendPort ?? (await randomFreePort());
   const backendProcess = spawn(
     "./output/TIT_ROOT/bin/titback",
-    ["--headless", "--port", backendPort.toString()],
+    ["--port", backendPort.toString()],
     {
       cwd: "../../",
     }
@@ -63,13 +63,13 @@ export async function setupBackend(
       reject(new Error("Backend startup timed out after 3 seconds."));
     }, 3000);
     backendProcess.stdout?.on("data", (data: Buffer) => {
-      if (data.toString().includes("Running")) {
-        clearTimeout(timeout);
-        resolve();
-      }
       console.log(data.toString());
     });
     backendProcess.stderr?.on("data", (data: Buffer) => {
+      if (data.toString().includes("running")) {
+        clearTimeout(timeout);
+        resolve();
+      }
       console.error(data.toString());
     });
   });
