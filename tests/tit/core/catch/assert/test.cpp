@@ -5,14 +5,13 @@
 
 #define TIT_ENABLE_ASSERTS
 #include "tit/core/checks.hpp"
+#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
-#include "tit/main/main.hpp"
 
 namespace tit {
+namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-namespace {
 
 [[gnu::noinline]] void func_3() {
   eprintln("func_3");
@@ -30,13 +29,12 @@ namespace {
   func_2();
 }
 
-} // namespace
-
-void tit_main(CmdArgs /*args*/) {
-  func_1();
-  eprintln("This line should not be executed.");
-}
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+} // namespace
 } // namespace tit
+
+TIT_IMPLEMENT_MAIN([] {
+  func_1();
+  eprintln("This line should not be executed.");
+});

@@ -13,6 +13,7 @@
 #include <exception>
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <mutex>
 #include <ranges>
 #include <source_location>
@@ -29,14 +30,13 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stats.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/sys_info.hpp"
 #include "tit/core/type.hpp"
-#include "tit/main/main.hpp"
-#include "tit/par/control.hpp"
 
 #ifdef TIT_HAVE_GCOV
 extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
@@ -62,8 +62,6 @@ void ewrite(std::string_view message) noexcept {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// @todo There is a code duplication between this function and
-///       `report_check_failure` in `checks.cpp`. We should refactor it.
 void eprintln_crash_report(
     std::string_view message,
     std::string_view cause = "",
@@ -330,33 +328,65 @@ void setup_terminate_handler() noexcept {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace
-} // namespace tit
 
-auto main(int argc, char** argv) noexcept(false) -> int {
-  using namespace tit;
+// Note: Declared in `checks.hpp`.
+[[noreturn]] void impl::report_assert_failure(
+    std::string_view expression,
+    std::string_view message,
+    std::source_location location) noexcept {
+  const std::scoped_lock lock{crash_report_mutex()};
 
+  // Report the assertion failure.
+  terminate_on_exception([expression, message, location] {
+    eprintln_crash_report("Internal consistency check failed!",
+                          expression,
+                          message,
+                          location,
+                          boost::stacktrace::stacktrace{});
+  });
+
+  // Exit the process.
+  fast_exit(1);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto run_main(int argc,
+              char** argv,
+              std::move_only_function<void(int, char**)> main) noexcept -> int {
   // Setup error handlers.
   setup_signal_handlers();
   setup_terminate_handler();
 
-  // Print the logo and system information. Skip the logo if requested. If logo
-  // is printed, set the variable to prevent printing it again in the child
-  // processes.
-  if (!get_env("TIT_NO_BANNER", false)) {
-    println_logo_and_system_info();
-    set_env("TIT_NO_BANNER", true);
-  }
+  // Handlers are set up now, run the main function inside a safe block.
+  terminate_on_exception([argc, argv, &main] {
+    // Print the logo and system information. Skip the logo if requested. If
+    // logo is printed, set the variable to prevent printing it again in the
+    // child processes.
+    if (!get_env("TIT_NO_BANNER", false)) {
+      println_logo_and_system_info();
+      set_env("TIT_NO_BANNER", true);
+    }
 
-  // Enable subsystems.
-  if (get_env("TIT_ENABLE_STATS", false)) Stats::enable();
-  if (get_env("TIT_ENABLE_PROFILER", false)) Profiler::enable();
+    // Enable subsystems.
+    if (get_env("TIT_ENABLE_STATS", false)) Stats::enable();
+    if (get_env("TIT_ENABLE_PROFILER", false)) Profiler::enable();
 
-  // Setup parallelism.
-  par::set_num_threads(get_env("TIT_NUM_THREADS", sys_info::cpu_perf_cores()));
+    // Run the main function.
+    main(argc, argv);
+  });
 
-  // Run the main function.
-  tit_main({argc, argv});
   return 0;
 }
 
+auto run_main(int argc,
+              char** argv,
+              std::move_only_function<void()> main) noexcept -> int {
+  return run_main(argc, argv, [&main](int /*argc*/, char** /*argv*/) {
+    main();
+  });
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace tit
