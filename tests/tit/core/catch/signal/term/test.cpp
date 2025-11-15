@@ -6,13 +6,12 @@
 #include <csignal>
 #include <cstdlib>
 
+#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
-#include "tit/main/main.hpp"
-
-namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace tit {
 namespace {
 
 [[gnu::noinline]] void func_3() {
@@ -32,13 +31,12 @@ namespace {
 }
 
 } // namespace
-
-void tit_main(CmdArgs /*args*/) {
-  static_cast<void>(std::atexit([] { eprintln("At exit..."); }));
-  func_1();
-  eprintln("This line should not be executed.");
-}
+} // namespace tit
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+TIT_IMPLEMENT_MAIN([] {
+  static_cast<void>(std::atexit([] { eprintln("At exit..."); }));
+  func_1();
+  eprintln("This line should not be executed.");
+});

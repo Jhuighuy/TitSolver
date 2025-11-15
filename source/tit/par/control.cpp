@@ -9,9 +9,17 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/env.hpp"
+#include "tit/core/sys_info.hpp"
 #include "tit/par/control.hpp"
 
 namespace tit::par {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void init() {
+  par::set_num_threads(get_env("TIT_NUM_THREADS", sys_info::cpu_perf_cores()));
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
