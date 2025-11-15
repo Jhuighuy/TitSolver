@@ -3,20 +3,22 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/exception.hpp"
+#include <chrono>
+#include <thread>
+
+#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
-#include "tit/main/main.hpp"
 
 namespace tit {
+namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-namespace {
-
 [[gnu::noinline]] void func_3() {
   eprintln("func_3");
-  eprintln("Throwing an exception...");
-  TIT_THROW("Test exception, Some arguments: {}, {}.", 13, "hello");
+  eprintln("Creating a joinable thread...");
+  std::thread(
+      [] { std::this_thread::sleep_for(std::chrono::milliseconds(100)); });
 }
 
 [[gnu::noinline]] void func_2() {
@@ -30,12 +32,11 @@ namespace {
 }
 
 } // namespace
-
-void tit_main(CmdArgs /*args*/) {
-  func_1();
-  eprintln("This line should not be executed.");
-}
+} // namespace tit
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit
+TIT_IMPLEMENT_MAIN([] {
+  func_1();
+  eprintln("This line should not be executed.");
+});
