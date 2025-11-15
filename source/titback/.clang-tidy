@@ -3,17 +3,5 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
-  NAME
-    titwcsph
-  SOURCES
-    "wcsph.cpp"
-  DEPENDS
-    tit::core
-    tit::data
-    tit::sph
-  DESTINATION
-    "bin"
-)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+InheritParentConfig: true
+Checks: -modernize-type-traits

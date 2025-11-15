@@ -4,13 +4,13 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
-#include "tit/main/main.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -24,7 +24,7 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Real>
-auto sph_main(CmdArgs /*args*/) -> int {
+auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real H = 0.01; // Bar height.
   constexpr Real L = 0.10; // Bar length.
 
@@ -134,6 +134,6 @@ auto sph_main(CmdArgs /*args*/) -> int {
 } // namespace
 } // namespace tit::sph::tlsph
 
-void tit::tit_main(CmdArgs args) {
-  sph::tlsph::sph_main<float64_t>(args);
-}
+TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
+  sph::tlsph::sph_main<float64_t>(argc, argv);
+});

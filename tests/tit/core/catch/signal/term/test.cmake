@@ -3,17 +3,10 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
-  NAME
-    titwcsph
-  SOURCES
-    "wcsph.cpp"
-  DEPENDS
-    tit::core
-    tit::data
-    tit::sph
-  DESTINATION
-    "bin"
+add_tit_test(
+  EXE SOURCES "test.cpp" DEPENDS tit::core
+  EXIT_CODE 241
+  MATCH_STDERR "stderr.txt"
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
