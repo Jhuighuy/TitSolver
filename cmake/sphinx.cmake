@@ -81,7 +81,7 @@ function(add_tit_sphinx_target)
   # collect all the Python sources. For each Doxygen targets, we collect the
   # stamps files produced by the CMake target.
   #
-  # NOTE: For some reason, rebuilding of Sphinx target is not triggered unless
+  # Note: For some reason, rebuilding of Sphinx target is not triggered unless
   #       we explicitly depend on both Doxygen target and its stamp file.
   set(TARGET_DEP_FILES)
   foreach(DEP ${TARGET_DEPS_AUTODOC})
