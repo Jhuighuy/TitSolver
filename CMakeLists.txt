@@ -31,10 +31,13 @@ find_package(Boost CONFIG REQUIRED COMPONENTS container stacktrace_addr2line)
 find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
+find_package(HighFive CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
+find_package(miniz CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
+find_package(tinyxml2 CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
@@ -59,10 +62,13 @@ add_tit_library(
     Crow::Crow
     doctest::doctest
     gcem
+    HighFive::HighFive
     hwy::hwy
     mimalloc-static
+    miniz::miniz
     nlohmann_json::nlohmann_json
     TBB::tbb
+    tinyxml2::tinyxml2
     unofficial::sqlite3::sqlite3
     zstd::libzstd
 )
