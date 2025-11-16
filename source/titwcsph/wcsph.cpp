@@ -3,13 +3,17 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <functional>
+#include <memory>
 #include <string_view>
 
 #include "tit/core/basic_types.hpp"
+#include "tit/core/env.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
+#include "tit/data/hdf5.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
@@ -61,7 +65,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   [[maybe_unused]] constexpr Real R = 0.2;
   [[maybe_unused]] constexpr Real Ma = 0.1;
   constexpr Real CFL = 0.8;
-  constexpr Real dt = std::min(CFL * h_0 / cs_0, Real{0.25} * sqrt(h_0 / g));
+  [[maybe_unused]] constexpr Real dt =
+      std::min(CFL * h_0 / cs_0, Real{0.25} * sqrt(h_0 / g));
 
   // Parameters for the heat equation. Unused for now.
   [[maybe_unused]] constexpr Real kappa_0 = 0.6;
@@ -188,10 +193,22 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
   // Create a data storage to store the particles.  We'll store only one last
   // run result, all the previous runs will be discarded.
-  data::DataStorage storage{"./particles.ttdb"};
-  storage.set_max_series(1);
-  const auto series = storage.create_series();
-  particles.write(0.0, series);
+  using ParticlesType = decltype(auto{particles});
+  std::function<void(float64_t, ParticlesType&)> write_particles;
+  if (get_env("TIT_HDF5", false)) {
+    auto file = std::make_shared<data::HDF5File>("particles.h5");
+    write_particles = [file](float64_t time, ParticlesType& ps) mutable {
+      file->add(time, ps);
+    };
+  } else {
+    auto file = std::make_shared<data::DataStorage>("./particles.ttdb");
+    file->set_max_series(1);
+    write_particles = [file](float64_t time, ParticlesType& ps) mutable {
+      const auto series = file->create_series();
+      ps.write(time, series);
+    };
+  }
+  write_particles(0.0, particles);
 
   // Run the simulation.
   Real time{};
@@ -212,7 +229,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
     const auto end = time * sqrt(g / H) >= 6.9;
     if ((n % 100 == 0 && n != 0) || end) {
       const StopwatchCycle cycle{printtime};
-      particles.write(time * sqrt(g / H), series);
+      write_particles(time * sqrt(g / H), particles);
     }
 
     if (end) break;

@@ -7,6 +7,8 @@ add_tit_library(
   NAME
     data
   SOURCES
+    "hdf5.cpp"
+    "hdf5.hpp"
     "sqlite.cpp"
     "sqlite.hpp"
     "storage.cpp"
@@ -16,6 +18,8 @@ add_tit_library(
     "zstd.hpp"
   DEPENDS
     tit::core
+    HighFive::HighFive
+    tinyxml2::tinyxml2
     unofficial::sqlite3::sqlite3
     zstd::libzstd
 )
