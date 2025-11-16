@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   TbBackground as BackgroundIcon,
   TbPalette as ColorMapIcon,
+  TbDatabaseExport as ExportIcon,
   TbGalaxy as FieldIcon,
   TbPerspectiveOff as OrthographicIcon,
   TbPerspective as PerspectiveIcon,
@@ -16,6 +17,7 @@ import { Vector3 } from "three";
 
 import { TechText } from "~/components/basic";
 import { ColorBox, ColorLegend } from "~/components/color-bar";
+import { ExportButton } from "~/components/export";
 import { useStorage } from "~/components/storage";
 import { ViewCube } from "~/components/view-cube";
 import { assert, toCSSColor } from "~/utils";
@@ -275,6 +277,16 @@ export function Viewport() {
             </Select.Content>
           )}
         </Select.Root>
+
+        <Separator orientation="vertical" size="1" />
+
+        {/* ---- Export button. -------------------------------------------- */}
+        <ExportButton size="1" variant="ghost">
+          <Flex align="center" gap="2">
+            <ExportIcon size={16} />
+            Export…
+          </Flex>
+        </ExportButton>
       </Flex>
 
       {/* ---- Canvas. ----------------------------------------------------- */}
