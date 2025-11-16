@@ -35,6 +35,7 @@ add_tit_library(
     "exception.hpp"
     "main.cpp"
     "main.hpp"
+    "malloc.cpp"
     "mat.hpp"
     "math.hpp"
     "print.cpp"
@@ -62,6 +63,7 @@ add_tit_library(
     Boost::container
     gcem
     hwy::hwy
+    mimalloc-static
     nlohmann_json::nlohmann_json
     TBB::tbb
 )

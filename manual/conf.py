@@ -12,19 +12,6 @@
 import datetime
 import json
 import os
-import sys
-from unittest import mock
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# Python configuration.
-#
-
-MANUAL_ROOT_DIR = os.path.dirname(__file__)
-PROJECT_ROOT_DIR = os.path.abspath(os.path.join(MANUAL_ROOT_DIR, ".."))
-SOURCE_DIR = os.path.abspath(os.path.join(PROJECT_ROOT_DIR, "source"))
-sys.path.insert(0, SOURCE_DIR)
-sys.modules["ctypes"] = mock.Mock()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -34,8 +21,11 @@ sys.modules["ctypes"] = mock.Mock()
 project = "BlueTit Solver"
 copyright = f"{datetime.date.today().year}"
 author = "Oleg Butakov"
-with open(os.path.join(PROJECT_ROOT_DIR, "vcpkg.json"), encoding="utf-8") as f:
-  release = json.load(f)["version-string"]
+with open(
+    os.path.join(os.path.dirname(__file__), "..", "vcpkg.json"),
+    encoding="utf-8",
+) as f:
+    release = json.load(f)["version-string"]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -55,24 +45,6 @@ numfig_format = {
 rst_prolog = r"""
 .. |product| replace:: :math:`\mathsf{BlueTit\text{ }Solver}`
 """
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# Autodoc configuration.
-#
-
-extensions.append("sphinx.ext.autodoc")
-nitpick_ignore_regex.append(('py:class', '.*'))
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# Breathe configuration.
-#
-
-extensions.append("breathe")
-breathe_default_project = "titsdk_doxygen"
-breathe_default_members = ("members",)
-nitpick_ignore_regex.append(('cpp:identifier', '.*'))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #

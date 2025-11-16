@@ -18,10 +18,8 @@ project(tit VERSION "${TIT_VERSION}" LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(clang)
 include(codespell)
-include(doxygen)
 include(git)
 include(pnpm)
-include(python)
 include(sphinx)
 include(testing)
 include(tit_target)
@@ -34,6 +32,7 @@ find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
+find_package(mimalloc CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
@@ -42,8 +41,8 @@ find_package(zstd CONFIG REQUIRED)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Add the actual sources.
-add_subdirectory("source")
 add_subdirectory("manual")
+add_subdirectory("source")
 add_subdirectory("tests")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,6 +60,7 @@ add_tit_library(
     doctest::doctest
     gcem
     hwy::hwy
+    mimalloc-static
     nlohmann_json::nlohmann_json
     TBB::tbb
     unofficial::sqlite3::sqlite3

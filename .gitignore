@@ -9,44 +9,50 @@
 !*/
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Project
+#
 
-# Project configuration files.
 !.git*
 !/.github/**
+!/.vscode/settings.json
 !/sonar-project.properties
 
-# Editor configuration files.
-!/.vscode/settings.json
+.cache/
+/output/
 
-# C++ configuration files.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# CMake
+#
+
+!CMakeLists.txt
+!*.cmake
+!/cmake/codespell.txt
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# C++
+#
+
 !/.clang-format
 !.clang-tidy
 !/vcpkg.json
 
-# Web configuration files.
+!*.hpp
+!*.cpp
+!*.cpp.in
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Web
+#
+
 !biome.json
 !package.json
 !*.config.json
 !tsconfig*.json
 
-# Python configuration files.
-!py.typed
-!/pyproject.toml
-
-# Output.
-.cache/
-/output/
-**/coverage
-**/node_modules/
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# C++ files.
-!*.hpp
-!*.cpp
-!*.cpp.in
-
-# Web files.
 !*.js
 !*.jsx
 !*.ts
@@ -55,19 +61,18 @@
 !*.css
 !*.svg
 
-# Python files.
-!*.py
+**/coverage
+**/node_modules/
 
-# Documentation files.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Miscellaneous
+#
+
 !*.md
 !*.rst
 
-# Scripts.
+!*.py
 !*.sh
-
-# CMake files.
-!CMakeLists.txt
-!*.cmake
-!/cmake/codespell.txt
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
