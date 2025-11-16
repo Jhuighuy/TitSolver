@@ -298,6 +298,10 @@ ttdb_series__close: Final = cast(
     Callable[[ttdb_series_t], None],
     lib.func("ttdb_series__close", (c_void_p,), None),
 )
+ttdb_series__export_hdf5: Final = cast(
+    Callable[[ttdb_series_t, bytes], None],
+    lib.func("ttdb_series__export_hdf5", (c_void_p, c_char_p), None),
+)
 ttdb_series__num_frames: Final = cast(
     Callable[[ttdb_series_t], int],
     lib.func("ttdb_series__num_frames", (c_void_p,), c_uint64),
@@ -324,6 +328,10 @@ class Series:
   def __del__(self) -> None:
     """Close the series."""
     ttdb_series__close(self.__series)
+
+  def export_hdf5(self, path: str) -> None:
+    """Export the series to an HDF5 file."""
+    ttdb_series__export_hdf5(self.__series, path.encode("utf-8"))
 
   @property
   def num_frames(self) -> int:

@@ -11,6 +11,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
@@ -365,6 +366,14 @@ void DataStorage::array_read(DataArrayID array_id,
   TIT_ASSERT(data.size() == array_size(array_id) * array_type(array_id).width(),
              "Data size mismatch!");
   array_open_read_(array_id)->read(data);
+}
+
+auto DataStorage::array_read(DataArrayID array_id) const
+    -> std::vector<std::byte> {
+  std::vector<std::byte> result(array_size(array_id) *
+                                array_type(array_id).width());
+  array_read(array_id, std::span{result});
+  return result;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -204,6 +204,14 @@ typedef struct ttdb_series ttdb_series_t;
 void ttdb_series__close(ttdb_series_t* series);
 
 /**
+ * Export the series to an HDF5 file.
+ *
+ * @param series Series to export.
+ * @param path Path to the HDF5 file to export to.
+ */
+void ttdb_series__export_hdf5(ttdb_series_t* series, const char* path);
+
+/**
  * Get the number of frames in the series.
  *
  * @param series Series to get the number of frames of.

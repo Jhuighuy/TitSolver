@@ -32,9 +32,11 @@ include(tit_target)
 find_package(Boost CONFIG REQUIRED COMPONENTS container stacktrace_addr2line)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
+find_package(HighFive CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
+find_package(tinyxml2 CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
@@ -58,9 +60,11 @@ add_tit_library(
     Boost::stacktrace_addr2line
     doctest::doctest
     gcem
+    HighFive::HighFive
     hwy::hwy
     nlohmann_json::nlohmann_json
     TBB::tbb
+    tinyxml2::tinyxml2
     unofficial::sqlite3::sqlite3
     zstd::libzstd
 )

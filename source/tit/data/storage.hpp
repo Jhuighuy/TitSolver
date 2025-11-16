@@ -115,6 +115,9 @@ public:
   void read(std::span<std::byte> data) const {
     storage().array_read(array_id_, data);
   }
+  auto read() const -> std::vector<std::byte> {
+    return storage().array_read(array_id_);
+  }
   template<std::ranges::sized_range Range>
     requires std::ranges::contiguous_range<Range> &&
              known_type_of<std::ranges::range_value_t<Range>>
@@ -462,6 +465,7 @@ public:
   /// Read data from a data array.
   /// @{
   void array_read(DataArrayID array_id, std::span<std::byte> data) const;
+  auto array_read(DataArrayID array_id) const -> std::vector<std::byte>;
   template<std::ranges::sized_range Range>
     requires std::ranges::contiguous_range<Range> &&
              known_type_of<std::ranges::range_value_t<Range>>

@@ -12,6 +12,7 @@
 
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
+#include "tit/data/hdf5.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"
 
@@ -182,6 +183,18 @@ struct ttdb_series {
 
 void ttdb_series__close(ttdb_series_t* series) {
   delete series;
+}
+
+void ttdb_series__export_hdf5(ttdb_series_t* series, const char* path) {
+  safe_call([series, path] {
+    TIT_ENSURE(series != nullptr, "Series pointer is null.");
+    TIT_ENSURE(path != nullptr, "Path pointer is null.");
+    data::export_hdf5(
+        path,
+        /// @todo Implicit conversion should be implemented for views.
+        DataSeriesView{std::as_const(*series->storage), series->series_id});
+    return true;
+  });
 }
 
 uint64_t ttdb_series__num_frames(ttdb_series_t* series) {
