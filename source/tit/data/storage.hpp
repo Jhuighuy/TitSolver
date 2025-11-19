@@ -31,6 +31,9 @@ namespace tit::data {
 /// Data series ID type.
 enum class DataSeriesID : sqlite::RowID {};
 
+/// Parameter ID type.
+enum class DataParamID : sqlite::RowID {};
+
 /// Data frame ID type.
 enum class DataFrameID : sqlite::RowID {};
 
@@ -191,14 +194,14 @@ public:
 
   /// Find the data array with the given name.
   auto find_array(std::string_view name) const {
-    return storage().find_array(frame_id_, name);
+    return storage().frame_find_array(frame_id_, name);
   }
 
   /// Create a new data array in the frame.
   auto create_array(std::string_view name) const -> DataArrayView<Storage>
     requires (!std::is_const_v<Storage>)
   {
-    return storage().create_array(frame_id_, name);
+    return storage().frame_create_array(frame_id_, name);
   }
 
 private:
@@ -207,6 +210,83 @@ private:
   DataFrameID frame_id_{0};
 
 }; // class DataFrameView
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Parameter view.
+template<data_storage Storage>
+class DataParamView final {
+public:
+
+  /// Construct a null parameter view.
+  constexpr DataParamView() noexcept = default;
+
+  /// Construct a parameter view.
+  constexpr explicit DataParamView(Storage& storage, DataParamID param_id)
+      : storage_{&storage}, param_id_{param_id} {
+    TIT_ASSERT(storage.check_param(param_id_), "Invalid parameter ID!");
+  }
+
+  /// Get the data storage.
+  constexpr auto storage() const noexcept -> Storage& {
+    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
+    return *storage_;
+  }
+
+  /// Get the parameter ID.
+  /// @{
+  constexpr auto id() const noexcept -> DataParamID {
+    TIT_ASSERT(param_id_ != DataParamID{0}, "Parameter ID is null!");
+    return param_id_;
+  }
+  constexpr explicit(false) operator DataParamID() const noexcept {
+    return id();
+  }
+  /// @}
+
+  /// Compare data parameter views by ID.
+  friend constexpr auto operator==(DataParamView lhs,
+                                   DataParamView rhs) noexcept -> bool {
+    TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
+    return lhs.param_id_ == rhs.param_id_;
+  }
+
+  /// Get the specification of the parameter.
+  auto spec() const -> std::string {
+    return storage().param_spec(param_id_);
+  }
+
+  /// Get the value of the parameter.
+  auto value() const -> std::string {
+    return storage().param_value(param_id_);
+  }
+
+  /// Set the value of the parameter.
+  void set_value(std::string_view value) {
+    storage().param_set_value(param_id_, value);
+  }
+
+  /// Get the parent parameter.
+  auto parent() const {
+    return storage().param_parent(param_id_);
+  }
+
+  /// Get the number of child parameters.
+  auto num_children() const -> size_t {
+    return storage().param_num_children(param_id_);
+  }
+
+  /// Enumerate all child parameters.
+  auto children() const {
+    return storage().param_children(param_id_);
+  }
+
+private:
+
+  Storage* storage_ = nullptr;
+  DataParamID param_id_{0};
+
+}; // class ParameterView
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -253,6 +333,16 @@ public:
     return storage().series_name(series_id_);
   }
 
+  /// Get the number of parameters in the data series.
+  auto num_params() const -> size_t {
+    return storage().series_num_params(series_id_);
+  }
+
+  /// Enumerate all parameters in the data series.
+  auto params() const {
+    return storage().series_params(series_id_);
+  }
+
   /// Get the number of frames in the data series.
   auto num_frames() const -> size_t {
     return storage().series_num_frames(series_id_);
@@ -272,7 +362,7 @@ public:
   auto create_frame(float64_t time) const -> DataFrameView<Storage>
     requires (!std::is_const_v<Storage>)
   {
-    return storage().create_frame(series_id_, time);
+    return storage().series_create_frame(series_id_, time);
   }
 
 private:
@@ -313,9 +403,9 @@ public:
   /// @{
   auto series_ids() const -> std::generator<DataSeriesID>;
   auto series(this auto& self) {
-    return std::views::transform( //
-        self.series_ids(),
-        [&self](DataSeriesID id) { return DataSeriesView{self, id}; });
+    return self.series_ids() | //
+           std::views::transform(
+               [&self](DataSeriesID id) { return DataSeriesView{self, id}; });
   }
   /// @}
 
@@ -336,16 +426,48 @@ public:
   }
   /// @}
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   /// Delete a data series.
   void delete_series(DataSeriesID series_id);
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Check if a data series with the given ID exists.
   auto check_series(DataSeriesID series_id) const -> bool;
 
   /// Get the name of a data series.
   auto series_name(DataSeriesID series_id) const -> std::string;
+
+  /// Number of parameters in the series.
+  auto series_num_params(DataSeriesID series_id) const -> size_t;
+
+  /// Enumerate all parameters in the series.
+  /// @{
+  auto series_param_ids(DataSeriesID series_id) const
+      -> std::generator<DataParamID>;
+  auto series_params(this auto& self, DataSeriesID series_id) {
+    return self.series_param_ids(series_id) |
+           std::views::transform(
+               [&self](DataParamID id) { return DataParamView{self, id}; });
+  }
+  /// @}
+
+  /// Create a new parameter in the series.
+  /// @{
+  auto series_create_param_id(
+      DataSeriesID series_id,
+      std::string_view spec,
+      std::string_view value,
+      std::optional<DataParamID> parent_id = std::nullopt) -> DataParamID;
+  auto series_create_param(DataSeriesID series_id,
+                           std::string_view spec,
+                           std::string_view value,
+                           std::optional<DataParamID> parent_id = std::nullopt)
+      -> DataParamView<DataStorage> {
+    return DataParamView{
+        *this,
+        series_create_param_id(series_id, spec, value, parent_id)};
+  }
+  /// @}
 
   /// Number of frames in the series.
   auto series_num_frames(DataSeriesID series_id) const -> size_t;
@@ -355,9 +477,9 @@ public:
   auto series_frame_ids(DataSeriesID series_id) const
       -> std::generator<DataFrameID>;
   auto series_frames(this auto& self, DataSeriesID series_id) {
-    return std::views::transform(
-        self.series_frame_ids(series_id),
-        [&self](DataFrameID id) { return DataFrameView{self, id}; });
+    return self.series_frame_ids(series_id) |
+           std::views::transform(
+               [&self](DataFrameID id) { return DataFrameView{self, id}; });
   }
   /// @}
 
@@ -371,17 +493,59 @@ public:
 
   /// Create a new frame in the series.
   /// @{
-  auto create_frame_id(DataSeriesID series_id, float64_t time) -> DataFrameID;
-  auto create_frame(DataSeriesID series_id, float64_t time)
+  auto series_create_frame_id(DataSeriesID series_id, float64_t time)
+      -> DataFrameID;
+  auto series_create_frame(DataSeriesID series_id, float64_t time)
       -> DataFrameView<DataStorage> {
-    return DataFrameView{*this, create_frame_id(series_id, time)};
+    return DataFrameView{*this, series_create_frame_id(series_id, time)};
   }
   /// @}
 
-  /// Delete a frame.
-  void delete_frame(DataFrameID frame_id);
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Delete a parameter.
+  void delete_param(DataParamID param_id);
+
+  /// Check if a parameter with the given ID exists.
+  auto check_param(DataParamID param_id) const -> bool;
+
+  /// Get the specification of the parameter.
+  auto param_spec(DataParamID param_id) const -> std::string;
+
+  /// Get the value of a parameter.
+  auto param_value(DataParamID param_id) const -> std::string;
+
+  /// Set the value of a parameter.
+  void param_set_value(DataParamID param_id, std::string_view value);
+
+  /// Get the parent parameter.
+  /// @{
+  auto param_parent_id(DataParamID param_id) const
+      -> std::optional<DataParamID>;
+  auto param_parent(this auto& self, DataParamID param_id) {
+    return self.param_parent_id(param_id).transform(
+        [&self](auto id) { return DataParamView{self, id}; });
+  }
+  /// @}
+
+  /// Get the number of child parameters.
+  auto param_num_children(DataParamID param_id) const -> size_t;
+
+  /// Enumerate all child parameters.
+  /// @{
+  auto param_child_ids(DataParamID param_id) const
+      -> std::generator<DataParamID>;
+  auto param_children(this auto& self, DataParamID param_id) {
+    return self.param_child_ids(param_id) |
+           std::views::transform(
+               [&self](auto id) { return DataParamView{self, id}; });
+  }
+  /// @}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Delete a frame.
+  void delete_frame(DataFrameID frame_id);
 
   /// Check if a frame with the given ID exists.
   auto check_frame(DataFrameID frame_id) const -> bool;
@@ -397,20 +561,20 @@ public:
   auto frame_array_ids(DataFrameID frame_id) const
       -> std::generator<DataArrayID>;
   auto frame_arrays(this auto& self, DataFrameID frame_id) {
-    return std::views::transform(
-        self.frame_array_ids(frame_id),
-        [&self](auto id) { return DataArrayView{self, id}; });
+    return self.frame_array_ids(frame_id) |
+           std::views::transform(
+               [&self](auto id) { return DataArrayView{self, id}; });
   }
   /// @}
 
   /// Find the data array with the given name.
   /// @{
-  auto find_array_id(DataFrameID frame_id, std::string_view name) const
+  auto frame_find_array_id(DataFrameID frame_id, std::string_view name) const
       -> std::optional<DataArrayID>;
-  auto find_array(this auto& self,
-                  DataFrameID frame_id,
-                  std::string_view name) {
-    return self.find_array_id(frame_id, name).transform([&self](auto id) {
+  auto frame_find_array(this auto& self,
+                        DataFrameID frame_id,
+                        std::string_view name) {
+    return self.frame_find_array_id(frame_id, name).transform([&self](auto id) {
       return DataArrayView{self, id};
     });
   }
@@ -418,18 +582,18 @@ public:
 
   /// Create a new data array in the frame.
   /// @{
-  auto create_array_id(DataFrameID frame_id, std::string_view name)
+  auto frame_create_array_id(DataFrameID frame_id, std::string_view name)
       -> DataArrayID;
-  auto create_array(DataFrameID frame_id, std::string_view name)
+  auto frame_create_array(DataFrameID frame_id, std::string_view name)
       -> DataArrayView<DataStorage> {
-    return DataArrayView{*this, create_array_id(frame_id, name)};
+    return DataArrayView{*this, frame_create_array_id(frame_id, name)};
   }
   /// @}
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   /// Delete a data array.
   void delete_array(DataArrayID array_id);
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Check if a data array with the given ID exists.
   auto check_array(DataArrayID array_id) const -> bool;

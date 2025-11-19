@@ -14,8 +14,12 @@ add_tit_library(
     "type.hpp"
     "zstd.cpp"
     "zstd.hpp"
+    "spec.cpp"
+    "spec.hpp"
+    "spec2.hpp"
   DEPENDS
     tit::core
+    nlohmann_json::nlohmann_json
     unofficial::sqlite3::sqlite3
     zstd::libzstd
 )
