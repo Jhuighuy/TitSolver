@@ -5,7 +5,7 @@
 
 add_subdirectory("tit")
 add_subdirectory("titapp")
-add_subdirectory("titfront")
+add_subdirectory("titgui")
 add_subdirectory("titsdk")
 add_subdirectory("titwcsph")
 add_subdirectory("ttdbreader")

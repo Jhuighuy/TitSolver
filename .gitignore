@@ -54,6 +54,9 @@
 !*.html
 !*.css
 !*.svg
+dist/
+coverage/
+!__snapshots__/*.snap
 
 # Python files.
 !*.py
