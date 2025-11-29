@@ -50,12 +50,12 @@ class Application(QApplication):
           os.path.join(
               os.path.dirname(__file__),
               "..",
-              "frontend",
+              "gui",
               "index.html",
           ))
       if not os.path.isfile(path):
         raise FileNotFoundError(
-            f"Frontend not found at {path}. "
+            f"GUI files not found at {path}. "
             "Ensure the application is installed correctly.")
       self.__server.start(host, args.port)
       self.__window = Window(QUrl.fromLocalFile(path))
