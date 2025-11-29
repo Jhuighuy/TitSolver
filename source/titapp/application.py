@@ -65,7 +65,7 @@ class Application(QApplication):
 
   def __parse_args(self) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="titback",
+        prog="titapp",
         description="BlueTit CAE.",
         add_help=False,
     )

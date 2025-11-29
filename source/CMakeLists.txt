@@ -4,7 +4,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_subdirectory("tit")
-add_subdirectory("titback")
+add_subdirectory("titapp")
 add_subdirectory("titfront")
 add_subdirectory("titsdk")
 add_subdirectory("titwcsph")

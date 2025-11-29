@@ -33,7 +33,7 @@ class Server(QObject):
     super().__init__(parent)
     self.__client = None
     self.__server = QWebSocketServer(
-        "titback",
+        "titapp-server",
         QWebSocketServer.SslMode.NonSecureMode,
     )
 
