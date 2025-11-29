@@ -40,7 +40,7 @@ reportMissingModuleSource = false
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [tool.coverage.paths]
-titback = ["source/titback", "output/TIT_ROOT/lib/titback"]
+titapp = ["source/titapp", "output/TIT_ROOT/lib/titapp"]
 titsdk = ["source/titsdk", "output/TIT_ROOT/lib/titsdk"]
 ttdbreader = ["source/ttdbreader", "output/TIT_ROOT/paraview/ttdbreader"]
 

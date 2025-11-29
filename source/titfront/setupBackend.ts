@@ -48,7 +48,7 @@ export async function setupBackend(
 ): Promise<BackendConfig> {
   const backendPort = options.backendPort ?? (await randomFreePort());
   const backendProcess = spawn(
-    "./output/TIT_ROOT/bin/titback",
+    "./output/TIT_ROOT/bin/titapp",
     ["--headless", "--port", backendPort.toString()],
     {
       cwd: "../../",
@@ -56,7 +56,7 @@ export async function setupBackend(
   );
   backendProcess.on("exit", (code, signal) => {
     if (code === 0) return;
-    console.error(`titback exited with code ${code} / signal ${signal}`);
+    console.error(`titapp exited with code ${code} / signal ${signal}`);
   });
   await new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -98,7 +98,7 @@ export async function setupBackend(
   });
   const proxyPort = options.proxyPort ?? (await randomFreePort());
   proxyServer.listen(proxyPort, () => {});
-  console.info(`titback started [${backendProcess.pid}].`);
+  console.info(`titapp started [${backendProcess.pid}].`);
 
   return {
     backendPort,
@@ -106,7 +106,7 @@ export async function setupBackend(
     cleanup() {
       proxyServer.close();
       backendProcess.kill();
-      console.info(`titback closed [${backendProcess.pid}].`);
+      console.info(`titapp closed [${backendProcess.pid}].`);
     },
   };
 }
