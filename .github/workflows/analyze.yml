@@ -43,8 +43,8 @@ jobs:
           # Fetch all history for proper analysis and coverage reports.
           fetch-depth: 0
 
-      - name: Setup Sonar Scanner
-        uses: SonarSource/sonarcloud-github-c-cpp@v2
+      - name: Install Sonar Build Wrapper
+        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v6.0.0
 
       - name: Setup runner
         uses: ./.github/actions/setup_runner
@@ -98,12 +98,13 @@ jobs:
           disable_search: true
 
       - name: Run Sonar Scanner
+        uses: SonarSource/sonarqube-scan-action@v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          sonar-scanner                                                                    \
-            --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
-            --define sonar.coverageReportPaths="${{ env.CXX_COVERAGE_REPORT_PATH_SONAR }}" \
-            --define sonar.javascript.lcov.reportPaths="${{ env.JS_COVERAGE_REPORT_PATH }}"\
-            --define sonar.python.coverage.reportPaths="${{ env.PYTHON_COVERAGE_REPORT_PATH }}"
+        with:
+          args: >
+            --define "sonar.cfamily.build-wrapper-output=${{ env.BUILD_WRAPPER_OUT_DIR }}"
+            --define "sonar.coverageReportPaths=${{ env.CXX_COVERAGE_REPORT_PATH_SONAR }}"
+            --define "sonar.javascript.lcov.reportPaths=${{ env.JS_COVERAGE_REPORT_PATH }}"
+            --define "sonar.python.coverage.reportPaths=${{ env.PYTHON_COVERAGE_REPORT_PATH }}"
