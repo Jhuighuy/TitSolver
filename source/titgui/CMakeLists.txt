@@ -3,12 +3,11 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titapp")
-add_subdirectory("titgui")
-add_subdirectory("titsdk")
-add_subdirectory("tittlsph")
-add_subdirectory("titwcsph")
-add_subdirectory("ttdbreader")
+add_tit_pnpm_target(
+  NAME
+    titgui
+  DESTINATION
+    "lib/gui"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

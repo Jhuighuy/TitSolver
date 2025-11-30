@@ -134,7 +134,7 @@ ttdb_array_t* ttdb_frame__find_array(ttdb_frame_t* frame, const char* name) {
   return safe_call([frame, name] -> ttdb_array_t* {
     TIT_ENSURE(frame != nullptr, "Frame pointer is null.");
     TIT_ENSURE(name != nullptr, "Name pointer is null.");
-    const auto id = frame->storage->find_array_id(frame->frame_id, name);
+    const auto id = frame->storage->frame_find_array_id(frame->frame_id, name);
     if (!id.has_value()) return nullptr;
     return new ttdb_array{
         .storage = frame->storage,
