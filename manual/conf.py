@@ -35,7 +35,7 @@ project = "BlueTit Solver"
 copyright = f"{datetime.date.today().year}"
 author = "Oleg Butakov"
 with open(os.path.join(PROJECT_ROOT_DIR, "vcpkg.json"), encoding="utf-8") as f:
-  release = json.load(f)["version-string"]
+    release = json.load(f)["version-string"]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -55,24 +55,6 @@ numfig_format = {
 rst_prolog = r"""
 .. |product| replace:: :math:`\mathsf{BlueTit\text{ }Solver}`
 """
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# Autodoc configuration.
-#
-
-extensions.append("sphinx.ext.autodoc")
-nitpick_ignore_regex.append(('py:class', '.*'))
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# Breathe configuration.
-#
-
-extensions.append("breathe")
-breathe_default_project = "titsdk_doxygen"
-breathe_default_members = ("members",)
-nitpick_ignore_regex.append(('cpp:identifier', '.*'))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
