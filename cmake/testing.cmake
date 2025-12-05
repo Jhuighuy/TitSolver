@@ -38,7 +38,7 @@ function(add_tit_test)
     TEST
     ""
     "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
-    "EXE;PYTHON;COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
+    "EXE;COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
     ${ARGN}
   )
 
@@ -55,52 +55,34 @@ function(add_tit_test)
   endif()
 
   # Setup the test command.
-  if(TEST_EXE OR TEST_PYTHON)
+  if(TEST_EXE)
     if(TEST_COMMAND)
-      message(FATAL_ERROR "'EXE', 'PYTHON', 'COMMAND' are mutually exclusive.")
+      message(FATAL_ERROR "'EXE', 'COMMAND' are mutually exclusive.")
     endif()
 
     # Setup the target name.
     string(REPLACE "/" "_" TEST_TARGET "${TEST_NAME}")
     set(TEST_TARGET "${TEST_TARGET}_test")
 
-    if(TEST_EXE)
-      cmake_parse_arguments(TEST "" "" "SOURCES;DEPENDS" ${TEST_EXE})
+    cmake_parse_arguments(TEST "" "" "SOURCES;DEPENDS" ${TEST_EXE})
 
-      # Setup the list of sources and dependencies. Since `test.cmake` files
-      # are included in the root test directory, we need to provide the
-      # absolute paths to the sources.
-      if(NOT TEST_SOURCES)
-        message(FATAL_ERROR "List of 'EXE' test sources must not be empty.")
-      endif()
-      list(TRANSFORM TEST_SOURCES PREPEND "${CMAKE_CURRENT_LIST_DIR}/")
-
-      # Add the executable.
-      add_tit_executable(
-        NAME "${TEST_TARGET}"
-        SOURCES ${TEST_SOURCES}
-        DEPENDS ${TEST_DEPENDS}
-      )
-
-      # Test command will run the executable.
-      set(TEST_COMMAND "${TEST_TARGET}")
-    elseif(TEST_PYTHON)
-      cmake_parse_arguments(TEST "" "SOURCE" "" ${TEST_PYTHON})
-
-      # Same as for the 'EXE' case, but we have a single source file.
-      # Also, we need to add the source file to the list of input files.
-      if(NOT TEST_SOURCE)
-        message(FATAL_ERROR "Single 'PYTHON' test source must be provided.")
-      endif()
-      list(PREPEND TEST_INPUT_FILES "${TEST_SOURCE}")
-      set(TEST_SOURCE "${CMAKE_CURRENT_LIST_DIR}/${TEST_SOURCE}")
-
-      # Add the Python module.
-      add_tit_python_target(NAME "${TEST_TARGET}" SOURCES "${TEST_SOURCE}")
-
-      # Test command will run the Python script.
-      set(TEST_COMMAND "${SHELL_EXE}" -c "${PYTHON_RUN_CMD} ${TEST_SOURCE}")
+    # Setup the list of sources and dependencies. Since `test.cmake` files
+    # are included in the root test directory, we need to provide the
+    # absolute paths to the sources.
+    if(NOT TEST_SOURCES)
+      message(FATAL_ERROR "List of 'EXE' test sources must not be empty.")
     endif()
+    list(TRANSFORM TEST_SOURCES PREPEND "${CMAKE_CURRENT_LIST_DIR}/")
+
+    # Add the executable.
+    add_tit_executable(
+      NAME "${TEST_TARGET}"
+      SOURCES ${TEST_SOURCES}
+      DEPENDS ${TEST_DEPENDS}
+    )
+
+    # Test command will run the executable.
+    set(TEST_COMMAND "${TEST_TARGET}")
   endif()
   if(NOT TEST_COMMAND)
     message(FATAL_ERROR "Command line must not be empty.")

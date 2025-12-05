@@ -141,7 +141,6 @@ parse-args() {
 setup-path() {
 	echo "# Setting up paths..."
 	export PATH="$INSTALL_DIR/bin:$INSTALL_DIR/private/bin:$PATH"
-	export PYTHONPATH="$INSTALL_DIR/lib:$PYTHONPATH"
 }
 
 setup-work-dir() {
