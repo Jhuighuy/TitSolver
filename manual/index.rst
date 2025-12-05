@@ -10,7 +10,6 @@ User Manual
   :maxdepth: 2
 
   theory/index
-  sdk/index
 
 Welcome to the |product| user manual. This documentation provides comprehensive
 guidance for using and understanding |product|.
