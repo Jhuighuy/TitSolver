@@ -6,9 +6,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <ranges>
 #include <span>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <crow/app.h>
@@ -21,8 +21,60 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/main.hpp"
-#include "tit/core/type.hpp"
 #include "tit/data/storage.hpp"
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace {
+
+auto encode_base64(const std::vector<std::byte>& data) -> std::string {
+  static constexpr auto alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                   "abcdefghijklmnopqrstuvwxyz"
+                                   "0123456789+/";
+
+  const size_t len = data.size();
+
+  std::string result;
+  result.reserve(((len + 2) / 3) * 4);
+
+  size_t i = 0;
+  while (i + 3 <= len) {
+    const auto triple =
+        (uint32_t(std::to_integer<unsigned char>(data[i])) << 16) |
+        (uint32_t(std::to_integer<unsigned char>(data[i + 1])) << 8) |
+        (uint32_t(std::to_integer<unsigned char>(data[i + 2])));
+
+    result.push_back(alphabet[(triple >> 18) & 0x3F]);
+    result.push_back(alphabet[(triple >> 12) & 0x3F]);
+    result.push_back(alphabet[(triple >> 6) & 0x3F]);
+    result.push_back(alphabet[triple & 0x3F]);
+
+    i += 3;
+  }
+
+  if (i + 1 == len) {
+    const auto triple =
+        (uint32_t(std::to_integer<unsigned char>(data[i])) << 16);
+
+    result.push_back(alphabet[(triple >> 18) & 0x3F]);
+    result.push_back(alphabet[(triple >> 12) & 0x3F]);
+    result.push_back('=');
+    result.push_back('=');
+  } else if (i + 2 == len) {
+    const auto triple =
+        (uint32_t(std::to_integer<unsigned char>(data[i])) << 16) |
+        (uint32_t(std::to_integer<unsigned char>(data[i + 1])) << 8);
+
+    result.push_back(alphabet[(triple >> 18) & 0x3F]);
+    result.push_back(alphabet[(triple >> 12) & 0x3F]);
+    result.push_back(alphabet[(triple >> 6) & 0x3F]);
+    result.push_back('=');
+  }
+
+  return result;
+}
+
+} // namespace
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -37,7 +89,6 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
   crow::SimpleApp app;
 
-  // NOLINTNEXTLINE(modernize-type-traits)
   CROW_WEBSOCKET_ROUTE(app, "/ws")
       .onmessage([&storage](crow::websocket::connection& connection,
                             const std::string& data,
@@ -47,22 +98,38 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
         json::json response;
         response["status"] = "success";
         response["requestID"] = request["requestID"];
-        const auto frame = storage.last_series().last_frame();
-        for (const auto* var : {"r", "rho"}) {
-          const auto r = frame.find_array(var);
-          std::vector<std::byte> r_data(r->size() * r->type().width());
-          r->read(std::span{r_data});
-          response["result"][var] = std::span{
-              safe_bit_ptr_cast<const double*>(std::as_const(r_data).data()),
-              r_data.size() / sizeof(double),
-          };
+
+        const auto& message = request["message"];
+        const auto type = message["type"].get<std::string>();
+        if (type == "num-frames") {
+          response["result"] = storage.last_series().num_frames();
+        } else if (type == "frame") {
+          const auto frame_index = message["index"].get<std::size_t>();
+          const auto frame =
+              (storage.last_series().frames() | std::ranges::to<std::vector>())
+                  .at(frame_index);
+
+          for (const auto& array : frame.arrays()) {
+            std::vector<std::byte> bytes(array.size() * array.type().width());
+            array.read(std::span{bytes});
+
+            json::json field_result;
+            field_result["kind"] = array.type().kind().name();
+            field_result["data"] = encode_base64(bytes);
+
+            response["result"][array.name()] = field_result;
+          }
+        } else {
+          response["status"] = "error";
+          response["error"] = "Unknown message type: " + type;
         }
+
         connection.send_text(response.dump());
       });
 
   CROW_ROUTE(app, "/")
   ([&root_dir](const crow::request& /*request*/, crow::response& response) {
-    const auto index_html = root_dir / "lib" / "frontend" / "index.html";
+    const auto index_html = root_dir / "lib" / "gui" / "index.html";
     response.set_static_file_info_unsafe(index_html.native());
     response.end();
   });
@@ -70,7 +137,7 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   ([&root_dir](const crow::request& /*request*/,
                crow::response& response,
                const std::filesystem::path& file_name) {
-    auto file_path = root_dir / "lib" / "frontend" / file_name;
+    auto file_path = root_dir / "lib" / "gui" / file_name;
     if (std::filesystem::is_directory(file_path)) file_path /= "index.html";
     response.set_static_file_info_unsafe(file_path.native());
     response.end();

@@ -3,17 +3,18 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-/// <reference types="vitest/jsdom" />
-import { beforeAll } from "vitest";
-import { setupBackend } from "./setupBackend";
+import { Text } from "@radix-ui/themes";
+import type { ComponentProps } from "react";
+
+import { cn } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-beforeAll(async () => {
-  const { proxyPort, cleanup } = await setupBackend();
-  jsdom.reconfigure({ url: `http://localhost:${proxyPort}` });
-  console.info(`Running tests on port ${proxyPort}...`);
-  return cleanup;
-});
+export function TechText({
+  className,
+  ...props
+}: Readonly<ComponentProps<typeof Text>>) {
+  return <Text {...props} className={cn("font-mono italic", className)} />;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
