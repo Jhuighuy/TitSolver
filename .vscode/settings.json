@@ -24,9 +24,6 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "[python]": {
-    "editor.defaultFormatter": "eeyore.yapf"
-  },
   "[shellscript]": {
     "editor.defaultFormatter": "mkhl.shfmt"
   },
@@ -36,7 +33,6 @@
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "python.analysis.extraPaths": ["${workspaceFolder}/source"],
   "flake8.args": ["--config", "${workspaceFolder}/pyptoject.toml"],
   "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,

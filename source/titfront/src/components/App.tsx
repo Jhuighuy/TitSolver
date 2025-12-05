@@ -4,13 +4,11 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import type { FC } from "react";
-import { AiOutlinePython as PythonIcon } from "react-icons/ai";
 import {
   FiActivity as ActivityIcon,
   FiDatabase as DatabaseIcon,
   FiSettings as SettingsIcon,
   FiSliders as SlidersIcon,
-  FiTerminal as TerminalIcon,
 } from "react-icons/fi";
 
 import { Menu } from "~/components/Menu";
@@ -21,7 +19,6 @@ import { ViewerComponent } from "~/components/Viewer";
 
 export const App: FC = () => {
   const leftIconSize = 24;
-  const bottomIconSize = 16;
   return (
     <div className="h-screen w-screen flex flex-row select-none text-sm">
       <Menu side="left">
@@ -50,18 +47,6 @@ export const App: FC = () => {
       </Menu>
       <div className="flex-1 flex flex-col">
         <ViewerComponent />
-        <Menu side="bottom">
-          <Menu.Item
-            name="Python shell"
-            icon={<PythonIcon size={bottomIconSize} />}
-            group={0}
-          />
-          <Menu.Item
-            name="Console"
-            icon={<TerminalIcon size={bottomIconSize} />}
-            group={0}
-          />
-        </Menu>
       </div>
     </div>
   );

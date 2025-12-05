@@ -58,24 +58,6 @@ rst_prolog = r"""
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-# Autodoc configuration.
-#
-
-extensions.append("sphinx.ext.autodoc")
-nitpick_ignore_regex.append(('py:class', '.*'))
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# Breathe configuration.
-#
-
-extensions.append("breathe")
-breathe_default_project = "titsdk_doxygen"
-breathe_default_members = ("members",)
-nitpick_ignore_regex.append(('cpp:identifier', '.*'))
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
 # Options for HTML output.
 #
 

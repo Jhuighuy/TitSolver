@@ -29,10 +29,6 @@
 !*.config.json
 !tsconfig*.json
 
-# Python configuration files.
-!py.typed
-!/pyproject.toml
-
 # Output.
 .cache/
 /output/
@@ -55,10 +51,8 @@
 !*.css
 !*.svg
 
-# Python files.
-!*.py
-
 # Documentation files.
+!config.py
 !*.md
 !*.rst
 
