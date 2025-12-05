@@ -19,7 +19,6 @@ runs:
       run: |
         GCC_VERSION=${GCC_VERSION:-15}
         LLVM_VERSION=${LLVM_VERSION:-21}
-        PYTHON_VERSION=${PYTHON_VERSION:-3.13}
 
         # Select the compiler from the arguments.
         case "${{ inputs.compiler }}" in
@@ -40,13 +39,14 @@ runs:
         # Select packages to install.
         PACKAGES=(
           cmake
-          doxygen
+          codespell
           "gcc@$GCC_VERSION"
+          gcovr
           "llvm@$LLVM_VERSION"
           moreutils
           node
           pnpm
-          "python@$PYTHON_VERSION"
+          sphinx-doc
         )
         if [[ "$OSTYPE" == "darwin"* ]]; then
           PACKAGES+=(
@@ -69,6 +69,7 @@ runs:
         if [[ ! -f "$GCC_PATH/g++-$GCC_VERSION" ]]; then
           ln -s "$GCC_PATH/g++" "$GCC_PATH/g++-$GCC_VERSION"
         fi
+
         # System binutils might not be able to handle the latest GCC.
         if [[ "$OSTYPE" == "linux-gnu"* &&
               "${{ inputs.compiler }}" == "GCC" ]]; then
@@ -87,6 +88,7 @@ runs:
         if [[ ! -f "$LLVM_PATH/clang++-$LLVM_VERSION" ]]; then
           ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
         fi
+
         # On Linux LLVM tools will use system libstdc++ library by default,
         # so we need to override it with the one from our GCC installation.
         if [[ "$OSTYPE" == "linux-gnu"* &&
@@ -109,28 +111,3 @@ runs:
         echo "CXXFLAGS=$CXXFLAGS" >> "$GITHUB_ENV"
         echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
         echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
-
-        # Add Python to the path.
-        PYTHON_PATH="$(brew --prefix "python@$PYTHON_VERSION")/libexec/bin"
-        echo "$PYTHON_PATH" >> "$GITHUB_PATH"
-
-    - name: Setup Python packages
-      shell: bash
-      run: |
-        # Select packages to install.
-        PYTHON_PACKAGES=(
-          breathe
-          codespell
-          coverage
-          flake8
-          Flake8-pyproject
-          gcovr
-          mypy
-          numpy
-          pylint
-          Sphinx
-        )
-
-        # Install Python packages.
-        python3 -m pip install --upgrade --break-system-packages \
-          "${PYTHON_PACKAGES[@]}"
