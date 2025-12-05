@@ -28,7 +28,7 @@ set(
 #
 function(add_tit_sphinx_target)
   # Parse and check arguments.
-  cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "DEPENDS" ${ARGN})
+  cmake_parse_arguments(TARGET "" "" "NAME;DESTINATION" ${ARGN})
   if(NOT TARGET_NAME)
     message(FATAL_ERROR "Target name must be specified.")
   endif()
@@ -67,32 +67,6 @@ function(add_tit_sphinx_target)
     list(APPEND TARGET_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FILE}")
   endforeach()
 
-  # Parse the dependencies. For each Doxygen dependency, configure the Breathe
-  # options to point to the Doxygen XML output directory.
-  cmake_parse_arguments(TARGET_DEPS "" "" "AUTODOC;DOXYGEN" ${TARGET_DEPENDS})
-  set(BREATHE_OPTIONS)
-  foreach(DEP ${TARGET_DEPS_DOXYGEN})
-    get_target_property(DEP_DIR "${DEP}" BINARY_DIR)
-    list(APPEND BREATHE_OPTIONS "-Dbreathe_projects.${DEP}=${DEP_DIR}/xml")
-  endforeach()
-
-  # Define the list of the dependency files. For each Autodoc targets, we
-  # collect all the Python sources. For each Doxygen targets, we collect the
-  # stamps files produced by the CMake target.
-  #
-  # Note: For some reason, rebuilding of Sphinx target is not triggered unless
-  #       we explicitly depend on both Doxygen target and its stamp file.
-  set(TARGET_DEP_FILES)
-  foreach(DEP ${TARGET_DEPS_AUTODOC})
-    get_target_property(DEP_SOURCE_DIR "${DEP}" SOURCE_DIR)
-    file(GLOB_RECURSE DEP_SOURCES "${DEP_SOURCE_DIR}/*.py")
-    list(APPEND TARGET_DEP_FILES ${DEP_SOURCES})
-  endforeach()
-  foreach(DEP ${TARGET_DEPS_DOXYGEN})
-    get_target_property(DEP_BINARY_DIR "${DEP}" BINARY_DIR)
-    list(APPEND TARGET_DEP_FILES "${DEP}" "${DEP_BINARY_DIR}/${DEP}.stamp")
-  endforeach()
-
   # Run sphinx-build.
   cmake_path(
     RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR
@@ -107,7 +81,6 @@ function(add_tit_sphinx_target)
         -E env "TZ=UTC" # Sphinx may fail if TZ is not set.
         "${SPHINX_EXE}"
           ${SPHINX_OPTIONS}
-          ${BREATHE_OPTIONS}
           "${CMAKE_CURRENT_SOURCE_DIR}"
           "${CMAKE_CURRENT_BINARY_DIR}"
     DEPENDS
@@ -115,7 +88,6 @@ function(add_tit_sphinx_target)
       ${TARGET_PAGES}
       ${TARGET_STATIC_FILES}
       ${TARGET_TEMPLATES}
-      ${TARGET_DEP_FILES}
   )
   make_target_name(${TARGET_NAME} TARGET)
   add_custom_target("${TARGET}" ALL DEPENDS ${TARGET_OUTPUT})
