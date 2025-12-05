@@ -3,12 +3,13 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-/// <reference types="vitest" />
+/// <reference types="vitest/config" />
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 import { setupBackend } from "./setupBackend";
+import { titapp2 } from "./titapp2";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -21,7 +22,7 @@ export default defineConfig({
       },
     }),
     tailwindcss(),
-    titback(),
+    titapp2(),
   ],
   resolve: {
     alias: {
@@ -44,8 +45,8 @@ export default defineConfig({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Vite plugin to run the backend server alongside the development server.
-function titback(): Plugin {
+// Vite plugin to run the application server alongside the development server.
+export function titapp(): Plugin {
   return {
     name: "run-tit-backend",
     async configureServer(server) {

@@ -50,6 +50,10 @@
 !*.html
 !*.css
 !*.svg
+.vite
+dist/
+coverage/
+!__snapshots__/*.snap
 
 # Documentation files.
 !config.py

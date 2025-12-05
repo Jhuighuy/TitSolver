@@ -5,7 +5,7 @@
 
 add_subdirectory("tit")
 add_subdirectory("titback")
-add_subdirectory("titfront")
+add_subdirectory("titgui")
 add_subdirectory("titwcsph")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
