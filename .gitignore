@@ -24,7 +24,6 @@
 !/vcpkg.json
 
 # Web configuration files.
-!biome.json
 !package.json
 !*.config.json
 !tsconfig*.json
@@ -50,6 +49,10 @@
 !*.html
 !*.css
 !*.svg
+.vite
+dist/
+coverage/
+!__snapshots__/*.snap
 
 # Documentation files.
 !config.py
