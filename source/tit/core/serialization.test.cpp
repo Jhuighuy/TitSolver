@@ -22,6 +22,86 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("encode_base64") {
+  SUBCASE("empty") {
+    CHECK(encode_base64(std::vector<std::byte>{}).empty());
+  }
+  SUBCASE("one byte") {
+    std::vector<std::byte> data{std::byte{0x4D}};
+    CHECK(encode_base64(data) == "TQ==");
+  }
+  SUBCASE("two bytes") {
+    std::vector<std::byte> data{std::byte{0x4D}, std::byte{0x61}};
+    CHECK(encode_base64(data) == "TWE=");
+  }
+  SUBCASE("three bytes") {
+    std::vector<std::byte> data{std::byte{0x4D},
+                                std::byte{0x61},
+                                std::byte{0x6E}};
+    CHECK(encode_base64(data) == "TWFu");
+  }
+  SUBCASE("multiple blocks") {
+    std::vector<std::byte> data{std::byte{0x48},
+                                std::byte{0x65},
+                                std::byte{0x6C},
+                                std::byte{0x6C},
+                                std::byte{0x6F}};
+    CHECK(encode_base64(data) == "SGVsbG8=");
+  }
+}
+
+TEST_CASE("decode_base64") {
+  SUBCASE("success") {
+    SUBCASE("empty") {
+      CHECK(decode_base64("").empty());
+    }
+    SUBCASE("one byte with padding") {
+      const auto result = decode_base64("TQ==");
+      CHECK_RANGE_EQ(result, {std::byte{0x4D}});
+    }
+    SUBCASE("two bytes with padding") {
+      const auto result = decode_base64("TWE=");
+      CHECK_RANGE_EQ(result, {std::byte{0x4D}, std::byte{0x61}});
+    }
+    SUBCASE("three bytes no padding") {
+      const auto result = decode_base64("TWFu");
+      CHECK_RANGE_EQ(result,
+                     {std::byte{0x4D}, std::byte{0x61}, std::byte{0x6E}});
+    }
+    SUBCASE("multiple blocks") {
+      const auto result = decode_base64("SGVsbG8=");
+      CHECK_RANGE_EQ(result,
+                     {std::byte{0x48},
+                      std::byte{0x65},
+                      std::byte{0x6C},
+                      std::byte{0x6C},
+                      std::byte{0x6F}});
+    }
+    SUBCASE("roundtrip") {
+      const std::vector<std::byte> data{std::byte{0x00},
+                                        std::byte{0xFF},
+                                        std::byte{0xAB},
+                                        std::byte{0xCD},
+                                        std::byte{0xEF}};
+      CHECK_RANGE_EQ(decode_base64(encode_base64(data)), data);
+    }
+  }
+  SUBCASE("failure") {
+    SUBCASE("invalid length") {
+      CHECK_THROWS_MSG(decode_base64("ABC"),
+                       Exception,
+                       "Invalid Base64 string length '3'.");
+    }
+    SUBCASE("invalid character") {
+      CHECK_THROWS_MSG(decode_base64("TW@="),
+                       Exception,
+                       "Invalid Base64 character '@'.");
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // Test serialization of a type.
 template<class T>
 void test_serialization(const T& input, size_t expected_size) {
@@ -42,14 +122,10 @@ void test_serialization(const T& input, size_t expected_size) {
   }
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 TEST_CASE("serialize<trivial-type>") {
   test_serialization(1, sizeof(int32_t));
   test_serialization(1.0, sizeof(float64_t));
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("serialize<std::pair<...>>") {
   test_serialization(std::pair{1, 2.0}, sizeof(int32_t) + sizeof(float64_t));

@@ -41,6 +41,7 @@ add_tit_library(
     "profiler.hpp"
     "range.hpp"
     "serialization.hpp"
+    "serialization.cpp"
     "simd.hpp"
     "stats.cpp"
     "stats.hpp"

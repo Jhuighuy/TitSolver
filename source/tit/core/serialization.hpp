@@ -11,6 +11,8 @@
 #include <cstddef>
 #include <ranges>
 #include <span>
+#include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -24,6 +26,14 @@
 #include "tit/core/vec.hpp"
 
 namespace tit {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Encode a byte array into a Base64 string.
+auto encode_base64(std::span<const std::byte> data) -> std::string;
+
+/// Decode a Base64 string into a byte array.
+auto decode_base64(std::string_view data) -> std::vector<std::byte>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
