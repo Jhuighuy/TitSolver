@@ -64,6 +64,8 @@ TEST_CASE("serialize<std::array<...>>") {
   test_serialization(std::array{1, 2, 3}, sizeof(int32_t) * 3);
 }
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("serialize<Vec<...>>") {
   const Vec<float32_t, 3> vec{1.0, 2.0, 3.0};
   test_serialization(vec, 3 * sizeof(float32_t));
