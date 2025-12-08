@@ -13,10 +13,13 @@
 #include <filesystem>
 #include <format>
 #include <iterator>
+#include <memory>
 #include <mutex>
 #include <ranges>
 #include <span>
 #include <string>
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include <crow/app.h>
@@ -31,6 +34,7 @@
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/main.hpp"
+#include "tit/core/posix.hpp"
 #include "tit/core/type.hpp"
 #include "tit/data/storage.hpp"
 
@@ -52,6 +56,11 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   crow::SimpleApp app;
 
   const data::DataStorage storage{"particles.ttdb"};
+
+  const auto solver_path = exe_dir / "titwcsph";
+  std::mutex solver_mutex;
+  std::jthread solver_thread;
+  Process* solver_process = nullptr; // Owned by `solver_thread`.
 
   // ---------------------------------------------------------------------------
   //
@@ -111,9 +120,13 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
         current_connection = nullptr;
       })
       .onmessage([&send_response,
-                  &storage](crow::websocket::connection& /*connection*/,
-                            const std::string& raw_request,
-                            bool is_binary) {
+                  &storage,
+                  &solver_path,
+                  &solver_mutex,
+                  &solver_thread,
+                  &solver_process](crow::websocket::connection& /*connection*/,
+                                   const std::string& raw_request,
+                                   bool is_binary) {
         TIT_ALWAYS_ASSERT(!is_binary, "Binary messages are not supported.");
 
         const auto request = json::json::parse(raw_request);
@@ -157,6 +170,75 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
           }
 
           response["result"] = result;
+          send_response(response.dump());
+          return;
+        }
+
+        // ---------------------------------------------------------------------
+        if (type == "run") {
+          const std::scoped_lock lock{solver_mutex};
+
+          TIT_ALWAYS_ASSERT(solver_process == nullptr,
+                            "Solver is already running.");
+
+          auto solver_process_holder = std::make_unique<Process>();
+          solver_process = solver_process_holder.get();
+
+          solver_process->on_stdout(
+              [response, &send_response](std::string_view data) mutable {
+                response["repeat"] = true;
+                response["result"] = json::json{
+                    {"kind", "stdout"},
+                    {"data", data},
+                };
+                send_response(response.dump());
+              });
+
+          solver_process->on_stderr(
+              [response, &send_response](std::string_view data) mutable {
+                response["repeat"] = true;
+                response["result"] = json::json{
+                    {"kind", "stderr"},
+                    {"data", data},
+                };
+                send_response(response.dump());
+              });
+
+          solver_process->on_exit(
+              [response, &send_response](int code, int signal) mutable {
+                response["result"] = json::json{
+                    {"kind", "exit"},
+                    {"code", code},
+                    {"signal", signal},
+                };
+                send_response(response.dump());
+              });
+
+          solver_process->spawn_child(solver_path);
+
+          solver_thread =
+              std::jthread{[&solver_mutex,
+                            &solver_process,
+                            holder = std::move(solver_process_holder)] {
+                holder->wait_child();
+
+                const std::scoped_lock lock_{solver_mutex};
+                solver_process = nullptr;
+              }};
+
+          return;
+        }
+
+        // ---------------------------------------------------------------------
+        if (type == "stop") {
+          const std::scoped_lock lock{solver_mutex};
+
+          TIT_ALWAYS_ASSERT(
+              (solver_process != nullptr && solver_process->is_running()),
+              "Solver is not running.");
+
+          solver_process->kill_child();
+
           send_response(response.dump());
           return;
         }
