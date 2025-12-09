@@ -84,6 +84,24 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
   // ---------------------------------------------------------------------------
 
+  CROW_ROUTE(app, "/manual/")
+  ([&root_dir](const crow::request& /*request*/, crow::response& response) {
+    const auto index_html = root_dir / "manual" / "index.html";
+    response.set_static_file_info(index_html.native());
+    response.end();
+  });
+  CROW_ROUTE(app, "/manual/<path>")
+  ([&root_dir](const crow::request& /*request*/,
+               crow::response& response,
+               const std::filesystem::path& file_name) {
+    auto file_path = root_dir / "manual" / file_name;
+    if (std::filesystem::is_directory(file_path)) file_path /= "index.html";
+    response.set_static_file_info(file_path.native());
+    response.end();
+  });
+
+  // ---------------------------------------------------------------------------
+
   CROW_ROUTE(app, "/")
   ([&root_dir](const crow::request& /*request*/, crow::response& response) {
     const auto index_html = root_dir / "lib" / "gui" / "index.html";
