@@ -30,6 +30,15 @@ export function iota(n: number): number[] {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
+ * Extract an array from a single item or an array.
+ */
+export function items<T>(arg: T | T[]): T[] {
+  return Array.isArray(arg) ? arg : [arg];
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
  * Combine class names.
  */
 export function cn(...inputs: ClassValue[]): string {
