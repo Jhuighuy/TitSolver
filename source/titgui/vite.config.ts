@@ -119,6 +119,10 @@ function titapp(): Plugin {
               ws: true,
               changeOrigin: true,
             },
+            "/manual": {
+              target: `http://localhost:${backendPort}`,
+              changeOrigin: true,
+            },
           },
         },
       };
