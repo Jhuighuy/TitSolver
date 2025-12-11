@@ -14,6 +14,7 @@
 #include <ranges>
 #include <span>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <crow/app.h>
@@ -26,9 +27,12 @@
 
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
+#include "tit/core/exception.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/type.hpp"
+#include "tit/data/export-hdf5.hpp"
 #include "tit/data/storage.hpp"
+#include "tit/data/zip.hpp"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -43,12 +47,19 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
   crow::SimpleApp app;
 
+  const auto tmp_dir = std::filesystem::temp_directory_path() / "tit-tmp";
+  std::filesystem::create_directories(tmp_dir);
+  const auto export_dir = std::filesystem::temp_directory_path() / "tit-export";
+  std::filesystem::create_directories(export_dir);
+  std::jthread export_thread;
+
   // ---------------------------------------------------------------------------
 
   CROW_WEBSOCKET_ROUTE(app, "/ws")
-      .onmessage([&storage](crow::websocket::connection& connection,
-                            const std::string& data,
-                            bool is_binary) {
+      .onmessage([&storage, &tmp_dir, &export_dir, &export_thread](
+                     crow::websocket::connection& connection,
+                     const std::string& data,
+                     bool is_binary) {
         TIT_ASSERT(!is_binary, "Binary messages are not supported.");
         const auto request = json::json::parse(data);
         json::json response;
@@ -79,6 +90,20 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
             response["result"][array.name()] = field_result;
           }
+        } else if (type == "export") {
+          // -------------------------------------------------------------------
+          TIT_ENSURE(!export_thread.joinable(), "Export already running!");
+          export_thread = std::jthread(
+              [&storage, &tmp_dir, &export_dir, &connection, response] mutable {
+                const auto out_dir = tmp_dir / "particles";
+                std::filesystem::create_directories(out_dir);
+                data::export_hdf5(out_dir, storage.last_series());
+                static constexpr std::string_view zip_name = "particles.zip";
+                data::zip_directory(out_dir, export_dir / zip_name);
+                response["result"] = zip_name;
+                connection.send_text(response.dump());
+              });
+          return; // No response needed.
         } else {
           // -------------------------------------------------------------------
           response["status"] = "error";
@@ -87,6 +112,18 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
         connection.send_text(response.dump());
       });
+
+  // ---------------------------------------------------------------------------
+
+  CROW_ROUTE(app, "/export/<path>")
+  ([&export_dir](const crow::request& /*request*/,
+                 crow::response& response,
+                 const std::filesystem::path& file_name) {
+    TIT_ENSURE(file_name == file_name.filename(), "Invalid file name!");
+    const auto file_path = export_dir / file_name;
+    response.set_static_file_info_unsafe(file_path.native());
+    response.end();
+  });
 
   // ---------------------------------------------------------------------------
 

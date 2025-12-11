@@ -12,11 +12,14 @@
     "crow",
     "doctest",
     "gcem",
+    "highfive",
     "highway",
     "mimalloc",
+    "miniz",
     "nlohmann-json",
     "sqlite3",
     "tbb",
+    "tinyxml2",
     "zstd"
   ],
   "overrides": [{ "name": "tbb", "version": "2022.1.0" }]
