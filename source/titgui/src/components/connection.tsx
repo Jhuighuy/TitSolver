@@ -61,9 +61,8 @@ export function ConnectionProvider({
     if (lastMessage === null) return;
 
     assert(typeof lastMessage.data === "string");
-    const { requestID, status, result } = responseSchema.parse(
-      JSON.parse(lastMessage.data)
-    );
+    const response = responseSchema.parse(JSON.parse(lastMessage.data));
+    const { requestID, status, result, repeat } = response;
 
     const awaitingResponse = awaitingResponseRef.current;
     const callback = awaitingResponse.get(requestID);
@@ -71,7 +70,7 @@ export function ConnectionProvider({
       console.warn(`No callback found for request ID: ${requestID}.`);
       return;
     }
-    awaitingResponse.delete(requestID);
+    if (!repeat) awaitingResponse.delete(requestID);
 
     switch (status) {
       case "success":
@@ -99,6 +98,7 @@ const responseSchema = z
   .object({
     requestID: z.string(),
     status: z.union([z.literal("success"), z.literal("error")]),
+    repeat: z.boolean().optional(),
   })
   .and(
     z.union([

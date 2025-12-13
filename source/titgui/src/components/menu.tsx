@@ -11,10 +11,19 @@ import {
   Text,
   Tooltip,
 } from "@radix-ui/themes";
-import { Activity, type ReactElement, type ReactNode, useState } from "react";
+import {
+  Activity,
+  createContext,
+  type ReactElement,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { Resizable } from "~/components/resizable";
-import { iota, items } from "~/utils";
+import { assert, iota, items } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -95,6 +104,32 @@ export function Menu({ children }: Readonly<MenuProps>) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+export type MenuAction = {
+  name: string;
+  disabled?: boolean;
+  icon: ReactElement;
+  onClick: () => void;
+};
+
+export type MenuActions = {
+  addAction: (action: MenuAction) => () => void;
+};
+
+const MenuActionsContext = createContext<MenuActions | null>(null);
+
+function useMenuActions(): MenuActions {
+  const context = useContext(MenuActionsContext);
+  assert(context !== null, "Menu actions are not available.");
+  return context;
+}
+
+export function useMenuAction(action: MenuAction) {
+  const { addAction } = useMenuActions();
+  useEffect(() => addAction(action), [action, addAction]);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 type MenuItemProps = {
   group: number;
   name: string;
@@ -103,6 +138,23 @@ type MenuItemProps = {
 };
 
 function MenuItem({ name, children }: Readonly<MenuItemProps>) {
+  // ---- Actions. -------------------------------------------------------------
+
+  const [actions, setActions] = useState<MenuAction[]>([]);
+
+  const menuActions = useMemo<MenuActions>(
+    () => ({
+      addAction(action) {
+        const filterByName = ({ name }: MenuAction) => name !== action.name;
+        setActions((prev) => [...prev.filter(filterByName), action]);
+        return () => setActions((prev) => prev.filter(filterByName));
+      },
+    }),
+    []
+  );
+
+  // ---- Layout. --------------------------------------------------------------
+
   return (
     <Flex
       p="2"
@@ -112,13 +164,27 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
       className="bg-linear-to-bl from-gray-700 to-gray-800 inset-shadow-sm inset-shadow-gray-700"
     >
       {/* ---- Header. ----------------------------------------------------- */}
-      {/** @todo Add user-configurable actions. */}
       <Flex gap="2" direction="row" align="center">
         <Box asChild flexGrow="1">
           <Text weight="bold" size="2" truncate>
             {name.toLocaleUpperCase()}
           </Text>
         </Box>
+
+        {actions.map((action) => (
+          <Tooltip key={action.name} content={action.name}>
+            <IconButton
+              size="1"
+              variant="ghost"
+              color="gray"
+              disabled={action.disabled}
+              onClick={action.onClick}
+              aria-label={action.name}
+            >
+              {action.icon}
+            </IconButton>
+          </Tooltip>
+        ))}
       </Flex>
 
       {/* ---- Contents. --------------------------------------------------- */}
@@ -129,7 +195,11 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
         py="1"
         className="bg-gray-900 rounded-lg"
       >
-        <ScrollArea>{children}</ScrollArea>
+        <ScrollArea>
+          <MenuActionsContext.Provider value={menuActions}>
+            {children}
+          </MenuActionsContext.Provider>
+        </ScrollArea>
       </Box>
     </Flex>
   );
