@@ -14,6 +14,7 @@
 #include <format>
 #include <iterator>
 #include <memory>
+#include <mutex>
 #include <ranges>
 #include <span>
 #include <string>
@@ -57,6 +58,7 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   const data::DataStorage storage{"particles.ttdb"};
 
   const auto solver_path = exe_dir / "titwcsph";
+  std::mutex solver_mutex;
   std::jthread solver_thread;
   Process* solver_process = nullptr; // Owned by `solver_thread`.
 
@@ -65,12 +67,16 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   // WebSocket connection
   //
 
+  std::mutex connection_mutex;
+
   crow::websocket::connection* current_connection = nullptr;
 
   std::vector<std::string> pending_messages;
 
-  const auto send_response = [&current_connection,
+  const auto send_response = [&connection_mutex,
+                              &current_connection,
                               &pending_messages](const std::string& response) {
+    const std::scoped_lock lock{connection_mutex};
     if (current_connection != nullptr) {
       current_connection->send_text(response);
     } else {
@@ -79,13 +85,18 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   };
 
   CROW_WEBSOCKET_ROUTE(app, "/ws")
-      .onaccept([&current_connection](const crow::request& /*request*/,
+      .onaccept([&connection_mutex,
+                 &current_connection](const crow::request& /*request*/,
                                       void** /*user_data*/) {
         // Accept only one connection.
+        const std::scoped_lock lock{connection_mutex};
         return current_connection == nullptr;
       })
-      .onopen([&current_connection,
+      .onopen([&connection_mutex, //
+               &current_connection,
                &pending_messages](crow::websocket::connection& connection) {
+        const std::scoped_lock lock{connection_mutex};
+
         TIT_ALWAYS_ASSERT(current_connection == nullptr,
                           "Only one connection is allowed.");
 
@@ -94,27 +105,29 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
         for (const auto& message : pending_messages) {
           current_connection->send_text(message);
         }
+
         pending_messages.clear();
       })
-      .onclose([&current_connection](crow::websocket::connection& connection,
+      .onclose([&connection_mutex, //
+                &current_connection](crow::websocket::connection& connection,
                                      const std::string& /*reason*/,
                                      uint16_t /*code*/) {
+        const std::scoped_lock lock{connection_mutex};
+
         TIT_ALWAYS_ASSERT(current_connection == &connection,
                           "Unexpected connection.");
 
         current_connection = nullptr;
       })
-      .onmessage([&current_connection,
-                  &send_response,
+      .onmessage([&send_response,
                   &storage,
                   &solver_path,
+                  &solver_mutex,
                   &solver_thread,
-                  &solver_process](crow::websocket::connection& connection,
+                  &solver_process](crow::websocket::connection& /*connection*/,
                                    const std::string& raw_request,
                                    bool is_binary) {
         TIT_ALWAYS_ASSERT(!is_binary, "Binary messages are not supported.");
-        TIT_ALWAYS_ASSERT(current_connection == &connection,
-                          "Unexpected connection.");
 
         const auto request = json::json::parse(raw_request);
         const auto& message = request["message"];
@@ -163,6 +176,8 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
         // ---------------------------------------------------------------------
         if (type == "run") {
+          const std::scoped_lock lock{solver_mutex};
+
           TIT_ALWAYS_ASSERT(solver_process == nullptr,
                             "Solver is already running.");
 
@@ -201,9 +216,13 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
           solver_process->spawn_child(solver_path);
 
-          solver_thread = std::jthread{
-              [&solver_process, holder = std::move(solver_process_holder)] {
-                solver_process->wait_child();
+          solver_thread =
+              std::jthread{[&solver_mutex,
+                            &solver_process,
+                            holder = std::move(solver_process_holder)] {
+                holder->wait_child();
+
+                const std::scoped_lock lock_{solver_mutex};
                 solver_process = nullptr;
               }};
 
@@ -212,6 +231,8 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
         // ---------------------------------------------------------------------
         if (type == "stop") {
+          const std::scoped_lock lock{solver_mutex};
+
           TIT_ALWAYS_ASSERT(
               (solver_process != nullptr && solver_process->is_running()),
               "Solver is not running.");
