@@ -35,7 +35,9 @@
 #include "tit/core/main.hpp"
 #include "tit/core/posix.hpp"
 #include "tit/core/type.hpp"
+#include "tit/data/export-hdf5.hpp"
 #include "tit/data/storage.hpp"
+#include "tit/data/zip.hpp"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -46,6 +48,11 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   const auto root_dir = exe_dir.parent_path();
   const auto gui_dir = root_dir / "lib" / "gui";
   const auto manual_dir = root_dir / "manual";
+
+  const auto tmp_dir = std::filesystem::temp_directory_path() / "tit-tmp";
+  const auto export_dir = std::filesystem::temp_directory_path() / "tit-export";
+  std::filesystem::create_directories(tmp_dir);
+  std::filesystem::create_directories(export_dir);
 
   // ---------------------------------------------------------------------------
   //
@@ -60,6 +67,8 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   std::mutex solver_mutex;
   std::jthread solver_thread;
   Process* solver_process = nullptr; // Owned by `solver_thread`.
+
+  std::jthread export_thread;
 
   // ---------------------------------------------------------------------------
   //
@@ -123,9 +132,12 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
                   &solver_path,
                   &solver_mutex,
                   &solver_thread,
-                  &solver_process](crow::websocket::connection& /*connection*/,
-                                   const std::string& raw_request,
-                                   bool is_binary) {
+                  &solver_process,
+                  &tmp_dir,
+                  &export_dir,
+                  &export_thread](crow::websocket::connection& /*connection*/,
+                                  const std::string& raw_request,
+                                  bool is_binary) {
         TIT_ALWAYS_ASSERT(!is_binary, "Binary messages are not supported.");
 
         const auto request = json::json::parse(raw_request);
@@ -242,6 +254,27 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
         }
 
         // ---------------------------------------------------------------------
+        if (type == "export") {
+          export_thread = std::jthread{[&storage,
+                                        &tmp_dir,
+                                        &export_dir,
+                                        response,
+                                        &send_response] mutable {
+            const auto out_dir = tmp_dir / "particles";
+            std::filesystem::create_directories(out_dir);
+            data::export_hdf5(out_dir, storage.last_series());
+
+            static constexpr std::string_view zip_name = "particles.zip";
+            data::zip_directory(out_dir, export_dir / zip_name);
+
+            response["result"] = zip_name;
+            send_response(response.dump());
+          }};
+
+          return;
+        }
+
+        // ---------------------------------------------------------------------
         response["status"] = "error";
         response["error"] = std::format("Unknown message type: '{}'.", type);
         send_response(response.dump());
@@ -251,6 +284,18 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   //
   // Static files
   //
+
+  CROW_ROUTE(app, "/export/<path>")
+  ([&export_dir](const crow::request& /*request*/,
+                 crow::response& response,
+                 const std::filesystem::path& file_name) {
+    TIT_ENSURE(file_name == file_name.filename(), "Invalid file name!");
+    const auto file_path = export_dir / file_name;
+    response.set_static_file_info_unsafe(file_path.native());
+    response.end();
+  });
+
+  // ---------------------------------------------------------------------------
 
   CROW_ROUTE(app, "/manual/")
   ([&manual_dir](const crow::request& /*request*/, crow::response& response) {

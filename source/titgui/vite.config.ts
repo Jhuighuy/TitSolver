@@ -123,6 +123,10 @@ function titapp(): Plugin {
               target: `http://localhost:${backendPort}`,
               changeOrigin: true,
             },
+            "/export": {
+              target: `http://localhost:${backendPort}`,
+              changeOrigin: true,
+            },
           },
         },
       };

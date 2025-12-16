@@ -7,15 +7,22 @@ add_tit_library(
   NAME
     data
   SOURCES
+    "export-hdf5.cpp"
+    "export-hdf5.hpp"
     "sqlite.cpp"
     "sqlite.hpp"
     "storage.cpp"
     "storage.hpp"
     "type.hpp"
+    "zip.cpp"
+    "zip.hpp"
     "zstd.cpp"
     "zstd.hpp"
   DEPENDS
     tit::core
+    HighFive::HighFive
+    miniz::miniz
+    tinyxml2::tinyxml2
     unofficial::sqlite3::sqlite3
     zstd::libzstd
 )
