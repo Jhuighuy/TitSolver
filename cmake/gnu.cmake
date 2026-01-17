@@ -47,6 +47,8 @@ set(
 # Define common compile options.
 set(
   GNU_COMPILE_OPTIONS
+  # Use C++26 standard.
+  -std=c++26
   # Warnings and diagnostics.
   ${GNU_WARNINGS}
   # Generate machine code for the host system's architecture.
@@ -60,12 +62,8 @@ set(
 # Define common link options.
 set(GNU_LINK_OPTIONS ${GNU_COMPILE_OPTIONS})
 if(APPLE)
-  list(
-    APPEND
-    GNU_LINK_OPTIONS
-    # Do not warn about duplicate libraries.
-    -Wl,-no_warn_duplicate_libraries
-  )
+  # Do not warn about duplicate libraries.
+  list(APPEND GNU_LINK_OPTIONS -Wl,-no_warn_duplicate_libraries)
 endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

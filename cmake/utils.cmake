@@ -13,6 +13,9 @@ find_program(CHRONIC_EXE NAMES "chronic" REQUIRED)
 # Find shell.
 find_program(SHELL_EXE NAMES "bash" "zsh" "sh" REQUIRED)
 
+# Find xargs.
+find_program(XARGS_EXE NAMES "xargs" REQUIRED)
+
 # Find git.
 find_program(GIT_EXE NAMES "git" REQUIRED)
 
@@ -90,6 +93,8 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
   # Append include directories.
   foreach(PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     set(TARGET_INCLUDE_DIRS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
+    set(TARGET_INCLUDE_DIRS "$<LIST:SORT,${TARGET_INCLUDE_DIRS}>")
+    set(TARGET_INCLUDE_DIRS "$<REMOVE_DUPLICATES:${TARGET_INCLUDE_DIRS}>")
     list(
       APPEND
       ${OPTIONS_VAR}
@@ -100,6 +105,8 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
   # Append compile definitions.
   foreach(PROP COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
     set(TARGET_DEFS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
+    set(TARGET_DEFS "$<LIST:SORT,${TARGET_DEFS}>")
+    set(TARGET_DEFS "$<REMOVE_DUPLICATES:${TARGET_DEFS}>")
     set(TARGET_DEFS "$<FILTER:${TARGET_DEFS},INCLUDE,.+>") # remove stray `;`.
     list(
       APPEND

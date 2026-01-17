@@ -25,6 +25,8 @@ set(
 # Define common compile options.
 set(
   CLANG_COMPILE_OPTIONS
+  # Use C++26 standard.
+  -std=c++26
   # Warnings and diagnostics.
   ${CLANG_WARNINGS}
   # Generate machine code for the host system's architecture.
@@ -33,19 +35,19 @@ set(
   -fPIC
   # Do not export symbols.
   -fvisibility=hidden
-  # As of LLVM 20.1.3, builtin for `std::forward_like` is bogus.
+  # As of LLVM 21.1.8, builtin for `std::forward_like` is bogus.
   -fno-builtin-std-forward_like
+  # As of LLVM 21.1.8, C++26's `std::format` is not working properly.
+  # https://github.com/llvm/llvm-project/issues/151371
+  -D__cpp_lib_format=202304L
+  -D__glibcxx_format=202304L
 )
 
 # Define common link options.
 set(CLANG_LINK_OPTIONS ${CLANG_COMPILE_OPTIONS})
 if(APPLE)
-  list(
-    APPEND
-    CLANG_LINK_OPTIONS
-    # Do not warn about duplicate libraries.
-    -Wl,-no_warn_duplicate_libraries
-  )
+  # Do not warn about duplicate libraries.
+  list(APPEND CLANG_LINK_OPTIONS -Wl,-no_warn_duplicate_libraries)
 endif()
 
 # When the actual compiler is configured to use libstdc++, I want the LLVM tools
@@ -80,8 +82,6 @@ function(_make_libstdcpp_options RESULT_VAR)
     return()
   endif()
 
-  message(STATUS "LLVM: using libstdc++ at: ${FOUND_DIR}")
-  message(STATUS "LLVM: using libstdc++ platform at: ${FOUND_PLATFORM_DIR}")
   set(
     ${RESULT_VAR}
     -stdlib++-isystem "${FOUND_DIR}"
@@ -157,15 +157,13 @@ function(enable_clang_tidy TARGET)
   endif()
 
   # Setup "compilation" arguments for clang-tidy call.
-  get_generated_compile_options(${TARGET} CLANG_TIDY_COMPILE_OPTIONS)
+  get_generated_compile_options(${TARGET} TARGET_COMPILE_OPTIONS)
   list(
     APPEND
-    CLANG_TIDY_COMPILE_OPTIONS
+    TARGET_COMPILE_OPTIONS
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
-    # Enable C++23, as it is not configured by the compile options.
-    -std=c++23
   )
 
   # Get the binary, source directory and sources of the target.
@@ -218,7 +216,7 @@ function(enable_clang_tidy TARGET)
       COMMAND
         "${CHRONIC_EXE}"
           "${CLANG_TIDY_EXE}"
-            "${SOURCE}" ${CLANG_TIDY_OPTIONS} -- ${CLANG_TIDY_COMPILE_OPTIONS}
+            "${SOURCE}" ${CLANG_TIDY_OPTIONS} -- ${TARGET_COMPILE_OPTIONS}
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
       DEPENDS "${SOURCE}" ${CLANG_TIDY_CONFIG_FILES}
@@ -239,27 +237,25 @@ endfunction()
 #
 function(write_compile_flags TARGET)
   # Setup "compilation" arguments for a hypothetical "clang" call.
-  get_generated_compile_options(${TARGET} CLANG_COMPILE_OPTIONS)
+  get_generated_compile_options(${TARGET} TARGET_COMPILE_OPTIONS)
   list(
     APPEND
-    CLANG_COMPILE_OPTIONS
+    TARGET_COMPILE_OPTIONS
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
-    # Enable C++23, as it is not configured by the compile options.
-    -std=c++23
   )
 
   # Remove `-Werror` from the compile flags, as it crashes clangd sometimes.
-  list(REMOVE_ITEM CLANG_COMPILE_OPTIONS "-Werror")
+  list(REMOVE_ITEM TARGET_COMPILE_OPTIONS "-Werror")
 
   # Write the compile flags to a file, each on a new line.
   add_custom_target(
     "${TARGET}_compile_flags"
     ALL # Execute on every build.
     COMMAND
-      "${CMAKE_COMMAND}" -E echo ${CLANG_COMPILE_OPTIONS} |
-      xargs -n 1 > "${CMAKE_SOURCE_DIR}/compile_flags.txt"
+      "${CMAKE_COMMAND}" -E echo ${TARGET_COMPILE_OPTIONS} |
+      "${XARGS_EXE}" -n 1 > "${CMAKE_SOURCE_DIR}/compile_flags.txt"
     COMMENT "Writing compile_flags.txt"
     COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
     VERBATIM

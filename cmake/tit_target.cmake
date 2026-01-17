@@ -21,7 +21,6 @@ function(configure_tit_target TARGET VISIBILITY)
   )
 
   # Setup compile and link options.
-  target_compile_features(${TARGET} ${VISIBILITY} cxx_std_23)
   foreach(CONFIG ${ALL_CONFIGS})
     string(TOUPPER ${CONFIG} CONFIG_UPPER)
 
