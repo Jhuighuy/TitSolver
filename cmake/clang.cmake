@@ -35,6 +35,10 @@ set(
   -fvisibility=hidden
   # As of LLVM 20.1.3, builtin for `std::forward_like` is bogus.
   -fno-builtin-std-forward_like
+  # As of LLVM 21.1.8, C++26's `std::format` is not working properly.
+  # https://github.com/llvm/llvm-project/issues/151371
+  -D__cpp_lib_format=202304L
+  -D__glibcxx_format=202304L
 )
 
 # Define common link options.
@@ -164,8 +168,8 @@ function(enable_clang_tidy TARGET)
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
-    # Enable C++23, as it is not configured by the compile options.
-    -std=c++23
+    # Enable C++26, as it is not configured by the compile options.
+    -std=c++26
   )
 
   # Get the binary, source directory and sources of the target.
@@ -246,8 +250,8 @@ function(write_compile_flags TARGET)
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
-    # Enable C++23, as it is not configured by the compile options.
-    -std=c++23
+    # Enable C++26, as it is not configured by the compile options.
+    -std=c++26
   )
 
   # Remove `-Werror` from the compile flags, as it crashes clangd sometimes.
