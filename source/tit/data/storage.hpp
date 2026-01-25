@@ -21,6 +21,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/core/stream.hpp"
+#include "tit/data/param_spec.hpp"
 #include "tit/data/sqlite.hpp"
 #include "tit/data/type.hpp"
 
@@ -30,6 +31,9 @@ namespace tit::data {
 
 /// Data series ID type.
 enum class DataSeriesID : sqlite::RowID {};
+
+/// Parameter ID type.
+enum class DataParamID : sqlite::RowID {};
 
 /// Data frame ID type.
 enum class DataFrameID : sqlite::RowID {};
@@ -143,6 +147,90 @@ private:
   DataArrayID array_id_{0};
 
 }; // class DataArrayView
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Parameter view.
+template<data_storage Storage>
+class DataParamView final {
+public:
+
+  /// Construct a null parameter view.
+  constexpr DataParamView() noexcept = default;
+
+  /// Construct a parameter view.
+  /// @{
+  constexpr explicit DataParamView(Storage& storage, DataParamID param_id)
+      : storage_{&storage}, param_id_{param_id} {
+    TIT_ASSERT(storage.check_param(param_id_), "Invalid parameter ID!");
+  }
+  template<data_storage Other>
+    requires (!std::same_as<Other, Storage> &&
+              std::convertible_to<Other&, Storage&>)
+  constexpr explicit(false) DataParamView(DataParamView<Other> other)
+      : storage_{&other.storage()}, param_id_{other.id()} {}
+  /// @}
+
+  /// Get the data storage.
+  constexpr auto storage() const noexcept -> Storage& {
+    TIT_ASSERT(storage_ != nullptr, "Storage is null!");
+    return *storage_;
+  }
+
+  /// Get the parameter ID.
+  /// @{
+  constexpr auto id() const noexcept -> DataParamID {
+    TIT_ASSERT(param_id_ != DataParamID{0}, "Parameter ID is null!");
+    return param_id_;
+  }
+  constexpr explicit(false) operator DataParamID() const noexcept {
+    return id();
+  }
+  /// @}
+
+  /// Compare data parameter views by ID.
+  friend constexpr auto operator==(DataParamView lhs,
+                                   DataParamView rhs) noexcept -> bool {
+    TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
+    return lhs.param_id_ == rhs.param_id_;
+  }
+
+  /// Get the specification of the parameter.
+  auto spec() const -> ParamSpecPtr {
+    return storage().param_spec(param_id_);
+  }
+
+  /// Get the value of the parameter.
+  auto value() const -> std::string {
+    return storage().param_value(param_id_);
+  }
+
+  /// Set the value of the parameter.
+  void set_value(std::string_view value) {
+    storage().param_set_value(param_id_, value);
+  }
+
+  /// Get the parent parameter ID.
+  auto parent_id() const -> DataParamID {
+    return storage().param_parent_id(param_id_);
+  }
+
+  /// Get the number of child parameters.
+  auto num_children() const -> size_t {
+    return storage().param_num_children(param_id_);
+  }
+
+  /// Enumerate all child parameters.
+  auto children() const {
+    return storage().param_children(param_id_);
+  }
+
+private:
+
+  Storage* storage_ = nullptr;
+  DataParamID param_id_{0};
+
+}; // class ParameterView
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -277,6 +365,26 @@ public:
     return storage().series_name(series_id_);
   }
 
+  /// Get the number of parameters in the data series.
+  auto num_params() const -> size_t {
+    return storage().series_num_params(series_id_);
+  }
+
+  /// Enumerate all parameters in the data series.
+  auto params() const {
+    return storage().series_params(series_id_);
+  }
+
+  /// Create a new parameter in the data series.
+  auto create_param(const ParamSpec& spec,
+                    DataParamID parent_id = DataParamID{0},
+                    std::string_view value = "") const
+      -> DataParamView<DataStorage>
+    requires (!std::is_const_v<Storage>)
+  {
+    return storage().series_create_param(series_id_, spec, parent_id, value);
+  }
+
   /// Get the number of frames in the data series.
   auto num_frames() const -> size_t {
     return storage().series_num_frames(series_id_);
@@ -371,6 +479,37 @@ public:
   /// Get the name of a data series.
   auto series_name(DataSeriesID series_id) const -> std::string;
 
+  /// Number of parameters in the series.
+  auto series_num_params(DataSeriesID series_id) const -> size_t;
+
+  /// Enumerate all parameters in the series.
+  /// @{
+  auto series_param_ids(DataSeriesID series_id) const
+      -> std::generator<DataParamID>;
+  auto series_params(this auto& self, DataSeriesID series_id) {
+    return self.series_param_ids(series_id) |
+           std::views::transform(
+               [&self](DataParamID id) { return DataParamView{self, id}; });
+  }
+  /// @}
+
+  /// Create a new parameter in the series.
+  /// @{
+  auto series_create_param_id(DataSeriesID series_id,
+                              const ParamSpec& spec,
+                              DataParamID parent_id = DataParamID{0},
+                              std::string_view value = "") -> DataParamID;
+  auto series_create_param(DataSeriesID series_id,
+                           const ParamSpec& spec,
+                           DataParamID parent_id = DataParamID{0},
+                           std::string_view value = "")
+      -> DataParamView<DataStorage> {
+    return DataParamView{
+        *this,
+        series_create_param_id(series_id, spec, parent_id, value)};
+  }
+  /// @}
+
   /// Number of frames in the series.
   auto series_num_frames(DataSeriesID series_id) const -> size_t;
 
@@ -400,6 +539,40 @@ public:
   auto series_create_frame(DataSeriesID series_id, float64_t time)
       -> DataFrameView<DataStorage> {
     return DataFrameView{*this, series_create_frame_id(series_id, time)};
+  }
+  /// @}
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Delete a parameter.
+  void delete_param(DataParamID param_id);
+
+  /// Check if a parameter with the given ID exists.
+  auto check_param(DataParamID param_id) const -> bool;
+
+  /// Get the specification of the parameter.
+  auto param_spec(DataParamID param_id) const -> ParamSpecPtr;
+
+  /// Get the value of a parameter.
+  auto param_value(DataParamID param_id) const -> std::string;
+
+  /// Set the value of a parameter.
+  void param_set_value(DataParamID param_id, std::string_view value);
+
+  /// Get the parent parameter.
+  auto param_parent_id(DataParamID param_id) const -> DataParamID;
+
+  /// Get the number of child parameters.
+  auto param_num_children(DataParamID param_id) const -> size_t;
+
+  /// Enumerate all child parameters.
+  /// @{
+  auto param_child_ids(DataParamID param_id) const
+      -> std::generator<DataParamID>;
+  auto param_children(this auto& self, DataParamID param_id) {
+    return self.param_child_ids(param_id) |
+           std::views::transform(
+               [&self](auto id) { return DataParamView{self, id}; });
   }
   /// @}
 
