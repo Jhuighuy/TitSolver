@@ -20,7 +20,7 @@ import {
 import ScrollContainer from "react-indiana-drag-scroll";
 
 import { TechText } from "~/components/basic";
-import { useStorage } from "~/components/storage";
+import { useStorage } from "~/hooks/use-storage";
 import { assert, iota } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,7 +30,8 @@ export function Timeline() {
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRepeating, setIsRepeating] = useState(false);
-  const { numFrames, frameIndex, requestFrame, refresh } = useStorage();
+  const { numFrames, isFrameLoading, frameIndex, requestFrame, refresh } =
+    useStorage();
 
   function setNextFrame() {
     assert(frameIndex !== null);
@@ -38,7 +39,7 @@ export function Timeline() {
     requestFrame(
       isRepeating
         ? (frameIndex + 1) % numFrames
-        : Math.min(numFrames - 1, frameIndex + 1)
+        : Math.min(frameIndex + 1, numFrames - 1)
     );
   }
 
@@ -48,7 +49,7 @@ export function Timeline() {
     requestFrame(
       isRepeating
         ? (frameIndex + numFrames - 1) % numFrames
-        : Math.max(0, frameIndex - 1)
+        : Math.max(frameIndex - 1, 0)
     );
   }
 
@@ -69,8 +70,8 @@ export function Timeline() {
 
   useEffect(() => {
     if (frameIndex === null) return;
-    if (isPlaying) playNextFrameEvent();
-  }, [isPlaying, frameIndex]);
+    if (isPlaying && !isFrameLoading) playNextFrameEvent();
+  }, [isPlaying, isFrameLoading, frameIndex]);
 
   // ---- Layout. --------------------------------------------------------------
 

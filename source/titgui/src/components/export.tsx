@@ -4,39 +4,56 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { Button } from "@radix-ui/themes";
-import { type ComponentProps, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { type ComponentProps, useEffect, useState } from "react";
 import { z } from "zod";
 
-import { useConnection } from "~/components/connection";
-import { assert } from "~/utils";
+import { useConnection } from "~/hooks/use-connection";
+import { downloadFile } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function ExportButton({
   disabled,
   children,
+  color,
   ...props
 }: Readonly<Omit<ComponentProps<typeof Button>, "onClick">>) {
-  const [isExporting, setIsExporting] = useState(false);
-  const { sendMessage } = useConnection();
+  // ---- Color. ---------------------------------------------------------------
+
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (showSuccess) return;
+    const timeout = setTimeout(() => setShowSuccess(false), 1000);
+    return () => clearTimeout(timeout);
+  }, [showSuccess]);
+
+  // ---- Mutation. ------------------------------------------------------------
+
+  const { sendMessageAsync } = useConnection();
+
+  const exportMutation = useMutation({
+    mutationFn: () =>
+      sendMessageAsync({ type: "export" }).then((result) =>
+        z.string().parse(result)
+      ),
+    onSuccess: (fileName) => {
+      downloadFile(`/export/${fileName}`, fileName);
+      setShowSuccess(true);
+    },
+    onError: (error) => {
+      console.error("Export failed:", error);
+    },
+  });
+
+  // ---- Layout. --------------------------------------------------------------
 
   return (
     <Button
-      disabled={disabled || isExporting}
-      onClick={() => {
-        assert(!isExporting);
-        setIsExporting(true);
-
-        sendMessage({ type: "export" }, (result) => {
-          setIsExporting(false);
-
-          const fileName = z.string().parse(result);
-          const linkElement = document.createElement("a");
-          linkElement.href = `/export/${fileName}`;
-          linkElement.download = fileName;
-          linkElement.click();
-        });
-      }}
+      disabled={disabled || exportMutation.isPending}
+      color={showSuccess ? "green" : color}
+      onClick={() => exportMutation.mutate()}
       {...props}
     >
       {children}

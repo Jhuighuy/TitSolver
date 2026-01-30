@@ -3,15 +3,13 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box, Flex, Theme } from "@radix-ui/themes";
 import { TbHelp as HelpIcon, TbRun as RunIcon } from "react-icons/tb";
 
-import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
 import { RunMenu } from "~/components/menu-run";
-import { SolverProvider } from "~/components/solver";
-import { StorageProvider } from "~/components/storage";
 import { Timeline } from "~/components/timeline";
 import { Viewport } from "~/components/viewport";
 
@@ -19,17 +17,15 @@ import { Viewport } from "~/components/viewport";
 
 export function App() {
   return (
-    <Theme appearance="dark">
-      <ConnectionProvider>
-        <SolverProvider>
-          <StorageProvider>
-            <Page />
-          </StorageProvider>
-        </SolverProvider>
-      </ConnectionProvider>
-    </Theme>
+    <QueryClientProvider client={queryClient}>
+      <Theme appearance="dark">
+        <Page />
+      </Theme>
+    </QueryClientProvider>
   );
 }
+
+const queryClient = new QueryClient();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

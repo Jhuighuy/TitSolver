@@ -139,3 +139,37 @@ export function toCSSColor(num: number): string {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * Download a file by simulating a click on a link.
+ */
+export function downloadFile(url: string, fileName: string): void {
+  const linkElement = document.createElement("a");
+  linkElement.href = url;
+  linkElement.download = fileName;
+  linkElement.click();
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * Copy a map and delete a key.
+ */
+export function copyDel<K, V>(map: Map<K, V>, key: K): Map<K, V> {
+  const result = new Map(map);
+  result.delete(key);
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * Copy a map and set a key.
+ */
+export function copySet<K, V>(map: Map<K, V>, key: K, value: V): Map<K, V> {
+  const result = new Map(map);
+  result.set(key, value);
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { TbRun as RunIcon, TbHandStop as StopIcon } from "react-icons/tb";
 
 import { type MenuAction, useMenuAction } from "~/components/menu";
-import { useSolver } from "~/components/solver";
+import { useSolver } from "~/hooks/use-solver";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

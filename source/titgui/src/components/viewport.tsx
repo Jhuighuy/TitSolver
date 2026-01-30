@@ -18,8 +18,8 @@ import { Vector3 } from "three";
 import { TechText } from "~/components/basic";
 import { ColorBox, ColorLegend } from "~/components/color-bar";
 import { ExportButton } from "~/components/export";
-import { useStorage } from "~/components/storage";
 import { ViewCube } from "~/components/view-cube";
+import { useStorage } from "~/hooks/use-storage";
 import { assert, toCSSColor } from "~/utils";
 import {
   type BackgroundColorName,
@@ -96,11 +96,10 @@ export function Viewport() {
     if (renderer === null) return;
 
     assert(currentField in frameData);
+    const fieldData = frameData[currentField];
+
     renderer.particles.setData(frameData, currentField);
-    renderer.particles.setColorRange(
-      frameData[currentField].min,
-      frameData[currentField].max
-    );
+    renderer.particles.setColorRange(fieldData.min, fieldData.max);
   }, [frameData, currentField]);
 
   // ---- Camera. --------------------------------------------------------------
