@@ -98,7 +98,6 @@ export function ConnectionProvider({
 const responseSchema = z
   .object({
     requestID: z.string(),
-    status: z.union([z.literal("success"), z.literal("error")]),
     repeat: z.boolean().optional(),
   })
   .and(

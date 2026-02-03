@@ -72,14 +72,9 @@ export function Resizable({
 
   return (
     <Flex direction="row">
-      <div
-        style={{
-          width: `${size}px`,
-          height: "100%",
-        }}
-      >
+      <Box width={`${size}px`} height="100%">
         {children}
-      </div>
+      </Box>
       <Box
         className="bg-gray-700 focus-visible:outline-(--accent-8)"
         width="2px"
