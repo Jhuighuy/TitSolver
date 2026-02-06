@@ -79,6 +79,11 @@ public:
         artificial_viscosity_{std::move(artificial_viscosity)},
         momentum_sources_{std::move(momentum_sources)...} {}
 
+  /// Reflect the momentum equation.
+  constexpr void reflect(this auto& self, auto& refl) {
+    refl(self.artificial_viscosity_, {{"name", "Artificial viscosity"}});
+  }
+
   /// Viscosity term.
   constexpr auto viscosity() const noexcept -> const auto& {
     return viscosity_;

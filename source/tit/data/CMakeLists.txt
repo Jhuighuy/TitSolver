@@ -9,6 +9,10 @@ add_tit_library(
   SOURCES
     "export-hdf5.cpp"
     "export-hdf5.hpp"
+    "json.hpp"
+    "param_rw.hpp"
+    "param_spec.cpp"
+    "param_spec.hpp"
     "sqlite.cpp"
     "sqlite.hpp"
     "storage.cpp"
@@ -22,6 +26,7 @@ add_tit_library(
     tit::core
     HighFive::HighFive
     miniz::miniz
+    nlohmann_json::nlohmann_json
     tinyxml2::tinyxml2
     unofficial::sqlite3::sqlite3
     zstd::libzstd

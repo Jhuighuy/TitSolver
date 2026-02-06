@@ -8,6 +8,7 @@
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
+#include "tit/data/param_rw.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
@@ -117,7 +118,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   }();
 
   // Setup the time integrator.
-  const RungeKuttaIntegrator time_integrator{equations};
+  RungeKuttaIntegrator time_integrator{equations};
 
   // Setup the particles array:
   ParticleArray particles{
@@ -184,12 +185,24 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       geom::PixelatedPartition{2 * h_0, geom::KMeansClustering{}},
   };
 
-  // Create a data storage to store the particles.  We'll store only one last
+  // Create a data storage to store the particles. We'll store only one last
   // run result, all the previous runs will be discarded.
   data::DataStorage storage{"./particles.ttdb"};
   storage.set_max_series(1);
+
+  // Restore last simulation parameters (if any).
+  if (storage.num_series() != 0) {
+    const data::ParamReader reader{storage.last_series()};
+    reader(time_integrator, {{"name", "Time integrator"}});
+  }
+
+  // Create a new series for this simulation run.
   const auto series = storage.create_series();
   particles.write(0.0, series);
+
+  // Dump the simulation setup parameters to the data storage.
+  const data::ParamWriter writer{series};
+  writer(time_integrator, {{"name", "Time integrator"}});
 
   // Run the simulation.
   Real time{};

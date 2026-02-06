@@ -6,7 +6,7 @@
 #pragma once
 
 #include <concepts>
-#include <utility> // IWYU pragma: keep
+#include <utility>
 
 namespace tit {
 
@@ -44,6 +44,72 @@ struct AlwaysTrue final {
     return true;
   }
 };
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Converter to a different type.
+template<class Val>
+struct To final {
+  template<class... Args>
+  static constexpr auto operator()(Args&&... args) noexcept -> Val {
+    return Val(std::forward<Args>(args)...);
+  }
+};
+
+/// Convert to a different type.
+template<class Val>
+inline constexpr To<Val> to{};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Update a value, restoring the old value on destruction.
+template<class Val>
+class ScopedVal final {
+public:
+
+  /// Capture an existing value and replace it with a new one.
+  constexpr ScopedVal(Val& ref, Val new_value) noexcept
+      : ptr_{std::addressof(ref)},
+        old_{std::exchange(*ptr_, std::move(new_value))} {}
+
+  /// Move-construct a scoped value.
+  constexpr ScopedVal(ScopedVal&& other) noexcept
+      : ptr_{std::exchange(other.ptr_, nullptr)}, old_{std::move(other.old_)} {}
+
+  /// Move-assign a scoped value.
+  constexpr auto operator=(ScopedVal&& other) noexcept -> ScopedVal& {
+    if (this != &other) {
+      restore();
+      ptr_ = std::exchange(other.ptr_, nullptr);
+      old_ = std::move(other.old_);
+    }
+    return *this;
+  }
+
+  /// Scoped values are not copyable.
+  constexpr ScopedVal(const ScopedVal&) = delete;
+
+  /// Scoped values are not copy-assignable.
+  constexpr auto operator=(const ScopedVal&) -> ScopedVal& = delete;
+
+  /// Restore the old value.
+  constexpr ~ScopedVal() noexcept {
+    restore();
+  }
+
+  /// Restore the old value.
+  void restore() noexcept {
+    if (ptr_ == nullptr) return;
+    *ptr_ = std::move(old_);
+    ptr_ = nullptr;
+  }
+
+private:
+
+  Val* ptr_;
+  Val old_;
+
+}; // class ScopedVal
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
