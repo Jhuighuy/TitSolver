@@ -20,12 +20,12 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("data::DataStorage") {
+TEST_CASE("data::Storage") {
   const std::filesystem::path file_name{"test.ttdb"};
   const std::filesystem::path invalid_file_name{"/invalid/path/to/file.ttdb"};
   SUBCASE("success") {
     SUBCASE("create in-memory") {
-      const data::DataStorage storage{":memory:"};
+      const data::Storage storage{":memory:"};
       CHECK(storage.path().empty());
     }
     SUBCASE("create file") {
@@ -33,20 +33,20 @@ TEST_CASE("data::DataStorage") {
         // Remove the file if it already exists.
         REQUIRE(std::filesystem::remove(file_name));
       }
-      const data::DataStorage storage{file_name};
+      const data::Storage storage{file_name};
       CHECK(std::filesystem::exists(file_name));
       CHECK(storage.path().filename() == file_name);
     }
     SUBCASE("open existing") {
       // Should exist due to the previous test.
       REQUIRE(std::filesystem::exists(file_name));
-      const data::DataStorage storage{file_name};
+      const data::Storage storage{file_name};
       CHECK(storage.path().filename() == file_name);
     }
     SUBCASE("open readonly") {
       // Should exist due to the previous test.
       REQUIRE(std::filesystem::exists(file_name));
-      data::DataStorage storage{file_name, /*read_only=*/true};
+      data::Storage storage{file_name, /*read_only=*/true};
       CHECK_THROWS_MSG(storage.create_series_id("test"),
                        Exception,
                        "attempt to write a readonly database");
@@ -71,19 +71,19 @@ TEST_CASE("data::DataStorage") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("data::DataSeriesView") {
+TEST_CASE("data::SeriesView") {
   SUBCASE("empty storage") {
-    const data::DataStorage storage{":memory:"};
+    const data::Storage storage{":memory:"};
     CHECK(storage.num_series() == 0);
     // CHECK(std::ranges::empty(storage.series_ids()));
   }
   SUBCASE("create series") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     REQUIRE(storage.max_series() >= 3);
 
     const auto series_1 = storage.create_series("1");
     REQUIRE(storage.check_series(series_1));
-    CHECK(series_1 == data::DataSeriesID{1});
+    CHECK(series_1 == data::SeriesID{1});
     CHECK(series_1.name() == "1");
     CHECK(storage.num_series() == 1);
     CHECK_RANGE_EQ(storage.series(), {series_1});
@@ -91,7 +91,7 @@ TEST_CASE("data::DataSeriesView") {
 
     const auto series_2 = storage.create_series("2");
     REQUIRE(storage.check_series(series_2));
-    CHECK(series_2 == data::DataSeriesID{2});
+    CHECK(series_2 == data::SeriesID{2});
     CHECK(series_2.name() == "2");
     CHECK(storage.num_series() == 2);
     CHECK_RANGE_EQ(storage.series(), {series_1, series_2});
@@ -99,14 +99,14 @@ TEST_CASE("data::DataSeriesView") {
 
     const auto series_3 = storage.create_series("3");
     REQUIRE(storage.check_series(series_3));
-    CHECK(series_3 == data::DataSeriesID{3});
+    CHECK(series_3 == data::SeriesID{3});
     CHECK(series_3.name() == "3");
     CHECK(storage.num_series() == 3);
     CHECK_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
     CHECK(storage.last_series() == series_3);
   }
   SUBCASE("create more series than the maximum") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     storage.set_max_series(3);
     REQUIRE(storage.max_series() == 3);
 
@@ -128,7 +128,7 @@ TEST_CASE("data::DataSeriesView") {
     CHECK_RANGE_EQ(storage.series(), {series_3, series_4, series_5});
   }
   SUBCASE("decrease maximum") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     storage.set_max_series(3);
     REQUIRE(storage.max_series() == 3);
 
@@ -144,7 +144,7 @@ TEST_CASE("data::DataSeriesView") {
     CHECK_RANGE_EQ(storage.series(), {series_2, series_3});
   }
   SUBCASE("increase maximum") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     storage.set_max_series(3);
     REQUIRE(storage.max_series() == 3);
 
@@ -168,7 +168,7 @@ TEST_CASE("data::DataSeriesView") {
                    {series_1, series_2, series_3, series_4, series_5});
   }
   SUBCASE("delete series") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     storage.set_max_series(3);
     REQUIRE(storage.max_series() == 3);
 
@@ -193,20 +193,20 @@ TEST_CASE("data::DataSeriesView") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("data::DataFrameView") {
+TEST_CASE("data::FrameView") {
   SUBCASE("empty series") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
     CHECK(series.num_frames() == 0);
     // CHECK(std::ranges::empty(series.frames()));
   }
   SUBCASE("create frames") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
 
     const auto frame_1 = series.create_frame(0.0);
     REQUIRE(storage.check_frame(frame_1));
-    CHECK(frame_1 == data::DataFrameID{1});
+    CHECK(frame_1 == data::FrameID{1});
     CHECK(frame_1.time() == 0.0);
     CHECK(series.num_frames() == 1);
     CHECK_RANGE_EQ(series.frames(), {frame_1});
@@ -214,7 +214,7 @@ TEST_CASE("data::DataFrameView") {
 
     const auto frame_2 = series.create_frame(1.0);
     REQUIRE(storage.check_frame(frame_2));
-    CHECK(frame_2 == data::DataFrameID{2});
+    CHECK(frame_2 == data::FrameID{2});
     CHECK(frame_2.time() == 1.0);
     CHECK(series.num_frames() == 2);
     CHECK_RANGE_EQ(series.frames(), {frame_1, frame_2});
@@ -222,14 +222,14 @@ TEST_CASE("data::DataFrameView") {
 
     const auto frame_3 = series.create_frame(2.0);
     REQUIRE(storage.check_frame(frame_3));
-    CHECK(frame_3 == data::DataFrameID{3});
+    CHECK(frame_3 == data::FrameID{3});
     CHECK(frame_3.time() == 2.0);
     CHECK(series.num_frames() == 3);
     CHECK_RANGE_EQ(series.frames(), {frame_1, frame_2, frame_3});
     CHECK(series.last_frame() == frame_3);
   }
   SUBCASE("create frames in different series") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series_1 = storage.create_series("");
     const auto series_2 = storage.create_series("");
 
@@ -246,7 +246,7 @@ TEST_CASE("data::DataFrameView") {
     REQUIRE_RANGE_EQ(series_2.frames(), {frame_21, frame_22, frame_23});
 
     // Make sure the frames are not shared between series.
-    const std::set<data::DataFrameID> all_frames{
+    const std::set<data::FrameID> all_frames{
         frame_11,
         frame_12,
         frame_13,
@@ -257,7 +257,7 @@ TEST_CASE("data::DataFrameView") {
     CHECK(all_frames.size() == 6);
   }
   SUBCASE("delete frames") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
 
     // Create a few frames.
@@ -275,11 +275,11 @@ TEST_CASE("data::DataFrameView") {
     // Make sure the ID of the removed frame is not reused.
     const auto frame_4 = series.create_frame(3.0);
     CHECK(storage.check_frame(frame_4));
-    CHECK(frame_4 == data::DataFrameID{4});
+    CHECK(frame_4 == data::FrameID{4});
     CHECK_RANGE_EQ(series.frames(), {frame_1, frame_3, frame_4});
   }
   SUBCASE("delete series") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
 
     // Create a few frames.
@@ -301,22 +301,22 @@ TEST_CASE("data::DataFrameView") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("data::DataArrayView") {
+TEST_CASE("data::ArrayView") {
   SUBCASE("empty dataset") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
     const auto frame = series.create_frame(0.0);
     CHECK(frame.num_arrays() == 0);
   }
   SUBCASE("create arrays") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
     const auto frame = series.create_frame(0.0);
 
     const auto array_1 = frame.create_array("array_1");
     array_1.write(std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));
-    CHECK(array_1 == data::DataArrayID{1});
+    CHECK(array_1 == data::ArrayID{1});
     CHECK(array_1.name() == "array_1");
     CHECK(array_1.type() == data::type_of<float64_t>);
     CHECK(array_1.size() == 1);
@@ -329,7 +329,7 @@ TEST_CASE("data::DataArrayView") {
                   to_byte_array(std::numbers::e_v<float32_t>));
     REQUIRE(storage.check_array(array_2));
     CHECK(array_2.name() == "array_2");
-    CHECK(array_2 == data::DataArrayID{2});
+    CHECK(array_2 == data::ArrayID{2});
     CHECK(array_2.type() == data::type_of<float32_t>);
     CHECK(array_2.size() == 1);
     CHECK_RANGE_EQ(array_2.read<float32_t>(), {std::numbers::e_v<float32_t>});
@@ -337,7 +337,7 @@ TEST_CASE("data::DataArrayView") {
     CHECK_RANGE_EQ(frame.arrays(), {array_1, array_2});
   }
   SUBCASE("find arrays") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
     const auto frame = series.create_frame(0.0);
 
@@ -355,7 +355,7 @@ TEST_CASE("data::DataArrayView") {
     CHECK_FALSE(frame.find_array("does_not_exist"));
   }
   SUBCASE("update arrays") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
     const auto frame = series.create_frame(0.0);
 
@@ -372,7 +372,7 @@ TEST_CASE("data::DataArrayView") {
                    {std::numbers::phi, std::numbers::sqrt3});
   }
   SUBCASE("delete arrays") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
     const auto frame = series.create_frame(0.0);
 
@@ -393,11 +393,11 @@ TEST_CASE("data::DataArrayView") {
     const auto array_3 = frame.create_array("array_3");
     array_3.write(std::vector{std::numbers::phi});
     CHECK(storage.check_array(array_3));
-    CHECK(array_3 == data::DataArrayID{3});
+    CHECK(array_3 == data::ArrayID{3});
     CHECK_RANGE_EQ(frame.arrays(), {array_2, array_3});
   }
   SUBCASE("delete frame") {
-    data::DataStorage storage{":memory:"};
+    data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
     const auto frame = series.create_frame(0.0);
 

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
+#include <memory>
 #include <span>
 #include <utility>
 
@@ -15,27 +16,27 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
-#include "tit/data/zstd.hpp"
+#include "tit/core/zstd.hpp"
 
-namespace tit::data::zstd {
+namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // NOLINTBEGIN(cert-err58-cpp)
-const size_t StreamCompressor::in_chunk_size_ = ZSTD_CStreamInSize();
-const size_t StreamCompressor::out_chunk_size_ = ZSTD_CStreamOutSize();
+const size_t ZSTDStreamCompressor::in_chunk_size_ = ZSTD_CStreamInSize();
+const size_t ZSTDStreamCompressor::out_chunk_size_ = ZSTD_CStreamOutSize();
 // NOLINTEND(cert-err58-cpp)
 
-StreamCompressor::StreamCompressor(OutputStreamPtr<std::byte> stream)
+ZSTDStreamCompressor::ZSTDStreamCompressor(OutputStreamPtr<std::byte> stream)
     : stream_{std::move(stream)}, context_{ZSTD_createCCtx()} {
   TIT_ASSERT(stream_ != nullptr, "Stream is null!");
 }
 
-void StreamCompressor::Deleter_::operator()(ZSTD_CCtx_s* context) noexcept {
+void ZSTDStreamCompressor::Deleter_::operator()(ZSTD_CCtx_s* context) noexcept {
   ZSTD_freeCCtx(context);
 }
 
-void StreamCompressor::write(std::span<const std::byte> data) {
+void ZSTDStreamCompressor::write(std::span<const std::byte> data) {
   // Prepare the buffer.
   if (in_buffer_.capacity() == 0) in_buffer_.reserve(in_chunk_size_);
 
@@ -52,7 +53,7 @@ void StreamCompressor::write(std::span<const std::byte> data) {
   }
 }
 
-void StreamCompressor::flush() {
+void ZSTDStreamCompressor::flush() {
   TIT_ASSERT(context_ != nullptr, "ZSTD context is null!");
   TIT_ASSERT(stream_ != nullptr, "Stream is null!");
 
@@ -101,23 +102,29 @@ void StreamCompressor::flush() {
   in_buffer_.clear();
 }
 
+auto make_zstd_stream_compressor(OutputStreamPtr<std::byte> stream)
+    -> OutputStreamPtr<std::byte> {
+  return make_output_stream<ZSTDStreamCompressor>(std::move(stream));
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // NOLINTBEGIN(cert-err58-cpp)
-const size_t StreamDecompressor::in_chunk_size_ = ZSTD_DStreamInSize();
-const size_t StreamDecompressor::out_chunk_size_ = ZSTD_DStreamOutSize();
+const size_t ZSTDStreamDecompressor::in_chunk_size_ = ZSTD_DStreamInSize();
+const size_t ZSTDStreamDecompressor::out_chunk_size_ = ZSTD_DStreamOutSize();
 // NOLINTEND(cert-err58-cpp)
 
-StreamDecompressor::StreamDecompressor(InputStreamPtr<std::byte> stream)
+ZSTDStreamDecompressor::ZSTDStreamDecompressor(InputStreamPtr<std::byte> stream)
     : stream_{std::move(stream)}, context_{ZSTD_createDCtx()} {
   TIT_ASSERT(stream_ != nullptr, "Stream is null!");
 }
 
-void StreamDecompressor::Deleter_::operator()(ZSTD_DCtx_s* context) noexcept {
+void ZSTDStreamDecompressor::Deleter_::operator()(
+    ZSTD_DCtx_s* context) noexcept {
   ZSTD_freeDCtx(context);
 }
 
-auto StreamDecompressor::read(std::span<std::byte> data) -> size_t {
+auto ZSTDStreamDecompressor::read(std::span<std::byte> data) -> size_t {
   TIT_ASSERT(context_ != nullptr, "ZSTD context is null!");
   TIT_ASSERT(stream_ != nullptr, "Stream is null!");
 
@@ -142,6 +149,7 @@ auto StreamDecompressor::read(std::span<std::byte> data) -> size_t {
       }
 
       // Decompress the input buffer.
+      // Keep the status in order to identify truncated frames.
       out_buffer_.resize(out_chunk_size_);
       ZSTD_inBuffer input{
           .src = in_buffer_.data(),
@@ -153,7 +161,6 @@ auto StreamDecompressor::read(std::span<std::byte> data) -> size_t {
           .size = out_buffer_.size(),
           .pos = 0,
       };
-      // Store the status in order to identify truncated frames.
       last_status_ = ZSTD_decompressStream(context_.get(), &output, &input);
       TIT_ENSURE(ZSTD_isError(last_status_) == 0,
                  "ZSTD decompression failed ({}): {}.",
@@ -181,6 +188,11 @@ auto StreamDecompressor::read(std::span<std::byte> data) -> size_t {
   return total_copied;
 }
 
+auto make_zstd_stream_decompressor(InputStreamPtr<std::byte> stream)
+    -> InputStreamPtr<std::byte> {
+  return make_input_stream<ZSTDStreamDecompressor>(std::move(stream));
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-} // namespace tit::data::zstd
+} // namespace tit

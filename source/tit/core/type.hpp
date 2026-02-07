@@ -10,6 +10,7 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
@@ -72,6 +73,51 @@ inline constexpr bool is_specialization_of_v<Class<Args...>, Class> = true;
 /// Check if type is a specialization of the given template.
 template<class Type, template<class...> class Class>
 concept specialization_of = impl::is_specialization_of_v<Type, Class>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+namespace impl {
+
+template<class Tuple>
+concept has_tuple_size =
+    requires { typename std::tuple_size<Tuple>::type; } &&
+    std::derived_from<std::tuple_size<Tuple>,
+                      std::integral_constant<size_t, std::tuple_size_v<Tuple>>>;
+
+template<class Tuple, size_t Index>
+concept has_tuple_element = requires {
+  typename std::tuple_element_t<Index, std::remove_const_t<Tuple>>;
+} && requires (Tuple& tuple) {
+  {
+    std::get<Index>(tuple)
+  } -> std::convertible_to<const std::tuple_element_t<Index, Tuple>&>;
+};
+
+template<class Tuple, size_t Size>
+concept tuple_size_is =
+    has_tuple_size<Tuple> && (std::tuple_size_v<Tuple> == Size);
+
+template<class Tuple, size_t Index, class Elem>
+concept tuple_element_is =
+    has_tuple_element<Tuple, Index> &&
+    std::constructible_from<Elem, std::tuple_element_t<Index, Tuple>>;
+
+} // namespace impl
+
+/// Check if a type is tuple-like, i.e., it has `std::tuple_size` and
+/// `std::tuple_element` defined, and the `std::get` function is properly
+/// defined.
+template<class Tuple, class... Items>
+concept tuple_like =
+    std::is_object_v<Tuple> && impl::has_tuple_size<Tuple> &&
+    []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
+      return (impl::has_tuple_element<Tuple, Indices> && ...);
+    }(std::make_index_sequence<std::tuple_size_v<Tuple>>()) &&
+    ((sizeof...(Items) == 0) ||
+     (impl::tuple_size_is<Tuple, sizeof...(Items)> &&
+      []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
+        return (impl::tuple_element_is<Tuple, Indices, Items> && ...);
+      }(std::make_index_sequence<sizeof...(Items)>())));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

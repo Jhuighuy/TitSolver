@@ -60,12 +60,17 @@ add_tit_library(
     "type.hpp"
     "utils.hpp"
     "vec.hpp"
+    "zip.cpp"
+    "zip.hpp"
+    "zstd.cpp"
+    "zstd.hpp"
   DEPENDS
     gcem
     hwy::hwy
     mimalloc-static
+    miniz::miniz
     nlohmann_json::nlohmann_json
-    TBB::tbb
+    zstd::libzstd
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,6 +97,7 @@ add_tit_executable(
     "str.test.cpp"
     "time.test.cpp"
     "type.test.cpp"
+    "zstd.test.cpp"
   DEPENDS
     tit::core
     tit::testing

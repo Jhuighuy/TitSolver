@@ -21,7 +21,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/type.hpp"
-#include "tit/data/export-hdf5.hpp"
+#include "tit/data/hdf5.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"
 
@@ -40,7 +40,7 @@ public:
 
   // Write a single frame to the file.
   void write_frame(const std::string& frame_name,
-                   DataFrameView<const DataStorage> frame) {
+                   FrameView<const Storage> frame) {
     auto group = file_.createGroup(frame_name);
     for (const auto& array : frame.arrays()) {
       const auto array_name = array.name();
@@ -49,12 +49,12 @@ public:
 
       /// @todo Currently, we do not support writing matrices, because
       ///       HDF5 does not support them natively.
-      if (array_type.rank() == DataRank::matrix) continue;
+      if (array_type.rank() == Rank::matrix) continue;
 
       const auto array_data = array.read();
 
       std::vector space_dims{array_size};
-      using enum DataRank;
+      using enum Rank;
       switch (array_type.rank()) {
         case scalar: {
           break;
@@ -75,7 +75,7 @@ public:
       }
       const HighFive::DataSpace space{space_dims};
 
-      using enum DataKind::ID;
+      using enum Kind::ID;
       switch (array_type.kind().id()) {
 #define CASE(type)                                                             \
   case type:                                                                   \
@@ -137,7 +137,7 @@ public:
   // Write a single frame to the file.
   void write_frame(const std::filesystem::path& hdf5_rel_path,
                    const std::string& frame_name,
-                   DataFrameView<const DataStorage> frame) {
+                   FrameView<const Storage> frame) {
     auto* const grid_elem =
         grid_collection_elem_->InsertNewChildElement("Grid");
     grid_elem->SetAttribute("Name", frame_name.c_str());
@@ -179,14 +179,14 @@ public:
 
       /// @todo Currently, we do not support writing matrices, because
       ///       HDF5 does not support them natively.
-      if (array_type.rank() == DataRank::matrix) continue;
+      if (array_type.rank() == Rank::matrix) continue;
 
       auto* const attribute_elem =
           grid_elem->InsertNewChildElement("Attribute");
       attribute_elem->SetAttribute("Name", array_name.c_str());
       attribute_elem->SetAttribute("Center", "Node");
 
-      using enum DataRank;
+      using enum Rank;
       switch (array_type.rank()) {
         case scalar:
           attribute_elem->SetAttribute("AttributeType", "Scalar");
@@ -219,7 +219,7 @@ private:
                              std::string_view frame_name,
                              std::string_view array_name,
                              size_t size,
-                             DataType type) {
+                             Type type) {
     TIT_ASSERT(parent_elem != nullptr, "Parent element is null!");
     TIT_ASSERT(!frame_name.empty(), "Frame name is empty!");
     TIT_ASSERT(!array_name.empty(), "Array name is empty!");
@@ -227,7 +227,7 @@ private:
     auto* const data_item_elem = parent_elem->InsertNewChildElement("DataItem");
     data_item_elem->SetAttribute("Format", "HDF");
 
-    using enum DataRank;
+    using enum Rank;
     switch (type.rank()) {
       case scalar: {
         data_item_elem->SetAttribute( //
@@ -254,7 +254,7 @@ private:
       default: std::unreachable();
     }
 
-    using enum DataKind::ID;
+    using enum Kind::ID;
     switch (type.kind().id()) {
       case int8:
       case uint8:
@@ -309,7 +309,7 @@ private:
 } // namespace
 
 void export_hdf5(const std::filesystem::path& path,
-                 DataSeriesView<const DataStorage> series) {
+                 SeriesView<const Storage> series) {
   TIT_ENSURE(std::filesystem::exists(path), "Directory does not exist!");
   TIT_ENSURE(std::filesystem::is_directory(path), "Path is not a directory!");
 

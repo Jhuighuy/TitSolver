@@ -35,9 +35,9 @@
 #include "tit/core/main.hpp"
 #include "tit/core/posix.hpp"
 #include "tit/core/type.hpp"
-#include "tit/data/export-hdf5.hpp"
+#include "tit/core/zip.hpp"
+#include "tit/data/hdf5.hpp"
 #include "tit/data/storage.hpp"
-#include "tit/data/zip.hpp"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -61,7 +61,7 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
   crow::SimpleApp app;
 
-  const data::DataStorage storage{"particles.ttdb"};
+  const data::Storage storage{"particles.ttdb"};
 
   const auto solver_path = exe_dir / "titwcsph";
   std::mutex solver_mutex;
@@ -265,7 +265,9 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
             data::export_hdf5(out_dir, storage.last_series());
 
             static constexpr std::string_view zip_name = "particles.zip";
-            data::zip_directory(out_dir, export_dir / zip_name);
+            ZipWriter zip_writer{export_dir / zip_name};
+            zip_writer.add_dir(out_dir);
+            zip_writer.close();
 
             response["result"] = zip_name;
             send_response(response.dump());

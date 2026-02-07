@@ -38,7 +38,7 @@ void test_serialization(const T& input, size_t expected_size) {
     T output{};
     CHECK_THROWS_MSG(deserialize(*make_range_input_stream(bytes), output),
                      Exception,
-                     "truncated stream");
+                     "Deserialization failed");
   }
 }
 
@@ -97,7 +97,7 @@ TEST_CASE("StreamSerializer") {
         make_stream_deserializer<int32_t>(make_range_input_stream(bytes))
             ->read(result),
         Exception,
-        "truncated stream");
+        "Deserialization failed");
   }
 }
 

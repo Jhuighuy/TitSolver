@@ -15,7 +15,7 @@ namespace tit::data {
 
 /// Export the storage series to HDF5/XDMF3 files.
 void export_hdf5(const std::filesystem::path& path,
-                 DataSeriesView<const DataStorage> series);
+                 SeriesView<const Storage> series);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
