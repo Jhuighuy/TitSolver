@@ -22,7 +22,7 @@ namespace tit::data {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Data kind specification.
-class DataKind final {
+class Kind final {
 public:
 
   /// Kind IDs.
@@ -41,7 +41,7 @@ public:
   };
 
   /// Construct a data kind.
-  constexpr explicit DataKind(ID id) : id_{id} {
+  constexpr explicit Kind(ID id) : id_{id} {
     TIT_ENSURE(id_ < ID::unknown_,
                "Invalid data kind ID: {}.",
                std::to_underlying(id_));
@@ -89,48 +89,48 @@ public:
   }
 
   /// Compare data kinds.
-  constexpr auto operator==(const DataKind&) const -> bool = default;
+  constexpr auto operator==(const Kind&) const -> bool = default;
 
 private:
 
   ID id_;
 
-}; // class DataKind
+}; // class Kind
 
 namespace impl {
 
 template<class Val>
-inline constexpr auto kind_id_of = DataKind::ID::unknown_;
+inline constexpr auto kind_id_of = Kind::ID::unknown_;
 
 template<>
-inline constexpr auto kind_id_of<int8_t> = DataKind::ID::int8;
+inline constexpr auto kind_id_of<int8_t> = Kind::ID::int8;
 
 template<>
-inline constexpr auto kind_id_of<uint8_t> = DataKind::ID::uint8;
+inline constexpr auto kind_id_of<uint8_t> = Kind::ID::uint8;
 
 template<>
-inline constexpr auto kind_id_of<int16_t> = DataKind::ID::int16;
+inline constexpr auto kind_id_of<int16_t> = Kind::ID::int16;
 
 template<>
-inline constexpr auto kind_id_of<uint16_t> = DataKind::ID::uint16;
+inline constexpr auto kind_id_of<uint16_t> = Kind::ID::uint16;
 
 template<>
-inline constexpr auto kind_id_of<int32_t> = DataKind::ID::int32;
+inline constexpr auto kind_id_of<int32_t> = Kind::ID::int32;
 
 template<>
-inline constexpr auto kind_id_of<uint32_t> = DataKind::ID::uint32;
+inline constexpr auto kind_id_of<uint32_t> = Kind::ID::uint32;
 
 template<>
-inline constexpr auto kind_id_of<int64_t> = DataKind::ID::int64;
+inline constexpr auto kind_id_of<int64_t> = Kind::ID::int64;
 
 template<>
-inline constexpr auto kind_id_of<uint64_t> = DataKind::ID::uint64;
+inline constexpr auto kind_id_of<uint64_t> = Kind::ID::uint64;
 
 template<>
-inline constexpr auto kind_id_of<float32_t> = DataKind::ID::float32;
+inline constexpr auto kind_id_of<float32_t> = Kind::ID::float32;
 
 template<>
-inline constexpr auto kind_id_of<float64_t> = DataKind::ID::float64;
+inline constexpr auto kind_id_of<float64_t> = Kind::ID::float64;
 
 } // namespace impl
 
@@ -138,16 +138,16 @@ inline constexpr auto kind_id_of<float64_t> = DataKind::ID::float64;
 template<class Val>
 concept known_kind_of =
     std::is_object_v<Val> &&
-    (impl::kind_id_of<normalize_type_t<Val>> < DataKind::ID::unknown_);
+    (impl::kind_id_of<normalize_type_t<Val>> < Kind::ID::unknown_);
 
 /// Data kind of a class.
 template<known_kind_of Val>
-inline constexpr DataKind kind_of = DataKind{impl::kind_id_of<Val>};
+inline constexpr Kind kind_of = Kind{impl::kind_id_of<Val>};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Data type rank.
-enum class DataRank : uint8_t {
+enum class Rank : uint8_t {
   scalar,
   vector,
   matrix,
@@ -155,31 +155,30 @@ enum class DataRank : uint8_t {
 };
 
 /// Data type specification.
-class DataType final {
+class Type final {
 public:
 
   /// Construct a data type.
   /// @{
-  constexpr explicit DataType(DataKind kind)
-      : DataType{kind, DataRank::scalar, 1} {}
-  constexpr explicit DataType(DataKind kind, DataRank rank, uint8_t dim)
+  constexpr explicit Type(Kind kind) : Type{kind, Rank::scalar, 1} {}
+  constexpr explicit Type(Kind kind, Rank rank, uint8_t dim)
       : kind_{kind}, rank_{rank}, dim_{dim} {
-    TIT_ENSURE(rank < DataRank::count_,
+    TIT_ENSURE(rank < Rank::count_,
                "Invalid data type rank: {}.",
                std::to_underlying(rank));
     TIT_ENSURE(dim > 0, "Dimensionality must be positive, but is {}.", dim);
-    TIT_ENSURE(rank != DataRank::scalar || dim == 1,
+    TIT_ENSURE(rank != Rank::scalar || dim == 1,
                "Dimensionality of a scalar must be 1, but is {}.",
                dim);
   }
   /// @}
 
   /// Construct a data type from integer identifier.
-  constexpr explicit DataType(uint32_t id)
-      : DataType{// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
-                 DataKind{static_cast<DataKind::ID>((id - 1) & 0xFF)},
-                 static_cast<DataRank>((id >> 8) & 0xFF),
-                 static_cast<uint8_t>((id >> 16) & 0xFF)} {}
+  constexpr explicit Type(uint32_t id)
+      : Type{// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+             Kind{static_cast<Kind::ID>((id - 1) & 0xFF)},
+             static_cast<Rank>((id >> 8) & 0xFF),
+             static_cast<uint8_t>((id >> 16) & 0xFF)} {}
 
   /// Data type integer identifier.
   constexpr auto id() const -> uint32_t {
@@ -189,12 +188,12 @@ public:
   }
 
   /// Data type kind.
-  constexpr auto kind() const noexcept -> DataKind {
+  constexpr auto kind() const noexcept -> Kind {
     return kind_;
   }
 
   /// Data type rank.
-  constexpr auto rank() const noexcept -> DataRank {
+  constexpr auto rank() const noexcept -> Rank {
     return rank_;
   }
 
@@ -210,7 +209,7 @@ public:
 
   /// Data type string representation.
   constexpr auto name() const -> std::string {
-    using enum DataRank;
+    using enum Rank;
     switch (rank()) {
       case scalar: return std::string{kind().name()};
       case vector: return std::format("Vec<{}, {}>", kind().name(), dim());
@@ -220,43 +219,39 @@ public:
   }
 
   /// Compare data types.
-  constexpr auto operator==(const DataType&) const -> bool = default;
+  constexpr auto operator==(const Type&) const -> bool = default;
 
 private:
 
-  DataKind kind_;
-  DataRank rank_;
+  Kind kind_;
+  Rank rank_;
   uint8_t dim_;
 
-}; // class DataType
+}; // class Type
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 namespace impl {
 
 template<class Val>
-inline constexpr DataType type_of{kind_of<Val>};
+inline constexpr Type type_of{kind_of<Val>};
 
 template<known_kind_of Num, size_t Dim>
-inline constexpr DataType type_of<Vec<Num, Dim>>{kind_of<Num>,
-                                                 DataRank::vector,
-                                                 Dim};
+inline constexpr Type type_of<Vec<Num, Dim>>{kind_of<Num>, Rank::vector, Dim};
 
 template<known_kind_of Num, size_t Dim>
-inline constexpr DataType type_of<Mat<Num, Dim>>{kind_of<Num>,
-                                                 DataRank::matrix,
-                                                 Dim};
+inline constexpr Type type_of<Mat<Num, Dim>>{kind_of<Num>, Rank::matrix, Dim};
 
 } // namespace impl
 
 /// Class that has a known data type.
-template<class Type>
-concept known_type_of = requires { impl::type_of<Type>.id(); };
+template<class Val>
+concept known_type_of = requires { impl::type_of<Val>.id(); };
 
 /// Data kind of a class.
-template<known_type_of Type>
-  requires std::is_object_v<Type>
-inline constexpr DataType type_of = impl::type_of<Type>;
+template<known_type_of Val>
+  requires std::is_object_v<Val>
+inline constexpr Type type_of = impl::type_of<Val>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

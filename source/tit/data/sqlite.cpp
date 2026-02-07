@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <format>
+#include <memory>
 #include <span>
 #include <string>
 #include <string_view>
@@ -18,6 +19,7 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
+#include "tit/core/stream.hpp"
 #include "tit/core/type.hpp"
 #include "tit/data/sqlite.hpp"
 
@@ -396,6 +398,13 @@ auto BlobReader::read(std::span<std::byte> data) -> size_t {
   return count;
 }
 
+auto make_blob_reader(const Database& db,
+                      const std::string& table_name,
+                      const std::string& column_name,
+                      RowID row_id) -> InputStreamPtr<std::byte> {
+  return make_input_stream<BlobReader>(db, table_name, column_name, row_id);
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 BlobWriter::BlobWriter(Database& db,
@@ -431,6 +440,13 @@ void BlobWriter::flush() {
                                column_name_);
   Statement statement{*db_, sql};
   statement.run(buffer_, row_id_);
+}
+
+auto make_blob_writer(Database& db,
+                      std::string_view table_name,
+                      std::string_view column_name,
+                      RowID row_id) -> OutputStreamPtr<std::byte> {
+  return make_output_stream<BlobWriter>(db, table_name, column_name, row_id);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

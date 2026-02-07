@@ -195,7 +195,7 @@ public:
 
   /// Write a particle array into a data series.
   void write(field_value_t<h_t, Space> time,
-             data::DataSeriesView<data::DataStorage> series) const {
+             data::SeriesView<data::Storage> series) const {
     auto frame = series.create_frame(static_cast<float64_t>(time));
     ParticleArray::varying_fields.for_each([&frame, this](auto field) {
       const auto array = frame.create_array(field.field_name);

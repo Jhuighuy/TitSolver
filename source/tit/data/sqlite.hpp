@@ -273,12 +273,10 @@ private:
 }; // class BlobReader
 
 /// Make a blob reader.
-constexpr auto make_blob_reader(const Database& db,
-                                const std::string& table_name,
-                                const std::string& column_name,
-                                RowID row_id) -> InputStreamPtr<std::byte> {
-  return std::make_unique<BlobReader>(db, table_name, column_name, row_id);
-}
+auto make_blob_reader(const Database& db,
+                      const std::string& table_name,
+                      const std::string& column_name,
+                      RowID row_id) -> InputStreamPtr<std::byte>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -309,12 +307,10 @@ private:
 }; // class BlobWriter
 
 /// Make a blob writer.
-constexpr auto make_blob_writer(Database& db,
-                                std::string_view table_name,
-                                std::string_view column_name,
-                                RowID row_id) -> OutputStreamPtr<std::byte> {
-  return make_flushable<BlobWriter>(db, table_name, column_name, row_id);
-}
+auto make_blob_writer(Database& db,
+                      std::string_view table_name,
+                      std::string_view column_name,
+                      RowID row_id) -> OutputStreamPtr<std::byte>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

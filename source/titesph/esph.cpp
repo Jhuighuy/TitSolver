@@ -95,7 +95,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
   // Create a data storage to store the particles.  We'll store only one last
   // run result, all the previous runs will be discarded.
-  data::DataStorage storage{"./particles.ttdb"};
+  data::Storage storage{"./particles.ttdb"};
   storage.set_max_series(1);
   const auto series = storage.create_series();
   particles.write(0.0, series);

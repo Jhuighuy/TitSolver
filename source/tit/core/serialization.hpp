@@ -9,7 +9,6 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
-#include <ranges>
 #include <span>
 #include <tuple>
 #include <type_traits>
@@ -21,6 +20,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/stream.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 
 namespace tit {
@@ -29,7 +29,7 @@ namespace tit {
 
 /// Convert a value to a byte array.
 template<class T>
-  requires std::is_trivially_copyable_v<T>
+  requires std::is_trivially_destructible_v<T>
 constexpr auto to_byte_array(const T& value)
     -> std::array<std::byte, sizeof(T)> {
   return std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
@@ -37,7 +37,7 @@ constexpr auto to_byte_array(const T& value)
 
 /// Convert a value to a byte vector.
 template<class T>
-  requires std::is_trivially_copyable_v<T>
+  requires std::is_trivially_destructible_v<T>
 constexpr auto to_bytes(const T& value) -> std::vector<std::byte> {
   const auto bytes_array = to_byte_array(value);
   return {bytes_array.begin(), bytes_array.end()};
@@ -45,7 +45,7 @@ constexpr auto to_bytes(const T& value) -> std::vector<std::byte> {
 
 /// Convert a byte array to a value.
 template<class T>
-  requires std::is_trivially_copyable_v<T>
+  requires std::is_trivially_destructible_v<T>
 constexpr auto from_bytes(std::span<const std::byte> bytes) -> T {
   TIT_ASSERT(bytes.size() >= sizeof(T), "Invalid byte array size!");
   std::array<std::byte, sizeof(T)> bytes_array{};
@@ -55,143 +55,88 @@ constexpr auto from_bytes(std::span<const std::byte> bytes) -> T {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Throw an exception indicating that the deserialization failed due to
-/// truncated stream.
-[[noreturn]] constexpr auto deserialization_failed() -> bool {
-  TIT_THROW("Serialization failed: truncated stream!");
+/// Serialize a trivially-destructible value into the output stream.
+template<class Val>
+  requires (std::is_trivially_destructible_v<Val> &&
+            (std::integral<Val> || std::floating_point<Val>) )
+constexpr void serialize(OutputStream<std::byte>& out, const Val& val) {
+  out.write(to_byte_array(val));
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Serialize a trivially-copyable value into the output stream.
-template<class Stream, class Item>
-  requires (std::is_trivially_copyable_v<Item> &&
-            (std::integral<Item> || std::floating_point<Item>) )
-constexpr void serialize(Stream& out, const Item& item) {
-  out.write(to_byte_array(item));
-}
-
-/// Deserialize a trivially-copyable value from the input stream.
-template<class Stream, class Item>
-  requires (std::is_trivially_copyable_v<Item> &&
-            (std::integral<Item> || std::floating_point<Item>) )
-constexpr auto deserialize(Stream& in, Item& item) -> bool {
-  std::array<std::byte, sizeof(Item)> bytes{};
+/// Deserialize a trivially-destructible value from the input stream.
+template<class Val>
+  requires (std::is_trivially_destructible_v<Val> &&
+            (std::integral<Val> || std::floating_point<Val>) )
+constexpr auto deserialize(InputStream<std::byte>& in, Val& val) -> bool {
+  std::array<std::byte, sizeof(Val)> bytes{};
   const auto copied = in.read(bytes);
   if (copied == 0) return false;
-  if (copied != bytes.size()) deserialization_failed();
-  item = from_bytes<Item>(bytes);
+  TIT_ENSURE(copied == bytes.size(),
+             "Deserialization failed: expected {} bytes, got {}.",
+             bytes.size(),
+             copied);
+  val = from_bytes<Val>(bytes);
   return true;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-namespace impl {
-
-template<class Tuple>
-concept has_tuple_size =
-    requires { typename std::tuple_size<Tuple>::type; } &&
-    std::derived_from<std::tuple_size<Tuple>,
-                      std::integral_constant<size_t, std::tuple_size_v<Tuple>>>;
-
-template<class Tuple, size_t Index>
-concept has_tuple_element = //
-    requires {
-      typename std::tuple_element_t<Index, std::remove_const_t<Tuple>>;
-    } && requires (Tuple& tuple) {
-      {
-        std::get<Index>(tuple)
-      } -> std::convertible_to<const std::tuple_element_t<Index, Tuple>&>;
-    };
-
-template<class Tuple, size_t Size>
-concept tuple_size_is =
-    has_tuple_size<Tuple> && (std::tuple_size_v<Tuple> == Size);
-
-template<class Tuple, size_t Index, class Elem>
-concept tuple_element_is =
-    has_tuple_element<Tuple, Index> &&
-    std::constructible_from<Elem, std::tuple_element_t<Index, Tuple>>;
-
-template<class Tuple, class... Items>
-concept tuple_like =
-    std::is_object_v<Tuple> && impl::has_tuple_size<Tuple> &&
-    []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
-      return (impl::has_tuple_element<Tuple, Indices> && ...);
-    }(std::make_index_sequence<std::tuple_size_v<Tuple>>()) &&
-    ((sizeof...(Items) == 0) ||
-     (impl::tuple_size_is<Tuple, sizeof...(Items)> &&
-      []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
-        return (impl::tuple_element_is<Tuple, Indices, Items> && ...);
-      }(std::make_index_sequence<sizeof...(Items)>())));
-
-} // namespace impl
-
 /// Serialize a tuple of values into the output stream.
-template<impl::tuple_like Tuple, class Stream>
-constexpr void serialize(Stream& out, const Tuple& tuple) {
-  std::apply([&out](const auto&... items) { serialize(out, items...); }, tuple);
+template<tuple_like Tuple>
+constexpr void serialize(OutputStream<std::byte>& out, const Tuple& tuple) {
+  std::apply([&out](const auto&... items) { (serialize(out, items), ...); },
+             tuple);
 }
 
 /// Deserialize a tuple of values from the input stream.
-template<impl::tuple_like Tuple, class Stream>
-constexpr auto deserialize(Stream& in, Tuple& tuple) -> bool {
+template<tuple_like Tuple>
+constexpr auto deserialize(InputStream<std::byte>& in, Tuple& tuple) -> bool {
   return std::apply(
-      [&in](auto&... items) { return (deserialize(in, items...)); },
+      [&in](auto& first_item, auto&... rest_items) {
+        if (!deserialize(in, first_item)) return false;
+        if ((deserialize(in, rest_items) && ...)) return true;
+        TIT_THROW("Deserialization failed: failed to deserialize {} items.",
+                  sizeof...(rest_items) + 1);
+      },
       tuple);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Serialize a vector into the output stream.
-template<class Stream, class Num, size_t Dim>
-constexpr void serialize(Stream& out, const Vec<Num, Dim>& vec) {
+template<class Num, size_t Dim>
+constexpr void serialize(OutputStream<std::byte>& out,
+                         const Vec<Num, Dim>& vec) {
   serialize(out, vec.elems());
 }
 
 /// Deserialize a vector from the input stream.
-template<class Stream, class Num, size_t Dim>
-constexpr auto deserialize(Stream& in, Vec<Num, Dim>& vec) -> bool {
+template<class Num, size_t Dim>
+constexpr auto deserialize(InputStream<std::byte>& in, Vec<Num, Dim>& vec)
+    -> bool {
   return deserialize(in, vec.elems());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Serialize a matrix into the output stream.
-template<class Stream, class Num, size_t Dim>
-constexpr void serialize(Stream& out, const Mat<Num, Dim>& mat) {
+template<class Num, size_t Dim>
+constexpr void serialize(OutputStream<std::byte>& out,
+                         const Mat<Num, Dim>& mat) {
   serialize(out, mat.rows());
 }
 
 /// Deserialize a matrix from the input stream.
-template<class Stream, class Num, size_t Dim>
-constexpr auto deserialize(Stream& in, Mat<Num, Dim>& mat) -> bool {
+template<class Num, size_t Dim>
+constexpr auto deserialize(InputStream<std::byte>& in, Mat<Num, Dim>& mat)
+    -> bool {
   return deserialize(in, mat.rows());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Serialize multiple values into the output stream.
-template<class Stream, class... Items>
-  requires (sizeof...(Items) > 1)
-constexpr void serialize(Stream& out, const Items&... items) {
-  (serialize(out, items), ...);
-}
-
-/// Deserialize multiple values from the input stream.
-template<class Stream, class FirstItem, class... RestItems>
-  requires (sizeof...(RestItems) > 0)
-constexpr auto deserialize(Stream& in,
-                           FirstItem& first_item,
-                           RestItems&... rest_items) -> bool {
-  if (!deserialize(in, first_item)) return false;
-  if ((deserialize(in, rest_items) && ...)) return true;
-  deserialization_failed();
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Stream that serializes the values and writes them to the underlying stream.
+/// Stream that serializes the values and writes them to the underlying byte
+/// stream.
 template<class Item>
 class StreamSerializer final : public OutputStream<Item> {
 public:
@@ -222,13 +167,13 @@ private:
 template<class Item>
 constexpr auto make_stream_serializer(OutputStreamPtr<std::byte> stream)
     -> OutputStreamPtr<Item> {
-  return make_flushable<StreamSerializer<Item>>(std::move(stream));
+  return make_output_stream<StreamSerializer<Item>>(std::move(stream));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Stream that deserializes the values and reads them from the underlying
-/// stream.
+/// byte stream.
 template<class Item>
 class StreamDeserializer final : public InputStream<Item> {
 public:
@@ -242,10 +187,7 @@ public:
   constexpr auto read(std::span<Item> items) -> size_t override {
     TIT_ASSERT(stream_ != nullptr, "Stream is null!");
     for (size_t i = 0; i < items.size(); ++i) {
-      if (!deserialize(*stream_, items[i])) {
-        if (std::byte probe{}; stream_->read({&probe, 1}) != 1) return i;
-        deserialization_failed();
-      }
+      if (!deserialize(*stream_, items[i])) return i;
     }
     return items.size();
   }
@@ -260,7 +202,7 @@ private:
 template<class Item>
 constexpr auto make_stream_deserializer(InputStreamPtr<std::byte> stream)
     -> InputStreamPtr<Item> {
-  return std::make_unique<StreamDeserializer<Item>>(std::move(stream));
+  return make_input_stream<StreamDeserializer<Item>>(std::move(stream));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
