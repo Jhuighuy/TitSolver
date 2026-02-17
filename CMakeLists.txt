@@ -28,6 +28,7 @@ include(tit_target)
 
 # Find the third-party libraries.
 find_package(Boost CONFIG REQUIRED COMPONENTS container stacktrace_addr2line)
+find_package(Clipper2 CONFIG REQUIRED)
 find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
@@ -59,6 +60,7 @@ add_tit_library(
   DEPENDS
     Boost::container
     Boost::stacktrace_addr2line
+    Clipper2::Clipper2
     Crow::Crow
     doctest::doctest
     gcem

@@ -9,8 +9,8 @@
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
-#include "tit/geom/bbox.hpp"
 #include "tit/geom/partition.hpp"
+#include "tit/geom/polygon.hpp"
 #include "tit/geom/search.hpp"
 #include "tit/par/control.hpp"
 #include "tit/sph/artificial_viscosity.hpp"
@@ -42,16 +42,13 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
   constexpr Real POOL_WIDTH = 5.366 * H;
   constexpr Real POOL_HEIGHT = 2.5 * H;
-  constexpr geom::BBox DOMAIN_{Vec<Real, 2>{0.0, 0.0},
-                               Vec<Real, 2>{POOL_WIDTH, POOL_HEIGHT}};
 
   constexpr Real dr = H / 80.0;
 
-  constexpr auto N_FIXED = 4;
-  constexpr auto WATER_M = int(round(L / dr));
-  constexpr auto WATER_N = int(round(H / dr));
-  constexpr auto POOL_M = int(round(POOL_WIDTH / dr));
-  constexpr auto POOL_N = int(round(POOL_HEIGHT / dr));
+  constexpr auto N_FIXED = 16;
+  constexpr auto WATER_M = size_t(round(L / dr));
+  constexpr auto WATER_N = size_t(round(H / dr));
+  constexpr auto WALL_THICKNESS = dr * N_FIXED;
 
   constexpr Real g = 9.81;
   constexpr Real rho_0 = 1000.0;
@@ -130,25 +127,45 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       time_integrator,
   };
 
-  // Generate individual particles.
+  // Generate fixed particles.
   size_t num_fixed_particles = 0;
-  size_t num_fluid_particles = 0;
-  for (auto i = -N_FIXED; i < POOL_M + N_FIXED; ++i) {
-    for (auto j = -N_FIXED; j < POOL_N; ++j) {
-      const bool is_fixed = (i < 0 || i >= POOL_M) || (j < 0);
-      const bool is_fluid = (i < WATER_M) && (j < WATER_N);
-
-      if (is_fixed) num_fixed_particles += 1;
-      else if (is_fluid) num_fluid_particles += 1;
-      else continue;
-
-      auto a = particles.append(is_fixed ? ParticleType::fixed :
-                                           ParticleType::fluid);
-      r[a] = dr * Vec{i + Real{0.5}, j + Real{0.5}};
-      if (is_fixed) r_wall[a] = DOMAIN_.clamp(r[a]);
+  geom::poly::Polygon polygon{
+      {0.0, 0.0},
+      {POOL_WIDTH, 0.0},
+      {POOL_WIDTH, POOL_HEIGHT},
+      {POOL_WIDTH + WALL_THICKNESS, POOL_HEIGHT},
+      {POOL_WIDTH + WALL_THICKNESS, -WALL_THICKNESS},
+      {-WALL_THICKNESS, -WALL_THICKNESS},
+      {-WALL_THICKNESS, POOL_HEIGHT},
+      {0.0, POOL_HEIGHT},
+  };
+  const auto initial_polygon = polygon;
+  for (auto i = 0; i < N_FIXED; ++i) {
+    polygon = polygon.offset(-dr);
+    const auto fine_polygon = polygon.subdivide_edges(dr);
+    for (size_t path_index = 0; path_index < fine_polygon.num_paths();
+         ++path_index) {
+      for (size_t point_index = 0;
+           point_index < fine_polygon.path_num_points(path_index);
+           ++point_index) {
+        const auto a = particles.append(ParticleType::fixed);
+        r[a] =
+            fine_polygon.point(path_index, point_index) + Vec{dr / 2, dr / 2};
+        r_wall[a] = initial_polygon.closest_point(r[a]);
+        ++num_fixed_particles;
+      }
     }
   }
   log("Num. fixed particles: {}", num_fixed_particles);
+
+  // Generate fluid particles.
+  size_t num_fluid_particles = 0;
+  for (size_t i = 0; i < WATER_M; ++i) {
+    for (size_t j = 0; j < WATER_N; ++j) {
+      const auto a = particles.append(ParticleType::fluid);
+      r[a] = dr * Vec{i + Real{0.5}, j + Real{0.5}};
+    }
+  }
   log("Num. fluid particles: {}", num_fluid_particles);
 
   // Set global particle constants.
