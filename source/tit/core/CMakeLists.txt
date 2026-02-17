@@ -3,6 +3,17 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+add_tit_library(
+  NAME
+    malloc
+  SOURCES
+    "malloc.cpp"
+  DEPENDS
+    mimalloc-static
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 configure_file("build_info.cpp.in" "build_info.cpp" @ONLY)
 
 add_tit_library(
@@ -32,7 +43,6 @@ add_tit_library(
     "exception.hpp"
     "main.cpp"
     "main.hpp"
-    "malloc.cpp"
     "mat.hpp"
     "math.hpp"
     "mdvector.hpp"
@@ -65,9 +75,9 @@ add_tit_library(
     "zstd.cpp"
     "zstd.hpp"
   DEPENDS
+    $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:tit::malloc>
     gcem
     hwy::hwy
-    mimalloc-static
     miniz::miniz
     nlohmann_json::nlohmann_json
     zstd::libzstd

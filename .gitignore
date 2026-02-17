@@ -54,6 +54,9 @@ dist/
 coverage/
 !__snapshots__/*.snap
 
+# Python files.
+!*.py
+
 # Documentation files.
 !config.py
 !*.md

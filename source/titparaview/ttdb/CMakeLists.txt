@@ -3,11 +3,25 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titback")
-add_subdirectory("titesph")
-add_subdirectory("titgui")
-add_subdirectory("titparaview")
-add_subdirectory("titwcsph")
+add_tit_library(
+  NAME
+    ttdb
+  TYPE
+    SHARED
+  SOURCES
+    "ttdb.cpp"
+    "ttdb.hpp"
+  DEPENDS
+    tit::data
+  DESTINATION
+    "paraview/"
+)
+
+install(
+  FILES
+    "ttdb.py"
+  DESTINATION
+    "paraview/"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

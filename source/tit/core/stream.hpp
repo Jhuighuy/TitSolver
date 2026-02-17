@@ -10,6 +10,7 @@
 #include <exception>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <span>
 #include <type_traits>
@@ -40,6 +41,16 @@ public:
   ///
   /// @returns Number of items actually read.
   constexpr virtual auto read(std::span<Item> items) -> size_t = 0;
+
+  /// Read the next item from the stream.
+  ///
+  /// @returns Next item.
+  constexpr auto read() -> std::optional<Item>
+    requires std::default_initializable<Item>
+  {
+    if (Item item; read({&item, 1}) == 1) return item;
+    return std::nullopt;
+  }
 
 }; // class InputStream
 

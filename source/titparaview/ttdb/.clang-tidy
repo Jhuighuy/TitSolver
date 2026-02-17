@@ -3,11 +3,13 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titback")
-add_subdirectory("titesph")
-add_subdirectory("titgui")
-add_subdirectory("titparaview")
-add_subdirectory("titwcsph")
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+InheritParentConfig: true
+Checks: |
+  -bugprone-reserved-identifier
+  -cert-dcl37-c
+  -cert-dcl51-cpp
+  -cppcoreguidelines-avoid-non-const-global-variables
+  -cppcoreguidelines-owning-memory
+  -modernize-deprecated-headers
+  -modernize-use-trailing-return-type
+  -modernize-use-using

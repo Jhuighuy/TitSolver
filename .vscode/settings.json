@@ -33,7 +33,11 @@
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "flake8.args": ["--config", "${workspaceFolder}/pyptoject.toml"],
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/source/titparaview/ttdb",
+    "/Applications/ParaView-6.0.0.app/Contents/Python/",
+    "/Applications/ParaView-6.1.0-RC1.app/Contents/Python/"
+  ],
   "cmake.configureOnOpen": false,
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
