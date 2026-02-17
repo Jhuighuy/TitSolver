@@ -226,7 +226,10 @@ namespace sph {
 /// Particle position.
 TIT_DEFINE_VECTOR_FIELD(r)
 } // namespace sph
+/// Particle displacement vector.
 TIT_DEFINE_VECTOR_FIELD(dr)
+/// Position the the nearest point on the wall.
+TIT_DEFINE_VECTOR_FIELD(r_wall)
 
 /// Particle velocity.
 TIT_DEFINE_VECTOR_FIELD(v)

@@ -31,10 +31,8 @@ void apply_bcs(const Kernel& kernel,
 
   // Interpolate the field values on the boundary.
   par::for_each(particles.fixed(), [&kernel, &mesh](PV b) {
-    /// @todo Once we have a proper geometry library, we should use
-    ///       here and clean up the code.
     const auto& search_point = r[b];
-    const auto clipped_point = Domain<Num>.clamp(search_point);
+    const auto& clipped_point = r_wall[b];
     const auto r_ghost = 2 * clipped_point - search_point;
     const auto SN = normalize(search_point - clipped_point);
     const auto SD = norm(r_ghost - r[b]);
@@ -47,7 +45,7 @@ void apply_bcs(const Kernel& kernel,
     // linear interpolations.
     Num S{};
     Mat<Num, Dim + 1> M{};
-    const auto h_ghost = RADIUS_SCALE * h[b];
+    const auto h_ghost = ParticleMesh::radius_scale * h[b];
     for (const PV a : mesh.fixed_interp(b)) {
       const auto r_delta = r_ghost - r[a];
       const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);

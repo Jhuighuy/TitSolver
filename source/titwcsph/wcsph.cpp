@@ -9,6 +9,7 @@
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
+#include "tit/geom/bbox.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
 #include "tit/par/control.hpp"
@@ -41,6 +42,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
   constexpr Real POOL_WIDTH = 5.366 * H;
   constexpr Real POOL_HEIGHT = 2.5 * H;
+  constexpr geom::BBox DOMAIN_{Vec<Real, 2>{0.0, 0.0},
+                               Vec<Real, 2>{POOL_WIDTH, POOL_HEIGHT}};
 
   constexpr Real dr = H / 80.0;
 
@@ -142,6 +145,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       auto a = particles.append(is_fixed ? ParticleType::fixed :
                                            ParticleType::fluid);
       r[a] = dr * Vec{i + Real{0.5}, j + Real{0.5}};
+      if (is_fixed) r_wall[a] = DOMAIN_.clamp(r[a]);
     }
   }
   log("Num. fixed particles: {}", num_fixed_particles);

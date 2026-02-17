@@ -35,12 +35,13 @@ class KickDriftIntegrator final {
 public:
 
   /// Set of particle fields that are required.
+  /// @todo This probably not the right place for `r_wall`, and `parinfo`.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{parinfo, r, r_wall, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+      Equations::modified_fields | TypeSet{parinfo, r, r_wall, v, u};
 
   /// Construct time integrator.
   ///
@@ -100,11 +101,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{parinfo, r, r_wall, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+      Equations::modified_fields | TypeSet{parinfo, r, r_wall, v, u};
 
   /// Construct time integrator.
   ///
@@ -173,11 +174,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{parinfo, r, r_wall, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+      Equations::modified_fields | TypeSet{parinfo, r, r_wall, v, u};
 
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(Equations equations) noexcept
