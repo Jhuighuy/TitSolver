@@ -3,19 +3,15 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <algorithm>
 #include <memory>
 #include <optional>
-#include <ranges>
 #include <string>
 #include <string_view>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/prop/json.hpp"
+#include "tit/prop/json-2.hpp"
 #include "tit/prop/spec.hpp"
 
 namespace tit::prop {
@@ -59,6 +55,10 @@ auto spec_type_to_string(SpecType type) -> std::string_view {
   std::unreachable();
 }
 
+auto spec_type_to_json(SpecType type) -> JSON {
+  return JSON::from_string(spec_type_to_string(type));
+}
+
 auto spec_type_from_string(std::string_view string) -> SpecType {
   using enum SpecType;
   if (string == "bool") return bool_;
@@ -72,8 +72,8 @@ auto spec_type_from_string(std::string_view string) -> SpecType {
   TIT_THROW("Unknown specification type name: '{}'.", string);
 }
 
-auto spec_type_from_json(const json::JSON& json) -> SpecType {
-  return spec_type_from_string(json.get<std::string>());
+auto spec_type_from_json(const JSON& json) -> SpecType {
+  return spec_type_from_string(json.as_string());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,9 +81,9 @@ auto spec_type_from_json(const json::JSON& json) -> SpecType {
 // Specification.
 //
 
-auto Spec::from_json(json::JSON json) -> SpecPtr {
+auto Spec::from_json(JSON json) -> SpecPtr {
   using enum SpecType;
-  switch (spec_type_from_json(json::pop(json, TYPE_KEY))) {
+  switch (spec_type_from_json(json.pop(TYPE_KEY))) {
     case bool_:   return BoolSpec::from_json(std::move(json));
     case int_:    return IntSpec::from_json(std::move(json));
     case float_:  return FloatSpec::from_json(std::move(json));
@@ -97,7 +97,15 @@ auto Spec::from_json(json::JSON json) -> SpecPtr {
 }
 
 auto Spec::from_string(std::string_view string) -> SpecPtr {
-  return from_json(json::JSON::parse(string));
+  return from_json(JSON::parse(string));
+}
+
+auto Spec::to_json() const -> JSON {
+  auto json = JSON::object();
+
+  json.set(TYPE_KEY, spec_type_to_json(type()));
+
+  return json;
 }
 
 auto Spec::to_string() const -> std::string {
@@ -113,40 +121,38 @@ auto BoolSpec::type() const noexcept -> SpecType {
   return SpecType::bool_;
 }
 
-auto BoolSpec::from_json(json::JSON json) -> BoolSpecPtr {
+auto BoolSpec::from_json(JSON json) -> BoolSpecPtr {
   auto spec = std::make_unique<BoolSpec>();
 
-  spec->init_ = json::maybe_pop<bool>(json, INIT_KEY);
+  spec->init_ = json.pop(INIT_KEY).as_opt_bool();
+  spec->true_label_ = json.pop(TRUE_LABEL_KEY).as_opt_string();
+  spec->false_label_ = json.pop(FALSE_LABEL_KEY).as_opt_string();
 
-  spec->true_label_ = json::maybe_pop<std::string>(json, TRUE_LABEL_KEY);
-  spec->false_label_ = json::maybe_pop<std::string>(json, FALSE_LABEL_KEY);
-  if (spec->false_label_.has_value()) {
-    TIT_ENSURE(spec->true_label_.has_value(),
-               "Either both or none of 'true_label' and 'false_label' must be "
-               "specified.");
-  }
+  TIT_ENSURE(spec->true_label_.has_value() == spec->false_label_.has_value(),
+             "Either both or none of 'true_label' and 'false_label' must be "
+             "specified.");
 
-  json::ensure_empty(json, "Boolean specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto BoolSpec::to_json() const -> json::JSON {
-  json::JSON json;
+auto BoolSpec::to_json() const -> JSON {
+  auto json = Spec::to_json();
 
-  json::maybe_set(json, INIT_KEY, init_);
-  json::maybe_set(json, TRUE_LABEL_KEY, true_label_);
-  json::maybe_set(json, FALSE_LABEL_KEY, false_label_);
+  json.set(INIT_KEY, JSON::from_bool(init_));
+  json.set(TRUE_LABEL_KEY, JSON::from_string(true_label_));
+  json.set(FALSE_LABEL_KEY, JSON::from_string(false_label_));
 
   return json;
 }
 
-auto BoolSpec::initial_value() const -> json::JSON {
-  return init_.has_value() ? json::JSON{init_.value()} : json::null;
+auto BoolSpec::initial_value() const -> JSON {
+  return JSON::from_bool(init_);
 }
 
-void BoolSpec::validate_value(json::JSON value) const {
-  TIT_ENSURE(value.is_boolean(), "Value '{}' is not a boolean.", value.dump());
+void BoolSpec::validate_value(JSON value) const {
+  value.ensure_bool();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -158,11 +164,12 @@ auto IntSpec::type() const noexcept -> SpecType {
   return SpecType::int_;
 }
 
-auto IntSpec::from_json(json::JSON json) -> IntSpecPtr {
+auto IntSpec::from_json(JSON json) -> IntSpecPtr {
   auto spec = std::make_unique<IntSpec>();
 
-  spec->min_ = json::maybe_pop<int64_t>(json, MIN_KEY);
-  spec->max_ = json::maybe_pop<int64_t>(json, MAX_KEY);
+  spec->min_ = json.pop(MIN_KEY).as_opt_int();
+  spec->max_ = json.pop(MAX_KEY).as_opt_int();
+
   if (spec->min_.has_value() && spec->max_.has_value()) {
     TIT_ENSURE(spec->min_.value() <= spec->max_.value(),
                "Minimum value '{}' must be less than or equal to maximum '{}'.",
@@ -170,7 +177,8 @@ auto IntSpec::from_json(json::JSON json) -> IntSpecPtr {
                spec->max_.value());
   }
 
-  spec->init_ = json::maybe_pop<int64_t>(json, INIT_KEY);
+  spec->init_ = json.pop(INIT_KEY).as_opt_int();
+
   if (spec->init_.has_value() && spec->min_.has_value()) {
     TIT_ENSURE(
         spec->init_.value() >= spec->min_.value(),
@@ -178,6 +186,7 @@ auto IntSpec::from_json(json::JSON json) -> IntSpecPtr {
         spec->init_.value(),
         spec->min_.value());
   }
+
   if (spec->init_.has_value() && spec->max_.has_value()) {
     TIT_ENSURE(spec->init_.value() <= spec->max_.value(),
                "Default value '{}' must be less than or equal to maximum '{}'.",
@@ -185,31 +194,27 @@ auto IntSpec::from_json(json::JSON json) -> IntSpecPtr {
                spec->max_.value());
   }
 
-  json::ensure_empty(json, "Integer specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto IntSpec::to_json() const -> json::JSON {
-  json::JSON json;
+auto IntSpec::to_json() const -> JSON {
+  auto json = Spec::to_json();
 
-  json::maybe_set(json, INIT_KEY, init_);
-  json::maybe_set(json, MIN_KEY, min_);
-  json::maybe_set(json, MAX_KEY, max_);
+  json.set(INIT_KEY, JSON::from_int(init_));
+  json.set(MIN_KEY, JSON::from_int(min_));
+  json.set(MAX_KEY, JSON::from_int(max_));
 
   return json;
 }
 
-auto IntSpec::initial_value() const -> json::JSON {
-  return init_.has_value() ? json::JSON{init_.value()} : json::null;
+auto IntSpec::initial_value() const -> JSON {
+  return JSON::from_int(init_);
 }
 
-void IntSpec::validate_value(json::JSON value) const {
-  TIT_ENSURE(value.is_number_integer(),
-             "Value '{}' is not an integer.",
-             value.dump());
-
-  const auto value_int = value.get<int64_t>();
+void IntSpec::validate_value(JSON value) const {
+  const auto value_int = value.as_int();
 
   if (min_.has_value()) {
     TIT_ENSURE(value_int >= min_.value(),
@@ -217,6 +222,7 @@ void IntSpec::validate_value(json::JSON value) const {
                value_int,
                min_.value());
   }
+
   if (max_.has_value()) {
     TIT_ENSURE(value_int <= max_.value(),
                "Value '{}' is greater than maximum '{}'.",
@@ -234,11 +240,12 @@ auto FloatSpec::type() const noexcept -> SpecType {
   return SpecType::float_;
 }
 
-auto FloatSpec::from_json(json::JSON json) -> FloatSpecPtr {
+auto FloatSpec::from_json(JSON json) -> FloatSpecPtr {
   auto spec = std::make_unique<FloatSpec>();
 
-  spec->min_ = json::maybe_pop<float64_t>(json, MIN_KEY);
-  spec->max_ = json::maybe_pop<float64_t>(json, MAX_KEY);
+  spec->min_ = json.pop(MIN_KEY).as_opt_float();
+  spec->max_ = json.pop(MAX_KEY).as_opt_float();
+
   if (spec->min_.has_value() && spec->max_.has_value()) {
     TIT_ENSURE(spec->min_.value() <= spec->max_.value(),
                "Minimum value '{}' must be less than or equal to maximum '{}'.",
@@ -246,7 +253,8 @@ auto FloatSpec::from_json(json::JSON json) -> FloatSpecPtr {
                spec->max_.value());
   }
 
-  spec->init_ = json::maybe_pop<float64_t>(json, INIT_KEY);
+  spec->init_ = json.pop(INIT_KEY).as_opt_float();
+
   if (spec->init_.has_value() && spec->min_.has_value()) {
     TIT_ENSURE(
         spec->init_.value() >= spec->min_.value(),
@@ -254,6 +262,7 @@ auto FloatSpec::from_json(json::JSON json) -> FloatSpecPtr {
         spec->init_.value(),
         spec->min_.value());
   }
+
   if (spec->init_.has_value() && spec->max_.has_value()) {
     TIT_ENSURE(spec->init_.value() <= spec->max_.value(),
                "Default value '{}' must be less than or equal to maximum '{}'.",
@@ -261,32 +270,30 @@ auto FloatSpec::from_json(json::JSON json) -> FloatSpecPtr {
                spec->max_.value());
   }
 
-  spec->unit_ = json::maybe_pop<std::string>(json, UNIT_KEY);
+  spec->unit_ = json.pop(UNIT_KEY).as_opt_string();
 
-  json::ensure_empty(json, "Floating-point specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto FloatSpec::to_json() const -> json::JSON {
-  json::JSON json;
+auto FloatSpec::to_json() const -> JSON {
+  auto json = Spec::to_json();
 
-  json::maybe_set(json, INIT_KEY, init_);
-  json::maybe_set(json, MIN_KEY, min_);
-  json::maybe_set(json, MAX_KEY, max_);
-  json::maybe_set(json, UNIT_KEY, unit_);
+  json.set(INIT_KEY, JSON::from_float(init_));
+  json.set(MIN_KEY, JSON::from_float(min_));
+  json.set(MAX_KEY, JSON::from_float(max_));
+  json.set(UNIT_KEY, JSON::from_string(unit_));
 
   return json;
 }
 
-auto FloatSpec::initial_value() const -> json::JSON {
-  return init_.has_value() ? json::JSON{init_.value()} : json::null;
+auto FloatSpec::initial_value() const -> JSON {
+  return JSON::from_float(init_);
 }
 
-void FloatSpec::validate_value(json::JSON value) const {
-  TIT_ENSURE(value.is_number(), "Value '{}' is not a number.", value.dump());
-
-  const auto value_float = value.get<float64_t>();
+void FloatSpec::validate_value(JSON value) const {
+  const auto value_float = value.as_float();
 
   if (min_.has_value()) {
     TIT_ENSURE(value_float >= min_.value(),
@@ -294,6 +301,7 @@ void FloatSpec::validate_value(json::JSON value) const {
                value_float,
                min_.value());
   }
+
   if (max_.has_value()) {
     TIT_ENSURE(value_float <= max_.value(),
                "Value '{}' is greater than maximum '{}'.",
@@ -307,19 +315,21 @@ void FloatSpec::validate_value(json::JSON value) const {
 // String Specification.
 //
 
-auto StrSpec::from_json(json::JSON json) -> StrSpecPtr {
+auto StrSpec::from_json(JSON json) -> StrSpecPtr {
   auto spec = std::make_unique<StrSpec>();
 
-  spec->init_ = json::maybe_pop<std::string>(json, INIT_KEY);
+  spec->init_ = json.pop(INIT_KEY).as_opt_string();
 
-  json::ensure_empty(json, "String specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto StrSpec::to_json() const -> json::JSON {
-  json::JSON json;
-  json::maybe_set(json, INIT_KEY, init_);
+auto StrSpec::to_json() const -> JSON {
+  auto json = Spec::to_json();
+
+  json.set(INIT_KEY, JSON::from_string(init_));
+
   return json;
 }
 
@@ -327,12 +337,12 @@ auto StrSpec::type() const noexcept -> SpecType {
   return SpecType::str;
 }
 
-auto StrSpec::initial_value() const -> json::JSON {
-  return init_.has_value() ? json::JSON{init_.value()} : json::null;
+auto StrSpec::initial_value() const -> JSON {
+  return JSON::from_string(init_);
 }
 
-void StrSpec::validate_value(json::JSON value) const {
-  TIT_ENSURE(value.is_string(), "Value '{}' is not a string.", value.dump());
+void StrSpec::validate_value(JSON value) const {
+  value.ensure_string();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -344,76 +354,84 @@ auto EnumSpec::type() const noexcept -> SpecType {
   return SpecType::enum_;
 }
 
-auto EnumOptionSpec::from_json(json::JSON json) -> EnumOptionSpecPtr {
-  auto spec = std::make_unique<EnumOptionSpec>();
+auto EnumOptionSpec::from_json(JSON json) -> EnumOptionSpec {
+  EnumOptionSpec spec;
 
   if (json.is_string()) {
-    spec->name_ = json.get<std::string>();
+    spec.name_ = json.as_string();
   } else {
-    spec->name_ = json::pop<std::string>(json, NAME_KEY);
-    spec->descr_ = json::maybe_pop<std::string>(json, DESCR_KEY);
+    spec.name_ = json.pop(NAME_KEY).as_string();
+    spec.descr_ = json.pop(DESCR_KEY).as_opt_string();
 
-    json::ensure_empty(json, "Enumeration option specification");
+    json.ensure_empty();
   }
 
   return spec;
 }
 
-auto EnumSpec::from_json(json::JSON json) -> EnumSpecPtr {
+auto EnumSpec::from_json(JSON json) -> EnumSpecPtr {
   auto spec = std::make_unique<EnumSpec>();
 
-  std::unordered_set<std::string_view> option_names;
-  for (auto& option_json : json::pop(json, OPTIONS_KEY)) {
-    auto option = EnumOptionSpec::from_json(option_json);
-    TIT_ENSURE(option_names.insert(option->name()).second,
+  for (auto option_json : json.pop(OPTIONS_KEY).iter_array()) {
+    auto option = EnumOptionSpec::from_json(std::move(option_json));
+
+    TIT_ENSURE(spec->find_option(option.name()) == nullptr,
                "Duplicate enum option name '{}'.",
-               option->name());
+               option.name());
 
     spec->options_.push_back(std::move(option));
   }
 
-  spec->init_ = json::maybe_pop<std::string>(json, INIT_KEY);
+  spec->init_ = json.pop(INIT_KEY).as_opt_string();
+
   if (spec->init_.has_value()) {
-    TIT_ENSURE(option_names.contains(spec->init_.value()),
+    TIT_ENSURE(spec->find_option(spec->init_.value()) != nullptr,
                "Default value '{}' is not in options '{}'.",
                spec->init_.value(),
-               option_names);
+               spec->option_names());
   }
 
-  json::ensure_empty(json, "Enumeration specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto EnumOptionSpec::to_json() const -> json::JSON {
-  if (!descr_.has_value()) return name_;
-  return {{NAME_KEY, name_}, {DESCR_KEY, *descr_}};
+auto EnumOptionSpec::to_json() const -> JSON {
+  if (descr_.has_value()) {
+    auto json = JSON::object();
+
+    json.set(NAME_KEY, JSON::from_string(name_));
+    json.set(DESCR_KEY, JSON::from_string(descr_.value()));
+
+    return json;
+  }
+
+  return JSON::from_string(name_);
 }
 
-auto EnumSpec::to_json() const -> json::JSON {
-  json::JSON options_json;
-  for (const auto& option : options_) options_json.push_back(option->to_json());
+auto EnumSpec::to_json() const -> JSON {
+  auto options_json = JSON::array();
+  for (const auto& option : options_) options_json.append(option.to_json());
 
-  json::JSON json{{OPTIONS_KEY, std::move(options_json)}};
-  json::maybe_set(json, INIT_KEY, init_);
+  auto json = Spec::to_json();
+
+  json.set(OPTIONS_KEY, std::move(options_json));
+  json.set(INIT_KEY, JSON::from_string(init_));
+
   return json;
 }
 
-auto EnumSpec::initial_value() const -> json::JSON {
-  return init_.has_value() ? json::JSON{init_.value()} : json::null;
+auto EnumSpec::initial_value() const -> JSON {
+  return JSON::from_string(init_);
 }
 
-void EnumSpec::validate_value(json::JSON value) const {
-  TIT_ENSURE(value.is_string(), "Value '{}' is not a string.", value.dump());
-  const auto value_str = value.get<std::string>();
+void EnumSpec::validate_value(JSON value) const {
+  const auto value_str = value.as_string();
 
-  constexpr auto option_name = [](const auto& option) {
-    return option->name();
-  };
-  TIT_ENSURE(std::ranges::contains(options_, value_str, option_name),
+  TIT_ENSURE(find_option(value_str) != nullptr,
              "Value '{}' is not in options '{}'.",
              value_str,
-             options_ | std::views::transform(option_name));
+             option_names());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -425,27 +443,33 @@ auto ArraySpec::type() const noexcept -> SpecType {
   return SpecType::array;
 }
 
-auto ArraySpec::from_json(json::JSON json) -> ArraySpecPtr {
+auto ArraySpec::from_json(JSON json) -> ArraySpecPtr {
   auto spec = std::make_unique<ArraySpec>();
 
-  spec->item_spec_ = Spec::from_json(json::pop(json, ITEM_KEY));
+  spec->item_spec_ = Spec::from_json(json.pop(ITEM_KEY));
 
-  json::ensure_empty(json, "Array specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto ArraySpec::to_json() const -> json::JSON {
-  return {{ITEM_KEY, item_spec_->to_json()}};
+auto ArraySpec::to_json() const -> JSON {
+  auto json = Spec::to_json();
+
+  json.set(ITEM_KEY, item_spec_->to_json());
+
+  return json;
 }
 
-auto ArraySpec::initial_value() const -> json::JSON {
-  return json::JSON::array();
+void ArraySpec::validate_value(JSON value) const {
+  for (auto item : value.iter_array()) {
+    item_spec_->validate_value(std::move(item));
+  }
 }
 
-void ArraySpec::validate_value(json::JSON value) const {
-  TIT_ENSURE(value.is_array(), "Value '{}' is not an array.", value.dump());
-  for (const auto& item : value) item_spec_->validate_value(item);
+auto ArraySpec::initial_value() const -> JSON {
+  // Note: Arrays always have a default value of `[]`.
+  return JSON::array();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -457,82 +481,86 @@ auto RecordSpec::type() const noexcept -> SpecType {
   return SpecType::record;
 }
 
-auto RecordFieldSpec::from_json(json::JSON json) -> RecordFieldSpecPtr {
-  auto spec = std::make_unique<RecordFieldSpec>();
+auto RecordFieldSpec::from_json(JSON json) -> RecordFieldSpec {
+  RecordFieldSpec spec;
 
-  spec->name_ = json::pop<std::string>(json, NAME_KEY);
-  spec->descr_ = json::maybe_pop<std::string>(json, DESCR_KEY);
-  spec->val_spec_ = Spec::from_json(json::pop(json, SPEC_KEY));
+  spec.name_ = json.pop(NAME_KEY).as_string();
+  spec.descr_ = json.pop(DESCR_KEY).as_opt_string();
+  spec.val_spec_ = Spec::from_json(json.pop(SPEC_KEY));
 
-  json::ensure_empty(json, "Record field specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto RecordSpec::from_json(json::JSON json) -> RecordSpecPtr {
+auto RecordSpec::from_json(JSON json) -> RecordSpecPtr {
   auto spec = std::make_unique<RecordSpec>();
 
-  std::unordered_set<std::string_view> field_names;
-  for (auto& field_json : json::pop(json, FIELDS_KEY)) {
-    auto field = RecordFieldSpec::from_json(field_json);
-    TIT_ENSURE(field_names.insert(field->name()).second,
+  for (auto field_json : json.pop(FIELDS_KEY).iter_array()) {
+    auto field = RecordFieldSpec::from_json(std::move(field_json));
+
+    TIT_ENSURE(spec->find_field(field.name()) == nullptr,
                "Duplicate field name '{}'.",
-               field->name());
+               field.name());
 
     spec->fields_.push_back(std::move(field));
   }
 
-  json::ensure_empty(json, "Record specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto RecordFieldSpec::to_json() const -> json::JSON {
-  json::JSON json{
-      {NAME_KEY, name_},
-      {SPEC_KEY, val_spec_->to_json()},
-  };
+auto RecordFieldSpec::to_json() const -> JSON {
+  auto json = JSON::object();
 
-  json::maybe_set(json, DESCR_KEY, descr_);
+  json.set(NAME_KEY, JSON::from_string(name_));
+  json.set(DESCR_KEY, JSON::from_string(descr_));
+  json.set(SPEC_KEY, val_spec_->to_json());
 
   return json;
 }
 
-auto RecordSpec::to_json() const -> json::JSON {
-  json::JSON fields_json;
-  for (const auto& field : fields_) fields_json.push_back(field->to_json());
+auto RecordSpec::to_json() const -> JSON {
+  auto fields_json = JSON::array();
+  for (const auto& field : fields_) fields_json.append(field.to_json());
 
-  return {{FIELDS_KEY, std::move(fields_json)}};
+  auto json = Spec::to_json();
+
+  json.set(FIELDS_KEY, std::move(fields_json));
+
+  return json;
 }
 
-auto RecordFieldSpec::initial_value() const -> json::JSON {
+auto RecordFieldSpec::initial_value() const -> JSON {
   return val_spec_->initial_value();
 }
 
-auto RecordSpec::initial_value() const -> json::JSON {
-  json::JSON value;
+auto RecordSpec::initial_value() const -> JSON {
+  // Note: Records always have a default value of at least `{}`.
+  JSON value = JSON::object();
 
   for (const auto& field : fields_) {
-    if (auto field_value = field->initial_value(); !field_value.is_null()) {
-      value[field->name()] = std::move(field_value);
-    }
+    value.set(field.name(), field.initial_value());
   }
 
   return value;
 }
 
-void RecordFieldSpec::validate_value(json::JSON value) const {
+void RecordFieldSpec::validate_value(JSON value) const {
   val_spec_->validate_value(std::move(value));
 }
 
-void RecordSpec::validate_value(json::JSON value) const {
-  TIT_ENSURE(value.is_object(), "Value '{}' is not an object.", value.dump());
-
+void RecordSpec::validate_value(JSON value) const {
+  // Note: We validate only the present fields.
   for (const auto& field : fields_) {
-    field->validate_value(json::pop(value, field->name()));
+    if (auto field_value = value.get(field.name()); !field_value.is_null()) {
+      field.validate_value(std::move(field_value));
+    }
   }
 
-  json::ensure_empty(value, "Record value");
+  // Make sure there are no unexpected fields.
+  value.ensure_empty();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -544,105 +572,107 @@ auto VariantSpec::type() const noexcept -> SpecType {
   return SpecType::variant;
 }
 
-auto VariantOptionSpec::from_json(json::JSON json) -> VariantOptionSpecPtr {
-  auto spec = std::make_unique<VariantOptionSpec>();
+auto VariantOptionSpec::from_json(JSON json) -> VariantOptionSpec {
+  VariantOptionSpec spec;
 
-  spec->name_ = json::pop<std::string>(json, NAME_KEY);
-  spec->descr_ = json::maybe_pop<std::string>(json, DESCR_KEY);
-  spec->val_spec_ = Spec::from_json(json::pop(json, SPEC_KEY));
+  spec.name_ = json.pop(NAME_KEY).as_string();
+  spec.descr_ = json.pop(DESCR_KEY).as_opt_string();
+  spec.val_spec_ = Spec::from_json(json.pop(SPEC_KEY));
 
-  json::ensure_empty(json, "Variant option specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto VariantSpec::from_json(json::JSON json) -> VariantSpecPtr {
+auto VariantSpec::from_json(JSON json) -> VariantSpecPtr {
   auto spec = std::make_unique<VariantSpec>();
 
-  std::unordered_set<std::string_view> option_names;
-  for (auto& option_json : json::pop(json, OPTIONS_KEY)) {
-    auto option = VariantOptionSpec::from_json(option_json);
-    TIT_ENSURE(option_names.insert(option->name()).second,
+  for (auto option_json : json.pop(OPTIONS_KEY).iter_array()) {
+    auto option = VariantOptionSpec::from_json(std::move(option_json));
+
+    TIT_ENSURE(spec->find_option(option.name()) == nullptr,
                "Duplicate variant option name '{}'.",
-               option->name());
+               option.name());
 
     spec->options_.push_back(std::move(option));
   }
 
-  spec->init_ = json::maybe_pop<std::string>(json, INIT_KEY);
+  spec->init_ = json.pop(INIT_KEY).as_opt_string();
   if (spec->init_.has_value()) {
-    TIT_ENSURE(option_names.contains(spec->init_.value()),
+    TIT_ENSURE(spec->find_option(spec->init_.value()) != nullptr,
                "Default value '{}' is not in options '{}'.",
                spec->init_.value(),
-               option_names);
+               spec->option_names());
   }
 
-  json::ensure_empty(json, "Variant specification");
+  json.ensure_empty();
 
   return spec;
 }
 
-auto VariantOptionSpec::to_json() const -> json::JSON {
-  json::JSON json{
-      {NAME_KEY, name_},
-      {SPEC_KEY, val_spec_->to_json()},
-  };
+auto VariantOptionSpec::to_json() const -> JSON {
+  JSON json = JSON::object();
 
-  json::maybe_set(json, DESCR_KEY, descr_);
-
-  return json;
-}
-
-auto VariantSpec::to_json() const -> json::JSON {
-  json::JSON options_json;
-  for (const auto& option : options_) options_json.push_back(option->to_json());
-
-  json::JSON json{{OPTIONS_KEY, std::move(options_json)}};
-  json::maybe_set(json, INIT_KEY, init_);
+  json.set(NAME_KEY, JSON::from_string(name_));
+  json.set(DESCR_KEY, JSON::from_string(descr_));
+  json.set(SPEC_KEY, val_spec_->to_json());
 
   return json;
 }
 
-auto VariantOptionSpec::initial_value() const -> json::JSON {
+auto VariantSpec::to_json() const -> JSON {
+  auto options_json = JSON::array();
+  for (const auto& option : options_) options_json.append(option.to_json());
+
+  auto json = Spec::to_json();
+
+  json.set(OPTIONS_KEY, std::move(options_json));
+  json.set(INIT_KEY, JSON::from_string(init_));
+
+  return json;
+}
+
+auto VariantOptionSpec::initial_value() const -> JSON {
   return val_spec_->initial_value();
 }
 
-auto VariantSpec::initial_value() const -> json::JSON {
-  json::JSON value;
-
-  if (init_.has_value()) value[VARIANT_KEY] = init_.value();
+auto VariantSpec::initial_value() const -> JSON {
+  // Note: Variants always have a default value of at least `{}`.
+  JSON value = JSON::object();
 
   for (const auto& option : options_) {
-    if (auto option_value = option->initial_value(); !option_value.is_null()) {
-      value[option->name()] = std::move(option_value);
-    }
+    value.set(option.name(), option.initial_value());
   }
+
+  value.set(VARIANT_KEY, JSON::from_string(init_));
+
   return value;
 }
 
-void VariantOptionSpec::validate_value(json::JSON value) const {
+void VariantOptionSpec::validate_value(JSON value) const {
   val_spec_->validate_value(std::move(value));
 }
 
-void VariantSpec::validate_value(json::JSON value) const {
-  TIT_ENSURE(value.is_object(), "Value '{}' is not an object.", value.dump());
+void VariantSpec::validate_value(JSON value) const {
+  if (const auto option_name = value.pop(VARIANT_KEY).as_opt_string();
+      option_name.has_value()) {
+    const auto* const option = find_option(option_name.value());
 
-  const auto variant = json::pop<std::string>(value, VARIANT_KEY);
-  constexpr auto option_name = [](const auto& option) {
-    return option->name();
-  };
-  TIT_ENSURE(std::ranges::contains(options_, variant, option_name),
-             "Value '{}' is not in options '{}'.",
-             variant,
-             options_ | std::views::transform(option_name));
-
-  for (const auto& option : options_) {
-    option->validate_value(json::pop(value, option->name()));
+    TIT_ENSURE(option != nullptr,
+               "Value '{}' is not in options '{}'.",
+               option_name.value(),
+               option_names());
   }
 
-  TIT_ENSURE(value.empty(),
-             "Variant value contains extra keys: '{}'.",
-             value.dump(/*indent=*/2));
+  // Note: We validate only the present options.
+  for (const auto& option : options_) {
+    if (auto option_value = value.pop(option.name()); !option_value.is_null()) {
+      option.validate_value(std::move(option_value));
+    }
+  }
+
+  // Make sure there are no unexpected options.
+  value.ensure_empty();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

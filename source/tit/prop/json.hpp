@@ -23,7 +23,25 @@ using JSON = nlohmann::json;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Null JSON value.
+///
+/// In the scope of this `tit::prop`, null JSON values are  equivalent to
+/// `std::nullopt`.
 inline const JSON null;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Extract a value from a JSON, if it is not null.
+template<class Val>
+constexpr auto as(const JSON& json, std::optional<Val> default_ = std::nullopt)
+    -> std::optional<Val> {
+  return json.is_null() ? default_ : json.get<Val>();
+}
+
+/// Construct a JSON from an optional value.
+template<class Val>
+constexpr auto from(std::optional<Val> val) -> JSON {
+  return val.has_value() ? JSON{val.value()} : null;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -31,13 +49,25 @@ inline const JSON null;
 /// @{
 constexpr auto get(const JSON& json,
                    std::string_view key,
-                   const JSON& def = null) -> JSON {
-  return json.contains(key) ? json.at(key) : def;
+                   const JSON& default_ = null) -> JSON {
+  return json.contains(key) ? json.at(key) : default_;
 }
 template<class Val>
-constexpr auto get(const JSON& json, std::string_view key, const Val& def)
-    -> Val {
-  return json.contains(key) ? json.at(key).get<Val>() : def;
+constexpr auto get(const JSON& json, //
+                   std::string_view key,
+                   const Val& default_) -> Val {
+  return as(get<Val>(json, key), default_);
+}
+/// @}
+
+/// Set a value in a JSON object, if the value is not null.
+/// @{
+constexpr void set(JSON& json, std::string_view key, JSON val) {
+  if (!val.is_null()) json[key] = std::move(val);
+}
+template<class Val>
+constexpr void set(JSON& json, std::string_view key, std::optional<Val> val) {
+  set(json, key, val.has_value() ? JSON{val.value()} : null);
 }
 /// @}
 
@@ -46,7 +76,6 @@ constexpr auto get(const JSON& json, std::string_view key, const Val& def)
 /// Get a value from a JSON object and remove it from the object.
 /// @{
 constexpr auto pop(JSON& json, std::string_view key) -> JSON {
-  TIT_ENSURE(json.contains(key), "Missing '{}' key.", key);
   auto val = json.at(key);
   json.erase(key);
   return val;
@@ -57,23 +86,22 @@ constexpr auto pop(JSON& json, std::string_view key) -> Val {
 }
 /// @}
 
-/// Get a value from a JSON object and remove it from the object, if it exists.
+/// Get a value from a JSON object and remove it from the object, otherwise
+/// return a default value.
+/// @{
+constexpr auto pop(JSON& json, std::string_view key, const JSON& default_)
+    -> JSON {
+  if (json.contains(key)) return pop(json, key);
+  return default_;
+}
 template<class Val>
-constexpr auto maybe_pop(JSON& json, std::string_view key)
-    -> std::optional<Val> {
+constexpr auto pop(JSON& json,
+                   std::string_view key,
+                   const std::optional<Val>& default_) -> std::optional<Val> {
   if (json.contains(key)) return pop<Val>(json, key);
-  return std::nullopt;
+  return default_;
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Set a value in a JSON object.
-template<class Val>
-constexpr void maybe_set(JSON& json,
-                         std::string_view key,
-                         std::optional<Val> val) {
-  if (val.has_value()) json[key] = std::move(*val);
-}
+/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

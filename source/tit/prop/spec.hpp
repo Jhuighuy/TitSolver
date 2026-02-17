@@ -13,7 +13,7 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/type.hpp"
-#include "tit/prop/json.hpp"
+#include "tit/prop/json-2.hpp"
 
 namespace tit::prop {
 
@@ -34,11 +34,14 @@ enum class SpecType : uint8_t {
 /// Convert a specification type to a string.
 auto spec_type_to_string(SpecType type) -> std::string_view;
 
+/// Convert a specification type to a JSON value.
+auto spec_type_to_json(SpecType type) -> JSON;
+
 /// Construct a specification type from a string.
 auto spec_type_from_string(std::string_view string) -> SpecType;
 
 /// Construct a specification type from JSON.
-auto spec_type_from_json(const json::JSON& json) -> SpecType;
+auto spec_type_from_json(const JSON& json) -> SpecType;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
@@ -53,13 +56,13 @@ class Spec : public VirtualBase, public std::enable_shared_from_this<Spec> {
 public:
 
   /// Construct a specification from JSON.
-  static auto from_json(json::JSON json) -> SpecPtr;
+  static auto from_json(JSON json) -> SpecPtr;
 
   /// Construct a specification from string.
   static auto from_string(std::string_view string) -> SpecPtr;
 
   /// Convert the specification to JSON.
-  virtual auto to_json() const -> json::JSON = 0;
+  virtual auto to_json() const -> JSON = 0;
 
   /// Convert the specification to string.
   auto to_string() const -> std::string;
@@ -68,10 +71,15 @@ public:
   virtual auto type() const noexcept -> SpecType = 0;
 
   /// Get the initial value.
-  virtual auto initial_value() const -> json::JSON = 0;
+  virtual auto initial_value() const -> JSON = 0;
 
   /// Validate the value against the specification.
-  virtual void validate_value(json::JSON value) const = 0;
+  virtual void validate_value(JSON value) const = 0;
+
+protected:
+
+  /// Construct a specification.
+  constexpr Spec() noexcept = default;
 
 }; // class Spec
 
@@ -87,11 +95,13 @@ using BoolSpecPtr = std::shared_ptr<class BoolSpec>;
 class BoolSpec final : public Spec {
 public:
 
-  static auto from_json(json::JSON json) -> BoolSpecPtr;
-  auto to_json() const -> json::JSON override;
+  static auto from_json(JSON json) -> BoolSpecPtr;
+  auto to_json() const -> JSON override;
+
   auto type() const noexcept -> SpecType override;
-  auto initial_value() const -> json::JSON override;
-  void validate_value(json::JSON value) const override;
+
+  auto initial_value() const -> JSON override;
+  void validate_value(JSON value) const override;
 
 private:
 
@@ -113,11 +123,13 @@ using IntSpecPtr = std::shared_ptr<class IntSpec>;
 class IntSpec final : public Spec {
 public:
 
-  static auto from_json(json::JSON json) -> IntSpecPtr;
-  auto to_json() const -> json::JSON override;
+  static auto from_json(JSON json) -> IntSpecPtr;
+  auto to_json() const -> JSON override;
+
   auto type() const noexcept -> SpecType override;
-  auto initial_value() const -> json::JSON override;
-  void validate_value(json::JSON value) const override;
+
+  auto initial_value() const -> JSON override;
+  void validate_value(JSON value) const override;
 
 private:
 
@@ -139,11 +151,13 @@ using FloatSpecPtr = std::shared_ptr<class FloatSpec>;
 class FloatSpec final : public Spec {
 public:
 
-  static auto from_json(json::JSON json) -> FloatSpecPtr;
-  auto to_json() const -> json::JSON override;
+  static auto from_json(JSON json) -> FloatSpecPtr;
+  auto to_json() const -> JSON override;
+
   auto type() const noexcept -> SpecType override;
-  auto initial_value() const -> json::JSON override;
-  void validate_value(json::JSON value) const override;
+
+  auto initial_value() const -> JSON override;
+  void validate_value(JSON value) const override;
 
 private:
 
@@ -166,11 +180,13 @@ using StrSpecPtr = std::shared_ptr<class StrSpec>;
 class StrSpec final : public Spec {
 public:
 
-  static auto from_json(json::JSON json) -> StrSpecPtr;
-  auto to_json() const -> json::JSON override;
+  static auto from_json(JSON json) -> StrSpecPtr;
+  auto to_json() const -> JSON override;
+
   auto type() const noexcept -> SpecType override;
-  auto initial_value() const -> json::JSON override;
-  void validate_value(json::JSON value) const override;
+
+  void validate_value(JSON value) const override;
+  auto initial_value() const -> JSON override;
 
 private:
 
@@ -183,19 +199,15 @@ private:
 // Enumeration Specification.
 //
 
-/// Pointer to an enumeration option specification.
-using EnumOptionSpecPtr = std::unique_ptr<class EnumOptionSpec>;
-
 /// Enumeration option specification.
 class EnumOptionSpec final {
 public:
 
-  static auto from_json(json::JSON json) -> EnumOptionSpecPtr;
-  auto to_json() const -> json::JSON;
-  void validate_value(json::JSON value) const;
+  static auto from_json(JSON json) -> EnumOptionSpec;
+  auto to_json() const -> JSON;
 
   /// Get the option name.
-  auto name() const noexcept -> std::string_view {
+  auto name() const noexcept -> const std::string& {
     return name_;
   }
 
@@ -213,16 +225,30 @@ using EnumSpecPtr = std::shared_ptr<class EnumSpec>;
 class EnumSpec final : public Spec {
 public:
 
-  static auto from_json(json::JSON json) -> EnumSpecPtr;
-  auto to_json() const -> json::JSON override;
+  static auto from_json(JSON json) -> EnumSpecPtr;
+  auto to_json() const -> JSON override;
+
   auto type() const noexcept -> SpecType override;
-  auto initial_value() const -> json::JSON override;
-  void validate_value(json::JSON value) const override;
+
+  auto initial_value() const -> JSON override;
+  void validate_value(JSON value) const override;
+
+  /// Get all option names.
+  auto option_names() const noexcept {
+    return std::views::transform(options_, &EnumOptionSpec::name);
+  }
+
+  /// Find an option by name.
+  auto find_option(std::string_view name) const noexcept
+      -> const EnumOptionSpec* {
+    const auto iter = std::ranges::find(options_, name, &EnumOptionSpec::name);
+    return iter != options_.end() ? &(*iter) : nullptr;
+  }
 
 private:
 
-  std::vector<EnumOptionSpecPtr> options_;
   std::optional<std::string> init_;
+  std::vector<EnumOptionSpec> options_;
 
 }; // class EnumSpec
 
@@ -238,11 +264,13 @@ using ArraySpecPtr = std::shared_ptr<class ArraySpec>;
 class ArraySpec final : public Spec {
 public:
 
-  static auto from_json(json::JSON json) -> ArraySpecPtr;
-  auto to_json() const -> json::JSON override;
+  static auto from_json(JSON json) -> ArraySpecPtr;
+  auto to_json() const -> JSON override;
+
   auto type() const noexcept -> SpecType override;
-  auto initial_value() const -> json::JSON override;
-  void validate_value(json::JSON value) const override;
+
+  auto initial_value() const -> JSON override;
+  void validate_value(JSON value) const override;
 
 private:
 
@@ -255,20 +283,18 @@ private:
 // Record Specification.
 //
 
-/// Pointer to a record field specification.
-using RecordFieldSpecPtr = std::unique_ptr<class RecordFieldSpec>;
-
 /// Record field specification.
 class RecordFieldSpec final {
 public:
 
-  static auto from_json(json::JSON json) -> RecordFieldSpecPtr;
-  auto to_json() const -> json::JSON;
-  auto initial_value() const -> json::JSON;
-  void validate_value(json::JSON value) const;
+  static auto from_json(JSON json) -> RecordFieldSpec;
+  auto to_json() const -> JSON;
+
+  void validate_value(JSON value) const;
+  auto initial_value() const -> JSON;
 
   /// Get the field name.
-  auto name() const noexcept -> std::string_view {
+  auto name() const noexcept -> const std::string& {
     return name_;
   }
 
@@ -287,15 +313,29 @@ using RecordSpecPtr = std::shared_ptr<class RecordSpec>;
 class RecordSpec final : public Spec {
 public:
 
-  static auto from_json(json::JSON json) -> RecordSpecPtr;
-  auto to_json() const -> json::JSON override;
+  static auto from_json(JSON json) -> RecordSpecPtr;
+  auto to_json() const -> JSON override;
+
   auto type() const noexcept -> SpecType override;
-  auto initial_value() const -> json::JSON override;
-  void validate_value(json::JSON value) const override;
+
+  auto initial_value() const -> JSON override;
+  void validate_value(JSON value) const override;
+
+  /// Get the field names.
+  auto field_names() const noexcept {
+    return std::views::transform(fields_, &RecordFieldSpec::name);
+  }
+
+  /// Find a field by name.
+  auto find_field(std::string_view name) const noexcept
+      -> const RecordFieldSpec* {
+    const auto iter = std::ranges::find(fields_, name, &RecordFieldSpec::name);
+    return iter != fields_.end() ? &(*iter) : nullptr;
+  }
 
 private:
 
-  std::vector<RecordFieldSpecPtr> fields_;
+  std::vector<RecordFieldSpec> fields_;
 
 }; // class RecordSpec
 
@@ -304,20 +344,18 @@ private:
 // Variant Specification.
 //
 
-/// Pointer to a variant option specification.
-using VariantOptionSpecPtr = std::unique_ptr<class VariantOptionSpec>;
-
 /// Variant option specification.
 class VariantOptionSpec final {
 public:
 
-  static auto from_json(json::JSON json) -> VariantOptionSpecPtr;
-  auto to_json() const -> json::JSON;
-  auto initial_value() const -> json::JSON;
-  void validate_value(json::JSON value) const;
+  static auto from_json(JSON json) -> VariantOptionSpec;
+  auto to_json() const -> JSON;
+
+  auto initial_value() const -> JSON;
+  void validate_value(JSON value) const;
 
   /// Get the option name.
-  auto name() const noexcept -> std::string_view {
+  auto name() const noexcept -> const std::string& {
     return name_;
   }
 
@@ -336,16 +374,31 @@ using VariantSpecPtr = std::shared_ptr<class VariantSpec>;
 class VariantSpec final : public Spec {
 public:
 
-  static auto from_json(json::JSON json) -> VariantSpecPtr;
-  auto to_json() const -> json::JSON override;
+  static auto from_json(JSON json) -> VariantSpecPtr;
+  auto to_json() const -> JSON override;
+
   auto type() const noexcept -> SpecType override;
-  auto initial_value() const -> json::JSON override;
-  void validate_value(json::JSON value) const override;
+
+  void validate_value(JSON value) const override;
+  auto initial_value() const -> JSON override;
+
+  /// Get all option names.
+  auto option_names() const noexcept {
+    return std::views::transform(options_, &VariantOptionSpec::name);
+  }
+
+  /// Find an option by name.
+  auto find_option(std::string_view name) const noexcept
+      -> const VariantOptionSpec* {
+    const auto iter =
+        std::ranges::find(options_, name, &VariantOptionSpec::name);
+    return iter != options_.end() ? &(*iter) : nullptr;
+  }
 
 private:
 
-  std::vector<VariantOptionSpecPtr> options_;
   std::optional<std::string> init_;
+  std::vector<VariantOptionSpec> options_;
 
 }; // class VariantSpec
 
