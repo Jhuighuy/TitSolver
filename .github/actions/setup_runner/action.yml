@@ -45,6 +45,9 @@ runs:
           gcovr
           llvm@$LLVM_VERSION
           node
+          qtbase
+          qtwebengine
+          qtwebsockets
           sphinx-doc
         )
 

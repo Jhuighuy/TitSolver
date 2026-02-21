@@ -65,14 +65,14 @@ function titapp(): Plugin {
       backend.stdout?.on("data", (data: Buffer) => {
         const text = data.toString();
         console.log(text);
-      });
-      backend.stderr?.on("data", (data: Buffer) => {
-        const text = data.toString();
-        console.error(text);
         if (text.includes("running")) {
           clearTimeout(timeout);
           resolve();
         }
+      });
+      backend.stderr?.on("data", (data: Buffer) => {
+        const text = data.toString();
+        console.error(text);
       });
     });
 
