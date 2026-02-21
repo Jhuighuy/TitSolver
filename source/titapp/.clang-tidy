@@ -4,4 +4,8 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 InheritParentConfig: true
-Checks: -modernize-type-traits
+
+Checks: |
+  -cppcoreguidelines-owning-memory
+  -modernize-use-trailing-return-type
+  -readability-redundant-access-specifiers

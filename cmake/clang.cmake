@@ -163,6 +163,11 @@ function(enable_clang_tidy TARGET)
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
   )
+  if(APPLE)
+    # LLVM tools fail to implicitly recognize Qt frameworks path.
+    list(APPEND TARGET_COMPILE_OPTIONS "-F${Qt6_DIR}/../../")
+  endif()
+
 
   # Get the binary, source directory and sources of the target.
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
@@ -243,6 +248,10 @@ function(write_compile_flags TARGET)
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
   )
+  if(APPLE)
+    # LLVM tools fail to implicitly recognize Qt frameworks path.
+    list(APPEND TARGET_COMPILE_OPTIONS "-F${Qt6_DIR}/../../")
+  endif()
 
   # Remove `-Werror` from the compile flags, as it crashes clangd sometimes.
   list(REMOVE_ITEM TARGET_COMPILE_OPTIONS "-Werror")
