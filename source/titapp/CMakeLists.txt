@@ -30,3 +30,30 @@ add_tit_executable(
 write_compile_flags(titapp)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+if(APPLE)
+  add_tit_executable(
+    NAME
+      launcher
+    SOURCES
+      "launcher.cpp"
+    DEPENDS
+      "-framework AppKit"
+      "-framework Foundation"
+    DESTINATION
+      "BlueTit.app/Contents/MacOS"
+  )
+
+  configure_file("Info.plist.in" "Info.plist" @ONLY)
+  install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/Info.plist"
+    DESTINATION "BlueTit.app/Contents"
+  )
+
+  install(
+    FILES "Icon.icns"
+    DESTINATION "BlueTit.app/Contents/Resources"
+  )
+endif()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
