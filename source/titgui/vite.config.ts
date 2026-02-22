@@ -14,6 +14,7 @@ import { defineConfig, type Plugin } from "vite";
 
 // See https://vitejs.dev/config/ for options.
 export default defineConfig({
+  base: "./",
   resolve: {
     alias: { "~": path.resolve(__dirname, "./src") },
   },
@@ -40,10 +41,11 @@ function titapp(): Plugin {
     backendPort = await findFreePort();
 
     // Spawn the backend and wait for the it to start.
-    process.env.TIT_BACKEND_PORT = backendPort.toString();
-    backend = spawn("./output/TIT_ROOT/bin/titback", {
-      cwd: "../../",
-    });
+    backend = spawn(
+      "./output/TIT_ROOT/bin/titapp",
+      ["--headless", "--port", backendPort.toString()],
+      { cwd: "../../" },
+    );
     await new Promise<void>((resolve, reject) => {
       if (backend === null) return reject(new Error("Backend not spawned."));
       const timeout = setTimeout(
@@ -74,17 +76,17 @@ function titapp(): Plugin {
       });
     });
 
-    console.info(`titback started [${backend.pid}].`);
+    console.info(`titapp started [${backend.pid}].`);
   }
 
   function cleanupBackend() {
     if (!backend || backend.killed) return;
     backend.kill("SIGTERM");
-    console.info(`titback closed [${backend.pid}].`);
+    console.info(`titapp closed [${backend.pid}].`);
   }
 
   return {
-    name: "run-titback",
+    name: "run-titapp",
     async config(_, { command }) {
       if (command !== "serve" && process.env.VITE_TEST !== "true") {
         return;
