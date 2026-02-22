@@ -5,7 +5,7 @@
 
 add_tit_executable(
   NAME
-    titback
+    titapp
   SOURCES
     "backend.cpp"
   DEPENDS

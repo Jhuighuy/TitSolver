@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 // Note: False-positives from Crow internals on Fedora 43.
+#include "tit/core/str.hpp"
 #if defined(__linux__) && defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
@@ -30,7 +31,6 @@
 #include <nlohmann/json_fwd.hpp>
 
 #include "tit/core/checks.hpp"
-#include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/posix.hpp"
@@ -41,7 +41,7 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
+TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
   namespace json = nlohmann;
 
   const auto exe_dir = std::filesystem::path{argv[0]}.parent_path();
@@ -337,8 +337,19 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
 
   // ---------------------------------------------------------------------------
 
-  /// @todo Pass port as a command line argument.
-  app.port(get_env<uint16_t>("TIT_BACKEND_PORT", 18080)).run();
+  uint16_t port = 18080;
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg{argv[i]};
+    if (arg == "--port" && i + 1 < argc) {
+      const auto port_val = str_to<uint16_t>(argv[i + 1]);
+      if (port_val.has_value()) {
+        port = port_val.value();
+        continue;
+      }
+    }
+  }
+
+  app.port(port).run();
 });
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
