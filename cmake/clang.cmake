@@ -9,8 +9,7 @@ include(utils)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define warnings and diagnostics options.
-set(
-  CLANG_WARNINGS
+set(CLANG_WARNINGS
   # Treat warnings as errors.
   -Werror
   # Enable all the commonly used warning options.
@@ -23,8 +22,7 @@ set(
 )
 
 # Define common compile options.
-set(
-  CLANG_COMPILE_OPTIONS
+set(CLANG_COMPILE_OPTIONS
   # Use C++26 standard.
   -std=c++26
   # Warnings and diagnostics.
@@ -82,8 +80,7 @@ function(_make_libstdcpp_options RESULT_VAR)
     return()
   endif()
 
-  set(
-    ${RESULT_VAR}
+  set(${RESULT_VAR}
     -stdlib++-isystem "${FOUND_DIR}"
     -cxx-isystem "${FOUND_PLATFORM_DIR}"
     PARENT_SCOPE
@@ -95,20 +92,16 @@ unset(_make_libstdcpp_options)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define common optimization options.
-set(
-  CLANG_OPTIMIZE_OPTIONS
+set(CLANG_OPTIMIZE_OPTIONS
   # Enable aggressive optimization levels.
   -O3
   # Enable aggressive floating-point expression contraction.
   -ffast-math
   -ffp-contract=fast
-  # Link time optimizations are disabled: we experience crashes in tests.
-  # -flto=auto
 )
 
 # Define compile options for "Release" configuration.
-set(
-  CLANG_COMPILE_OPTIONS_RELEASE
+set(CLANG_COMPILE_OPTIONS_RELEASE
   ${CLANG_COMPILE_OPTIONS}
   ${CLANG_OPTIMIZE_OPTIONS}
 )
@@ -119,8 +112,7 @@ set(CLANG_LINK_OPTIONS_RELEASE ${CLANG_LINK_OPTIONS} ${CLANG_OPTIMIZE_OPTIONS})
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define common debugging options.
-set(
-  CLANG_DEBUG_OPTIONS
+set(CLANG_DEBUG_OPTIONS
   # Store debug information.
   -g
   # Optimize for debugging experience.
@@ -139,8 +131,7 @@ set(CLANG_LINK_OPTIONS_DEBUG ${CLANG_LINK_OPTIONS} ${CLANG_DEBUG_OPTIONS})
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy-21" "clang-tidy")
 
 # Define clang-tidy options.
-set(
-  CLANG_TIDY_OPTIONS
+set(CLANG_TIDY_OPTIONS
   # No annoying output.
   --quiet
   # Enable colors during piping through chronic.
@@ -158,9 +149,7 @@ function(enable_clang_tidy TARGET)
 
   # Setup "compilation" arguments for clang-tidy call.
   get_generated_compile_options(${TARGET} TARGET_COMPILE_OPTIONS)
-  list(
-    APPEND
-    TARGET_COMPILE_OPTIONS
+  list(APPEND TARGET_COMPILE_OPTIONS
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
@@ -238,9 +227,7 @@ endfunction()
 function(write_compile_flags TARGET)
   # Setup "compilation" arguments for a hypothetical "clang" call.
   get_generated_compile_options(${TARGET} TARGET_COMPILE_OPTIONS)
-  list(
-    APPEND
-    TARGET_COMPILE_OPTIONS
+  list(APPEND TARGET_COMPILE_OPTIONS
     # Inherit compile options we would use for compilation.
     ${CLANG_COMPILE_OPTIONS}
     ${CLANG_STDLIB_OPTIONS}
@@ -249,17 +236,23 @@ function(write_compile_flags TARGET)
   # Remove `-Werror` from the compile flags, as it crashes clangd sometimes.
   list(REMOVE_ITEM TARGET_COMPILE_OPTIONS "-Werror")
 
+  # Get the source directory.
+  get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
+
   # Write the compile flags to a file, each on a new line.
-  add_custom_target(
-    "${TARGET}_compile_flags"
-    ALL # Execute on every build.
+  set(OUTPUT_FILE "${TARGET_SOURCE_DIR}/compile_flags.txt")
+  add_custom_command(
+    COMMENT "Writing compile flags for target ${TARGET}"
+    OUTPUT "${OUTPUT_FILE}"
     COMMAND
       "${CMAKE_COMMAND}" -E echo ${TARGET_COMPILE_OPTIONS} |
-      "${XARGS_EXE}" -n 1 > "${CMAKE_SOURCE_DIR}/compile_flags.txt"
-    COMMENT "Writing compile_flags.txt"
+      "${XARGS_EXE}" -n 1 > "${OUTPUT_FILE}"
     COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
     VERBATIM
   )
+
+  # Create a custom target that should "build" once the file is written.
+  add_custom_target("${TARGET}_compile_flags" ALL DEPENDS "${OUTPUT_FILE}")
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

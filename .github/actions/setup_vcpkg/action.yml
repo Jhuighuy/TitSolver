@@ -3,6 +3,9 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+name: "Setup vcpkg"
+description: "Setup vcpkg and install the manifest dependencies."
+
 runs:
   using: "composite"
   steps:
@@ -11,46 +14,38 @@ runs:
       run: |
         # Install vcpkg.
         VCPKG_ROOT="$HOME/vcpkg"
-        git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
-        eval "$VCPKG_ROOT/bootstrap-vcpkg.sh"
+        if [ ! -d "$VCPKG_ROOT" ]; then
+          git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+        fi
+
+        # Bootstrap vcpkg.
+        eval "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
         echo "VCPKG_ROOT=$VCPKG_ROOT" >> "$GITHUB_ENV"
 
         # Setup the default binary cache location.
-        VCPKG_DEFAULT_BINARY_CACHE="$HOME/vcpkg_cache"
+        VCPKG_DEFAULT_BINARY_CACHE="$HOME/.cache/vcpkg/archives"
         mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" || true
         echo "VCPKG_DEFAULT_BINARY_CACHE=$VCPKG_DEFAULT_BINARY_CACHE" >> "$GITHUB_ENV"
+        echo "VCPKG_BINARY_SOURCES=clear;default,readwrite" >> "$GITHUB_ENV"
 
-    - name: Identify compiler
+    - name: Identify compiler hash
       shell: bash
       run: |
-        # Identify the compiler and set the environment variables.
         CC=${CC:-cc}
+        CC_HASH=$($CC --version | head -n 1 | sha1sum | cut -d' ' -f1)
         CXX=${CXX:-c++}
-        COMPILER_ID=$(cat $(which "$CC") $(which "$CXX") | sha1sum | cut -d' ' -f1)
-        echo "COMPILER_ID=$COMPILER_ID" >> "$GITHUB_ENV"
+        CXX_HASH=$($CXX --version | head -n 1 | sha1sum | cut -d' ' -f1)
+        echo "COMPILER_HASH=${CC_HASH}-${CXX_HASH}" >> "$GITHUB_ENV"
 
-    - name: Restore vcpkg packages cache
+    - name: Restore vcpkg binary cache
       id: vcpkg-cache-restore
-      uses: actions/cache/restore@v4
+      uses: actions/cache@v4
       with:
-        # Use the run ID as the cache key, this way the cache is updated
-        # after each run.
-        key: vcpkg-${{ runner.os }}-${{ env.COMPILER_ID }}-${{ github.run_id }}
-        restore-keys: vcpkg-${{ runner.os }}-${{ env.COMPILER_ID }}
-        path: |
-          ${{ env.VCPKG_ROOT }}/installed
-          ${{ env.VCPKG_ROOT }}/buildtrees
-          ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+        key: vcpkg-bin-${{ runner.os }}-${{ env.COMPILER_HASH }}-${{ hashFiles('vcpkg.json') }}
+        restore-keys: |
+          vcpkg-bin-${{ runner.os }}-${{ env.COMPILER_HASH }}-
+        path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
 
     - name: Install vcpkg packages
       shell: bash
-      run: $VCPKG_ROOT/vcpkg install
-
-    - name: Update vcpkg packages cache
-      uses: actions/cache/save@v4
-      with:
-        key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}
-        path: |
-          ${{ env.VCPKG_ROOT }}/installed
-          ${{ env.VCPKG_ROOT }}/buildtrees
-          ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+      run: $VCPKG_ROOT/vcpkg install --no-print-usage

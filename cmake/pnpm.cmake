@@ -22,7 +22,7 @@ set(PNPM_TEST_CMD "pnpm run $<IF:$<CONFIG:Coverage>,coverage,test>")
 function(add_tit_pnpm_target)
   # Parse and check arguments.
   cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "" ${ARGN})
-  make_target_name(${TARGET_NAME} TARGET)
+  set(TARGET "${TARGET_NAME}")
 
   # Find "package.json".
   set(TARGET_PACKAGE_JSON "${CMAKE_CURRENT_SOURCE_DIR}/package.json")
@@ -42,8 +42,7 @@ function(add_tit_pnpm_target)
   # Run `pnpm install`.
   set(STAMP "${CMAKE_CURRENT_SOURCE_DIR}/node_modules/.modules.yaml")
   add_custom_command(
-    COMMENT
-      "Installing dependencies for PNPM package ${TARGET}"
+    COMMENT "Installing dependencies for PNPM package ${TARGET}"
     COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" install
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS "${TARGET_PACKAGE_JSON}"

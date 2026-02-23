@@ -53,14 +53,11 @@ jobs:
       - name: Setup vcpkg
         uses: ./.github/actions/setup_vcpkg
 
-      - name: Build
+      - name: Build and test
         run: |
           build-wrapper-linux-x86-64                                           \
             --out-dir "${{ env.BUILD_WRAPPER_OUT_DIR }}"                       \
-            ./build/build.sh --force --config ${{ matrix.configuration }}
-
-      - name: Run tests
-        run: ./build/test.sh
+            ./build/build.sh --config ${{ matrix.configuration }} --force --test
 
       - name: Collect coverage reports
         run: |

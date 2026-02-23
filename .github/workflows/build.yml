@@ -46,11 +46,8 @@ jobs:
       - name: Setup vcpkg
         uses: ./.github/actions/setup_vcpkg
 
-      - name: Build
-        run: ./build/build.sh --config ${{ matrix.configuration }}
-
-      - name: Run tests
-        run: ./build/test.sh
+      - name: Build and test
+        run: ./build/build.sh --config ${{ matrix.configuration }} --test
 
       - name: Upload test output
         uses: actions/upload-artifact@v4

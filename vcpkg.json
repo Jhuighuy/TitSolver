@@ -1,14 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "tit",
   "version-string": "0.1.0",
   "builtin-baseline": "25d20d679f8ce2b062d951b07c976dfca8f2aaa3",
   "dependencies": [
     "boost-container",
-    {
-      "name": "boost-stacktrace",
-      "default-features": false
-    },
+    { "name": "boost-stacktrace", "default-features": false },
     "crow",
     "doctest",
     "gcem",

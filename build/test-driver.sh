@@ -11,7 +11,6 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-source "$(dirname $0)/build-utils.sh" || exit $?
 TEST_NAME=""
 TEST_COMMAND=()
 EXIT_CODE=0
@@ -20,9 +19,6 @@ STDOUT_PATH=""
 STDERR_PATH=""
 INPUT_PATHS=()
 OUTPUT_PATHS=()
-DIFF_EXE=${DIFF_EXE:-diff}
-# Prefer `gsed` to regular `sed`. This is essential on the BSD-like systems.
-SED_EXE=${SED_EXE:-$(command -v gsed || echo sed)}
 SED_FILTERS=(
 	# Shrink absolute paths to filenames.
 	"s/\/(([^\/]+|\.{1,2})\/)+([^\/]+)/\3/g"
@@ -34,8 +30,8 @@ SED_FILTERS=(
 	"/libgcov profiling error$/d"
 )
 
-usage() {
-	echo "Usage: $(basename "$0") [options] -- <test-command>"
+print-usage() {
+	echo "Usage: $0 [options...] -- <test-command>"
 	echo ""
 	echo "Options:"
 	echo "  -h, --help            Print this help message."
@@ -124,37 +120,57 @@ parse-args() {
 			;;
 		# Help.
 		-h | -help | --help)
-			usage
+			print-usage
 			exit 0
 			;;
 		*)
+			echo ""
 			echo "Invalid argument: $1."
-			usage
+			echo ""
+			print-usage
 			exit 1
 			;;
 		esac
 	done
+
+	if [ -z "$TEST_NAME" ]; then
+		echo ""
+		echo "Test name must be specified."
+		echo ""
+		print-usage
+		exit 1
+	fi
+
+	if [ -z "${TEST_COMMAND[*]}" ]; then
+		echo ""
+		echo "Test command must be specified."
+		echo ""
+		print-usage
+		exit 1
+	fi
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-setup-path() {
-	echo "# Setting up paths..."
-	export PATH="$INSTALL_DIR/bin:$INSTALL_DIR/private/bin:$PATH"
-}
-
 setup-work-dir() {
-	echo "# Setting up the test directory..."
 	# Transform the test name into a directory name: append the output directory
 	# and remove the tags. E.g. 'foo/bar[abc]' -> '<output-dir>/foo/bar'.
 	WORK_DIR="$TEST_OUTPUT_DIR/${TEST_NAME%%\[*}"
-	mkdir -p "$WORK_DIR"
+	if ! mkdir -p "$WORK_DIR"; then
+		echo "Failed to create the test directory '$WORK_DIR'."
+		exit 1
+	fi
+
+	# Redirect the output to the file.
+	exec 1>"$WORK_DIR/test.log" 2>&1
 }
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 setup-input-file() {
 	local FILE_PATH="$1"
 	if [ ! -f "$FILE_PATH" ]; then
-		echo "# Unable to run the test: input file $FILE_PATH does not exist!"
+		echo "Failed to run: input file '$FILE_PATH' does not exist."
 		exit 1
 	fi
 	local FILE="${2:-$(basename "$FILE_PATH")}"
@@ -162,11 +178,10 @@ setup-input-file() {
 }
 
 setup-input() {
-	echo "# Setting up the test input..."
+	echo "Setting up the test input..."
 	if [ "$STDIN_PATH" ]; then
 		setup-input-file "$STDIN_PATH" "stdin.txt"
 	else
-		# Create the empty 'stdin' for convenience.
 		touch "stdin.txt"
 	fi
 	for INPUT_PATH in "${INPUT_PATHS[@]}"; do
@@ -174,22 +189,24 @@ setup-input() {
 	done
 }
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 FILES_TO_MATCH=()
 
 setup-output-file() {
 	local FILE_PATH="$1"
 	if [ ! -f "$FILE_PATH" ]; then
-		echo "# Unable to run the test: output file $FILE_PATH does not exist!"
+		echo "Failed to run: output file '$FILE_PATH' does not exist."
 		exit 1
 	fi
 	local FILE="${2:-$(basename "$FILE_PATH")}"
-	FILES_TO_MATCH+=("$FILE")
 	local EXPECTED_FILE="$FILE.expected"
 	ln -s "$FILE_PATH" "$EXPECTED_FILE"
+	FILES_TO_MATCH+=("$FILE")
 }
 
 setup-output() {
-	echo "# Setting up the test output..."
+	echo "Setting up the test output..."
 	[ "$STDOUT_PATH" ] && setup-output-file "$STDOUT_PATH" "stdout.txt"
 	[ "$STDERR_PATH" ] && setup-output-file "$STDERR_PATH" "stderr.txt"
 	for OUTPUT_PATH in "${OUTPUT_PATHS[@]}"; do
@@ -200,9 +217,34 @@ setup-output() {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 run-test() {
-	echo "# Running test..."
-	echo "# $ ${TEST_COMMAND[*]}"
+	echo "Running test..."
+	echo ">>> ${TEST_COMMAND[*]}"
 	"${TEST_COMMAND[@]}" <"stdin.txt" >"stdout.txt" 2>"stderr.txt"
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Prefer `gsed` to regular `sed`. This is essential on the BSD-like systems.
+SED_EXE=$(command -v gsed || echo sed)
+
+filter-file() {
+	local FILE=$1
+	local FILTERED_FILE=$2
+
+	local FIRST=true
+	for FILTER in "${SED_FILTERS[@]}"; do
+		# Convert PCRE filter to sed.
+		FILTER=${FILTER//\\d/[0-9]}
+		FILTER=${FILTER//\\w/[A-Za-z_]}
+
+		# Apply the filter.
+		if [ "$FIRST" = true ]; then
+			"$SED_EXE" -rE "$FILTER" "$FILE" >"$FILTERED_FILE"
+			FIRST=false
+		else
+			"$SED_EXE" -rE "$FILTER" -i "$FILTERED_FILE"
+		fi
+	done
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -210,8 +252,9 @@ run-test() {
 match-exit-code() {
 	local ACTUAL_EXIT_CODE="$1"
 	if (((EXIT_CODE & 255) != ACTUAL_EXIT_CODE)); then
-		echo "# Exit codes do not match!"
-		echo "# Note: expected $EXIT_CODE, actual $ACTUAL_EXIT_CODE."
+		echo "Exit codes do not match!"
+		echo "  Expected: $EXIT_CODE"
+		echo "  Actual  : $ACTUAL_EXIT_CODE"
 		return 1
 	fi
 }
@@ -232,32 +275,11 @@ match-file-checksum() {
 
 	# Match them.
 	if [ "$ACTUAL_CHECKSUM" != "$EXPECTED_CHECKSUM" ]; then
-		echo "# Checksum of $FILE does not match!"
-		echo "#   Expected: $EXPECTED_CHECKSUM"
-		echo "#   Actual:   $ACTUAL_CHECKSUM"
-		echo "#   Actual output: $WORK_DIR/$FILE"
+		echo "Checksum of '$FILE' does not match!"
+		echo "  Expected: $EXPECTED_CHECKSUM"
+		echo "  Actual  : $ACTUAL_CHECKSUM"
 		return 1
 	fi
-}
-
-filter-file() {
-	local FILE=$1
-	local FILTERED_FILE=$2
-
-	local FIRST=true
-	for FILTER in "${SED_FILTERS[@]}"; do
-		# Convert PCRE filter to sed.
-		FILTER=${FILTER//\\d/[0-9]}
-		FILTER=${FILTER//\\w/[A-Za-z_]}
-
-		# Apply the filter.
-		if [ $FIRST = true ]; then
-			"$SED_EXE" -rE "$FILTER" "$FILE" >"$FILTERED_FILE"
-			FIRST=false
-		else
-			"$SED_EXE" -rE "$FILTER" -i "$FILTERED_FILE"
-		fi
-	done
 }
 
 match-file-contents() {
@@ -269,83 +291,67 @@ match-file-contents() {
 	# Filter the actual and expected files (in parallel).
 	local FILTERED_EXPECTED_FILE="$EXPECTED_FILE.filtered"
 	local FILTERED_ACTUAL_FILE="$ACTUAL_FILE.filtered"
-	filter-file "$EXPECTED_FILE" "$FILTERED_EXPECTED_FILE" &
+	filter-file "$EXPECTED_FILE" "$FILTERED_EXPECTED_FILE"
 	filter-file "$ACTUAL_FILE" "$FILTERED_ACTUAL_FILE"
-	wait
 
 	# Match them.
 	local DIFF_FILE="$FILE.diff"
-	"$DIFF_EXE" --ignore-blank-lines --ignore-trailing-space \
+	diff --ignore-blank-lines --ignore-trailing-space \
 		"$FILTERED_EXPECTED_FILE" "$FILTERED_ACTUAL_FILE" >"$DIFF_FILE"
 	local DIFF_EXIT_CODE=$?
-	if [ $DIFF_EXIT_CODE != 0 ]; then
-		echo "# File $FILE contents does not match:"
-		echo "# - Actual output: $WORK_DIR/$FILE"
-		echo "# - Difference: $WORK_DIR/$DIFF_FILE"
+	if [ "$DIFF_EXIT_CODE" != 0 ]; then
+		echo "File '$FILE' contents do not match!"
+		echo "  Expected  : $WORK_DIR/$FILTERED_EXPECTED_FILE"
+		echo "  Actual    : $WORK_DIR/$FILTERED_ACTUAL_FILE"
+		echo "  Difference: $WORK_DIR/$DIFF_FILE"
 		return 1
 	fi
 }
 
 match-file() {
 	local FILE=$1
-
-	# Determine the matching function.
 	if [[ "$FILE" =~ \.checksum$ ]]; then
-		FILE="${FILE%.checksum}"
-		echo "# Matching $FILE checksum..."
-		local MATCH_COMMAND=match-file-checksum
+		match-file-checksum "${FILE%.checksum}"
 	else
-		echo "# Matching $FILE contents..."
-		local MATCH_COMMAND=match-file-contents
+		match-file-contents "$FILE"
 	fi
-
-	# Ensure the file exists.
-	if [ ! -f "$FILE" ]; then
-		echo "# File $FILE does not exist!"
-		return 1
-	fi
-
-	# Match the file.
-	"$MATCH_COMMAND" "$FILE"
 }
 
 match() {
-	echo "# Matching results..."
+	echo "Matching results..."
 	PASSED=true
 
 	# Match exit code.
 	match-exit-code "$1" || PASSED=false
 
-	# Match the output (in parallel).
-	local PIDS=()
+	# Match the output.
 	for FILE in "${FILES_TO_MATCH[@]}"; do
-		match-file "$FILE" &
-		PIDS+=($!)
+		match-file "$FILE" || PASSED=false
 	done
-	for PID in "${PIDS[@]}"; do wait "$PID" || PASSED=false; done
 
 	# Exit with status.
 	if [ "$PASSED" = true ]; then
-		echo "# Test passed!"
+		echo "Test passed!"
 	else
-		echo "# Test failed!"
+		echo "Test failed!"
 		return 1
 	fi
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-echo-thin-separator
-parse-args "$@"
-setup-path
-setup-work-dir
-cd "$WORK_DIR" || exit $?
-setup-input
-setup-output
-run-test
-match $?
-STATUS=$?
-echo-thin-separator
-exit $STATUS
+main() {
+	parse-args "$@"
+
+	setup-work-dir
+	cd "$WORK_DIR" || exit $?
+
+	setup-input
+	setup-output
+	run-test
+	match $?
+}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+main "$@"

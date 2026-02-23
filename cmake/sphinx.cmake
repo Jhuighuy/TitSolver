@@ -4,7 +4,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include_guard()
-include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -12,8 +11,7 @@ include(utils)
 find_program(SPHINX_EXE NAMES "sphinx-build" REQUIRED)
 
 # Setup sphinx-build options.
-set(
-  SPHINX_OPTIONS
+set(SPHINX_OPTIONS
   "--quiet"           # Be quiet.
   "--nitpicky"        # Warn about missing references.
   "--fail-on-warning" # Warnings are errors.
@@ -29,7 +27,7 @@ set(
 function(add_tit_sphinx_target)
   # Parse and check arguments.
   cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "" ${ARGN})
-  make_target_name(${TARGET_NAME} TARGET)
+  set(TARGET "${TARGET_NAME}")
 
   # Find all the source files.
   set(TARGET_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/conf.py")

@@ -3,10 +3,17 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+name: "Setup Runner"
+description: "Setup the runner with the specified compiler and dependencies."
+
 inputs:
   compiler:
     description: "Compiler (`GCC` or `Clang`)."
     required: true
+  gcc-version:
+    description: "Version of GCC to use."
+  llvm-version:
+    description: "Version of LLVM to use."
 
 runs:
   using: "composite"
@@ -17,97 +24,117 @@ runs:
     - name: Setup Homebrew packages
       shell: bash
       run: |
-        GCC_VERSION=${GCC_VERSION:-15}
-        LLVM_VERSION=${LLVM_VERSION:-21}
+        # ----------------------------------------------------------------------
+        #
+        # Setup environment variables.
+        #
 
-        # Select the compiler from the arguments.
-        case "${{ inputs.compiler }}" in
-          GCC)
-            CC="gcc-$GCC_VERSION"
-            CXX="g++-$GCC_VERSION"
-            ;;
-          Clang)
-            CC="clang-$LLVM_VERSION"
-            CXX="clang++-$LLVM_VERSION"
-            ;;
-          *)
-            echo "Unknown compiler: '$1'. Must be either 'GCC' or 'Clang'."
-            exit 1
-            ;;
-        esac
+        BREW_PREFIX="$(brew --prefix)"
+        GCC_VERSION="${{ inputs.gcc_version || '15' }}"
+        LLVM_VERSION="${{ inputs.llvm_version || '21' }}"
 
-        # Select packages to install.
+        # ----------------------------------------------------------------------
+        #
+        # Install packages.
+        #
+
         PACKAGES=(
           cmake
           codespell
-          "gcc@$GCC_VERSION"
+          gcc@$GCC_VERSION
           gcovr
-          "llvm@$LLVM_VERSION"
-          moreutils
+          llvm@$LLVM_VERSION
           node
           pnpm
           sphinx-doc
         )
-        if [[ "$OSTYPE" == "darwin"* ]]; then
+
+        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+          PACKAGES+=(
+            binutils
+          )
+        elif [[ "$OSTYPE" == "darwin"* ]]; then
+          sudo xcode-select -s /Library/Developer/CommandLineTools
           PACKAGES+=(
             diffutils
             gnu-sed
           )
         fi
 
-        # Install packages.
-        brew update -q
-        brew install -q "${PACKAGES[@]}"
+        HOMEBREW_NO_AUTO_UPDATE=1 brew install --quiet "${PACKAGES[@]}"
+
+        # ----------------------------------------------------------------------
+        #
+        # Setup compilers.
+        #
 
         # Add GCC tools to the path and create versioned symlinks.
-        GCC_INSTALLATION="$(brew --prefix gcc@$GCC_VERSION)"
-        GCC_PATH="$GCC_INSTALLATION/bin"
+        GCC_ROOT="$(brew --prefix gcc@$GCC_VERSION)"
+        GCC_PATH="$GCC_ROOT/bin"
+        for TOOL in gcc g++ gcov; do
+           if [[ ! -f "$GCC_PATH/$TOOL-$GCC_VERSION" ]]; then
+             ln -s "$GCC_PATH/$TOOL" "$GCC_PATH/$TOOL-$GCC_VERSION"
+           fi
+        done
         echo "$GCC_PATH" >> "$GITHUB_PATH"
-        if [[ ! -f "$GCC_PATH/gcc-$GCC_VERSION" ]]; then
-          ln -s "$GCC_PATH/gcc" "$GCC_PATH/gcc-$GCC_VERSION"
-        fi
-        if [[ ! -f "$GCC_PATH/g++-$GCC_VERSION" ]]; then
-          ln -s "$GCC_PATH/g++" "$GCC_PATH/g++-$GCC_VERSION"
-        fi
-
-        # System binutils might not be able to handle the latest GCC.
-        if [[ "$OSTYPE" == "linux-gnu"* &&
-              "${{ inputs.compiler }}" == "GCC" ]]; then
-          BINUTILS_PATH="$(brew --prefix binutils)/bin"
-          echo "$BINUTILS_PATH" >> "$GITHUB_PATH"
-          CPPFLAGS="-I$(brew --prefix binutils)/include $CPPFLAGS"
-          LDFLAGS="-L$(brew --prefix binutils)/lib $LDFLAGS"
-        fi
 
         # Add LLVM tools to the path and create versioned symlinks.
-        LLVM_PATH="$(brew --prefix "llvm@$LLVM_VERSION")/bin"
+        LLVM_ROOT="$(brew --prefix llvm@$LLVM_VERSION)"
+        LLVM_PATH="$LLVM_ROOT/bin"
+        for TOOL in clang clang++ clang-format clang-tidy; do
+           if [[ ! -f "$LLVM_PATH/$TOOL-$LLVM_VERSION" ]]; then
+             ln -s "$LLVM_PATH/$TOOL" "$LLVM_PATH/$TOOL-$LLVM_VERSION"
+           fi
+        done
         echo "$LLVM_PATH" >> "$GITHUB_PATH"
-        if [[ ! -f "$LLVM_PATH/clang-$LLVM_VERSION" ]]; then
-          ln -s "$LLVM_PATH/clang" "$LLVM_PATH/clang-$LLVM_VERSION"
-        fi
-        if [[ ! -f "$LLVM_PATH/clang++-$LLVM_VERSION" ]]; then
-          ln -s "$LLVM_PATH/clang++" "$LLVM_PATH/clang++-$LLVM_VERSION"
-        fi
 
-        # On Linux LLVM tools will use system libstdc++ library by default,
-        # so we need to override it with the one from our GCC installation.
-        if [[ "$OSTYPE" == "linux-gnu"* &&
-              "${{ inputs.compiler }}" == "Clang" ]]; then
-          LIBSTDCPP_PATH="$GCC_INSTALLATION/include/c++/$GCC_VERSION"
-          LIBSTDCPP_PLATFORM_PATH="$LIBSTDCPP_PATH/x86_64-pc-linux-gnu"
-          CXXFLAGS="-isystem $LIBSTDCPP_PATH $CXXFLAGS"
-          CXXFLAGS="-isystem $LIBSTDCPP_PLATFORM_PATH $CXXFLAGS"
-          CFLAGS="-isystem $LIBSTDCPP_PATH $CFLAGS"
-          CFLAGS="-isystem $LIBSTDCPP_PLATFORM_PATH $CFLAGS"
-          LDFLAGS="-L$GCC_INSTALLATION/lib/gcc/current -lstdc++ $LDFLAGS"
-          LD_LIBRARY_PATH="$GCC_INSTALLATION/lib/gcc/current:$LD_LIBRARY_PATH"
-        fi
+        # Select the compiler from the arguments.
+        case "${{ inputs.compiler }}" in
+          GCC)
+            CC="gcc-$GCC_VERSION"
+            CXX="g++-$GCC_VERSION"
 
-        # Export compiler configuration variables to the CI environment.
+            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+              # System binutils might not be compatible with the latest GCC.
+              BINUTILS_PREFIX="$(brew --prefix binutils)"
+              echo "$BINUTILS_PREFIX/bin" >> "$GITHUB_PATH"
+            fi
+            ;;
+
+          Clang)
+            CC="clang-$LLVM_VERSION"
+            CXX="clang++-$LLVM_VERSION"
+
+            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+              # Use libstdc++ from our GCC installation.
+              GCC_INC_PATH="$GCC_ROOT/include/c++/$GCC_VERSION"
+              GCC_LIB_PATH="$GCC_ROOT/lib/gcc/$GCC_VERSION"
+              ISYSTEM_FLAGS="-isystem $GCC_INC_PATH -isystem $GCC_INC_PATH/x86_64-pc-linux-gnu"
+              CFLAGS="$CFLAGS $ISYSTEM_FLAGS"
+              CXXFLAGS="$CXXFLAGS $ISYSTEM_FLAGS"
+              LDFLAGS="$LDFLAGS -L$GCC_LIB_PATH -Wl,-rpath,$GCC_LIB_PATH"
+
+              # Use Brew libraries.
+              BREW_LIB_PATH="$BREW_PREFIX/lib"
+              LDFLAGS="$LDFLAGS -L$BREW_LIB_PATH -Wl,-rpath,$BREW_LIB_PATH"
+            fi
+            ;;
+
+          *)
+            echo "::error::Unknown compiler: '${{ inputs.compiler }}'."
+            exit 1
+            ;;
+        esac
+
+        # ----------------------------------------------------------------------
+        #
+        # Export variables.
+        #
+
+        # Toolchain configuration.
         echo "CC=$CC" >> "$GITHUB_ENV"
         echo "CXX=$CXX" >> "$GITHUB_ENV"
         echo "CPPFLAGS=$CPPFLAGS" >> "$GITHUB_ENV"
         echo "CFLAGS=$CFLAGS" >> "$GITHUB_ENV"
         echo "CXXFLAGS=$CXXFLAGS" >> "$GITHUB_ENV"
         echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
-        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
