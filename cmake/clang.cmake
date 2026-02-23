@@ -102,8 +102,6 @@ set(
   # Enable aggressive floating-point expression contraction.
   -ffast-math
   -ffp-contract=fast
-  # Link time optimizations are disabled: we experience crashes in tests.
-  # -flto=auto
 )
 
 # Define compile options for "Release" configuration.
@@ -249,17 +247,23 @@ function(write_compile_flags TARGET)
   # Remove `-Werror` from the compile flags, as it crashes clangd sometimes.
   list(REMOVE_ITEM TARGET_COMPILE_OPTIONS "-Werror")
 
+  # Get the source directory.
+  get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
+
   # Write the compile flags to a file, each on a new line.
-  add_custom_target(
-    "${TARGET}_compile_flags"
-    ALL # Execute on every build.
+  set(OUTPUT_FILE "${TARGET_SOURCE_DIR}/compile_flags.txt")
+  add_custom_command(
+    COMMENT "Writing compile flags for target ${TARGET}"
+    OUTPUT "${OUTPUT_FILE}"
     COMMAND
       "${CMAKE_COMMAND}" -E echo ${TARGET_COMPILE_OPTIONS} |
-      "${XARGS_EXE}" -n 1 > "${CMAKE_SOURCE_DIR}/compile_flags.txt"
-    COMMENT "Writing compile_flags.txt"
+      "${XARGS_EXE}" -n 1 > "${OUTPUT_FILE}"
     COMMAND_EXPAND_LISTS # Needed for generator expressions to work.
     VERBATIM
   )
+
+  # Create a custom target that should "build" once the file is written.
+  add_custom_target("${TARGET}_compile_flags" ALL DEPENDS "${OUTPUT_FILE}")
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

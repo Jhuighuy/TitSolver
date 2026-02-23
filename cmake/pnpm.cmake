@@ -42,8 +42,7 @@ function(add_tit_pnpm_target)
   # Run `pnpm install`.
   set(STAMP "${CMAKE_CURRENT_SOURCE_DIR}/node_modules/.modules.yaml")
   add_custom_command(
-    COMMENT
-      "Installing dependencies for PNPM package ${TARGET}"
+    COMMENT "Installing dependencies for PNPM package ${TARGET}"
     COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" install
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS "${TARGET_PACKAGE_JSON}"

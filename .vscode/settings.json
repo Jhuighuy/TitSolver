@@ -48,26 +48,26 @@
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
   "files.exclude": {
+    "**/__pycache__": true,
     "**/.cache": true,
     "**/.mypy_cache": true,
     "**/.vite": true,
-    "**/__pycache__": true,
+    "**/compile_flags.txt": true,
     "**/coverage": true,
     "**/dist": true,
     "**/node_modules/**": true,
-    "compile_flags.txt": true,
     "output": true
   },
   "files.watcherExclude": {
+    "**/__pycache__/**": true,
     "**/.cache/**": true,
     "**/.mypy_cache/**": true,
     "**/.vite/**": true,
-    "**/__pycache__/**": true,
+    "**/compile_flags.txt": true,
     "**/coverage/**": true,
     "**/dist/**": true,
-    "**/output/**": true,
-    "**/compile_flags.txt": true,
-    "**/node_modules/**": true
+    "**/node_modules/**": true,
+    "**/output/**": true
   },
   "files.associations": {
     ".clang-tidy": "yaml",

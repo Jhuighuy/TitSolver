@@ -270,6 +270,7 @@ time {
 	configure
 	echo-separator
 	build
+	echo-separator
 	install
 	echo-separator
 }
