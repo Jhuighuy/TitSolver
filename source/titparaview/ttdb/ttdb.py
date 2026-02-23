@@ -29,7 +29,7 @@ class __Library:
 
     def __init__(self) -> None:
         dirname = os.path.dirname(__file__)
-        for filename in ("libtit_ttdb.so", "libtit_ttdb.dylib", "tit_ttdb.dll"):
+        for filename in ("libttdb.so", "libttdb.dylib", "ttdb.dll"):
             if os.path.exists(path := os.path.join(dirname, filename)):
                 break
         else:
