@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build --logLevel error",
     "coverage": "vitest run --coverage",
     "dev": "vite",
     "lint": "eslint .",

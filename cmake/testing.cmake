@@ -34,8 +34,7 @@ endfunction()
 # Register the test command.
 #
 function(add_tit_test)
-  cmake_parse_arguments(
-    TEST
+  cmake_parse_arguments(TEST
     ""
     "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
     "EXE;COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
@@ -126,16 +125,13 @@ function(add_tit_test)
   )
 
   # Setup test environment.
-  list(
-    PREPEND
-    TEST_ENVIRONMENT
+  list(PREPEND TEST_ENVIRONMENT
     "TEST_DATA_DIR=${CMAKE_CURRENT_SOURCE_DIR}/_data"
     "TIT_ENABLE_PROFILER=0"
     "TIT_ENABLE_STATS=0"
     "TIT_NO_BANNER=1"
   )
-  set_tests_properties(
-    "${TEST_NAME}"
+  set_tests_properties("${TEST_NAME}"
     PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}"
   )
 

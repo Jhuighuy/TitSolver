@@ -7,9 +7,6 @@ include_guard()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find chronic.
-find_program(CHRONIC_EXE NAMES "chronic" REQUIRED)
-
 # Find shell.
 find_program(SHELL_EXE NAMES "bash" "zsh" "sh" REQUIRED)
 
@@ -95,9 +92,7 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
     set(TARGET_INCLUDE_DIRS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
     set(TARGET_INCLUDE_DIRS "$<LIST:SORT,${TARGET_INCLUDE_DIRS}>")
     set(TARGET_INCLUDE_DIRS "$<REMOVE_DUPLICATES:${TARGET_INCLUDE_DIRS}>")
-    list(
-      APPEND
-      ${OPTIONS_VAR}
+    list(APPEND ${OPTIONS_VAR}
       "$<LIST:TRANSFORM,${TARGET_INCLUDE_DIRS},PREPEND,-I>"
     )
   endforeach()
@@ -108,9 +103,7 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
     set(TARGET_DEFS "$<LIST:SORT,${TARGET_DEFS}>")
     set(TARGET_DEFS "$<REMOVE_DUPLICATES:${TARGET_DEFS}>")
     set(TARGET_DEFS "$<FILTER:${TARGET_DEFS},INCLUDE,.+>") # remove stray `;`.
-    list(
-      APPEND
-      ${OPTIONS_VAR}
+    list(APPEND ${OPTIONS_VAR}
       "$<LIST:TRANSFORM,${TARGET_DEFS},PREPEND,-D>"
     )
   endforeach()

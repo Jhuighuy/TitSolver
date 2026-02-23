@@ -8,8 +8,7 @@ include_guard()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define warnings and diagnostics options.
-set(
-  GNU_WARNINGS
+set(GNU_WARNINGS
   # Treat warnings as errors.
   -Werror
   # Enable all the commonly used warning options.
@@ -45,8 +44,7 @@ set(
 )
 
 # Define common compile options.
-set(
-  GNU_COMPILE_OPTIONS
+set(GNU_COMPILE_OPTIONS
   # Use C++26 standard.
   -std=c++26
   # Warnings and diagnostics.
@@ -69,8 +67,7 @@ endif()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define common optimization options.
-set(
-  GNU_OPTIMIZE_OPTIONS
+set(GNU_OPTIMIZE_OPTIONS
   # Enable aggressive optimization levels.
   -Ofast
   # Enable aggressive floating-point expression contraction.
@@ -88,8 +85,7 @@ set(GNU_LINK_OPTIONS_RELEASE ${GNU_LINK_OPTIONS} ${GNU_OPTIMIZE_OPTIONS})
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define common debugging options.
-set(
-  GNU_DEBUG_OPTIONS
+set(GNU_DEBUG_OPTIONS
   # Store debug information.
   -g
   # Optimize for debugging experience.
@@ -105,8 +101,7 @@ set(GNU_LINK_OPTIONS_DEBUG ${GNU_LINK_OPTIONS} ${GNU_DEBUG_OPTIONS})
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Define common coverage options.
-set(
-  GNU_COVERAGE_OPTIONS
+set(GNU_COVERAGE_OPTIONS
   # Enable code coverage instrumentation during compilation.
   --coverage
   # Update profile data atomically, since we are multi-threaded.

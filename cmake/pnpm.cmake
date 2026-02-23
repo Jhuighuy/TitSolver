@@ -42,9 +42,8 @@ function(add_tit_pnpm_target)
   # Run `pnpm install`.
   set(STAMP "${CMAKE_CURRENT_SOURCE_DIR}/node_modules/.modules.yaml")
   add_custom_command(
-    COMMENT
-      "Installing dependencies for PNPM package ${TARGET}"
-    COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" install
+    COMMENT "Installing dependencies for PNPM package ${TARGET}"
+    COMMAND "${PNPM_EXE}" --silent install
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS "${TARGET_PACKAGE_JSON}"
     OUTPUT "${STAMP}"
@@ -59,7 +58,7 @@ function(add_tit_pnpm_target)
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${TARGET_OUTPUT_DIR}"
     COMMAND
       "${CMAKE_COMMAND}" -E env "PNPM_OUTPUT_DIR=${TARGET_OUTPUT_DIR}"
-        "${CHRONIC_EXE}" "${PNPM_EXE}" run build
+        "${PNPM_EXE}" --silent run build
     COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS ${TARGET_SOURCES} "${TARGET_NAME}_install"
@@ -72,7 +71,7 @@ function(add_tit_pnpm_target)
     set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_lint.stamp")
     add_custom_command(
       COMMENT "Linting PNPM package ${TARGET}"
-      COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" run lint
+      COMMAND "${PNPM_EXE}" --silent run lint
       COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       DEPENDS ${TARGET_SOURCES} "${TARGET_NAME}_install"

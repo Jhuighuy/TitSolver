@@ -12,8 +12,7 @@ include(utils)
 find_program(SPHINX_EXE NAMES "sphinx-build" REQUIRED)
 
 # Setup sphinx-build options.
-set(
-  SPHINX_OPTIONS
+set(SPHINX_OPTIONS
   "--quiet"           # Be quiet.
   "--nitpicky"        # Warn about missing references.
   "--fail-on-warning" # Warnings are errors.

@@ -14,18 +14,6 @@ project(tit VERSION "${TIT_VERSION}" LANGUAGES CXX)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Setup path to CMake modules and include them.
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(clang)
-include(codespell)
-include(git)
-include(pnpm)
-include(sphinx)
-include(testing)
-include(tit_target)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 # Find the third-party libraries.
 find_package(Boost CONFIG REQUIRED COMPONENTS container stacktrace_addr2line)
 find_package(Crow CONFIG REQUIRED)
@@ -43,7 +31,19 @@ find_package(zstd CONFIG REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Add the actual sources.
+# Include CMake modules.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(clang)
+include(codespell)
+include(git)
+include(pnpm)
+include(sphinx)
+include(testing)
+include(tit_target)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Add the source directories.
 add_subdirectory("source")
 add_subdirectory("manual")
 add_subdirectory("tests")
