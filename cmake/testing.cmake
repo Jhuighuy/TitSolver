@@ -5,7 +5,6 @@
 
 include_guard()
 include(tit_target)
-include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -34,11 +33,10 @@ endfunction()
 # Register the test command.
 #
 function(add_tit_test)
-  cmake_parse_arguments(
-    TEST
+  cmake_parse_arguments(TEST
     ""
     "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
-    "EXE;COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
+    "EXE;TARGET;COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
     ${ARGN}
   )
 
@@ -54,38 +52,38 @@ function(add_tit_test)
     set(TEST_NAME "${TEST_DIR}")
   endif()
 
-  # Setup the test command.
+  # Should we compile the test executable?
   if(TEST_EXE)
     if(TEST_COMMAND)
-      message(FATAL_ERROR "'EXE', 'COMMAND' are mutually exclusive.")
+      message(FATAL_ERROR "'COMMAND' and 'EXE' are mutually exclusive.")
     endif()
 
     # Setup the target name.
     string(REPLACE "/" "_" TEST_TARGET "${TEST_NAME}")
     set(TEST_TARGET "${TEST_TARGET}_test")
 
-    cmake_parse_arguments(TEST "" "" "SOURCES;DEPENDS" ${TEST_EXE})
+    # Parse the test executable arguments.
+    cmake_parse_arguments(TEST_EXE "" "" "SOURCES;DEPENDS" ${TEST_EXE})
 
     # Setup the list of sources and dependencies. Since `test.cmake` files
     # are included in the root test directory, we need to provide the
     # absolute paths to the sources.
-    if(NOT TEST_SOURCES)
-      message(FATAL_ERROR "List of 'EXE' test sources must not be empty.")
-    endif()
-    list(TRANSFORM TEST_SOURCES PREPEND "${CMAKE_CURRENT_LIST_DIR}/")
+    list(TRANSFORM TEST_EXE_SOURCES PREPEND "${CMAKE_CURRENT_LIST_DIR}/")
 
     # Add the executable.
     add_tit_executable(
       NAME "${TEST_TARGET}"
-      SOURCES ${TEST_SOURCES}
-      DEPENDS ${TEST_DEPENDS}
+      SOURCES ${TEST_EXE_SOURCES}
+      DEPENDS ${TEST_EXE_DEPENDS}
     )
-
-    # Test command will run the executable.
-    set(TEST_COMMAND "${TEST_TARGET}")
   endif()
-  if(NOT TEST_COMMAND)
-    message(FATAL_ERROR "Command line must not be empty.")
+
+  # Should we run the test target?
+  if(TEST_TARGET)
+    if(TEST_COMMAND)
+      message(FATAL_ERROR "'COMMAND' and 'TARGET' are mutually exclusive.")
+    endif()
+    set(TEST_COMMAND "$<TARGET_FILE:${TEST_TARGET}>")
   endif()
 
   # Setup the list of arguments for the test driver.
@@ -126,16 +124,13 @@ function(add_tit_test)
   )
 
   # Setup test environment.
-  list(
-    PREPEND
-    TEST_ENVIRONMENT
+  list(PREPEND TEST_ENVIRONMENT
     "TEST_DATA_DIR=${CMAKE_CURRENT_SOURCE_DIR}/_data"
     "TIT_ENABLE_PROFILER=0"
     "TIT_ENABLE_STATS=0"
     "TIT_NO_BANNER=1"
   )
-  set_tests_properties(
-    "${TEST_NAME}"
+  set_tests_properties("${TEST_NAME}"
     PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}"
   )
 

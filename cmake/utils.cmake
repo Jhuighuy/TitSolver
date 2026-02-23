@@ -7,9 +7,6 @@ include_guard()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find chronic.
-find_program(CHRONIC_EXE NAMES "chronic" REQUIRED)
-
 # Find shell.
 find_program(SHELL_EXE NAMES "bash" "zsh" "sh" REQUIRED)
 
@@ -19,69 +16,12 @@ find_program(XARGS_EXE NAMES "xargs" REQUIRED)
 # Find git.
 find_program(GIT_EXE NAMES "git" REQUIRED)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Common target name prefix.
-set(TARGET_NAME_PREFIX "tit")
-
-#
-# Make a target name.
-#
-function(make_target_name NAME RESULT_VAR)
-  if(NOT NAME)
-    message(FATAL_ERROR "Target name must be specified.")
-  endif()
-  if(NAME MATCHES "^${TARGET_NAME_PREFIX}")
-    set(${RESULT_VAR} "${NAME}" PARENT_SCOPE)
-  else()
-    set(${RESULT_VAR} "${TARGET_NAME_PREFIX}_${NAME}" PARENT_SCOPE)
-  endif()
-endfunction()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# A list of the C/C++ source file extensions.
-set(CPP_HEADER_EXTENSIONS ".h" ".hpp" ".hxx" ".h++" ".hh")
-set(CPP_SOURCE_EXTENSIONS ".c" ".cpp" ".cxx" ".c++" ".cc")
-
-#
-# Determine if file is a C/C++ header file based on it's extension.
-#
-function(is_cpp_header SOURCE_PATH RESULT_VAR)
-  get_filename_component(SOURCE_EXTENSION ${SOURCE_PATH} LAST_EXT)
-  string(TOLOWER ${SOURCE_EXTENSION} SOURCE_EXTENSION)
-  if(SOURCE_EXTENSION IN_LIST CPP_HEADER_EXTENSIONS)
-    set(${RESULT_VAR} TRUE PARENT_SCOPE)
-  else()
-    set(${RESULT_VAR} FALSE PARENT_SCOPE)
-  endif()
-endfunction()
-
-#
-# Determine if file is a C/C++ source file based on it's extension.
-#
-function(is_cpp_source SOURCE_PATH RESULT_VAR)
-  get_filename_component(SOURCE_EXTENSION ${SOURCE_PATH} LAST_EXT)
-  string(TOLOWER ${SOURCE_EXTENSION} SOURCE_EXTENSION)
-  if(SOURCE_EXTENSION IN_LIST CPP_SOURCE_EXTENSIONS)
-    set(${RESULT_VAR} TRUE PARENT_SCOPE)
-  else()
-    set(${RESULT_VAR} FALSE PARENT_SCOPE)
-  endif()
-endfunction()
-
-#
-# Determine if file is a C/C++ file based on it's extension.
-#
-function(is_cpp_file SOURCE_PATH RESULT_VAR)
-  is_cpp_header(${SOURCE_PATH} IS_HEADER)
-  is_cpp_source(${SOURCE_PATH} IS_SOURCE)
-  if(IS_HEADER OR IS_SOURCE)
-    set(${RESULT_VAR} TRUE PARENT_SCOPE)
-  else()
-    set(${RESULT_VAR} FALSE PARENT_SCOPE)
-  endif()
-endfunction()
+# Find chronic.
+find_program(CHRONIC_EXE
+  NAMES "chronic.sh"
+  PATHS "${CMAKE_SOURCE_DIR}/build"
+  REQUIRED
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -95,9 +35,7 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
     set(TARGET_INCLUDE_DIRS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
     set(TARGET_INCLUDE_DIRS "$<LIST:SORT,${TARGET_INCLUDE_DIRS}>")
     set(TARGET_INCLUDE_DIRS "$<REMOVE_DUPLICATES:${TARGET_INCLUDE_DIRS}>")
-    list(
-      APPEND
-      ${OPTIONS_VAR}
+    list(APPEND ${OPTIONS_VAR}
       "$<LIST:TRANSFORM,${TARGET_INCLUDE_DIRS},PREPEND,-I>"
     )
   endforeach()
@@ -108,9 +46,7 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
     set(TARGET_DEFS "$<LIST:SORT,${TARGET_DEFS}>")
     set(TARGET_DEFS "$<REMOVE_DUPLICATES:${TARGET_DEFS}>")
     set(TARGET_DEFS "$<FILTER:${TARGET_DEFS},INCLUDE,.+>") # remove stray `;`.
-    list(
-      APPEND
-      ${OPTIONS_VAR}
+    list(APPEND ${OPTIONS_VAR}
       "$<LIST:TRANSFORM,${TARGET_DEFS},PREPEND,-D>"
     )
   endforeach()
