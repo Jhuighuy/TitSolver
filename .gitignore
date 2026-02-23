@@ -8,31 +8,29 @@
 *~
 !*/
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Project configuration files.
-!.git*
-!/.github/**
-!/sonar-project.properties
-
-# Editor configuration files.
-!/.vscode/settings.json
-
-# C++ configuration files.
-!/.clang-format
-!.clang-tidy
-!/vcpkg.json
-
-# Web configuration files.
-!package.json
-!*.config.json
-!tsconfig*.json
-
-# Output.
+# Ignore output directories.
 .cache/
 /output/
-**/coverage
-**/node_modules/
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Git(Hub) files.
+!.git*
+!/.github/**
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Project and editor configuration files.
+!/.vscode/settings.json
+!/sonar-project.properties
+!/vcpkg.json
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# CMake files.
+!/cmake/*.cmake
+!/cmake/codespell.txt
+!CMakeLists.txt
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -40,34 +38,49 @@
 !*.hpp
 !*.cpp
 !*.cpp.in
+!.clang-format
+!.clang-tidy
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Web files.
+!__snapshots__/*.snap
+!*.css
+!*.html
 !*.js
 !*.jsx
 !*.ts
 !*.tsx
-!*.html
-!*.css
-!*.svg
-.vite
-dist/
+!eslint.config.js
+!package.json
+!tsconfig.json
+
+# Ignore in-tree artifacts.
+.vite/
 coverage/
-!__snapshots__/*.snap
+coverage/
+dist/
+node_modules/
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Python files.
 !*.py
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Documentation files.
-!config.py
 !*.md
 !*.rst
 
-# Scripts.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Shell scripts.
 !*.sh
 
-# CMake files.
-!CMakeLists.txt
-!*.cmake
-!/cmake/codespell.txt
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Assets.
+!*.svg
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

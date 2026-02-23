@@ -66,7 +66,7 @@ function titapp(): Plugin {
       if (backend === null) return reject(new Error("Backend not spawned."));
       const timeout = setTimeout(
         () => reject(new Error("Backend startup timeout.")),
-        5000
+        5000,
       );
       backend.on("error", (err) => {
         clearTimeout(timeout);

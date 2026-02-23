@@ -219,6 +219,7 @@ configure() {
 		exit 1
 	fi
 	CMAKE_ARGS+=("-D" "CMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_PATH")
+	CMAKE_ARGS+=("-D" "VCPKG_INSTALL_OPTIONS=--no-print-usage")
 
 	# Run CMake.
 	"${CMAKE_ARGS[@]}" || exit $?
@@ -270,6 +271,7 @@ time {
 	configure
 	echo-separator
 	build
+	echo-separator
 	install
 	echo-separator
 }

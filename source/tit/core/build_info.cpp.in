@@ -3,27 +3,25 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <string_view>
-
 #include "tit/core/build_info.hpp"
 
 namespace tit::build_info {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto version() noexcept -> std::string_view {
+auto version() noexcept -> const char* {
   return "@TIT_VERSION@";
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto commit_hash() noexcept -> std::string_view {
+auto commit_hash() noexcept -> const char* {
   return "@GIT_COMMIT_HASH@";
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto commit_date() noexcept -> std::string_view {
+auto commit_date() noexcept -> const char* {
   return "@GIT_COMMIT_DATE@";
 }
 

@@ -7,9 +7,6 @@ include_guard()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find chronic.
-find_program(CHRONIC_EXE NAMES "chronic" REQUIRED)
-
 # Find shell.
 find_program(SHELL_EXE NAMES "bash" "zsh" "sh" REQUIRED)
 

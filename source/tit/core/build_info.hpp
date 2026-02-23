@@ -5,24 +5,22 @@
 
 #pragma once
 
-#include <string_view>
-
 namespace tit::build_info {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Build version.
-auto version() noexcept -> std::string_view;
+auto version() noexcept -> const char*;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Hash of the last commit.
-auto commit_hash() noexcept -> std::string_view;
+auto commit_hash() noexcept -> const char*;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Date of the last commit.
-auto commit_date() noexcept -> std::string_view;
+auto commit_date() noexcept -> const char*;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
