@@ -78,6 +78,9 @@ TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
   // In GUI mode, we want to show a window with the web view.
   QScopedPointer<Window> window;
   if (!headless) {
+    // Set up the environment.
+    Window::setup_web_view_environment();
+
     // Locate the HTML file.
     const auto index_html = root_dir / "lib" / "gui" / "index.html";
     TIT_ENSURE(std::filesystem::exists(index_html),

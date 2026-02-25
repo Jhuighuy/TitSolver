@@ -19,7 +19,6 @@
 #include <QObject>
 #include <QProcess>
 #include <QString>
-#include <QThread>
 #include <QWebSocket>
 #include <QWebSocketProtocol>
 #include <QWebSocketServer>
@@ -55,14 +54,13 @@ Server::Server(uint16_t port,
             this,
             &Server::on_connection_);
   } else {
-    err("Failed to start WebSocket server: {}.",
-        server_->errorString().toLatin1().data());
+    TIT_THROW("Failed to start WebSocket server: {}.",
+              server_->errorString().toLatin1().data());
   }
 }
 
 Server::~Server() {
   server_->close();
-  qDeleteAll(server_->findChildren<QWebSocket*>());
 
   if (solver_process_ != nullptr &&
       solver_process_->state() != QProcess::NotRunning) {
@@ -82,6 +80,7 @@ void Server::on_connection_() {
   }
 
   client_ = next_client;
+  client_->setParent(this);
   log("Client connected: {}.",
       client_->peerAddress().toString().toLatin1().data());
 
@@ -92,6 +91,7 @@ void Server::on_connection_() {
 
   connect(client_, &QWebSocket::disconnected, this, [this] {
     if (client_ == nullptr) return;
+    client_->deleteLater();
     client_ = nullptr;
     log("Client disconnected.");
   });
@@ -210,7 +210,7 @@ void Server::on_run_solver_message_(const QJsonObject& /*message*/,
             send_result_(request_id, result);
           });
 
-  solver_process_->start(QString::fromStdString(solver_path_.string()));
+  solver_process_->start(QString::fromStdString(solver_path_));
 }
 
 void Server::on_stop_solver_message_(const QJsonObject& /*message*/,
@@ -221,7 +221,7 @@ void Server::on_stop_solver_message_(const QJsonObject& /*message*/,
     return;
   }
 
-  solver_process_->kill();
+  solver_process_->terminate();
 
   send_result_(request_id);
 }
@@ -230,24 +230,18 @@ void Server::on_stop_solver_message_(const QJsonObject& /*message*/,
 
 void Server::on_export_message_(const QJsonObject& /*message*/,
                                 const QJsonValue& request_id) {
+  /// @todo This will fail in headless mode. We should restore the old behavior
+  ///       and export to a default location in that case.
   const auto dir_path = QFileDialog::getExistingDirectory();
   if (dir_path.isEmpty()) {
     send_result_(request_id);
     return;
   }
 
-  auto* thread = new QThread{this};
-
-  connect(thread, &QThread::started, this, [this, dir_path, request_id] {
-    const std::filesystem::path out_dir{dir_path.toUtf8().data()};
-    std::filesystem::create_directories(out_dir);
-    data::export_hdf5(out_dir, storage_.last_series());
-    send_result_(request_id);
-  });
-
-  connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-
-  thread->start();
+  const std::filesystem::path out_dir{dir_path.toUtf8().data()};
+  std::filesystem::create_directories(out_dir);
+  data::export_hdf5(out_dir, storage_.last_series());
+  send_result_(request_id);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

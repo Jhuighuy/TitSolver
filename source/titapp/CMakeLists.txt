@@ -20,7 +20,6 @@ add_tit_executable(
     tit::core
     tit::data
     Qt6::Core
-    Qt6::Gui
     Qt6::Widgets
     Qt6::WebEngineWidgets
     Qt6::WebSockets

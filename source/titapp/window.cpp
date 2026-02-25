@@ -21,7 +21,7 @@ namespace tit::app {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Window::Window(const QUrl& url, QWidget* parent) : QMainWindow{parent} {
+void Window::setup_web_view_environment() {
   qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
           "--disable-logging "
           "--log-level=3 "
@@ -33,7 +33,11 @@ Window::Window(const QUrl& url, QWidget* parent) : QMainWindow{parent} {
           "--ignore-gpu-blocklist "
           "--disable-gpu-driver-bug-workarounds "
           "--enable-native-gpu-memory-buffers");
+}
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Window::Window(const QUrl& url, QWidget* parent) : QMainWindow{parent} {
   // NOLINTNEXTLINE(*-prefer-member-initializer,*-include-cleaner)
   web_view_ = new QWebEngineView{this};
   web_view_->setUrl(url);

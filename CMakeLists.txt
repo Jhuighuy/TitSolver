@@ -23,7 +23,7 @@ find_package(hwy CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
 find_package(miniz CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets WebEngineWidgets WebSockets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets WebEngineWidgets WebSockets)
 find_package(TBB CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
@@ -67,7 +67,6 @@ add_tit_library(
     miniz::miniz
     nlohmann_json::nlohmann_json
     Qt6::Core
-    Qt6::Gui
     Qt6::Widgets
     Qt6::WebEngineWidgets
     Qt6::WebSockets

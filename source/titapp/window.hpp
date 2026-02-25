@@ -21,6 +21,9 @@ class Window : public QMainWindow {
   Q_OBJECT
 public:
 
+  /// Setup the environment for the web view.
+  static void setup_web_view_environment();
+
   /// Constructs a new window.
   explicit Window(const QUrl& url, QWidget* parent = nullptr);
 
