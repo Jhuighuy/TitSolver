@@ -19,6 +19,7 @@
 #include <QObject>
 #include <QProcess>
 #include <QString>
+#include <QThread>
 #include <QWebSocket>
 #include <QWebSocketProtocol>
 #include <QWebSocketServer>
@@ -238,10 +239,17 @@ void Server::on_export_message_(const QJsonObject& /*message*/,
     return;
   }
 
-  const std::filesystem::path out_dir{dir_path.toUtf8().data()};
-  std::filesystem::create_directories(out_dir);
-  data::export_hdf5(out_dir, storage_.last_series());
-  send_result_(request_id);
+  auto* const thread = QThread::create([this, dir_path, request_id] {
+    const std::filesystem::path out_dir{dir_path.toUtf8().data()};
+    std::filesystem::create_directories(out_dir);
+    data::export_hdf5(out_dir, storage_.last_series());
+    send_result_(request_id);
+  });
+
+  connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+
+  thread->setParent(this);
+  thread->start();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
