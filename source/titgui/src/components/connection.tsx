@@ -44,7 +44,7 @@ export function ConnectionProvider({
 }: Readonly<ConnectionProviderProps>) {
   const awaitingResponseRef = useRef(new Map<string, Callback>());
   const { sendMessage: sendRawMessage, lastMessage } = useWebSocket(
-    `ws://${globalThis.location.host ?? "localhost:8080"}/ws`
+    `ws://${globalThis.location.host || "localhost:18080"}/ws`,
   );
 
   const sendMessage = useCallback(
@@ -54,7 +54,7 @@ export function ConnectionProvider({
       awaitingResponse.set(requestID, callback ?? (() => {}));
       sendRawMessage(JSON.stringify({ requestID, message }));
     },
-    [sendRawMessage]
+    [sendRawMessage],
   );
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export function ConnectionProvider({
 
     assert(typeof lastMessage.data === "string");
     const { requestID, status, result, repeat } = responseSchema.parse(
-      JSON.parse(lastMessage.data)
+      JSON.parse(lastMessage.data),
     );
 
     const awaitingResponse = awaitingResponseRef.current;
@@ -105,7 +105,7 @@ const responseSchema = z
     z.union([
       z.object({ status: z.literal("success"), result: z.unknown() }),
       z.object({ status: z.literal("error"), result: z.string() }),
-    ])
+    ]),
   );
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

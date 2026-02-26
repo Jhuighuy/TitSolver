@@ -48,6 +48,9 @@ runs:
           moreutils
           node
           pnpm
+          qtbase
+          qtwebengine
+          qtwebsockets
           sphinx-doc
         )
 

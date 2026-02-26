@@ -24,6 +24,7 @@ export default defineConfig({
     tailwindcss(),
     titapp(),
   ],
+  base: "./",
   resolve: {
     alias: {
       "~": path.resolve(__dirname, "./src"),
@@ -58,15 +59,16 @@ function titapp(): Plugin {
     backendPort = await findFreePort();
 
     // Spawn the backend and wait for the it to start.
-    process.env.TIT_BACKEND_PORT = backendPort.toString();
-    backend = spawn("./output/TIT_ROOT/bin/titback", {
-      cwd: "../../",
-    });
+    backend = spawn(
+      "./output/TIT_ROOT/bin/titapp",
+      ["--headless", "--port", backendPort.toString()],
+      { cwd: "../../" },
+    );
     await new Promise<void>((resolve, reject) => {
       if (backend === null) return reject(new Error("Backend not spawned."));
       const timeout = setTimeout(
         () => reject(new Error("Backend startup timeout.")),
-        5000
+        5000,
       );
       backend.on("error", (err) => {
         clearTimeout(timeout);
@@ -81,28 +83,28 @@ function titapp(): Plugin {
       backend.stdout?.on("data", (data: Buffer) => {
         const text = data.toString();
         console.log(text);
-      });
-      backend.stderr?.on("data", (data: Buffer) => {
-        const text = data.toString();
-        console.error(text);
         if (text.includes("running")) {
           clearTimeout(timeout);
           resolve();
         }
       });
+      backend.stderr?.on("data", (data: Buffer) => {
+        const text = data.toString();
+        console.error(text);
+      });
     });
 
-    console.info(`titback started [${backend.pid}].`);
+    console.info(`titapp started [${backend.pid}].`);
   }
 
   function cleanupBackend() {
     if (!backend || backend.killed) return;
     backend.kill("SIGTERM");
-    console.info(`titback closed [${backend.pid}].`);
+    console.info(`titapp closed [${backend.pid}].`);
   }
 
   return {
-    name: "run-titback",
+    name: "run-titapp",
     async config(_, { command }) {
       if (command !== "serve" && process.env.VITE_TEST !== "true") {
         return;

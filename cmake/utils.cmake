@@ -19,6 +19,14 @@ find_program(XARGS_EXE NAMES "xargs" REQUIRED)
 # Find git.
 find_program(GIT_EXE NAMES "git" REQUIRED)
 
+if(APPLE)
+  # Find iconutil.
+  find_program(ICONUTIL_EXE NAMES "iconutil" REQUIRED)
+
+  # Find rsvg-convert.
+  find_program(RSVG_CONVERT_EXE NAMES "rsvg-convert" REQUIRED)
+endif()
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Common target name prefix.
@@ -152,5 +160,63 @@ function(install_each_file)
     install(FILES "${FILE}" DESTINATION "${FILE_DESTINATION_DIR}")
   endforeach()
 endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+if(APPLE)
+  #
+  # Convert an SVG file into a `.icns` file.
+  #
+  function(convert_svg_to_icns SVG_PATH ICNS_PATH)
+    # Get the icon name without the extension.
+    get_filename_component(ICON_NAME "${ICNS_PATH}" NAME_WE)
+
+    # Create the `.iconset` directory.
+    set(ICONSET_DIR "${CMAKE_CURRENT_BINARY_DIR}/${ICON_NAME}.iconset")
+    add_custom_command(
+      OUTPUT "${ICONSET_DIR}"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${ICONSET_DIR}"
+    )
+
+    # Fill the `.iconset` directory with the generated PNGs.
+    set(ICONSET_FILES "")
+    foreach(SIZE 16 32 128 256 512)
+      foreach(SCALE 1 2)
+        math(EXPR PIXELS "${SIZE} * ${SCALE}")
+
+        if(${SCALE} EQUAL 1)
+          set(ICON "icon_${SIZE}x${SIZE}.png")
+        else()
+          set(ICON "icon_${SIZE}x${SIZE}@${SCALE}x.png")
+        endif()
+
+        set(PNG_PATH "${ICONSET_DIR}/${ICON}")
+        list(APPEND ICONSET_FILES "${PNG_PATH}")
+
+        add_custom_command(
+          COMMENT "Converting ${SVG_PATH} to ${ICON}"
+          OUTPUT "${PNG_PATH}"
+          COMMAND
+            "${RSVG_CONVERT_EXE}"
+              -w "${PIXELS}" -h "${PIXELS}"
+              -o "${PNG_PATH}"
+              "${CMAKE_CURRENT_SOURCE_DIR}/${SVG_PATH}"
+          DEPENDS "${SVG_PATH}" "${ICONSET_DIR}"
+        )
+      endforeach()
+    endforeach()
+
+    # Generate the `.icns` file.
+    add_custom_command(
+      COMMENT "Generating ${ICNS_PATH}"
+      OUTPUT "${ICNS_PATH}"
+      COMMAND "${ICONUTIL_EXE}" -c icns "${ICONSET_DIR}" -o "${ICNS_PATH}"
+      DEPENDS ${ICONSET_FILES}
+    )
+
+    # Add a target to build the `.icns` file.
+    add_custom_target(${ICON_NAME}_to_icns ALL DEPENDS "${ICNS_PATH}")
+  endfunction()
+endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

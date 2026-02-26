@@ -3,18 +3,9 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
-  NAME
-    titback
-  SOURCES
-    "backend.cpp"
-  DEPENDS
-    tit::core
-    tit::data
-    Crow::Crow
-    nlohmann_json::nlohmann_json
-  DESTINATION
-    "bin"
-)
+InheritParentConfig: true
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Checks: |
+  -cppcoreguidelines-owning-memory
+  -modernize-use-trailing-return-type
+  -readability-redundant-access-specifiers
