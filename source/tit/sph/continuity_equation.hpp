@@ -15,23 +15,19 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Mass source type.
-template<class MS>
+template<class MS, class Num>
 concept mass_source = false; // No mass sources at the moment.
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Continuity equation.
-template<mass_source... MassSources>
+template<class Num, mass_source<Num>... MassSources>
 class ContinuityEquation final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      (MassSources::required_fields | ... | TypeSet{rho, drho_dt});
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      (MassSources::modified_fields | ... | TypeSet{});
+  static constexpr auto fields =
+      (MassSources::fields | ... | TypeSet{rho, drho_dt});
 
   /// Construct the continuity equation.
   constexpr explicit ContinuityEquation(MassSources... mass_sources) noexcept
@@ -51,8 +47,8 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Continuity equation type.
-template<class CE>
-concept continuity_equation = specialization_of<CE, ContinuityEquation>;
+template<class CE, class Num>
+concept continuity_equation = specialization_of<CE, ContinuityEquation, Num>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

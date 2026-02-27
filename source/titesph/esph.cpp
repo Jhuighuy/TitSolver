@@ -44,10 +44,12 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
   // Setup the SPH equations.
   const TLElasticEquations equations{
+      h_0,
+      m_0,
       // Constitutive law.
       NeoHookean{Y, nu},
       // C2 Wendland's spline kernel.
-      EighthOrderWendlandKernel{},
+      EighthOrderWendlandKernel{h_0},
   };
 
   // Setup the time integrator.
@@ -58,7 +60,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       // 2D space.
       Space<Real, 2>{},
       // Set of fields is inferred from the equations.
-      time_integrator,
+      time_integrator.fields,
   };
 
   // Generate individual particles.
@@ -78,10 +80,6 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   }
   log("Num. fixed particles: {}", num_fixed_particles);
   log("Num. elastic particles: {}", num_struct_particles);
-
-  // Set global particle constants.
-  m[particles] = m_0;
-  h[particles] = h_0;
 
   // Setup the particle mesh structure.
   ParticleMesh mesh{

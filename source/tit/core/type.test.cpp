@@ -10,9 +10,9 @@
 #include "tit/core/type.hpp"
 #include "tit/testing/test.hpp"
 
-template<class>
+template<class...>
 struct Template1 {};
-template<class>
+template<class...>
 struct Template2 {};
 
 struct A {};
@@ -35,7 +35,9 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 static_assert(specialization_of<Template1<int>, Template1>);
+static_assert(specialization_of<Template1<int, double>, Template1, int>);
 static_assert(!specialization_of<Template1<int>, Template2>);
+static_assert(!specialization_of<Template1<int>, Template1, double>);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

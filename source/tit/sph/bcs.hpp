@@ -19,18 +19,20 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// @todo This is a temporary implementation.
-template<kernel Kernel,
+template<class Num,
+         kernel<Num> Kernel,
          particle_mesh ParticleMesh,
          particle_array ParticleArray>
-void apply_bcs(const Kernel& kernel,
+void apply_bcs(Num h,
+               Num m,
+               const Kernel& kernel,
                ParticleMesh& mesh,
                ParticleArray& particles) {
   using PV = ParticleView<ParticleArray>;
-  using Num = particle_num_t<ParticleArray>;
   static constexpr auto Dim = particle_dim_v<ParticleArray>;
 
   // Interpolate the field values on the boundary.
-  par::for_each(particles.fixed(), [&kernel, &mesh](PV b) {
+  par::for_each(particles.fixed(), [h, m, &kernel, &mesh](PV b) {
     /// @todo Once we have a proper geometry library, we should use
     ///       here and clean up the code.
     const auto& search_point = r[b];
@@ -47,13 +49,13 @@ void apply_bcs(const Kernel& kernel,
     // linear interpolations.
     Num S{};
     Mat<Num, Dim + 1> M{};
-    const auto h_ghost = RADIUS_SCALE * h[b];
+    const auto h_ghost = RADIUS_SCALE * h;
     for (const PV a : mesh.fixed_interp(b)) {
       const auto r_delta = r_ghost - r[a];
       const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
       const auto W_delta = kernel(r_delta, h_ghost);
-      S += W_delta * m[a] / rho[a];
-      M += outer(B_delta, B_delta * W_delta * m[a] / rho[a]);
+      S += W_delta * m / rho[a];
+      M += outer(B_delta, B_delta * W_delta * m / rho[a]);
     }
 
     if (const auto fact = ldl(M); fact) {
@@ -64,9 +66,9 @@ void apply_bcs(const Kernel& kernel,
         const auto r_delta = r_ghost - r[a];
         const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
         const auto W_delta = dot(E, B_delta) * kernel(r_delta, h_ghost);
-        rho[b] += m[a] * W_delta;
-        v[b] += m[a] / rho[a] * v[a] * W_delta;
-        if constexpr (has<PV>(u)) u[b] += m[a] / rho[a] * u[a] * W_delta;
+        rho[b] += m * W_delta;
+        v[b] += m / rho[a] * v[a] * W_delta;
+        if constexpr (has<PV>(u)) u[b] += m / rho[a] * u[a] * W_delta;
       }
     } else if (!is_tiny(S)) {
       // Constant interpolation succeeds, use it.
@@ -75,9 +77,9 @@ void apply_bcs(const Kernel& kernel,
       for (const PV a : mesh.fixed_interp(b)) {
         const auto r_delta = r_ghost - r[a];
         const auto W_delta = E * kernel(r_delta, h_ghost);
-        rho[b] += m[a] * W_delta;
-        v[b] += m[a] / rho[a] * v[a] * W_delta;
-        if constexpr (has<PV>(u)) u[b] += m[a] / rho[a] * u[a] * W_delta;
+        rho[b] += m * W_delta;
+        v[b] += m / rho[a] * v[a] * W_delta;
+        if constexpr (has<PV>(u)) u[b] += m / rho[a] * u[a] * W_delta;
       }
     } else {
       // Both interpolations fail, leave the particle as it is.

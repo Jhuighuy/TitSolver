@@ -235,17 +235,12 @@ TIT_DEFINE_VECTOR_FIELD(dv_dt)
 /// Particle velocity gradient.
 TIT_DEFINE_MATRIX_FIELD(grad_v)
 
-/// Particle mass.
-TIT_DEFINE_SCALAR_FIELD(m)
 /// Particle density.
 TIT_DEFINE_SCALAR_FIELD(rho)
 /// Particle density gradient.
 TIT_DEFINE_VECTOR_FIELD(grad_rho)
 /// Particle density time derivative.
 TIT_DEFINE_SCALAR_FIELD(drho_dt)
-
-/// Particle width.
-TIT_DEFINE_SCALAR_FIELD(h)
 
 /// Particle pressure.
 TIT_DEFINE_SCALAR_FIELD(p)
@@ -256,11 +251,6 @@ TIT_DEFINE_SCALAR_FIELD(cs)
 TIT_DEFINE_SCALAR_FIELD(u)
 /// Particle thermal energy time derivative.
 TIT_DEFINE_SCALAR_FIELD(du_dt)
-
-/// Particle dynamic viscosity.
-TIT_DEFINE_SCALAR_FIELD(mu)
-/// Particle heat conductivity coefficient.
-TIT_DEFINE_SCALAR_FIELD(kappa)
 
 /// Particle normal vector.
 TIT_DEFINE_VECTOR_FIELD(N)

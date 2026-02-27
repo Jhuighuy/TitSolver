@@ -35,12 +35,8 @@ class KickDriftIntegrator final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+  static constexpr auto fields =
+      Equations::fields | TypeSet{parinfo, r, v, dv_dt};
 
   /// Construct time integrator.
   ///
@@ -49,8 +45,7 @@ public:
       : equations_{std::move(equations)} {}
 
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array<fields> ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) const {
@@ -99,12 +94,8 @@ class KickDriftKickIntegrator final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+  static constexpr auto fields =
+      Equations::fields | TypeSet{parinfo, r, v, dv_dt};
 
   /// Construct time integrator.
   ///
@@ -113,8 +104,7 @@ public:
       : equations_{std::move(equations)} {}
 
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array<fields> ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) const {
@@ -172,20 +162,15 @@ class RungeKuttaIntegrator final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+  static constexpr auto fields =
+      Equations::fields | TypeSet{parinfo, r, v, dv_dt};
 
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(Equations equations) noexcept
       : equations_{std::move(equations)} {}
 
   /// Make a step in time.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array<fields> ParticleArray>
   void step(particle_num_t<ParticleArray> dt,
             ParticleMesh& mesh,
             ParticleArray& particles) const {
@@ -214,8 +199,7 @@ public:
 private:
 
   // Do an explicit Euler substep.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array<fields> ParticleArray>
   void substep_(particle_num_t<ParticleArray> dt,
                 ParticleMesh& mesh,
                 ParticleArray& particles) const {
@@ -236,7 +220,7 @@ private:
   }
 
   // Compute the linear combination of the two substeps.
-  template<particle_array<required_fields> ParticleArray>
+  template<particle_array<fields> ParticleArray>
   static void lincomb_(particle_num_t<ParticleArray> weight,
                        const ParticleArray& particles,
                        particle_num_t<ParticleArray> out_weight,

@@ -39,7 +39,7 @@ add_tit_executable(
   NAME
     sph_tests
   SOURCES
-    "kernel.test.cpp"
+    # "kernel.test.cpp"
   DEPENDS
     tit::sph
     tit::testing

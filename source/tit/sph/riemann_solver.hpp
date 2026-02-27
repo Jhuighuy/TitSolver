@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <concepts>
 #include <tuple>
 
 #include "tit/core/checks.hpp"
@@ -22,10 +24,7 @@ class ZhangRiemannSolver final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, v, p};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  static constexpr TypeSet fields{rho, v};
 
   /// Construct Riemann solver.
   constexpr explicit ZhangRiemannSolver(Num cs_0) noexcept : cs_0_{cs_0} {
@@ -33,9 +32,8 @@ public:
   }
 
   /// Solve Riemann problem.
-  template<particle_view_n<Num, required_fields> PV>
+  template<particle_view_n<Num, fields | TypeSet{p}> PV>
   constexpr auto operator()(PV a, PV b) const noexcept {
-    TIT_ASSERT(a != b, "Particles must be different!");
     const auto e_ab = normalize(r[a, b]);
     const auto rho_ab = rho.avg(a, b);
     const auto dp_ab = p[b, a];
@@ -55,8 +53,8 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Riemann solver type.
-template<class RS>
-concept riemann_solver = specialization_of<RS, ZhangRiemannSolver>;
+template<class RS, class Num>
+concept riemann_solver = std::same_as<RS, ZhangRiemannSolver<Num>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

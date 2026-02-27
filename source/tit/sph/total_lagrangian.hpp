@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <concepts>
+
+#include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/type.hpp"
@@ -44,10 +47,7 @@ class StVenantKirchhoff final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, E, F};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  static constexpr TypeSet fields{rho, E, F};
 
   /// Construct the St. Venant-Kirchhoff constitutive law.
   ///
@@ -76,10 +76,7 @@ class NeoHookean final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho, F};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
+  static constexpr TypeSet fields{rho, F};
 
   /// Construct the Neo-Hookean constitutive law.
   ///
@@ -107,51 +104,52 @@ private:
 }; // class NeoHookean
 
 /// Constitutive law of the elastic material.
-template<class CL>
-concept constitutive_law = specialization_of<CL, StVenantKirchhoff> ||
-                           specialization_of<CL, NeoHookean>;
+template<class CL, class Num>
+concept constitutive_law = std::same_as<CL, StVenantKirchhoff<Num>> ||
+                           std::same_as<CL, NeoHookean<Num>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Elastic equations with fixed kernel width in Total Lagrangian formulation.
-template<constitutive_law ConstitutiveLaw, kernel Kernel>
+template<class Num, constitutive_law<Num> ConstitutiveLaw, kernel<Num> Kernel>
 class TLElasticEquations final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields = //
-      ConstitutiveLaw::required_fields |  //
-      Kernel::required_fields |           //
-      TypeSet{h, m, rho, rho_0, r, r_0, v, dv_dt, L_0, F, E, P};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      ConstitutiveLaw::modified_fields | //
-      Kernel::modified_fields |          //
+  static constexpr auto fields = //
+      ConstitutiveLaw::fields |  //
+      Kernel::fields |           //
       TypeSet{rho, rho_0, r, r_0, v, dv_dt, L_0, F, E, P};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Initialize elastic equations.
   ///
+  /// @param h      Particle width.
+  /// @param m      Particle mass.
   /// @param cl     Constitutive law.
   /// @param kernel Kernel.
-  constexpr explicit TLElasticEquations(ConstitutiveLaw cl = {},
+  constexpr explicit TLElasticEquations(Num h,
+                                        Num m,
+                                        ConstitutiveLaw cl = {},
                                         Kernel kernel = {}) noexcept
-      : cl_{std::move(cl)}, //
-        kernel_{std::move(kernel)} {}
+      : h_{h}, m_{m},       //
+        cl_{std::move(cl)}, //
+        kernel_{std::move(kernel)} {
+    TIT_ASSERT(h_ > 0.0, "Particle width must be positive.");
+    TIT_ASSERT(m_ > 0.0, "Particle mass must be positive.");
+  }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array<fields> ParticleArray>
   void index(ParticleMesh& mesh, ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
 
     // In Total Lagrangian SPH reference state is captured just once.
     if (initialized_) return;
     initialized_ = true;
-    mesh.update(particles, [this](PV a) { return kernel_.radius(a); });
+    mesh.update(particles, [this](PV /*a*/) { return kernel_.radius(); });
 
     // Capture the reference state.
     par::for_each(particles.all(), [](PV a) {
@@ -163,9 +161,9 @@ public:
     // Compute kernel gradient renormalization matrix.
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
-      const auto grad_W_0ab = kernel_.grad(r_0[a, b], h[a]);
-      const auto V_0a = m[a] / rho_0[a];
-      const auto V_0b = m[b] / rho_0[b];
+      const auto grad_W_0ab = kernel_.grad(r_0[a, b]);
+      const auto V_0a = m_ / rho_0[a];
+      const auto V_0b = m_ / rho_0[b];
 
       const auto L_0_flux = outer(r_0[b, a], grad_W_0ab);
       L_0[a] += V_0b * L_0_flux;
@@ -182,8 +180,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Setup boundary particles.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array<fields> ParticleArray>
   void setup_boundary(ParticleMesh& /*mesh*/,
                       ParticleArray& /*particles*/) const {
     // Nothing to do.
@@ -192,8 +189,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute density-related fields.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array<fields> ParticleArray>
   constexpr void compute_density(ParticleMesh& /*mesh*/,
                                  ParticleArray& /*particles*/) const {
     // Nothing to do. Everything is computed in `compute_forces()`.
@@ -202,8 +198,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute velocity-related fields.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+  template<particle_mesh ParticleMesh, particle_array<fields> ParticleArray>
   void compute_forces(ParticleMesh& mesh, ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
 
@@ -219,9 +214,9 @@ public:
     // Compute deformation gradient.
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
-      const auto grad_W_0ab = kernel_.grad(r_0[a, b], h[a]);
-      const auto V_0a = m[a] / rho_0[a];
-      const auto V_0b = m[b] / rho_0[b];
+      const auto grad_W_0ab = kernel_.grad(r_0[a, b]);
+      const auto V_0a = m_ / rho_0[a];
+      const auto V_0b = m_ / rho_0[b];
 
       // Update deformation gradient.
       const auto F_flux = outer(r[b, a], grad_W_0ab);
@@ -249,18 +244,20 @@ public:
     // Compute velocity time derivative.
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
-      const auto grad_W_0ab = kernel_.grad(r_0[a, b], h[a]);
+      const auto grad_W_0ab = kernel_.grad(r_0[a, b]);
 
       // Update velocity time derivative.
       const auto v_flux =
           (P[a] / pow2(rho_0[a]) + P[b] / pow2(rho_0[b])) * grad_W_0ab;
-      dv_dt[a] += m[b] * v_flux;
-      dv_dt[b] -= m[a] * v_flux;
+      dv_dt[a] += m_ * v_flux;
+      dv_dt[b] -= m_ * v_flux;
     });
   }
 
 private:
 
+  Num h_;
+  Num m_;
   [[no_unique_address]] ConstitutiveLaw cl_;
   [[no_unique_address]] Kernel kernel_;
   mutable bool initialized_ = false;

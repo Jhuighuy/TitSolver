@@ -62,17 +62,25 @@ concept deduce_constructible_from = requires (Args... args) { T{args...}; };
 
 namespace impl {
 
-template<class Type, template<class...> class Class>
+template<class Type, template<class...> class Class, class... Bound>
 inline constexpr bool is_specialization_of_v = false;
 
-template<class... Args, template<class...> class Class>
+template<template<class...> class Class, class... Args>
 inline constexpr bool is_specialization_of_v<Class<Args...>, Class> = true;
+
+template<template<class...> class Class, class B1, class... Args>
+inline constexpr bool is_specialization_of_v<Class<B1, Args...>, Class, B1> =
+    true;
+
+template<template<class...> class Class, class B1, class B2, class... Args>
+inline constexpr bool
+    is_specialization_of_v<Class<B1, B2, Args...>, Class, B1, B2> = true;
 
 } // namespace impl
 
 /// Check if type is a specialization of the given template.
-template<class Type, template<class...> class Class>
-concept specialization_of = impl::is_specialization_of_v<Type, Class>;
+template<class Type, template<class...> class Class, class... Bound>
+concept specialization_of = impl::is_specialization_of_v<Type, Class, Bound...>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

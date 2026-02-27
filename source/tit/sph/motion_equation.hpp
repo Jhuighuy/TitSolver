@@ -19,10 +19,7 @@ class NoParticleShifting final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields = TypeSet{};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields = TypeSet{};
+  static constexpr auto fields = TypeSet{};
 
 }; // class NoParticleShifting
 
@@ -32,10 +29,7 @@ class ParticleShiftingTechnique final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields = TypeSet{dr, N, FS};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields = TypeSet{};
+  static constexpr auto fields = TypeSet{dr, N, FS};
 
   /// Construct the particle shifting technique.
   ///
@@ -69,24 +63,19 @@ private:
 }; // class ParticleShiftingTechnique
 
 /// Particle shifting type.
-template<class PS>
+template<class PS, class Num>
 concept particle_shifting = std::same_as<PS, NoParticleShifting> ||
-                            specialization_of<PS, ParticleShiftingTechnique>;
+                            std::same_as<PS, ParticleShiftingTechnique<Num>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Motion equation.
-template<particle_shifting ParticleShifting>
+template<class Num, particle_shifting<Num> ParticleShifting>
 class MotionEquation final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =
-      ParticleShifting::required_fields | TypeSet{r, v};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      ParticleShifting::modified_fields | TypeSet{};
+  static constexpr auto fields = ParticleShifting::fields | TypeSet{r, v};
 
   /// Construct the motion equation.
   constexpr explicit MotionEquation(ParticleShifting particle_shifting) noexcept
@@ -106,8 +95,8 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Motion equation type.
-template<class ME>
-concept motion_equation = specialization_of<ME, MotionEquation>;
+template<class ME, class Num>
+concept motion_equation = specialization_of<ME, MotionEquation, Num>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

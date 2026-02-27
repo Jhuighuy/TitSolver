@@ -19,6 +19,7 @@
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/fluid_equations_riemann.hpp"
+#include "tit/sph/heat_conductivity.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/momentum_equation.hpp"
 #include "tit/sph/motion_equation.hpp"
@@ -69,49 +70,52 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   const auto equations = [&] {
     if constexpr (Riemann) {
       return FluidEquationsRiemann{
+          h_0,
+          m_0,
           // Continuity equation with no source terms.
-          ContinuityEquation{},
+          ContinuityEquation<Real>{},
           // Momentum equation with gravity source term.
-          MomentumEquation{
+          MomentumEquation<Real, NoViscosity, GravitySource<Real>>{
               // Inviscid flow.
               NoViscosity{},
-              NoArtificialViscosity{},
               // Gravity source term.
               GravitySource{g},
           },
           // Weakly compressible equation of state.
           LinearTaitEquationOfState{cs_0, rho_0},
           // C2 Wendland's spline kernel.
-          QuarticWendlandKernel{},
+          QuarticWendlandKernel{h_0},
           // Riemann solver for the fluid equations.
           ZhangRiemannSolver{cs_0},
           // WENO-3 reconstruction scheme.
-          WENO3Reconstruction{},
+          WENO3Reconstruction<Real>{},
       };
     } else {
       return FluidEquations{
+          h_0,
+          m_0,
           // Standard motion equation.
-          MotionEquation{
+          MotionEquation<Real, ParticleShiftingTechnique<Real>>{
               // Enabled particle shifting technique.
               ParticleShiftingTechnique{R, Ma, CFL},
           },
           // Continuity equation with no source terms.
-          ContinuityEquation{},
+          ContinuityEquation<Real>{},
           // Momentum equation with gravity source term.
-          MomentumEquation{
+          MomentumEquation<Real, NoViscosity, GravitySource<Real>>{
               // Inviscid flow.
               NoViscosity{},
-              // δ-SPH artificial viscosity formulation.
-              DeltaSPHArtificialViscosity{cs_0, rho_0},
               // Gravity source term.
               GravitySource{g},
           },
-          // No energy equation.
-          NoEnergyEquation{},
+          // Energy equation with no source terms.
+          EnergyEquation<Real, NoHeatConductivity>{{}},
           // Weakly compressible equation of state.
           LinearTaitEquationOfState{cs_0, rho_0},
           // C2 Wendland's spline kernel.
-          QuarticWendlandKernel{},
+          QuarticWendlandKernel{h_0},
+          // δ-SPH artificial viscosity formulation.
+          DeltaSPHArtificialViscosity{h_0, cs_0, rho_0},
       };
     }
   }();
@@ -124,7 +128,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       // 2D space.
       Space<Real, 2>{},
       // Set of fields is inferred from the equations.
-      time_integrator,
+      time_integrator.fields,
   };
 
   // Generate individual particles.
@@ -146,10 +150,6 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   }
   log("Num. fixed particles: {}", num_fixed_particles);
   log("Num. fluid particles: {}", num_fluid_particles);
-
-  // Set global particle constants.
-  m[particles] = m_0;
-  h[particles] = h_0;
 
   // Density hydrostatic initialization.
   for (const auto a : particles.all()) {

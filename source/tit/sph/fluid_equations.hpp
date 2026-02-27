@@ -10,12 +10,14 @@
 #include <numbers>
 #include <ranges>
 
+#include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/par/algorithms.hpp"
+#include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/bcs.hpp"
 #include "tit/sph/continuity_equation.hpp"
 #include "tit/sph/energy_equation.hpp"
@@ -32,84 +34,87 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Fluid equations with fixed kernel width and continuity equation.
-template<motion_equation MotionEquation,
-         continuity_equation ContinuityEquation,
-         momentum_equation MomentumEquation,
-         energy_equation EnergyEquation,
-         equation_of_state EquationOfState,
-         kernel Kernel>
+template<class Num,
+         motion_equation<Num> MotionEquation,
+         continuity_equation<Num> ContinuityEquation,
+         momentum_equation<Num> MomentumEquation,
+         energy_equation<Num> EnergyEquation,
+         equation_of_state<Num> EquationOfState,
+         kernel<Num> Kernel,
+         artificial_viscosity<Num> ArtificialViscosity>
 class FluidEquations final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =   //
-      MotionEquation::required_fields |     //
-      ContinuityEquation::required_fields | //
-      MomentumEquation::required_fields |   //
-      EnergyEquation::required_fields |     //
-      EquationOfState::required_fields |    //
-      Kernel::required_fields | TypeSet{h, m, r, rho, p, v, dv_dt};
-
-  /// Set of particle fields that are modified.
-  static constexpr auto modified_fields =
-      MotionEquation::modified_fields |       //
-      ContinuityEquation::modified_fields |   //
-      MomentumEquation::modified_fields |     //
-      EnergyEquation::modified_fields |       //
-      EquationOfState::modified_fields |      //
-      Kernel::modified_fields |               //
-      TypeSet{rho, drho_dt, grad_rho, N, L} | //
-      TypeSet{p, v, dv_dt} |                  //
-      TypeSet{u, du_dt} |                     //
-      TypeSet{dr, FS};
+  static constexpr auto fields =    //
+      MotionEquation::fields |      //
+      ContinuityEquation::fields |  //
+      MomentumEquation::fields |    //
+      EnergyEquation::fields |      //
+      EquationOfState::fields |     //
+      Kernel::fields |              //
+      ArtificialViscosity::fields | //
+      TypeSet{r, rho, p, v, dv_dt};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct the fluid equations.
   ///
+  /// @param h                   Particle width.
+  /// @param m                   Particle mass.
   /// @param motion_equation     Motion equation.
   /// @param continuity_equation Continuity equation.
   /// @param momentum_equation   Momentum equation.
   /// @param energy_equation     Energy equation.
   /// @param equation_of_state   Equation of state.
   /// @param kernel              Kernel.
-  constexpr explicit FluidEquations(MotionEquation motion_equation,
-                                    ContinuityEquation continuity_equation,
-                                    MomentumEquation momentum_equation,
-                                    EnergyEquation energy_equation,
-                                    EquationOfState eos,
-                                    Kernel kernel) noexcept
-      : motion_equation_{std::move(motion_equation)},
+  /// @param artificial_viscosity Artificial viscosity formulation.
+  constexpr explicit FluidEquations(
+      Num h,
+      Num m,
+      MotionEquation motion_equation,
+      ContinuityEquation continuity_equation,
+      MomentumEquation momentum_equation,
+      EnergyEquation energy_equation,
+      EquationOfState equation_of_state,
+      Kernel kernel,
+      ArtificialViscosity artificial_viscosity) noexcept
+      : h_{h}, m_{m}, //
+        motion_equation_{std::move(motion_equation)},
         continuity_equation_{std::move(continuity_equation)},
         momentum_equation_{std::move(momentum_equation)},
-        energy_equation_{std::move(energy_equation)}, //
-        eos_{std::move(eos)},                         //
-        kernel_{std::move(kernel)} {}
+        energy_equation_{std::move(energy_equation)},
+        equation_of_state_{std::move(equation_of_state)},
+        kernel_{std::move(kernel)},
+        artificial_viscosity_{std::move(artificial_viscosity)} {
+    TIT_ASSERT(h_ > 0.0, "Particle width must be positive.");
+    TIT_ASSERT(m_ > 0.0, "Particle mass must be positive.");
+  }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+           particle_array_n<Num, fields> ParticleArray>
   void index(ParticleMesh& mesh, ParticleArray& particles) const {
     using PV = ParticleView<ParticleArray>;
-    mesh.update(particles, [this](PV a) { return kernel_.radius(a); });
+    mesh.update(particles, [this](PV /*a*/) { return kernel_.radius(); });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Setup boundary particles.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+           particle_array_n<Num, fields> ParticleArray>
   void setup_boundary(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
-    apply_bcs(kernel_, mesh, particles);
+    apply_bcs(h_, m_, kernel_, mesh, particles);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute density-related fields.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+           particle_array_n<Num, fields> ParticleArray>
   void compute_density(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
@@ -129,8 +134,8 @@ public:
       // Precompute the fields.
       par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
         const auto [a, b] = ab;
-        const auto V_a = m[a] / rho[a];
-        const auto V_b = m[b] / rho[b];
+        const auto V_a = m_ / rho[a];
+        const auto V_b = m_ / rho[b];
         const auto grad_W_ab = kernel_.grad(a, b);
 
         // Update density gradient.
@@ -178,10 +183,9 @@ public:
       const auto grad_W_ab = kernel_.grad(a, b);
 
       // Update density time derivative.
-      const auto Psi_ab =
-          momentum_equation_.artificial_viscosity().density_term(a, b);
-      drho_dt[a] -= m[b] * dot(v[b, a] - Psi_ab / rho[b], grad_W_ab);
-      drho_dt[b] -= m[a] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
+      const auto Psi_ab = artificial_viscosity_.continuity_equation_term(a, b);
+      drho_dt[a] -= m_ * dot(v[b, a] - Psi_ab / rho[b], grad_W_ab);
+      drho_dt[b] -= m_ * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
     });
   }
 
@@ -189,7 +193,7 @@ public:
 
   /// Compute velocity-related fields.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+           particle_array_n<Num, fields> ParticleArray>
   void compute_forces(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_forces()");
     using PV = ParticleView<ParticleArray>;
@@ -213,8 +217,8 @@ public:
       }
 
       // Compute pressure and sound speed.
-      p[a] = eos_.pressure(a);
-      if constexpr (has<PV>(cs)) cs[a] = eos_.sound_speed(a);
+      p[a] = equation_of_state_.pressure(a);
+      if constexpr (has<PV>(cs)) cs[a] = equation_of_state_.sound_speed(a);
     });
 
     // Compute velocity and internal energy time derivatives.
@@ -225,18 +229,17 @@ public:
       // Update velocity time derivative.
       const auto P_a = p[a] / pow2(rho[a]);
       const auto P_b = p[b] / pow2(rho[b]);
-      const auto Pi_ab =
-          momentum_equation_.viscosity()(a, b) +
-          momentum_equation_.artificial_viscosity().velocity_term(a, b);
+      const auto Pi_ab = momentum_equation_.viscosity()(a, b) +
+                         artificial_viscosity_.momentum_equation_term(a, b);
       const auto v_flux = (-P_a - P_b + Pi_ab) * grad_W_ab;
-      dv_dt[a] += m[b] * v_flux;
-      dv_dt[b] -= m[a] * v_flux;
+      dv_dt[a] += m_ * v_flux;
+      dv_dt[b] -= m_ * v_flux;
 
       // Update internal energy time derivative.
       if constexpr (has<PV>(du_dt)) {
         const auto Q_ab = energy_equation_.heat_conductivity()(a, b);
-        du_dt[a] -= m[b] * dot((P_a - Pi_ab / 2) * v[b, a] - Q_ab, grad_W_ab);
-        du_dt[b] -= m[a] * dot((P_b - Pi_ab / 2) * v[b, a] + Q_ab, grad_W_ab);
+        du_dt[a] -= m_ * dot((P_a - Pi_ab / 2) * v[b, a] - Q_ab, grad_W_ab);
+        du_dt[b] -= m_ * dot((P_b - Pi_ab / 2) * v[b, a] + Q_ab, grad_W_ab);
       }
     });
   }
@@ -245,12 +248,11 @@ public:
 
   /// Compute particle shifts.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+           particle_array_n<Num, fields> ParticleArray>
   constexpr void compute_shifts(ParticleMesh& mesh,
                                 ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_shifts()");
     using PV = ParticleView<ParticleArray>;
-    using Num = particle_num_t<PV>;
 
     const auto R = motion_equation_.particle_shifting().R();
     const auto Ma = motion_equation_.particle_shifting().Ma();
@@ -266,7 +268,7 @@ public:
     //   essentially zero, but we use a very small number to avoid spurious
     //   comparisons.
     const auto a_0 = particles[0];
-    const auto FS_FAR = 2 * CFL * Ma * pow2(h[a_0]);
+    const auto FS_FAR = 2 * CFL * Ma * pow2(h_);
     static constexpr auto FS_ON = std::numeric_limits<Num>::min();
     par::for_each(particles.fluid(), [](PV a) { FS[a] = FS_ON, dr[a] = {}; });
     par::for_each(particles.fixed(), [FS_FAR](PV a) { FS[a] = FS_FAR; });
@@ -276,12 +278,12 @@ public:
     // Here we are reading and writing the same field `FS` in the parallel loop.
     // There is no race condition because we read the neighbor to compare it
     // with `FS_ON`, and non-free-surface particles are updated in the loop.
-    par::block_for_each(mesh.block_pairs(particles), [FS_FAR](auto ab) {
+    par::block_for_each(mesh.block_pairs(particles), [FS_FAR, this](auto ab) {
       const auto [a, b] = ab;
 
       // Skip the particles that are too far away.
       const auto r_ab = norm2(r[a, b]);
-      if (const auto dist_threshold = pow2(2 * h[a]); r_ab > dist_threshold) {
+      if (const auto dist_threshold = pow2(2 * h_); r_ab > dist_threshold) {
         return;
       }
 
@@ -326,12 +328,12 @@ public:
         auto fs_neighbors = std::views::filter(mesh[a], on_fs);
         const auto dist_to_a = [a](PV b) { return norm2(r[a, b]); };
         const auto b = *std::ranges::min_element(fs_neighbors, {}, dist_to_a);
-        FS[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius(a);
+        FS[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius();
       }
     });
 
     // Compute the particle shifts.
-    const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h[a_0] / 2), h[a_0]));
+    const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h_ / 2), h_ / 2));
     par::block_for_each(
         mesh.block_pairs(particles),
         [inv_W_0, FS_FAR, R, this](auto ab) {
@@ -343,8 +345,8 @@ public:
           const auto Chi_ab = R * pow<4>(W_ab * inv_W_0);
           const auto Xi_a = static_cast<Num>(bitwise_equal(FS[a], FS_FAR));
           const auto Xi_b = static_cast<Num>(bitwise_equal(FS[b], FS_FAR));
-          dr[a] -= (Xi_a + Chi_ab) * FS[a] * m[b] / rho[b] * grad_W_ab;
-          dr[b] += (Xi_b + Chi_ab) * FS[b] * m[a] / rho[a] * grad_W_ab;
+          dr[a] -= (Xi_a + Chi_ab) * FS[a] * m_ / rho[b] * grad_W_ab;
+          dr[b] += (Xi_b + Chi_ab) * FS[b] * m_ / rho[a] * grad_W_ab;
         });
   }
 
@@ -352,12 +354,15 @@ public:
 
 private:
 
+  Num h_;
+  Num m_;
   [[no_unique_address]] MotionEquation motion_equation_;
   [[no_unique_address]] ContinuityEquation continuity_equation_;
   [[no_unique_address]] MomentumEquation momentum_equation_;
   [[no_unique_address]] EnergyEquation energy_equation_;
-  [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] EquationOfState equation_of_state_;
   [[no_unique_address]] Kernel kernel_;
+  [[no_unique_address]] ArtificialViscosity artificial_viscosity_;
 
 }; // class FluidEquations
 

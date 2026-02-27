@@ -76,8 +76,7 @@ public:
     TIT_ASSERT(a.has_type(ParticleType::fixed),
                "Particle must be of the fixed type!");
     auto& particles = a.array();
-    const size_t i = a - *particles.fixed().begin();
-    return interp_adjacency_[i] | //
+    return interp_adjacency_[a.index() - (*particles.fixed().begin()).index()] |
            std::views::transform(
                [&particles](size_t b) { return particles[b]; });
   }
