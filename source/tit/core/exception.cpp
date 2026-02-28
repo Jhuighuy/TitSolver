@@ -42,7 +42,7 @@ namespace {
 
 auto errno_message(int errno_value) -> std::string {
   TIT_ASSERT(errno_value != 0, "No error information available!");
-  return std::strerror(errno_value); // NOLINT(*-mt-unsafe)
+  return std::strerror(errno_value);
 }
 
 } // namespace

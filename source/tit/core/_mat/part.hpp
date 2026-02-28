@@ -67,7 +67,7 @@ struct MatPartAt {
 
 /// Get the matrix part element.
 template<MatPart Part>
-inline constexpr auto part_at = MatPartAt<Part>{};
+inline constexpr MatPartAt<Part> part_at{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

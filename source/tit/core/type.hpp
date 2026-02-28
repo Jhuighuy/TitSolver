@@ -142,7 +142,7 @@ struct composition<T, F, Fs...> : composition<typename F<T>::type, Fs...> {};
 
 /// Compose a set of template modifications.
 template<class T, template<class> class... Fs>
-using composition_t = typename impl::composition<T, Fs...>::type;
+using composition_t = impl::composition<T, Fs...>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -202,7 +202,7 @@ struct normalize_type<SInt> :
 /// to a third-party template, we need to "normalize" it, by replacing it with
 /// the standard fixed-width type, if possible.
 template<class T>
-using normalize_type_t = typename impl::normalize_type<T>::type;
+using normalize_type_t = impl::normalize_type<T>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

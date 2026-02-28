@@ -10,6 +10,8 @@
 #include "tit/core/type.hpp"
 #include "tit/testing/test.hpp"
 
+// NOLINTBEGIN(*-use-internal-linkage)
+
 template<class>
 struct Template1 {};
 template<class>
@@ -28,6 +30,8 @@ struct Derived : Base {};
 struct PolymorphicBase : tit::VirtualBase {};
 struct PolymorphicDerived : PolymorphicBase {};
 } // namespace test
+
+// NOLINTEND(*-use-internal-linkage)
 
 namespace tit {
 namespace {

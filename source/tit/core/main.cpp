@@ -40,7 +40,7 @@
 #include "tit/core/type.hpp"
 
 #ifdef TIT_HAVE_GCOV
-extern "C" void __gcov_dump(); // NOLINT(*-reserved-identifier)
+extern "C" void __gcov_dump();
 #endif
 
 namespace tit {
@@ -197,7 +197,7 @@ auto crash_report_mutex() -> std::recursive_mutex& {
 void setup_signal_handlers() noexcept {
   // Preload `libgcc` beforehand to increase the chances of `backtrace` being
   // safe to call from a signal handler.
-  void* dummy_trace = nullptr; // NOLINT(*-const-correctness)
+  void* dummy_trace = nullptr;
   backtrace(&dummy_trace, 1);
 
   // Define descriptions for a subset of signals.
@@ -235,7 +235,7 @@ void setup_signal_handlers() noexcept {
 
       // Print the stack trace, if needed, and exit.
       if (sig == SIGINT || sig == SIGTERM) {
-        std::exit(-sig); // NOLINT(concurrency-mt-unsafe)
+        std::exit(-sig);
       } else {
         ewrite("\n");
         ewrite("\n");
@@ -251,7 +251,7 @@ void setup_signal_handlers() noexcept {
       }
     });
     if (prev_handler == SIG_ERR) {
-      terminate_on_exception([descr] { // NOLINTNEXTLINE(*-mt-unsafe)
+      terminate_on_exception([descr] {
         err("Unable to set handler for '{}': {}.", descr, std::strerror(errno));
       });
     }

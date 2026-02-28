@@ -6,7 +6,6 @@
 #pragma once
 
 #include <concepts>
-#include <utility> // IWYU pragma: keep
 
 namespace tit {
 
@@ -21,12 +20,6 @@ namespace tit {
 
 /// Generate a unique identifier
 #define TIT_NAME(prefix) TIT_CAT(TIT_CAT(prefix, _), __LINE__)
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Use this function to assume forwarding references as universal references
-/// to avoid false alarms from analysis tools.
-#define TIT_ASSUME_UNIVERSAL(T, ref) static_cast<void>(std::forward<T>(ref))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
