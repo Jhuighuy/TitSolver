@@ -3,11 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-// Note: False-positives from Crow internals on Fedora 43.
-#if defined(__linux__) && defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -21,11 +16,22 @@
 #include <utility>
 #include <vector>
 
+#if defined(__GNUC__) && defined(__linux__)
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-literal-operator"
+#endif
 #include <crow/app.h>
 #include <crow/http_request.h>
 #include <crow/http_response.h>
 #include <crow/utility.h>
 #include <crow/websocket.h>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 

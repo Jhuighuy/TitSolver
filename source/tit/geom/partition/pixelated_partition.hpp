@@ -5,12 +5,9 @@
 
 #pragma once
 
-#include <array>
 #include <concepts>
-#include <deque>
 #include <limits>
 #include <ranges>
-#include <span>
 #include <vector>
 
 #include "tit/core/basic_types.hpp"
@@ -18,7 +15,6 @@
 #include "tit/core/mdvector.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/geom/grid.hpp"
 #include "tit/geom/point_range.hpp"
 
@@ -48,15 +44,13 @@ public:
                   std::ranges::range_value_t<Parts> num_parts,
                   std::ranges::range_value_t<Parts> init_part = 0) const {
     TIT_PROFILE_SECTION("PixelatedPartition::operator()");
-    TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Parts, parts);
 
     // Validate the arguments.
     TIT_ASSERT(num_parts > 0, "Number of parts must be positive!");
-    TIT_ASSERT(std::size(points) >= num_parts,
+    TIT_ASSERT(std::ranges::size(points) >= num_parts,
                "Number of points cannot be less than the number of parts!");
     if constexpr (std::ranges::sized_range<Parts>) {
-      TIT_ASSERT(std::size(points) == std::size(parts),
+      TIT_ASSERT(std::ranges::size(points) == std::ranges::size(parts),
                  "Size of parts range must be equal to the number of points!");
     }
 
