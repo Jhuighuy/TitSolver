@@ -31,7 +31,7 @@ using StoragePtr = std::shared_ptr<Storage>;
 
 namespace {
 
-std::array<char, 1024> last_error;
+std::array<char, 1024> last_error; // NOLINT(*-avoid-non-const-global-variables)
 
 template<class Func>
   requires std::invocable<Func> &&

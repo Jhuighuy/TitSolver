@@ -280,7 +280,7 @@ constexpr auto approx_equal_to(const Mat<Num, Dim>& A,
 
 // Matrix formatter.
 template<class Num, tit::size_t Dim>
-struct std::formatter<tit::Mat<Num, Dim>> { // NOLINT(cert-dcl58-cpp)
+struct std::formatter<tit::Mat<Num, Dim>> {
   static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }

@@ -61,8 +61,6 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  // NOLINTBEGIN(*-type-union-access)
-
   /// Fill-initialize the vector with zeroes.
   constexpr Vec() noexcept {
     TIT_IF_SIMD_AVALIABLE(Num) {
@@ -127,8 +125,6 @@ public:
     return regs_[i];
   }
   /// @}
-
-  // NOLINTEND(*-type-union-access)
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -651,7 +647,7 @@ constexpr auto normalize(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
   constexpr auto eps_sqr = pow2(tiny_v<Num>);
   TIT_IF_SIMD_AVALIABLE(Num) {
     // Use filtering since we are most likely deal with a non-zero vector.
-    using Reg = typename Vec<Num, Dim>::Reg;
+    using Reg = Vec<Num, Dim>::Reg;
     const auto norm_recip_reg = simd::filter(Reg(norm_sqr) >= Reg(eps_sqr),
                                              Reg(inverse(sqrt(norm_sqr))));
     Vec<Num, Dim> r;
@@ -689,7 +685,7 @@ constexpr auto cross(const Vec<Num, 3>& a, const Vec<Num, 3>& b)
 
 // Vector formatter.
 template<class Num, tit::size_t Dim>
-struct std::formatter<tit::Vec<Num, Dim>> { // NOLINT(cert-dcl58-cpp)
+struct std::formatter<tit::Vec<Num, Dim>> {
   static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
   }

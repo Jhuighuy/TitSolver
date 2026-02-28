@@ -17,8 +17,9 @@ set(CLANG_WARNINGS
   -Wextra
   -Wpedantic
   -Wgnu
-  # No warnings for unknown warning options.
-  -Wno-unknown-warning-option
+  # Some extensions are allowed.
+  -Wno-gnu-zero-variadic-macro-arguments
+  -Wno-c2y-extensions
 )
 
 # Define common compile options.
@@ -128,7 +129,7 @@ set(CLANG_LINK_OPTIONS_DEBUG ${CLANG_LINK_OPTIONS} ${CLANG_DEBUG_OPTIONS})
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find clang-tidy. Prefer version-suffixed executables.
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy-21" "clang-tidy")
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy-22" "clang-tidy")
 
 # Define clang-tidy options.
 set(CLANG_TIDY_OPTIONS
@@ -203,9 +204,11 @@ function(enable_clang_tidy TARGET)
       COMMENT "Analyzing ${RELATIVE_SOURCE_PATH}"
       OUTPUT "${STAMP}"
       COMMAND
-        "${CHRONIC_EXE}"
-          "${CLANG_TIDY_EXE}"
-            "${SOURCE}" ${CLANG_TIDY_OPTIONS} -- ${TARGET_COMPILE_OPTIONS}
+        "${CLANG_TIDY_EXE}"
+          "${SOURCE}"
+          "--header-filter=${TARGET_SOURCE_DIR}/.*"
+          ${CLANG_TIDY_OPTIONS}
+          -- ${TARGET_COMPILE_OPTIONS}
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${STAMP}"
       DEPENDS "${SOURCE}" ${CLANG_TIDY_CONFIG_FILES}

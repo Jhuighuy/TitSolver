@@ -58,8 +58,7 @@ public:
 
 private:
 
-  std::unique_ptr<tbb::task_group> group_ =
-      std::make_unique<typename decltype(group_)::element_type>();
+  std::unique_ptr<tbb::task_group> group_ = std::make_unique<tbb::task_group>();
 
 }; // class TaskGroup
 

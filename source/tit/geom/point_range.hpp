@@ -14,7 +14,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/range.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
 
@@ -53,8 +52,7 @@ inline constexpr auto point_range_dim_v = vec_dim_v<point_range_vec_t<Points>>;
 /// Count the number of points in the given range as a point range number type.
 template<point_range Points>
 constexpr auto count_points(Points&& points) -> point_range_num_t<Points> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
-  return static_cast<point_range_num_t<Points>>(std::size(points));
+  return static_cast<point_range_num_t<Points>>(std::ranges::size(points));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,16 +61,14 @@ constexpr auto count_points(Points&& points) -> point_range_num_t<Points> {
 /// @{
 template<point_range Points>
 constexpr auto compute_center(Points&& points) -> point_range_vec_t<Points> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
   TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
-  auto sum = *std::begin(points);
+  auto sum = *std::ranges::begin(points);
   for (const auto& point : points | std::views::drop(1)) sum += point;
   return sum / count_points(points);
 }
 template<point_range Points>
 constexpr auto compute_center(Points&& points, std::span<const size_t> perm)
     -> point_range_vec_t<Points> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
   return compute_center(permuted_view(points, perm));
 }
 /// @}
@@ -83,16 +79,14 @@ constexpr auto compute_center(Points&& points, std::span<const size_t> perm)
 /// @{
 template<point_range Points>
 constexpr auto compute_bbox(Points&& points) -> point_range_bbox_t<Points> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
   TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
-  BBox box{*std::begin(points)};
+  BBox box{*std::ranges::begin(points)};
   for (const auto& point : points | std::views::drop(1)) box.expand(point);
   return box;
 }
 template<point_range Points>
 constexpr auto compute_bbox(Points&& points, std::span<const size_t> perm)
     -> point_range_bbox_t<Points> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
   return compute_bbox(permuted_view(points, perm));
 }
 /// @}
@@ -107,9 +101,8 @@ constexpr auto compute_bbox(Points&& points, std::span<const size_t> perm)
 template<point_range Points>
 constexpr auto compute_inertia_tensor(Points&& points)
     -> point_range_mat_t<Points> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
   TIT_ASSERT(!std::ranges::empty(points), "Points must not be empty!");
-  auto sum = *std::begin(points);
+  auto sum = *std::ranges::begin(points);
   auto inertia_tensor = outer_sqr(sum);
   for (const auto& point : points | std::views::drop(1)) {
     sum += point;
@@ -123,7 +116,6 @@ template<point_range Points>
 constexpr auto compute_inertia_tensor(Points&& points,
                                       std::span<const size_t> perm)
     -> point_range_mat_t<Points> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
   return compute_inertia_tensor(permuted_view(points, perm));
 }
 /// @}
@@ -136,7 +128,6 @@ constexpr auto compute_inertia_tensor(Points&& points,
 template<point_range Points>
 constexpr auto compute_largest_inertia_axis(Points&& points)
     -> std::expected<point_range_vec_t<Points>, MatEigError> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
   const auto inertia_tensor = compute_inertia_tensor(points);
   return jacobi(inertia_tensor).transform([](const auto& eig) {
     const auto& [V, d] = eig;
@@ -147,7 +138,6 @@ template<point_range Points>
 constexpr auto compute_largest_inertia_axis(Points&& points,
                                             std::span<const size_t> perm)
     -> std::expected<point_range_vec_t<Points>, MatEigError> {
-  TIT_ASSUME_UNIVERSAL(Points, points);
   return compute_largest_inertia_axis(permuted_view(points, perm));
 }
 /// @}

@@ -112,7 +112,7 @@ public:
     requires std::ranges::contiguous_range<Range> &&
              known_type_of<std::ranges::range_value_t<Range>>
   void write(Range&& data) const {
-    storage().array_write(array_id_, std::forward<Range>(data));
+    storage().array_write(array_id_, data);
   }
   /// @}
 
@@ -128,7 +128,7 @@ public:
     requires std::ranges::contiguous_range<Range> &&
              known_type_of<std::ranges::range_value_t<Range>>
   void read(Range&& data) const {
-    storage().array_read(array_id_, std::forward<Range>(data));
+    storage().array_read(array_id_, data);
   }
   template<known_type_of Val>
   auto read() const -> std::vector<Val> {
@@ -473,7 +473,7 @@ public:
     using Val = std::ranges::range_value_t<Range>;
     make_stream_serializer<Val>(
         array_open_write_(array_id, type_of<Val>, data.size()))
-        ->write(std::forward<Range>(data));
+        ->write(data);
   }
   /// @}
 
@@ -488,8 +488,7 @@ public:
     using Val = std::ranges::range_value_t<Range>;
     TIT_ASSERT(array_type(array_id) == type_of<Val>, "Type mismatch!");
     TIT_ASSERT(data.size() == array_size(array_id), "Data size mismatch!");
-    make_stream_deserializer<Val>(array_open_read_(array_id))
-        ->read(std::forward<Range>(data));
+    make_stream_deserializer<Val>(array_open_read_(array_id))->read(data);
   }
   template<known_type_of Val>
   auto array_read(ArrayID array_id) const -> std::vector<Val> {

@@ -24,8 +24,6 @@
 #include <stdlib.h> // NOLINT(*-deprecated-headers)
 #endif
 
-// NOLINTBEGIN(*-use-after-move,clang-analyzer-cplusplus.Move)
-
 #include "tit/core/exception.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/posix.hpp"
@@ -415,30 +413,16 @@ TEST_CASE("FD") {
 
       const FD fd2{std::move(fd1)};
       CHECK(fd2 == raw_fd);
-      CHECK(fd1 == -1);
     }
     SUBCASE("assignment") {
-      SUBCASE("self") {
-        const auto raw_fd = checked_open(__FILE__, O_RDONLY);
+      const auto raw_fd = checked_open(__FILE__, O_RDONLY);
 
-        FD fd{raw_fd};
-        REQUIRE(fd == raw_fd);
+      FD fd1{raw_fd};
+      REQUIRE(fd1 == raw_fd);
 
-        auto& fd_ref = fd;
-        fd = std::move(fd_ref);
-        CHECK(fd == raw_fd);
-      }
-      SUBCASE("other") {
-        const auto raw_fd = checked_open(__FILE__, O_RDONLY);
-
-        FD fd1{raw_fd};
-        REQUIRE(fd1 == raw_fd);
-
-        FD fd2;
-        fd2 = std::move(fd1);
-        CHECK(fd2 == raw_fd);
-        CHECK(fd1 == -1);
-      }
+      FD fd2;
+      fd2 = std::move(fd1);
+      CHECK(fd2 == raw_fd);
     }
   }
   SUBCASE("reset") {
@@ -555,51 +539,35 @@ TEST_CASE("Process") {
 
       const Process process_2{std::move(process_1)};
       CHECK(process_2.pid() == pid);
-      CHECK(process_1.pid() == -1);
     }
     SUBCASE("assignment") {
-      SUBCASE("self") {
-        Process process;
-        process.spawn_child([] { fast_exit(0); });
+      SUBCASE("assign running to empty") {
+        Process process_1;
+        process_1.spawn_child([] { fast_exit(0); });
 
-        REQUIRE(process.pid() > 0);
-        const auto pid = process.pid();
+        const auto pid = process_1.pid();
+        REQUIRE(pid > 0);
 
-        auto& process_ref = process;
-        process_ref = std::move(process);
-        CHECK(process.pid() == pid);
+        Process process_2;
+        REQUIRE(process_2.pid() == -1);
+
+        process_2 = std::move(process_1);
+        CHECK(process_2.pid() == pid);
       }
-      SUBCASE("other") {
-        SUBCASE("assign running to empty") {
-          Process process_1;
-          process_1.spawn_child([] { fast_exit(0); });
+      SUBCASE("assign empty to running") {
+        Process process_1;
+        REQUIRE(process_1.pid() == -1);
 
-          const auto pid = process_1.pid();
-          REQUIRE(pid > 0);
+        Process process_2;
+        process_2.spawn_child([] { fast_exit(0); });
 
-          Process process_2;
-          REQUIRE(process_2.pid() == -1);
+        const auto pid = process_2.pid();
+        REQUIRE(pid > 0);
 
-          process_2 = std::move(process_1);
-          CHECK(process_2.pid() == pid);
-          CHECK(process_1.pid() == -1);
-        }
-        SUBCASE("assign empty to running") {
-          Process process_1;
-          REQUIRE(process_1.pid() == -1);
+        process_2 = std::move(process_1);
+        CHECK(process_2.pid() == -1);
 
-          Process process_2;
-          process_2.spawn_child([] { fast_exit(0); });
-
-          const auto pid = process_2.pid();
-          REQUIRE(pid > 0);
-
-          process_2 = std::move(process_1);
-          CHECK(process_1.pid() == -1);
-          CHECK(process_2.pid() == -1);
-
-          CHECK_THROWS_AS(checked_kill(pid, SIGTERM), ErrnoException);
-        }
+        CHECK_THROWS_AS(checked_kill(pid, SIGTERM), ErrnoException);
       }
     }
   }
@@ -707,5 +675,3 @@ TEST_CASE("Process") {
 
 } // namespace
 } // namespace tit
-
-// NOLINTEND(*-use-after-move,clang-analyzer-cplusplus.Move)

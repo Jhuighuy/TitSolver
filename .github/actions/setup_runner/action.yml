@@ -31,7 +31,7 @@ runs:
 
         BREW_PREFIX="$(brew --prefix)"
         GCC_VERSION="${{ inputs.gcc_version || '15' }}"
-        LLVM_VERSION="${{ inputs.llvm_version || '21' }}"
+        LLVM_VERSION="${{ inputs.llvm_version || '22' }}"
 
         # ----------------------------------------------------------------------
         #

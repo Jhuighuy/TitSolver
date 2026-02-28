@@ -41,7 +41,7 @@ auto checked_open(const std::filesystem::path& file, int flags) -> fd_t {
                     "Call to `checked_open` with `O_CREAT` flag must be "
                     "specified accompanied with a non-zero `mode` argument.");
 
-  const auto fd = open(file.c_str(), flags); // NOLINT(*-vararg)
+  const auto fd = open(file.c_str(), flags);
   TIT_ENSURE_ERRNO(fd >= 0, "Failed to open a file.");
 
   return fd;
@@ -53,7 +53,7 @@ auto checked_open(const std::filesystem::path& file, int flags, mode_t mode)
                     "specified accompanied with a non-zero `mode` argument.");
   TIT_ASSERT(mode != 0, "Invalid file mode!");
 
-  const auto fd = open(file.c_str(), flags, mode); // NOLINT(*-vararg)
+  const auto fd = open(file.c_str(), flags, mode);
   TIT_ENSURE_ERRNO(fd >= 0, "Failed to open a file.");
 
   return fd;
@@ -106,10 +106,8 @@ void checked_dup2(fd_t fd, fd_t new_fd) {
 auto checked_get_fcntl(fd_t fd) -> int {
   TIT_ASSERT(fd >= 0, "Invalid file descriptor!");
 
-  // NOLINTBEGIN(*-vararg)
   const int flags = fcntl(fd, F_GETFL, 0);
   TIT_ENSURE_ERRNO(flags >= 0, "Failed to get a file descriptor flags.");
-  // NOLINTEND(*-vararg)
 
   return flags;
 }
@@ -117,10 +115,8 @@ auto checked_get_fcntl(fd_t fd) -> int {
 void checked_set_fcntl(fd_t fd, int flags) {
   TIT_ASSERT(fd >= 0, "Invalid file descriptor!");
 
-  // NOLINTBEGIN(*-vararg)
   const auto status = fcntl(fd, F_SETFL, flags);
   TIT_ENSURE_ERRNO(status == 0, "Failed to set a file descriptor flags.");
-  // NOLINTEND(*-vararg)
 }
 
 auto checked_poll(std::span<pollfd> fds, std::chrono::milliseconds timeout)
