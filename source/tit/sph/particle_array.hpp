@@ -17,7 +17,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/sph/field.hpp"
@@ -109,7 +108,6 @@ public:
       -> decltype(auto) {
     static_assert(fields.contains(Field{}));
     if constexpr (overrides.contains(Field{})) {
-      TIT_ASSUME_UNIVERSAL(Self, self);
       return std::get<overrides.find(Field{})>(
           std::forward_like<Self>(self.overrides_data_));
     } else {
@@ -356,7 +354,7 @@ struct particle_field_reference<field, PA> {
 template<auto field, class P>
   requires particle_view<P, field> || particle_array<P, field>
 using particle_field_reference_t =
-    typename impl::particle_field_reference<field, P>::type;
+    impl::particle_field_reference<field, P>::type;
 
 /// Particle field type.
 template<auto field, class P>

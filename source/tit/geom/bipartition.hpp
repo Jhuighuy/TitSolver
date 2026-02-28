@@ -6,14 +6,13 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <functional>
+#include <ranges>
 #include <span>
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/point_range.hpp"
 
@@ -33,7 +32,6 @@ public:
                             size_t axis,
                             bool reverse = false) const
       -> std::pair<std::span<size_t>, std::span<size_t>> {
-    TIT_ASSUME_UNIVERSAL(Points, points);
     TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
     std::span<size_t> right_perm;
     if (reverse) {
@@ -47,7 +45,10 @@ public:
           std::bind_back(std::less{}, pivot),
           [&points, axis](size_t index) { return points[index][axis]; });
     }
-    return {{std::begin(perm), std::begin(right_perm)}, right_perm};
+    return {
+        {std::ranges::begin(perm), std::ranges::begin(right_perm)},
+        right_perm,
+    };
   }
 
 }; // class CoordBisection
@@ -69,7 +70,6 @@ public:
                             const point_range_vec_t<Points>& dir,
                             bool reverse = false) const
       -> std::pair<std::span<size_t>, std::span<size_t>> {
-    TIT_ASSUME_UNIVERSAL(Points, points);
     std::span<size_t> right_perm;
     if (reverse) {
       right_perm = std::ranges::partition(
@@ -82,7 +82,10 @@ public:
           std::bind_back(std::less{}, pivot),
           [&points, &dir](size_t index) { return dot(points[index], dir); });
     }
-    return {{std::begin(perm), std::begin(right_perm)}, right_perm};
+    return {
+        {std::ranges::begin(perm), std::ranges::begin(right_perm)},
+        right_perm,
+    };
   }
 
 }; // class DirBisection
@@ -104,7 +107,6 @@ public:
                             size_t median_index,
                             size_t axis) const
       -> std::pair<std::span<size_t>, std::span<size_t>> {
-    TIT_ASSUME_UNIVERSAL(Points, points);
     TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
     const auto median = perm.begin() + static_cast<ssize_t>(median_index);
     std::ranges::nth_element(
@@ -112,7 +114,10 @@ public:
         median,
         std::less{},
         [&points, axis](size_t index) { return points[index][axis]; });
-    return {{std::begin(perm), median}, {median, std::end(perm)}};
+    return {
+        {std::ranges::begin(perm), median},
+        {median, std::ranges::end(perm)},
+    };
   }
 
   /// Split the points into two parts by the median along the longest axis
@@ -122,7 +127,6 @@ public:
                             std::span<size_t> perm,
                             size_t median_index) const
       -> std::pair<std::span<size_t>, std::span<size_t>> {
-    TIT_ASSUME_UNIVERSAL(Points, points);
     const auto box = compute_bbox(points, perm);
     const auto axis = max_value_index(box.extents());
     return (*this)(points, perm, median_index, axis);
@@ -147,7 +151,6 @@ public:
                             size_t median_index,
                             const point_range_vec_t<Points>& dir) const
       -> std::pair<std::span<size_t>, std::span<size_t>> {
-    TIT_ASSUME_UNIVERSAL(Points, points);
     const auto median = perm.begin() + static_cast<ssize_t>(median_index);
     std::ranges::nth_element( //
         perm,
@@ -155,7 +158,10 @@ public:
         [&points, &dir](size_t i, size_t j) {
           return dot(points[i] - points[j], dir) < 0;
         });
-    return {{std::begin(perm), median}, {median, std::end(perm)}};
+    return {
+        {std::ranges::begin(perm), median},
+        {median, std::ranges::end(perm)},
+    };
   }
 
 }; // class DirMedianSplit
@@ -179,7 +185,6 @@ public:
                             const point_range_vec_t<Points>& fallback_dir =
                                 unit(point_range_vec_t<Points>{})) const
       -> std::pair<std::span<size_t>, std::span<size_t>> {
-    TIT_ASSUME_UNIVERSAL(Points, points);
     const auto dir =
         compute_largest_inertia_axis(points, perm).value_or(fallback_dir);
     return dir_median_split(points, perm, median_index, dir);

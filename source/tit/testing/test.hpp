@@ -77,7 +77,7 @@ template<std::ranges::input_range Range1,
          std::ranges::input_range Range2 =
              std::initializer_list<std::ranges::range_value_t<Range1>>>
 constexpr auto equal(Range1&& a, Range2&& b) -> bool {
-  return std::ranges::equal(std::forward<Range1>(a), std::forward<Range2>(b));
+  return std::ranges::equal(a, b);
 }
 
 /// Test that the range operands are equal.

@@ -12,7 +12,6 @@
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
 #include "tit/par/task_group.hpp"
@@ -29,7 +28,6 @@ public:
   template<point_range Points>
   void operator()(Points&& points, std::span<size_t> perm) const {
     TIT_PROFILE_SECTION("MortonCurveSort::operator()");
-    TIT_ASSUME_UNIVERSAL(Points, points);
     using Box = point_range_bbox_t<Points>;
 
     // Initialize sorting.
@@ -43,7 +41,7 @@ public:
                                         const Box& my_box,
                                         std::ranges::view auto my_perm,
                                         size_t axis) -> void {
-      if (std::size(my_perm) <= 1) return;
+      if (std::ranges::size(my_perm) <= 1) return;
 
       // Split the points along the current axis.
       const auto center_coord = my_box.center()[axis];

@@ -66,7 +66,7 @@ public:
   [[gnu::always_inline]]
   explicit Reg(std::span<const Num> span) noexcept {
     TIT_ASSERT(span.size() >= Size, "Data size is too small!");
-    base = hn::LoadU(Tag{}, span.data()); // NOLINT(*-prefer-member-initializer)
+    base = hn::LoadU(Tag{}, span.data());
   }
 
   /// Store SIMD register into memory.

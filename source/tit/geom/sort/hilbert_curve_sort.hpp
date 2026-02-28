@@ -14,7 +14,6 @@
 #include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
 #include "tit/par/task_group.hpp"
@@ -153,7 +152,6 @@ public:
   template<point_range Points>
   void operator()(Points&& points, std::span<size_t> perm) const {
     TIT_PROFILE_SECTION("HilbertCurveSort::operator()");
-    TIT_ASSUME_UNIVERSAL(Points, points);
     using Box = point_range_bbox_t<Points>;
     static constexpr auto Dim = point_range_dim_v<Points>;
     using State = impl::HilbertState<Dim>;
@@ -168,7 +166,7 @@ public:
                                         const Box& my_box,
                                         std::ranges::view auto my_perm,
                                         const State& state) -> void {
-      if (std::size(my_perm) <= 1) return;
+      if (std::ranges::size(my_perm) <= 1) return;
 
       // Split permutation along the current axis.
       const auto axis = state.axis();

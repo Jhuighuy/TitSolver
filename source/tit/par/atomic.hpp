@@ -14,8 +14,6 @@
 
 namespace tit::par {
 
-// NOLINTBEGIN(*-pro-type-vararg)
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Atomic type.
@@ -85,7 +83,5 @@ inline auto fetch_and_add(Val& val, difference_t<Val> delta) noexcept -> Val {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// NOLINTEND(*-pro-type-vararg)
 
 } // namespace tit::par

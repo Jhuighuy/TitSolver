@@ -22,10 +22,8 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// NOLINTBEGIN(cert-err58-cpp)
 const size_t ZSTDStreamCompressor::in_chunk_size_ = ZSTD_CStreamInSize();
 const size_t ZSTDStreamCompressor::out_chunk_size_ = ZSTD_CStreamOutSize();
-// NOLINTEND(cert-err58-cpp)
 
 ZSTDStreamCompressor::ZSTDStreamCompressor(OutputStreamPtr<std::byte> stream)
     : stream_{std::move(stream)}, context_{ZSTD_createCCtx()} {
@@ -109,10 +107,8 @@ auto make_zstd_stream_compressor(OutputStreamPtr<std::byte> stream)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// NOLINTBEGIN(cert-err58-cpp)
 const size_t ZSTDStreamDecompressor::in_chunk_size_ = ZSTD_DStreamInSize();
 const size_t ZSTDStreamDecompressor::out_chunk_size_ = ZSTD_DStreamOutSize();
-// NOLINTEND(cert-err58-cpp)
 
 ZSTDStreamDecompressor::ZSTDStreamDecompressor(InputStreamPtr<std::byte> stream)
     : stream_{std::move(stream)}, context_{ZSTD_createDCtx()} {
