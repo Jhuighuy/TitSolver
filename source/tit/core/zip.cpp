@@ -11,9 +11,16 @@
 #include <string>
 #include <vector>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
 #include <miniz.h>
 #include <miniz_common.h>
 #include <miniz_zip.h>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"

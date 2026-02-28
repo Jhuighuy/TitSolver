@@ -5,52 +5,55 @@
 
 # Rational on disabled checks:
 #
-# * bugprone-easily-swappable-parameters:
-#   Very strict check, but I wish to re-enable this check in the future.
+# | bugprone-easily-swappable-parameters
+# | bugprone-random-generator-seed
+# | cppcoreguidelines-avoid-magic-numbers
+# | cppcoreguidelines-macro-usage
+# | cppcoreguidelines-pro-bounds-avoid-unchecked-container-access
+# | cppcoreguidelines-pro-bounds-constant-array-index
+# | cppcoreguidelines-pro-bounds-pointer-arithmetic
+# | cppcoreguidelines-pro-type-union-access
+# | cppcoreguidelines-pro-type-vararg
+# | misc-no-recursion
+# | modernize-use-nodiscard
+# | readability-identifier-length
+# | readability-magic-numbers
+# | readability-math-missing-parentheses
+# |__ Excessively strict checks.
 #
-# * cert-msc32-c, cert-msc51-cpp:
-#   We are fine with fixed seed for random number generators.
+# | bugprone-throwing-static-initialization,
+# | readability-function-cognitive-complexity:
+# |__ These checks do not work correctly with Doctest.
 #
-# * cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers:
-#   Very strict check, but I wish to re-enable this check in the future.
-#   Will take time to properly configure and fix all issues.
+# | cppcoreguidelines-missing-std-forward
+# |__ Outdated check for C++20 ranges code.
 #
-# * cppcoreguidelines-macro-usage:
-#   Excessively strict check.
-#
-# * cppcoreguidelines-pro-bounds-constant-array-index:
-#   Excessively strict check, also does not work correctly with doctest macros.
-#
-# * cppcoreguidelines-pro-bounds-pointer-arithmetic:
-#   It is impossible to avoid pointer arithmetic, especially when iterators
-#   of some standard containers are just raw pointers.
-#
-# * modernize-use-nodiscard:
-#   Excessively strict check, I do not want to put `[[nodiscard]]` everywhere.
-#
-# * readability-function-cognitive-complexity:
-#   Does not work correctly with doctest macros.
-#
-# * readability-identifier-length:
-#   We are doing a lot of math, so have a lot of short identifiers.
-#
-# * readability-math-missing-parentheses:
-#   Excessively strict check, also does not work correctly with doctest macros.
-#   Maybe reconsider this check once it will be configurable.
+# | bugprone-std-namespace-modification
+# | modernize-avoid-c-style-cast
+# | modernize-type-traits
+# |__ These checks are completely broken in LLVM 22.
 Checks: |
   bugprone-*
   -bugprone-easily-swappable-parameters
-  cert-*
-  -cert-msc32-c
-  -cert-msc51-cpp
+  -bugprone-random-generator-seed
+  -bugprone-std-namespace-modification
+  -bugprone-throwing-static-initialization
   concurrency-*
+  -concurrency-mt-unsafe
   cppcoreguidelines-*
   -cppcoreguidelines-avoid-magic-numbers
   -cppcoreguidelines-macro-usage
+  -cppcoreguidelines-missing-std-forward
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access
   -cppcoreguidelines-pro-bounds-constant-array-index
   -cppcoreguidelines-pro-bounds-pointer-arithmetic
+  -cppcoreguidelines-pro-type-union-access
+  -cppcoreguidelines-pro-type-vararg
   misc-*
+  -misc-no-recursion
   modernize-*
+  -modernize-avoid-c-style-cast
+  -modernize-type-traits
   -modernize-use-nodiscard
   performance-*
   readability-*

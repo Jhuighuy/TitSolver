@@ -6,7 +6,6 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <limits>
 #include <random>
 #include <ranges>
@@ -17,7 +16,6 @@
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/geom/point_range.hpp"
 
 namespace tit::geom {
@@ -46,20 +44,18 @@ public:
                   std::ranges::range_value_t<Clusters> num_clusters,
                   std::ranges::range_value_t<Clusters> init_cluster = 0) const {
     TIT_PROFILE_SECTION("KMeansClustering::operator()");
-    TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Clusters, clusters);
     using Cluster = std::ranges::range_value_t<Clusters>;
     using Vec = point_range_vec_t<Points>;
     using Num = point_range_num_t<Points>;
 
     // Validate the arguments.
-    const auto num_points = std::size(points);
+    const auto num_points = std::ranges::size(points);
     TIT_ASSERT(num_clusters > 0, "Number of clusters must be positive!");
     TIT_ASSERT(num_points >= num_clusters,
                "Number of points cannot be less than the number of clusters!");
     if constexpr (std::ranges::sized_range<Clusters>) {
       TIT_ASSERT(
-          num_points == std::size(clusters),
+          num_points == std::ranges::size(clusters),
           "Size of clusters range must be equal to the number of points!");
     }
 

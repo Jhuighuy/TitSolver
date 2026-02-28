@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/utils.hpp"
 
 namespace tit {
 
@@ -25,7 +24,6 @@ concept output_index_range = std::ranges::random_access_range<Indices> &&
 template<std::ranges::random_access_range Range>
   requires std::ranges::viewable_range<Range>
 constexpr auto permuted_view(Range&& range, std::span<const size_t> perm) {
-  TIT_ASSUME_UNIVERSAL(Range, range);
   return perm | std::views::transform(
                     [range_view = std::views::all(std::forward<Range>(range))](
                         size_t index) -> auto&& { return range_view[index]; });

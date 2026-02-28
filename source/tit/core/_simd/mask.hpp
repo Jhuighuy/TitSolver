@@ -29,7 +29,7 @@ template<>
 struct mask_bits<float64_t> : std::type_identity<uint64_t> {};
 
 template<supported_type Num>
-using mask_bits_t = typename impl::mask_bits<Num>::type;
+using mask_bits_t = impl::mask_bits<Num>::type;
 
 } // namespace impl
 

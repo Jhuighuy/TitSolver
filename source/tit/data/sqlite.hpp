@@ -127,7 +127,7 @@ public:
       } else if constexpr (std::floating_point<Arg>) {
         bind_(index, static_cast<float64_t>(arg));
       } else if constexpr (str_like<Arg> || blob_arg<Arg>) {
-        bind_(index, arg);
+        bind_(index, arg); // NOLINT(*-array-to-pointer-decay)
       } else {
         static_assert(false);
       }

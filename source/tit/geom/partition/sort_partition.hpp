@@ -13,7 +13,6 @@
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/geom/point_range.hpp"
 #include "tit/geom/sort.hpp"
 
@@ -40,20 +39,18 @@ public:
                   std::ranges::range_value_t<Parts> num_parts,
                   std::ranges::range_value_t<Parts> init_part = 0) const {
     TIT_PROFILE_SECTION("SortPartition::operator()");
-    TIT_ASSUME_UNIVERSAL(Points, points);
-    TIT_ASSUME_UNIVERSAL(Parts, parts);
 
     // Validate the arguments.
     TIT_ASSERT(num_parts > 0, "Number of parts must be positive!");
-    TIT_ASSERT(std::size(points) >= num_parts,
+    TIT_ASSERT(std::ranges::size(points) >= num_parts,
                "Number of points cannot be less than the number of parts!");
     if constexpr (std::ranges::sized_range<Parts>) {
-      TIT_ASSERT(std::size(points) == std::size(parts),
+      TIT_ASSERT(std::ranges::size(points) == std::ranges::size(parts),
                  "Size of parts range must be equal to the number of points!");
     }
 
     // Build the permutation using the spatial sort.
-    const auto num_points = std::size(points);
+    const auto num_points = std::ranges::size(points);
     std::vector<size_t> perm(num_points);
     sort_(points, perm);
 

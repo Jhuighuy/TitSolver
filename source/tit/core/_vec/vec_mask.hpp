@@ -59,8 +59,6 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  // NOLINTBEGIN(*-type-union-access)
-
   /// Fill-initialize the vector mask with false values.
   constexpr VecMask() {
     TIT_IF_SIMD_AVALIABLE(Num) {
@@ -109,8 +107,6 @@ public:
     return regs_[i];
   }
   /// @}
-
-  // NOLINTEND(*-type-union-access)
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -223,7 +219,7 @@ constexpr auto any(const VecMask<Num, Dim>& m) -> bool {
 template<class Num, size_t Dim>
 constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
   TIT_IF_SIMD_AVALIABLE(Num) {
-    using RegMask = typename VecMask<Num, Dim>::RegMask;
+    using RegMask = VecMask<Num, Dim>::RegMask;
     constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
     if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
       return simd::all(simd::merge_n(Dim, m.reg(0), RegMask(true)));

@@ -24,7 +24,7 @@ constexpr auto default_terminal_width = 80;
 auto terminal_width(int fd) -> size_t {
   if (isatty(fd) == 0) return default_terminal_width;
 
-  winsize window_size = {}; // NOLINTNEXTLINE(*-vararg,*-include-cleaner)
+  winsize window_size = {};
   const auto status = ioctl(fd, TIOCGWINSZ, &window_size);
   TIT_ENSURE_ERRNO(status == 0,
                    "Unable to query terminal window size with fileno {}!",

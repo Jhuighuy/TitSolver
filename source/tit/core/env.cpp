@@ -15,7 +15,7 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto get_env(const std::string& name) noexcept -> std::optional<std::string> {
-  const auto* const value = std::getenv(name.c_str()); // NOLINT(*-mt-unsafe)
+  const auto* const value = std::getenv(name.c_str());
   if (value == nullptr) return std::nullopt;
   return value;
 }
@@ -23,7 +23,7 @@ auto get_env(const std::string& name) noexcept -> std::optional<std::string> {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void set_env(const std::string& name, const std::string& val) {
-  // NOLINTNEXTLINE(*-mt-unsafe,*-include-cleaner)
+  // NOLINTNEXTLINE(*-include-cleaner)
   const auto status = setenv(name.c_str(), val.c_str(), /*overwrite=*/1);
   TIT_ENSURE_ERRNO(status == 0,
                    "Unable to set environment variable '{}' value to '{}'.",
@@ -34,7 +34,7 @@ void set_env(const std::string& name, const std::string& val) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void unset_env(const std::string& name) {
-  // NOLINTNEXTLINE(*-mt-unsafe,*-include-cleaner)
+  // NOLINTNEXTLINE(*-include-cleaner)
   const auto status = unsetenv(name.c_str());
   TIT_ENSURE_ERRNO(status == 0,
                    "Unable to unset environment variable '{}'.",

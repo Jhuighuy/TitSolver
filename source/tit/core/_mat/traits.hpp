@@ -30,7 +30,7 @@ inline constexpr bool is_mat_v = impl::is_mat_v<T>;
 /// Matrix row type.
 template<class Mat>
   requires is_mat_v<Mat>
-using mat_row_t = typename Mat::Row;
+using mat_row_t = Mat::Row;
 
 /// Number type of the matrix.
 template<class Mat>

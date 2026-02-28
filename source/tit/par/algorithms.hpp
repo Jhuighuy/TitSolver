@@ -20,7 +20,6 @@
 #include <oneapi/tbb/parallel_sort.h>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/par/atomic.hpp"
 #include "tit/par/control.hpp"
 
@@ -45,8 +44,7 @@ namespace impl {
 
 template<range Range>
 static auto make_blocked(Range&& range) noexcept -> blocked_range_t<Range&&> {
-  TIT_ASSUME_UNIVERSAL(Range, range);
-  return {std::begin(range), std::end(range)};
+  return {std::ranges::begin(range), std::ranges::end(range)};
 }
 
 } // namespace impl
@@ -196,9 +194,9 @@ struct Transform final {
             std::projected<std::ranges::iterator_t<Range>, Proj>>>
   static auto operator()(Range&& range, OutIter out, Func func, Proj proj = {})
       -> OutIter {
-    const auto out_end = std::next(out, std::size(range));
+    const auto out_end = std::ranges::next(out, std::ranges::size(range));
     for_each(std::views::zip(std::ranges::subrange{out, out_end},
-                             std::views::as_const(std::forward<Range>(range))),
+                             std::views::as_const(range)),
              [&func, &proj](auto arg) {
                std::get<0>(arg) =
                    std::invoke(func, std::invoke(proj, std::get<1>(arg)));
@@ -220,10 +218,9 @@ struct Sort final {
   template<range Range, class Compare = std::less<>, class Proj = std::identity>
     requires std::sortable<std::ranges::iterator_t<Range>, Compare, Proj>
   static void operator()(Range&& range, Compare compare = {}, Proj proj = {}) {
-    TIT_ASSUME_UNIVERSAL(Range, range);
     tbb::parallel_sort(
-        std::begin(range),
-        std::end(range),
+        std::ranges::begin(range),
+        std::ranges::end(range),
         [&compare, &proj](std::ranges::range_reference_t<Range> a,
                           std::ranges::range_reference_t<Range> b) {
           return std::invoke(compare,

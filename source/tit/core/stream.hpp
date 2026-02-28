@@ -72,7 +72,7 @@ using InputStreamPtr =
 template<class IS, class... Args>
 constexpr auto make_input_stream(Args&&... args)
     -> InputStreamPtr<typename IS::item_type> {
-  using ItemType = typename IS::item_type;
+  using ItemType = IS::item_type;
   static_assert(std::derived_from<IS, tit::InputStream<ItemType>>,
                 "`IS` must be derived from `InputStream`!");
   return InputStreamPtr<ItemType>{new IS{std::forward<Args>(args)...}};
@@ -129,7 +129,7 @@ using OutputStreamPtr =
 template<class OS, class... Args>
 constexpr auto make_output_stream(Args&&... args)
     -> OutputStreamPtr<typename OS::item_type> {
-  using ItemType = typename OS::item_type;
+  using ItemType = OS::item_type;
   static_assert(std::derived_from<OS, tit::OutputStream<ItemType>>,
                 "`OS` must be derived from `OutputStream<Item>`!");
   return OutputStreamPtr<ItemType>{new OS{std::forward<Args>(args)...}};

@@ -149,13 +149,12 @@ struct field_value;
 
 template<empty_type Field, class Real, size_t Dim>
 struct field_value<Field, Space<Real, Dim>> {
-  using type =
-      typename std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
+  using type = std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
 };
 
 /// Field value type.
 template<empty_type Field, class Space>
-using field_value_t = typename field_value<Field, Space>::type;
+using field_value_t = field_value<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
