@@ -13,7 +13,7 @@ import { twMerge } from "tailwind-merge";
  */
 export function assert(
   condition: unknown,
-  message?: string
+  message?: string,
 ): asserts condition {
   if (!condition) throw new Error(message ?? "Assertion failed.");
 }
@@ -93,13 +93,13 @@ export function decodeBase64(b64: string, type: string) {
   const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   assert(
     bytes.byteLength % ctor.BYTES_PER_ELEMENT === 0,
-    `Byte length ${bytes.byteLength} is not a multiple of ${ctor.BYTES_PER_ELEMENT} for type ${type}`
+    `Byte length ${bytes.byteLength} is not a multiple of ${ctor.BYTES_PER_ELEMENT} for type ${type}`,
   );
 
   const vals = new ctor(
     bytes.buffer,
     bytes.byteOffset,
-    bytes.byteLength / ctor.BYTES_PER_ELEMENT
+    bytes.byteLength / ctor.BYTES_PER_ELEMENT,
   );
 
   // Convert `bigint` arrays to number arrays.

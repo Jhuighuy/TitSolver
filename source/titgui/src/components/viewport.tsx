@@ -99,7 +99,7 @@ export function Viewport() {
     renderer.particles.setData(frameData, currentField);
     renderer.particles.setColorRange(
       frameData[currentField].min,
-      frameData[currentField].max
+      frameData[currentField].max,
     );
   }, [frameData, currentField]);
 
@@ -116,7 +116,7 @@ export function Viewport() {
 
     function handleChange() {
       setCameraRotation(
-        new Vector3().copy(controller.rotation).multiplyScalar(180 / Math.PI)
+        new Vector3().copy(controller.rotation).multiplyScalar(180 / Math.PI),
       );
     }
 
@@ -129,7 +129,7 @@ export function Viewport() {
     if (renderer === null) return;
 
     renderer.cameraController.rotation.setFromVector3(
-      cameraRotation.clone().multiplyScalar(Math.PI / 180)
+      cameraRotation.clone().multiplyScalar(Math.PI / 180),
     );
   }, [cameraRotation]);
 
@@ -248,7 +248,7 @@ export function Viewport() {
                     {label}
                   </Flex>
                 </Select.Item>
-              )
+              ),
             )}
           </Select.Content>
         </Select.Root>

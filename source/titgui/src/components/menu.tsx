@@ -46,7 +46,7 @@ export function Menu({ children }: Readonly<MenuProps>) {
   const childrenArray = items(children);
   const maxGroup = childrenArray.reduce(
     (max, c) => Math.max(max, c.props.group),
-    0
+    0,
   );
 
   return (
@@ -79,7 +79,7 @@ export function Menu({ children }: Readonly<MenuProps>) {
                       {item.props.icon}
                     </IconButton>
                   </Tooltip>
-                )
+                ),
             )}
           </Flex>
         ))}
@@ -150,7 +150,7 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
         return () => setActions((prev) => prev.filter(filterByName));
       },
     }),
-    []
+    [],
   );
 
   // ---- Layout. --------------------------------------------------------------

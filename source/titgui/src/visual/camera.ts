@@ -37,7 +37,7 @@ export class Camera extends ThreeCamera {
           halfHeight,
           -halfHeight,
           this.near,
-          this.far
+          this.far,
         );
         break;
       }
@@ -50,7 +50,7 @@ export class Camera extends ThreeCamera {
           halfHeight,
           -halfHeight,
           this.near,
-          this.far
+          this.far,
         );
         break;
       }

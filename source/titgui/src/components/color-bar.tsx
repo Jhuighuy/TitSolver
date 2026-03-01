@@ -32,10 +32,10 @@ export function ColorBox({
               ${Math.round(r * 255)},
               ${Math.round(g * 255)},
               ${Math.round(b * 255)}
-            ) ${value * 100}%`
+            ) ${value * 100}%`,
         )
         .join(", "),
-    [name]
+    [name],
   );
 
   const gradient = useMemo(
@@ -43,7 +43,7 @@ export function ColorBox({
       orientation === "vertical"
         ? `linear-gradient(to top, ${gradientStops})`
         : `linear-gradient(to right, ${gradientStops})`,
-    [gradientStops, orientation]
+    [gradientStops, orientation],
   );
 
   return <Box {...props} style={{ ...style, background: gradient }} />;
