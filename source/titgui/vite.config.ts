@@ -22,10 +22,6 @@ export default defineConfig({
     tailwindcss(),
     titapp(),
   ],
-  build: {
-    outDir: process.env.PNPM_OUTPUT_DIR ?? "dist",
-    emptyOutDir: true,
-  },
 });
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
