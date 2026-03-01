@@ -15,7 +15,7 @@ import tseslint from "typescript-eslint";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export default defineConfig({
-  ignores: ["dist", "coverage"],
+  ignores: ["dist"],
   extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
   files: ["**/*.{ts,tsx}"],
   languageOptions: {

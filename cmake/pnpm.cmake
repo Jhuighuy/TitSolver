@@ -14,9 +14,6 @@ find_program(PNPM_EXE NAMES "pnpm" REQUIRED)
 # Find the PNPX executable.
 find_program(PNPX_EXE NAMES "pnpx" REQUIRED)
 
-# Setup the PNPM test runner executable.
-set(PNPM_TEST_CMD "pnpm run $<IF:$<CONFIG:Coverage>,coverage,test>")
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #

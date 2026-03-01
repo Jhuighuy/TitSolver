@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-/// <reference types="vitest/config" />
 import { type ChildProcess, spawn } from "node:child_process";
 import { type AddressInfo, createServer } from "node:net";
 import path from "node:path";
@@ -15,30 +14,17 @@ import { defineConfig, type Plugin } from "vite";
 
 // See https://vitejs.dev/config/ for options.
 export default defineConfig({
+  resolve: {
+    alias: { "~": path.resolve(__dirname, "./src") },
+  },
   plugins: [
-    react({
-      babel: {
-        plugins: [["babel-plugin-react-compiler"]],
-      },
-    }),
+    react({ babel: { plugins: [["babel-plugin-react-compiler"]] } }),
     tailwindcss(),
     titapp(),
   ],
-  resolve: {
-    alias: {
-      "~": path.resolve(__dirname, "./src"),
-    },
-  },
   build: {
     outDir: process.env.PNPM_OUTPUT_DIR ?? "dist",
     emptyOutDir: true,
-  },
-  test: {
-    globals: true,
-    environment: "jsdom",
-    coverage: {
-      reporter: ["lcov"],
-    },
   },
 });
 
