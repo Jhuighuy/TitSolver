@@ -66,7 +66,7 @@ export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
           const { code, signal } = response;
           setSolverOutput(
             (prev) =>
-              `${prev}\n[Process exited with code ${code}, signal ${signal}]\n`
+              `${prev}\n[Process exited with code ${code}, signal ${signal}]\n`,
           );
 
           isSolverRunningRef.current = false;
@@ -93,7 +93,7 @@ export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
       runSolver,
       stopSolver,
     }),
-    [isSolverRunning, solverOutput, runSolver, stopSolver]
+    [isSolverRunning, solverOutput, runSolver, stopSolver],
   );
 
   return (

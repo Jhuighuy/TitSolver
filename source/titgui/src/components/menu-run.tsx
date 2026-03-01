@@ -24,7 +24,7 @@ export function RunMenu() {
       disabled: isSolverRunning,
       onClick: runSolver,
     }),
-    [isSolverRunning, runSolver]
+    [isSolverRunning, runSolver],
   );
 
   useMenuAction(runAction);
@@ -36,7 +36,7 @@ export function RunMenu() {
       disabled: !isSolverRunning,
       onClick: stopSolver,
     }),
-    [isSolverRunning, stopSolver]
+    [isSolverRunning, stopSolver],
   );
 
   useMenuAction(stopAction);

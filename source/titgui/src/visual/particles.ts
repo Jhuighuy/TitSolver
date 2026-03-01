@@ -66,7 +66,7 @@ export class Particles extends Points<BufferGeometry, ShaderMaterial> {
     assert(dim === 2 || dim === 3, `Invalid dimensionality: ${dim}.`);
     this.geometry.setAttribute(
       "position",
-      new Float32BufferAttribute(dim === 3 ? r.data : expandTo3D(r.data), 3)
+      new Float32BufferAttribute(dim === 3 ? r.data : expandTo3D(r.data), 3),
     );
 
     /** @todo Support for vector fields. */
@@ -75,7 +75,7 @@ export class Particles extends Points<BufferGeometry, ShaderMaterial> {
     assert(scalar.data.length === rho.data.length);
     this.geometry.setAttribute(
       "scalar",
-      new Float32BufferAttribute(scalar.data, 1)
+      new Float32BufferAttribute(scalar.data, 1),
     );
   }
 

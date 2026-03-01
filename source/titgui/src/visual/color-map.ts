@@ -368,7 +368,7 @@ export type ColorMapName = keyof typeof colorMaps;
 
 export function createColorMapTexture(
   colorMapName: ColorMapName,
-  resolution = 256
+  resolution = 256,
 ): DataTexture {
   const points = colorMaps[colorMapName].points;
 

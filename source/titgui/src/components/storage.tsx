@@ -46,7 +46,7 @@ type StorageProviderProps = {
 export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
   const [numFrames, setNumFrames] = useState<number | null>(null);
   const [requestedFrameIndex, setRequestedFrameIndex] = useState<number | null>(
-    null
+    null,
   );
   const [frameIndex, setFrameIndex] = useState<number | null>(null);
   const [frameData, setFrameData] = useState<FieldMap | null>(null);
@@ -130,7 +130,7 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
         setFrameData(null);
       },
     }),
-    [numFrames, frameIndex, frameData]
+    [numFrames, frameIndex, frameData],
   );
 
   // ---- Layout. --------------------------------------------------------------
@@ -151,7 +151,7 @@ const frameDataSchema = z.record(
   z.object({
     kind: z.string(),
     data: z.string(),
-  })
+  }),
 );
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

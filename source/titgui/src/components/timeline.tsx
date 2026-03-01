@@ -38,7 +38,7 @@ export function Timeline() {
     requestFrame(
       isRepeating
         ? (frameIndex + 1) % numFrames
-        : Math.min(numFrames - 1, frameIndex + 1)
+        : Math.min(numFrames - 1, frameIndex + 1),
     );
   }
 
@@ -48,7 +48,7 @@ export function Timeline() {
     requestFrame(
       isRepeating
         ? (frameIndex + numFrames - 1) % numFrames
-        : Math.max(0, frameIndex - 1)
+        : Math.max(0, frameIndex - 1),
     );
   }
 
