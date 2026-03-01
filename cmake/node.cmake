@@ -8,20 +8,20 @@ include(utils)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Find the PNPM executable.
-find_program(PNPM_EXE NAMES "pnpm" REQUIRED)
+# Find the npm executable.
+find_program(NPM_EXE NAMES "npm" REQUIRED)
 
-# Find the PNPX executable.
-find_program(PNPX_EXE NAMES "pnpx" REQUIRED)
+# Find the npx executable.
+find_program(NPX_EXE NAMES "npx" REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #
-# Add a PNPM target.
+# Add a node package target.
 #
-function(add_tit_pnpm_target)
+function(add_tit_node_package)
   # Parse and check arguments.
-  cmake_parse_arguments(TARGET "" "NAME;DESTINATION" "" ${ARGN})
+  cmake_parse_arguments(TARGET "" "NAME" "" ${ARGN})
   set(TARGET "${TARGET_NAME}")
 
   # Find "package.json".
@@ -39,26 +39,22 @@ function(add_tit_pnpm_target)
     list(APPEND TARGET_SOURCES ${EXT_CONFIGS} ${EXT_SOURCES})
   endforeach()
 
-  # Run `pnpm install`.
-  set(STAMP "${CMAKE_CURRENT_SOURCE_DIR}/node_modules/.modules.yaml")
+  # Run `npm install`.
+  set(STAMP "${CMAKE_CURRENT_SOURCE_DIR}/node_modules/.package-lock.json")
   add_custom_command(
-    COMMENT "Installing dependencies for PNPM package ${TARGET}"
-    COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" install
+    COMMENT "Installing dependencies for Node package ${TARGET}"
+    COMMAND "${CHRONIC_EXE}" "${NPM_EXE}" install
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS "${TARGET_PACKAGE_JSON}"
     OUTPUT "${STAMP}"
   )
   add_custom_target("${TARGET}_install" ALL DEPENDS "${STAMP}")
 
-  # Run `pnpm run build`.
-  set(TARGET_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/dist")
+  # Run `npm run build`.
   set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.stamp")
   add_custom_command(
-    COMMENT "Building PNPM package ${TARGET}"
-    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${TARGET_OUTPUT_DIR}"
-    COMMAND
-      "${CMAKE_COMMAND}" -E env "PNPM_OUTPUT_DIR=${TARGET_OUTPUT_DIR}"
-        "${CHRONIC_EXE}" "${PNPM_EXE}" run build
+    COMMENT "Building Node package ${TARGET}"
+    COMMAND "${CHRONIC_EXE}" "${NPM_EXE}" run build
     COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS ${TARGET_SOURCES} "${TARGET}_install"
@@ -70,8 +66,8 @@ function(add_tit_pnpm_target)
   if(NOT SKIP_ANALYSIS)
     set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_lint.stamp")
     add_custom_command(
-      COMMENT "Linting PNPM package ${TARGET}"
-      COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" run lint
+      COMMENT "Linting Node package ${TARGET}"
+      COMMAND "${CHRONIC_EXE}" "${NPM_EXE}" run lint
       COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       DEPENDS ${TARGET_SOURCES} "${TARGET}"
@@ -80,22 +76,14 @@ function(add_tit_pnpm_target)
     add_custom_target("${TARGET}_lint" ALL DEPENDS "${STAMP}")
   endif()
 
-  # Install the target.
-  if(TARGET_DESTINATION)
-    install(
-      DIRECTORY "${TARGET_OUTPUT_DIR}/"
-      DESTINATION "${TARGET_DESTINATION}"
-    )
-  endif()
-
-  # Run `pnpx generate-license-file` to create a file with full license text for
+  # Run `npx generate-license-file` to create a file with full license text for
   # all the third-party dependencies.
   set(LICENSES "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_third_party_licenses.txt")
   add_custom_command(
     COMMENT "Generating third-party license file for Node package ${TARGET}"
     COMMAND
       "${CHRONIC_EXE}"
-        "${PNPX_EXE}"
+        "${NPX_EXE}" --yes
           generate-license-file
             --input "${TARGET_PACKAGE_JSON}"
             --output "${LICENSES}"
