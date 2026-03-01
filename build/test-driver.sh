@@ -11,7 +11,6 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-source "$(dirname $0)/build-utils.sh" || exit $?
 TEST_NAME=""
 TEST_COMMAND=()
 EXIT_CODE=0
@@ -20,9 +19,8 @@ STDOUT_PATH=""
 STDERR_PATH=""
 INPUT_PATHS=()
 OUTPUT_PATHS=()
-DIFF_EXE=${DIFF_EXE:-diff}
 # Prefer `gsed` to regular `sed`. This is essential on the BSD-like systems.
-SED_EXE=${SED_EXE:-$(command -v gsed || echo sed)}
+SED_EXE=$(command -v gsed || echo sed)
 SED_FILTERS=(
 	# Shrink absolute paths to filenames.
 	"s/\/(([^\/]+|\.{1,2})\/)+([^\/]+)/\3/g"
@@ -33,6 +31,8 @@ SED_FILTERS=(
 	# Remove profiling reports.
 	"/libgcov profiling error$/d"
 )
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 usage() {
 	echo "Usage: $(basename "$0") [options] -- <test-command>"
@@ -137,11 +137,6 @@ parse-args() {
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-setup-path() {
-	echo "# Setting up paths..."
-	export PATH="$INSTALL_DIR/bin:$INSTALL_DIR/private/bin:$PATH"
-}
 
 setup-work-dir() {
 	echo "# Setting up the test directory..."
@@ -251,7 +246,7 @@ filter-file() {
 		FILTER=${FILTER//\\w/[A-Za-z_]}
 
 		# Apply the filter.
-		if [ $FIRST = true ]; then
+		if [ "$FIRST" = true ]; then
 			"$SED_EXE" -rE "$FILTER" "$FILE" >"$FILTERED_FILE"
 			FIRST=false
 		else
@@ -275,7 +270,7 @@ match-file-contents() {
 
 	# Match them.
 	local DIFF_FILE="$FILE.diff"
-	"$DIFF_EXE" --ignore-blank-lines --ignore-trailing-space \
+	diff --ignore-blank-lines --ignore-trailing-space \
 		"$FILTERED_EXPECTED_FILE" "$FILTERED_ACTUAL_FILE" >"$DIFF_FILE"
 	local DIFF_EXIT_CODE=$?
 	if [ $DIFF_EXIT_CODE != 0 ]; then
@@ -335,17 +330,12 @@ match() {
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-echo-thin-separator
 parse-args "$@"
-setup-path
 setup-work-dir
 cd "$WORK_DIR" || exit $?
 setup-input
 setup-output
 run-test
 match $?
-STATUS=$?
-echo-thin-separator
-exit $STATUS
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
