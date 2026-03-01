@@ -44,7 +44,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Web files.
-!__snapshots__/*.snap
 !*.css
 !*.html
 !*.js
@@ -58,7 +57,6 @@
 
 # Ignore in-tree artifacts.
 .vite/
-coverage/
 dist/
 node_modules/
 

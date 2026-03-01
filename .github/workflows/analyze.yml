@@ -33,7 +33,6 @@ jobs:
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
       CODECOV_REPORT: cxx_coverage_codecov.xml
       SONAR_REPORT: cxx_coverage_sonar.xml
-      JS_REPORT_PATH: source/titgui/coverage/lcov.info
 
     steps:
       - name: Checkout
@@ -71,7 +70,7 @@ jobs:
         with:
           slug: Jhuighuy/TitSolver
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{ env.CODECOV_REPORT }},${{ env.JS_REPORT_PATH }}
+          files: ${{ env.CODECOV_REPORT }}
           disable_search: true
 
       - name: Run Sonar Scanner
@@ -84,4 +83,3 @@ jobs:
             --define "sonar.cfamily.experimental.cpp26.enabled=true"
             --define "sonar.cfamily.build-wrapper-output=${{ env.BUILD_WRAPPER_OUT_DIR }}"
             --define "sonar.coverageReportPaths=${{ env.SONAR_REPORT }}"
-            --define "sonar.javascript.lcov.reportPaths=${{ env.JS_REPORT_PATH }}"

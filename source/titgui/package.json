@@ -12,11 +12,9 @@
   "main": ".vite/build/electron.js",
   "scripts": {
     "build": "tsc -b && vite build",
-    "coverage": "vitest run --coverage",
     "dev": "vite",
     "lint": "eslint .",
     "preinstall": "npx only-allow pnpm",
-    "test": "vitest run",
     "upgrade": "pnpm update -r --latest"
   },
   "dependencies": {
@@ -34,15 +32,11 @@
   "devDependencies": {
     "@eslint/js": "^9.39.3",
     "@tailwindcss/vite": "4.2.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@types/jsdom": "^28.0.0",
     "@types/node": "^25.3.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.183.1",
     "@vitejs/plugin-react": "^5.1.4",
-    "@vitest/coverage-v8": "4.0.18",
     "autoprefixer": "^10.4.27",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9.39.3",
@@ -51,12 +45,10 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
-    "jsdom": "^28.1.0",
     "tailwindcss": "4.2.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "^7.3.1",
-    "vitest": "^4.0.18"
+    "vite": "^7.3.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
