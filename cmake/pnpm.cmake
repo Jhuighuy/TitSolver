@@ -11,6 +11,9 @@ include(utils)
 # Find the PNPM executable.
 find_program(PNPM_EXE NAMES "pnpm" REQUIRED)
 
+# Find the PNPX executable.
+find_program(PNPX_EXE NAMES "pnpx" REQUIRED)
+
 # Setup the PNPM test runner executable.
 set(PNPM_TEST_CMD "pnpm run $<IF:$<CONFIG:Coverage>,coverage,test>")
 
@@ -87,6 +90,25 @@ function(add_tit_pnpm_target)
       DESTINATION "${TARGET_DESTINATION}"
     )
   endif()
+
+  # Run `npx generate-license-file` to create a file with full license text for
+  # all the third-party dependencies.
+  set(LICENSES "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_third_party_licenses.txt")
+  add_custom_command(
+    COMMENT "Generating third-party license file for Node package ${TARGET}"
+    COMMAND
+      "${CHRONIC_EXE}"
+        "${PNPX_EXE}"
+          generate-license-file
+            --input "${CMAKE_CURRENT_SOURCE_DIR}/package.json"
+            --output "${LICENSES}"
+            --overwrite
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    DEPENDS "${TARGET_PACKAGE_JSON}"
+    OUTPUT "${LICENSES}"
+  )
+  add_custom_target("${TARGET}_licenses" ALL DEPENDS "${LICENSES}")
+  install(FILES "${LICENSES}" DESTINATION "licenses")
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
