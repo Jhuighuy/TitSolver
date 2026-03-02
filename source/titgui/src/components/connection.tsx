@@ -44,7 +44,7 @@ export function ConnectionProvider({
 }: Readonly<ConnectionProviderProps>) {
   const awaitingResponseRef = useRef(new Map<string, Callback>());
   const { sendMessage: sendRawMessage, lastMessage } = useWebSocket(
-    `ws://${globalThis.location.host ?? "localhost:8080"}/ws`,
+    "ws://localhost:18080/ws",
   );
 
   const sendMessage = useCallback(
