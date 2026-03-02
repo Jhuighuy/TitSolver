@@ -11,6 +11,9 @@ include(utils)
 # Find the PNPM executable.
 find_program(PNPM_EXE NAMES "pnpm" REQUIRED)
 
+# Find the PNPX executable.
+find_program(PNPX_EXE NAMES "pnpx" REQUIRED)
+
 # Setup the PNPM test runner executable.
 set(PNPM_TEST_CMD "pnpm run $<IF:$<CONFIG:Coverage>,coverage,test>")
 
@@ -61,7 +64,7 @@ function(add_tit_pnpm_target)
         "${CHRONIC_EXE}" "${PNPM_EXE}" run build
     COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    DEPENDS ${TARGET_SOURCES} "${TARGET_NAME}_install"
+    DEPENDS ${TARGET_SOURCES} "${TARGET}_install"
     OUTPUT "${STAMP}"
   )
   add_custom_target("${TARGET}" ALL DEPENDS "${STAMP}")
@@ -74,7 +77,7 @@ function(add_tit_pnpm_target)
       COMMAND "${CHRONIC_EXE}" "${PNPM_EXE}" run lint
       COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      DEPENDS ${TARGET_SOURCES} "${TARGET_NAME}_install"
+      DEPENDS ${TARGET_SOURCES} "${TARGET}"
       OUTPUT "${STAMP}"
     )
     add_custom_target("${TARGET}_lint" ALL DEPENDS "${STAMP}")
@@ -87,6 +90,26 @@ function(add_tit_pnpm_target)
       DESTINATION "${TARGET_DESTINATION}"
     )
   endif()
+
+  # Run `pnpx generate-license-file` to create a file with full license text for
+  # all the third-party dependencies.
+  set(LICENSES "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_third_party_licenses.txt")
+  add_custom_command(
+    COMMENT "Generating third-party license file for Node package ${TARGET}"
+    COMMAND
+      "${CHRONIC_EXE}"
+        "${PNPX_EXE}"
+          generate-license-file
+            --input "${TARGET_PACKAGE_JSON}"
+            --output "${LICENSES}"
+            --overwrite
+    COMMAND sed -i -e '/generate-license-file/d' "${LICENSES}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    DEPENDS "${TARGET_PACKAGE_JSON}" "${TARGET}_install"
+    OUTPUT "${LICENSES}"
+  )
+  add_custom_target("${TARGET}_licenses" ALL DEPENDS "${LICENSES}")
+  install(FILES "${LICENSES}" DESTINATION "licenses")
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
