@@ -78,6 +78,22 @@ write_compile_flags(all_flags)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Install licenses for vcpkg packages.
+cmake_path(SET VCPKG_SHARE_DIR
+  "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share"
+)
+if(EXISTS "${VCPKG_SHARE_DIR}")
+  file(GLOB PACKAGE_DIRS LIST_DIRECTORIES true "${VCPKG_SHARE_DIR}/*")
+  foreach(PKG_DIR ${PACKAGE_DIRS})
+    get_filename_component(PKG_NAME "${PKG_DIR}" NAME)
+    if(EXISTS "${PKG_DIR}/copyright")
+      install(FILES "${PKG_DIR}/copyright" DESTINATION "licenses/${PKG_NAME}")
+    endif()
+  endforeach()
+endif()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Enable spell checking.
 check_spelling()
 
