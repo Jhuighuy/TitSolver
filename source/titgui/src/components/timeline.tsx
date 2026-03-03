@@ -86,7 +86,7 @@ export function Timeline() {
       px="2"
       py="4px"
       gap="1"
-      className="bg-linear-to-br from-gray-700 to-gray-800 inset-shadow-sm inset-shadow-gray-700"
+      className="bg-linear-to-br from-gray-700 to-gray-800"
     >
       {/* ---- Playback controls. ------------------------------------------ */}
       <Flex direction="row" align="center" gap="4" mx="2">

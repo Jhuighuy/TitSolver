@@ -4,7 +4,15 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { Box, Flex, Theme } from "@radix-ui/themes";
-import { TbHelp as HelpIcon, TbRun as RunIcon } from "react-icons/tb";
+import {
+  TbDashboard as DashboardIcon,
+  TbHelp as HelpIcon,
+  TbLogs as LogsIcon,
+  TbServer as ServerIcon,
+  TbSettings as SettingsIcon,
+  TbDatabase as StorageIcon,
+  TbTerminal as TerminalIcon,
+} from "react-icons/tb";
 
 import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
@@ -52,13 +60,23 @@ function Window() {
 function Page() {
   return (
     <Flex direction="row" width="100%" height="100%" minHeight="0" gap="1px">
-      <Menu>
-        <Menu.Item group={0} name="Run" icon={<RunIcon size={32} />}>
+      <Menu side="left">
+        <Menu.Item group={0} name="Storage" icon={<StorageIcon size={32} />} />
+        <Menu.Item
+          group={0}
+          name="Dashboard"
+          icon={<DashboardIcon size={32} />}
+        >
           <RunMenu />
         </Menu.Item>
         <Menu.Item group={1} name="Help" icon={<HelpIcon size={32} />}>
           <HelpMenu />
         </Menu.Item>
+        <Menu.Item
+          group={1}
+          name="Settings"
+          icon={<SettingsIcon size={32} />}
+        />
       </Menu>
 
       <Flex direction="column" width="100%" height="100%" gap="1px">
@@ -66,6 +84,16 @@ function Page() {
           <Viewport />
         </Box>
         <Timeline />
+
+        <Menu side="bottom">
+          <Menu.Item group={0} name="Logs" icon={<LogsIcon size={16} />} />
+          <Menu.Item
+            group={0}
+            name="Terminal"
+            icon={<TerminalIcon size={16} />}
+          />
+          <Menu.Item group={0} name="Server" icon={<ServerIcon size={16} />} />
+        </Menu>
       </Flex>
     </Flex>
   );
