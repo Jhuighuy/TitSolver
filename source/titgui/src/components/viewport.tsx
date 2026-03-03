@@ -54,12 +54,8 @@ export function Viewport() {
     assert(container !== null);
     renderer.resize(container.clientWidth, container.clientHeight);
 
-    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
     const resizeObserver = new ResizeObserver(() => {
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        renderer.resize(container.clientWidth, container.clientHeight);
-      }, 100);
+      renderer.resize(container.clientWidth, container.clientHeight);
     });
     resizeObserver.observe(container, { box: "content-box" });
 

@@ -8,12 +8,14 @@ import {
   Flex,
   IconButton,
   ScrollArea,
+  Separator,
   Text,
   Tooltip,
 } from "@radix-ui/themes";
 import {
   Activity,
   createContext,
+  Fragment,
   type ReactElement,
   type ReactNode,
   useContext,
@@ -21,17 +23,19 @@ import {
   useMemo,
   useState,
 } from "react";
+import { TbMinimize as MinimizeIcon } from "react-icons/tb";
 
 import { Resizable } from "~/components/resizable";
-import { assert, iota, items } from "~/utils";
+import { assert, cn, iota, items } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type MenuProps = {
+  side: "left" | "right" | "top" | "bottom";
   children: ReactElement<MenuItemProps> | ReactElement<MenuItemProps>[];
 };
 
-export function Menu({ children }: Readonly<MenuProps>) {
+export function Menu({ side, children }: Readonly<MenuProps>) {
   // ---- State. --------------------------------------------------------------
 
   const [size, setSize] = useState(320);
@@ -43,6 +47,32 @@ export function Menu({ children }: Readonly<MenuProps>) {
 
   // ---- Layout. --------------------------------------------------------------
 
+  const vertical = side === "left" || side === "right";
+  const oppositeSide = (() => {
+    switch (side) {
+      case "left":
+        return "right";
+      case "right":
+        return "left";
+      case "top":
+        return "bottom";
+      case "bottom":
+        return "top";
+    }
+  })();
+  const flexDirection = (() => {
+    switch (side) {
+      case "left":
+        return "row";
+      case "right":
+        return "row-reverse";
+      case "top":
+        return "column";
+      case "bottom":
+        return "column-reverse";
+    }
+  })();
+
   const childrenArray = items(children);
   const maxGroup = childrenArray.reduce(
     (max, c) => Math.max(max, c.props.group),
@@ -50,36 +80,72 @@ export function Menu({ children }: Readonly<MenuProps>) {
   );
 
   return (
-    <Flex direction="row" gap="1px">
+    <Flex direction={flexDirection} gap="1px">
       {/* ---- Menu bar. --------------------------------------------------- */}
       <Flex
         align="center"
         justify="between"
-        direction="column"
-        width="16"
-        height="full"
-        className="bg-linear-to-bl from-gray-700 to-gray-800  inset-shadow-sm inset-shadow-gray-700"
+        {...(vertical
+          ? { direction: "column", height: "100%", pb: "4" }
+          : { direction: "row", width: "100%", px: "4" })}
+        className="bg-linear-to-bl from-gray-700 to-gray-800"
       >
         {iota(maxGroup + 1).map((group) => (
-          <Flex key={group} align="center" m="2" gap="4" direction="column">
+          <Flex
+            key={group}
+            align="center"
+            {...(vertical
+              ? { direction: "column" }
+              : { direction: "row", gap: "4" })}
+          >
             {childrenArray.map(
               (item, index) =>
-                item.props.group === group && (
+                item.props.group === group &&
+                (vertical ? (
                   <Tooltip
-                    key={item.props.name}
+                    key={[group, item.props.name].join("-")}
                     content={item.props.name}
-                    side="right"
+                    side={oppositeSide}
                   >
-                    <IconButton
-                      aria-label={item.props.name}
-                      size="4"
-                      variant={index === activeItem ? "classic" : "outline"}
+                    <Flex
+                      align="center"
+                      justify="center"
+                      width="56px"
+                      height="56px"
                       onClick={() => setActiveItemOrToggle(index)}
+                      aria-label={item.props.name}
+                      className={cn(
+                        "hover:text-(--accent-11) border-l-3",
+                        index === activeItem
+                          ? "text-(--gray-12) border-l-(--gray-12) hover:border-l-(--accent-11)"
+                          : "text-(--gray-11) border-l-transparent",
+                      )}
                     >
                       {item.props.icon}
-                    </IconButton>
+                    </Flex>
                   </Tooltip>
-                ),
+                ) : (
+                  <Fragment key={item.props.name}>
+                    {index > 0 && <Separator orientation="vertical" size="1" />}
+                    <Flex
+                      align="center"
+                      justify="center"
+                      gap="1"
+                      height="32px"
+                      onClick={() => setActiveItemOrToggle(index)}
+                      aria-label={item.props.name}
+                      className={cn(
+                        "hover:text-(--accent-11) border-b-2",
+                        index === activeItem
+                          ? "text-(--gray-12) border-b-(--gray-12) hover:border-b-(--accent-11)"
+                          : "text-(--gray-11) border-b-transparent",
+                      )}
+                    >
+                      {item.props.icon}
+                      <Text size="1">{item.props.name}</Text>
+                    </Flex>
+                  </Fragment>
+                )),
             )}
           </Flex>
         ))}
@@ -87,7 +153,13 @@ export function Menu({ children }: Readonly<MenuProps>) {
 
       {/* ---- Menu item. -------------------------------------------------- */}
       <Activity mode={activeItem === -1 ? "hidden" : "visible"}>
-        <Resizable minSize={160} maxSize={640} size={size} setSize={setSize}>
+        <Resizable
+          side={side}
+          size={size}
+          setSize={setSize}
+          minSize={160}
+          maxSize={640}
+        >
           {childrenArray.map((item, index) => (
             <Activity
               key={item.props.name}
@@ -161,12 +233,12 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
       gap="2"
       height="100%"
       direction="column"
-      className="bg-linear-to-bl from-gray-700 to-gray-800 inset-shadow-sm inset-shadow-gray-700"
+      className="bg-linear-to-bl from-gray-700 to-gray-800"
     >
       {/* ---- Header. ----------------------------------------------------- */}
       <Flex gap="2" direction="row" align="center">
         <Box asChild flexGrow="1">
-          <Text weight="bold" size="2" truncate>
+          <Text weight="bold" size="1" truncate>
             {name.toLocaleUpperCase()}
           </Text>
         </Box>
@@ -185,16 +257,22 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
             </IconButton>
           </Tooltip>
         ))}
+
+        <Tooltip content="Close">
+          <IconButton
+            size="1"
+            variant="ghost"
+            color="gray"
+            onClick={undefined /** @todo Implement me. */}
+            aria-label="Close"
+          >
+            <MinimizeIcon />
+          </IconButton>
+        </Tooltip>
       </Flex>
 
       {/* ---- Contents. --------------------------------------------------- */}
-      <Box
-        flexGrow="1"
-        overflow="auto"
-        px="2"
-        py="1"
-        className="bg-gray-900 rounded-lg"
-      >
+      <Box flexGrow="1" overflow="auto" className="bg-gray-900 rounded-lg">
         <ScrollArea>
           <MenuActionsContext.Provider value={menuActions}>
             {children}

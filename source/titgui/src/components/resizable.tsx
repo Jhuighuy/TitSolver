@@ -7,41 +7,62 @@ import { Box, Flex, VisuallyHidden } from "@radix-ui/themes";
 import type { ReactNode } from "react";
 
 import { assert } from "~/utils";
+import { clamp } from "~/utils-math";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type ResizableDivProps = {
-  minSize: number;
-  maxSize: number;
+  side: "left" | "right" | "top" | "bottom";
   size: number;
   setSize: (size: number) => void;
+  minSize: number;
+  maxSize: number;
   children?: ReactNode;
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function Resizable({
+  side,
   size,
+  setSize,
   minSize,
   maxSize,
-  setSize,
   children,
 }: Readonly<ResizableDivProps>) {
   assert(0 < minSize && minSize <= size && size <= maxSize);
 
-  function setSizeClamped(newSize: number) {
-    setSize(Math.max(minSize, Math.min(newSize, maxSize)));
+  const reverse = side === "right" || side === "bottom";
+  const horizontal = side === "left" || side === "right";
+  const flexDirection = (() => {
+    switch (side) {
+      case "left":
+        return "row";
+      case "right":
+        return "row-reverse";
+      case "top":
+        return "column";
+      case "bottom":
+        return "column-reverse";
+    }
+  })();
+
+  function updateSize(delta: number) {
+    const newSize = reverse ? size - delta : size + delta;
+    setSize(clamp(newSize, minSize, maxSize));
   }
 
   function handleMouseDown(downEvent: React.MouseEvent) {
     downEvent.preventDefault();
 
     const prevCursor = document.body.style.cursor;
-    document.body.style.cursor = "ew-resize";
+    document.body.style.cursor = horizontal ? "ew-resize" : "ns-resize";
 
     function handleMouseMove(moveEvent: MouseEvent) {
-      const delta = moveEvent.clientX - downEvent.clientX;
-      setSizeClamped(size + delta);
+      const delta = horizontal
+        ? moveEvent.clientX - downEvent.clientX
+        : moveEvent.clientY - downEvent.clientY;
+      updateSize(delta);
     }
 
     function handleMouseUp() {
@@ -57,13 +78,13 @@ export function Resizable({
   function handleKeyDown(event: React.KeyboardEvent) {
     const delta = 10;
     switch (event.key) {
-      case "ArrowLeft":
+      case horizontal ? "ArrowLeft" : "ArrowUp":
         event.preventDefault();
-        setSizeClamped(size - delta);
+        updateSize(-delta);
         break;
-      case "ArrowRight":
+      case horizontal ? "ArrowRight" : "ArrowDown":
         event.preventDefault();
-        setSizeClamped(size + delta);
+        updateSize(delta);
         break;
       default:
         return;
@@ -71,30 +92,36 @@ export function Resizable({
   }
 
   return (
-    <Flex direction="row">
+    <Flex direction={flexDirection}>
       <div
-        style={{
-          width: `${size}px`,
-          height: "100%",
-        }}
+        style={
+          horizontal
+            ? { width: `${size}px`, height: "100%" }
+            : { height: `${size}px`, width: "100%" }
+        }
       >
         {children}
       </div>
-      <Box
-        className="bg-gray-700 focus-visible:outline-(--accent-8)"
-        width="2px"
-        tabIndex={0}
-        onMouseDown={handleMouseDown}
-        onKeyDown={handleKeyDown}
-        style={{ cursor: "ew-resize" }}
-        role="separator"
-        aria-label="Resize panel"
-        aria-orientation="horizontal"
-        aria-valuemin={minSize}
-        aria-valuemax={maxSize}
-        aria-valuenow={size}
-      >
-        <VisuallyHidden>Resize</VisuallyHidden>
+      <Box position="relative">
+        <Box
+          tabIndex={0}
+          onMouseDown={handleMouseDown}
+          onKeyDown={handleKeyDown}
+          role="separator"
+          aria-label="Resize panel"
+          aria-orientation={horizontal ? "horizontal" : "vertical"}
+          aria-valuemin={minSize}
+          aria-valuemax={maxSize}
+          aria-valuenow={size}
+          position="absolute"
+          {...(horizontal
+            ? { left: "-1px", width: "2px", height: "100%" }
+            : { top: "-1px", width: "100%", height: "2px" })}
+          className="focus-visible:outline-(--accent-8)"
+          style={{ cursor: horizontal ? "ew-resize" : "ns-resize" }}
+        >
+          <VisuallyHidden>Resize</VisuallyHidden>
+        </Box>
       </Box>
     </Flex>
   );
