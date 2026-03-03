@@ -8,7 +8,9 @@
 import child_process from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { app, BrowserWindow, dialog } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
+
+import { IPC_FULL_SCREEN_CHANGED, IPC_IS_FULL_SCREEN } from "~/constants";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -154,23 +156,38 @@ class InstallRootResolver {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+const WINDOW_MIN_WIDTH = 1280;
+const WINDOW_MIN_HEIGHT = 800;
+
 class MainWindowManager {
   public static createWindow() {
     // Create the window.
     const window = new BrowserWindow({
-      width: 1280,
-      height: 800,
-      minWidth: 1280,
-      minHeight: 800,
+      width: WINDOW_MIN_WIDTH,
+      height: WINDOW_MIN_HEIGHT,
+      minWidth: WINDOW_MIN_WIDTH,
+      minHeight: WINDOW_MIN_HEIGHT,
       titleBarStyle: "hidden",
       webPreferences: { preload: path.join(__dirname, "preload.js") },
     });
+
+    // Attach listeners.
+    MainWindowManager.attachFullScreenListeners(window);
 
     // Hide the window until content is loaded to avoid white flash.
     window.hide();
     void MainWindowManager.load(window).then(() => window.show());
 
     return window;
+  }
+
+  private static attachFullScreenListeners(window: BrowserWindow) {
+    const notify = () => {
+      window.webContents.send(IPC_FULL_SCREEN_CHANGED, window.isFullScreen());
+    };
+    window.on("enter-full-screen", notify);
+    window.on("leave-full-screen", notify);
+    window.once("ready-to-show", notify);
   }
 
   private static async load(window: BrowserWindow) {
@@ -261,6 +278,7 @@ class Application {
     this.backend = new BackendProcess(installRoot);
     this.backend.start();
 
+    this.registerIpcHandlers();
     MainWindowManager.createWindow();
   }
 
@@ -270,6 +288,14 @@ class Application {
 
   private onBeforeQuit() {
     this.backend?.stop();
+  }
+
+  private registerIpcHandlers() {
+    ipcMain.removeHandler(IPC_IS_FULL_SCREEN);
+    ipcMain.handle(IPC_IS_FULL_SCREEN, (event) => {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      return window?.isFullScreen() ?? false;
+    });
   }
 }
 

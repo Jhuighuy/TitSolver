@@ -13,7 +13,9 @@ import { RunMenu } from "~/components/menu-run";
 import { SolverProvider } from "~/components/solver";
 import { StorageProvider } from "~/components/storage";
 import { Timeline } from "~/components/timeline";
+import { TitleBar } from "~/components/title-bar";
 import { Viewport } from "~/components/viewport";
+import { useWindowIsFullScreen } from "~/hooks/use-window";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -23,7 +25,7 @@ export function App() {
       <ConnectionProvider>
         <SolverProvider>
           <StorageProvider>
-            <Page />
+            <Window />
           </StorageProvider>
         </SolverProvider>
       </ConnectionProvider>
@@ -33,9 +35,23 @@ export function App() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+function Window() {
+  const isFullScreen = useWindowIsFullScreen();
+  return (
+    <Flex direction="column" width="100vw" height="100vh" gap="1px">
+      {isFullScreen || <TitleBar />}
+      <Box asChild flexGrow="1">
+        <Page />
+      </Box>
+    </Flex>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 function Page() {
   return (
-    <Flex direction="row" height="100vh" gap="1px">
+    <Flex direction="row" width="100%" height="100%" minHeight="0" gap="1px">
       <Menu>
         <Menu.Item group={0} name="Run" icon={<RunIcon size={32} />}>
           <RunMenu />

@@ -3,23 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-/** biome-ignore-all lint/correctness/noUnusedVariables: . */
-/// <reference types="vite/client" />
-/// <reference types="vite-plugin-svgr/client" />
+const WINDOW = "window";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface Window {
-  windowState?: WindowStateAPI;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-interface WindowStateAPI {
-  isFullScreen: () => Promise<boolean>;
-  onFullScreenChanged: (
-    listener: (isFullScreen: boolean) => void,
-  ) => () => void;
-}
+export const IPC_IS_FULL_SCREEN = `${WINDOW}:is-full-screen`;
+export const IPC_FULL_SCREEN_CHANGED = `${WINDOW}:full-screen-changed`;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -10,7 +10,10 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 
 export default {
   outDir: "dist",
-  packagerConfig: { asar: true },
+  packagerConfig: {
+    asar: true,
+    icon: "assets/icon",
+  },
   plugins: [
     new VitePlugin({
       build: [
