@@ -3,18 +3,20 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   type ReactNode,
-  useCallback,
+  useEffect,
   useContext,
-  useMemo,
   useRef,
-  useState,
 } from "react";
-import { z } from "zod";
 
-import { useConnection } from "~/components/connection";
+import {
+  getSolverStatus,
+  runSolver as runSolverRequest,
+  stopSolver as stopSolverRequest,
+} from "~/backend-api";
 import { assert } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,83 +42,66 @@ type SolverProviderProps = {
   children: ReactNode;
 };
 
+const solverStatusQueryKey = ["solver", "status"] as const;
+const storageNumFramesQueryKey = ["storage", "num-frames"] as const;
+
 export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
-  const { sendMessage } = useConnection();
+  const queryClient = useQueryClient();
+  const prevOutputSizeRef = useRef(0);
 
-  const isSolverRunningRef = useRef(false);
-  const [isSolverRunning, setIsSolverRunning] = useState(false);
-  const [solverOutput, setSolverOutput] = useState("");
+  const statusQuery = useQuery({
+    queryKey: solverStatusQueryKey,
+    queryFn: getSolverStatus,
+    refetchInterval(query) {
+      const data = query.state.data;
+      return data?.isRunning === true ? 200 : false;
+    },
+  });
 
-  const runSolver = useCallback(() => {
-    assert(!isSolverRunningRef.current);
-    isSolverRunningRef.current = true;
-    setIsSolverRunning(true);
+  const runMutation = useMutation({
+    mutationFn: runSolverRequest,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: solverStatusQueryKey });
+    },
+  });
 
-    setSolverOutput("");
+  const stopMutation = useMutation({
+    mutationFn: stopSolverRequest,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: solverStatusQueryKey });
+    },
+  });
 
-    sendMessage({ type: "run" }, (responseRaw) => {
-      const response = runSchema.parse(responseRaw);
-      switch (response.kind) {
-        case "stdout":
-        case "stderr":
-          setSolverOutput((prev) => prev + response.data);
-          break;
+  useEffect(() => {
+    const output = statusQuery.data?.output;
+    if (output === undefined) return;
 
-        case "exit": {
-          const { code, signal } = response;
-          setSolverOutput(
-            (prev) =>
-              `${prev}\n[Process exited with code ${code}, signal ${signal}]\n`,
-          );
+    const prevOutputSize = prevOutputSizeRef.current;
+    const outputChanged = prevOutputSize !== output.length;
+    prevOutputSizeRef.current = output.length;
+    if (!outputChanged) return;
 
-          isSolverRunningRef.current = false;
-          setIsSolverRunning(false);
-          break;
-        }
-
-        default:
-          assert(false);
-      }
+    void queryClient.invalidateQueries({
+      queryKey: storageNumFramesQueryKey,
     });
-  }, [sendMessage]);
+  }, [queryClient, statusQuery.data?.output]);
 
-  const stopSolver = useCallback(() => {
-    assert(isSolverRunningRef.current);
-
-    sendMessage({ type: "stop" });
-  }, [sendMessage]);
-
-  const solver = useMemo<Solver>(
-    () => ({
-      isSolverRunning,
-      solverOutput,
-      runSolver,
-      stopSolver,
-    }),
-    [isSolverRunning, solverOutput, runSolver, stopSolver],
-  );
+  const solver: Solver = {
+    isSolverRunning: statusQuery.data?.isRunning ?? false,
+    solverOutput: statusQuery.data?.output ?? "",
+    runSolver() {
+      if (runMutation.isPending || stopMutation.isPending) return;
+      runMutation.mutate();
+    },
+    stopSolver() {
+      if (runMutation.isPending || stopMutation.isPending) return;
+      stopMutation.mutate();
+    },
+  };
 
   return (
     <SolverContext.Provider value={solver}>{children}</SolverContext.Provider>
   );
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-const runSchema = z.union([
-  z.object({
-    kind: z.literal("stdout"),
-    data: z.string(),
-  }),
-  z.object({
-    kind: z.literal("stderr"),
-    data: z.string(),
-  }),
-  z.object({
-    kind: z.literal("exit"),
-    code: z.number(),
-    signal: z.number(),
-  }),
-]);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

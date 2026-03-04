@@ -14,7 +14,6 @@ import {
   TbTerminal as TerminalIcon,
 } from "react-icons/tb";
 
-import { ConnectionProvider } from "~/components/connection";
 import { LoggingProvider } from "~/components/logging";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
@@ -33,13 +32,11 @@ import { useWindowAppearance, useWindowIsFullScreen } from "~/hooks/use-window";
 export function App() {
   return (
     <LoggingProvider>
-      <ConnectionProvider>
-        <SolverProvider>
-          <StorageProvider>
-            <Window />
-          </StorageProvider>
-        </SolverProvider>
-      </ConnectionProvider>
+      <SolverProvider>
+        <StorageProvider>
+          <Window />
+        </StorageProvider>
+      </SolverProvider>
     </LoggingProvider>
   );
 }
