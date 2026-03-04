@@ -3,19 +3,19 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   type ReactNode,
   useContext,
   useEffect,
-  useEffectEvent,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
-import { z } from "zod";
 
-import { useConnection } from "~/components/connection";
+import { getFrame, getNumFrames } from "~/backend-api";
 import { assert, decodeBase64 } from "~/utils";
 import { FieldMap } from "~/visual/fields";
 
@@ -23,8 +23,9 @@ import { FieldMap } from "~/visual/fields";
 
 export type Storage = {
   numFrames: number;
-  frameIndex: number;
+  frameIndex: number | null;
   frameData: FieldMap;
+  loadedFrames: number[];
   requestFrame: (frameIndex: number) => void;
   refresh: () => void;
 };
@@ -43,98 +44,144 @@ type StorageProviderProps = {
   children: ReactNode;
 };
 
+function numFramesQueryKey(sessionID: number) {
+  return ["storage", "num-frames", sessionID] as const;
+}
+
+function frameQueryKey(sessionID: number, frameIndex: number) {
+  return ["storage", "frame", sessionID, frameIndex] as const;
+}
+
 export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
-  const [numFrames, setNumFrames] = useState<number | null>(null);
+  const preloadWindow = 8;
+  const keepBehindWindow = 4;
+  const keepAheadWindow = 16;
+
+  const queryClient = useQueryClient();
+  const [sessionID, setSessionID] = useState(0);
+  const loadedFramesSnapshotRef = useRef<number[]>([]);
   const [requestedFrameIndex, setRequestedFrameIndex] = useState<number | null>(
     null,
   );
-  const [frameIndex, setFrameIndex] = useState<number | null>(null);
-  const [frameData, setFrameData] = useState(new FieldMap({}));
 
-  const { sendMessage } = useConnection();
+  const numFramesQuery = useQuery({
+    queryKey: numFramesQueryKey(sessionID),
+    queryFn: getNumFrames,
+  });
 
-  // ---- Number of frames. ----------------------------------------------------
+  const numFrames = numFramesQuery.data ?? 0;
+  const frameIndex =
+    numFrames === 0
+      ? null
+      : requestedFrameIndex === null || requestedFrameIndex >= numFrames
+        ? 0
+        : requestedFrameIndex;
 
-  const sessionIDRef = useRef(0);
-
-  const requestNumFramesEvent = useEffectEvent(() => {
-    const sessionID = ++sessionIDRef.current;
-
-    sendMessage({ type: "num-frames" }, (result) => {
-      if (sessionID !== sessionIDRef.current) return;
-
-      const numFrames = numFramesSchema.parse(result);
-      assert(numFrames >= 0);
-      setNumFrames(numFrames);
-
-      if (numFrames > 0) setRequestedFrameIndex(0);
-    });
+  const frameQuery = useQuery({
+    queryKey:
+      frameIndex !== null
+        ? frameQueryKey(sessionID, frameIndex)
+        : frameQueryKey(sessionID, -1),
+    queryFn: () => {
+      assert(frameIndex !== null);
+      return getFrame(frameIndex);
+    },
+    enabled: frameIndex !== null && numFrames > 0,
+    staleTime: 30_000,
   });
 
   useEffect(() => {
-    if (numFrames === null) requestNumFramesEvent();
-  }, [numFrames]);
+    if (frameIndex === null) return;
 
-  // ---- Current frame. -------------------------------------------------------
+    const minFrameIndex = Math.max(0, frameIndex - keepBehindWindow);
+    const maxFrameIndex = Math.min(numFrames - 1, frameIndex + keepAheadWindow);
 
-  const requestIDRef = useRef(0);
-
-  const requestFrameEvent = useEffectEvent(() => {
-    assert(numFrames !== null && requestedFrameIndex !== null);
-    assert(0 <= requestedFrameIndex && requestedFrameIndex < numFrames);
-
-    const sessionID = sessionIDRef.current;
-    const requestID = ++requestIDRef.current;
-
-    sendMessage({ type: "frame", index: requestedFrameIndex }, (result) => {
-      if (sessionID !== sessionIDRef.current) return;
-      if (requestID !== requestIDRef.current) return;
-
-      const rawFrameData = frameDataSchema.parse(result);
-
-      const fieldMap = new FieldMap(
-        Object.fromEntries(
-          Object.entries(rawFrameData).map(([fieldName, { kind, data }]) => [
-            fieldName,
-            decodeBase64(data, kind),
-          ]),
-        ),
-      );
-
-      setFrameData(fieldMap);
-      setFrameIndex(requestedFrameIndex);
-
-      setRequestedFrameIndex(null);
+    queryClient.removeQueries({
+      predicate: (query) => {
+        const [scope, type, querySessionID, queryFrameIndex] = query.queryKey;
+        if (
+          scope !== "storage" ||
+          type !== "frame" ||
+          querySessionID !== sessionID ||
+          typeof queryFrameIndex !== "number"
+        ) {
+          return false;
+        }
+        return queryFrameIndex < minFrameIndex || maxFrameIndex < queryFrameIndex;
+      },
     });
-  });
 
-  useEffect(() => {
-    if (requestedFrameIndex !== null) requestFrameEvent();
-  }, [requestedFrameIndex]);
+    for (let offset = 1; offset <= preloadWindow; ++offset) {
+      const nextFrameIndex = frameIndex + offset;
+      if (nextFrameIndex > maxFrameIndex) break;
 
-  // ---- Context. -------------------------------------------------------------
+      void queryClient.prefetchQuery({
+        queryKey: frameQueryKey(sessionID, nextFrameIndex),
+        queryFn: () => getFrame(nextFrameIndex),
+        staleTime: 30_000,
+      });
+    }
+  }, [frameIndex, numFrames, queryClient, sessionID]);
 
-  const storage = useMemo(
-    () => ({
-      numFrames: numFrames ?? 1,
-      frameIndex: frameIndex ?? 0,
-      frameData,
-      requestFrame(frameIndex: number) {
-        assert(numFrames !== null);
-        assert(0 <= frameIndex && frameIndex < numFrames);
-        setRequestedFrameIndex(frameIndex);
-      },
-      refresh() {
-        setNumFrames(null);
-        setRequestedFrameIndex(null);
-        setFrameIndex(null);
-        setFrameData(new FieldMap({}));
-      },
-    }),
-    [numFrames, frameIndex, frameData],
+  const loadedFrames = useSyncExternalStore(
+    (onStoreChange) => queryClient.getQueryCache().subscribe(onStoreChange),
+    () => {
+      const nextLoaded = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ["storage", "frame", sessionID] })
+        .flatMap((query) => {
+          const keyPart = query.queryKey[3];
+          if (typeof keyPart !== "number") return [];
+          if (query.state.data === undefined) return [];
+          if (keyPart < 0 || keyPart >= numFrames) return [];
+          return [keyPart];
+        });
+
+      const dedupedSorted = [...new Set(nextLoaded)].sort((a, b) => a - b);
+      const prev = loadedFramesSnapshotRef.current;
+      const isSame =
+        prev.length === dedupedSorted.length &&
+        prev.every((value, index) => value === dedupedSorted[index]);
+      if (isSame) return prev;
+
+      loadedFramesSnapshotRef.current = dedupedSorted;
+      return dedupedSorted;
+    },
+    () => [],
   );
 
-  // ---- Layout. --------------------------------------------------------------
+  const frameData = useMemo(() => {
+    if (frameQuery.data === undefined) return new FieldMap({});
+
+    return new FieldMap(
+      Object.fromEntries(
+        Object.entries(frameQuery.data).map(([fieldName, field]) => [
+          fieldName,
+          decodeBase64(field.data, field.kind),
+        ]),
+      ),
+    );
+  }, [frameQuery.data]);
+
+  const storage = useMemo<Storage>(
+    () => ({
+      numFrames,
+      frameIndex,
+      frameData,
+      loadedFrames,
+      requestFrame(nextFrameIndex: number) {
+        assert(0 <= nextFrameIndex && nextFrameIndex < numFrames);
+        setRequestedFrameIndex(nextFrameIndex);
+      },
+      refresh() {
+        setRequestedFrameIndex(null);
+        loadedFramesSnapshotRef.current = [];
+        setSessionID((prev) => prev + 1);
+        void queryClient.removeQueries({ queryKey: ["storage", "frame"] });
+      },
+    }),
+    [frameData, frameIndex, loadedFrames, numFrames, queryClient],
+  );
 
   return (
     <StorageContext.Provider value={storage}>
@@ -142,17 +189,5 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
     </StorageContext.Provider>
   );
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-const numFramesSchema = z.number().min(0);
-
-const frameDataSchema = z.record(
-  z.string(),
-  z.object({
-    kind: z.string(),
-    data: z.string(),
-  }),
-);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

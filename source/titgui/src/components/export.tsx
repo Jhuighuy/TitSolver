@@ -4,10 +4,10 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { Button } from "@radix-ui/themes";
+import { useMutation } from "@tanstack/react-query";
 import { type ComponentProps, useState } from "react";
-import { z } from "zod";
 
-import { useConnection } from "~/components/connection";
+import { backendUrl, exportStorage } from "~/backend-api";
 import { assert, downloadFile } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,7 +18,7 @@ export function ExportButton({
   ...props
 }: Readonly<Omit<ComponentProps<typeof Button>, "onClick">>) {
   const [isExporting, setIsExporting] = useState(false);
-  const { sendMessage } = useConnection();
+  const exportMutation = useMutation({ mutationFn: exportStorage });
 
   return (
     <Button
@@ -27,10 +27,14 @@ export function ExportButton({
         assert(!isExporting);
         setIsExporting(true);
 
-        sendMessage({ type: "export" }, (result) => {
-          setIsExporting(false);
-          const fileName = z.string().parse(result);
-          downloadFile(fileName, `/export/${fileName}`);
+        exportMutation.mutate(undefined, {
+          onSuccess: (fileName) => {
+            setIsExporting(false);
+            downloadFile(fileName, backendUrl(`/export/${fileName}`));
+          },
+          onError: () => {
+            setIsExporting(false);
+          },
         });
       }}
       {...props}

@@ -14,7 +14,6 @@ import {
   TbDatabase as StorageIcon,
 } from "react-icons/tb";
 
-import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
 import { LogsMenu } from "~/components/menu-logs";
@@ -32,13 +31,11 @@ import { useWindowAppearance, useWindowIsFullScreen } from "~/hooks/use-window";
 
 export function App() {
   return (
-    <ConnectionProvider>
-      <SolverProvider>
-        <StorageProvider>
-          <Window />
-        </StorageProvider>
-      </SolverProvider>
-    </ConnectionProvider>
+    <SolverProvider>
+      <StorageProvider>
+        <Window />
+      </StorageProvider>
+    </SolverProvider>
   );
 }
 

@@ -20,6 +20,7 @@
 #include <ranges>
 #include <stop_token>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -29,10 +30,11 @@
 #pragma clang diagnostic ignored "-Wdeprecated-literal-operator"
 #endif
 #include <crow/app.h>
+#include <crow/common.h>
 #include <crow/http_request.h>
 #include <crow/http_response.h>
+#include <crow/middlewares/cors.h>
 #include <crow/utility.h>
-#include <crow/websocket.h>
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
@@ -40,7 +42,6 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 
-#include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/main.hpp"
@@ -56,6 +57,13 @@
 TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   namespace json = nlohmann;
 
+  struct SolverTelemetry final {
+    uint64_t timestamp = 0;
+    float64_t cpu_percent = 0.0;
+    uint64_t memory_bytes = 0;
+    bool has_value = false;
+  };
+
   const auto exe_dir = std::filesystem::path{argv[0]}.parent_path();
   const auto root_dir = exe_dir.parent_path();
   const auto gui_dir = root_dir / "lib" / "gui";
@@ -66,12 +74,21 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   std::filesystem::create_directories(tmp_dir);
   std::filesystem::create_directories(export_dir);
 
-  // ---------------------------------------------------------------------------
-  //
-  // Application state
-  //
-
-  crow::SimpleApp app;
+  crow::App<crow::CORSHandler> app;
+  app.get_middleware<crow::CORSHandler>()
+      .prefix("/api")
+      .origin("*")
+      .methods(crow::HTTPMethod::Get,
+               crow::HTTPMethod::Post,
+               crow::HTTPMethod::Options)
+      .headers("Content-Type", "Accept")
+      .max_age(600);
+  app.get_middleware<crow::CORSHandler>()
+      .prefix("/export")
+      .origin("*")
+      .methods(crow::HTTPMethod::Get, crow::HTTPMethod::Options)
+      .headers("Content-Type", "Accept")
+      .max_age(600);
 
   const data::Storage storage{"particles.ttdb"};
 
@@ -79,109 +96,57 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   std::mutex solver_mutex;
   std::jthread solver_thread;
   Process* solver_process = nullptr; // Owned by `solver_thread`.
+  std::string solver_output;
+
   std::mutex solver_telemetry_mutex;
   std::jthread solver_telemetry_thread;
-  struct SolverTelemetry final {
-    uint64_t timestamp = 0;
-    float64_t cpu_percent = 0.0;
-    uint64_t memory_bytes = 0;
-    bool has_value = false;
-  } solver_telemetry;
+  SolverTelemetry solver_telemetry;
 
-  std::jthread export_thread;
+  auto send_json =
+      [](crow::response& response, const json::json& body, int code = 200) {
+        response.code = code;
+        response.set_header("Content-Type", "application/json");
+        response.write(body.dump());
+        response.end();
+      };
 
-  // ---------------------------------------------------------------------------
-  //
-  // WebSocket connection
-  //
-
-  std::mutex connection_mutex;
-
-  crow::websocket::connection* current_connection = nullptr;
-
-  std::vector<std::string> pending_messages;
-
-  const auto send_response = [&connection_mutex,
-                              &current_connection,
-                              &pending_messages](const std::string& response) {
-    const std::scoped_lock lock{connection_mutex};
-    if (current_connection != nullptr) {
-      current_connection->send_text(response);
-    } else {
-      pending_messages.push_back(response);
-    }
+  auto send_error = [&send_json](crow::response& response,
+                                 std::string_view error,
+                                 int code = 400) {
+    send_json(response,
+              json::json{{"status", "error"}, {"error", error}},
+              code);
   };
 
-  CROW_WEBSOCKET_ROUTE(app, "/ws")
-      .onaccept([&connection_mutex,
-                 &current_connection](const crow::request& /*request*/,
-                                      void** /*user_data*/) {
-        // Accept only one connection.
-        const std::scoped_lock lock{connection_mutex};
-        return current_connection == nullptr;
-      })
-      .onopen([&connection_mutex, //
-               &current_connection,
-               &pending_messages](crow::websocket::connection& connection) {
-        const std::scoped_lock lock{connection_mutex};
+  auto telemetry_to_json =
+      [&solver_telemetry_mutex, &solver_telemetry]() -> json::json {
+    const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
+    if (!solver_telemetry.has_value) return {};
+    return json::json{
+        {"timestamp", solver_telemetry.timestamp},
+        {"cpuPercent", solver_telemetry.cpu_percent},
+        {"memoryBytes", solver_telemetry.memory_bytes},
+    };
+  };
 
-        TIT_ALWAYS_ASSERT(current_connection == nullptr,
-                          "Only one connection is allowed.");
+  // ---------------------------------------------------------------------------
+  // API: Storage.
 
-        current_connection = &connection;
+  CROW_ROUTE(app, "/api/storage/num-frames")
+      .methods(crow::HTTPMethod::Get)([&storage,
+                                       &send_json](const crow::request&,
+                                                   crow::response& response) {
+        send_json(response,
+                  json::json{{"status", "success"},
+                             {"result", storage.last_series().num_frames()}});
+      });
 
-        for (const auto& message : pending_messages) {
-          current_connection->send_text(message);
-        }
-
-        pending_messages.clear();
-      })
-      .onclose([&connection_mutex, //
-                &current_connection](crow::websocket::connection& connection,
-                                     const std::string& /*reason*/,
-                                     uint16_t /*code*/) {
-        const std::scoped_lock lock{connection_mutex};
-
-        TIT_ALWAYS_ASSERT(current_connection == &connection,
-                          "Unexpected connection.");
-
-        current_connection = nullptr;
-      })
-      .onmessage([&send_response,
-                  &storage,
-                  &solver_path,
-                  &solver_mutex,
-                  &solver_telemetry_mutex,
-                  &solver_telemetry_thread,
-                  &solver_telemetry,
-                  &solver_thread,
-                  &solver_process,
-                  &tmp_dir,
-                  &export_dir,
-                  &export_thread](crow::websocket::connection& /*connection*/,
-                                  const std::string& raw_request,
-                                  bool is_binary) {
-        TIT_ALWAYS_ASSERT(!is_binary, "Binary messages are not supported.");
-
-        const auto request = json::json::parse(raw_request);
-        const auto& message = request["message"];
-        const auto type = message["type"].get<std::string>();
-
-        json::json response{
-            {"requestID", request["requestID"]},
-            {"status", "success"},
-        };
-
-        // ---------------------------------------------------------------------
-        if (type == "num-frames") {
-          response["result"] = storage.last_series().num_frames();
-          send_response(response.dump());
-          return;
-        }
-
-        // ---------------------------------------------------------------------
-        if (type == "frame") {
-          const auto frame_index = message["index"].get<size_t>();
+  CROW_ROUTE(app, "/api/storage/frame/<uint>")
+      .methods(crow::HTTPMethod::Get)([&storage, &send_json, &send_error](
+                                          const crow::request&,
+                                          crow::response& response,
+                                          size_t frame_index) {
+        try {
           auto frames = storage.last_series().frames();
           auto frame_iter = std::ranges::begin(frames);
           const auto frames_end = std::ranges::end(frames);
@@ -192,7 +157,6 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
           json::json result;
           for (const auto& array : frame.arrays()) {
             const auto bytes = array.read();
-
             result[array.name()] = json::json{
                 {"kind", array.type().kind().name()},
                 {"data",
@@ -202,199 +166,213 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
             };
           }
 
-          response["result"] = result;
-          send_response(response.dump());
-          return;
+          send_json(
+              response,
+              json::json{{"status", "success"}, {"result", std::move(result)}});
+        } catch (const std::exception& error) {
+          send_error(response, error.what());
         }
-
-        // ---------------------------------------------------------------------
-        if (type == "run") {
-          const std::scoped_lock lock{solver_mutex};
-
-          TIT_ALWAYS_ASSERT(solver_process == nullptr,
-                            "Solver is already running.");
-
-          auto solver_process_holder = std::make_unique<Process>();
-          solver_process = solver_process_holder.get();
-
-          const auto append_telemetry =
-              [&solver_telemetry_mutex, &solver_telemetry](json::json& result) {
-                const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
-                if (!solver_telemetry.has_value) return;
-
-                result["timestamp"] = solver_telemetry.timestamp;
-                result["cpuPercent"] = solver_telemetry.cpu_percent;
-                result["memoryBytes"] = solver_telemetry.memory_bytes;
-              };
-
-          solver_process->on_stdout(
-              [response, &send_response, append_telemetry](
-                  std::string_view data) mutable {
-                response["repeat"] = true;
-                auto result = json::json{
-                    {"kind", "stdout"},
-                    {"data", data},
-                };
-                append_telemetry(result);
-                response["result"] = std::move(result);
-                send_response(response.dump());
-              });
-
-          solver_process->on_stderr(
-              [response, &send_response, append_telemetry](
-                  std::string_view data) mutable {
-                response["repeat"] = true;
-                auto result = json::json{
-                    {"kind", "stderr"},
-                    {"data", data},
-                };
-                append_telemetry(result);
-                response["result"] = std::move(result);
-                send_response(response.dump());
-              });
-
-          solver_process->on_exit(
-              [response,
-               &send_response,
-               &solver_telemetry_thread](int code, int signal) mutable {
-                solver_telemetry_thread.request_stop();
-                response["result"] = json::json{
-                    {"kind", "exit"},
-                    {"code", code},
-                    {"signal", signal},
-                };
-                send_response(response.dump());
-              });
-
-          solver_process->spawn_child(solver_path);
-
-          {
-            const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
-            solver_telemetry = {};
-          }
-
-          const auto solver_pid = solver_process->pid();
-          try {
-            const auto snapshot = proc_info::query_usage(solver_pid);
-            const auto now =
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now().time_since_epoch())
-                    .count();
-            const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
-            solver_telemetry = {
-                .timestamp = static_cast<uint64_t>(now),
-                .cpu_percent = 0.0,
-                .memory_bytes = snapshot.memory_bytes,
-                .has_value = true,
-            };
-          } catch (const std::exception& /*e*/) {
-          }
-
-          solver_telemetry_thread = std::jthread{
-              [solver_pid, &solver_telemetry_mutex, &solver_telemetry](
-                  const std::stop_token& stop_token) {
-                try {
-                  auto previous_snapshot = proc_info::query_usage(solver_pid);
-                  auto previous_time = std::chrono::steady_clock::now();
-
-                  while (!stop_token.stop_requested()) {
-                    std::this_thread::sleep_for(std::chrono::seconds{1});
-                    if (stop_token.stop_requested()) break;
-
-                    const auto now = std::chrono::steady_clock::now();
-                    const auto snapshot = proc_info::query_usage(solver_pid);
-                    const auto timestamp =
-                        std::chrono::duration_cast<std::chrono::milliseconds>(
-                            std::chrono::system_clock::now().time_since_epoch())
-                            .count();
-                    const auto cpu_percent = proc_info::compute_cpu_percent(
-                        previous_snapshot,
-                        snapshot,
-                        std::chrono::duration_cast<std::chrono::nanoseconds>(
-                            now - previous_time));
-
-                    {
-                      const std::scoped_lock telemetry_lock{
-                          solver_telemetry_mutex};
-                      solver_telemetry = {
-                          .timestamp = static_cast<uint64_t>(timestamp),
-                          .cpu_percent = cpu_percent,
-                          .memory_bytes = snapshot.memory_bytes,
-                          .has_value = true,
-                      };
-                    }
-
-                    previous_snapshot = snapshot;
-                    previous_time = now;
-                  }
-                } catch (const std::exception& /*e*/) {
-                }
-              }};
-
-          solver_thread =
-              std::jthread{[&solver_mutex,
-                            &solver_process,
-                            holder = std::move(solver_process_holder)] {
-                holder->wait_child();
-
-                const std::scoped_lock lock_{solver_mutex};
-                solver_process = nullptr;
-              }};
-
-          return;
-        }
-
-        // ---------------------------------------------------------------------
-        if (type == "stop") {
-          const std::scoped_lock lock{solver_mutex};
-
-          TIT_ALWAYS_ASSERT(
-              (solver_process != nullptr && solver_process->is_running()),
-              "Solver is not running.");
-
-          solver_telemetry_thread.request_stop();
-          solver_process->kill_child();
-
-          send_response(response.dump());
-          return;
-        }
-
-        // ---------------------------------------------------------------------
-        if (type == "export") {
-          export_thread = std::jthread{[&storage,
-                                        &tmp_dir,
-                                        &export_dir,
-                                        response,
-                                        &send_response] mutable {
-            const auto out_dir = tmp_dir / "particles";
-            std::filesystem::create_directories(out_dir);
-            data::export_hdf5(out_dir, storage.last_series());
-
-            static constexpr std::string_view zip_name = "particles.zip";
-            ZipWriter zip_writer{export_dir / zip_name};
-            zip_writer.add_dir(out_dir);
-            zip_writer.close();
-
-            response["result"] = zip_name;
-            send_response(response.dump());
-          }};
-
-          return;
-        }
-
-        // ---------------------------------------------------------------------
-        response["status"] = "error";
-        response["error"] = std::format("Unknown message type: '{}'.", type);
-        send_response(response.dump());
       });
 
   // ---------------------------------------------------------------------------
-  //
-  // Static files
-  //
+  // API: Solver.
+
+  CROW_ROUTE(app, "/api/solver/run")
+      .methods(crow::HTTPMethod::Post)(
+          [&solver_mutex,
+           &solver_thread,
+           &solver_process,
+           &solver_output,
+           &solver_telemetry_mutex,
+           &solver_telemetry_thread,
+           &solver_telemetry,
+           &solver_path,
+           &send_json,
+           &send_error](const crow::request&, crow::response& response) {
+            const std::scoped_lock lock{solver_mutex};
+            if (solver_process != nullptr && solver_process->is_running()) {
+              send_error(response, "Solver is already running.");
+              return;
+            }
+
+            solver_output.clear();
+            {
+              const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
+              solver_telemetry = {};
+            }
+
+            auto solver_process_holder = std::make_unique<Process>();
+            solver_process = solver_process_holder.get();
+
+            solver_process->on_stdout(
+                [&solver_mutex, &solver_output](std::string_view data) {
+                  const std::scoped_lock lock_{solver_mutex};
+                  solver_output += data;
+                });
+
+            solver_process->on_stderr(
+                [&solver_mutex, &solver_output](std::string_view data) {
+                  const std::scoped_lock lock_{solver_mutex};
+                  solver_output += data;
+                });
+
+            solver_process->on_exit([&solver_mutex,
+                                     &solver_output,
+                                     &solver_telemetry_thread](int code,
+                                                               int signal) {
+              solver_telemetry_thread.request_stop();
+              const std::scoped_lock lock_{solver_mutex};
+              solver_output +=
+                  std::format("\n[Process exited with code {}, signal {}]\n",
+                              code,
+                              signal);
+            });
+
+            solver_process->spawn_child(solver_path);
+
+            const auto solver_pid = solver_process->pid();
+            try {
+              const auto snapshot = proc_info::query_usage(solver_pid);
+              const auto now =
+                  std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::system_clock::now().time_since_epoch())
+                      .count();
+              const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
+              solver_telemetry = {
+                  .timestamp = static_cast<uint64_t>(now),
+                  .cpu_percent = 0.0,
+                  .memory_bytes = snapshot.memory_bytes,
+                  .has_value = true,
+              };
+            } catch (const std::exception&) {
+            }
+
+            solver_telemetry_thread = std::jthread{
+                [solver_pid, &solver_telemetry_mutex, &solver_telemetry](
+                    const std::stop_token& stop_token) {
+                  try {
+                    auto previous_snapshot = proc_info::query_usage(solver_pid);
+                    auto previous_time = std::chrono::steady_clock::now();
+
+                    while (!stop_token.stop_requested()) {
+                      std::this_thread::sleep_for(std::chrono::seconds{1});
+                      if (stop_token.stop_requested()) break;
+
+                      const auto now = std::chrono::steady_clock::now();
+                      const auto snapshot = proc_info::query_usage(solver_pid);
+                      const auto timestamp =
+                          std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::system_clock::now().time_since_epoch())
+                              .count();
+                      const auto cpu_percent = proc_info::compute_cpu_percent(
+                          previous_snapshot,
+                          snapshot,
+                          std::chrono::duration_cast<std::chrono::nanoseconds>(
+                              now - previous_time));
+
+                      {
+                        const std::scoped_lock telemetry_lock{
+                            solver_telemetry_mutex};
+                        solver_telemetry = {
+                            .timestamp = static_cast<uint64_t>(timestamp),
+                            .cpu_percent = cpu_percent,
+                            .memory_bytes = snapshot.memory_bytes,
+                            .has_value = true,
+                        };
+                      }
+
+                      previous_snapshot = snapshot;
+                      previous_time = now;
+                    }
+                  } catch (const std::exception&) {
+                  }
+                }};
+
+            solver_thread =
+                std::jthread{[&solver_mutex,
+                              &solver_process,
+                              holder = std::move(solver_process_holder)] {
+                  holder->wait_child();
+
+                  const std::scoped_lock lock_{solver_mutex};
+                  solver_process = nullptr;
+                }};
+
+            send_json(response, json::json{{"status", "success"}});
+          });
+
+  CROW_ROUTE(app, "/api/solver/stop")
+      .methods(crow::HTTPMethod::Post)(
+          [&solver_mutex,
+           &solver_process,
+           &solver_telemetry_thread,
+           &send_json,
+           &send_error](const crow::request&, crow::response& response) {
+            const std::scoped_lock lock{solver_mutex};
+
+            if (solver_process == nullptr || !solver_process->is_running()) {
+              send_error(response, "Solver is not running.");
+              return;
+            }
+
+            solver_telemetry_thread.request_stop();
+            solver_process->kill_child();
+            send_json(response, json::json{{"status", "success"}});
+          });
+
+  CROW_ROUTE(app, "/api/solver/status")
+      .methods(crow::HTTPMethod::Get)(
+          [&solver_mutex,
+           &solver_process,
+           &solver_output,
+           &send_json,
+           telemetry_to_json](const crow::request&, crow::response& response) {
+            const std::scoped_lock lock{solver_mutex};
+
+            auto result = json::json{
+                {"isRunning",
+                 solver_process != nullptr && solver_process->is_running()},
+                {"output", solver_output},
+            };
+            result.update(telemetry_to_json());
+
+            send_json(response,
+                      json::json{
+                          {"status", "success"},
+                          {"result", std::move(result)},
+                      });
+          });
+
+  // ---------------------------------------------------------------------------
+  // API: Export.
+
+  CROW_ROUTE(app, "/api/export")
+      .methods(crow::HTTPMethod::Post)(
+          [&storage, &tmp_dir, &export_dir, &send_json, &send_error](
+              const crow::request&, crow::response& response) {
+            try {
+              const auto out_dir = tmp_dir / "particles";
+              std::filesystem::create_directories(out_dir);
+              data::export_hdf5(out_dir, storage.last_series());
+
+              static constexpr std::string_view zip_name = "particles.zip";
+              ZipWriter zip_writer{export_dir / zip_name};
+              zip_writer.add_dir(out_dir);
+              zip_writer.close();
+
+              send_json(
+                  response,
+                  json::json{{"status", "success"}, {"result", zip_name}});
+            } catch (const std::exception& error) {
+              send_error(response, error.what(), 500);
+            }
+          });
+
+  // ---------------------------------------------------------------------------
+  // Static files.
 
   CROW_ROUTE(app, "/export/<path>")
-  ([&export_dir](const crow::request& /*request*/,
+  ([&export_dir](const crow::request&,
                  crow::response& response,
                  const std::filesystem::path& file_name) {
     TIT_ENSURE(file_name == file_name.filename(), "Invalid file name!");
@@ -403,17 +381,15 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
     response.end();
   });
 
-  // ---------------------------------------------------------------------------
-
   CROW_ROUTE(app, "/manual/")
-  ([&manual_dir](const crow::request& /*request*/, crow::response& response) {
+  ([&manual_dir](const crow::request&, crow::response& response) {
     const auto index_html = manual_dir / "index.html";
     response.set_static_file_info(index_html.native());
     response.end();
   });
 
   CROW_ROUTE(app, "/manual/<path>")
-  ([&manual_dir](const crow::request& /*request*/,
+  ([&manual_dir](const crow::request&,
                  crow::response& response,
                  const std::filesystem::path& file_name) {
     auto file_path = manual_dir / file_name;
@@ -422,17 +398,15 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
     response.end();
   });
 
-  // ---------------------------------------------------------------------------
-
   CROW_ROUTE(app, "/")
-  ([&gui_dir](const crow::request& /*request*/, crow::response& response) {
+  ([&gui_dir](const crow::request&, crow::response& response) {
     const auto index_html = gui_dir / "index.html";
     response.set_static_file_info(index_html.native());
     response.end();
   });
 
   CROW_ROUTE(app, "/<path>")
-  ([&gui_dir](const crow::request& /*request*/,
+  ([&gui_dir](const crow::request&,
               crow::response& response,
               const std::filesystem::path& file_name) {
     auto file_path = gui_dir / file_name;
@@ -441,9 +415,6 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
     response.end();
   });
 
-  // ---------------------------------------------------------------------------
-
-  /// @todo Pass port as a command line argument.
   app.port(get_env<uint16_t>("TIT_BACKEND_PORT", 18080)).run();
 });
 

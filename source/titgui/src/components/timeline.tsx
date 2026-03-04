@@ -4,7 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { Box, Flex, IconButton, Separator, Tooltip } from "@radix-ui/themes";
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import {
   FaBackward as BackIcon,
   FaForward as ForwardIcon,
@@ -13,10 +13,7 @@ import {
   FaStepBackward as StepBackwardIcon,
   FaStepForward as StepForwardIcon,
 } from "react-icons/fa";
-import {
-  FaArrowsRotate as RefreshIcon,
-  FaRepeat as RepeatIcon,
-} from "react-icons/fa6";
+import { FaRepeat as RepeatIcon } from "react-icons/fa6";
 import ScrollContainer from "react-indiana-drag-scroll";
 
 import { TechText } from "~/components/basic";
@@ -27,11 +24,17 @@ import { assert, iota } from "~/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function Timeline() {
+  const playbackDelayMs = 100;
+
   // --- Playback handling. ----------------------------------------------------
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRepeating, setIsRepeating] = useState(false);
-  const { numFrames, frameIndex, requestFrame, refresh } = useStorage();
+  const { numFrames, frameIndex, loadedFrames, requestFrame } = useStorage();
+  const loadedFrameSet = useMemo<Set<number>>(
+    () => new Set(loadedFrames),
+    [loadedFrames],
+  );
 
   function setNextFrame() {
     assert(frameIndex !== null);
@@ -70,7 +73,12 @@ export function Timeline() {
 
   useEffect(() => {
     if (frameIndex === null) return;
-    if (isPlaying) playNextFrameEvent();
+    if (!isPlaying) return;
+
+    const timeoutID = window.setTimeout(() => {
+      playNextFrameEvent();
+    }, playbackDelayMs);
+    return () => window.clearTimeout(timeoutID);
   }, [isPlaying, frameIndex]);
 
   // ---- Layout. --------------------------------------------------------------
@@ -179,21 +187,6 @@ export function Timeline() {
 
       <Separator orientation="vertical" size="4" />
 
-      <Flex direction="row" align="center" gap="2" mx="2">
-        <Tooltip content="Refresh">
-          <IconButton
-            variant="ghost"
-            color="gray"
-            radius="full"
-            onClick={refresh}
-          >
-            <RefreshIcon size={iconSize} />
-          </IconButton>
-        </Tooltip>
-      </Flex>
-
-      <Separator orientation="vertical" size="4" />
-
       {/* ---- Time steps. ------------------------------------------------- */}
       <Box asChild flexGrow="1" width="100%" height="100%">
         <ScrollContainer vertical={false}>
@@ -202,7 +195,12 @@ export function Timeline() {
               const inRange = tickIndex < numFrames;
               const isLarge = tickIndex % 10 === 0;
               const sizeMultiplier = isLarge ? 2 : 1;
-              const color = inRange ? "var(--gray-11)" : "var(--gray-8)";
+              const isLoaded = loadedFrameSet.has(tickIndex);
+              const color = inRange
+                ? isLoaded
+                  ? "var(--accent-10)"
+                  : "var(--gray-11)"
+                : "var(--gray-8)";
 
               return (
                 <Box
