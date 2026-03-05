@@ -139,3 +139,19 @@ export function toCSSColor(num: number): string {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * State updater type.
+ */
+export type SetStateAction<T> = T | ((prev: T) => T);
+
+/**
+ * Type guard for state updater functions.
+ */
+export function isStateUpdater<T>(
+  next: SetStateAction<T>,
+): next is (prev: T) => T {
+  return typeof next === "function";
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
