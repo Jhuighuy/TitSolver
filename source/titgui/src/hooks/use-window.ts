@@ -4,6 +4,9 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { useEffect, useState } from "react";
+import { z } from "zod";
+
+import { usePersistedState } from "~/hooks/use-persisted-state";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -28,6 +31,46 @@ export function useWindowIsFullScreen() {
   }, []);
 
   return isFullScreen;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+const appearanceSchema = z.union([
+  z.literal("light"),
+  z.literal("dark"),
+  z.literal("system"),
+]);
+
+export type Appearance = z.infer<typeof appearanceSchema>;
+
+export function useWindowAppearanceState() {
+  return usePersistedState("appearance", appearanceSchema, "system");
+}
+
+export function useWindowAppearance() {
+  const [appearance] = useWindowAppearanceState();
+  const prefersDarkAppearance = useWindowPrefersDarkAppearance();
+
+  if (appearance === "system") return prefersDarkAppearance ? "dark" : "light";
+  return appearance;
+}
+
+function useWindowPrefersDarkAppearance() {
+  const [prefersDarkAppearance, setPrefersDarkAppearance] = useState(
+    window.matchMedia("(prefers-color-scheme: dark)").matches,
+  );
+
+  useEffect(() => {
+    const listener = (event: MediaQueryListEvent) => {
+      setPrefersDarkAppearance(event.matches);
+    };
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    mediaQuery.addEventListener("change", listener);
+    return () => mediaQuery.removeEventListener("change", listener);
+  }, []);
+
+  return prefersDarkAppearance;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

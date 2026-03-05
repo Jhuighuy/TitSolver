@@ -16,6 +16,7 @@ import {
 import { Vector3 } from "three";
 
 import { TechText } from "~/components/basic";
+import { chrome } from "~/components/classes";
 import { ColorBox, ColorLegend } from "~/components/color-bar";
 import { ExportButton } from "~/components/export";
 import { useStorage } from "~/components/storage";
@@ -149,7 +150,7 @@ export function Viewport() {
         px="4"
         py="4px"
         gap="3"
-        className="bg-linear-to-br from-gray-700 to-gray-800"
+        className={chrome({ direction: "br" })}
       >
         {/* ---- Projection. ----------------------------------------------- */}
         <Select.Root
@@ -292,7 +293,7 @@ export function Viewport() {
         height="100%"
         overflow="hidden"
         position="relative"
-        className="bg-linear-to-bl from-gray-700 to-gray-800"
+        className={chrome({ direction: "bl" })}
       >
         <Box position="absolute" asChild>
           <canvas ref={canvasRef} />

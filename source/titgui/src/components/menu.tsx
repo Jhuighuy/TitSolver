@@ -26,9 +26,11 @@ import {
 import { TbMinimize as MinimizeIcon } from "react-icons/tb";
 import { z } from "zod";
 
+import { chrome, surface } from "~/components/classes";
 import { Resizable } from "~/components/resizable";
+import { cn } from "~/components/utils";
 import { usePersistedState } from "~/hooks/use-persisted-state";
-import { assert, cn, iota, items } from "~/utils";
+import { assert, iota, items } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -99,7 +101,7 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
         {...(vertical
           ? { direction: "column", height: "100%", pb: "4" }
           : { direction: "row", width: "100%", px: "4" })}
-        className="bg-linear-to-bl from-gray-700 to-gray-800"
+        className={chrome({ direction: "bl" })}
       >
         {iota(maxGroup + 1).map((group) => (
           <Flex
@@ -244,7 +246,7 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
       gap="2"
       height="100%"
       direction="column"
-      className="bg-linear-to-bl from-gray-700 to-gray-800"
+      className={chrome({ direction: "bl" })}
     >
       {/* ---- Header. ----------------------------------------------------- */}
       <Flex gap="2" direction="row" align="center">
@@ -283,7 +285,7 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
       </Flex>
 
       {/* ---- Contents. --------------------------------------------------- */}
-      <Box flexGrow="1" overflow="auto" className="bg-gray-900 rounded-lg">
+      <Box flexGrow="1" overflow="auto" className={cn("rounded-lg", surface())}>
         <ScrollArea>
           <MenuActionsContext.Provider value={menuActions}>
             {children}

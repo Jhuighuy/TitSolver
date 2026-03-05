@@ -18,40 +18,42 @@ import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
 import { RunMenu } from "~/components/menu-run";
+import { SettingsMenu } from "~/components/menu-settings";
 import { SolverProvider } from "~/components/solver";
 import { StorageProvider } from "~/components/storage";
 import { Timeline } from "~/components/timeline";
 import { TitleBar } from "~/components/title-bar";
 import { Viewport } from "~/components/viewport";
-import { useWindowIsFullScreen } from "~/hooks/use-window";
+import { useWindowAppearance, useWindowIsFullScreen } from "~/hooks/use-window";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function App() {
   return (
-    <Theme appearance="dark">
-      <ConnectionProvider>
-        <SolverProvider>
-          <StorageProvider>
-            <Window />
-          </StorageProvider>
-        </SolverProvider>
-      </ConnectionProvider>
-    </Theme>
+    <ConnectionProvider>
+      <SolverProvider>
+        <StorageProvider>
+          <Window />
+        </StorageProvider>
+      </SolverProvider>
+    </ConnectionProvider>
   );
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 function Window() {
+  const appearance = useWindowAppearance();
   const isFullScreen = useWindowIsFullScreen();
   return (
-    <Flex direction="column" width="100vw" height="100vh" gap="1px">
-      {isFullScreen || <TitleBar />}
-      <Box asChild flexGrow="1">
-        <Page />
-      </Box>
-    </Flex>
+    <Theme appearance={appearance}>
+      <Flex direction="column" width="100vw" height="100vh" gap="1px">
+        {isFullScreen || <TitleBar />}
+        <Box asChild flexGrow="1">
+          <Page />
+        </Box>
+      </Flex>
+    </Theme>
   );
 }
 
@@ -72,11 +74,9 @@ function Page() {
         <Menu.Item group={1} name="Help" icon={<HelpIcon size={32} />}>
           <HelpMenu />
         </Menu.Item>
-        <Menu.Item
-          group={1}
-          name="Settings"
-          icon={<SettingsIcon size={32} />}
-        />
+        <Menu.Item group={1} name="Settings" icon={<SettingsIcon size={32} />}>
+          <SettingsMenu />
+        </Menu.Item>
       </Menu>
 
       <Flex direction="column" width="100%" height="100%" gap="1px">

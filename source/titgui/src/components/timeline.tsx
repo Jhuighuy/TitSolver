@@ -20,6 +20,7 @@ import {
 import ScrollContainer from "react-indiana-drag-scroll";
 
 import { TechText } from "~/components/basic";
+import { chrome, hoverSurface } from "~/components/classes";
 import { useStorage } from "~/components/storage";
 import { assert, iota } from "~/utils";
 
@@ -86,7 +87,7 @@ export function Timeline() {
       px="2"
       py="4px"
       gap="1"
-      className="bg-linear-to-br from-gray-700 to-gray-800"
+      className={chrome({ direction: "br" })}
     >
       {/* ---- Playback controls. ------------------------------------------ */}
       <Flex direction="row" align="center" gap="4" mx="2">
@@ -213,7 +214,7 @@ export function Timeline() {
                   height="100%"
                   {...(inRange && {
                     onClick: () => clickOnFrame(tickIndex),
-                    className: "rounded hover:bg-gray-600",
+                    className: `rounded ${hoverSurface()}`,
                   })}
                 >
                   {/* ---- Horizontal bar. --------------------------------- */}
