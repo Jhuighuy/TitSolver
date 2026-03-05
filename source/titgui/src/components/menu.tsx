@@ -24,8 +24,10 @@ import {
   useState,
 } from "react";
 import { TbMinimize as MinimizeIcon } from "react-icons/tb";
+import { z } from "zod";
 
 import { Resizable } from "~/components/resizable";
+import { usePersistedState } from "~/hooks/use-persisted-state";
 import { assert, cn, iota, items } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -38,8 +40,17 @@ type MenuProps = {
 export function Menu({ side, children }: Readonly<MenuProps>) {
   // ---- State. --------------------------------------------------------------
 
-  const [size, setSize] = useState(320);
-  const [activeItem, setActiveItem] = useState(-1);
+  const [size, setSize] = usePersistedState(
+    `menu:${side}:size`,
+    z.int().min(160).max(640),
+    320,
+  );
+
+  const [activeItem, setActiveItem] = usePersistedState(
+    `menu:${side}:active-item`,
+    z.int().min(-1).max(items(children).length - 1), // prettier-ignore
+    -1,
+  );
 
   function setActiveItemOrToggle(index: number) {
     setActiveItem((prev) => (index === prev ? -1 : index));

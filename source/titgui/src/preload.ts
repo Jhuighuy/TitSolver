@@ -5,7 +5,12 @@
 
 import { contextBridge, type IpcRendererEvent, ipcRenderer } from "electron";
 
-import { IPC_FULL_SCREEN_CHANGED, IPC_IS_FULL_SCREEN } from "~/constants";
+import {
+  IPC_FULL_SCREEN_CHANGED,
+  IPC_IS_FULL_SCREEN,
+  IPC_PERSIST_GET,
+  IPC_PERSIST_SET,
+} from "~/constants";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -21,6 +26,17 @@ contextBridge.exposeInMainWorld("windowState", {
 
     ipcRenderer.on(IPC_FULL_SCREEN_CHANGED, callback);
     return () => ipcRenderer.off(IPC_FULL_SCREEN_CHANGED, callback);
+  },
+});
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+contextBridge.exposeInMainWorld("persistedState", {
+  get(key: string) {
+    return ipcRenderer.invoke(IPC_PERSIST_GET, key) as Promise<unknown>;
+  },
+  set(key: string, value: unknown) {
+    return ipcRenderer.invoke(IPC_PERSIST_SET, key, value) as Promise<void>;
   },
 });
 
