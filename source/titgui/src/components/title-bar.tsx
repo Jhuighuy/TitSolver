@@ -4,7 +4,10 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { Flex, Text } from "@radix-ui/themes";
+
 import BlueTitIcon from "~/assets/icon.svg?react";
+import { chrome } from "~/components/classes";
+import { cn } from "~/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -19,7 +22,7 @@ export function TitleBar() {
       height="30px"
       minHeight="30px"
       maxHeight="30px"
-      className="title-bar-drag bg-linear-to-br from-gray-700 to-gray-800"
+      className={cn("title-bar-drag", chrome({ direction: "br" }))}
     >
       <BlueTitIcon
         width={16}
