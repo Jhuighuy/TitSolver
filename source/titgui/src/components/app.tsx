@@ -15,8 +15,10 @@ import {
 } from "react-icons/tb";
 
 import { ConnectionProvider } from "~/components/connection";
+import { LoggingProvider } from "~/components/logging";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
+import { LogsMenu } from "~/components/menu-logs";
 import { RunMenu } from "~/components/menu-run";
 import { SettingsMenu } from "~/components/menu-settings";
 import { SolverProvider } from "~/components/solver";
@@ -30,13 +32,15 @@ import { useWindowAppearance, useWindowIsFullScreen } from "~/hooks/use-window";
 
 export function App() {
   return (
-    <ConnectionProvider>
-      <SolverProvider>
-        <StorageProvider>
-          <Window />
-        </StorageProvider>
-      </SolverProvider>
-    </ConnectionProvider>
+    <LoggingProvider>
+      <ConnectionProvider>
+        <SolverProvider>
+          <StorageProvider>
+            <Window />
+          </StorageProvider>
+        </SolverProvider>
+      </ConnectionProvider>
+    </LoggingProvider>
   );
 }
 
@@ -86,7 +90,9 @@ function Page() {
         <Timeline />
 
         <Menu side="bottom">
-          <Menu.Item group={0} name="Logs" icon={<LogsIcon size={16} />} />
+          <Menu.Item group={0} name="Logs" icon={<LogsIcon size={16} />}>
+            <LogsMenu />
+          </Menu.Item>
           <Menu.Item
             group={0}
             name="Terminal"
