@@ -143,3 +143,31 @@ export function isStateUpdater<T>(
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * Download a file with the given name and content.
+ */
+export function downloadFile(fileName: string, url: string) {
+  const linkElement = document.createElement("a");
+  linkElement.href = url;
+  linkElement.download = fileName;
+  linkElement.click();
+}
+
+/**
+ * Download a blob with the given name and content.
+ */
+export function downloadBlob(fileName: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  downloadFile(fileName, url);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Download a text file with the given name and content.
+ */
+export function downloadText(fileName: string, text: string) {
+  downloadBlob(fileName, new Blob([text], { type: "text/plain" }));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

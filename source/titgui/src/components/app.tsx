@@ -17,6 +17,7 @@ import {
 import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
+import { LogsMenu } from "~/components/menu-logs";
 import { RunMenu } from "~/components/menu-run";
 import { SettingsMenu } from "~/components/menu-settings";
 import { SolverProvider } from "~/components/solver";
@@ -86,7 +87,9 @@ function Page() {
         <Timeline />
 
         <Menu side="bottom">
-          <Menu.Item group={0} name="Logs" icon={<LogsIcon size={16} />} />
+          <Menu.Item group={0} name="Logs" icon={<LogsIcon size={16} />}>
+            <LogsMenu />
+          </Menu.Item>
           <Menu.Item
             group={0}
             name="Terminal"
