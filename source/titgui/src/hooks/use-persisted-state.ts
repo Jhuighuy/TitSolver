@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import type { ZodType } from "zod";
 
+import { useLogging } from "~/hooks/use-logging";
 import { isStateUpdater, type SetStateAction } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,6 +17,7 @@ export function usePersistedState<T>(
   schema: ZodType<T>,
   fallbackValue: T,
 ) {
+  const { warn } = useLogging();
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => ["persist", key], [key]);
 
@@ -31,9 +33,9 @@ export function usePersistedState<T>(
 
       const parsed = schema.safeParse(persistedValue);
       if (!parsed.success) {
-        console.warn(
-          `Invalid persisted value for '${key}', using fallback.`,
-          `Error: ${parsed.error.message}`,
+        warn(
+          `Invalid persisted value for '${key}', using fallback.\n`,
+          `Error: '${parsed.error.message}'`,
         );
         mutate(fallbackValue);
         return fallbackValue;

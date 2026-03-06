@@ -8,7 +8,7 @@ import { type ComponentProps, useState } from "react";
 import { z } from "zod";
 
 import { useConnection } from "~/components/connection";
-import { assert } from "~/utils";
+import { assert, downloadFile } from "~/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -29,12 +29,8 @@ export function ExportButton({
 
         sendMessage({ type: "export" }, (result) => {
           setIsExporting(false);
-
           const fileName = z.string().parse(result);
-          const linkElement = document.createElement("a");
-          linkElement.href = `/export/${fileName}`;
-          linkElement.download = fileName;
-          linkElement.click();
+          downloadFile(fileName, `/export/${fileName}`);
         });
       }}
       {...props}
