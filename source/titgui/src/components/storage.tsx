@@ -16,15 +16,15 @@ import {
 import { z } from "zod";
 
 import { useConnection } from "~/components/connection";
-import { assert, decodeBase64, minMax } from "~/utils";
-import type { FieldMap } from "~/visual/particles";
+import { assert, decodeBase64 } from "~/utils";
+import { FieldMap } from "~/visual/fields";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export type Storage = {
   numFrames: number;
-  frameIndex: number | null;
-  frameData: FieldMap | null;
+  frameIndex: number;
+  frameData: FieldMap;
   requestFrame: (frameIndex: number) => void;
   refresh: () => void;
 };
@@ -49,7 +49,7 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
     null,
   );
   const [frameIndex, setFrameIndex] = useState<number | null>(null);
-  const [frameData, setFrameData] = useState<FieldMap | null>(null);
+  const [frameData, setFrameData] = useState(new FieldMap({}));
 
   const { sendMessage } = useConnection();
 
@@ -92,15 +92,16 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
 
       const rawFrameData = frameDataSchema.parse(result);
 
-      const frameData: FieldMap = {};
-      for (const [fieldName, field] of Object.entries(rawFrameData)) {
-        const { kind, data } = field;
-        const vals = decodeBase64(data, kind);
-        const [min, max] = minMax(vals);
-        frameData[fieldName] = { min, max, data: vals };
-      }
+      const fieldMap = new FieldMap(
+        Object.fromEntries(
+          Object.entries(rawFrameData).map(([fieldName, { kind, data }]) => [
+            fieldName,
+            decodeBase64(data, kind),
+          ]),
+        ),
+      );
 
-      setFrameData(frameData);
+      setFrameData(fieldMap);
       setFrameIndex(requestedFrameIndex);
 
       setRequestedFrameIndex(null);
@@ -115,8 +116,8 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
 
   const storage = useMemo(
     () => ({
-      numFrames: numFrames ?? 0,
-      frameIndex,
+      numFrames: numFrames ?? 1,
+      frameIndex: frameIndex ?? 0,
       frameData,
       requestFrame(frameIndex: number) {
         assert(numFrames !== null);
@@ -127,7 +128,7 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
         setNumFrames(null);
         setRequestedFrameIndex(null);
         setFrameIndex(null);
-        setFrameData(null);
+        setFrameData(new FieldMap({}));
       },
     }),
     [numFrames, frameIndex, frameData],
