@@ -12,8 +12,8 @@ import { Euler, Quaternion, Vector3 } from "three";
 type ViewCubeProps = ComponentProps<typeof Box> & {
   length?: string;
   diameter?: string;
-  rotation: Vector3;
-  setRotation?: (rotation: Vector3) => void;
+  rotation: Euler;
+  setRotation?: (rotation: Euler) => void;
 };
 
 export function ViewCube({
@@ -23,10 +23,7 @@ export function ViewCube({
   setRotation,
   ...props
 }: Readonly<ViewCubeProps>) {
-  const rotationRad = rotation.clone().multiplyScalar(Math.PI / 180);
-  const euler = new Euler().setFromVector3(rotationRad);
-  const quat = new Quaternion().setFromEuler(euler).invert();
-
+  const quat = new Quaternion().setFromEuler(rotation).invert();
   return (
     <Box {...props} position="relative">
       {Object.entries(axisCns).map(([axis, [colorCn, altColorCn]], i) => {
@@ -91,13 +88,13 @@ export function ViewCube({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-const axisRotations: Record<string, Vector3> = {
-  "+x": new Vector3(0, 90, 0),
-  "-x": new Vector3(0, -90, 0),
-  "+y": new Vector3(90, 0, 0),
-  "-y": new Vector3(-90, 0, 0),
-  "+z": new Vector3(0, 0, 0),
-  "-z": new Vector3(0, 180, 0),
+const axisRotations: Record<string, Euler> = {
+  "+x": new Euler(0, Math.PI / 2, 0),
+  "-x": new Euler(0, -Math.PI / 2, 0),
+  "+y": new Euler(Math.PI / 2, 0, 0),
+  "-y": new Euler(-Math.PI / 2, 0, 0),
+  "+z": new Euler(0, 0, 0),
+  "-z": new Euler(0, Math.PI, 0),
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

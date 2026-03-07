@@ -12,7 +12,11 @@ import {
 } from "three";
 
 import { assert, expandTo3D } from "~/utils";
-import { type ColorMapName, createColorMapTexture } from "~/visual/color-map";
+import {
+  type ColorMap,
+  colorMaps,
+  colorMapToTexture,
+} from "~/visual/color-map";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -38,7 +42,8 @@ export class Particles extends Points<BufferGeometry, ShaderMaterial> {
       uniforms: {
         minValue: { value: 0 },
         maxValue: { value: 1 },
-        colorMap: { value: createColorMapTexture("jet") },
+        colorMap: { value: colorMapToTexture(colorMaps.jet) },
+        nanColor: { value: colorMaps.jet.nanColor },
         pointSize: { value: 25 },
       },
     });
@@ -88,12 +93,13 @@ export class Particles extends Points<BufferGeometry, ShaderMaterial> {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  public setColorMap(colorMap: ColorMapName) {
+  public setColorMap(colorMap: ColorMap) {
     if (this.material.uniforms.colorMap.value) {
       assert(this.material.uniforms.colorMap.value instanceof Texture);
       this.material.uniforms.colorMap.value.dispose();
     }
-    this.material.uniforms.colorMap.value = createColorMapTexture(colorMap);
+    this.material.uniforms.colorMap.value = colorMapToTexture(colorMap);
+    this.material.uniforms.nanColor.value = colorMap.nanColor;
   }
 }
 

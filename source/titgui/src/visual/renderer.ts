@@ -5,10 +5,7 @@
 
 import { Scene, WebGLRenderer } from "three";
 
-import {
-  type BackgroundColorName,
-  backgroundColors,
-} from "~/visual/background-color";
+import type { BackgroundColor } from "~/visual/background-color";
 import { CameraController } from "~/visual/camera-controller";
 import { Particles } from "~/visual/particles";
 
@@ -61,13 +58,10 @@ export class Renderer {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  public setBackgroundColor(backgroundColorName: BackgroundColorName) {
-    const backgroundColor = backgroundColors[backgroundColorName].color;
-    if (backgroundColor === null) {
-      this.renderer.setClearColor(0, 0);
-    } else {
-      this.renderer.setClearColor(backgroundColor, 1);
-    }
+  public setBackgroundColor(backgroundColor: BackgroundColor) {
+    const color = backgroundColor.color;
+    if (color === null) this.renderer.setClearColor(0, 0);
+    else this.renderer.setClearColor(color, 1);
   }
 }
 

@@ -26,14 +26,12 @@ export function ColorBox({
   const gradientStops = useMemo(
     () =>
       colorMaps[name].points
-        .map(
-          ([value, r, g, b]) =>
-            `rgb(
-              ${Math.round(r * 255)},
-              ${Math.round(g * 255)},
-              ${Math.round(b * 255)}
-            ) ${value * 100}%`,
-        )
+        .map(([value, r, g, b]) => {
+          r = Math.round(r * 255);
+          g = Math.round(g * 255);
+          b = Math.round(b * 255);
+          return `rgb(${r}, ${g}, ${b}) ${value * 100}%`;
+        })
         .join(", "),
     [name],
   );
@@ -54,57 +52,52 @@ export function ColorBox({
 type ColorLegendProps = ColorBoxProps & {
   min: number;
   max: number;
-  ticks: number;
+  ticks?: number;
   title?: string;
 };
 
 export function ColorLegend({
   min,
   max,
-  ticks,
+  ticks = 10,
   title,
-  orientation = "horizontal",
   ...props
-}: ColorLegendProps) {
+}: Omit<ColorLegendProps, "orientation">) {
   assert(min <= max);
   assert(ticks >= 2);
 
-  const reversed = orientation === "vertical";
-
   return (
-    <ColorBox {...props} orientation={orientation} position="relative">
+    <ColorBox
+      {...props}
+      orientation="vertical"
+      position="relative"
+      style={{ border: "2px solid var(--gray-11)" }}
+    >
       {/* ---- Title. ------------------------------------------------------ */}
       {title && (
         <Box
           position="absolute"
-          {...(orientation === "vertical"
-            ? {
-                left: "-100%",
-                top: "50%",
-                style: { transform: "translate(-50%, -50%) rotate(-90deg)" },
-              }
-            : {
-                left: "50%",
-                top: "-100%",
-                style: { transform: "translate(-50%, -50%)" },
-              })}
+          left="-150%"
+          top="50%"
+          style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
         >
-          <TechText color="gray">{title}</TechText>
+          <TechText>{title}</TechText>
         </Box>
       )}
 
       {/* ---- Ticks. ------------------------------------------------------ */}
       {iota(ticks).map((index) => {
         const t = index / (ticks - 1);
-        const offset = `calc(${reversed ? 1 - t : t} * (100% - 2px) + 1px)`;
+        const offset = `calc(${1 - t} * (100% + 2px) - 1px)`;
 
         return (
           <Box
             key={index}
             position="absolute"
-            {...(orientation === "vertical"
-              ? { left: "100%", top: offset, width: "100%", height: "2px" }
-              : { left: offset, top: "100%", width: "2px", height: "100%" })}
+            left="100%"
+            top={offset}
+            width="100%"
+            height="2px"
             style={{
               background: "var(--gray-11)",
               transform: "translate(-50%, -50%)",
@@ -112,14 +105,10 @@ export function ColorLegend({
           >
             <Box
               position="absolute"
-              {...(orientation === "vertical"
-                ? { left: "275%" }
-                : { left: "50%", top: "150%" })}
-              style={{ transform: "translate(-50%, -50%)" }}
+              left="150%"
+              style={{ transform: "translateY(-50%)" }}
             >
-              <TechText size="2" color="gray">
-                {(min + (max - min) * t).toFixed(2)}
-              </TechText>
+              <TechText size="2">{(min + (max - min) * t).toFixed(2)}</TechText>
             </Box>
           </Box>
         );

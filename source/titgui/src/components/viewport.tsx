@@ -13,7 +13,7 @@ import {
   TbPerspectiveOff as OrthographicIcon,
   TbPerspective as PerspectiveIcon,
 } from "react-icons/tb";
-import { Vector3 } from "three";
+import { Euler } from "three";
 
 import { TechText } from "~/components/basic";
 import { chrome } from "~/components/classes";
@@ -71,14 +71,14 @@ export function Viewport() {
     const renderer = rendererRef.current;
     if (renderer === null) return;
 
-    renderer.particles.setColorMap(colorMapName);
+    renderer.particles.setColorMap(colorMaps[colorMapName]);
   }, [colorMapName]);
 
   useEffect(() => {
     const renderer = rendererRef.current;
     if (renderer === null) return;
 
-    renderer.setBackgroundColor(backgroundColorName);
+    renderer.setBackgroundColor(backgroundColors[backgroundColorName]);
   }, [backgroundColorName]);
 
   // ---- Fields. --------------------------------------------------------------
@@ -103,7 +103,7 @@ export function Viewport() {
   // ---- Camera. --------------------------------------------------------------
 
   const [projection, setProjection] = useState<Projection>("orthographic");
-  const [cameraRotation, setCameraRotation] = useState(new Vector3(0, 0, 0));
+  const [cameraRotation, setCameraRotation] = useState(new Euler());
 
   useEffect(() => {
     const renderer = rendererRef.current;
@@ -112,9 +112,7 @@ export function Viewport() {
     const controller = renderer.cameraController;
 
     function handleChange() {
-      setCameraRotation(
-        new Vector3().copy(controller.rotation).multiplyScalar(180 / Math.PI),
-      );
+      setCameraRotation(controller.rotation.clone());
     }
 
     controller.addEventListener("changed", handleChange);
@@ -125,9 +123,7 @@ export function Viewport() {
     const renderer = rendererRef.current;
     if (renderer === null) return;
 
-    renderer.cameraController.rotation.setFromVector3(
-      cameraRotation.clone().multiplyScalar(Math.PI / 180),
-    );
+    renderer.cameraController.rotation.copy(cameraRotation);
   }, [cameraRotation]);
 
   useEffect(() => {
@@ -329,7 +325,6 @@ export function Viewport() {
                 min={frameData[currentField].min}
                 max={frameData[currentField].max}
                 ticks={10}
-                orientation="vertical"
                 width="20px"
                 height="500px"
               />
