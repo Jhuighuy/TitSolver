@@ -63,6 +63,13 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  public setViewportSize(width: number, height: number) {
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   private panCamera(dx: number, dy: number) {
     const panX = -dx * (this.panSpeed / this.camera.zoom);
     const panY = dy * (this.panSpeed / this.camera.zoom);

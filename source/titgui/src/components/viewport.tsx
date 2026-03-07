@@ -3,284 +3,147 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex, Select, Separator, Theme } from "@radix-ui/themes";
+import { Box, Flex } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
-import {
-  TbBackground as BackgroundIcon,
-  TbPalette as ColorMapIcon,
-  TbDatabaseExport as ExportIcon,
-  TbGalaxy as FieldIcon,
-  TbPerspectiveOff as OrthographicIcon,
-  TbPerspective as PerspectiveIcon,
-} from "react-icons/tb";
-import { Euler } from "three";
+import { Euler, Vector3 } from "three";
 
-import { TechText } from "~/components/basic";
 import { chrome } from "~/components/classes";
-import { ColorBox, ColorLegend } from "~/components/color-bar";
-import { ExportButton } from "~/components/export";
 import { useStorage } from "~/components/storage";
-import { ViewCube } from "~/components/view-cube";
-import { assert, toCSSColor } from "~/utils";
+import { ViewControls } from "~/components/view-controls";
+import { ViewHUD } from "~/components/view-hud";
+import { useSignalValue } from "~/hooks/use-signal";
+import { derived, scoped, signal } from "~/signals";
+import { assert } from "~/utils";
 import {
   type BackgroundColorName,
   backgroundColors,
 } from "~/visual/background-color";
 import type { Projection } from "~/visual/camera";
-import { type ColorMapName, colorMaps } from "~/visual/color-map";
+import {
+  type ColorMapName,
+  type ColorRangeMode,
+  colorMaps,
+  colorRangeDefault,
+} from "~/visual/color-map";
+import {
+  FieldMap,
+  fieldModifierDefault,
+  fieldModifierToString,
+  isValidFieldModifier,
+} from "~/visual/fields";
+import type { GlyphScaleMode } from "~/visual/glyphs";
+import type { ShadingMode } from "~/visual/particles";
+import { isValidRenderMode, type RenderMode } from "~/visual/particles-switch";
 import { Renderer } from "~/visual/renderer";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function Viewport() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
   // ---- Renderer. ------------------------------------------------------------
 
-  const rendererRef = useRef<Renderer | null>(null);
-  const [colorMapName, setColorMapName] = useState<ColorMapName>("turbo");
-  const [backgroundColorName, setBackgroundColorName] =
-    useState<BackgroundColorName>("none");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [model] = useState(() => new ViewportModel());
 
   useEffect(() => {
+    // Get canvas.
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (canvas === null) return;
 
-    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    // Prevent context menu for right mouse drag.
+    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+    canvas.addEventListener("contextmenu", onContextMenu);
 
+    // Create renderer and attach to model.
     const renderer = new Renderer(canvas);
-    rendererRef.current = renderer;
+    const detachRender = model.attachRenderer(renderer);
 
+    // Keep renderer size synchronized with container size.
     const container = canvas.parentElement;
     assert(container !== null);
     renderer.resize(container.clientWidth, container.clientHeight);
-
-    const resizeObserver = new ResizeObserver(() => {
-      renderer.resize(container.clientWidth, container.clientHeight);
-    });
+    const resizeObserver = new ResizeObserver(() =>
+      renderer.resize(container.clientWidth, container.clientHeight),
+    );
     resizeObserver.observe(container, { box: "content-box" });
 
     return () => {
+      // Dispose renderer and listeners.
+      detachRender();
       resizeObserver.disconnect();
-      rendererRef.current = null;
       renderer.dispose();
+      canvas.removeEventListener("contextmenu", onContextMenu);
     };
-  }, []);
+  }, [model]);
 
-  useEffect(() => {
-    const renderer = rendererRef.current;
-    if (renderer === null) return;
-
-    renderer.particles.setColorMap(colorMaps[colorMapName]);
-  }, [colorMapName]);
-
-  useEffect(() => {
-    const renderer = rendererRef.current;
-    if (renderer === null) return;
-
-    renderer.setBackgroundColor(backgroundColors[backgroundColorName]);
-  }, [backgroundColorName]);
-
-  // ---- Fields. --------------------------------------------------------------
+  // ---- Frame data. ----------------------------------------------------------
 
   const { frameData } = useStorage();
-  const [currentField, setCurrentField] = useState("rho");
 
-  useEffect(() => {
-    if (frameData === null) return;
+  useEffect(() => model.frameData.set(frameData), [model, frameData]);
 
-    const renderer = rendererRef.current;
-    if (renderer === null) return;
+  // ---- State. ---------------------------------------------------------------
 
-    assert(currentField in frameData);
-    renderer.particles.setData(frameData, currentField);
-    renderer.particles.setColorRange(
-      frameData[currentField].min,
-      frameData[currentField].max,
-    );
-  }, [frameData, currentField]);
-
-  // ---- Camera. --------------------------------------------------------------
-
-  const [projection, setProjection] = useState<Projection>("orthographic");
-  const [cameraRotation, setCameraRotation] = useState(new Euler());
-
-  useEffect(() => {
-    const renderer = rendererRef.current;
-    if (renderer === null) return;
-
-    const controller = renderer.cameraController;
-
-    function handleChange() {
-      setCameraRotation(controller.rotation.clone());
-    }
-
-    controller.addEventListener("changed", handleChange);
-    return () => controller.removeEventListener("changed", handleChange);
-  }, []);
-
-  useEffect(() => {
-    const renderer = rendererRef.current;
-    if (renderer === null) return;
-
-    renderer.cameraController.rotation.copy(cameraRotation);
-  }, [cameraRotation]);
-
-  useEffect(() => {
-    const renderer = rendererRef.current;
-    if (renderer === null) return;
-
-    renderer.cameraController.camera.projection = projection;
-    renderer.cameraController.camera.updateProjectionMatrix();
-  }, [projection]);
+  const projection = useSignalValue(model.projection);
+  const backgroundColorName = useSignalValue(model.backgroundColorName);
+  const cameraPosition = useSignalValue(model.cameraPosition);
+  const cameraRotation = useSignalValue(model.cameraRotation);
+  const field = useSignalValue(model.field);
+  const renderMode = useSignalValue(model.renderMode);
+  const colorField = useSignalValue(model.colorField);
+  const colorFieldModifier = useSignalValue(model.colorFieldModifier);
+  const colorTitle = useSignalValue(model.colorTitle);
+  const shadingMode = useSignalValue(model.shadingMode);
+  const pointSize = useSignalValue(model.pointSize);
+  const glyphScale = useSignalValue(model.glyphScale);
+  const glyphScaleMode = useSignalValue(model.glyphScaleMode);
+  const colorMapName = useSignalValue(model.colorMapName);
+  const colorRange = useSignalValue(model.colorRange);
+  const colorRangeMode = useSignalValue(model.colorRangeMode);
 
   // ---- Layout. --------------------------------------------------------------
 
   return (
     <Flex direction="column" width="100%" height="100%" gap="1px">
       {/* ---- Controls. --------------------------------------------------- */}
-      <Flex
-        direction="row"
-        align="center"
-        height="36px"
-        px="4"
-        py="4px"
-        gap="3"
-        className={chrome({ direction: "br" })}
-      >
-        {/* ---- Projection. ----------------------------------------------- */}
-        <Select.Root
-          size="1"
-          value={projection}
-          onValueChange={(x) => setProjection(x as Projection)}
-        >
-          <Select.Trigger variant="ghost">
-            <Flex align="center" gap="2">
-              {projection === "perspective" ? (
-                <PerspectiveIcon size={16} />
-              ) : (
-                <OrthographicIcon size={16} />
-              )}
-              Projection
-            </Flex>
-          </Select.Trigger>
-          <Select.Content>
-            <Select.Item value="perspective">
-              <Flex align="center" gap="2">
-                <PerspectiveIcon size={16} />
-                Perspective
-              </Flex>
-            </Select.Item>
-            <Select.Item value="orthographic">
-              <Flex align="center" gap="2">
-                <OrthographicIcon size={16} />
-                Orthographic
-              </Flex>
-            </Select.Item>
-          </Select.Content>
-        </Select.Root>
-
-        <Separator orientation="vertical" size="1" />
-
-        {/* ---- Color map. ------------------------------------------------ */}
-        <Select.Root
-          size="1"
-          value={colorMapName}
-          onValueChange={(x) => setColorMapName(x as ColorMapName)}
-        >
-          <Select.Trigger variant="ghost">
-            <Flex align="center" gap="2">
-              <ColorMapIcon size={16} />
-              Color map
-            </Flex>
-          </Select.Trigger>
-          <Select.Content>
-            {Object.entries(colorMaps).map(([name, { label }]) => (
-              <Select.Item key={label} value={name}>
-                <Flex align="center" gap="2">
-                  <ColorBox
-                    name={name as ColorMapName}
-                    width="64px"
-                    height="16px"
-                  />
-                  {label}
-                </Flex>
-              </Select.Item>
-            ))}
-          </Select.Content>
-        </Select.Root>
-
-        <Separator orientation="vertical" size="1" />
-
-        {/* ---- Background color. ----------------------------------------- */}
-        <Select.Root
-          size="1"
-          value={backgroundColorName}
-          onValueChange={(x) =>
-            setBackgroundColorName(x as BackgroundColorName)
-          }
-        >
-          <Select.Trigger variant="ghost">
-            <Flex align="center" gap="2">
-              <BackgroundIcon size={16} />
-              Background
-            </Flex>
-          </Select.Trigger>
-          <Select.Content>
-            {Object.entries(backgroundColors).map(
-              ([name, { label, color }]) => (
-                <Select.Item key={label} value={name}>
-                  <Flex align="center" gap="2">
-                    <Box
-                      width="16px"
-                      height="16px"
-                      {...(color !== null && {
-                        style: { backgroundColor: toCSSColor(color) },
-                      })}
-                    />
-                    {label}
-                  </Flex>
-                </Select.Item>
-              ),
-            )}
-          </Select.Content>
-        </Select.Root>
-
-        <Separator orientation="vertical" size="1" />
-
-        {/* ---- Field selection. ------------------------------------------ */}
-        <Select.Root
-          size="1"
-          value={currentField}
-          onValueChange={setCurrentField}
-        >
-          <Select.Trigger variant="ghost">
-            <Flex align="center" gap="2">
-              <FieldIcon size={16} />
-              Field
-            </Flex>
-          </Select.Trigger>
-          {frameData !== null && (
-            <Select.Content>
-              {Object.keys(frameData).map((name) => (
-                <Select.Item key={name} value={name}>
-                  <TechText>{name}</TechText>
-                </Select.Item>
-              ))}
-            </Select.Content>
-          )}
-        </Select.Root>
-
-        <Separator orientation="vertical" size="1" />
-
-        {/* ---- Export button. -------------------------------------------- */}
-        <ExportButton size="1" variant="ghost">
-          <Flex align="center" gap="2">
-            <ExportIcon size={16} />
-            Export…
-          </Flex>
-        </ExportButton>
-      </Flex>
+      <ViewControls
+        frameData={frameData}
+        /* Camera. */
+        projection={projection}
+        setProjection={(value) => model.projection.set(value)}
+        backgroundColorName={backgroundColorName}
+        setBackgroundColorName={(value) => model.backgroundColorName.set(value)}
+        cameraPosition={cameraPosition}
+        setCameraPosition={(value) => model.cameraPosition.set(value)}
+        cameraRotation={cameraRotation}
+        setCameraRotation={(value) => model.cameraRotation.set(value)}
+        /* Field selection. */
+        field={field}
+        setFieldByName={(value) => model.fieldName.set(value)}
+        renderMode={renderMode}
+        setRenderMode={(value) => model.renderMode.set(value)}
+        colorField={colorField}
+        {...(renderMode === "glyphs" && {
+          setColorFieldByName: (value: string) =>
+            model.userColorFieldName.set(value),
+        })}
+        colorFieldModifier={colorFieldModifier}
+        setColorFieldModifier={(value) => model.colorFieldModifier.set(value)}
+        /* Render parameters. */
+        shadingMode={shadingMode}
+        setShadingMode={(value) => model.shadingMode.set(value)}
+        pointSize={pointSize}
+        setPointSize={(value) => model.pointSize.set(value)}
+        glyphScale={glyphScale}
+        setGlyphScale={(value) => model.glyphScale.set(value)}
+        glyphScaleMode={glyphScaleMode}
+        setGlyphScaleMode={(value) => model.glyphScaleMode.set(value)}
+        colorMapName={colorMapName}
+        setColorMapName={(value) => model.colorMapName.set(value)}
+        colorRangeMode={colorRangeMode}
+        setColorRangeMode={(value) => model.colorRangeMode.set(value)}
+        colorRange={colorRange}
+        setColorRange={(value) => model.colorRange.set(value)}
+      />
 
       {/* ---- Canvas. ----------------------------------------------------- */}
       <Box
@@ -291,49 +154,257 @@ export function Viewport() {
         position="relative"
         className={chrome({ direction: "bl" })}
       >
-        <Box position="absolute" asChild>
-          <canvas ref={canvasRef} />
-        </Box>
+        <canvas ref={canvasRef} style={{ position: "absolute" }} />
 
-        <Theme appearance={backgroundColors[backgroundColorName].appearance}>
-          {/* ---- View cube. ---------------------------------------------- */}
-          <Box
-            position="absolute"
-            right="8"
-            top="8"
-            style={{ transform: "translate(50%, -50%)" }}
-          >
-            <ViewCube
-              width="100px"
-              height="100px"
-              rotation={cameraRotation}
-              setRotation={setCameraRotation}
-            />
-          </Box>
-
-          {/* ---- Color legend. ------------------------------------------- */}
-          {frameData !== null && (
-            <Box
-              position="absolute"
-              left="8"
-              top="50%"
-              style={{ transform: "translate(-50%, -50%)" }}
-            >
-              <ColorLegend
-                name={colorMapName}
-                title={currentField}
-                min={frameData[currentField].min}
-                max={frameData[currentField].max}
-                ticks={10}
-                width="20px"
-                height="500px"
-              />
-            </Box>
-          )}
-        </Theme>
+        <ViewHUD
+          appearance={backgroundColors[backgroundColorName].appearance}
+          cameraRotation={cameraRotation}
+          setCameraRotation={(value) => model.cameraRotation.set(value)}
+          colorMapName={colorMapName}
+          colorRange={colorRange}
+          colorTitle={colorTitle}
+        />
       </Box>
     </Flex>
   );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+class ViewportModel {
+  private renderer: Renderer | null = null;
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public readonly projection = signal<Projection>("orthographic");
+  public readonly backgroundColorName = signal<BackgroundColorName>("none");
+  public readonly cameraPosition = signal(new Vector3());
+  public readonly cameraRotation = signal(new Euler());
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public readonly frameData = signal(new FieldMap({}));
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public readonly fieldName = signal("rho");
+  public readonly field = derived(
+    () => this.frameData.get().get(this.fieldName.get()),
+    [this.frameData, this.fieldName],
+  );
+
+  public readonly renderMode = scoped<RenderMode>(
+    () => (this.field.get().rank === 1 ? "glyphs" : "points"),
+    [this.fieldName],
+  );
+
+  public readonly userColorFieldName = scoped(
+    () => this.fieldName.get(),
+    [this.fieldName],
+  );
+  public readonly colorFieldName = derived(() => {
+    return this.renderMode.get() === "glyphs"
+      ? this.userColorFieldName.get()
+      : this.fieldName.get();
+  }, [this.fieldName, this.renderMode, this.userColorFieldName]);
+  public readonly colorField = derived(
+    () => this.frameData.get().get(this.colorFieldName.get()),
+    [this.frameData, this.field, this.renderMode, this.colorFieldName],
+  );
+
+  public readonly colorFieldModifier = scoped(
+    () => fieldModifierDefault(this.colorField.get()),
+    [this.fieldName, this.renderMode, this.colorFieldName],
+  );
+
+  public readonly colorTitle = derived(() => {
+    return fieldModifierToString(
+      this.colorField.get(),
+      this.colorFieldModifier.get(),
+    );
+  }, [this.colorField, this.colorFieldModifier]);
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public readonly shadingMode = signal<ShadingMode>("shaded");
+
+  public readonly pointSize = signal(10.0);
+
+  public readonly glyphScale = scoped(() => 0.02, [this.fieldName]);
+  public readonly glyphScaleMode = scoped<GlyphScaleMode>(
+    () => "uniform",
+    [this.fieldName],
+  );
+
+  public readonly colorMapName = scoped<ColorMapName>(
+    () => "jet",
+    [
+      this.fieldName,
+      this.renderMode,
+      this.colorFieldName,
+      this.colorFieldModifier,
+    ],
+  );
+
+  public readonly colorRangeMode = scoped<ColorRangeMode>(
+    () => "auto",
+    [
+      this.fieldName,
+      this.renderMode,
+      this.colorFieldName,
+      this.colorFieldModifier,
+    ],
+  );
+
+  private readonly autoColorRange = signal(colorRangeDefault);
+  public readonly colorRange = scoped(
+    () => colorRangeDefault,
+    [
+      this.fieldName,
+      this.renderMode,
+      this.colorFieldName,
+      this.colorFieldModifier,
+    ],
+  );
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public constructor() {
+    this.projection.subscribe(() =>
+      this.renderer?.setProjection(this.projection.get()),
+    );
+    this.backgroundColorName.subscribe(() =>
+      this.renderer?.setBackgroundColor(
+        backgroundColors[this.backgroundColorName.get()],
+      ),
+    );
+    this.cameraPosition.subscribe(() =>
+      this.renderer?.cameraController.position.copy(this.cameraPosition.get()),
+    );
+    this.cameraRotation.subscribe(() =>
+      this.renderer?.cameraController.rotation.copy(this.cameraRotation.get()),
+    );
+
+    this.field.subscribe(() => this.pushFieldsAndColoring());
+    this.renderMode.subscribe(() => this.pushFieldsAndColoring());
+    this.colorField.subscribe(() => this.pushFieldsAndColoring());
+    this.colorFieldModifier.subscribe(() => this.pushFieldsAndColoring());
+
+    this.shadingMode.subscribe(() =>
+      this.renderer?.setShadingMode(this.shadingMode.get()),
+    );
+    this.pointSize.subscribe(() =>
+      this.renderer?.setPointSize(this.pointSize.get()),
+    );
+    this.glyphScale.subscribe(() =>
+      this.renderer?.setGlyphScale(this.glyphScale.get()),
+    );
+    this.glyphScaleMode.subscribe(() =>
+      this.renderer?.setGlyphScaleMode(this.glyphScaleMode.get()),
+    );
+
+    this.colorMapName.subscribe(() => this.pushColorMap());
+    this.colorRangeMode.subscribe(() => this.pushColorRange());
+    this.colorRange.subscribe(() => this.pushColorRange());
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public attachRenderer(renderer: Renderer) {
+    assert(this.renderer === null);
+
+    this.renderer = renderer;
+
+    // Initialize renderer state.
+    renderer.setProjection(this.projection.get());
+    renderer.setBackgroundColor(
+      backgroundColors[this.backgroundColorName.get()],
+    );
+    renderer.cameraController.position.copy(this.cameraPosition.get());
+    renderer.cameraController.rotation.copy(this.cameraRotation.get());
+    this.pushFieldsAndColoring();
+
+    // Update camera state on change.
+    const handleChange = () => this.pullCameraState();
+    const controller = renderer.cameraController;
+    controller.addEventListener("changed", handleChange);
+
+    return () => {
+      controller.removeEventListener("changed", handleChange);
+      this.renderer = null;
+    };
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private pullCameraState() {
+    const renderer = this.renderer;
+    if (renderer === null) return;
+
+    this.cameraPosition.set(
+      new Vector3().copy(renderer.cameraController.position),
+    );
+    this.cameraRotation.set(
+      new Euler().copy(renderer.cameraController.rotation),
+    );
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private pushFieldsAndColoring() {
+    const renderer = this.renderer;
+    if (renderer === null) return;
+
+    const field = this.field.get();
+    const renderMode = this.renderMode.get();
+    assert(isValidRenderMode(field, renderMode));
+    renderer.setRenderMode(renderMode);
+
+    const colorField = this.colorField.get();
+    const colorFieldModifier = this.colorFieldModifier.get();
+    assert(isValidFieldModifier(colorField, colorFieldModifier));
+    this.autoColorRange.set(
+      renderer.setRenderData(
+        this.frameData.get(),
+        field,
+        colorField,
+        colorFieldModifier,
+      ),
+    );
+
+    renderer.setShadingMode(this.shadingMode.get());
+
+    if (renderMode === "points") {
+      renderer.setPointSize(this.pointSize.get());
+    }
+    if (renderMode === "glyphs") {
+      renderer.setGlyphScale(this.glyphScale.get());
+      renderer.setGlyphScaleMode(this.glyphScaleMode.get());
+    }
+
+    this.pushColorRange();
+    this.pushColorMap();
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private pushColorRange() {
+    if (this.colorRangeMode.get() === "auto") {
+      this.colorRange.set(this.autoColorRange.get());
+    }
+
+    this.renderer?.setRenderColorRange(
+      this.renderMode.get(),
+      this.colorRange.get(),
+    );
+  }
+
+  private pushColorMap() {
+    this.renderer?.setRenderColorMap(
+      this.renderMode.get(),
+      colorMaps[this.colorMapName.get()],
+    );
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
