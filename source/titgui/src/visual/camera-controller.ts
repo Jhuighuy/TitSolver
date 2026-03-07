@@ -12,6 +12,7 @@ import {
 } from "three";
 
 import { assert } from "~/utils";
+import { clamp } from "~/utils-math";
 import { Camera } from "~/visual/camera";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -29,6 +30,8 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
   public rotateSpeed = 2;
   public zoomSpeed = 1.2;
   public panSpeed = 2;
+  public minZoom = 1e-3;
+  public maxZoom = 1e6;
 
   private state: "pan" | "zoom" | "rotate" | null = null;
   private readonly eventStart = new Vector2();
@@ -70,7 +73,11 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
   }
 
   private zoomCamera(dy: number) {
-    this.camera.zoom *= 1 + dy * this.zoomSpeed;
+    this.camera.zoom = clamp(
+      this.camera.zoom * (1 + dy * this.zoomSpeed),
+      this.minZoom,
+      this.maxZoom,
+    );
     this.camera.updateProjectionMatrix();
   }
 
@@ -166,8 +173,29 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
 
   private readonly onMouseWheel = (event: WheelEvent) => {
     event.preventDefault();
-    const delta = event.deltaY > 0 ? 1 / this.zoomSpeed : this.zoomSpeed;
-    this.camera.zoom *= delta;
+
+    // Normalize wheel delta to CSS pixels for consistent mouse/touchpad behavior.
+    const deltaPixels = (() => {
+      switch (event.deltaMode) {
+        case WheelEvent.DOM_DELTA_PIXEL:
+          return event.deltaY;
+        case WheelEvent.DOM_DELTA_LINE:
+          return event.deltaY * 16;
+        case WheelEvent.DOM_DELTA_PAGE:
+          return event.deltaY * this.canvas.clientHeight;
+        default:
+          return event.deltaY;
+      }
+    })();
+
+    // Exponential scale gives smooth trackpad zoom and stable wheel step zoom.
+    const sensitivity = 0.002 * this.zoomSpeed;
+    const delta = Math.exp(-deltaPixels * sensitivity);
+    this.camera.zoom = clamp(
+      this.camera.zoom * delta,
+      this.minZoom,
+      this.maxZoom,
+    );
     this.camera.updateProjectionMatrix();
     this.dispatchEvent({ type: "changed" });
   };
