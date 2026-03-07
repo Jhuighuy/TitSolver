@@ -11,6 +11,7 @@ import { assert } from "~/utils";
 
 export type ColorMap = {
   label: string;
+  nanColor: [r: number, g: number, b: number];
   points: [value: number, r: number, g: number, b: number][];
 };
 
@@ -19,6 +20,7 @@ export type ColorMap = {
 export const colorMaps = {
   grayscale: {
     label: "Grayscale",
+    nanColor: [1, 0, 1],
     points: [
       [0, 0, 0, 0],
       [1, 1, 1, 1],
@@ -26,6 +28,7 @@ export const colorMaps = {
   } satisfies ColorMap,
   jet: {
     label: "Jet",
+    nanColor: [1, 0, 1],
     points: [
       [0, 0, 0, 0.5625],
       [0.111111, 0, 0, 1],
@@ -38,6 +41,7 @@ export const colorMaps = {
   } satisfies ColorMap,
   turbo: {
     label: "Turbo",
+    nanColor: [1, 0, 1],
     points: [
       [0, 0.18995, 0.07176, 0.23217],
       [0.0039216, 0.19483, 0.08339, 0.26149],
@@ -299,6 +303,7 @@ export const colorMaps = {
   } satisfies ColorMap,
   rainbowUniform: {
     label: "Rainbow Uniform",
+    nanColor: [1, 0, 1],
     points: [
       [0, 0.02, 0.3813, 1],
       [0.023809523809523808, 0.02, 0.424267768, 0.97],
@@ -347,6 +352,7 @@ export const colorMaps = {
   } satisfies ColorMap,
   rainbowDesaturated: {
     label: "Rainbow Desaturated",
+    nanColor: [1, 0, 1],
     points: [
       [0, 0.278431372549, 0.278431372549, 0.858823529412],
       [0.143, 0, 0, 0.360784313725],
@@ -360,17 +366,10 @@ export const colorMaps = {
   } satisfies ColorMap,
 } as const;
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 export type ColorMapName = keyof typeof colorMaps;
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-export function createColorMapTexture(
-  colorMapName: ColorMapName,
-  resolution = 256,
-): DataTexture {
-  const points = colorMaps[colorMapName].points;
+export function colorMapToTexture(colorMap: ColorMap, resolution = 256) {
+  const points = colorMap.points;
 
   const minVal = points[0][0];
   const maxVal = points[points.length - 1][0];
