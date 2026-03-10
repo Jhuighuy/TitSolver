@@ -133,6 +133,9 @@ private:
 
 }; // class KMeansClustering
 
+/// Make a K-means clustering (with default parameters).
+inline constexpr KMeansClustering kmeans_clustering{};
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit::geom
