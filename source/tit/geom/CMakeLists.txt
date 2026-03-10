@@ -37,6 +37,8 @@ add_tit_executable(
     "bipartition.test.cpp"
     "grid.test.cpp"
     "point_range.test.cpp"
+    "partition/kmeans_clustering.test.cpp"
+    "partition/pixelated_partition.test.cpp"
     "partition/recursive_bisection.test.cpp"
     "partition/sort_partition.test.cpp"
     "search.test.cpp"
