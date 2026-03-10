@@ -28,6 +28,7 @@ namespace tit::geom {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Pixelated partitioning function.
 template<class Num, class Partition>
 class PixelatedPartition final {
 public:
