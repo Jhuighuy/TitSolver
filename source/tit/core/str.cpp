@@ -5,16 +5,39 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 #include <format>
 #include <iterator>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 #include "tit/core/str.hpp"
 
 namespace tit {
+namespace {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto is_alpha(char c) -> bool {
+  return std::isalpha(static_cast<unsigned char>(c)) != 0;
+}
+
+auto is_alnum(char c) -> bool {
+  return std::isalnum(static_cast<unsigned char>(c)) != 0;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+} // namespace
+
+auto str_is_identifier(std::string_view str) -> bool {
+  return !str.empty() && (is_alpha(str.front()) || str.front() == '_') &&
+         std::ranges::all_of(str.substr(1),
+                             [](char c) { return is_alnum(c) || c == '_'; });
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
