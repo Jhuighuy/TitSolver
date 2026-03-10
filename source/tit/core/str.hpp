@@ -10,7 +10,11 @@
 #include <charconv>
 #include <concepts>
 #include <functional>
+#include <initializer_list>
+#include <map>
 #include <optional>
+#include <ranges>
+#include <set>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -20,6 +24,15 @@
 #include "tit/core/basic_types.hpp"
 
 namespace tit {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// String set.
+using StrSet = std::set<std::string, std::less<>>;
+
+/// String map.
+template<class Val>
+using StrMap = std::map<std::string, Val, std::less<>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -90,6 +103,43 @@ struct StrTo<bool> final {
     return str_to<int>(str).transform([](int value) { return value != 0; });
   }
 };
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Check if @p str is a valid identifier.
+auto str_is_identifier(std::string_view str) -> bool;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Join a range of string-like values with a separator.
+template<
+    std::ranges::input_range Range = std::initializer_list<std::string_view>>
+  requires std::convertible_to<std::ranges::range_reference_t<Range>,
+                               std::string_view>
+[[nodiscard]] auto str_join(Range&& range, std::string_view sep)
+    -> std::string {
+  std::string result;
+  for (bool first = true; auto&& part : range) {
+    if (!first) result += sep;
+    first = false;
+    result += std::string_view{part};
+  }
+  return result;
+}
+
+/// Join a range of string-like values with a separator.
+/// Filter out empty values.
+template<
+    std::ranges::input_range Range = std::initializer_list<std::string_view>>
+  requires std::convertible_to<std::ranges::range_reference_t<Range>,
+                               std::string_view>
+[[nodiscard]] auto str_join_nonempty(Range&& range, std::string_view sep)
+    -> std::string {
+  return str_join(range | std::views::filter([](std::string_view part) {
+                    return !part.empty();
+                  }),
+                  sep);
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

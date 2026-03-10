@@ -63,5 +63,51 @@ TEST_CASE("str_to") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("str_is_identifier") {
+  SUBCASE("valid") {
+    CHECK(str_is_identifier("foo"));
+    CHECK(str_is_identifier("_bar"));
+    CHECK(str_is_identifier("foo_1"));
+    CHECK(str_is_identifier("_"));
+  }
+  SUBCASE("invalid") {
+    CHECK_FALSE(str_is_identifier(""));
+    CHECK_FALSE(str_is_identifier("1foo"));
+    CHECK_FALSE(str_is_identifier("foo-bar"));
+    CHECK_FALSE(str_is_identifier("foo.bar"));
+    CHECK_FALSE(str_is_identifier("foo bar"));
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("str_join") {
+  SUBCASE("multiple parts") {
+    CHECK(str_join({"a", "b", "c"}, ",") == "a,b,c");
+  }
+  SUBCASE("empty range") {
+    CHECK(str_join({}, ",") == "");
+  }
+  SUBCASE("single part") {
+    CHECK(str_join({"only"}, ",") == "only");
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("str_join_nonempty") {
+  SUBCASE("filters empty parts") {
+    CHECK(str_join_nonempty({"a", "", "c"}, ",") == "a,c");
+  }
+  SUBCASE("all empty") {
+    CHECK(str_join_nonempty({"", ""}, ",") == "");
+  }
+  SUBCASE("no empty parts") {
+    CHECK(str_join_nonempty({"x", "y"}, ".") == "x.y");
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace
 } // namespace tit
