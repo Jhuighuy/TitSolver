@@ -16,8 +16,8 @@ export type Projection = "orthographic" | "perspective";
 export class Camera extends ThreeCamera {
   public projection: Projection = "orthographic";
   public aspect: number = 1;
-  public near: number = 0.01;
-  public far: number = 1000;
+  public near: number = 0.1;
+  public far: number = 100;
   public fov: number = 30;
   public zoom: number = 1;
 
