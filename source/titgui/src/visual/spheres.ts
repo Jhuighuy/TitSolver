@@ -9,6 +9,7 @@ import {
   Points,
   ShaderMaterial,
   Texture,
+  Vector2,
 } from "three";
 
 import { assert } from "~/utils";
@@ -41,6 +42,7 @@ export class Spheres
         colorMap: { value: colorMapToTexture(colorMaps.jet) },
         nanColor: { value: colorMaps.jet.nanColor },
         pointSize: { value: 25 },
+        viewport: { value: new Vector2(1, 1) },
       },
     });
   }
@@ -78,6 +80,10 @@ export class Spheres
     this.material.uniforms.pointSize.value = size;
   }
 
+  public setViewport(width: number, height: number) {
+    this.material.uniforms.viewport.value = new Vector2(width, height);
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public setColorRange({ min, max }: ColorRange) {
@@ -106,13 +112,16 @@ const vertexShaderSource = `
 
   attribute float value;
   varying float vValue;
+  varying float vPointSize;
+  varying vec4 vMvCenter;
 
   void main() {
     vValue = value;
 
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = -pointSize / mvPosition.z;
-    gl_Position = projectionMatrix * mvPosition;
+    vMvCenter = modelViewMatrix * vec4(position, 1.0);
+    vPointSize = -pointSize / vMvCenter.z;
+    gl_PointSize = vPointSize;
+    gl_Position = projectionMatrix * vMvCenter;
   }
 `;
 
@@ -125,12 +134,29 @@ const fragmentShaderSource = `
   uniform vec3 nanColor;
   uniform float minValue;
   uniform float maxValue;
+  uniform vec2 viewport;
+  uniform mat4 projectionMatrix;
 
   varying float vValue;
+  varying float vPointSize;
+  varying vec4 vMvCenter;
 
   void main() {
-    float r = length(gl_PointCoord - vec2(0.5));
-    if (r > 0.5) discard;
+    vec2 unit = 2.0 * gl_PointCoord - vec2(1.0);
+    float r2 = dot(unit, unit);
+    if (r2 > 1.0) discard;
+
+    float viewRadiusX = abs(vMvCenter.z) * vPointSize /
+      max(viewport.x * projectionMatrix[0][0], epsilon);
+    float viewRadiusY = abs(vMvCenter.z) * vPointSize /
+      max(viewport.y * projectionMatrix[1][1], epsilon);
+    float sphereRadius = 0.5 * (viewRadiusX + viewRadiusY);
+    vec3 sphereOffset = vec3(
+      unit * sphereRadius,
+      sqrt(max(1.0 - r2, 0.0)) * sphereRadius
+    );
+    vec4 clipPosition = projectionMatrix * (vMvCenter + vec4(sphereOffset, 0.0));
+    gl_FragDepth = 0.5 * (clipPosition.z / clipPosition.w) + 0.5;
 
     if (vValue != vValue) {
       gl_FragColor = vec4(nanColor, 1.0);

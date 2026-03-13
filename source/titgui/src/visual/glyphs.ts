@@ -96,7 +96,10 @@ export class Glyphs
     );
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public setViewport(width: number, height: number): void {
+    void width;
+    void height;
+  }
 
   public setScale(scale: number) {
     assert(Number.isFinite(scale) && scale > 0);

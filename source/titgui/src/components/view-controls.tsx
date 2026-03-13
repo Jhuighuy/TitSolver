@@ -10,6 +10,7 @@ import {
   Flex,
   Select,
   Separator,
+  Text,
 } from "@radix-ui/themes";
 import {
   TbBackground as BackgroundIcon,
@@ -17,6 +18,7 @@ import {
   TbDroplet as ColoringIcon,
   TbPalette as ColorMapIcon,
   TbChartDots as ComponentIcon,
+  TbBolt as EffectsIcon,
   TbDatabaseExport as ExportIcon,
   TbGalaxy as FieldIcon,
   TbVectorTriangle as GlyphScaleModeIcon,
@@ -45,6 +47,7 @@ import {
   type ColorRangeMode,
   colorMaps,
 } from "~/visual/color-map";
+import type { EffectsSettings } from "~/visual/effects";
 import type {
   Field,
   FieldMap,
@@ -62,7 +65,8 @@ type ViewControlsProps = {
   setFieldByName: (value: string) => void;
 } & CameraControlsProps &
   RenderControlsProps &
-  ColorControlsProps;
+  ColorControlsProps &
+  EffectsControlsProps;
 
 export function ViewControls({
   frameData,
@@ -90,6 +94,8 @@ export function ViewControls({
   setColorRange,
   colorRangeMode,
   setColorRangeMode,
+  effects,
+  setEffects,
 }: Readonly<ViewControlsProps>) {
   return (
     <Flex
@@ -222,6 +228,32 @@ export function ViewControls({
               colorFieldModifier={colorFieldModifier}
               setColorFieldModifier={setColorFieldModifier}
             />
+          </Box>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+
+      <Separator orientation="vertical" size="1" />
+
+      {/* ---- Effects. ---------------------------------------------------- */}
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <Button size="1" variant="ghost" className="rt-SelectTrigger">
+            <Flex align="center" gap="1">
+              <EffectsIcon size={16} />
+              Effects
+            </Flex>
+            <DropdownMenu.TriggerIcon className="rt-SelectIcon" />
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          <Box
+            px="2"
+            py="2"
+            style={{ minWidth: "280px" }}
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <EffectsControls effects={effects} setEffects={setEffects} />
           </Box>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
@@ -428,6 +460,11 @@ type ColorControlsProps = {
   setColorRangeMode: (value: ColorRangeMode) => void;
   colorRange: ColorRange;
   setColorRange: (value: ColorRange) => void;
+};
+
+type EffectsControlsProps = {
+  effects: EffectsSettings;
+  setEffects: (value: EffectsSettings) => void;
 };
 
 function ColorControls({
@@ -656,6 +693,175 @@ function ColorControls({
           )}
         </>
       )}
+    </Flex>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+function EffectsControls({
+  effects,
+  setEffects,
+}: Readonly<EffectsControlsProps>) {
+  return (
+    <Flex direction="column" gap="2">
+      <Text size="1" weight="bold">
+        Eye-Dome Lighting
+      </Text>
+
+      <Select.Root
+        size="1"
+        value={effects.edl.enabled ? "on" : "off"}
+        onValueChange={(value) =>
+          setEffects({
+            ...effects,
+            edl: { ...effects.edl, enabled: value === "on" },
+          })
+        }
+      >
+        <Select.Trigger>
+          <Flex align="center" gap="1">
+            <EffectsIcon size={16} />
+            EDL
+          </Flex>
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="off">Disabled</Select.Item>
+          <Select.Item value="on">Enabled</Select.Item>
+        </Select.Content>
+      </Select.Root>
+
+      <NumberEditor
+        disabled={!effects.edl.enabled}
+        size="1"
+        label="Radius"
+        type="float"
+        min={0.25}
+        max={8}
+        value={effects.edl.radius}
+        onValueChange={(value) =>
+          setEffects({
+            ...effects,
+            edl: { ...effects.edl, radius: value },
+          })
+        }
+      />
+
+      <NumberEditor
+        disabled={!effects.edl.enabled}
+        size="1"
+        label="Strength"
+        type="float"
+        min={0.05}
+        max={8}
+        value={effects.edl.strength}
+        onValueChange={(value) =>
+          setEffects({
+            ...effects,
+            edl: { ...effects.edl, strength: value },
+          })
+        }
+      />
+
+      <Text size="1" weight="bold" mt="2">
+        Ambient Occlusion
+      </Text>
+
+      <Select.Root
+        size="1"
+        value={effects.ssao.enabled ? "on" : "off"}
+        onValueChange={(value) =>
+          setEffects({
+            ...effects,
+            ssao: { ...effects.ssao, enabled: value === "on" },
+          })
+        }
+      >
+        <Select.Trigger>
+          <Flex align="center" gap="1">
+            <EffectsIcon size={16} />
+            SSAO
+          </Flex>
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="off">Disabled</Select.Item>
+          <Select.Item value="on">Enabled</Select.Item>
+        </Select.Content>
+      </Select.Root>
+
+      <NumberEditor
+        disabled={!effects.ssao.enabled}
+        size="1"
+        label="Radius"
+        type="float"
+        min={0.5}
+        max={16}
+        value={effects.ssao.radius}
+        onValueChange={(value) =>
+          setEffects({
+            ...effects,
+            ssao: { ...effects.ssao, radius: value },
+          })
+        }
+      />
+
+      <NumberEditor
+        disabled={!effects.ssao.enabled}
+        size="1"
+        label="Intensity"
+        type="float"
+        min={0.1}
+        max={8}
+        value={effects.ssao.intensity}
+        onValueChange={(value) =>
+          setEffects({
+            ...effects,
+            ssao: { ...effects.ssao, intensity: value },
+          })
+        }
+      />
+
+      <NumberEditor
+        disabled={!effects.ssao.enabled}
+        size="1"
+        label="Bias"
+        type="float"
+        min={0.0001}
+        max={0.1}
+        value={effects.ssao.bias}
+        onValueChange={(value) =>
+          setEffects({
+            ...effects,
+            ssao: { ...effects.ssao, bias: value },
+          })
+        }
+      />
+
+      <Text size="1" weight="bold" mt="2">
+        Anti-Aliasing
+      </Text>
+
+      <Select.Root
+        size="1"
+        value={effects.smaa.enabled ? "on" : "off"}
+        onValueChange={(value) =>
+          setEffects({
+            ...effects,
+            smaa: { enabled: value === "on" },
+          })
+        }
+      >
+        <Select.Trigger>
+          <Flex align="center" gap="1">
+            <EffectsIcon size={16} />
+            SMAA
+          </Flex>
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="off">Disabled</Select.Item>
+          <Select.Item value="on">Enabled</Select.Item>
+        </Select.Content>
+      </Select.Root>
     </Flex>
   );
 }

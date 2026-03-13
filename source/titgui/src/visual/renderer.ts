@@ -14,15 +14,18 @@ import {
   type ColorRange,
   colorRangeDefault,
 } from "~/visual/color-map";
+import type { EffectsSettings } from "~/visual/effects";
 import type { Field, FieldMap, FieldModifier } from "~/visual/fields";
 import type { GlyphScaleMode } from "~/visual/glyphs";
 import { ParticlesSwitch, type RenderMode } from "~/visual/particles-switch";
+import { PostProcessingPipeline } from "~/visual/post-processing";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export class Renderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly renderer: WebGLRenderer;
+  private readonly postProcessing: PostProcessingPipeline;
   readonly scene: Scene;
   readonly cameraController: CameraController;
   readonly particles: ParticlesSwitch;
@@ -34,9 +37,9 @@ export class Renderer {
 
     this.renderer = new WebGLRenderer({ canvas, antialias: true });
     this.renderer.setClearColor(0, 0);
+    this.postProcessing = new PostProcessingPipeline(this.renderer);
     this.renderer.setAnimationLoop(() => {
-      this.renderer.clearColor();
-      this.renderer.render(this.scene, this.cameraController.camera);
+      this.postProcessing.render(this.scene, this.cameraController.camera);
     });
 
     this.scene = new Scene();
@@ -54,6 +57,7 @@ export class Renderer {
     this.particles.dispose();
     this.cameraController.dispose();
     this.renderer.setAnimationLoop(null);
+    this.postProcessing.dispose();
     this.renderer.dispose();
   }
 
@@ -61,6 +65,8 @@ export class Renderer {
 
   public resize(width: number, height: number) {
     this.renderer.setSize(width, height, false);
+    this.postProcessing.resize(width, height);
+    this.particles.setViewport(width, height);
     this.cameraController.camera.aspect = width / height;
     this.cameraController.camera.updateProjectionMatrix();
   }
@@ -78,6 +84,12 @@ export class Renderer {
   public setProjection(projection: Projection) {
     this.cameraController.camera.projection = projection;
     this.cameraController.camera.updateProjectionMatrix();
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public setEffects(settings: EffectsSettings) {
+    this.postProcessing.setSettings(settings);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

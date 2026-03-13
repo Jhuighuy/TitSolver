@@ -25,6 +25,7 @@ import {
   colorMaps,
   colorRangeDefault,
 } from "~/visual/color-map";
+import { type EffectsSettings, effectsSettingsDefault } from "~/visual/effects";
 import {
   FieldMap,
   fieldModifierDefault,
@@ -96,6 +97,7 @@ export function Viewport() {
   const colorMapName = useSignalValue(model.colorMapName);
   const colorRange = useSignalValue(model.colorRange);
   const colorRangeMode = useSignalValue(model.colorRangeMode);
+  const effects = useSignalValue(model.effects);
 
   // ---- Layout. --------------------------------------------------------------
 
@@ -134,6 +136,8 @@ export function Viewport() {
         setColorRangeMode={(value) => model.colorRangeMode.set(value)}
         colorRange={colorRange}
         setColorRange={(value) => model.userColorRange.set(value)}
+        effects={effects}
+        setEffects={(value) => model.effects.set(value)}
       />
 
       {/* ---- Canvas. ----------------------------------------------------- */}
@@ -261,6 +265,8 @@ class ViewportModel {
       : this.userColorRange.get();
   }, [this.colorRangeMode, this.autoColorRange, this.userColorRange]);
 
+  public readonly effects = signal<EffectsSettings>(effectsSettingsDefault);
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public constructor() {
@@ -297,6 +303,7 @@ class ViewportModel {
     this.colorMapName.subscribe(() => this.pushColorMap());
     this.colorRangeMode.subscribe(() => this.pushColorRange());
     this.colorRange.subscribe(() => this.pushColorRange());
+    this.effects.subscribe(() => this.pushEffects());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -311,6 +318,7 @@ class ViewportModel {
     renderer.setBackgroundColor(
       backgroundColors[this.backgroundColorName.get()],
     );
+    renderer.setEffects(this.effects.get());
     renderer.cameraController.position.copy(this.cameraPosition.get());
     renderer.cameraController.rotation.copy(this.cameraRotation.get());
     this.pushFieldsAndColoring();
@@ -389,6 +397,10 @@ class ViewportModel {
       this.renderMode.get(),
       colorMaps[this.colorMapName.get()],
     );
+  }
+
+  private pushEffects() {
+    this.renderer?.setEffects(this.effects.get());
   }
 }
 

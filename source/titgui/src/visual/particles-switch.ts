@@ -62,6 +62,11 @@ export class ParticlesSwitch extends Object3D implements Particles {
     this.current.setColorMap(colorMap);
   }
 
+  public setViewport(width: number, height: number) {
+    this.spheres.setViewport(width, height);
+    this.glyphs.setViewport(width, height);
+  }
+
   public setPointSize(size: number) {
     this.spheres.setPointSize(size);
   }

@@ -12,6 +12,7 @@ import type { Field } from "~/visual/fields";
 
 export interface Particles extends Object3D {
   dispose(): void;
+  setViewport(width: number, height: number): void;
   setData(
     field: Field,
     colorValues: Float32Array,
