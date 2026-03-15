@@ -1,0 +1,166 @@
+{
+  "fields": [
+    {
+      "id": "debug",
+      "name": "Enable debug mode",
+      "spec": {
+        "default": false,
+        "type": "bool"
+      }
+    },
+    {
+      "id": "workers",
+      "name": "Number of worker threads",
+      "spec": {
+        "default": 4,
+        "max": 64,
+        "min": 1,
+        "type": "int"
+      }
+    },
+    {
+      "id": "threshold",
+      "name": "Threshold value",
+      "spec": {
+        "default": 0.5,
+        "max": 1.0,
+        "min": 0.0,
+        "type": "real"
+      }
+    },
+    {
+      "id": "output",
+      "name": "Output file path",
+      "spec": {
+        "default": "./output",
+        "type": "string"
+      }
+    },
+    {
+      "id": "mode",
+      "name": "Run mode",
+      "spec": {
+        "default": "fast",
+        "options": [
+          {
+            "id": "fast",
+            "name": "Fast mode"
+          },
+          {
+            "id": "safe",
+            "name": "Safe mode"
+          },
+          {
+            "id": "debug",
+            "name": "Debug mode"
+          }
+        ],
+        "type": "enum"
+      }
+    },
+    {
+      "id": "physics",
+      "name": "Physics settings",
+      "spec": {
+        "fields": [
+          {
+            "id": "gravity",
+            "name": "Gravitational acceleration",
+            "spec": {
+              "default": 9.81,
+              "type": "real"
+            }
+          },
+          {
+            "id": "density",
+            "name": "Reference density",
+            "spec": {
+              "default": 1.0,
+              "max": 1000.0,
+              "min": 0.1,
+              "type": "real"
+            }
+          },
+          {
+            "id": "config",
+            "name": "Physics sub-config",
+            "spec": {
+              "fields": [
+                {
+                  "id": "substeps",
+                  "name": "Substep count",
+                  "spec": {
+                    "default": 2,
+                    "type": "int"
+                  }
+                }
+              ],
+              "type": "record"
+            }
+          }
+        ],
+        "type": "record"
+      }
+    },
+    {
+      "id": "tags",
+      "name": "String tags",
+      "spec": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "id": "shape",
+      "name": "Active shape",
+      "spec": {
+        "options": {
+          "circle": {
+            "name": "Circle",
+            "spec": {
+              "fields": [
+                {
+                  "id": "radius",
+                  "name": "Circle radius",
+                  "spec": {
+                    "default": 1.0,
+                    "type": "real"
+                  }
+                }
+              ],
+              "type": "record"
+            }
+          },
+          "rect": {
+            "name": "Rectangle",
+            "spec": {
+              "fields": [
+                {
+                  "id": "width",
+                  "name": "Rectangle width",
+                  "spec": {
+                    "default": 2.0,
+                    "type": "real"
+                  }
+                },
+                {
+                  "id": "height",
+                  "name": "Rectangle height",
+                  "spec": {
+                    "default": 1.5,
+                    "type": "real"
+                  }
+                }
+              ],
+              "type": "record"
+            }
+          }
+        },
+        "type": "variant"
+      }
+    }
+  ],
+  "type": "record"
+}

@@ -27,6 +27,7 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,6 +71,7 @@ add_tit_library(
     TBB::tbb
     tinyxml2::tinyxml2
     unofficial::sqlite3::sqlite3
+    yaml-cpp::yaml-cpp
     zstd::libzstd
 )
 

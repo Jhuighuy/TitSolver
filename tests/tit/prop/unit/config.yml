@@ -1,0 +1,10 @@
+alpha: true
+count: 5
+ratio: 1.5
+name: test
+items:
+  - 1
+  - 2
+  - 3
+outer:
+  inner: 42

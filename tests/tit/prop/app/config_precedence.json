@@ -1,0 +1,22 @@
+{
+  "debug": true,
+  "mode": "debug",
+  "output": "true",
+  "physics": {
+    "config": {
+      "substeps": 2
+    },
+    "density": 1.0,
+    "gravity": 9.81
+  },
+  "shape": {
+    "_active": "rect",
+    "rect": {
+      "height": 3.5,
+      "width": 2.0
+    }
+  },
+  "tags": [],
+  "threshold": 0.9,
+  "workers": 16
+}

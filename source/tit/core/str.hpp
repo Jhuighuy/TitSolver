@@ -10,12 +10,15 @@
 #include <charconv>
 #include <concepts>
 #include <functional>
+#include <initializer_list>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "tit/core/basic_types.hpp"
 
@@ -93,19 +96,71 @@ struct StrTo<bool> final {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Return @p str quoted and escaped for readable output.
+auto str_quoted(std::string_view str) -> std::string;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Check if @p str is a valid identifier.
+auto str_is_identifier(std::string_view str) -> bool;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Split @p str by @p delim.
+auto str_split(std::string_view str, char delim)
+    -> std::vector<std::string_view>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Join a range of string-like values with a separator.
+template<
+    std::ranges::input_range Range = std::initializer_list<std::string_view>>
+  requires std::convertible_to<std::ranges::range_reference_t<Range>,
+                               std::string_view>
+[[nodiscard]] auto str_join(Range&& range, std::string_view sep)
+    -> std::string {
+  std::string result;
+  for (bool first = true; auto&& part : range) {
+    if (!first) result += sep;
+    first = false;
+    result += std::string_view{part};
+  }
+  return result;
+}
+
+/// Join a range of string-like values with a separator.
+/// Filter out empty values.
+template<
+    std::ranges::input_range Range = std::initializer_list<std::string_view>>
+  requires std::convertible_to<std::ranges::range_reference_t<Range>,
+                               std::string_view>
+[[nodiscard]] auto str_join_nonempty(Range&& range, std::string_view sep)
+    -> std::string {
+  return str_join(range | std::views::filter([](std::string_view part) {
+                    return !part.empty();
+                  }),
+                  sep);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Format a real number while keeping a decimal point for integral values.
+auto fmt_real(float64_t value) -> std::string;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Format memory size in bytes as a pretty string.
 auto fmt_memsize(uint64_t value, size_t precision = 1) -> std::string;
 
 /// Format quantity as a pretty string with SI prefix.
 /// @{
-auto fmt_quantity(long double value,
-                  std::string_view unit,
-                  size_t precision = 1) -> std::string;
+auto fmt_quantity(float64_t value, std::string_view unit, size_t precision = 1)
+    -> std::string;
 template<class Val>
   requires std::integral<Val> || std::floating_point<Val>
 auto fmt_quantity(Val value, std::string_view unit, size_t precision = 1)
     -> std::string {
-  return fmt_quantity(static_cast<long double>(value), unit, precision);
+  return fmt_quantity(static_cast<float64_t>(value), unit, precision);
 }
 /// @}
 

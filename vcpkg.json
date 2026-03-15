@@ -16,6 +16,7 @@
     "sqlite3",
     "tbb",
     "tinyxml2",
+    "yaml-cpp",
     "zstd"
   ],
   "overrides": [{ "name": "tbb", "version": "2022.1.0" }]

@@ -1,0 +1,66 @@
+# Enable debug mode
+# Type: bool, default=false
+debug: false
+
+# Number of worker threads
+# Type: int, min=1, max=64, default=4
+workers: 4
+
+# Threshold value
+# Type: real, min=0.0, max=1.0, default=0.5
+threshold: 0.5
+
+# Output file path
+# Type: string, default="./output"
+output: "./output"
+
+# Run mode
+# Type: enum, default="fast"
+mode: "fast"
+
+# Physics settings
+# Type: record
+physics:
+  # Gravitational acceleration
+  # Type: real, default=9.81
+  gravity: 9.81
+
+  # Reference density
+  # Type: real, min=0.1, max=1000.0, default=1.0
+  density: 1.0
+
+  # Physics sub-config
+  # Type: record
+  config:
+    # Substep count
+    # Type: int, default=2
+    substeps: 2
+
+# String tags
+# Type: array
+tags: []
+# Item type: string
+
+# Active shape
+# Type: variant, default="circle"
+shape:
+  _active: "circle"
+  # Type: enum, default="circle"
+
+  # Circle
+  # Type: record
+  circle:
+    # Circle radius
+    # Type: real, default=1.0
+    radius: 1.0
+
+  # Rectangle
+  # Type: record
+  rect:
+    # Rectangle width
+    # Type: real, default=2.0
+    width: 2.0
+
+    # Rectangle height
+    # Type: real, default=1.5
+    height: 1.5

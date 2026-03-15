@@ -1,0 +1,5 @@
+{
+  "debug": true,
+  "workers": 16,
+  "mode": "safe"
+}
