@@ -6,10 +6,10 @@
 import {
   IconDashboard,
   IconDatabase,
+  IconFileText,
   IconHelp,
   IconLogs,
   IconSettings,
-  IconTerminal,
 } from "@tabler/icons-react";
 
 import { Box, Flex } from "~/renderer-common/components/layout";
@@ -18,8 +18,8 @@ import { Window } from "~/renderer-common/components/window";
 import { DashboardMenu } from "~/renderer-main/components/dashboard-menu";
 import { HelpMenu } from "~/renderer-main/components/help-menu";
 import { LogsMenu } from "~/renderer-main/components/logs-menu";
+import { OutputMenu } from "~/renderer-main/components/output-menu";
 import { SettingsMenu } from "~/renderer-main/components/settings-menu";
-import { SolverProvider } from "~/renderer-main/components/solver";
 import { StorageProvider } from "~/renderer-main/components/storage";
 import { Timeline } from "~/renderer-main/components/timeline";
 import { Viewport } from "~/renderer-main/components/viewport";
@@ -28,13 +28,11 @@ import { Viewport } from "~/renderer-main/components/viewport";
 
 export function App() {
   return (
-    <SolverProvider>
-      <StorageProvider>
-        <Window>
-          <Page />
-        </Window>
-      </StorageProvider>
-    </SolverProvider>
+    <StorageProvider>
+      <Window>
+        <Page />
+      </Window>
+    </StorageProvider>
   );
 }
 
@@ -66,7 +64,9 @@ function Page() {
           <Menu.Item group={0} name="Logs" icon={<IconLogs />}>
             <LogsMenu />
           </Menu.Item>
-          <Menu.Item group={0} name="Terminal" icon={<IconTerminal />} />
+          <Menu.Item group={0} name="Output" icon={<IconFileText />}>
+            <OutputMenu />
+          </Menu.Item>
         </Menu.Root>
       </Flex>
     </Flex>
