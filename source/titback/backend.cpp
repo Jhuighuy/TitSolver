@@ -8,14 +8,17 @@
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
 #include <format>
 #include <iterator>
 #include <memory>
 #include <mutex>
 #include <ranges>
+#include <stop_token>
 #include <string>
 #include <thread>
 #include <utility>
@@ -42,6 +45,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/posix.hpp"
+#include "tit/core/proc_info.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/zip.hpp"
 #include "tit/data/hdf5.hpp"
@@ -75,6 +79,14 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   std::mutex solver_mutex;
   std::jthread solver_thread;
   Process* solver_process = nullptr; // Owned by `solver_thread`.
+  std::mutex solver_telemetry_mutex;
+  std::jthread solver_telemetry_thread;
+  struct SolverTelemetry final {
+    uint64_t timestamp = 0;
+    float64_t cpu_percent = 0.0;
+    uint64_t memory_bytes = 0;
+    bool has_value = false;
+  } solver_telemetry;
 
   std::jthread export_thread;
 
@@ -139,6 +151,9 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
                   &storage,
                   &solver_path,
                   &solver_mutex,
+                  &solver_telemetry_mutex,
+                  &solver_telemetry_thread,
+                  &solver_telemetry,
                   &solver_thread,
                   &solver_process,
                   &tmp_dir,
@@ -202,28 +217,47 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
           auto solver_process_holder = std::make_unique<Process>();
           solver_process = solver_process_holder.get();
 
+          const auto append_telemetry =
+              [&solver_telemetry_mutex, &solver_telemetry](json::json& result) {
+                const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
+                if (!solver_telemetry.has_value) return;
+
+                result["timestamp"] = solver_telemetry.timestamp;
+                result["cpuPercent"] = solver_telemetry.cpu_percent;
+                result["memoryBytes"] = solver_telemetry.memory_bytes;
+              };
+
           solver_process->on_stdout(
-              [response, &send_response](std::string_view data) mutable {
+              [response, &send_response, append_telemetry](
+                  std::string_view data) mutable {
                 response["repeat"] = true;
-                response["result"] = json::json{
+                auto result = json::json{
                     {"kind", "stdout"},
                     {"data", data},
                 };
+                append_telemetry(result);
+                response["result"] = std::move(result);
                 send_response(response.dump());
               });
 
           solver_process->on_stderr(
-              [response, &send_response](std::string_view data) mutable {
+              [response, &send_response, append_telemetry](
+                  std::string_view data) mutable {
                 response["repeat"] = true;
-                response["result"] = json::json{
+                auto result = json::json{
                     {"kind", "stderr"},
                     {"data", data},
                 };
+                append_telemetry(result);
+                response["result"] = std::move(result);
                 send_response(response.dump());
               });
 
           solver_process->on_exit(
-              [response, &send_response](int code, int signal) mutable {
+              [response,
+               &send_response,
+               &solver_telemetry_thread](int code, int signal) mutable {
+                solver_telemetry_thread.request_stop();
                 response["result"] = json::json{
                     {"kind", "exit"},
                     {"code", code},
@@ -233,6 +267,69 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
               });
 
           solver_process->spawn_child(solver_path);
+
+          {
+            const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
+            solver_telemetry = {};
+          }
+
+          const auto solver_pid = solver_process->pid();
+          try {
+            const auto snapshot = proc_info::query_usage(solver_pid);
+            const auto now =
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch())
+                    .count();
+            const std::scoped_lock telemetry_lock{solver_telemetry_mutex};
+            solver_telemetry = {
+                .timestamp = static_cast<uint64_t>(now),
+                .cpu_percent = 0.0,
+                .memory_bytes = snapshot.memory_bytes,
+                .has_value = true,
+            };
+          } catch (const std::exception& /*e*/) {
+          }
+
+          solver_telemetry_thread = std::jthread{
+              [solver_pid, &solver_telemetry_mutex, &solver_telemetry](
+                  const std::stop_token& stop_token) {
+                try {
+                  auto previous_snapshot = proc_info::query_usage(solver_pid);
+                  auto previous_time = std::chrono::steady_clock::now();
+
+                  while (!stop_token.stop_requested()) {
+                    std::this_thread::sleep_for(std::chrono::seconds{1});
+                    if (stop_token.stop_requested()) break;
+
+                    const auto now = std::chrono::steady_clock::now();
+                    const auto snapshot = proc_info::query_usage(solver_pid);
+                    const auto timestamp =
+                        std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch())
+                            .count();
+                    const auto cpu_percent = proc_info::compute_cpu_percent(
+                        previous_snapshot,
+                        snapshot,
+                        std::chrono::duration_cast<std::chrono::nanoseconds>(
+                            now - previous_time));
+
+                    {
+                      const std::scoped_lock telemetry_lock{
+                          solver_telemetry_mutex};
+                      solver_telemetry = {
+                          .timestamp = static_cast<uint64_t>(timestamp),
+                          .cpu_percent = cpu_percent,
+                          .memory_bytes = snapshot.memory_bytes,
+                          .has_value = true,
+                      };
+                    }
+
+                    previous_snapshot = snapshot;
+                    previous_time = now;
+                  }
+                } catch (const std::exception& /*e*/) {
+                }
+              }};
 
           solver_thread =
               std::jthread{[&solver_mutex,
@@ -255,6 +352,7 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
               (solver_process != nullptr && solver_process->is_running()),
               "Solver is not running.");
 
+          solver_telemetry_thread.request_stop();
           solver_process->kill_child();
 
           send_response(response.dump());

@@ -6,18 +6,19 @@
 import { Box, Flex, Theme } from "@radix-ui/themes";
 import {
   TbDashboard as DashboardIcon,
+  TbFileText as OutputIcon,
   TbHelp as HelpIcon,
   TbLogs as LogsIcon,
   TbServer as ServerIcon,
   TbSettings as SettingsIcon,
   TbDatabase as StorageIcon,
-  TbTerminal as TerminalIcon,
 } from "react-icons/tb";
 
 import { ConnectionProvider } from "~/components/connection";
 import { Menu } from "~/components/menu";
 import { HelpMenu } from "~/components/menu-help";
 import { LogsMenu } from "~/components/menu-logs";
+import { OutputMenu } from "~/components/menu-output";
 import { RunMenu } from "~/components/menu-run";
 import { SettingsMenu } from "~/components/menu-settings";
 import { SolverProvider } from "~/components/solver";
@@ -90,11 +91,9 @@ function Page() {
           <Menu.Item group={0} name="Logs" icon={<LogsIcon size={16} />}>
             <LogsMenu />
           </Menu.Item>
-          <Menu.Item
-            group={0}
-            name="Terminal"
-            icon={<TerminalIcon size={16} />}
-          />
+          <Menu.Item group={0} name="Output" icon={<OutputIcon size={16} />}>
+            <OutputMenu />
+          </Menu.Item>
           <Menu.Item group={0} name="Server" icon={<ServerIcon size={16} />} />
         </Menu>
       </Flex>

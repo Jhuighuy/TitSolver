@@ -66,6 +66,9 @@ auto cpu_arch() -> std::string {
   return static_cast<const char*>(uts.machine);
 }
 
+auto cpu_clock_ticks_per_second() -> uint64_t {
+  return checked_sysconf(_SC_CLK_TCK);
+}
 auto cpu_cores() -> uint64_t {
   return checked_sysconf(_SC_NPROCESSORS_CONF);
 }
@@ -86,8 +89,11 @@ auto cpu_info() -> std::string {
 
 auto ram_size() -> uint64_t {
   const auto pages = checked_sysconf(_SC_PHYS_PAGES);
-  const auto page_size = checked_sysconf(_SC_PAGE_SIZE);
-  return static_cast<uint64_t>(pages) * static_cast<uint64_t>(page_size);
+  return static_cast<uint64_t>(pages) * ram_page_size();
+}
+
+auto ram_page_size() -> uint64_t {
+  return checked_sysconf(_SC_PAGE_SIZE);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

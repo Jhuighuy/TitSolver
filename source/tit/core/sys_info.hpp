@@ -38,6 +38,9 @@ auto cpu_name() -> std::string;
 /// Get number of CPU sockets.
 auto cpu_sockets() -> uint64_t;
 
+/// Get clock ticks per second.
+auto cpu_clock_ticks_per_second() -> uint64_t;
+
 /// Get number of all (logical) CPU cores.
 auto cpu_cores() -> uint64_t;
 
@@ -52,7 +55,10 @@ auto cpu_info() -> std::string;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Get RAM size in bytes.
+/// Get memory page size in bytes.
+auto ram_page_size() -> uint64_t;
+
+/// Get memory size in bytes.
 auto ram_size() -> uint64_t;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
