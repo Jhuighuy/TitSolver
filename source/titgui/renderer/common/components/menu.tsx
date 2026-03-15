@@ -22,7 +22,6 @@ import { IconButton } from "~/renderer/common/components/button";
 import { chrome, surface } from "~/renderer/common/components/classes";
 import { Box, Flex } from "~/renderer/common/components/layout";
 import { Resizable } from "~/renderer/common/components/resizable";
-import { ScrollArea } from "~/renderer/common/components/scroll-area";
 import { Separator } from "~/renderer/common/components/separator";
 import { Text } from "~/renderer/common/components/text";
 import { Tooltip } from "~/renderer/common/components/tooltip";
@@ -327,11 +326,9 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
 
       {/* ---- Contents. --------------------------------------------------- */}
       <Box flexGrow="1" mx="1" mb="1" overflow="auto" className={surface()}>
-        <ScrollArea>
-          <MenuActionsContext.Provider value={menuActions}>
-            {children}
-          </MenuActionsContext.Provider>
-        </ScrollArea>
+        <MenuActionsContext.Provider value={menuActions}>
+          {children}
+        </MenuActionsContext.Provider>
       </Box>
     </Flex>
   );

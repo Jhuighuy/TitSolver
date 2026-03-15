@@ -6,6 +6,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import path from "node:path";
+import pidusage from "pidusage";
 
 import { BrowserWindow } from "electron";
 
@@ -35,11 +36,14 @@ export interface SessionOptions {
 class SolverManager {
   private child?: ChildProcessWithoutNullStreams;
   private listener?: (event: SolverEvent) => void;
+  private telemetryInterval?: ReturnType<typeof setInterval>;
 
   /**
    * Create a solver manager.
    */
   public constructor(private readonly install: Installation) {}
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
    * Run the solver.
@@ -60,6 +64,7 @@ class SolverManager {
 
     child.on("exit", (code, signal) => {
       this.child = undefined;
+      this.stopTelemetry();
       this.listener?.({
         kind: "exit",
         code: code ?? 0,
@@ -69,11 +74,13 @@ class SolverManager {
 
     child.on("error", (error) => {
       this.child = undefined;
+      this.stopTelemetry();
       this.listener?.({ kind: "stderr", data: String(error) });
       this.listener?.({ kind: "exit", code: 1, signal: 0 });
     });
 
     this.child = child;
+    this.startTelemetry();
   }
 
   /**
@@ -96,6 +103,47 @@ class SolverManager {
    */
   public setEventCallback(listener?: (event: SolverEvent) => void) {
     this.listener = listener;
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  // Start telemetry and register pidusage callback.
+  private startTelemetry() {
+    this.stopTelemetry();
+
+    const childPID = this.child?.pid;
+    assert(childPID !== undefined);
+
+    const sample = async () => {
+      if (this.child?.pid !== childPID) return;
+      try {
+        const usage = await pidusage(childPID);
+        if (this.child.pid !== childPID) return;
+
+        this.listener?.({
+          kind: "sample",
+          timestamp: Date.now(),
+          cpuPercent: usage.cpu,
+          memoryBytes: usage.memory,
+        });
+      } catch {
+        // Ignore telemetry errors caused by process shutdown races.
+      }
+    };
+
+    void sample();
+    this.telemetryInterval = setInterval(() => {
+      void sample();
+    }, 1000);
+  }
+
+  // Stop telemetry and clear pidusage cache.
+  private stopTelemetry() {
+    if (this.telemetryInterval !== undefined) {
+      clearInterval(this.telemetryInterval);
+      this.telemetryInterval = undefined;
+    }
+    pidusage.clear();
   }
 }
 

@@ -7,6 +7,16 @@ import { z } from "zod";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+export const solverSampleSchema = z.object({
+  timestamp: z.number().nonnegative(),
+  cpuPercent: z.number().nonnegative(),
+  memoryBytes: z.number().nonnegative(),
+});
+
+export type SolverSample = z.infer<typeof solverSampleSchema>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 export const solverEventSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("stdout"),
@@ -16,6 +26,9 @@ export const solverEventSchema = z.discriminatedUnion("kind", [
     kind: z.literal("stderr"),
     data: z.string(),
   }),
+  z.object({
+    kind: z.literal("sample"),
+  }).extend(solverSampleSchema.shape),
   z.object({
     kind: z.literal("exit"),
     code: z.number().int(),
