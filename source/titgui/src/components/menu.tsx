@@ -16,6 +16,7 @@ import {
   Activity,
   createContext,
   Fragment,
+  type RefCallback,
   type ReactElement,
   type ReactNode,
   useContext,
@@ -93,13 +94,13 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
   );
 
   return (
-    <Flex direction={flexDirection} gap="1px">
+    <Flex direction={flexDirection} gap="1px" minWidth="0" minHeight="0">
       {/* ---- Menu bar. --------------------------------------------------- */}
       <Flex
         align="center"
         justify="between"
         {...(vertical
-          ? { direction: "column", height: "100%", pb: "4" }
+          ? { direction: "column", height: "100%" }
           : { direction: "row", width: "100%", px: "4" })}
         className={chrome({ direction: "bl" })}
       >
@@ -201,6 +202,7 @@ export type MenuActions = {
 };
 
 const MenuActionsContext = createContext<MenuActions | null>(null);
+const MenuViewportContext = createContext<HTMLDivElement | null>(null);
 
 function useMenuActions(): MenuActions {
   const context = useContext(MenuActionsContext);
@@ -211,6 +213,10 @@ function useMenuActions(): MenuActions {
 export function useMenuAction(action: MenuAction) {
   const { addAction } = useMenuActions();
   useEffect(() => addAction(action), [action, addAction]);
+}
+
+export function useMenuViewport(): HTMLDivElement | null {
+  return useContext(MenuViewportContext);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -226,6 +232,9 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
   // ---- Actions. -------------------------------------------------------------
 
   const [actions, setActions] = useState<MenuAction[]>([]);
+  const [viewportElement, setViewportElement] = useState<HTMLDivElement | null>(
+    null,
+  );
 
   const menuActions = useMemo<MenuActions>(
     () => ({
@@ -238,6 +247,11 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
     [],
   );
 
+  const viewportRef = useMemo<RefCallback<HTMLDivElement>>(
+    () => (element) => setViewportElement(element),
+    [],
+  );
+
   // ---- Layout. --------------------------------------------------------------
 
   return (
@@ -245,51 +259,63 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
       p="2"
       gap="2"
       height="100%"
+      minWidth="0"
+      minHeight="0"
       direction="column"
       className={chrome({ direction: "bl" })}
     >
       {/* ---- Header. ----------------------------------------------------- */}
-      <Flex gap="2" direction="row" align="center">
-        <Box asChild flexGrow="1">
-          <Text weight="bold" size="1" truncate>
-            {name.toLocaleUpperCase()}
+      <Flex align="center" justify="between" gap="2" minWidth="0">
+        <Box flexGrow="1" minWidth="0">
+          <Text as="div" weight="bold" size="1" truncate>
+            {name.toUpperCase()}
           </Text>
         </Box>
 
-        {actions.map((action) => (
-          <Tooltip key={action.name} content={action.name}>
+        <Flex align="center" gap="1" flexShrink="0">
+          {actions.map((action) => (
+            <Tooltip key={action.name} content={action.name}>
+              <IconButton
+                size="1"
+                variant="ghost"
+                color="gray"
+                disabled={action.disabled}
+                onClick={action.onClick}
+                aria-label={action.name}
+              >
+                {action.icon}
+              </IconButton>
+            </Tooltip>
+          ))}
+
+          <Tooltip content="Close">
             <IconButton
               size="1"
               variant="ghost"
               color="gray"
-              disabled={action.disabled}
-              onClick={action.onClick}
-              aria-label={action.name}
+              onClick={undefined /** @todo Implement me. */}
+              aria-label="Close"
             >
-              {action.icon}
+              <MinimizeIcon />
             </IconButton>
           </Tooltip>
-        ))}
-
-        <Tooltip content="Close">
-          <IconButton
-            size="1"
-            variant="ghost"
-            color="gray"
-            onClick={undefined /** @todo Implement me. */}
-            aria-label="Close"
-          >
-            <MinimizeIcon />
-          </IconButton>
-        </Tooltip>
+        </Flex>
       </Flex>
 
       {/* ---- Contents. --------------------------------------------------- */}
-      <Box flexGrow="1" overflow="auto" className={cn("rounded-lg", surface())}>
-        <ScrollArea>
-          <MenuActionsContext.Provider value={menuActions}>
-            {children}
-          </MenuActionsContext.Provider>
+      <Box
+        flexGrow="1"
+        minWidth="0"
+        minHeight="0"
+        overflow="hidden"
+        className={cn("rounded-lg", surface())}
+      >
+        <ScrollArea ref={viewportRef} style={{ width: "100%", height: "100%" }}>
+          <MenuViewportContext.Provider value={viewportElement}>
+            <MenuActionsContext.Provider value={menuActions}>
+              {children}
+            </MenuActionsContext.Provider>
+          </MenuViewportContext.Provider>
         </ScrollArea>
       </Box>
     </Flex>

@@ -92,12 +92,12 @@ export function Resizable({
   }
 
   return (
-    <Flex direction={flexDirection}>
+    <Flex direction={flexDirection} minWidth="0" minHeight="0">
       <div
         style={
           horizontal
-            ? { width: `${size}px`, height: "100%" }
-            : { height: `${size}px`, width: "100%" }
+            ? { width: `${size}px`, height: "100%", minWidth: 0, minHeight: 0 }
+            : { height: `${size}px`, width: "100%", minWidth: 0, minHeight: 0 }
         }
       >
         {children}

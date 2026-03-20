@@ -25,6 +25,7 @@ import {
   TbPerspective as PerspectiveIcon,
   TbRulerMeasure as RangeIcon,
   TbShape as RenderIcon,
+  TbPointer as MouseIcon,
   TbVector as RepresentationIcon,
 } from "react-icons/tb";
 
@@ -32,6 +33,7 @@ import { TechText } from "~/components/basic";
 import { chrome } from "~/components/classes";
 import { ColorBox } from "~/components/color-bar";
 import { ExportButton } from "~/components/export";
+import { type MouseMode, mouseModes } from "~/components/mouse-mode";
 import { NumberEditor } from "~/components/number-editor";
 import { toCSSColor } from "~/utils";
 import {
@@ -60,6 +62,8 @@ type ViewControlsProps = {
   frameData: FieldMap;
   field: Field;
   setFieldByName: (value: string) => void;
+  mouseMode: MouseMode;
+  setMouseMode: (value: MouseMode) => void;
 } & CameraControlsProps &
   RenderControlsProps &
   ColorControlsProps;
@@ -68,6 +72,8 @@ export function ViewControls({
   frameData,
   field,
   setFieldByName,
+  mouseMode,
+  setMouseMode,
   projection,
   setProjection,
   backgroundColorName,
@@ -129,6 +135,29 @@ export function ViewControls({
           </Box>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
+
+      <Separator orientation="vertical" size="1" />
+
+      {/* ---- Mouse. ------------------------------------------------------ */}
+      <Select.Root
+        size="1"
+        value={mouseMode}
+        onValueChange={(value) => setMouseMode(value as MouseMode)}
+      >
+        <Select.Trigger variant="ghost">
+          <Flex align="center" gap="1">
+            <MouseIcon size={16} />
+            Mouse
+          </Flex>
+        </Select.Trigger>
+        <Select.Content>
+          {mouseModes.map((mode) => (
+            <Select.Item key={mode} value={mode}>
+              <TechText>{mode}</TechText>
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select.Root>
 
       <Separator orientation="vertical" size="1" />
 

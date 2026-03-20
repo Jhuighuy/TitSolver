@@ -3,7 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Scene, WebGLRenderer } from "three";
+import { Scene, Vector2, Vector3, WebGLRenderer } from "three";
 
 import { assert } from "~/utils";
 import type { BackgroundColor } from "~/visual/background-color";
@@ -23,6 +23,10 @@ import { ParticlesSwitch, type RenderMode } from "~/visual/particles-switch";
 export class Renderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly renderer: WebGLRenderer;
+  private positionValues = new Float32Array();
+  private selectionValues = new Float32Array();
+  private renderWidth = 1;
+  private renderHeight = 1;
   readonly scene: Scene;
   readonly cameraController: CameraController;
   readonly particles: ParticlesSwitch;
@@ -60,8 +64,10 @@ export class Renderer {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public resize(width: number, height: number) {
+    this.renderWidth = Math.max(width, 1);
+    this.renderHeight = Math.max(height, 1);
     this.renderer.setSize(width, height, false);
-    this.cameraController.camera.aspect = width / height;
+    this.cameraController.camera.aspect = this.renderWidth / this.renderHeight;
     this.cameraController.camera.updateProjectionMatrix();
   }
 
@@ -123,6 +129,11 @@ export class Renderer {
     }
 
     this.particles.setData(field, colorValues, positionValues);
+    this.positionValues = positionValues;
+    if (this.selectionValues.length !== data.count) {
+      this.selectionValues = new Float32Array(data.count);
+    }
+    this.particles.setSelection(this.selectionValues);
 
     return hasFiniteColorValue ? colorRange : colorRangeDefault;
   }
@@ -154,6 +165,94 @@ export class Renderer {
   public setGlyphScaleMode(mode: GlyphScaleMode) {
     this.particles.setGlyphScaleMode(mode);
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public setSelectedParticleIndices(indices: readonly number[]) {
+    const count = this.positionValues.length / 3;
+    this.selectionValues = new Float32Array(count);
+    for (const index of indices) {
+      if (0 <= index && index < count) {
+        this.selectionValues[index] = 1;
+      }
+    }
+    this.particles.setSelection(this.selectionValues);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public selectParticlesInRect(
+    start: Vector2,
+    end: Vector2,
+  ): number[] {
+    const left = Math.min(start.x, end.x);
+    const right = Math.max(start.x, end.x);
+    const top = Math.min(start.y, end.y);
+    const bottom = Math.max(start.y, end.y);
+
+    return this.selectProjectedParticles(
+      ({ x, y }) => left <= x && x <= right && top <= y && y <= bottom,
+    );
+  }
+
+  public selectParticlesInPolygon(points: Vector2[]): number[] {
+    if (points.length < 3) return [];
+    return this.selectProjectedParticles((point) => pointInPolygon(point, points));
+  }
+
+  private selectProjectedParticles(
+    predicate: (point: Vector2) => boolean,
+  ): number[] {
+    const camera = this.cameraController.camera;
+    const worldPosition = new Vector3();
+    const projectedPosition = new Vector3();
+    const screenPoint = new Vector2();
+    const selectedIndices: number[] = [];
+
+    for (let index = 0; index < this.positionValues.length / 3; index++) {
+      worldPosition.set(
+        this.positionValues[index * 3 + 0] ?? 0,
+        this.positionValues[index * 3 + 1] ?? 0,
+        this.positionValues[index * 3 + 2] ?? 0,
+      );
+
+      projectedPosition.copy(worldPosition).project(camera);
+      if (!Number.isFinite(projectedPosition.x)) continue;
+      if (!Number.isFinite(projectedPosition.y)) continue;
+      if (!Number.isFinite(projectedPosition.z)) continue;
+      if (projectedPosition.z < -1 || projectedPosition.z > 1) continue;
+
+      screenPoint.set(
+        (projectedPosition.x * 0.5 + 0.5) * this.renderWidth,
+        (1 - (projectedPosition.y * 0.5 + 0.5)) * this.renderHeight,
+      );
+
+      if (predicate(screenPoint)) selectedIndices.push(index);
+    }
+
+    return selectedIndices;
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+function pointInPolygon(point: Vector2, polygon: Vector2[]) {
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const pi = polygon[i];
+    const pj = polygon[j];
+    if (pi === undefined || pj === undefined) continue;
+
+    const intersects =
+      (pi.y > point.y) !== (pj.y > point.y) &&
+      point.x <
+        ((pj.x - pi.x) * (point.y - pi.y)) / (pj.y - pi.y + Number.EPSILON) +
+          pi.x;
+    if (intersects) inside = !inside;
+  }
+
+  return inside;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

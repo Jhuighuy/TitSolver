@@ -40,6 +40,7 @@ export class Spheres
         maxValue: { value: 1 },
         colorMap: { value: colorMapToTexture(colorMaps.jet) },
         nanColor: { value: colorMaps.jet.nanColor },
+        selectedColor: { value: [0.99, 0.76, 0.18] },
         pointSize: { value: 25 },
       },
     });
@@ -68,6 +69,15 @@ export class Spheres
     this.geometry.setAttribute(
       "position",
       new Float32BufferAttribute(positionValues, 3),
+    );
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public setSelection(selectionValues: Float32Array) {
+    this.geometry.setAttribute(
+      "selection",
+      new Float32BufferAttribute(selectionValues, 1),
     );
   }
 
@@ -105,10 +115,14 @@ const vertexShaderSource = `
   uniform float pointSize;
 
   attribute float value;
+  attribute float selection;
+
   varying float vValue;
+  varying float vSelection;
 
   void main() {
     vValue = value;
+    vSelection = selection;
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = -pointSize / mvPosition.z;
@@ -123,22 +137,31 @@ const fragmentShaderSource = `
 
   uniform sampler2D colorMap;
   uniform vec3 nanColor;
+  uniform vec3 selectedColor;
   uniform float minValue;
   uniform float maxValue;
 
   varying float vValue;
+  varying float vSelection;
 
   void main() {
     float r = length(gl_PointCoord - vec2(0.5));
     if (r > 0.5) discard;
 
+    vec3 color;
     if (vValue != vValue) {
-      gl_FragColor = vec4(nanColor, 1.0);
+      color = nanColor;
     } else {
       float denom = max(maxValue - minValue, epsilon);
       float scaled = clamp((vValue - minValue) / denom, 0.0, 1.0);
-      gl_FragColor = texture2D(colorMap, vec2(scaled, 0.5));
+      color = texture2D(colorMap, vec2(scaled, 0.5)).rgb;
     }
+
+    if (vSelection > 0.5) {
+      color = mix(color, selectedColor, 0.5);
+    }
+
+    gl_FragColor = vec4(color, 1.0);
   }
 `;
 

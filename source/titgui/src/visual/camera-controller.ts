@@ -27,6 +27,7 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
   public readonly canvas: HTMLCanvasElement;
   public readonly camera: Camera;
 
+  public enabled = true;
   public rotateSpeed = 2;
   public zoomSpeed = 1.2;
   public panSpeed = 2;
@@ -116,6 +117,8 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   private readonly onMouseDown = (event: MouseEvent) => {
+    if (!this.enabled) return;
+
     event.preventDefault();
     if (this.state !== null) return;
 
@@ -139,6 +142,8 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
   };
 
   private readonly onMouseMove = (event: MouseEvent) => {
+    if (!this.enabled) return;
+
     this.eventEnd.set(event.clientX, event.clientY);
     const dx = (this.eventEnd.x - this.eventStart.x) / this.canvas.clientWidth;
     const dy = (this.eventEnd.y - this.eventStart.y) / this.canvas.clientHeight;
@@ -167,11 +172,15 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
   };
 
   private readonly onDoubleClick = () => {
+    if (!this.enabled) return;
+
     this.snapToNearestAxis();
     this.dispatchEvent({ type: "changed" });
   };
 
   private readonly onMouseWheel = (event: WheelEvent) => {
+    if (!this.enabled) return;
+
     event.preventDefault();
 
     // Normalize wheel delta to CSS pixels for consistent mouse/touchpad behavior.
