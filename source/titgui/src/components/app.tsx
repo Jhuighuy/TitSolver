@@ -12,6 +12,7 @@ import {
   TbSettings as SettingsIcon,
   TbDatabase as StorageIcon,
   TbTerminal as TerminalIcon,
+  TbTable as TableIcon,
 } from "react-icons/tb";
 
 import { ConnectionProvider } from "~/components/connection";
@@ -20,6 +21,7 @@ import { HelpMenu } from "~/components/menu-help";
 import { LogsMenu } from "~/components/menu-logs";
 import { RunMenu } from "~/components/menu-run";
 import { SettingsMenu } from "~/components/menu-settings";
+import { TableMenu } from "~/components/menu-table";
 import { SolverProvider } from "~/components/solver";
 import { StorageProvider } from "~/components/storage";
 import { Timeline } from "~/components/timeline";
@@ -80,13 +82,22 @@ function Page() {
         </Menu.Item>
       </Menu>
 
-      <Flex direction="column" width="100%" height="100%" gap="1px">
+      <Flex
+        direction="column"
+        width="100%"
+        height="100%"
+        minWidth="0"
+        gap="1px"
+      >
         <Box flexGrow="1">
           <Viewport />
         </Box>
         <Timeline />
 
         <Menu side="bottom">
+          <Menu.Item group={0} name="Particles" icon={<TableIcon size={16} />}>
+            <TableMenu />
+          </Menu.Item>
           <Menu.Item group={0} name="Logs" icon={<LogsIcon size={16} />}>
             <LogsMenu />
           </Menu.Item>

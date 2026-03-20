@@ -131,3 +131,28 @@ export function downloadText(fileName: string, text: string) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * Copy text to the clipboard.
+ */
+export async function copyToClipboard(text: string): Promise<void> {
+  await navigator.clipboard.writeText(text);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * Format a numeric field value for compact table display.
+ */
+export function formatNumber(value: number): string {
+  if (!Number.isFinite(value)) return String(value);
+
+  const absValue = Math.abs(value);
+  if ((absValue !== 0 && absValue < 1e-3) || absValue >= 1e4) {
+    return value.toExponential(3);
+  }
+
+  return value.toFixed(4).replace(/\.?0+$/, "");
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
