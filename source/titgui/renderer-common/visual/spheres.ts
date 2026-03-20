@@ -45,6 +45,7 @@ export class Spheres
         maxValue: { value: 1 },
         colorMap: { value: colorMapToTexture(colorMaps.jet) },
         nanColor: { value: colorMaps.jet.nanColor },
+        selectedColor: { value: [0.99, 0.76, 0.18] },
         pointSize: { value: 25 },
         viewportHeight: { value: 1 },
         shadingMix: { value: 0 },
@@ -76,6 +77,15 @@ export class Spheres
     this.geometry.setAttribute(
       "position",
       new Float32BufferAttribute(positionValues, 3),
+    );
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public setSelection(selectionValues: Float32Array) {
+    this.geometry.setAttribute(
+      "selection",
+      new Float32BufferAttribute(selectionValues, 1),
     );
   }
 
@@ -128,13 +138,16 @@ const vertexShaderSource = `
   uniform float viewportHeight;
 
   attribute float value;
+  attribute float selection;
 
   varying float vValue;
+  varying float vSelectionMix;
   varying float vViewRadius;
   varying vec3 vCenterView;
 
   void main() {
     vValue = value;
+    vSelectionMix = selection;
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     vCenterView = mvPosition.xyz;
@@ -158,6 +171,7 @@ const fragmentShaderSource = `
   uniform float pointSize;
   uniform sampler2D colorMap;
   uniform vec3 nanColor;
+  uniform vec3 selectedColor;
   uniform float minValue;
   uniform float maxValue;
   uniform float shadingMix;
@@ -165,6 +179,7 @@ const fragmentShaderSource = `
   varying float vValue;
   varying vec3 vCenterView;
   varying float vViewRadius;
+  varying float vSelectionMix;
 
   void main() {
     vec2 xy = 2.0 * (gl_PointCoord - vec2(0.5));
@@ -176,8 +191,9 @@ const fragmentShaderSource = `
     vec4 clipSurface = projectionMatrix * vec4(surfaceView, 1.0);
     gl_FragDepth = clamp(0.5 * (clipSurface.z / clipSurface.w) + 0.5, 0.0, 1.0);
 
+    vec3 color;
     if (vValue != vValue) {
-      gl_FragColor = vec4(nanColor, 1.0);
+      color = nanColor;
     } else {
       float denom = max(maxValue - minValue, epsilon);
       float scaled = clamp((vValue - minValue) / denom, 0.0, 1.0);
@@ -187,9 +203,12 @@ const fragmentShaderSource = `
       float diffuse = 0.35 + 0.65 * max(dot(normal, lightDir), 0.0);
       float specular = pow(max(dot(reflect(-lightDir, normal), vec3(0.0, 0.0, 1.0)), 0.0), 16.0);
       vec3 shadedColor = clamp(baseColor * diffuse + vec3(0.15) * specular, 0.0, 1.0);
-
-      gl_FragColor = vec4(mix(baseColor, shadedColor, shadingMix), 1.0);
+      color = mix(baseColor, shadedColor, shadingMix);
     }
+
+    color = mix(color, selectedColor, vSelectionMix);
+
+    gl_FragColor = vec4(color, 1.0);
   }
 `;
 

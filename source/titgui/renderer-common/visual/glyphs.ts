@@ -54,6 +54,7 @@ export class Glyphs
         maxValue: { value: 1 },
         colorMap: { value: colorMapToTexture(colorMaps.jet) },
         nanColor: { value: colorMaps.jet.nanColor },
+        selectedColor: { value: [0.99, 0.76, 0.18] },
         lengthScale: { value: 0.02 },
         widthScale: { value: 0.02 * glyphWidthRatio },
         scaleByMagnitude: { value: 1 },
@@ -99,6 +100,15 @@ export class Glyphs
     this.geometry.setAttribute(
       "center",
       new InstancedBufferAttribute(positionValues, 3),
+    );
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public setSelection(selectionValues: Float32Array) {
+    this.geometry.setAttribute(
+      "selection",
+      new InstancedBufferAttribute(selectionValues, 1),
     );
   }
 
@@ -166,6 +176,7 @@ const vertexShaderSource = `
   const float epsilon = 1e-12;
 
   attribute float value;
+  attribute float selection;
   attribute vec3 vector;
   attribute vec3 center;
 
@@ -175,9 +186,11 @@ const vertexShaderSource = `
 
   varying float vValue;
   varying float vShade;
+  varying float vSelectionMix;
 
   void main() {
     vValue = value;
+    vSelectionMix = selection;
 
     float len = length(vector);
 
@@ -212,23 +225,30 @@ const fragmentShaderSource = `
 
   uniform sampler2D colorMap;
   uniform vec3 nanColor;
+  uniform vec3 selectedColor;
   uniform float minValue;
   uniform float maxValue;
   uniform float shadingMix;
 
   varying float vValue;
   varying float vShade;
+  varying float vSelectionMix;
 
   void main() {
+    vec3 color;
     if (vValue != vValue) {
-      gl_FragColor = vec4(nanColor, 1.0);
+      color = nanColor;
     } else {
       float denom = max(maxValue - minValue, epsilon);
       float scaled = clamp((vValue - minValue) / denom, 0.0, 1.0);
       vec3 baseColor = texture2D(colorMap, vec2(scaled, 0.5)).rgb;
       vec3 shadedColor = clamp(baseColor * vShade, 0.0, 1.0);
-      gl_FragColor = vec4(mix(baseColor, shadedColor, shadingMix), 1.0);
+      color = mix(baseColor, shadedColor, shadingMix);
     }
+
+    color = mix(color, selectedColor, vSelectionMix);
+
+    gl_FragColor = vec4(color, 1.0);
   }
 `;
 

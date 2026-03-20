@@ -19,11 +19,13 @@ import type {
   FieldModifier,
 } from "~/renderer-common/visual/fields";
 import type { GlyphScaleMode } from "~/renderer-common/visual/glyphs";
+import { ParticleSelection } from "~/renderer-common/visual/particle-selection";
 import type { ShadingMode } from "~/renderer-common/visual/particles";
 import {
   ParticlesSwitch,
   type RenderMode,
 } from "~/renderer-common/visual/particles-switch";
+import type { SelectionCommand } from "~/renderer-common/visual/selection";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,6 +33,7 @@ import { assert } from "~/shared/utils";
 export class Renderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly renderer: WebGLRenderer;
+  private readonly selection = new ParticleSelection();
   readonly scene: Scene;
   readonly cameraController: CameraController;
   readonly particles: ParticlesSwitch;
@@ -70,6 +73,7 @@ export class Renderer {
   public resize(width: number, height: number) {
     this.renderer.setSize(width, height, false);
     this.cameraController.setViewportSize(width, height);
+    this.selection.setViewportSize(width, height);
     this.particles.setViewportSize(width, height);
   }
 
@@ -131,6 +135,8 @@ export class Renderer {
     }
 
     this.particles.setData(field, colorValues, positionValues);
+    this.selection.setData(positionValues);
+    this.particles.setSelection(this.selection.getValues());
 
     return hasFiniteColorValue ? colorRange : colorRangeDefault;
   }
@@ -167,6 +173,17 @@ export class Renderer {
 
   public setGlyphScaleMode(mode: GlyphScaleMode) {
     this.particles.setGlyphScaleMode(mode);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public applySelectionCommand(command: SelectionCommand) {
+    const selectionCount = this.selection.apply(
+      this.cameraController.camera,
+      command,
+    );
+    this.particles.setSelection(this.selection.getValues());
+    return selectionCount;
   }
 }
 

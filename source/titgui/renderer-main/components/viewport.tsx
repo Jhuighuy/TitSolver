@@ -3,11 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex } from "@radix-ui/themes";
+import { Flex } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { Euler, Vector3 } from "three";
 
-import { chrome } from "~/renderer-common/components/classes";
 import { useSignalValue } from "~/renderer-common/hooks/use-signal";
 import { derived, scoped, signal } from "~/renderer-common/signals";
 import {
@@ -34,9 +33,14 @@ import {
   type RenderMode,
 } from "~/renderer-common/visual/particles-switch";
 import { Renderer } from "~/renderer-common/visual/renderer";
+import type { SelectionCommand } from "~/renderer-common/visual/selection";
 import { useStorage } from "~/renderer-main/components/storage";
 import { ViewControls } from "~/renderer-main/components/view-controls";
 import { ViewHUD } from "~/renderer-main/components/view-hud";
+import {
+  type ToolMode,
+  ViewSelection,
+} from "~/renderer-main/components/view-selection";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,6 +97,8 @@ export function Viewport() {
   const colorFieldModifier = useSignalValue(model.colorFieldModifier);
   const colorTitle = useSignalValue(model.colorTitle);
   const shadingMode = useSignalValue(model.shadingMode);
+  const toolMode = useSignalValue(model.toolMode);
+  const selectionCount = useSignalValue(model.selectionCount);
   const pointSize = useSignalValue(model.pointSize);
   const glyphScale = useSignalValue(model.glyphScale);
   const glyphScaleMode = useSignalValue(model.glyphScaleMode);
@@ -107,6 +113,11 @@ export function Viewport() {
       {/* ---- Controls. --------------------------------------------------- */}
       <ViewControls
         frameData={frameData}
+        /* Tool mode. */
+        toolMode={toolMode}
+        setToolMode={(value) => {
+          model.toolMode.set(value);
+        }}
         /* Camera. */
         projection={projection}
         setProjection={(value) => {
@@ -175,13 +186,15 @@ export function Viewport() {
       />
 
       {/* ---- Canvas. ----------------------------------------------------- */}
-      <Box
-        flexGrow="1"
-        width="100%"
-        height="100%"
-        overflow="hidden"
-        position="relative"
-        className={chrome({ direction: "bl" })}
+      <ViewSelection
+        toolMode={toolMode}
+        setToolMode={(value) => {
+          model.toolMode.set(value);
+        }}
+        selectionCount={selectionCount}
+        onSelectionCommand={(value) => {
+          model.selectionCommand.set(value);
+        }}
       >
         <canvas ref={canvasRef} style={{ position: "absolute" }} />
 
@@ -195,7 +208,7 @@ export function Viewport() {
           colorRange={colorRange}
           colorTitle={colorTitle}
         />
-      </Box>
+      </ViewSelection>
     </Flex>
   );
 }
@@ -215,9 +228,6 @@ class ViewportModel {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public readonly frameData = signal(new FieldMap({}));
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   public readonly fieldName = signal("rho");
   public readonly field = derived(
     () => this.frameData.get().get(this.fieldName.get()),
@@ -254,6 +264,12 @@ class ViewportModel {
       this.colorFieldModifier.get(),
     );
   }, [this.colorField, this.colorFieldModifier]);
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public readonly toolMode = signal<ToolMode>("normal");
+  public readonly selectionCommand = signal<SelectionCommand | null>(null);
+  public readonly selectionCount = signal(0);
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -327,6 +343,10 @@ class ViewportModel {
     });
     this.colorFieldModifier.subscribe(() => {
       this.pushFieldsAndColoring();
+    });
+
+    this.selectionCommand.subscribe(() => {
+      this.pushSelectionCommand();
     });
 
     this.shadingMode.subscribe(() =>
@@ -431,6 +451,19 @@ class ViewportModel {
 
     this.pushColorRange();
     this.pushColorMap();
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private pushSelectionCommand() {
+    const renderer = this.renderer;
+    if (renderer === null) return;
+
+    const selectionCommand = this.selectionCommand.get();
+    if (selectionCommand === null) return;
+
+    this.selectionCount.set(renderer.applySelectionCommand(selectionCommand));
+    this.selectionCommand.set(null);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

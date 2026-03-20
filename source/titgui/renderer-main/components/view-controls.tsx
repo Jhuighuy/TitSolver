@@ -12,22 +12,33 @@ import {
   Separator,
   Text,
 } from "@radix-ui/themes";
+import type { ComponentProps, ReactNode } from "react";
 import {
+  TbSparkles as AutoIcon,
   TbBackground as BackgroundIcon,
   TbCamera as CameraIcon,
-  TbDroplet as ColoringIcon,
   TbPalette as ColorMapIcon,
+  TbDroplet as ColoringIcon,
   TbChartDots as ComponentIcon,
   TbDatabaseExport as ExportIcon,
   TbGalaxy as FieldIcon,
-  TbVectorTriangle as GlyphScaleModeIcon,
+  TbCircle as FlatShadingIcon,
+  TbLassoPolygon as LassoIcon,
+  TbManualGearbox as ManualRangeIcon,
+  TbMatrix as MatrixIcon,
   TbSettings as ModifierIcon,
+  TbPointer as MouseIcon,
   TbPerspectiveOff as OrthographicIcon,
   TbPerspective as PerspectiveIcon,
   TbRulerMeasure as RangeIcon,
+  TbRectangle as RectIcon,
   TbShape as RenderIcon,
   TbVector as RepresentationIcon,
+  TbPoint as ScalarIcon,
+  TbVectorTriangle as ScaleModeIcon,
   TbSun as ShadingIcon,
+  TbTool as ToolIcon,
+  TbArrowUpRight as VectorIcon,
 } from "react-icons/tb";
 import { Euler, MathUtils, Vector3 } from "three";
 
@@ -51,27 +62,25 @@ import type {
   Field,
   FieldMap,
   FieldModifier,
-  FieldRank,
 } from "~/renderer-common/visual/fields";
 import type { GlyphScaleMode } from "~/renderer-common/visual/glyphs";
 import type { ShadingMode } from "~/renderer-common/visual/particles";
 import type { RenderMode } from "~/renderer-common/visual/particles-switch";
 import { ExportButton } from "~/renderer-main/components/export";
+import type { ToolMode } from "~/renderer-main/components/view-selection";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type ViewControlsProps = {
-  frameData: FieldMap;
-  field: Field;
-  setFieldByName: (value: string) => void;
-} & CameraControlsProps &
+type ViewControlsProps = FieldControlsProps &
+  ToolControlsProps &
+  CameraControlsProps &
   RenderControlsProps &
   ColorControlsProps;
 
 export function ViewControls({
-  frameData,
-  field,
-  setFieldByName,
+  // Tool.
+  toolMode,
+  setToolMode,
   // Camera.
   projection,
   setProjection,
@@ -81,6 +90,10 @@ export function ViewControls({
   setCameraPosition,
   cameraRotation,
   setCameraRotation,
+  // Field.
+  frameData,
+  field,
+  setFieldByName,
   // Render.
   renderMode,
   setRenderMode,
@@ -114,148 +127,71 @@ export function ViewControls({
       gap="3"
       className={chrome({ direction: "br" })}
     >
+      {/* ---- Tool. ------------------------------------------------------- */}
+      <ToolControls toolMode={toolMode} setToolMode={setToolMode} />
+
+      <Separator orientation="vertical" size="1" />
+
       {/* ---- Camera. ----------------------------------------------------- */}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <Button size="1" variant="ghost" className="rt-SelectTrigger">
-            <Flex align="center" gap="1">
-              <CameraIcon size={16} />
-              Camera
-            </Flex>
-            <DropdownMenu.TriggerIcon className="rt-SelectIcon" />
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          <Box
-            px="2"
-            py="2"
-            style={{ minWidth: "240px" }}
-            onMouseDown={(event) => {
-              event.stopPropagation();
-            }}
-            onClick={(event) => {
-              event.stopPropagation();
-            }}
-          >
-            <CameraControls
-              projection={projection}
-              setProjection={setProjection}
-              backgroundColorName={backgroundColorName}
-              setBackgroundColorName={setBackgroundColorName}
-              cameraPosition={cameraPosition}
-              setCameraPosition={setCameraPosition}
-              cameraRotation={cameraRotation}
-              setCameraRotation={setCameraRotation}
-            />
-          </Box>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+      <ControlsDropdown label="Camera" icon={<CameraIcon size={16} />}>
+        <CameraControls
+          projection={projection}
+          setProjection={setProjection}
+          backgroundColorName={backgroundColorName}
+          setBackgroundColorName={setBackgroundColorName}
+          cameraPosition={cameraPosition}
+          setCameraPosition={setCameraPosition}
+          cameraRotation={cameraRotation}
+          setCameraRotation={setCameraRotation}
+        />
+      </ControlsDropdown>
 
       <Separator orientation="vertical" size="1" />
 
       {/* ---- Field. ------------------------------------------------------ */}
-      <Select.Root size="1" value={field.name} onValueChange={setFieldByName}>
-        <Select.Trigger variant="ghost">
-          <Flex align="center" gap="1">
-            <FieldIcon size={16} />
-            Field
-          </Flex>
-        </Select.Trigger>
-        <Select.Content>
-          {Array.from(frameData.entries()).map(([name, field]) => (
-            <Select.Item key={name} value={name}>
-              <Flex align="center" gap="2">
-                <FieldTypeIcon rank={field.rank} />
-                <TechText>{name}</TechText>
-              </Flex>
-            </Select.Item>
-          ))}
-        </Select.Content>
-      </Select.Root>
+      <FieldControls
+        frameData={frameData}
+        field={field}
+        setFieldByName={setFieldByName}
+      />
 
       <Separator orientation="vertical" size="1" />
 
       {/* ---- Render. ----------------------------------------------------- */}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <Button size="1" variant="ghost" className="rt-SelectTrigger">
-            <Flex align="center" gap="1">
-              <RenderIcon size={16} />
-              Render
-            </Flex>
-            <DropdownMenu.TriggerIcon className="rt-SelectIcon" />
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          <Box
-            px="2"
-            py="2"
-            style={{ minWidth: "280px" }}
-            onMouseDown={(event) => {
-              event.stopPropagation();
-            }}
-            onClick={(event) => {
-              event.stopPropagation();
-            }}
-          >
-            <RenderControls
-              field={field}
-              renderMode={renderMode}
-              setRenderMode={setRenderMode}
-              shadingMode={shadingMode}
-              setShadingMode={setShadingMode}
-              pointSize={pointSize}
-              setPointSize={setPointSize}
-              glyphScale={glyphScale}
-              setGlyphScale={setGlyphScale}
-              glyphScaleMode={glyphScaleMode}
-              setGlyphScaleMode={setGlyphScaleMode}
-            />
-          </Box>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+      <ControlsDropdown label="Render" icon={<RenderIcon size={16} />}>
+        <RenderControls
+          field={field}
+          renderMode={renderMode}
+          setRenderMode={setRenderMode}
+          shadingMode={shadingMode}
+          setShadingMode={setShadingMode}
+          pointSize={pointSize}
+          setPointSize={setPointSize}
+          glyphScale={glyphScale}
+          setGlyphScale={setGlyphScale}
+          glyphScaleMode={glyphScaleMode}
+          setGlyphScaleMode={setGlyphScaleMode}
+        />
+      </ControlsDropdown>
 
       <Separator orientation="vertical" size="1" />
 
       {/* ---- Color range. ------------------------------------------------ */}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <Button size="1" variant="ghost" className="rt-SelectTrigger">
-            <Flex align="center" gap="1">
-              <ColoringIcon size={16} />
-              Coloring
-            </Flex>
-            <DropdownMenu.TriggerIcon className="rt-SelectIcon" />
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          <Box
-            px="2"
-            py="2"
-            style={{ minWidth: "280px" }}
-            onMouseDown={(event) => {
-              event.stopPropagation();
-            }}
-            onClick={(event) => {
-              event.stopPropagation();
-            }}
-          >
-            <ColorControls
-              colorRangeMode={colorRangeMode}
-              setColorRangeMode={setColorRangeMode}
-              colorRange={colorRange}
-              setColorRange={setColorRange}
-              colorMapName={colorMapName}
-              setColorMapName={setColorMapName}
-              frameData={frameData}
-              colorField={colorField}
-              setColorFieldByName={setColorFieldByName}
-              colorFieldModifier={colorFieldModifier}
-              setColorFieldModifier={setColorFieldModifier}
-            />
-          </Box>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+      <ControlsDropdown label="Coloring" icon={<ColoringIcon size={16} />}>
+        <ColorControls
+          colorRangeMode={colorRangeMode}
+          setColorRangeMode={setColorRangeMode}
+          colorRange={colorRange}
+          setColorRange={setColorRange}
+          colorMapName={colorMapName}
+          setColorMapName={setColorMapName}
+          frameData={frameData}
+          colorField={colorField}
+          setColorFieldByName={setColorFieldByName}
+          colorFieldModifier={colorFieldModifier}
+          setColorFieldModifier={setColorFieldModifier}
+        />
+      </ControlsDropdown>
 
       <Separator orientation="vertical" size="1" />
 
@@ -267,6 +203,95 @@ export function ViewControls({
         </Flex>
       </ExportButton>
     </Flex>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface ControlsDropdownProps {
+  label: string;
+  icon: ReactNode;
+  children: ReactNode;
+}
+
+function ControlsDropdown({
+  label,
+  icon,
+  children,
+}: Readonly<ControlsDropdownProps>) {
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        <Button size="1" variant="ghost" className="rt-SelectTrigger">
+          <Flex align="center" gap="1">
+            {icon}
+            {label}
+          </Flex>
+          <DropdownMenu.TriggerIcon className="rt-SelectIcon" />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content>
+        <Box
+          px="2"
+          py="2"
+          minWidth="280px"
+          onMouseDown={(event) => {
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          {children}
+        </Box>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface ToolControlsProps {
+  toolMode: ToolMode;
+  setToolMode: (value: ToolMode) => void;
+}
+
+function ToolControls({ toolMode, setToolMode }: Readonly<ToolControlsProps>) {
+  return (
+    <Select.Root
+      size="1"
+      value={toolMode}
+      onValueChange={(value) => {
+        setToolMode(value as ToolMode);
+      }}
+    >
+      <Select.Trigger variant="ghost">
+        <Flex align="center" gap="1">
+          <ToolIcon size={16} />
+          Tool
+        </Flex>
+      </Select.Trigger>
+      <Select.Content>
+        <Select.Item value="normal">
+          <Flex align="center" gap="2">
+            <MouseIcon size={16} />
+            Navigate
+          </Flex>
+        </Select.Item>
+        <Select.Item value="rect">
+          <Flex align="center" gap="2">
+            <RectIcon size={16} />
+            Box Select
+          </Flex>
+        </Select.Item>
+        <Select.Item value="lasso">
+          <Flex align="center" gap="2">
+            <LassoIcon size={16} />
+            Lasso Select
+          </Flex>
+        </Select.Item>
+      </Select.Content>
+    </Select.Root>
   );
 }
 
@@ -298,8 +323,8 @@ function CameraControls({
       <Select.Root
         size="1"
         value={projection}
-        onValueChange={(x) => {
-          setProjection(x as Projection);
+        onValueChange={(value: Projection) => {
+          setProjection(value);
         }}
       >
         <Select.Trigger>
@@ -331,8 +356,8 @@ function CameraControls({
       <Select.Root
         size="1"
         value={backgroundColorName}
-        onValueChange={(x) => {
-          setBackgroundColorName(x as BackgroundColorName);
+        onValueChange={(value: BackgroundColorName) => {
+          setBackgroundColorName(value);
         }}
       >
         <Select.Trigger>
@@ -406,6 +431,30 @@ function CameraControls({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+interface FieldControlsProps {
+  frameData: FieldMap;
+  field: Field;
+  setFieldByName: (value: string) => void;
+}
+
+function FieldControls({
+  frameData,
+  field,
+  setFieldByName,
+}: Readonly<FieldControlsProps>) {
+  return (
+    <FieldSelect
+      label="Field"
+      variant="ghost"
+      frameData={frameData}
+      field={field}
+      setFieldByName={setFieldByName}
+    />
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 interface RenderControlsProps {
   field: Field;
   renderMode: RenderMode;
@@ -440,8 +489,8 @@ function RenderControls({
         <Select.Root
           size="1"
           value={renderMode}
-          onValueChange={(value) => {
-            setRenderMode(value as RenderMode);
+          onValueChange={(value: RenderMode) => {
+            setRenderMode(value);
           }}
         >
           <Select.Trigger>
@@ -451,8 +500,18 @@ function RenderControls({
             </Flex>
           </Select.Trigger>
           <Select.Content>
-            <Select.Item value="points">Points</Select.Item>
-            <Select.Item value="glyphs">Glyphs</Select.Item>
+            <Select.Item value="points">
+              <Flex align="center" gap="2">
+                <ScalarIcon size={16} />
+                Points
+              </Flex>
+            </Select.Item>
+            <Select.Item value="glyphs">
+              <Flex align="center" gap="2">
+                <VectorIcon size={16} />
+                Glyphs
+              </Flex>
+            </Select.Item>
           </Select.Content>
         </Select.Root>
       )}
@@ -461,8 +520,8 @@ function RenderControls({
       <Select.Root
         size="1"
         value={shadingMode}
-        onValueChange={(value) => {
-          setShadingMode(value as ShadingMode);
+        onValueChange={(value: ShadingMode) => {
+          setShadingMode(value);
         }}
       >
         <Select.Trigger>
@@ -472,8 +531,18 @@ function RenderControls({
           </Flex>
         </Select.Trigger>
         <Select.Content>
-          <Select.Item value="flat">Flat</Select.Item>
-          <Select.Item value="shaded">Shaded</Select.Item>
+          <Select.Item value="flat">
+            <Flex align="center" gap="2">
+              <FlatShadingIcon size={16} />
+              Flat
+            </Flex>
+          </Select.Item>
+          <Select.Item value="shaded">
+            <Flex align="center" gap="2">
+              <ShadingIcon size={16} />
+              Shaded
+            </Flex>
+          </Select.Item>
         </Select.Content>
       </Select.Root>
 
@@ -502,13 +571,13 @@ function RenderControls({
           <Select.Root
             size="1"
             value={glyphScaleMode}
-            onValueChange={(value) => {
-              setGlyphScaleMode(value as GlyphScaleMode);
+            onValueChange={(value: GlyphScaleMode) => {
+              setGlyphScaleMode(value);
             }}
           >
             <Select.Trigger>
               <Flex align="center" gap="1">
-                <GlyphScaleModeIcon size={16} />
+                <ScaleModeIcon size={16} />
                 Scale Mode
               </Flex>
             </Select.Trigger>
@@ -555,36 +624,20 @@ function ColorControls({
   return (
     <Flex direction="column" gap="2">
       {setColorFieldByName !== undefined && (
-        <Select.Root
-          size="1"
-          value={colorField.name}
-          onValueChange={setColorFieldByName}
-        >
-          <Select.Trigger>
-            <Flex align="center" gap="1">
-              <FieldIcon size={16} />
-              Color By
-            </Flex>
-          </Select.Trigger>
-          <Select.Content>
-            {Array.from(frameData.entries()).map(([name, field]) => (
-              <Select.Item key={name} value={name}>
-                <Flex align="center" gap="2">
-                  <FieldTypeIcon rank={field.rank} />
-                  <TechText>{name}</TechText>
-                </Flex>
-              </Select.Item>
-            ))}
-          </Select.Content>
-        </Select.Root>
+        <FieldSelect
+          label="Color By"
+          frameData={frameData}
+          field={colorField}
+          setFieldByName={setColorFieldByName}
+        />
       )}
 
       {/* ---- Color range. ------------------------------------------------ */}
       <Select.Root
         size="1"
         value={colorRangeMode}
-        onValueChange={(value) => {
-          setColorRangeMode(value as ColorRangeMode);
+        onValueChange={(value: ColorRangeMode) => {
+          setColorRangeMode(value);
         }}
       >
         <Select.Trigger>
@@ -594,8 +647,18 @@ function ColorControls({
           </Flex>
         </Select.Trigger>
         <Select.Content>
-          <Select.Item value="auto">Auto</Select.Item>
-          <Select.Item value="manual">Manual</Select.Item>
+          <Select.Item value="auto">
+            <Flex align="center" gap="2">
+              <AutoIcon size={16} />
+              Auto
+            </Flex>
+          </Select.Item>
+          <Select.Item value="manual">
+            <Flex align="center" gap="2">
+              <ManualRangeIcon size={16} />
+              Manual
+            </Flex>
+          </Select.Item>
         </Select.Content>
       </Select.Root>
 
@@ -629,8 +692,8 @@ function ColorControls({
       <Select.Root
         size="1"
         value={colorMapName}
-        onValueChange={(x) => {
-          setColorMapName(x as ColorMapName);
+        onValueChange={(value: ColorMapName) => {
+          setColorMapName(value);
         }}
       >
         <Select.Trigger>
@@ -678,8 +741,18 @@ function ColorControls({
               </Flex>
             </Select.Trigger>
             <Select.Content>
-              <Select.Item value="magnitude">Magnitude</Select.Item>
-              <Select.Item value="component">Component</Select.Item>
+              <Select.Item value="magnitude">
+                <Flex align="center" gap="2">
+                  <RangeIcon size={16} />
+                  Magnitude
+                </Flex>
+              </Select.Item>
+              <Select.Item value="component">
+                <Flex align="center" gap="2">
+                  <ComponentIcon size={16} />
+                  Component
+                </Flex>
+              </Select.Item>
             </Select.Content>
           </Select.Root>
 
@@ -732,8 +805,18 @@ function ColorControls({
               </Flex>
             </Select.Trigger>
             <Select.Content>
-              <Select.Item value="determinant">Determinant</Select.Item>
-              <Select.Item value="component">Component</Select.Item>
+              <Select.Item value="determinant">
+                <Flex align="center" gap="2">
+                  <MatrixIcon size={16} />
+                  Determinant
+                </Flex>
+              </Select.Item>
+              <Select.Item value="component">
+                <Flex align="center" gap="2">
+                  <ComponentIcon size={16} />
+                  Component
+                </Flex>
+              </Select.Item>
             </Select.Content>
           </Select.Root>
 
@@ -776,25 +859,49 @@ function ColorControls({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface FieldTypeIconProps {
-  rank: FieldRank;
+interface FieldSelectProps {
+  label: string;
+  variant?: ComponentProps<typeof Select.Trigger>["variant"];
+  frameData: FieldMap;
+  field: Field;
+  setFieldByName: (value: string) => void;
 }
 
-function FieldTypeIcon({ rank }: Readonly<FieldTypeIconProps>) {
-  const label = ["S", "V", "M"][rank];
+function FieldSelect({
+  label,
+  variant,
+  frameData,
+  field,
+  setFieldByName,
+}: Readonly<FieldSelectProps>) {
   return (
-    <Box
-      width="16px"
-      height="16px"
-      style={{
-        border: "1px solid currentColor",
-        display: "grid",
-        placeItems: "center",
-        opacity: 0.8,
-      }}
-    >
-      <TechText style={{ fontSize: "10px", lineHeight: 1 }}>{label}</TechText>
-    </Box>
+    <Select.Root size="1" value={field.name} onValueChange={setFieldByName}>
+      <Select.Trigger {...(variant === undefined ? {} : { variant })}>
+        <Flex align="center" gap="1">
+          <FieldIcon size={16} />
+          {label}
+        </Flex>
+      </Select.Trigger>
+      <Select.Content>
+        {Array.from(frameData.entries()).map(([name, field]) => (
+          <Select.Item key={name} value={name}>
+            <Flex align="center" gap="2">
+              {(() => {
+                switch (field.rank) {
+                  case 0:
+                    return <ScalarIcon size={16} />;
+                  case 1:
+                    return <VectorIcon size={16} />;
+                  case 2:
+                    return <MatrixIcon size={16} />;
+                }
+              })()}
+              <TechText>{name}</TechText>
+            </Flex>
+          </Select.Item>
+        ))}
+      </Select.Content>
+    </Select.Root>
   );
 }
 
