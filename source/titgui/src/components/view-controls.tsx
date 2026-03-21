@@ -8,25 +8,32 @@ import {
   Button,
   DropdownMenu,
   Flex,
+  IconButton,
   Select,
   Separator,
   Text,
+  TextField,
 } from "@radix-ui/themes";
+import { useState } from "react";
 import {
   TbBackground as BackgroundIcon,
   TbCamera as CameraIcon,
   TbDroplet as ColoringIcon,
   TbPalette as ColorMapIcon,
   TbChartDots as ComponentIcon,
+  TbTrash as DeletePresetIcon,
   TbDatabaseExport as ExportIcon,
   TbGalaxy as FieldIcon,
   TbVectorTriangle as GlyphScaleModeIcon,
   TbSettings as ModifierIcon,
   TbPerspectiveOff as OrthographicIcon,
   TbPerspective as PerspectiveIcon,
+  TbBookmark as PresetIcon,
   TbRulerMeasure as RangeIcon,
   TbShape as RenderIcon,
   TbVector as RepresentationIcon,
+  TbRestore as RestorePresetIcon,
+  TbDeviceFloppy as SavePresetIcon,
   TbSun as ShadingIcon,
 } from "react-icons/tb";
 import { Euler, MathUtils, Vector3 } from "three";
@@ -66,7 +73,8 @@ type ViewControlsProps = {
   setFieldByName: (value: string) => void;
 } & CameraControlsProps &
   RenderControlsProps &
-  ColorControlsProps;
+  ColorControlsProps &
+  PresetControlsProps;
 
 export function ViewControls({
   frameData,
@@ -103,6 +111,11 @@ export function ViewControls({
   setColorRange,
   colorRangeMode,
   setColorRangeMode,
+  // Presets.
+  presetNames,
+  savePreset,
+  restorePreset,
+  deletePreset,
 }: Readonly<ViewControlsProps>) {
   return (
     <Flex
@@ -240,6 +253,37 @@ export function ViewControls({
               setColorFieldByName={setColorFieldByName}
               colorFieldModifier={colorFieldModifier}
               setColorFieldModifier={setColorFieldModifier}
+            />
+          </Box>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+
+      <Separator orientation="vertical" size="1" />
+
+      {/* ---- Presets. ---------------------------------------------------- */}
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <Button size="1" variant="ghost" className="rt-SelectTrigger">
+            <Flex align="center" gap="1">
+              <PresetIcon size={16} />
+              Presets
+            </Flex>
+            <DropdownMenu.TriggerIcon className="rt-SelectIcon" />
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          <Box
+            px="2"
+            py="2"
+            style={{ minWidth: "280px", width: "320px", maxWidth: "320px" }}
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <PresetControls
+              presetNames={presetNames}
+              savePreset={savePreset}
+              restorePreset={restorePreset}
+              deletePreset={deletePreset}
             />
           </Box>
         </DropdownMenu.Content>
@@ -746,6 +790,112 @@ function ColorControls({
           )}
         </>
       )}
+    </Flex>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type PresetControlsProps = {
+  presetNames: string[];
+  savePreset: (name: string) => void;
+  restorePreset: (name: string) => void;
+  deletePreset: (name: string) => void;
+};
+
+function PresetControls({
+  presetNames,
+  savePreset,
+  restorePreset,
+  deletePreset,
+}: Readonly<PresetControlsProps>) {
+  const [name, setName] = useState("");
+  const trimmedName = name.trim();
+
+  return (
+    <Flex direction="column" gap="2" width="100%" minWidth="0">
+      <Flex gap="2" align="center">
+        <Box asChild flexGrow="1" minWidth="0">
+          <TextField.Root
+            size="1"
+            placeholder="Preset name"
+            variant="surface"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </Box>
+        <IconButton
+          size="1"
+          variant="ghost"
+          disabled={trimmedName.length === 0}
+          onClick={() => {
+            savePreset(trimmedName);
+            setName(trimmedName);
+          }}
+        >
+          <SavePresetIcon size={16} />
+        </IconButton>
+      </Flex>
+
+      {presetNames.map((presetName) => (
+        <Flex key={presetName} gap="2" align="center" minWidth="0">
+          <Box flexGrow="1" minWidth="0">
+            <Button
+              size="1"
+              variant="surface"
+              style={{
+                width: "100%",
+                minWidth: 0,
+                overflow: "hidden",
+                justifyContent: "flex-start",
+              }}
+              onClick={() => {
+                restorePreset(presetName);
+                setName(presetName);
+              }}
+            >
+              <Flex
+                justify="start"
+                align="center"
+                gap="1"
+                width="100%"
+                minWidth="0"
+              >
+                <Box
+                  flexShrink="0"
+                  width="16px"
+                  height="16px"
+                  style={{ display: "grid", placeItems: "center" }}
+                >
+                  <RestorePresetIcon size={16} />
+                </Box>
+                <Box flexGrow="1" minWidth="0" title={presetName} asChild>
+                  <span
+                    style={{
+                      display: "block",
+                      minWidth: 0,
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis",
+                      textAlign: "left",
+                    }}
+                  >
+                    {presetName}
+                  </span>
+                </Box>
+              </Flex>
+            </Button>
+          </Box>
+          <IconButton
+            size="1"
+            variant="ghost"
+            color="red"
+            onClick={() => deletePreset(presetName)}
+          >
+            <DeletePresetIcon size={16} />
+          </IconButton>
+        </Flex>
+      ))}
     </Flex>
   );
 }

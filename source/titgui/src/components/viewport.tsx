@@ -6,11 +6,13 @@
 import { Box, Flex } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { Euler, Vector3 } from "three";
+import { z } from "zod";
 
 import { chrome } from "~/components/classes";
 import { useStorage } from "~/components/storage";
 import { ViewControls } from "~/components/view-controls";
 import { ViewHUD } from "~/components/view-hud";
+import { usePersistedState } from "~/hooks/use-persisted-state";
 import { useSignalValue } from "~/hooks/use-signal";
 import { derived, scoped, signal } from "~/signals";
 import { assert } from "~/utils";
@@ -27,6 +29,7 @@ import {
 } from "~/visual/color-map";
 import {
   FieldMap,
+  type FieldModifier,
   fieldModifierDefault,
   fieldModifierToString,
   isValidFieldModifier,
@@ -100,6 +103,37 @@ export function Viewport() {
   const colorRange = useSignalValue(model.colorRange);
   const colorRangeMode = useSignalValue(model.colorRangeMode);
 
+  // ---- Presets. -------------------------------------------------------------
+
+  const [presets, setPresets] = usePersistedState(
+    viewportPresetsKey,
+    viewportPresetsSchema,
+    [],
+  );
+
+  const presetNames = presets.map(({ name }) => name);
+
+  function savePreset(name: string) {
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) return;
+
+    const preset = { name: trimmedName, state: model.exportPreset() };
+    setPresets((prev) =>
+      [...prev.filter(({ name }) => name !== trimmedName), preset].sort(
+        (left, right) => left.name.localeCompare(right.name),
+      ),
+    );
+  }
+
+  function restorePreset(name: string) {
+    const preset = presets.find((candidate) => candidate.name === name);
+    if (preset !== undefined) model.applyPreset(preset.state);
+  }
+
+  function deletePreset(name: string) {
+    setPresets((prev) => prev.filter((preset) => preset.name !== name));
+  }
+
   // ---- Layout. --------------------------------------------------------------
 
   return (
@@ -143,6 +177,11 @@ export function Viewport() {
         setColorRangeMode={(value) => model.colorRangeMode.set(value)}
         colorRange={colorRange}
         setColorRange={(value) => model.colorRange.set(value)}
+        /* Presets. */
+        presetNames={presetNames}
+        savePreset={savePreset}
+        restorePreset={restorePreset}
+        deletePreset={deletePreset}
       />
 
       {/* ---- Canvas. ----------------------------------------------------- */}
@@ -405,6 +444,122 @@ class ViewportModel {
       colorMaps[this.colorMapName.get()],
     );
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public exportPreset(): ViewportPresetState {
+    const cameraPosition = this.cameraPosition.get();
+    const cameraRotation = this.cameraRotation.get();
+    return {
+      projection: this.projection.get(),
+      backgroundColorName: this.backgroundColorName.get(),
+      cameraPosition: [cameraPosition.x, cameraPosition.y, cameraPosition.z],
+      cameraRotation: [cameraRotation.x, cameraRotation.y, cameraRotation.z],
+      fieldName: this.fieldName.get(),
+      renderMode: this.renderMode.get(),
+      userColorFieldName: this.userColorFieldName.get(),
+      colorFieldModifier: this.colorFieldModifier.get(),
+      pointSize: this.pointSize.get(),
+      shadingMode: this.shadingMode.get(),
+      glyphScale: this.glyphScale.get(),
+      glyphScaleMode: this.glyphScaleMode.get(),
+      colorMapName: this.colorMapName.get(),
+      colorRangeMode: this.colorRangeMode.get(),
+      colorRange: this.colorRange.get(),
+    };
+  }
+
+  public applyPreset(state: ViewportPresetState) {
+    const frameData = this.frameData.get();
+
+    if (frameData.has(state.fieldName)) this.fieldName.set(state.fieldName);
+    if (frameData.has(state.userColorFieldName)) {
+      this.userColorFieldName.set(state.userColorFieldName);
+    }
+
+    const field = this.field.get();
+    if (isValidRenderMode(field, state.renderMode)) {
+      this.renderMode.set(state.renderMode);
+    }
+
+    const colorFieldName = this.colorFieldName.get();
+    const colorField = frameData.get(colorFieldName);
+    if (isValidFieldModifier(colorField, state.colorFieldModifier)) {
+      this.colorFieldModifier.set(state.colorFieldModifier);
+    }
+
+    this.projection.set(state.projection);
+    this.backgroundColorName.set(state.backgroundColorName);
+    this.cameraPosition.set(new Vector3(...state.cameraPosition));
+    this.cameraRotation.set(new Euler(...state.cameraRotation));
+    this.pointSize.set(state.pointSize);
+    this.shadingMode.set(state.shadingMode);
+    this.glyphScale.set(state.glyphScale);
+    this.glyphScaleMode.set(state.glyphScaleMode);
+    this.colorMapName.set(state.colorMapName);
+    this.colorRangeMode.set(state.colorRangeMode);
+    this.colorRange.set(state.colorRange);
+  }
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type ViewportPresetState = {
+  projection: Projection;
+  backgroundColorName: BackgroundColorName;
+  cameraPosition: [number, number, number];
+  cameraRotation: [number, number, number];
+  fieldName: string;
+  renderMode: RenderMode;
+  userColorFieldName: string;
+  colorFieldModifier: FieldModifier;
+  pointSize: number;
+  shadingMode: ShadingMode;
+  glyphScale: number;
+  glyphScaleMode: GlyphScaleMode;
+  colorMapName: ColorMapName;
+  colorRangeMode: ColorRangeMode;
+  colorRange: { min: number; max: number };
+};
+
+const viewportPresetStateSchema: z.ZodType<ViewportPresetState> = z.object({
+  projection: z.union([z.literal("orthographic"), z.literal("perspective")]),
+  backgroundColorName: z.custom<BackgroundColorName>(
+    (value) => typeof value === "string" && value in backgroundColors,
+  ),
+  cameraPosition: z.tuple([z.number(), z.number(), z.number()]),
+  cameraRotation: z.tuple([z.number(), z.number(), z.number()]),
+  fieldName: z.string().min(1),
+  renderMode: z.union([z.literal("points"), z.literal("glyphs")]),
+  userColorFieldName: z.string().min(1),
+  colorFieldModifier: z.union([
+    z.literal("magnitude"),
+    z.literal("determinant"),
+    z.int().nonnegative(),
+  ]),
+  pointSize: z.number().positive(),
+  shadingMode: z.union([z.literal("flat"), z.literal("shaded")]),
+  glyphScale: z.number().positive(),
+  glyphScaleMode: z.union([z.literal("magnitude"), z.literal("uniform")]),
+  colorMapName: z.custom<ColorMapName>(
+    (value) => typeof value === "string" && value in colorMaps,
+  ),
+  colorRangeMode: z.union([z.literal("auto"), z.literal("manual")]),
+  colorRange: z.object({
+    min: z.number(),
+    max: z.number(),
+  }),
+});
+
+const viewportPresetsSchema: z.ZodType<
+  Array<{ name: string; state: ViewportPresetState }>
+> = z.array(
+  z.object({
+    name: z.string().min(1),
+    state: viewportPresetStateSchema,
+  }),
+);
+
+const viewportPresetsKey = "viewport:presets";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
