@@ -53,10 +53,6 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
   namespace json = nlohmann;
 
   const auto exe_dir = std::filesystem::path{argv[0]}.parent_path();
-  const auto root_dir = exe_dir.parent_path();
-  const auto gui_dir = root_dir / "lib" / "gui";
-  const auto manual_dir = root_dir / "manual";
-
   const auto tmp_dir = std::filesystem::temp_directory_path() / "tit-tmp";
   const auto export_dir = std::filesystem::temp_directory_path() / "tit-export";
   std::filesystem::create_directories(tmp_dir);
@@ -302,44 +298,6 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
     TIT_ENSURE(file_name == file_name.filename(), "Invalid file name!");
     const auto file_path = export_dir / file_name;
     response.set_static_file_info_unsafe(file_path.native());
-    response.end();
-  });
-
-  // ---------------------------------------------------------------------------
-
-  CROW_ROUTE(app, "/manual/")
-  ([&manual_dir](const crow::request& /*request*/, crow::response& response) {
-    const auto index_html = manual_dir / "index.html";
-    response.set_static_file_info(index_html.native());
-    response.end();
-  });
-
-  CROW_ROUTE(app, "/manual/<path>")
-  ([&manual_dir](const crow::request& /*request*/,
-                 crow::response& response,
-                 const std::filesystem::path& file_name) {
-    auto file_path = manual_dir / file_name;
-    if (std::filesystem::is_directory(file_path)) file_path /= "index.html";
-    response.set_static_file_info(file_path.native());
-    response.end();
-  });
-
-  // ---------------------------------------------------------------------------
-
-  CROW_ROUTE(app, "/")
-  ([&gui_dir](const crow::request& /*request*/, crow::response& response) {
-    const auto index_html = gui_dir / "index.html";
-    response.set_static_file_info(index_html.native());
-    response.end();
-  });
-
-  CROW_ROUTE(app, "/<path>")
-  ([&gui_dir](const crow::request& /*request*/,
-              crow::response& response,
-              const std::filesystem::path& file_name) {
-    auto file_path = gui_dir / file_name;
-    if (std::filesystem::is_directory(file_path)) file_path /= "index.html";
-    response.set_static_file_info(file_path.native());
     response.end();
   });
 

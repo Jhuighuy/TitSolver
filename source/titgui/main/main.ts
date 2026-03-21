@@ -7,12 +7,17 @@ import { app, BrowserWindow, ipcMain, nativeTheme } from "electron";
 import path from "node:path";
 import { z } from "zod";
 
+import { HelpManager } from "~/main/help";
 import { Installation } from "~/main/installation";
 import { PersistedState } from "~/main/persisted-state";
 import { ServerManager } from "~/main/server";
 import { WindowManager } from "~/main/window";
 import {
-  HELP_OPEN_CHANNEL,
+  HELP_ADD_TAB_CHANNEL,
+  HELP_CLOSE_TAB_CHANNEL,
+  HELP_GET_SESSION_CHANNEL,
+  HELP_NAVIGATE_TAB_CHANNEL,
+  HELP_SELECT_TAB_CHANNEL,
   THEME_GET_CHANNEL,
   THEME_SET_CHANNEL,
   WINDOW_IS_FULL_SCREEN_CHANNEL,
@@ -20,7 +25,6 @@ import {
   WINDOW_PERSIST_SET_CHANNEL,
 } from "~/shared/channels";
 import { Theme, themeSchema } from "~/shared/theme";
-import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -29,6 +33,7 @@ class Application {
   private server?: ServerManager;
   private persist?: PersistedState;
   private windowManager?: WindowManager;
+  private helpManager?: HelpManager;
 
   public run() {
     app.on("ready", () => {
@@ -64,6 +69,12 @@ class Application {
 
     // Setup windows.
     this.windowManager = new WindowManager(this.persist);
+
+    // Setup help.
+    this.helpManager = new HelpManager(
+      this.install,
+      this.windowManager.controllers.help,
+    );
 
     this.registerIpcHandlers();
   }
@@ -111,11 +122,43 @@ class Application {
       return window?.isFullScreen() ?? false;
     });
 
-    ipcMain.removeHandler(HELP_OPEN_CHANNEL);
-    ipcMain.handle(HELP_OPEN_CHANNEL, (_event, path?: string) => {
-      assert(path === undefined);
-      this.windowManager?.controllers.help.open();
+    ipcMain.removeHandler(HELP_GET_SESSION_CHANNEL);
+    ipcMain.handle(HELP_GET_SESSION_CHANNEL, () => {
+      return this.helpManager?.session;
     });
+
+    ipcMain.removeHandler(HELP_ADD_TAB_CHANNEL);
+    ipcMain.handle(HELP_ADD_TAB_CHANNEL, (event, url?: string) => {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      if (
+        window === null ||
+        this.windowManager?.find(window)?.kind !== "help"
+      ) {
+        // Reveal tab from outside help window.
+        this.helpManager?.revealTab(url);
+      } else {
+        // Add tab from inside help window.
+        this.helpManager?.addTab(url);
+      }
+    });
+
+    ipcMain.removeHandler(HELP_CLOSE_TAB_CHANNEL);
+    ipcMain.handle(HELP_CLOSE_TAB_CHANNEL, (_event, id: number) => {
+      this.helpManager?.closeTab(id);
+    });
+
+    ipcMain.removeHandler(HELP_SELECT_TAB_CHANNEL);
+    ipcMain.handle(HELP_SELECT_TAB_CHANNEL, (_event, id: number) => {
+      this.helpManager?.selectTab(id);
+    });
+
+    ipcMain.removeHandler(HELP_NAVIGATE_TAB_CHANNEL);
+    ipcMain.handle(
+      HELP_NAVIGATE_TAB_CHANNEL,
+      (_event, id: number, url?: string) => {
+        this.helpManager?.navigateTab(id, url);
+      },
+    );
   }
 }
 

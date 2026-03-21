@@ -80,6 +80,8 @@ export class WindowController {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
+        // WebView tag is only used for help windows.
+        webviewTag: this.kind === "help",
       },
     });
 

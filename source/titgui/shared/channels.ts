@@ -20,6 +20,16 @@ export const WINDOW_FULL_SCREEN_CHANGED_CHANNEL = `${WINDOW}:full-screen-changed
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const HELP = "help";
-export const HELP_OPEN_CHANNEL = `${HELP}:open`;
+export const HELP_GET_SESSION_CHANNEL = `${HELP}:get-session`;
+export const HELP_SESSION_CHANGED_CHANNEL = `${HELP}:session-changed`;
+export const HELP_ADD_TAB_CHANNEL = `${HELP}:add-tab`;
+export const HELP_CLOSE_TAB_CHANNEL = `${HELP}:close-tab`;
+export const HELP_SELECT_TAB_CHANNEL = `${HELP}:select-tab`;
+export const HELP_NAVIGATE_TAB_CHANNEL = `${HELP}:navigate-tab`;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+const WEBVIEW = "webview";
+export const WEBVIEW_OPEN_IN_TAB_CHANNEL = `${WEBVIEW}:open-in-tab`;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

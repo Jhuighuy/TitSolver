@@ -5,6 +5,7 @@
 
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-svgr/client" />
+import type { HelpSession } from "~/shared/help-session";
 import type { Theme } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,7 +27,12 @@ interface WindowStateAPI {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface HelpAPI {
-  open: (path?: string) => Promise<void>;
+  getSession: () => Promise<HelpSession>;
+  onSessionChanged: (listener: (session: HelpSession) => void) => () => void;
+  addTab: (url?: string) => Promise<void>;
+  closeTab: (id: number) => Promise<void>;
+  selectTab: (id: number) => Promise<void>;
+  navigateTab: (id: number, url?: string) => Promise<void>;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

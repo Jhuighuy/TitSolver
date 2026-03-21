@@ -18,7 +18,7 @@ export function HelpMenu() {
         rel="noreferrer"
         onClick={(event) => {
           event.preventDefault();
-          void globalThis.help?.open();
+          void globalThis.help?.addTab();
         }}
       >
         <Flex align="center" gap="2">
