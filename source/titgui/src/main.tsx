@@ -9,6 +9,7 @@ import ReactDOM from "react-dom/client";
 import "@radix-ui/themes/styles.css";
 
 import { App } from "~/components/app";
+import { HelpApp } from "~/components/help-app";
 import { assert } from "~/utils";
 import "~/index.css";
 
@@ -21,11 +22,14 @@ const queryClient = new QueryClient();
 const root = document.getElementById("root");
 assert(root !== null, "Root element not found.");
 
+// Resolve the window route.
+const route = new URL(window.location.href).searchParams.get("window");
+
 // Render the app.
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      {route === "help" ? <HelpApp /> : <App />}
     </QueryClientProvider>
   </React.StrictMode>,
 );

@@ -8,11 +8,18 @@
 import child_process from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { pathToFileURL } from "node:url";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { z } from "zod";
 
 import {
+  HELP_WINDOW_HEIGHT_KEY,
+  HELP_WINDOW_MAXIMIZED_KEY,
+  HELP_WINDOW_WIDTH_KEY,
+  HELP_WINDOW_X_KEY,
+  HELP_WINDOW_Y_KEY,
   IPC_FULL_SCREEN_CHANGED,
+  IPC_HELP_OPEN,
   IPC_IS_FULL_SCREEN,
   IPC_PERSIST_GET,
   IPC_PERSIST_SET,
@@ -255,6 +262,50 @@ const persistedStateSchema = z.record(z.string(), z.unknown());
 
 const WINDOW_MIN_WIDTH = 1280;
 const WINDOW_MIN_HEIGHT = 800;
+const HELP_WINDOW_MIN_WIDTH = 960;
+const HELP_WINDOW_MIN_HEIGHT = 720;
+const HELP_WINDOW_TITLE = "BlueTit Manual";
+
+function getFrontendEntryUrl(searchParams?: Record<string, string>) {
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    const url = new URL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+    for (const [key, value] of Object.entries(searchParams ?? {})) {
+      url.searchParams.set(key, value);
+    }
+    return url.toString();
+  }
+
+  const url = pathToFileURL(
+    path.join(__dirname, "..", "renderer", MAIN_WINDOW_VITE_NAME, "index.html"),
+  );
+  for (const [key, value] of Object.entries(searchParams ?? {})) {
+    url.searchParams.set(key, value);
+  }
+  return url.toString();
+}
+
+function getManualRootPath(installRoot: string) {
+  return path.join(installRoot, "manual");
+}
+
+function getManualUrl(installRoot: string) {
+  return pathToFileURL(
+    path.join(getManualRootPath(installRoot), "index.html"),
+  ).toString();
+}
+
+function isManualUrl(url: string, installRoot: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "file:") return false;
+
+    const manualRootPath = `${getManualRootPath(installRoot)}${path.sep}`;
+    const filePath = decodeURIComponent(parsed.pathname);
+    return filePath.startsWith(manualRootPath);
+  } catch {
+    return false;
+  }
+}
 
 class MainWindowManager {
   public static createWindow(persist: PersistedState) {
@@ -301,7 +352,7 @@ class MainWindowManager {
     return window;
   }
 
-  private static attachFullScreenListeners(window: BrowserWindow) {
+  public static attachFullScreenListeners(window: BrowserWindow) {
     const notify = () => {
       window.webContents.send(IPC_FULL_SCREEN_CHANGED, window.isFullScreen());
     };
@@ -332,25 +383,105 @@ class MainWindowManager {
   }
 
   private static async load(window: BrowserWindow) {
-    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      return window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-    } else {
-      // .vite
-      // |_ build <-- __dirname
-      // |  |_ background.js
-      // |_ renderer
-      //    |_ `MAIN_WINDOW_VITE_NAME`
-      //       |_ index.html
-      void window.loadFile(
-        path.join(
-          __dirname,
-          "..",
-          "renderer",
-          MAIN_WINDOW_VITE_NAME,
-          "index.html",
-        ),
-      );
+    return window.loadURL(getFrontendEntryUrl());
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+class HelpWindowManager {
+  private static window: BrowserWindow | undefined;
+
+  public static open(installRoot: string, persist: PersistedState) {
+    if (
+      HelpWindowManager.window !== undefined &&
+      !HelpWindowManager.window.isDestroyed()
+    ) {
+      HelpWindowManager.window.focus();
+      return HelpWindowManager.window;
     }
+
+    const x = persist.get(HELP_WINDOW_X_KEY, z.int());
+    const y = persist.get(HELP_WINDOW_Y_KEY, z.int());
+    const width = persist.get(
+      HELP_WINDOW_WIDTH_KEY,
+      z.int().min(HELP_WINDOW_MIN_WIDTH),
+      1200,
+    );
+    const height = persist.get(
+      HELP_WINDOW_HEIGHT_KEY,
+      z.int().min(HELP_WINDOW_MIN_HEIGHT),
+      900,
+    );
+    const isMaximized = persist.get(
+      HELP_WINDOW_MAXIMIZED_KEY,
+      z.boolean(),
+      false,
+    );
+
+    const window = new BrowserWindow({
+      x,
+      y,
+      width,
+      height,
+      minWidth: HELP_WINDOW_MIN_WIDTH,
+      minHeight: HELP_WINDOW_MIN_HEIGHT,
+      title: HELP_WINDOW_TITLE,
+      titleBarStyle: "hidden",
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        webviewTag: true,
+      },
+    });
+
+    MainWindowManager.attachFullScreenListeners(window);
+    HelpWindowManager.attachPersistenceListener(window, persist);
+    HelpWindowManager.attachLifecycleListeners(window);
+
+    window.hide();
+    void HelpWindowManager.load(window, installRoot).then(() => {
+      window.show();
+      if (isMaximized) window.maximize();
+    });
+
+    HelpWindowManager.window = window;
+    return window;
+  }
+
+  private static attachPersistenceListener(
+    window: BrowserWindow,
+    persistedState: PersistedState,
+  ) {
+    window.on("close", () => {
+      const bounds = window.isMaximized()
+        ? window.getNormalBounds()
+        : window.getBounds();
+
+      persistedState.set(HELP_WINDOW_X_KEY, bounds.x);
+      persistedState.set(HELP_WINDOW_Y_KEY, bounds.y);
+      persistedState.set(HELP_WINDOW_WIDTH_KEY, bounds.width);
+      persistedState.set(HELP_WINDOW_HEIGHT_KEY, bounds.height);
+      persistedState.set(HELP_WINDOW_MAXIMIZED_KEY, window.isMaximized());
+      persistedState.save();
+    });
+  }
+
+  private static attachLifecycleListeners(window: BrowserWindow) {
+    window.on("closed", () => {
+      if (HelpWindowManager.window === window) {
+        HelpWindowManager.window = undefined;
+      }
+    });
+  }
+
+  private static async load(window: BrowserWindow, installRoot: string) {
+    return window.loadURL(
+      getFrontendEntryUrl({
+        window: "help",
+        manualUrl: getManualUrl(installRoot),
+      }),
+    );
   }
 }
 
@@ -394,6 +525,7 @@ class BackendProcess {
 
 class Application {
   private backend: BackendProcess | undefined;
+  private installRoot: string | undefined;
   private persistedState: PersistedState | undefined;
 
   public run() {
@@ -422,6 +554,7 @@ class Application {
 
     /** @todo Until we can select working directory from GUI. */
     const workDir = path.resolve(installRoot, "../..");
+    this.installRoot = installRoot;
 
     // Start the backend.
     this.backend = new BackendProcess(installRoot, workDir);
@@ -432,6 +565,7 @@ class Application {
       path.join(workDir, "persisted-state.json"),
     );
     this.registerIpcHandlers();
+    this.registerWebContentsHandlers();
     MainWindowManager.createWindow(this.persistedState);
   }
 
@@ -464,6 +598,38 @@ class Application {
         return;
       }
       this.persistedState.set(key, value);
+    });
+
+    ipcMain.removeHandler(IPC_HELP_OPEN);
+    ipcMain.handle(IPC_HELP_OPEN, () => {
+      if (this.persistedState === undefined) return;
+      if (this.installRoot === undefined) return;
+      HelpWindowManager.open(this.installRoot, this.persistedState);
+    });
+  }
+
+  private registerWebContentsHandlers() {
+    app.on("web-contents-created", (_event, contents) => {
+      if (contents.getType() !== "webview") return;
+
+      contents.setWindowOpenHandler(({ url }) => {
+        if (this.installRoot !== undefined && isManualUrl(url, this.installRoot)) {
+          queueMicrotask(() => {
+            void contents.loadURL(url);
+          });
+          return { action: "deny" };
+        }
+        void shell.openExternal(url);
+        return { action: "deny" };
+      });
+
+      contents.on("will-navigate", (event, url) => {
+        if (this.installRoot !== undefined && isManualUrl(url, this.installRoot)) {
+          return;
+        }
+        event.preventDefault();
+        void shell.openExternal(url);
+      });
     });
   }
 }

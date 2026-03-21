@@ -11,7 +11,14 @@ import { cn } from "~/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export function TitleBar() {
+type TitleBarProps = {
+  title?: string;
+};
+
+export function TitleBar({ title }: Readonly<TitleBarProps>) {
+  const titles = [document.title];
+  if (title !== undefined) titles.push(title);
+
   return (
     <Flex
       direction="row"
@@ -31,7 +38,7 @@ export function TitleBar() {
         role="img"
       />
       <Text size="1" weight="bold">
-        {document.title}
+        {titles.join(" | ")}
       </Text>
     </Flex>
   );

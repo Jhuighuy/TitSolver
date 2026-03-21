@@ -12,9 +12,8 @@
 interface Window {
   windowState?: WindowStateAPI;
   persistedState?: PersistedStateAPI;
+  help?: HelpAPI;
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface WindowStateAPI {
   isFullScreen: () => Promise<boolean>;
@@ -23,11 +22,43 @@ interface WindowStateAPI {
   ) => () => void;
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 interface PersistedStateAPI {
   get: (key: string) => Promise<unknown>;
   set: (key: string, value: unknown) => Promise<void>;
+}
+
+interface HelpAPI {
+  open: () => Promise<void>;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type WebViewElement = HTMLElement & {
+  src: string;
+  canGoBack: () => boolean;
+  canGoForward: () => boolean;
+  getTitle: () => string;
+  getURL: () => string;
+  goBack: () => void;
+  goForward: () => void;
+  loadURL: (url: string) => Promise<void>;
+  reload: () => void;
+  stop: () => void;
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+declare namespace React {
+  namespace JSX {
+    interface IntrinsicElements {
+      webview: {
+        ref?: (element: Element | null) => void;
+        src: string;
+        className?: string;
+        style?: React.CSSProperties;
+      };
+    }
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

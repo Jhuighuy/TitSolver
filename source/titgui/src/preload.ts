@@ -7,6 +7,7 @@ import { contextBridge, type IpcRendererEvent, ipcRenderer } from "electron";
 
 import {
   IPC_FULL_SCREEN_CHANGED,
+  IPC_HELP_OPEN,
   IPC_IS_FULL_SCREEN,
   IPC_PERSIST_GET,
   IPC_PERSIST_SET,
@@ -37,6 +38,14 @@ contextBridge.exposeInMainWorld("persistedState", {
   },
   set(key: string, value: unknown) {
     return ipcRenderer.invoke(IPC_PERSIST_SET, key, value) as Promise<void>;
+  },
+});
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+contextBridge.exposeInMainWorld("help", {
+  open() {
+    return ipcRenderer.invoke(IPC_HELP_OPEN) as Promise<void>;
   },
 });
 

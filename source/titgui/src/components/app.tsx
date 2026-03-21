@@ -3,7 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex, Theme } from "@radix-ui/themes";
+import { Box, Flex } from "@radix-ui/themes";
 import {
   TbDashboard as DashboardIcon,
   TbHelp as HelpIcon,
@@ -23,9 +23,8 @@ import { SettingsMenu } from "~/components/menu-settings";
 import { SolverProvider } from "~/components/solver";
 import { StorageProvider } from "~/components/storage";
 import { Timeline } from "~/components/timeline";
-import { TitleBar } from "~/components/title-bar";
 import { Viewport } from "~/components/viewport";
-import { useWindowAppearance, useWindowIsFullScreen } from "~/hooks/use-window";
+import { Window } from "~/components/window";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -34,27 +33,12 @@ export function App() {
     <ConnectionProvider>
       <SolverProvider>
         <StorageProvider>
-          <Window />
+          <Window>
+            <Page />
+          </Window>
         </StorageProvider>
       </SolverProvider>
     </ConnectionProvider>
-  );
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-function Window() {
-  const appearance = useWindowAppearance();
-  const isFullScreen = useWindowIsFullScreen();
-  return (
-    <Theme appearance={appearance}>
-      <Flex direction="column" width="100vw" height="100vh" gap="1px">
-        {isFullScreen || <TitleBar />}
-        <Box asChild flexGrow="1">
-          <Page />
-        </Box>
-      </Flex>
-    </Theme>
   );
 }
 
