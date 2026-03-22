@@ -18,20 +18,20 @@ export default {
     new VitePlugin({
       build: [
         {
-          entry: "src/background.ts",
-          config: "vite.config.ts",
+          entry: "main/main.ts",
+          config: "vite.main.config.ts",
           target: "main",
         },
         {
-          entry: "src/preload.ts",
-          config: "vite.config.ts",
+          entry: "preload/preload.ts",
+          config: "vite.preload.config.ts",
           target: "preload",
         },
       ],
       renderer: [
         {
-          name: "main_window",
-          config: "vite.config.ts",
+          name: "renderer",
+          config: "vite.renderer.config.ts",
         },
       ],
     }),

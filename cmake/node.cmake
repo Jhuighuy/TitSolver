@@ -30,13 +30,43 @@ function(add_tit_node_package)
     message(FATAL_ERROR "'package.json' file does not exist!")
   endif()
 
-  # Find all the source files.
+  # Find all the top-level source files (non-recursive).
   set(TARGET_SOURCES)
-  foreach(EXT ".html" ".css" ".svg" ".json"
-              ".js" ".jsx" ".mjs" ".ts" ".tsx" ".mts")
-    file(GLOB EXT_CONFIGS "${CMAKE_CURRENT_SOURCE_DIR}/*${EXT}")
-    file(GLOB_RECURSE EXT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*${EXT}")
-    list(APPEND TARGET_SOURCES ${EXT_CONFIGS} ${EXT_SOURCES})
+  set(EXTS
+    ".html" ".css"
+    ".svg" ".icns"
+    ".js" ".jsx" ".mjs" ".json"
+    ".ts" ".tsx" ".mts"
+  )
+  foreach(EXT ${EXTS})
+    file(GLOB EXT_SOURCES
+      LIST_DIRECTORIES false
+      "${CMAKE_CURRENT_SOURCE_DIR}/*${EXT}"
+    )
+    list(APPEND TARGET_SOURCES ${EXT_SOURCES})
+  endforeach()
+
+  # Find all the source files in child directories.
+  set(EXCLUDED_DIRS ".vite" "dist" "coverage" "node_modules")
+  file(GLOB TARGET_CHILDREN
+    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+    LIST_DIRECTORIES true
+    "${CMAKE_CURRENT_SOURCE_DIR}/*"
+  )
+  foreach(CHILD ${TARGET_CHILDREN})
+    if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${CHILD}")
+      continue()
+    endif()
+    if(CHILD IN_LIST EXCLUDED_DIRS)
+      continue()
+    endif()
+    foreach(EXT ${EXTS})
+      file(GLOB_RECURSE EXT_CHILD_SOURCES
+        LIST_DIRECTORIES false
+        "${CMAKE_CURRENT_SOURCE_DIR}/${CHILD}/*${EXT}"
+      )
+      list(APPEND TARGET_SOURCES ${EXT_CHILD_SOURCES})
+    endforeach()
   endforeach()
 
   # Run `npm install`.

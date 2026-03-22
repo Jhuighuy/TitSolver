@@ -7,10 +7,7 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "baseUrl": ".",
-    "paths": {
-      "~/assets/*": ["./assets/*"],
-      "~/*": ["./src/*"]
-    },
+    "paths": { "~/*": ["./*"] },
 
     /* Bundler mode. */
     "moduleResolution": "Bundler",
