@@ -130,8 +130,12 @@ export function ViewControls({
             px="2"
             py="2"
             style={{ minWidth: "240px" }}
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => {
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
           >
             <CameraControls
               projection={projection}
@@ -187,8 +191,12 @@ export function ViewControls({
             px="2"
             py="2"
             style={{ minWidth: "280px" }}
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => {
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
           >
             <RenderControls
               field={field}
@@ -225,8 +233,12 @@ export function ViewControls({
             px="2"
             py="2"
             style={{ minWidth: "280px" }}
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => {
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
           >
             <ColorControls
               colorRangeMode={colorRangeMode}
@@ -260,7 +272,7 @@ export function ViewControls({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type CameraControlsProps = {
+interface CameraControlsProps {
   projection: Projection;
   setProjection: (value: Projection) => void;
   backgroundColorName: BackgroundColorName;
@@ -269,7 +281,7 @@ type CameraControlsProps = {
   setCameraPosition: (value: Vector3) => void;
   cameraRotation: Euler;
   setCameraRotation: (value: Euler) => void;
-};
+}
 
 function CameraControls({
   projection,
@@ -286,7 +298,9 @@ function CameraControls({
       <Select.Root
         size="1"
         value={projection}
-        onValueChange={(x) => setProjection(x as Projection)}
+        onValueChange={(x) => {
+          setProjection(x as Projection);
+        }}
       >
         <Select.Trigger>
           <Flex align="center" gap="2">
@@ -317,7 +331,9 @@ function CameraControls({
       <Select.Root
         size="1"
         value={backgroundColorName}
-        onValueChange={(x) => setBackgroundColorName(x as BackgroundColorName)}
+        onValueChange={(x) => {
+          setBackgroundColorName(x as BackgroundColorName);
+        }}
       >
         <Select.Trigger>
           <Flex align="center" gap="1">
@@ -390,7 +406,7 @@ function CameraControls({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type RenderControlsProps = {
+interface RenderControlsProps {
   field: Field;
   renderMode: RenderMode;
   setRenderMode: (value: RenderMode) => void;
@@ -402,7 +418,7 @@ type RenderControlsProps = {
   setGlyphScale: (value: number) => void;
   glyphScaleMode: GlyphScaleMode;
   setGlyphScaleMode: (value: GlyphScaleMode) => void;
-};
+}
 
 function RenderControls({
   field,
@@ -424,7 +440,9 @@ function RenderControls({
         <Select.Root
           size="1"
           value={renderMode}
-          onValueChange={(value) => setRenderMode(value as RenderMode)}
+          onValueChange={(value) => {
+            setRenderMode(value as RenderMode);
+          }}
         >
           <Select.Trigger>
             <Flex align="center" gap="1">
@@ -443,7 +461,9 @@ function RenderControls({
       <Select.Root
         size="1"
         value={shadingMode}
-        onValueChange={(value) => setShadingMode(value as ShadingMode)}
+        onValueChange={(value) => {
+          setShadingMode(value as ShadingMode);
+        }}
       >
         <Select.Trigger>
           <Flex align="center" gap="1">
@@ -482,9 +502,9 @@ function RenderControls({
           <Select.Root
             size="1"
             value={glyphScaleMode}
-            onValueChange={(value) =>
-              setGlyphScaleMode(value as GlyphScaleMode)
-            }
+            onValueChange={(value) => {
+              setGlyphScaleMode(value as GlyphScaleMode);
+            }}
           >
             <Select.Trigger>
               <Flex align="center" gap="1">
@@ -505,7 +525,7 @@ function RenderControls({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type ColorControlsProps = {
+interface ColorControlsProps {
   frameData: FieldMap;
   colorField: Field;
   setColorFieldByName?: (value: string) => void;
@@ -517,7 +537,7 @@ type ColorControlsProps = {
   setColorRangeMode: (value: ColorRangeMode) => void;
   colorRange: ColorRange;
   setColorRange: (value: ColorRange) => void;
-};
+}
 
 function ColorControls({
   frameData,
@@ -563,7 +583,9 @@ function ColorControls({
       <Select.Root
         size="1"
         value={colorRangeMode}
-        onValueChange={(value) => setColorRangeMode(value as ColorRangeMode)}
+        onValueChange={(value) => {
+          setColorRangeMode(value as ColorRangeMode);
+        }}
       >
         <Select.Trigger>
           <Flex align="center" gap="1">
@@ -587,18 +609,18 @@ function ColorControls({
             label="Min"
             max={colorRange.max}
             value={colorRange.min}
-            onValueChange={(value) =>
-              setColorRange({ ...colorRange, min: value })
-            }
+            onValueChange={(value) => {
+              setColorRange({ ...colorRange, min: value });
+            }}
           />
           <NumberEditor
             size="1"
             label="Max"
             min={colorRange.min}
             value={colorRange.max}
-            onValueChange={(value) =>
-              setColorRange({ ...colorRange, max: value })
-            }
+            onValueChange={(value) => {
+              setColorRange({ ...colorRange, max: value });
+            }}
           />
         </>
       )}
@@ -607,7 +629,9 @@ function ColorControls({
       <Select.Root
         size="1"
         value={colorMapName}
-        onValueChange={(x) => setColorMapName(x as ColorMapName)}
+        onValueChange={(x) => {
+          setColorMapName(x as ColorMapName);
+        }}
       >
         <Select.Trigger>
           <Flex align="center" gap="1">
@@ -641,11 +665,11 @@ function ColorControls({
                 ? "component"
                 : colorFieldModifier
             }
-            onValueChange={(value) =>
+            onValueChange={(value) => {
               setColorFieldModifier(
                 (value === "component" ? 0 : value) as FieldModifier,
-              )
-            }
+              );
+            }}
           >
             <Select.Trigger>
               <Flex align="center" gap="1">
@@ -663,9 +687,9 @@ function ColorControls({
             <Select.Root
               size="1"
               value={colorFieldModifier.toString()}
-              onValueChange={(value) =>
-                setColorFieldModifier(Number.parseInt(value, 10))
-              }
+              onValueChange={(value) => {
+                setColorFieldModifier(Number.parseInt(value, 10));
+              }}
             >
               <Select.Trigger>
                 <Flex align="center" gap="1">
@@ -717,9 +741,9 @@ function ColorControls({
             <Select.Root
               size="1"
               value={colorFieldModifier.toString()}
-              onValueChange={(value) =>
-                setColorFieldModifier(Number.parseInt(value, 10))
-              }
+              onValueChange={(value) => {
+                setColorFieldModifier(Number.parseInt(value, 10));
+              }}
             >
               <Select.Trigger>
                 <Flex align="center" gap="1">
@@ -752,9 +776,9 @@ function ColorControls({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type FieldTypeIconProps = {
+interface FieldTypeIconProps {
   rank: FieldRank;
-};
+}
 
 function FieldTypeIcon({ rank }: Readonly<FieldTypeIconProps>) {
   const label = ["S", "V", "M"][rank];

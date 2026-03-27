@@ -11,17 +11,20 @@ import { assert } from "~/shared/utils";
 
 export type ColorRangeMode = "auto" | "manual";
 
-export type ColorRange = { min: number; max: number };
+export interface ColorRange {
+  min: number;
+  max: number;
+}
 
 export const colorRangeDefault: ColorRange = { min: 0, max: 1 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type ColorMap = {
+export interface ColorMap {
   label: string;
   nanColor: [r: number, g: number, b: number];
   points: [value: number, r: number, g: number, b: number][];
-};
+}
 
 export const colorMaps = {
   grayscale: {

@@ -23,7 +23,7 @@ export function ExportButton({
 
   return (
     <Button
-      disabled={disabled || isExporting}
+      disabled={(disabled ?? false) || isExporting}
       onClick={() => {
         assert(!isExporting);
         setIsExporting(true);

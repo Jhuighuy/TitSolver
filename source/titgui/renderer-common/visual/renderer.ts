@@ -127,7 +127,7 @@ export class Renderer {
       const components = positionField.components(i);
       positionValues[i * 3 + 0] = components[0];
       positionValues[i * 3 + 1] = components[1];
-      positionValues[i * 3 + 2] = components[2] ?? 0;
+      positionValues[i * 3 + 2] = components.at(2) ?? 0;
     }
 
     this.particles.setData(field, colorValues, positionValues);

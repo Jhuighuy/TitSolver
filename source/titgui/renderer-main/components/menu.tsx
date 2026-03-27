@@ -34,10 +34,10 @@ import { assert, iota, items } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type MenuProps = {
+interface MenuProps {
   side: "left" | "right" | "top" | "bottom";
   children: ReactElement<MenuItemProps> | ReactElement<MenuItemProps>[];
-};
+}
 
 export function Menu({ side, children }: Readonly<MenuProps>) {
   // ---- State. --------------------------------------------------------------
@@ -125,7 +125,9 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
                       justify="center"
                       width="56px"
                       height="56px"
-                      onClick={() => setActiveItemOrToggle(index)}
+                      onClick={() => {
+                        setActiveItemOrToggle(index);
+                      }}
                       aria-label={item.props.name}
                       className={cn(
                         "border-l-3 hover:text-(--accent-11)",
@@ -145,7 +147,9 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
                       justify="center"
                       gap="1"
                       height="32px"
-                      onClick={() => setActiveItemOrToggle(index)}
+                      onClick={() => {
+                        setActiveItemOrToggle(index);
+                      }}
                       aria-label={item.props.name}
                       className={cn(
                         "border-b-2 hover:text-(--accent-11)",
@@ -189,16 +193,16 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type MenuAction = {
+export interface MenuAction {
   name: string;
   disabled?: boolean;
   icon: ReactElement;
   onClick: () => void;
-};
+}
 
-export type MenuActions = {
+export interface MenuActions {
   addAction: (action: MenuAction) => () => void;
-};
+}
 
 const MenuActionsContext = createContext<MenuActions | null>(null);
 
@@ -215,12 +219,12 @@ export function useMenuAction(action: MenuAction) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type MenuItemProps = {
+interface MenuItemProps {
   group: number;
   name: string;
   icon: ReactElement;
   children?: ReactNode;
-};
+}
 
 function MenuItem({ name, children }: Readonly<MenuItemProps>) {
   // ---- Actions. -------------------------------------------------------------
@@ -232,7 +236,9 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
       addAction(action) {
         const filterByName = ({ name }: MenuAction) => name !== action.name;
         setActions((prev) => [...prev.filter(filterByName), action]);
-        return () => setActions((prev) => prev.filter(filterByName));
+        return () => {
+          setActions((prev) => prev.filter(filterByName));
+        };
       },
     }),
     [],

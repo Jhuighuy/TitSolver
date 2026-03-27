@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+/* eslint-disable @typescript-eslint/no-extraneous-class */
+
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import child_process from "node:child_process";
 import fs from "node:fs";
@@ -77,10 +79,9 @@ class InstallRootResolver {
 
   private static resolveInstallRootFromEnvironment() {
     const envRoot = process.env.TIT_ROOT;
-    if (envRoot === undefined || envRoot.trim() === "") {
-      return undefined;
+    if (envRoot !== undefined && envRoot.trim() !== "") {
+      return path.resolve(envRoot);
     }
-    return path.resolve(envRoot);
   }
 
   private static resolveDefaultInstallRoot() {
@@ -106,7 +107,6 @@ class InstallRootResolver {
     }
 
     // Unknown platform?
-    return undefined;
   }
 
   private static async promptUserForInstallRoot() {
@@ -142,7 +142,6 @@ class InstallRootResolver {
       });
       if (result.response === 1) break;
     }
-    return undefined;
   }
 
   private static isValidInstallRoot(installRoot?: string) {
@@ -331,21 +330,19 @@ class MainWindowManager {
 
   private static load(window: BrowserWindow) {
     const innerPath = path.join("renderer-main", "index.html");
-    if (RENDERER_VITE_DEV_SERVER_URL) {
-      return window.loadURL(
-        new URL(innerPath, RENDERER_VITE_DEV_SERVER_URL).toString(),
-      );
-    } else {
-      // .vite
-      // |_ build <-- __dirname
-      // |  |_ background.js
-      // |_ renderer
-      //    |_ `RENDERER_VITE_NAME`
-      //       |_ `innerPath`
-      return window.loadFile(
-        path.join(__dirname, "..", "renderer", RENDERER_VITE_NAME, innerPath),
-      );
-    }
+    return RENDERER_VITE_DEV_SERVER_URL === undefined
+      ? window.loadFile(
+          // .vite
+          // |_ build <-- __dirname
+          // |  |_ background.js
+          // |_ renderer
+          //    |_ `RENDERER_VITE_NAME`
+          //       |_ `innerPath`
+          path.join(__dirname, "..", "renderer", RENDERER_VITE_NAME, innerPath),
+        )
+      : window.loadURL(
+          new URL(innerPath, RENDERER_VITE_DEV_SERVER_URL).toString(),
+        );
   }
 }
 
@@ -447,9 +444,7 @@ class Application {
 
     ipcMain.removeHandler(IPC_PERSIST_GET);
     ipcMain.handle(IPC_PERSIST_GET, (_event, key: unknown) => {
-      if (typeof key !== "string" || this.persistedState === undefined) {
-        return undefined;
-      }
+      if (typeof key !== "string" || this.persistedState === undefined) return;
       return this.persistedState.get(key, z.unknown());
     });
 

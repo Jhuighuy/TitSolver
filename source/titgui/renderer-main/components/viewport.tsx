@@ -52,10 +52,6 @@ export function Viewport() {
     const canvas = canvasRef.current;
     if (canvas === null) return;
 
-    // Prevent context menu for right mouse drag.
-    const onContextMenu = (event: MouseEvent) => event.preventDefault();
-    canvas.addEventListener("contextmenu", onContextMenu);
-
     // Create renderer and attach to model.
     const renderer = new Renderer(canvas);
     const detachRender = model.attachRenderer(renderer);
@@ -64,9 +60,9 @@ export function Viewport() {
     const container = canvas.parentElement;
     assert(container !== null);
     renderer.resize(container.clientWidth, container.clientHeight);
-    const resizeObserver = new ResizeObserver(() =>
-      renderer.resize(container.clientWidth, container.clientHeight),
-    );
+    const resizeObserver = new ResizeObserver(() => {
+      renderer.resize(container.clientWidth, container.clientHeight);
+    });
     resizeObserver.observe(container, { box: "content-box" });
 
     return () => {
@@ -74,7 +70,6 @@ export function Viewport() {
       detachRender();
       resizeObserver.disconnect();
       renderer.dispose();
-      canvas.removeEventListener("contextmenu", onContextMenu);
     };
   }, [model]);
 
@@ -82,7 +77,9 @@ export function Viewport() {
 
   const { frameData } = useStorage();
 
-  useEffect(() => model.frameData.set(frameData), [model, frameData]);
+  useEffect(() => {
+    model.frameData.set(frameData);
+  }, [model, frameData]);
 
   // ---- State. ---------------------------------------------------------------
 
@@ -112,40 +109,69 @@ export function Viewport() {
         frameData={frameData}
         /* Camera. */
         projection={projection}
-        setProjection={(value) => model.projection.set(value)}
+        setProjection={(value) => {
+          model.projection.set(value);
+        }}
         backgroundColorName={backgroundColorName}
-        setBackgroundColorName={(value) => model.backgroundColorName.set(value)}
+        setBackgroundColorName={(value) => {
+          model.backgroundColorName.set(value);
+        }}
         cameraPosition={cameraPosition}
-        setCameraPosition={(value) => model.cameraPosition.set(value)}
+        setCameraPosition={(value) => {
+          model.cameraPosition.set(value);
+        }}
         cameraRotation={cameraRotation}
-        setCameraRotation={(value) => model.cameraRotation.set(value)}
+        setCameraRotation={(value) => {
+          model.cameraRotation.set(value);
+        }}
         /* Field selection. */
         field={field}
-        setFieldByName={(value) => model.fieldName.set(value)}
+        setFieldByName={(value) => {
+          model.fieldName.set(value);
+        }}
         renderMode={renderMode}
-        setRenderMode={(value) => model.renderMode.set(value)}
+        setRenderMode={(value) => {
+          model.renderMode.set(value);
+        }}
         colorField={colorField}
         {...(renderMode === "glyphs" && {
-          setColorFieldByName: (value: string) =>
-            model.userColorFieldName.set(value),
+          setColorFieldByName: (value: string) => {
+            model.userColorFieldName.set(value);
+          },
         })}
         colorFieldModifier={colorFieldModifier}
-        setColorFieldModifier={(value) => model.colorFieldModifier.set(value)}
+        setColorFieldModifier={(value) => {
+          model.colorFieldModifier.set(value);
+        }}
         /* Render parameters. */
         shadingMode={shadingMode}
-        setShadingMode={(value) => model.shadingMode.set(value)}
+        setShadingMode={(value) => {
+          model.shadingMode.set(value);
+        }}
         pointSize={pointSize}
-        setPointSize={(value) => model.pointSize.set(value)}
+        setPointSize={(value) => {
+          model.pointSize.set(value);
+        }}
         glyphScale={glyphScale}
-        setGlyphScale={(value) => model.glyphScale.set(value)}
+        setGlyphScale={(value) => {
+          model.glyphScale.set(value);
+        }}
         glyphScaleMode={glyphScaleMode}
-        setGlyphScaleMode={(value) => model.glyphScaleMode.set(value)}
+        setGlyphScaleMode={(value) => {
+          model.glyphScaleMode.set(value);
+        }}
         colorMapName={colorMapName}
-        setColorMapName={(value) => model.colorMapName.set(value)}
+        setColorMapName={(value) => {
+          model.colorMapName.set(value);
+        }}
         colorRangeMode={colorRangeMode}
-        setColorRangeMode={(value) => model.colorRangeMode.set(value)}
+        setColorRangeMode={(value) => {
+          model.colorRangeMode.set(value);
+        }}
         colorRange={colorRange}
-        setColorRange={(value) => model.colorRange.set(value)}
+        setColorRange={(value) => {
+          model.colorRange.set(value);
+        }}
       />
 
       {/* ---- Canvas. ----------------------------------------------------- */}
@@ -162,7 +188,9 @@ export function Viewport() {
         <ViewHUD
           appearance={backgroundColors[backgroundColorName].appearance}
           cameraRotation={cameraRotation}
-          setCameraRotation={(value) => model.cameraRotation.set(value)}
+          setCameraRotation={(value) => {
+            model.cameraRotation.set(value);
+          }}
           colorMapName={colorMapName}
           colorRange={colorRange}
           colorTitle={colorTitle}
@@ -231,7 +259,7 @@ class ViewportModel {
 
   public readonly shadingMode = signal<ShadingMode>("shaded");
 
-  public readonly pointSize = signal(10.0);
+  public readonly pointSize = signal(10);
 
   public readonly glyphScale = scoped(() => 0.02, [this.fieldName]);
   public readonly glyphScaleMode = scoped<GlyphScaleMode>(
@@ -288,10 +316,18 @@ class ViewportModel {
       this.renderer?.cameraController.rotation.copy(this.cameraRotation.get()),
     );
 
-    this.field.subscribe(() => this.pushFieldsAndColoring());
-    this.renderMode.subscribe(() => this.pushFieldsAndColoring());
-    this.colorField.subscribe(() => this.pushFieldsAndColoring());
-    this.colorFieldModifier.subscribe(() => this.pushFieldsAndColoring());
+    this.field.subscribe(() => {
+      this.pushFieldsAndColoring();
+    });
+    this.renderMode.subscribe(() => {
+      this.pushFieldsAndColoring();
+    });
+    this.colorField.subscribe(() => {
+      this.pushFieldsAndColoring();
+    });
+    this.colorFieldModifier.subscribe(() => {
+      this.pushFieldsAndColoring();
+    });
 
     this.shadingMode.subscribe(() =>
       this.renderer?.setShadingMode(this.shadingMode.get()),
@@ -306,9 +342,15 @@ class ViewportModel {
       this.renderer?.setGlyphScaleMode(this.glyphScaleMode.get()),
     );
 
-    this.colorMapName.subscribe(() => this.pushColorMap());
-    this.colorRangeMode.subscribe(() => this.pushColorRange());
-    this.colorRange.subscribe(() => this.pushColorRange());
+    this.colorMapName.subscribe(() => {
+      this.pushColorMap();
+    });
+    this.colorRangeMode.subscribe(() => {
+      this.pushColorRange();
+    });
+    this.colorRange.subscribe(() => {
+      this.pushColorRange();
+    });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -328,7 +370,9 @@ class ViewportModel {
     this.pushFieldsAndColoring();
 
     // Update camera state on change.
-    const handleChange = () => this.pullCameraState();
+    const handleChange = () => {
+      this.pullCameraState();
+    };
     const controller = renderer.cameraController;
     controller.addEventListener("changed", handleChange);
 

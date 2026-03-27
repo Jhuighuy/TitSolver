@@ -11,14 +11,14 @@ import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type ResizableDivProps = {
+interface ResizableDivProps {
   side: "left" | "right" | "top" | "bottom";
   size: number;
   setSize: (size: number) => void;
   minSize: number;
   maxSize: number;
   children?: ReactNode;
-};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

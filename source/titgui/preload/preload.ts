@@ -3,7 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { contextBridge, type IpcRendererEvent, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
 import {
   IPC_FULL_SCREEN_CHANGED,
@@ -21,8 +21,9 @@ contextBridge.exposeInMainWorld("windowState", {
     return ipcRenderer.invoke(IPC_IS_FULL_SCREEN) as Promise<boolean>;
   },
   onFullScreenChanged(listener: FullScreenListener) {
-    const callback = (_event: IpcRendererEvent, isFullScreen: boolean) =>
+    const callback = (_event: IpcRendererEvent, isFullScreen: boolean) => {
       listener(isFullScreen);
+    };
 
     ipcRenderer.on(IPC_FULL_SCREEN_CHANGED, callback);
     return () => ipcRenderer.off(IPC_FULL_SCREEN_CHANGED, callback);

@@ -10,7 +10,7 @@ import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type NumberEditorProps = {
+interface NumberEditorProps {
   className?: string;
   disabled?: boolean;
   size?: TextField.RootProps["size"];
@@ -21,7 +21,7 @@ type NumberEditorProps = {
   max?: number;
   value: number;
   onValueChange: (value: number) => void;
-};
+}
 
 export function NumberEditor({
   className,
@@ -83,7 +83,9 @@ export function NumberEditor({
       size={size}
       value={text}
       color={isValid ? color : "red"}
-      onChange={(event) => setText(event.target.value)}
+      onChange={(event) => {
+        setText(event.target.value);
+      }}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
     >

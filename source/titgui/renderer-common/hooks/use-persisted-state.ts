@@ -25,9 +25,9 @@ export function usePersistedState<T>(
   const { data } = useQuery({
     queryKey,
     queryFn: async () => {
-      if (window.persistedState === undefined) return fallbackValue;
+      if (globalThis.persistedState === undefined) return fallbackValue;
 
-      const persistedValue = await window.persistedState.get(key);
+      const persistedValue = await globalThis.persistedState.get(key);
       if (persistedValue === undefined) return fallbackValue;
 
       const parsed = schema.safeParse(persistedValue);
@@ -50,7 +50,7 @@ export function usePersistedState<T>(
 
   const { mutate } = useMutation({
     mutationFn: async (value: T) => {
-      await window.persistedState?.set(key, schema.parse(value));
+      await globalThis.persistedState?.set(key, schema.parse(value));
     },
     onMutate: async (next) => {
       await queryClient.cancelQueries({ queryKey });

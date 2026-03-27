@@ -36,13 +36,14 @@ export function LogsMenu() {
       name: "Save Logs",
       icon: <DownloadIcon size={16} />,
       disabled: messages.length === 0,
-      onClick: () =>
+      onClick: () => {
         downloadText(
           "logs.txt",
           messages
             .map(({ type, text }) => `${type.toUpperCase()}: ${text}`)
             .join("\n"),
-        ),
+        );
+      },
     }),
     [messages],
   );
@@ -54,7 +55,9 @@ export function LogsMenu() {
       name: "Clear Logs",
       icon: <ClearIcon size={16} />,
       disabled: messages.length === 0,
-      onClick: () => logger.clear(),
+      onClick: () => {
+        logger.clear();
+      },
     }),
     [messages],
   );
@@ -66,7 +69,7 @@ export function LogsMenu() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!messages) return;
+    void messages;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -129,7 +132,9 @@ function LogMessage({ type, text }: Readonly<LogMessageProps>) {
             size="1"
             variant="ghost"
             aria-label="Expand / collapse"
-            onClick={() => setIsExpanded((prev) => !prev)}
+            onClick={() => {
+              setIsExpanded((prev) => !prev);
+            }}
           >
             {isExpanded ? (
               <ExpandedIcon size={10} />

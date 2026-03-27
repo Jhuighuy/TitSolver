@@ -30,7 +30,7 @@ export function decodeBase64(b64: string, type: string) {
   assert(type in typeMap);
   const ctor = typeMap[type as keyof typeof typeMap];
 
-  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const bytes = Uint8Array.from(atob(b64), (c) => c.codePointAt(0) ?? 0);
   assert(
     bytes.byteLength % ctor.BYTES_PER_ELEMENT === 0,
     `Byte length ${bytes.byteLength} is not a multiple of ${ctor.BYTES_PER_ELEMENT} for type ${type}`,

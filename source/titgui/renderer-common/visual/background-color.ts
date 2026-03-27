@@ -5,11 +5,11 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type BackgroundColor = {
+export interface BackgroundColor {
   label: string;
   color: number | null;
   appearance: "inherit" | "light" | "dark";
-};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -19,12 +19,12 @@ import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type Solver = {
+export interface Solver {
   isSolverRunning: boolean;
   solverOutput: string;
   runSolver: () => void;
   stopSolver: () => void;
-};
+}
 
 const SolverContext = createContext<Solver | null>(null);
 
@@ -36,9 +36,9 @@ export function useSolver(): Solver {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type SolverProviderProps = {
+interface SolverProviderProps {
   children: ReactNode;
-};
+}
 
 export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
   const { sendMessage } = useConnection();

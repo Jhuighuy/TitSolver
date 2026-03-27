@@ -23,7 +23,9 @@ export function SettingsMenu() {
             <Select.Root
               size="1"
               value={appearance}
-              onValueChange={(value) => setAppearance(value as Appearance)}
+              onValueChange={(value) => {
+                setAppearance(value as Appearance);
+              }}
             >
               <Select.Trigger />
               <Select.Content>

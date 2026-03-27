@@ -56,8 +56,8 @@ export class Glyphs
         nanColor: { value: colorMaps.jet.nanColor },
         lengthScale: { value: 0.02 },
         widthScale: { value: 0.02 * glyphWidthRatio },
-        scaleByMagnitude: { value: 1.0 },
-        shadingMix: { value: 0.0 },
+        scaleByMagnitude: { value: 1 },
+        shadingMix: { value: 0 },
       },
     });
   }
@@ -84,7 +84,7 @@ export class Glyphs
       const components = field.components(i);
       fieldValues[i * 3 + 0] = components[0];
       fieldValues[i * 3 + 1] = components[1];
-      fieldValues[i * 3 + 2] = components[2] ?? 0;
+      fieldValues[i * 3 + 2] = components.at(2) ?? 0;
     }
 
     this.geometry.instanceCount = field.count;
@@ -155,7 +155,7 @@ const glyphVertices = new Float32Array(
     [0.75, 0.18, 0],
     [0, 0.18, 0],
     [0.6, -0.35, 0],
-    [1.0, 0, 0],
+    [1, 0, 0],
     [0.6, 0.35, 0],
   ].flat(),
 );

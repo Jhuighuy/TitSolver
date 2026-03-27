@@ -15,14 +15,14 @@ import { ViewCube } from "~/renderer-main/components/view-cube";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type ViewHUDProps = {
+interface ViewHUDProps {
   appearance: ThemeProps["appearance"];
   cameraRotation: Euler;
   setCameraRotation: (value: Euler) => void;
   colorMapName: ColorMapName;
   colorRange: ColorRange;
   colorTitle: string;
-};
+}
 
 export function ViewHUD({
   appearance,

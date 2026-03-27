@@ -22,13 +22,13 @@ import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type Storage = {
+export interface Storage {
   numFrames: number;
-  frameIndex: number;
+  frameIndex: number | null;
   frameData: FieldMap;
   requestFrame: (frameIndex: number) => void;
   refresh: () => void;
-};
+}
 
 const StorageContext = createContext<Storage | null>(null);
 
@@ -40,9 +40,9 @@ export function useStorage(): Storage {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type StorageProviderProps = {
+interface StorageProviderProps {
   children: ReactNode;
-};
+}
 
 export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
   const [numFrames, setNumFrames] = useState<number | null>(null);
@@ -117,8 +117,8 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
 
   const storage = useMemo(
     () => ({
-      numFrames: numFrames ?? 1,
-      frameIndex: frameIndex ?? 0,
+      numFrames: numFrames ?? 0,
+      frameIndex,
       frameData,
       requestFrame(frameIndex: number) {
         assert(numFrames !== null);

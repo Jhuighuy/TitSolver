@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import { type TypedArray } from "three";
+
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -13,11 +15,10 @@ export function clamp(value: number, min: number, max: number): number {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export function vectorMagnitude(values: ArrayLike<number>): number {
+export function vectorMagnitude(values: TypedArray): number {
   let magnitudeSquared = 0;
 
-  for (let i = 0; i < values.length; i++) {
-    const v = Number(values[i]);
+  for (const v of values) {
     magnitudeSquared += v * v;
   }
 
@@ -26,25 +27,25 @@ export function vectorMagnitude(values: ArrayLike<number>): number {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export function matrixDeterminant(values: ArrayLike<number>): number {
+export function matrixDeterminant(values: TypedArray): number {
   switch (values.length) {
     case 4: {
-      const a00 = Number(values[0]);
-      const a01 = Number(values[1]);
-      const a10 = Number(values[2]);
-      const a11 = Number(values[3]);
+      const a00 = values[0];
+      const a01 = values[1];
+      const a10 = values[2];
+      const a11 = values[3];
       return a00 * a11 - a01 * a10;
     }
     case 9: {
-      const a00 = Number(values[0]);
-      const a01 = Number(values[1]);
-      const a02 = Number(values[2]);
-      const a10 = Number(values[3]);
-      const a11 = Number(values[4]);
-      const a12 = Number(values[5]);
-      const a20 = Number(values[6]);
-      const a21 = Number(values[7]);
-      const a22 = Number(values[8]);
+      const a00 = values[0];
+      const a01 = values[1];
+      const a02 = values[2];
+      const a10 = values[3];
+      const a11 = values[4];
+      const a12 = values[5];
+      const a20 = values[6];
+      const a21 = values[7];
+      const a22 = values[8];
       return (
         a00 * (a11 * a22 - a12 * a21) -
         a01 * (a10 * a22 - a12 * a20) +

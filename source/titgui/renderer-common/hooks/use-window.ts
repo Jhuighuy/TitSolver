@@ -14,15 +14,17 @@ export function useWindowIsFullScreen() {
   const [isFullScreen, setIsFullScreen] = useState(true);
 
   useEffect(() => {
-    if (window.windowState === undefined) return;
+    if (globalThis.windowState === undefined) return;
 
     let mounted = true;
-    void window.windowState.isFullScreen().then((isFullScreen) => {
+    void globalThis.windowState.isFullScreen().then((isFullScreen) => {
       if (mounted) setIsFullScreen(isFullScreen);
     });
 
-    const unsubscribe = window.windowState.onFullScreenChanged((isFullScreen) =>
-      setIsFullScreen(isFullScreen),
+    const unsubscribe = globalThis.windowState.onFullScreenChanged(
+      (isFullScreen) => {
+        setIsFullScreen(isFullScreen);
+      },
     );
     return () => {
       mounted = false;
@@ -57,7 +59,7 @@ export function useWindowAppearance() {
 
 function useWindowPrefersDarkAppearance() {
   const [prefersDarkAppearance, setPrefersDarkAppearance] = useState(
-    window.matchMedia("(prefers-color-scheme: dark)").matches,
+    globalThis.matchMedia("(prefers-color-scheme: dark)").matches,
   );
 
   useEffect(() => {
@@ -65,9 +67,11 @@ function useWindowPrefersDarkAppearance() {
       setPrefersDarkAppearance(event.matches);
     };
 
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const mediaQuery = globalThis.matchMedia("(prefers-color-scheme: dark)");
     mediaQuery.addEventListener("change", listener);
-    return () => mediaQuery.removeEventListener("change", listener);
+    return () => {
+      mediaQuery.removeEventListener("change", listener);
+    };
   }, []);
 
   return prefersDarkAppearance;

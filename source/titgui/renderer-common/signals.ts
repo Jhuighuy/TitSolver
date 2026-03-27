@@ -7,10 +7,10 @@
 
 type Slot = () => void;
 
-export type SignalSource<T> = {
+export interface SignalSource<T> {
   get(): T;
   subscribe(slot: Slot): () => void;
-};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -47,9 +47,9 @@ export function signal<T>(value: T) {
 class DerivedSignal<T> implements SignalSource<T> {
   private value: T;
   private readonly slots = new Set<Slot>();
-  private readonly unsubscribe: Array<() => void>;
+  private readonly unsubscribe: (() => void)[];
 
-  public constructor(compute: () => T, sources: Array<SignalSource<unknown>>) {
+  public constructor(compute: () => T, sources: SignalSource<unknown>[]) {
     this.value = compute();
     this.unsubscribe = sources.map((source) =>
       source.subscribe(() => {
@@ -77,10 +77,7 @@ class DerivedSignal<T> implements SignalSource<T> {
   }
 }
 
-export function derived<T>(
-  compute: () => T,
-  sources: Array<SignalSource<unknown>>,
-) {
+export function derived<T>(compute: () => T, sources: SignalSource<unknown>[]) {
   return new DerivedSignal(compute, sources);
 }
 
@@ -92,15 +89,14 @@ class ScopedSignal<T> implements SignalSource<T> {
   private readonly signal: Signal<T>;
   private readonly byScope = new Map<string, T>();
 
-  public constructor(
-    fallback: () => T,
-    keySources: Array<SignalSource<unknown>>,
-  ) {
+  public constructor(fallback: () => T, keySources: SignalSource<unknown>[]) {
     this.fallback = fallback;
     this.key = () => keySources.map((source) => source.get()).join(":");
     this.signal = new Signal(this.get());
     for (const keySource of keySources) {
-      keySource.subscribe(() => this.signal.set(this.get()));
+      keySource.subscribe(() => {
+        this.signal.set(this.get());
+      });
     }
   }
 
@@ -120,7 +116,7 @@ class ScopedSignal<T> implements SignalSource<T> {
 
 export function scoped<T>(
   fallback: () => T,
-  keySources: Array<SignalSource<unknown>>,
+  keySources: SignalSource<unknown>[],
 ) {
   return new ScopedSignal(fallback, keySources);
 }

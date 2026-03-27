@@ -47,7 +47,7 @@ export class Spheres
         nanColor: { value: colorMaps.jet.nanColor },
         pointSize: { value: 25 },
         viewportHeight: { value: 1 },
-        shadingMix: { value: 0.0 },
+        shadingMix: { value: 0 },
       },
     });
     (this.material.extensions as { fragDepth?: boolean }).fragDepth = true;

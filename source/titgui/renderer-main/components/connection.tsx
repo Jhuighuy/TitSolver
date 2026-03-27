@@ -21,9 +21,9 @@ import { assert } from "~/shared/utils";
 
 export type Callback = (response: unknown) => void;
 
-export type Connection = {
+export interface Connection {
   sendMessage: (message: unknown, callback?: Callback) => void;
-};
+}
 
 const ConnectionContext = createContext<Connection | null>(null);
 
@@ -35,9 +35,9 @@ export function useConnection(): Connection {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type ConnectionProviderProps = {
+interface ConnectionProviderProps {
   children: ReactNode;
-};
+}
 
 export function ConnectionProvider({
   children,
@@ -49,9 +49,9 @@ export function ConnectionProvider({
 
   const sendMessage = useCallback(
     (message: unknown, callback?: Callback) => {
-      const requestID = Math.random().toString(36).substring(8);
+      const requestID = Math.random().toString(36).slice(8);
       const awaitingResponse = awaitingResponseRef.current;
-      awaitingResponse.set(requestID, callback ?? (() => {}));
+      awaitingResponse.set(requestID, callback ?? noop);
       sendRawMessage(JSON.stringify({ requestID, message }));
     },
     [sendRawMessage],
@@ -67,7 +67,7 @@ export function ConnectionProvider({
 
     const awaitingResponse = awaitingResponseRef.current;
     const callback = awaitingResponse.get(requestID);
-    if (!callback) {
+    if (callback === undefined) {
       console.warn(`No callback found for request ID: ${requestID}.`);
       return;
     }
@@ -107,5 +107,11 @@ const responseSchema = z
       z.object({ status: z.literal("error"), result: z.string() }),
     ]),
   );
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+function noop() {
+  // Do nothing.
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

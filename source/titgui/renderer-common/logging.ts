@@ -9,11 +9,11 @@ import { signal } from "~/renderer-common/signals";
 
 export type MessageType = "log" | "warning" | "error";
 
-export type Message = {
+export interface Message {
   id: number;
   type: MessageType;
   text: string;
-};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

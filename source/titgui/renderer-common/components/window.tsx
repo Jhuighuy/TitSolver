@@ -14,9 +14,9 @@ import {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type WindowProps = {
+interface WindowProps {
   children: ReactNode;
-};
+}
 
 export function Window({ children }: Readonly<WindowProps>) {
   const appearance = useWindowAppearance();

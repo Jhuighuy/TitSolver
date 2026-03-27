@@ -96,7 +96,9 @@ export function Timeline() {
             variant="ghost"
             color={isRepeating ? "blue" : "gray"}
             radius="full"
-            onClick={() => setIsRepeating(!isRepeating)}
+            onClick={() => {
+              setIsRepeating(!isRepeating);
+            }}
           >
             <RepeatIcon size={iconSize} />
           </IconButton>
@@ -110,7 +112,9 @@ export function Timeline() {
             color="gray"
             radius="full"
             disabled={numFrames === 0 || frameIndex === null}
-            onClick={() => requestFrame(0)}
+            onClick={() => {
+              requestFrame(0);
+            }}
           >
             <BackIcon size={iconSize} />
           </IconButton>
@@ -138,7 +142,9 @@ export function Timeline() {
             color="gray"
             radius="full"
             disabled={numFrames === 0 || frameIndex === null}
-            onClick={() => setIsPlaying((x) => !x)}
+            onClick={() => {
+              setIsPlaying((x) => !x);
+            }}
           >
             {isPlaying ? (
               <PauseIcon size={iconSize} />
@@ -170,7 +176,9 @@ export function Timeline() {
             color="gray"
             radius="full"
             disabled={numFrames === 0 || frameIndex === null}
-            onClick={() => requestFrame(numFrames - 1)}
+            onClick={() => {
+              requestFrame(numFrames - 1);
+            }}
           >
             <ForwardIcon size={iconSize} />
           </IconButton>
@@ -213,7 +221,9 @@ export function Timeline() {
                   width="10px"
                   height="100%"
                   {...(inRange && {
-                    onClick: () => clickOnFrame(tickIndex),
+                    onClick: () => {
+                      clickOnFrame(tickIndex);
+                    },
                     className: `rounded ${hoverSurface()}`,
                   })}
                 >

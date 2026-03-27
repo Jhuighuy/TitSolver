@@ -32,7 +32,7 @@ export function ViewCube({
         const scale = Math.hypot(e.x, e.y);
         const angle = Math.atan2(e.y, e.x);
 
-        return [+1, -1].map((sign) => {
+        return ([1, -1] as const).map((sign) => {
           const signedAxis = `${sign > 0 ? "+" : "-"}${axis}`;
 
           return (

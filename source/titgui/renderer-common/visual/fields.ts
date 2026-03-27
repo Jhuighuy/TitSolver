@@ -69,7 +69,7 @@ export class Field {
 
     assert(typeof modifier === "number");
     assert(0 <= modifier && modifier < this.width);
-    return Number(components[modifier]);
+    return components[modifier];
   }
 }
 
@@ -92,12 +92,12 @@ export class FieldMap extends Map<string, Field> {
     }
 
     // Get density field. It must be present.
+    assert("rho" in rawFields);
     const rho = rawFields.rho;
-    assert(rho !== undefined);
 
     // Get position field. It must be present.
+    assert("r" in rawFields);
     const r = rawFields.r;
-    assert(r !== undefined);
 
     // Dimensionality is inferred from density and position fields.
     this.count = rho.length;
