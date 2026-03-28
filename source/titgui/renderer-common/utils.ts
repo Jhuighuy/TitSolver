@@ -74,6 +74,13 @@ export function isStateUpdater<T>(
   return typeof next === "function";
 }
 
+/**
+ * Apply a state update action to the given state.
+ */
+export function applyStateUpdate<T>(prev: T, next: SetStateAction<T>): T {
+  return isStateUpdater(next) ? next(prev) : next;
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**

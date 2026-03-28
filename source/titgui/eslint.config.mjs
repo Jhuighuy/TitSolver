@@ -62,7 +62,11 @@ export default defineConfig(
   },
 
   {
-    files: ["renderer-common/**/*.{ts,tsx}", "renderer-main/**/*.{ts,tsx}"],
+    files: [
+      "renderer-common/**/*.{ts,tsx}",
+      "renderer-main/**/*.{ts,tsx}",
+      "renderer-help/**/*.{ts,tsx}",
+    ],
     languageOptions: { globals: globals.browser },
     settings: { react: { version: "detect" } },
     plugins: {

@@ -8,8 +8,8 @@ import type { ReactNode } from "react";
 
 import { TitleBar } from "~/renderer-common/components/title-bar";
 import {
-  useWindowAppearance,
   useWindowIsFullScreen,
+  useWindowTheme,
 } from "~/renderer-common/hooks/use-window";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,11 +19,11 @@ interface WindowProps {
 }
 
 export function Window({ children }: Readonly<WindowProps>) {
-  const appearance = useWindowAppearance();
+  const theme = useWindowTheme();
   const isFullScreen = useWindowIsFullScreen();
 
   return (
-    <Theme appearance={appearance}>
+    <Theme appearance={theme}>
       <Flex direction="column" width="100vw" height="100vh" gap="1px">
         {isFullScreen || <TitleBar />}
         <Box asChild flexGrow="1" minHeight="0">

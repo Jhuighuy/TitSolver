@@ -5,26 +5,24 @@
 
 import { Box, DataList, Select } from "@radix-ui/themes";
 
-import {
-  type Appearance,
-  useWindowAppearanceState,
-} from "~/renderer-common/hooks/use-window";
+import { useThemeState } from "~/renderer-common/hooks/use-theme";
+import type { Theme } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function SettingsMenu() {
-  const [appearance, setAppearance] = useWindowAppearanceState();
+  const [theme, setTheme] = useThemeState();
   return (
-    <Box m="1">
+    <Box m="2">
       <DataList.Root size="1">
         <DataList.Item align="center">
           <DataList.Label>Appearance</DataList.Label>
           <DataList.Value>
             <Select.Root
               size="1"
-              value={appearance}
-              onValueChange={(value) => {
-                setAppearance(value as Appearance);
+              value={theme}
+              onValueChange={(value: Theme) => {
+                setTheme(value);
               }}
             >
               <Select.Trigger />

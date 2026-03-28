@@ -3,78 +3,118 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { useEffect, useState } from "react";
-import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ZodType } from "zod";
 
-import { usePersistedState } from "~/renderer-common/hooks/use-persisted-state";
+import { logger } from "~/renderer-common/logging";
+import { applyStateUpdate, type SetStateAction } from "~/renderer-common/utils";
+import { assert } from "~/shared/utils";
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export function useWindowState<T>(
+  key: string,
+  schema: ZodType<T>,
+  fallbackValue: T,
+) {
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ["window", "persist", key], [key]);
+
+  const { data: value } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const rawValue = await globalThis.windowState?.persistGet(key);
+      if (rawValue === undefined) return fallbackValue;
+
+      const { success, data: value, error } = schema.safeParse(rawValue);
+      if (!success) {
+        logger.warn(
+          `Invalid persisted value for '${key}', reverting to fallback.\n`,
+          `Error: '${error.message}'.`,
+        );
+        mutate(fallbackValue);
+        return fallbackValue;
+      }
+
+      return value;
+    },
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: Number.POSITIVE_INFINITY,
+  });
+
+  const { mutate } = useMutation({
+    mutationFn: async (value: T) => {
+      assert(globalThis.windowState !== undefined);
+      await globalThis.windowState.persistSet(key, schema.parse(value));
+    },
+    onMutate: async (next) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<T>(queryKey);
+      queryClient.setQueryData(queryKey, next);
+      return { previous };
+    },
+  });
+
+  const setValue = useCallback(
+    (next: SetStateAction<T>) => {
+      const prev = queryClient.getQueryData<T>(queryKey) ?? fallbackValue;
+      mutate(applyStateUpdate(prev, next));
+    },
+    [queryClient, queryKey, mutate, fallbackValue],
+  );
+
+  return [value ?? fallbackValue, setValue] as const;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function useWindowIsFullScreen() {
-  const [isFullScreen, setIsFullScreen] = useState(true);
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ["window", "is-full-screen"], []);
+
+  const { data: isFullScreen } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      if (globalThis.windowState === undefined) return false;
+      return await globalThis.windowState.isFullScreen();
+    },
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: Number.POSITIVE_INFINITY,
+  });
 
   useEffect(() => {
-    if (globalThis.windowState === undefined) return;
-
-    let mounted = true;
-    void globalThis.windowState.isFullScreen().then((isFullScreen) => {
-      if (mounted) setIsFullScreen(isFullScreen);
+    return globalThis.windowState?.onFullScreenChanged((isFullScreen) => {
+      queryClient.setQueryData(queryKey, isFullScreen);
     });
+  }, [queryClient, queryKey]);
 
-    const unsubscribe = globalThis.windowState.onFullScreenChanged(
-      (isFullScreen) => {
-        setIsFullScreen(isFullScreen);
-      },
-    );
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
-  }, []);
-
-  return isFullScreen;
+  return isFullScreen ?? false;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-const appearanceSchema = z.union([
-  z.literal("light"),
-  z.literal("dark"),
-  z.literal("system"),
-]);
-
-export type Appearance = z.infer<typeof appearanceSchema>;
-
-export function useWindowAppearanceState() {
-  return usePersistedState("appearance", appearanceSchema, "system");
-}
-
-export function useWindowAppearance() {
-  const [appearance] = useWindowAppearanceState();
-  const prefersDarkAppearance = useWindowPrefersDarkAppearance();
-
-  if (appearance === "system") return prefersDarkAppearance ? "dark" : "light";
-  return appearance;
-}
-
-function useWindowPrefersDarkAppearance() {
-  const [prefersDarkAppearance, setPrefersDarkAppearance] = useState(
-    globalThis.matchMedia("(prefers-color-scheme: dark)").matches,
+export function useWindowTheme() {
+  const [prefersDarkTheme, setPrefersDarkTheme] = useState(
+    prefersDarkThemeQuery.matches,
   );
 
   useEffect(() => {
     const listener = (event: MediaQueryListEvent) => {
-      setPrefersDarkAppearance(event.matches);
+      setPrefersDarkTheme(event.matches);
     };
 
-    const mediaQuery = globalThis.matchMedia("(prefers-color-scheme: dark)");
-    mediaQuery.addEventListener("change", listener);
+    prefersDarkThemeQuery.addEventListener("change", listener);
     return () => {
-      mediaQuery.removeEventListener("change", listener);
+      prefersDarkThemeQuery.removeEventListener("change", listener);
     };
   }, []);
 
-  return prefersDarkAppearance;
+  return prefersDarkTheme ? "dark" : "light";
 }
+
+const prefersDarkThemeQuery = globalThis.matchMedia(
+  "(prefers-color-scheme: dark)",
+);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -29,7 +29,7 @@ import { z } from "zod";
 import { chrome, surface } from "~/renderer-common/components/classes";
 import { Resizable } from "~/renderer-common/components/resizable";
 import { cn } from "~/renderer-common/components/utils";
-import { usePersistedState } from "~/renderer-common/hooks/use-persisted-state";
+import { useWindowState } from "~/renderer-common/hooks/use-window";
 import { assert, iota, items } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,14 +42,14 @@ interface MenuProps {
 export function Menu({ side, children }: Readonly<MenuProps>) {
   // ---- State. --------------------------------------------------------------
 
-  const [size, setSize] = usePersistedState(
-    `menu:${side}:size`,
+  const [size, setSize] = useWindowState(
+    `menu.${side}.size`,
     z.int().min(160).max(640),
     320,
   );
 
-  const [activeItem, setActiveItem] = usePersistedState(
-    `menu:${side}:active-item`,
+  const [activeItem, setActiveItem] = useWindowState(
+    `menu.${side}.active-item`,
     z.int().min(-1).max(items(children).length - 1), // prettier-ignore
     -1,
   );
@@ -99,7 +99,7 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
         align="center"
         justify="between"
         {...(vertical
-          ? { direction: "column", height: "100%", pb: "4" }
+          ? { direction: "column", height: "100%" }
           : { direction: "row", width: "100%", px: "4" })}
         className={chrome({ direction: "bl" })}
       >

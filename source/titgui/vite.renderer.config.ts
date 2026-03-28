@@ -23,6 +23,11 @@ export default defineConfig({
           "renderer-main",
           "index.html",
         ),
+        "renderer-help/index": path.resolve(
+          __dirname,
+          "renderer-help",
+          "index.html",
+        ),
       },
     },
   },

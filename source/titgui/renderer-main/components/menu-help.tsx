@@ -11,7 +11,16 @@ import { TbBook as BookIcon } from "react-icons/tb";
 export function HelpMenu() {
   return (
     <Flex direction="column" gap="1" px="3" py="2">
-      <Link weight="bold" href="/manual/" target="_blank" rel="noreferrer">
+      <Link
+        weight="bold"
+        href="#"
+        target="_blank"
+        rel="noreferrer"
+        onClick={(event) => {
+          event.preventDefault();
+          void globalThis.help?.open();
+        }}
+      >
         <Flex align="center" gap="2">
           <BookIcon size={16} />
           User Manual

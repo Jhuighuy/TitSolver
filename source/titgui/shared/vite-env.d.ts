@@ -5,28 +5,36 @@
 
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-svgr/client" />
+import type { Theme } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface WindowStateAPI {
-  isFullScreen: () => Promise<boolean>;
-  onFullScreenChanged: (
-    listener: (isFullScreen: boolean) => void,
-  ) => () => void;
+interface ThemeAPI {
+  get: () => Promise<Theme>;
+  set: (theme: Theme) => Promise<void>;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface PersistedStateAPI {
-  get: (key: string) => Promise<unknown>;
-  set: (key: string, value: unknown) => Promise<void>;
+interface WindowStateAPI {
+  persistGet: (key: string) => Promise<unknown>;
+  persistSet: (key: string, value: unknown) => Promise<void>;
+  isFullScreen: () => Promise<boolean>;
+  onFullScreenChanged: (listener: (fullScreen: boolean) => void) => () => void;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface HelpAPI {
+  open: (path?: string) => Promise<void>;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 declare global {
+  var theme: ThemeAPI | undefined;
   var windowState: WindowStateAPI | undefined;
-  var persistedState: PersistedStateAPI | undefined;
+  var help: HelpAPI | undefined;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
