@@ -17,7 +17,7 @@ Primary areas:
   - `testing` – doctest-based test support.
 - `source/titwcsph/` – WCSPH solver executable.
 - `source/titgui/` – Electron + React + TypeScript GUI.
-- `manual/` – Documentation.
+- `manual/` – Astro documentation.
 - `tests/` – CTest registrations, behavioral tests, application tests, and test
   driver validation.
 

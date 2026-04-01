@@ -37,6 +37,7 @@ function(add_tit_node_package)
     ".svg" ".icns"
     ".js" ".jsx" ".mjs" ".json"
     ".ts" ".tsx" ".mts"
+    ".md" ".mdx" ".astro"
   )
   foreach(EXT ${EXTS})
     file(GLOB EXT_SOURCES
@@ -47,7 +48,7 @@ function(add_tit_node_package)
   endforeach()
 
   # Find all the source files in child directories.
-  set(EXCLUDED_DIRS ".vite" "dist" "coverage" "node_modules")
+  set(EXCLUDED_DIRS ".astro" ".vite" "dist" "coverage" "node_modules")
   file(GLOB TARGET_CHILDREN
     RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
     LIST_DIRECTORIES true

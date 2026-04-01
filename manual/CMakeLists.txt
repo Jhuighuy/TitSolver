@@ -3,6 +3,11 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Empty as of now.
+add_tit_node_package(NAME manual)
+
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/dist/"
+  DESTINATION "manual"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
