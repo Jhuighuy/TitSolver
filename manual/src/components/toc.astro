@@ -1,0 +1,59 @@
+---
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+const { sections } = Astro.props as {
+  sections: {
+    slug: string;
+    text: string;
+  }[];
+};
+---
+
+{
+  sections.length > 0 && (
+    <section class="toc" aria-label="On this page">
+      <p>On this page</p>
+      <ul>
+        {sections.map((section) => (
+          <li>
+            <a href={`#${section.slug}`}>{section.text}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .toc {
+    order: 2;
+    margin: 0 0 1.5rem;
+    padding: 0 0 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .toc p {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .toc ul {
+    margin: 0;
+    padding-left: 1.25rem;
+  }
+
+  .toc li {
+    max-width: none;
+  }
+
+  .toc li + li {
+    margin-top: 0.4rem;
+  }
+</style>

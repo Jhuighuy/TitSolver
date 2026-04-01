@@ -33,10 +33,11 @@ function(add_tit_node_package)
   # Find all the top-level source files (non-recursive).
   set(TARGET_SOURCES)
   set(EXTS
-    ".html" ".css"
+    ".html" ".md" ".css"
     ".svg" ".icns"
     ".js" ".jsx" ".mjs" ".json"
     ".ts" ".tsx" ".mts"
+    ".astro"
   )
   foreach(EXT ${EXTS})
     file(GLOB EXT_SOURCES

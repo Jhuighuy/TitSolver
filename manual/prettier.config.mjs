@@ -6,9 +6,16 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export default {
-  plugins: ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"],
-  tailwindFunctions: ["cn", "cva"],
+  plugins: ["prettier-plugin-astro", "prettier-plugin-organize-imports"],
   organizeImportsSkipDestructiveCodeActions: true,
+  overrides: [
+    {
+      files: "*.astro",
+      options: {
+        parser: "astro",
+      },
+    },
+  ],
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

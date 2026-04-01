@@ -1,0 +1,253 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+:root {
+  color-scheme: light;
+  --accent-color: #004f7a;
+  --accent-strong: #0a7bb5;
+  --accent-soft: #e9f5fb;
+  --background-color: #f4f7f8;
+  --border-color: #d7e1e7;
+  --code-background: #eef3f7;
+  --panel-background: rgba(255, 255, 255, 0.9);
+  --shadow-color: rgba(15, 35, 52, 0.08);
+  --text-color: #183041;
+  --text-muted: #5b7281;
+  --title-color: #0f3d57;
+  --radius-large: 6px;
+  --radius-medium: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --accent-color: #7fd3ff;
+    --accent-strong: #3db4f2;
+    --accent-soft: rgba(61, 180, 242, 0.18);
+    --background-color: #02070c;
+    --border-color: #243847;
+    --code-background: #132431;
+    --panel-background: rgba(13, 27, 37, 0.94);
+    --shadow-color: rgba(0, 0, 0, 0.52);
+    --text-color: #d7e7f1;
+    --text-muted: #93afbf;
+    --title-color: #f2f8fb;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--text-color);
+  background: var(--background-color);
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  counter-reset: figure table;
+}
+
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code {
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.45rem;
+  background: var(--code-background);
+  font-size: 0.95em;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+.content h1,
+.content h2,
+.content h3 {
+  color: var(--title-color);
+  line-height: 1.15;
+}
+
+.content h1 {
+  margin-top: 0;
+  margin-bottom: 0.85rem;
+  font-size: clamp(2.5rem, 4vw, 4rem);
+  letter-spacing: -0.04em;
+}
+
+.content h2 {
+  margin-top: 0.8rem;
+  margin-bottom: 1.8rem;
+  padding-top: 1.45rem;
+  border-top: 1px solid var(--border-color);
+  font-size: clamp(1.55rem, 2vw, 2rem);
+}
+
+.content h3 {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+}
+
+.content p {
+  margin: 0 0 1rem;
+}
+
+.content ul,
+.content ol {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+}
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border-radius: 0;
+  counter-increment: table;
+}
+
+.content caption {
+  margin-bottom: 0.6rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.content caption::before {
+  content: "Table " counter(table) ". ";
+  color: var(--title-color);
+  font-weight: 700;
+}
+
+.content thead {
+  background: var(--accent-soft);
+}
+
+.content th,
+.content td {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border-color);
+  text-align: left;
+  vertical-align: top;
+}
+
+.content blockquote,
+.admonition {
+  margin: 1.5rem 0;
+  padding: 1rem 1.15rem;
+  border-left: 4px solid var(--accent-strong);
+  border-radius: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-soft) 85%, transparent),
+    color-mix(in srgb, var(--accent-soft) 42%, transparent)
+  );
+}
+
+.admonition-title {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  color: var(--title-color);
+}
+
+.content figure {
+  margin: 2rem 0;
+  counter-increment: figure;
+}
+
+.content figure img {
+  display: block;
+  margin: 0 auto;
+}
+
+.content figcaption {
+  margin-top: 0.8rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.content figcaption::before {
+  content: "Figure " counter(figure) ". ";
+  color: var(--title-color);
+  font-weight: 700;
+}
+
+.content mjx-container {
+  color: var(--text-color);
+}
+
+.content mjx-container svg {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.content mjx-container a {
+  color: var(--accent-color);
+}
+
+.kernel-table td > .math-display,
+.content mjx-container[display="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.35rem 0;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+    --accent-color: #000;
+    --accent-strong: #000;
+    --accent-soft: transparent;
+    --background-color: #fff;
+    --border-color: #c0c0c0;
+    --code-background: transparent;
+    --panel-background: transparent;
+    --shadow-color: transparent;
+    --text-color: #000;
+    --text-muted: #333;
+    --title-color: #000;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    background: #fff;
+    font-size: 11pt;
+  }
+
+  a,
+  a:visited {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  code {
+    padding: 0;
+    border: 1px solid var(--border-color);
+  }
+
+  .breadcrumbs,
+  .toc,
+  .page-footer {
+    display: none;
+  }
+}

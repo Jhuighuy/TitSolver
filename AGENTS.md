@@ -23,14 +23,14 @@ Primary areas:
 - `source/titparaview/` – ParaView integration:
   - `ttdb/` – shared library plugin
   - `ttdbreader/` – Python reader script
-- `manual/` – Sphinx documentation
+- `manual/` – Astro-based static documentation/manual
 - `tests/` – CTest registrations, behavioral tests, application tests, and test
   driver validation
 
 ## Working Rules
 
 - Inspect the relevant module before editing; this repo mixes C++, Python,
-  TypeScript, Electron, and Sphinx assets.
+  TypeScript, Electron, Astro, and Markdown assets.
 - Prefer minimal, local changes that fit the surrounding style.
 - Do not edit generated or vendored output unless the user explicitly asks:
   - `output/`
@@ -134,7 +134,6 @@ Common CMake helpers used in this repository:
 - `add_tit_executable(...)`
 - `add_tit_test(...)`
 - `add_tit_node_package(...)`
-- `add_tit_sphinx_target(...)`
 
 Targets generally use the `tit::` namespace. Library targets observed in-tree
 include:
@@ -209,10 +208,17 @@ npm run lint
 
 ### Manual (`manual/`)
 
-- Sphinx-based documentation with `index.rst`, `conf.py`, `_templates/`, and
-  `_static/`.
-- Built through CMake via `add_tit_sphinx_target(...)`, not by ad hoc output
-  checked into the repo.
+- Astro-based static documentation built as a Node package through CMake.
+- Content lives under `manual/src/pages/` as Markdown files using the shared
+  layout `manual/src/layouts/page.astro`.
+- Page metadata and navigation are handled by `manual/src/pages.ts`.
+- Search indexing is handled by `manual/src/search.ts`.
+- Typical local checks from `manual/` are:
+
+```bash
+npm run lint
+npm run build
+```
 
 ### ParaView (`source/titparaview/`)
 

@@ -50,6 +50,7 @@
   "files.trimTrailingWhitespace": true,
   "files.exclude": {
     "**/__pycache__": true,
+    "**/.astro": true,
     "**/.cache": true,
     "**/.mypy_cache": true,
     "**/.vite": true,
@@ -61,6 +62,7 @@
   },
   "files.watcherExclude": {
     "**/__pycache__/**": true,
+    "**/.astro": true,
     "**/.cache/**": true,
     "**/.mypy_cache/**": true,
     "**/.vite/**": true,

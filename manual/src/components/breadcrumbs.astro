@@ -1,0 +1,45 @@
+---
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+import { getRelativeHref, type ManualPage } from "~/pages";
+
+const { breadcrumbs, currentPath } = Astro.props as {
+  breadcrumbs: ManualPage[];
+  currentPath: string;
+};
+---
+
+<nav class="breadcrumbs" aria-label="Breadcrumbs">
+  {
+    breadcrumbs.map((breadcrumb, index) => (
+      <Fragment>
+        {index > 0 && <span class="breadcrumbs-separator">/</span>}
+        {index + 1 < breadcrumbs.length ? (
+          <a href={getRelativeHref(currentPath, breadcrumb.path)}>
+            {breadcrumb.title}
+          </a>
+        ) : (
+          <span>{breadcrumb.title}</span>
+        )}
+      </Fragment>
+    ))
+  }
+</nav>
+
+<style>
+  .breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  .breadcrumbs-separator {
+    color: color-mix(in srgb, var(--text-muted) 75%, transparent);
+  }
+</style>

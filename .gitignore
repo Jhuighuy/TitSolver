@@ -54,10 +54,12 @@
 !*.mts
 !*.ts
 !*.tsx
+!*.astro
 !package.json
 !tsconfig.json
 
 # Ignore in-tree artifacts.
+.astro/
 .vite/
 dist/
 node_modules/

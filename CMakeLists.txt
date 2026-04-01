@@ -37,7 +37,6 @@ include(clang)
 include(codespell)
 include(git)
 include(node)
-include(sphinx)
 include(testing)
 include(tit_target)
 
