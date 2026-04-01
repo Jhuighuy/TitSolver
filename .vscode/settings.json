@@ -41,6 +41,8 @@
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
   "files.exclude": {
+    "**/.astro": true,
+    "**/.cache": true,
     "**/.vite": true,
     "**/compile_flags.txt": true,
     "**/dist": true,
@@ -50,6 +52,8 @@
     "output": true
   },
   "files.watcherExclude": {
+    "**/.astro/**": true,
+    "**/.cache/**": true,
     "**/.vite/**": true,
     "**/compile_flags.txt": true,
     "**/dist/**": true,

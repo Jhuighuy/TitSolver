@@ -4,13 +4,15 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
 import {
   app,
   BrowserWindow,
   clipboard,
   Menu,
+  net,
+  protocol,
   type MenuItemConstructorOptions,
   shell,
 } from "electron";
@@ -24,6 +26,24 @@ import {
 } from "~/shared/channels";
 import type { HelpSession, Tab } from "~/shared/help-session";
 import { assert } from "~/shared/utils";
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+const HELP_PROTOCOL = "help";
+const HELP_HOST = "manual";
+const HELP_ORIGIN = `${HELP_PROTOCOL}://${HELP_HOST}`;
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: HELP_PROTOCOL,
+    privileges: {
+      corsEnabled: true,
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -45,6 +65,11 @@ export class HelpManager {
     // Initialize paths.
     this.manualPath = install.manualPath;
     this.homeURL = this.pathToURL("index.html");
+
+    protocol.handle(HELP_PROTOCOL, async (request) => {
+      const filePath = this.urlToFilePath(request.url);
+      return net.fetch(pathToFileURL(filePath).toString());
+    });
 
     // Restore session from persisted state.
     const sessionModelSchema = z
@@ -364,7 +389,7 @@ export class HelpManager {
       assert(!normalizedPath.startsWith(".."));
       assert(!path.isAbsolute(normalizedPath));
 
-      return pathToFileURL(resolvedPath).toString();
+      return new URL(normalizedPath, `${HELP_ORIGIN}/`).toString();
     } catch {
       throw new Error(`Invalid manual-relative path: '${relativePath}'.`);
     }
@@ -374,11 +399,13 @@ export class HelpManager {
   private urlToPath(url: string) {
     try {
       const parsedURL = new URL(url, this.homeURL);
-      assert(parsedURL.protocol === "file:");
+      assert(parsedURL.protocol === `${HELP_PROTOCOL}:`);
+      assert(parsedURL.hostname === HELP_HOST);
 
-      const resolvedPath = path.resolve(fileURLToPath(parsedURL));
-      const relativePath = path.relative(this.manualPath, resolvedPath);
-      assert(relativePath !== "");
+      const relativePath = decodeURIComponent(parsedURL.pathname)
+        .replace(/^\/+/u, "")
+        .trim();
+      assert(relativePath !== "" && relativePath !== ".");
       assert(!relativePath.startsWith(".."));
       assert(!path.isAbsolute(relativePath));
 
@@ -397,6 +424,16 @@ export class HelpManager {
     } catch {
       return false;
     }
+  }
+
+  // Convert a help URL to a filesystem path inside the installed manual.
+  private urlToFilePath(url: string) {
+    const relativePath = this.urlToPath(url);
+    const resolvedPath = path.resolve(this.manualPath, relativePath);
+    const normalizedPath = path.relative(this.manualPath, resolvedPath);
+    assert(!normalizedPath.startsWith(".."));
+    assert(!path.isAbsolute(normalizedPath));
+    return resolvedPath;
   }
 }
 

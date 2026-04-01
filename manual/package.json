@@ -1,0 +1,30 @@
+{
+  "name": "manual",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BlueTit Solver user manual",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "dev": "astro dev",
+    "format": "oxfmt .",
+    "lint": "astro check && oxfmt --check .",
+    "upgrade": "npx npm-check-updates -u && npm install"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.40.0",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "astro": "^6.4.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@astrojs/mdx": "^6.0.3",
+    "katex": "^0.17.0",
+    "oxfmt": "^0.54.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "typescript": "^6.0.3"
+  }
+}

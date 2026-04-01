@@ -1,0 +1,64 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Part of BlueTit Solver, under the MIT License.
+ * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "katex/dist/katex.min.css";
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+:root {
+  --sl-font: "IBM Plex Sans";
+  --sl-font-mono: "IBM Plex Mono";
+  --sl-color-accent-low: #e0e7ff;
+  --sl-color-accent: #615fff;
+  --sl-color-accent-high: #432dd7;
+  --sl-color-white: #0f172b;
+  --sl-color-gray-1: #1d293d;
+  --sl-color-gray-2: #314158;
+  --sl-color-gray-3: #45556c;
+  --sl-color-gray-4: #62748e;
+  --sl-color-gray-5: #90a1b9;
+  --sl-color-gray-6: #e2e8f0;
+  --sl-color-gray-7: #f1f5f9;
+  --sl-color-black: #f8fafc;
+}
+
+:root[data-theme="dark"] {
+  --sl-color-accent-low: #1e1a4d;
+  --sl-color-accent: #7c86ff;
+  --sl-color-accent-high: #a5b4fc;
+  --sl-color-white: #f1f5f9;
+  --sl-color-gray-1: #e2e8f0;
+  --sl-color-gray-2: #cad5e2;
+  --sl-color-gray-3: #90a1b9;
+  --sl-color-gray-4: #62748e;
+  --sl-color-gray-5: #314158;
+  --sl-color-gray-6: #1d293d;
+  --sl-color-gray-7: #0f172b;
+  --sl-color-black: #020618;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+/* Fix KaTeX arrow placement for `\vec{...}`. */
+.sl-markdown-content .katex svg {
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: inherit;
+  max-width: none;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.sl-markdown-content .katex svg path {
+  stroke: none;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */

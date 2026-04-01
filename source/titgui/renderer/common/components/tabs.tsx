@@ -62,9 +62,13 @@ function TabsList({
   return (
     <BaseTabs.List
       {...props}
-      className={cn("flex h-8 items-end px-1 pt-1", chrome(), className)}
+      className={cn(
+        "flex h-8 w-full min-w-0 items-end px-1 pt-1",
+        chrome(),
+        className,
+      )}
     >
-      <Flex align="center" justify="end" gap="0.5">
+      <Flex align="center" justify="end" gap="0.5" minWidth="0">
         {children}
         {context?.onAddTab !== undefined && (
           <IconButton
@@ -110,12 +114,14 @@ function TabsTab({
         context?.onCloseTab?.(value);
       }}
       className={cn(
-        "flex h-7 max-w-70 min-w-0 cursor-pointer items-center gap-2 rounded-t-lg border border-b-0 border-(--chrome-1) bg-(--bg-2) px-3 py-2 transition-colors data-active:border-(--chrome-2) data-active:bg-(--bg-3) data-disabled:cursor-not-allowed data-disabled:opacity-40",
+        "flex h-7 w-50 min-w-0 flex-1 cursor-pointer items-center justify-between gap-1 rounded-t-lg border border-b-0 border-(--chrome-1) bg-(--bg-2) px-2 py-2 transition-colors data-active:border-(--chrome-2) data-active:bg-(--bg-3) data-disabled:cursor-not-allowed data-disabled:opacity-40",
         hoverSurface(),
         className,
       )}
     >
-      <Text color="muted">{children}</Text>
+      <Text color="muted" truncate>
+        {children}
+      </Text>
       {context?.onCloseTab !== undefined && (
         <IconButton
           aria-label="Close Tab"

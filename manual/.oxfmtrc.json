@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 80,
+  "insertFinalNewline": true,
+  "sortImports": true,
+  "ignorePatterns": [
+    ".astro/**",
+    "dist/**",
+    "node_modules/**",
+    "package-lock.json"
+  ]
+}
