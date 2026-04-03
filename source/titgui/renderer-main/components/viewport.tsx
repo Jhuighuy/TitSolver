@@ -3,14 +3,14 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Flex } from "@radix-ui/themes";
+import { Box, Flex } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { Euler, Vector3 } from "three";
 
 import { useSignalValue } from "~/renderer-common/hooks/use-signal";
 import { derived, scoped, signal } from "~/renderer-common/signals";
 import {
-  type BackgroundColorName,
+  BackgroundColorName,
   backgroundColors,
 } from "~/renderer-common/visual/background-color";
 import type { Projection } from "~/renderer-common/visual/camera";
@@ -35,12 +35,11 @@ import {
 import { Renderer } from "~/renderer-common/visual/renderer";
 import type { SelectionCommand } from "~/renderer-common/visual/selection";
 import { useStorage } from "~/renderer-main/components/storage";
+import { ViewColorLegend } from "~/renderer-main/components/view-color-legend";
 import { ViewControls } from "~/renderer-main/components/view-controls";
-import { ViewHUD } from "~/renderer-main/components/view-hud";
-import {
-  type ToolMode,
-  ViewSelection,
-} from "~/renderer-main/components/view-selection";
+import { ViewCube } from "~/renderer-main/components/view-cube";
+import type { ToolMode } from "~/renderer-main/components/view-selection";
+import { ViewSelection } from "~/renderer-main/components/view-selection";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,44 +86,45 @@ export function Viewport() {
 
   // ---- State. ---------------------------------------------------------------
 
+  const toolMode = useSignalValue(model.toolMode);
+  const selectionCount = useSignalValue(model.selectionCount);
   const projection = useSignalValue(model.projection);
   const backgroundColorName = useSignalValue(model.backgroundColorName);
   const cameraPosition = useSignalValue(model.cameraPosition);
   const cameraRotation = useSignalValue(model.cameraRotation);
   const field = useSignalValue(model.field);
+  const pointSize = useSignalValue(model.pointSize);
+  const glyphScale = useSignalValue(model.glyphScale);
+  const glyphScaleMode = useSignalValue(model.glyphScaleMode);
   const renderMode = useSignalValue(model.renderMode);
   const colorField = useSignalValue(model.colorField);
   const colorFieldModifier = useSignalValue(model.colorFieldModifier);
   const colorTitle = useSignalValue(model.colorTitle);
-  const shadingMode = useSignalValue(model.shadingMode);
-  const toolMode = useSignalValue(model.toolMode);
-  const selectionCount = useSignalValue(model.selectionCount);
-  const pointSize = useSignalValue(model.pointSize);
-  const glyphScale = useSignalValue(model.glyphScale);
-  const glyphScaleMode = useSignalValue(model.glyphScaleMode);
   const colorMapName = useSignalValue(model.colorMapName);
   const colorRange = useSignalValue(model.colorRange);
   const colorRangeMode = useSignalValue(model.colorRangeMode);
+  const shadingMode = useSignalValue(model.shadingMode);
+  const legendEnabled = useSignalValue(model.legendEnabled);
+  const legendTickCount = useSignalValue(model.legendTickCount);
 
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" width="100%" height="100%" gap="1px">
+    <Flex direction="column" gap="1px" width="100%" height="100%">
       {/* ---- Controls. --------------------------------------------------- */}
       <ViewControls
-        frameData={frameData}
-        /* Tool mode. */
+        // Tool.
         toolMode={toolMode}
         setToolMode={(value) => {
           model.toolMode.set(value);
         }}
-        /* Camera. */
+        // Camera.
         projection={projection}
         setProjection={(value) => {
           model.projection.set(value);
         }}
         backgroundColorName={backgroundColorName}
-        setBackgroundColorName={(value) => {
+        setBackgroundColorName={(value: BackgroundColorName) => {
           model.backgroundColorName.set(value);
         }}
         cameraPosition={cameraPosition}
@@ -135,7 +135,8 @@ export function Viewport() {
         setCameraRotation={(value) => {
           model.cameraRotation.set(value);
         }}
-        /* Field selection. */
+        // Display.
+        frameData={frameData}
         field={field}
         setFieldByName={(value) => {
           model.fieldName.set(value);
@@ -144,48 +145,56 @@ export function Viewport() {
         setRenderMode={(value) => {
           model.renderMode.set(value);
         }}
-        colorField={colorField}
-        {...(renderMode === "glyphs" && {
-          setColorFieldByName: (value: string) => {
-            model.userColorFieldName.set(value);
-          },
-        })}
-        colorFieldModifier={colorFieldModifier}
-        setColorFieldModifier={(value) => {
-          model.colorFieldModifier.set(value);
-        }}
-        /* Render parameters. */
-        shadingMode={shadingMode}
-        setShadingMode={(value) => {
-          model.shadingMode.set(value);
-        }}
         pointSize={pointSize}
         setPointSize={(value) => {
           model.pointSize.set(value);
         }}
         glyphScale={glyphScale}
         setGlyphScale={(value) => {
-          model.glyphScale.set(value);
+          if (model.glyphScaleMode.get() === "uniform") {
+            model.uniformGlyphScale.set(value);
+          } else {
+            model.magnitudeGlyphScale.set(value);
+          }
         }}
         glyphScaleMode={glyphScaleMode}
         setGlyphScaleMode={(value) => {
           model.glyphScaleMode.set(value);
         }}
+        colorField={colorField}
+        setColorFieldByName={(value) => {
+          model.userColorFieldName.set(value);
+        }}
+        colorFieldModifier={colorFieldModifier}
+        setColorFieldModifier={(value) => {
+          model.colorFieldModifier.set(value);
+        }}
         colorMapName={colorMapName}
         setColorMapName={(value) => {
           model.colorMapName.set(value);
-        }}
-        colorRangeMode={colorRangeMode}
-        setColorRangeMode={(value) => {
-          model.colorRangeMode.set(value);
         }}
         colorRange={colorRange}
         setColorRange={(value) => {
           model.colorRange.set(value);
         }}
+        colorRangeMode={colorRangeMode}
+        setColorRangeMode={(value) => {
+          model.colorRangeMode.set(value);
+        }}
+        // Render.
+        shadingMode={shadingMode}
+        setShadingMode={(value) => {
+          model.shadingMode.set(value);
+        }}
+        legendEnabled={legendEnabled}
+        setLegendEnabled={(value) => {
+          model.legendEnabled.set(value);
+        }}
+        legendTickCount={legendTickCount}
+        setLegendTickCount={(value) => {
+          model.legendTickCount.set(value);
+        }}
       />
-
-      {/* ---- Canvas. ----------------------------------------------------- */}
       <ViewSelection
         toolMode={toolMode}
         setToolMode={(value) => {
@@ -198,16 +207,40 @@ export function Viewport() {
       >
         <canvas ref={canvasRef} style={{ position: "absolute" }} />
 
-        <ViewHUD
-          appearance={backgroundColors[backgroundColorName].appearance}
-          cameraRotation={cameraRotation}
-          setCameraRotation={(value) => {
-            model.cameraRotation.set(value);
-          }}
-          colorMapName={colorMapName}
-          colorRange={colorRange}
-          colorTitle={colorTitle}
-        />
+        <Box
+          position="absolute"
+          right="8"
+          top="8"
+          style={{ transform: "translate(50%, -50%)" }}
+        >
+          <ViewCube
+            width="100px"
+            height="100px"
+            rotation={cameraRotation}
+            setRotation={(value) => {
+              model.cameraRotation.set(value);
+            }}
+          />
+        </Box>
+
+        {legendEnabled && (
+          <Box
+            position="absolute"
+            left="8"
+            top="50%"
+            style={{ transform: "translate(-50%, -50%)" }}
+          >
+            <ViewColorLegend
+              name={colorMapName}
+              title={colorTitle}
+              min={colorRange.min}
+              max={colorRange.max}
+              ticks={legendTickCount}
+              width="20px"
+              height="500px"
+            />
+          </Box>
+        )}
       </ViewSelection>
     </Flex>
   );
@@ -220,6 +253,12 @@ class ViewportModel {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  public readonly toolMode = signal<ToolMode>("normal");
+  public readonly selectionCommand = signal<SelectionCommand | null>(null);
+  public readonly selectionCount = signal(0);
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   public readonly projection = signal<Projection>("orthographic");
   public readonly backgroundColorName = signal<BackgroundColorName>("none");
   public readonly cameraPosition = signal(new Vector3());
@@ -228,6 +267,7 @@ class ViewportModel {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public readonly frameData = signal(new FieldMap({}));
+
   public readonly fieldName = signal("rho");
   public readonly field = derived(
     () => this.frameData.get().get(this.fieldName.get()),
@@ -238,6 +278,25 @@ class ViewportModel {
     () => (this.field.get().rank === 1 ? "glyphs" : "points"),
     [this.fieldName],
   );
+
+  public readonly pointSize = signal(10);
+
+  public readonly glyphScaleMode = scoped<GlyphScaleMode>(
+    () => "uniform",
+    [this.fieldName],
+  );
+
+  public readonly uniformGlyphScale = signal(0.02);
+  public readonly magnitudeGlyphScale = scoped(() => 0.02, [this.fieldName]);
+  public readonly glyphScale = derived(
+    () =>
+      this.glyphScaleMode.get() === "uniform"
+        ? this.uniformGlyphScale.get()
+        : this.magnitudeGlyphScale.get(),
+    [this.glyphScaleMode, this.uniformGlyphScale, this.magnitudeGlyphScale],
+  );
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public readonly userColorFieldName = scoped(
     () => this.fieldName.get(),
@@ -264,24 +323,6 @@ class ViewportModel {
       this.colorFieldModifier.get(),
     );
   }, [this.colorField, this.colorFieldModifier]);
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  public readonly toolMode = signal<ToolMode>("normal");
-  public readonly selectionCommand = signal<SelectionCommand | null>(null);
-  public readonly selectionCount = signal(0);
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  public readonly shadingMode = signal<ShadingMode>("shaded");
-
-  public readonly pointSize = signal(10);
-
-  public readonly glyphScale = scoped(() => 0.02, [this.fieldName]);
-  public readonly glyphScaleMode = scoped<GlyphScaleMode>(
-    () => "uniform",
-    [this.fieldName],
-  );
 
   public readonly colorMapName = scoped<ColorMapName>(
     () => "jet",
@@ -316,7 +357,17 @@ class ViewportModel {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  public readonly shadingMode = signal<ShadingMode>("shaded");
+  public readonly legendEnabled = signal(true);
+  public readonly legendTickCount = signal(5);
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   public constructor() {
+    this.selectionCommand.subscribe(() => {
+      this.pushSelectionCommand();
+    });
+
     this.projection.subscribe(() =>
       this.renderer?.setProjection(this.projection.get()),
     );
@@ -335,23 +386,10 @@ class ViewportModel {
     this.field.subscribe(() => {
       this.pushFieldsAndColoring();
     });
+
     this.renderMode.subscribe(() => {
       this.pushFieldsAndColoring();
     });
-    this.colorField.subscribe(() => {
-      this.pushFieldsAndColoring();
-    });
-    this.colorFieldModifier.subscribe(() => {
-      this.pushFieldsAndColoring();
-    });
-
-    this.selectionCommand.subscribe(() => {
-      this.pushSelectionCommand();
-    });
-
-    this.shadingMode.subscribe(() =>
-      this.renderer?.setShadingMode(this.shadingMode.get()),
-    );
     this.pointSize.subscribe(() =>
       this.renderer?.setPointSize(this.pointSize.get()),
     );
@@ -362,6 +400,12 @@ class ViewportModel {
       this.renderer?.setGlyphScaleMode(this.glyphScaleMode.get()),
     );
 
+    this.colorField.subscribe(() => {
+      this.pushFieldsAndColoring();
+    });
+    this.colorFieldModifier.subscribe(() => {
+      this.pushFieldsAndColoring();
+    });
     this.colorMapName.subscribe(() => {
       this.pushColorMap();
     });
@@ -371,6 +415,10 @@ class ViewportModel {
     this.colorRange.subscribe(() => {
       this.pushColorRange();
     });
+
+    this.shadingMode.subscribe(() =>
+      this.renderer?.setShadingMode(this.shadingMode.get()),
+    );
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -380,16 +428,15 @@ class ViewportModel {
 
     this.renderer = renderer;
 
-    // Initialize renderer state.
     renderer.setProjection(this.projection.get());
     renderer.setBackgroundColor(
       backgroundColors[this.backgroundColorName.get()],
     );
     renderer.cameraController.position.copy(this.cameraPosition.get());
     renderer.cameraController.rotation.copy(this.cameraRotation.get());
+    renderer.cameraController.camera.updateProjectionMatrix();
     this.pushFieldsAndColoring();
 
-    // Update camera state on change.
     const handleChange = () => {
       this.pullCameraState();
     };
@@ -414,6 +461,19 @@ class ViewportModel {
     this.cameraRotation.set(
       new Euler().copy(renderer.cameraController.rotation),
     );
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private pushSelectionCommand() {
+    const renderer = this.renderer;
+    if (renderer === null) return;
+
+    const selectionCommand = this.selectionCommand.get();
+    if (selectionCommand === null) return;
+
+    this.selectionCount.set(renderer.applySelectionCommand(selectionCommand));
+    this.selectionCommand.set(null);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -451,19 +511,6 @@ class ViewportModel {
 
     this.pushColorRange();
     this.pushColorMap();
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  private pushSelectionCommand() {
-    const renderer = this.renderer;
-    if (renderer === null) return;
-
-    const selectionCommand = this.selectionCommand.get();
-    if (selectionCommand === null) return;
-
-    this.selectionCount.set(renderer.applySelectionCommand(selectionCommand));
-    this.selectionCommand.set(null);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

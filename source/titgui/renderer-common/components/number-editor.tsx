@@ -3,9 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { TextField } from "@radix-ui/themes";
+import { Flex, TextField } from "@radix-ui/themes";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import { cn } from "~/renderer-common/components/utils";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -15,7 +17,7 @@ interface NumberEditorProps {
   disabled?: boolean;
   size?: TextField.RootProps["size"];
   color?: TextField.RootProps["color"];
-  label?: string;
+  label?: ReactNode;
   type?: "int" | "float";
   min?: number;
   max?: number;
@@ -78,7 +80,6 @@ export function NumberEditor({
 
   return (
     <TextField.Root
-      className={className}
       disabled={disabled}
       size={size}
       value={text}
@@ -88,8 +89,15 @@ export function NumberEditor({
       }}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
+      className={cn("[font-family:var(--code-font-family)]", className)}
     >
-      {label && <TextField.Slot side="left">{label}</TextField.Slot>}
+      {label && (
+        <TextField.Slot side="left">
+          <Flex align="center" gap="2" px="1">
+            {label}
+          </Flex>
+        </TextField.Slot>
+      )}
     </TextField.Root>
   );
 }
