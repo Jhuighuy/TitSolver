@@ -1,0 +1,33 @@
+diff --git a/hwy/timer.cc b/hwy/timer.cc
+--- a/hwy/timer.cc
++++ b/hwy/timer.cc
+@@ -147,7 +147,7 @@ HWY_DLLEXPORT double InvariantTicksPerSecond() {
+   LARGE_INTEGER freq;
+   (void)QueryPerformanceFrequency(&freq);
+   return static_cast<double>(freq.QuadPart);
+-#elif defined(__APPLE__)
++#elif defined(__APPLE__) && !HWY_COMPILER_GCC
+   // https://developer.apple.com/library/mac/qa/qa1398/_index.html
+   mach_timebase_info_data_t timebase;
+   (void)mach_timebase_info(&timebase);
+diff --git a/hwy/timer.h b/hwy/timer.h
+--- a/hwy/timer.h
++++ b/hwy/timer.h
+@@ -34,7 +34,7 @@
+ #include <windows.h>
+ #endif
+ 
+-#if defined(__APPLE__)
++#if defined(__APPLE__) && !HWY_COMPILER_GCC
+ #include <mach/mach.h>
+ #include <mach/mach_time.h>
+ #endif
+@@ -185,7 +185,7 @@ static HWY_INLINE Ticks Start() {
+   LARGE_INTEGER counter;
+   (void)QueryPerformanceCounter(&counter);
+   t = counter.QuadPart;
+-#elif defined(__APPLE__)
++#elif defined(__APPLE__) && !HWY_COMPILER_GCC
+   t = mach_absolute_time();
+ #elif defined(__HAIKU__)
+   t = system_time_nsecs();  // since boot

@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] Do not build hwy_test when HWY_ENABLE_TESTS is off
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 13d2d06..1e4d4e5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -640,6 +640,7 @@ if(UNIX AND NOT APPLE)
+ endif()
+ endif()  # HWY_ENABLE_CONTRIB
+ 
++if (HWY_ENABLE_TESTS)
+ add_library(hwy_test ${HWY_LIBRARY_TYPE} ${HWY_TEST_SOURCES})
+ target_link_libraries(hwy_test PUBLIC hwy)
+ target_compile_options(hwy_test PRIVATE ${HWY_FLAGS})
+@@ -659,6 +660,7 @@ if(UNIX AND NOT APPLE)
+   set_property(TARGET hwy_test APPEND_STRING PROPERTY
+     LINK_FLAGS " -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/hwy/hwy.version")
+ endif()
++endif()  # HWY_ENABLE_TESTS
+ 
+ # -------------------------------------------------------- hwy_list_targets
+ # Generate a tool to print the compiled-in targets as defined by the current

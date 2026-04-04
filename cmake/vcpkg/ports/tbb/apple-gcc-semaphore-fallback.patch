@@ -1,0 +1,57 @@
+diff --git a/src/tbb/semaphore.h b/src/tbb/semaphore.h
+--- a/src/tbb/semaphore.h
++++ b/src/tbb/semaphore.h
+@@ -21,9 +21,15 @@
+ 
+ #if _WIN32||_WIN64
+ #include <windows.h>
+-#elif __APPLE__
++#elif __APPLE__ && defined(__clang__)
+ #include <dispatch/dispatch.h>
+ #else
++#if __APPLE__
++#include <condition_variable>
++#include <mutex>
++#endif
++
++
+ #include <semaphore.h>
+ #ifdef TBB_USE_DEBUG
+ #include <cerrno>
+@@ -150,7 +156,7 @@
+         sem = CreateSemaphoreEx( nullptr, LONG(start_cnt_), max_semaphore_cnt, nullptr, 0, SEMAPHORE_ALL_ACCESS );
+     }
+ };
+-#elif __APPLE__
++#elif __APPLE__ && defined(__clang__)
+ //! Edsger Dijkstra's counting semaphore
+ class semaphore : no_copy {
+ public:
+@@ -168,6 +174,27 @@
+ private:
+     dispatch_semaphore_t my_sem;
+ };
++#elif __APPLE__
++class semaphore : no_copy {
++public:
++    semaphore(int start_cnt_ = 0) : my_count(start_cnt_) {}
++    ~semaphore() = default;
++
++    void P() {
++        std::unique_lock<std::mutex> lock(my_mutex);
++        my_cv.wait(lock, [&] { return my_count > 0; });
++        --my_count;
++    }
++    void V() {
++        std::lock_guard<std::mutex> lock(my_mutex);
++        ++my_count;
++        my_cv.notify_one();
++    }
++private:
++    std::mutex my_mutex;
++    std::condition_variable my_cv;
++    int my_count;
++};
+ #else /* Linux/Unix */
+ typedef uint32_t sem_count_t;
+ //! Edsger Dijkstra's counting semaphore

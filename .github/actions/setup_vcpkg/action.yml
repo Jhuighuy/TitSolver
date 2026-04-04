@@ -15,7 +15,7 @@ runs:
         # Install vcpkg.
         VCPKG_ROOT="$HOME/vcpkg"
         if [ ! -d "$VCPKG_ROOT" ]; then
-          git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+          git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT" --depth 1
         fi
 
         # Bootstrap vcpkg.

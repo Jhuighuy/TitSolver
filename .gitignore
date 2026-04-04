@@ -23,6 +23,7 @@
 # Project and editor configuration files.
 !/.vscode/settings.json
 !/sonar-project.properties
+!/vcpkg-configuration.json
 !/vcpkg.json
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,6 +31,7 @@
 # CMake files.
 !/cmake/*.cmake
 !/cmake/codespell.txt
+!/cmake/vcpkg/**/*
 !CMakeLists.txt
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
