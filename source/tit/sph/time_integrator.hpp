@@ -12,7 +12,6 @@
 #include "tit/par/algorithms.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
-#include "tit/sph/fluid_equations_riemann.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 
@@ -22,8 +21,7 @@ namespace tit::sph {
 
 /// Explicit equations type.
 template<class EE>
-concept explicit_equations = specialization_of<EE, FluidEquations> ||
-                             specialization_of<EE, FluidEquationsRiemann>;
+concept explicit_equations = specialization_of<EE, FluidEquations>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
