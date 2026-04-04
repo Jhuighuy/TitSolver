@@ -13,7 +13,6 @@ add_tit_library(
     "energy_equation.hpp"
     "equation_of_state.hpp"
     "field.hpp"
-    "fluid_equations_riemann.hpp"
     "fluid_equations.hpp"
     "heat_conductivity.hpp"
     "kernel.hpp"
@@ -21,8 +20,6 @@ add_tit_library(
     "motion_equation.hpp"
     "particle_array.hpp"
     "particle_mesh.hpp"
-    "reconstruction.hpp"
-    "riemann_solver.hpp"
     "time_integrator.hpp"
     "viscosity.hpp"
   DEPENDS
