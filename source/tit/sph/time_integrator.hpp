@@ -32,11 +32,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{r, v, dv_dt};
+      Equations::required_fields | TypeSet{r, dr, v, dv_dt, drho_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{r, v, u};
+      Equations::modified_fields | TypeSet{r, v, rho};
 
   /// Construct time integrator.
   ///
@@ -61,24 +61,18 @@ public:
 
     // Update particle density.
     equations_.compute_density(mesh, particles);
-    if constexpr (has<PV>(drho_dt)) {
-      par::for_each(particles.fluid(),
-                    [dt](PV a) { rho[a] += dt * drho_dt[a]; });
-    }
+    par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
 
     // Update particle velocty, internal energy, etc.
     equations_.compute_forces(mesh, particles);
     par::for_each(particles.fluid(), [dt](PV a) {
       v[a] += dt * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
     });
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
-      equations_.compute_shifts(mesh, particles);
-      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
-    }
+    equations_.compute_shifts(mesh, particles);
+    par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
   }
 
 private:
@@ -96,11 +90,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{r, v, dv_dt};
+      Equations::required_fields | TypeSet{r, dr, v, dv_dt, drho_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{r, v, u};
+      Equations::modified_fields | TypeSet{r, v, rho};
 
   /// Construct time integrator.
   ///
@@ -130,28 +124,21 @@ public:
     par::for_each(particles.fluid(), [dt, dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a];
       r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
     });
 
     // Update particle velocity to the full step.
     equations_.compute_density(mesh, particles);
-    if constexpr (has<PV>(drho_dt)) {
-      par::for_each(particles.fluid(),
-                    [dt](PV a) { rho[a] += dt * drho_dt[a]; });
-    }
+    par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
 
     // Update particle velocity to the full step.
     equations_.compute_forces(mesh, particles);
     par::for_each(particles.fluid(), [dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a]; // Kick.
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt_2 * du_dt[a];
     });
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
-      equations_.compute_shifts(mesh, particles);
-      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
-    }
+    equations_.compute_shifts(mesh, particles);
+    par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
   }
 
 private:
@@ -169,11 +156,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{r, v, dv_dt};
+      Equations::required_fields | TypeSet{r, dr, v, dv_dt, drho_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{r, v, u};
+      Equations::modified_fields | TypeSet{r, v, rho};
 
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(Equations equations) noexcept
@@ -201,10 +188,8 @@ public:
     lincomb_(1.0 / 3.0, old_particles, 2.0 / 3.0, particles);
 
     // Apply particle shifting.
-    if constexpr (has<PV>(dr)) {
-      equations_.compute_shifts(mesh, particles);
-      par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
-    }
+    equations_.compute_shifts(mesh, particles);
+    par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
   }
 
 private:
@@ -226,8 +211,7 @@ private:
     par::for_each(particles.fluid(), [dt](PV a) {
       r[a] += dt * v[a]; // Drift-Kick: position is updated before velocity.
       v[a] += dt * dv_dt[a];
-      if constexpr (has<PV>(drho_dt)) rho[a] += dt * drho_dt[a];
-      if constexpr (has<PV>(u, du_dt)) u[a] += dt * du_dt[a];
+      rho[a] += dt * drho_dt[a];
     });
   }
 
@@ -245,9 +229,6 @@ private:
           r[out_a] = weight * r[a] + out_weight * r[out_a];
           v[out_a] = weight * v[a] + out_weight * v[out_a];
           rho[out_a] = weight * rho[a] + out_weight * rho[out_a];
-          if constexpr (has<PV>(u)) {
-            u[out_a] = weight * u[a] + out_weight * u[out_a];
-          }
         });
   }
 
