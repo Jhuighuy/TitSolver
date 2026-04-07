@@ -13,6 +13,26 @@
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+.radix-themes {
+  --default-font-family:
+    "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+  --strong-font-family: var(--default-font-family);
+  --heading-font-family: var(--default-font-family);
+  --code-font-family:
+    "IBM Plex Mono", "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --em-font-family: var(--code-font-family);
+}
+
+.radix-themes.light {
+  --color-panel-solid: var(--color-slate-100);
+}
+
+.radix-themes.dark {
+  --color-panel-solid: var(--color-slate-900);
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
 .title-bar-drag {
   -webkit-app-region: drag;
   user-select: none;

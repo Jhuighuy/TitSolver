@@ -23,7 +23,7 @@ export function Window({ children }: Readonly<WindowProps>) {
   const isFullScreen = useWindowIsFullScreen();
 
   return (
-    <Theme appearance={theme}>
+    <Theme appearance={theme} accentColor="indigo" grayColor="slate">
       <Flex direction="column" width="100vw" height="100vh" gap="1px">
         {isFullScreen || <TitleBar />}
         <Box asChild flexGrow="1" minHeight="0">

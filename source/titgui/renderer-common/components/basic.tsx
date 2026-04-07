@@ -14,7 +14,12 @@ export function TechText({
   className,
   ...props
 }: Readonly<ComponentProps<typeof Text>>) {
-  return <Text {...props} className={cn("font-mono italic", className)} />;
+  return (
+    <Text
+      {...props}
+      className={cn("[font-family:var(--code-font-family)]", className)}
+    />
+  );
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
