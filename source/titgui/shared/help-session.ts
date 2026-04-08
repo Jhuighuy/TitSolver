@@ -5,21 +5,15 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type TabID = number;
-
 export interface Tab {
-  id: TabID;
+  id: number;
   url: string;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type TabTitles = Record<TabID, string>;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 export interface HelpSession {
-  activeTabID?: TabID;
+  activeTabID?: number;
   tabs: Tab[];
 }
 

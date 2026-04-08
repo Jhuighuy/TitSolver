@@ -3,9 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box } from "@radix-ui/themes";
 import { type ComponentProps, useMemo } from "react";
 
+import { Box } from "~/renderer-common/components/layout";
 import {
   type ColorMapName,
   colorMaps,
@@ -13,17 +13,17 @@ import {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type ColorBoxProps = ComponentProps<typeof Box> & {
+interface ColorBoxProps extends Omit<ComponentProps<typeof Box>, "as"> {
   name: ColorMapName;
   orientation?: "horizontal" | "vertical";
-};
+}
 
 export function ColorBox({
   name,
   orientation = "horizontal",
   style,
   ...props
-}: ColorBoxProps) {
+}: Readonly<ColorBoxProps>) {
   const gradientStops = useMemo(
     () =>
       colorMaps[name].points

@@ -14,8 +14,8 @@ export interface BackgroundColor {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export const backgroundColors = {
-  none: {
-    label: "None",
+  default: {
+    label: "Default",
     color: null,
     appearance: "inherit",
   } satisfies BackgroundColor,

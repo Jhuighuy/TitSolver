@@ -3,13 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex } from "@radix-ui/themes";
 import { useState } from "react";
 
+import { Tabs } from "~/renderer-common/components/tabs";
 import { TabPane } from "~/renderer-help/components/tab-pane";
-import { TabStrip } from "~/renderer-help/components/tab-strip";
 import { useTabs } from "~/renderer-help/hooks/use-tabs";
-import type { TabID, TabTitles } from "~/shared/help-session";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -19,39 +17,35 @@ export function Shell() {
   const { activeTabID, tabs, addTab, closeTab, selectTab, navigateTab } =
     useTabs();
 
-  const [titles, setTitles] = useState<TabTitles>({});
+  const [titles, setTitles] = useState<Record<number, string>>({});
 
-  function setTitleByID(id: TabID, title: string) {
+  function setTitleByID(id: number, title: string) {
     setTitles((previous) => ({ ...previous, [id]: title }));
   }
 
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" gap="1px" width="100%" height="100%">
-      {/* ---- Tab Strip. -------------------------------------------------- */}
-      <TabStrip
-        activeTabID={activeTabID}
-        tabs={tabs}
-        tabTitles={titles}
-        onAddTab={() => {
-          addTab();
-        }}
-        onCloseTab={closeTab}
-        onSelectTab={selectTab}
-      />
+    <Tabs
+      value={activeTabID ?? null}
+      onValueChange={(value) => {
+        if (typeof value === "number") selectTab(value);
+      }}
+      onAddTab={addTab}
+      onCloseTab={(value) => {
+        if (typeof value === "number") closeTab(value);
+      }}
+    >
+      <Tabs.List>
+        {tabs.map((tab) => (
+          <Tabs.Tab key={tab.id} value={tab.id}>
+            {titles[tab.id]}
+          </Tabs.Tab>
+        ))}
+      </Tabs.List>
 
-      {/* ---- Tab Panes. -------------------------------------------------- */}
       {tabs.map((tab) => (
-        // Inactive tabs are intentionally hidden only visually. This is crucial
-        // for the correct loading of tab titles during initial app startup.
-        <Box
-          key={tab.id}
-          flexGrow="1"
-          width="100%"
-          height="100%"
-          {...(tab.id !== activeTabID && { display: "none" })}
-        >
+        <Tabs.Panel key={tab.id} value={tab.id} keepMounted={true}>
           <TabPane
             url={tab.url}
             onNavigate={(url) => {
@@ -62,9 +56,9 @@ export function Shell() {
             }}
             onOpenInNewTab={addTab}
           />
-        </Box>
+        </Tabs.Panel>
       ))}
-    </Flex>
+    </Tabs>
   );
 }
 

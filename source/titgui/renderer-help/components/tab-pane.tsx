@@ -3,9 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex } from "@radix-ui/themes";
 import { useRef, useState } from "react";
 
+import { Box, Flex } from "~/renderer-common/components/layout";
 import { Toolbar } from "~/renderer-help/components/toolbar";
 import {
   type Navigation,
@@ -86,7 +86,7 @@ export function TabPane({
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" width="100%" height="100%">
+    <Flex direction="column" size="100%">
       {/* ---- Toolbar. ---------------------------------------------------- */}
       <Toolbar
         navigation={navigation}
@@ -102,7 +102,7 @@ export function TabPane({
       />
 
       {/* ---- Web View. -------------------------------------------------- */}
-      <Box asChild flexGrow="1">
+      <Box flexGrow="1">
         <WebView
           ref={webViewRef}
           url={url}

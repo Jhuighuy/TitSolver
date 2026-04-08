@@ -21,7 +21,7 @@ import {
   HELP_SESSION_CHANGED_CHANNEL,
   WEBVIEW_OPEN_IN_TAB_CHANNEL,
 } from "~/shared/channels";
-import type { HelpSession, Tab, TabID } from "~/shared/help-session";
+import type { HelpSession, Tab } from "~/shared/help-session";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -406,7 +406,7 @@ class HelpSessionModel implements HelpSession {
   /**
    * Active tab ID.
    */
-  public activeTabID: TabID | undefined;
+  public activeTabID: number | undefined;
 
   /**
    * Array of tabs.
@@ -416,8 +416,8 @@ class HelpSessionModel implements HelpSession {
   /**
    * Construct help session model.
    */
-  public constructor(activeTabID?: TabID, tabs: Tab[] = []) {
-    const tabIDs = new Set<TabID>();
+  public constructor(activeTabID?: number, tabs: Tab[] = []) {
+    const tabIDs = new Set<number>();
     for (const tab of tabs) {
       assert(!tabIDs.has(tab.id), `Duplicate tab ID: ${tab.id}.`);
       tabIDs.add(tab.id);
@@ -442,7 +442,7 @@ class HelpSessionModel implements HelpSession {
   /**
    * Find the tab with the given ID.
    */
-  public findTab(id: TabID) {
+  public findTab(id: number) {
     const index = this.tabs.findIndex((tab) => tab.id === id);
     return [index === -1 ? undefined : this.tabs[index], index] as const;
   }
@@ -471,7 +471,7 @@ class HelpSessionModel implements HelpSession {
   /**
    * Close the tab with the given ID.
    */
-  public closeTab(id: TabID) {
+  public closeTab(id: number) {
     const [tab, index] = this.findTab(id);
     assert(tab !== undefined);
     this.tabs.splice(index, 1);
@@ -486,7 +486,7 @@ class HelpSessionModel implements HelpSession {
   /**
    * Select the tab with the given ID.
    */
-  public selectTab(id: TabID) {
+  public selectTab(id: number) {
     const [tab] = this.findTab(id);
     assert(tab !== undefined);
     this.activeTabID = id;
@@ -495,7 +495,7 @@ class HelpSessionModel implements HelpSession {
   /**
    * Update the URL of the tab with the given ID.
    */
-  public navigateTab(id: TabID, url: string) {
+  public navigateTab(id: number, url: string) {
     const [tab] = this.findTab(id);
     assert(tab !== undefined);
     tab.url = url;

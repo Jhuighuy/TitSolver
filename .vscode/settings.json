@@ -39,6 +39,7 @@
     "/Applications/ParaView-6.1.0-RC1.app/Contents/Python/"
   ],
   "cmake.configureOnOpen": false,
+  "tailwindCSS.classFunctions": ["cn", "clsx", "cva"],
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
