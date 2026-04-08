@@ -3,19 +3,20 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Text } from "@radix-ui/themes";
+import { IconHandStop, IconRun } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef } from "react";
-import { TbRun as RunIcon, TbHandStop as StopIcon } from "react-icons/tb";
 
+import { Box } from "~/renderer-common/components/layout";
 import {
   type MenuAction,
   useMenuAction,
-} from "~/renderer-main/components/menu";
+} from "~/renderer-common/components/menu";
+import { Text } from "~/renderer-common/components/text";
 import { useSolver } from "~/renderer-main/components/solver";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export function RunMenu() {
+export function DashboardMenu() {
   // ---- Solver. --------------------------------------------------------------
 
   const { isSolverRunning, solverOutput, runSolver, stopSolver } = useSolver();
@@ -23,7 +24,7 @@ export function RunMenu() {
   const runAction = useMemo<MenuAction>(
     () => ({
       name: "Run Solver",
-      icon: <RunIcon size={16} />,
+      icon: <IconRun />,
       disabled: isSolverRunning,
       onClick: runSolver,
     }),
@@ -35,7 +36,7 @@ export function RunMenu() {
   const stopAction = useMemo<MenuAction>(
     () => ({
       name: "Stop Solver",
-      icon: <StopIcon size={16} />,
+      icon: <IconHandStop />,
       disabled: !isSolverRunning,
       onClick: stopSolver,
     }),

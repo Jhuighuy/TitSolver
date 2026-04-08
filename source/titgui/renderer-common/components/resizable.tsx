@@ -3,15 +3,17 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex, VisuallyHidden } from "@radix-ui/themes";
 import type { ReactNode } from "react";
 
+import { Box, Flex } from "~/renderer-common/components/layout";
+import { cn } from "~/renderer-common/components/utils";
+import { VisuallyHidden } from "~/renderer-common/components/visually-hidden";
 import { clamp } from "~/renderer-common/utils-math";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface ResizableDivProps {
+interface ResizableProps {
   side: "left" | "right" | "top" | "bottom";
   size: number;
   setSize: (size: number) => void;
@@ -20,8 +22,6 @@ interface ResizableDivProps {
   children?: ReactNode;
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 export function Resizable({
   side,
   size,
@@ -29,12 +29,12 @@ export function Resizable({
   minSize,
   maxSize,
   children,
-}: Readonly<ResizableDivProps>) {
+}: Readonly<ResizableProps>) {
   assert(0 < minSize && minSize <= size && size <= maxSize);
 
   const reverse = side === "right" || side === "bottom";
   const horizontal = side === "left" || side === "right";
-  const flexDirection = (() => {
+  const direction = (() => {
     switch (side) {
       case "left":
         return "row";
@@ -92,16 +92,14 @@ export function Resizable({
   }
 
   return (
-    <Flex direction={flexDirection}>
-      <div
-        style={
-          horizontal
-            ? { width: `${size}px`, height: "100%" }
-            : { height: `${size}px`, width: "100%" }
-        }
+    <Flex direction={direction}>
+      <Box
+        {...(horizontal
+          ? { width: `${size}px`, height: "100%" }
+          : { height: `${size}px`, width: "100%" })}
       >
         {children}
-      </div>
+      </Box>
       <Box position="relative">
         <Box
           tabIndex={0}
@@ -117,8 +115,10 @@ export function Resizable({
           {...(horizontal
             ? { left: "-1px", width: "2px", height: "100%" }
             : { top: "-1px", width: "100%", height: "2px" })}
-          className="focus-visible:outline-(--accent-8)"
-          style={{ cursor: horizontal ? "ew-resize" : "ns-resize" }}
+          className={cn(
+            "focus-visible:outline-2 focus-visible:outline-(--accent-fg-3)",
+            horizontal ? "cursor-ew-resize" : "cursor-ns-resize",
+          )}
         >
           <VisuallyHidden>Resize</VisuallyHidden>
         </Box>

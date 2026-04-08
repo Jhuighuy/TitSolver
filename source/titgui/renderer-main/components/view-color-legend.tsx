@@ -3,11 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box } from "@radix-ui/themes";
 import type { ComponentProps } from "react";
 
-import { TechText } from "~/renderer-common/components/basic";
 import { ColorBox } from "~/renderer-common/components/color-box";
+import { Box } from "~/renderer-common/components/layout";
+import { Text } from "~/renderer-common/components/text";
 import { assert, iota } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -25,7 +25,7 @@ export function ViewColorLegend({
   ticks = 10,
   title,
   ...props
-}: Omit<ViewColorLegendProps, "orientation">) {
+}: Readonly<Omit<ViewColorLegendProps, "orientation">>) {
   assert(min <= max);
   assert(ticks >= 2);
 
@@ -34,7 +34,7 @@ export function ViewColorLegend({
       {...props}
       orientation="vertical"
       position="relative"
-      style={{ border: "2px solid var(--gray-11)" }}
+      className="border-2 text-(--fg-2)"
     >
       {/* ---- Title. ------------------------------------------------------ */}
       {title && (
@@ -44,7 +44,9 @@ export function ViewColorLegend({
           top="50%"
           style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
         >
-          <TechText>{title}</TechText>
+          <Text size="3" mono>
+            {title}
+          </Text>
         </Box>
       )}
 
@@ -62,7 +64,7 @@ export function ViewColorLegend({
             width="100%"
             height="2px"
             style={{
-              background: "var(--gray-11)",
+              background: "currentColor",
               transform: "translate(-50%, -50%)",
             }}
           >
@@ -71,7 +73,9 @@ export function ViewColorLegend({
               left="150%"
               style={{ transform: "translateY(-50%)" }}
             >
-              <TechText size="2">{(min + (max - min) * t).toFixed(2)}</TechText>
+              <Text size="2" mono>
+                {(min + (max - min) * t).toFixed(2)}
+              </Text>
             </Box>
           </Box>
         );

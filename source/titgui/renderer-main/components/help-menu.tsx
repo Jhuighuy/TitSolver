@@ -3,8 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Flex, Link } from "@radix-ui/themes";
-import { TbBook as BookIcon } from "react-icons/tb";
+import { IconBook } from "@tabler/icons-react";
+
+import { Flex } from "~/renderer-common/components/layout";
+import { Link } from "~/renderer-common/components/link";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -21,10 +23,8 @@ export function HelpMenu() {
           void globalThis.help?.addTab();
         }}
       >
-        <Flex align="center" gap="2">
-          <BookIcon size={16} />
-          User Manual
-        </Flex>
+        <IconBook />
+        User Manual
       </Link>
     </Flex>
   );

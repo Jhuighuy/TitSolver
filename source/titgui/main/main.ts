@@ -65,6 +65,7 @@ class Application {
     nativeTheme.themeSource = this.persist.get("theme", themeSchema, "system");
     nativeTheme.on("updated", () => {
       this.persist?.set("theme", nativeTheme.themeSource);
+      this.windowManager?.updateBackgroundColors();
     });
 
     // Setup windows.

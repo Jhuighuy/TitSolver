@@ -3,10 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Button } from "@radix-ui/themes";
 import { type ComponentProps, useState } from "react";
 import { z } from "zod";
 
+import { Button } from "~/renderer-common/components/button";
 import { downloadFile } from "~/renderer-common/utils";
 import { useConnection } from "~/renderer-main/components/connection";
 import { assert } from "~/shared/utils";

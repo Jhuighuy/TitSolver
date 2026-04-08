@@ -4,27 +4,25 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import {
-  Flex,
-  IconButton,
-  Separator,
-  Spinner,
-  Text,
-  TextField,
-} from "@radix-ui/themes";
-import { cva } from "class-variance-authority";
-import {
-  TbArrowBackUp as BackIcon,
-  TbX as ClearIcon,
-  TbChevronDown as FindNextIcon,
-  TbChevronUp as FindPreviousIcon,
-  TbArrowForwardUp as ForwardIcon,
-  TbHome as HomeIcon,
-  TbReload as ReloadIcon,
-  TbSearch as SearchIcon,
-  TbWorld as WorldIcon,
-} from "react-icons/tb";
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconChevronDown,
+  IconChevronUp,
+  IconHome,
+  IconReload,
+  IconSearch,
+  IconWorld,
+  IconX,
+} from "@tabler/icons-react";
 
-import { chrome } from "~/renderer-common/components/classes";
+import { IconButton } from "~/renderer-common/components/button";
+import { chrome, surface } from "~/renderer-common/components/classes";
+import { TextInput } from "~/renderer-common/components/input";
+import { Flex } from "~/renderer-common/components/layout";
+import { Separator } from "~/renderer-common/components/separator";
+import { Spinner } from "~/renderer-common/components/spinner";
+import { Text } from "~/renderer-common/components/text";
+import { cn } from "~/renderer-common/components/utils";
 import type {
   Navigation,
   SearchResult,
@@ -63,37 +61,38 @@ export function Toolbar({
 
   return (
     <Flex
-      direction="row"
       align="center"
-      height="36px"
+      height="9"
+      minHeight="9"
+      maxHeight="9"
       px="2"
       gap="3"
-      className={chrome({ direction: "br" })}
+      className={chrome()}
     >
       {/* ---- Back / Forward. --------------------------------------------- */}
-      <IconButton variant="ghost" disabled={!canGoBack} onClick={onBack}>
-        <BackIcon size={16} />
+      <IconButton size="2" disabled={!canGoBack} onClick={onBack}>
+        <IconArrowBackUp />
       </IconButton>
 
-      <IconButton variant="ghost" disabled={!canGoForward} onClick={onForward}>
-        <ForwardIcon size={16} />
+      <IconButton size="2" disabled={!canGoForward} onClick={onForward}>
+        <IconArrowForwardUp />
       </IconButton>
 
-      <Separator orientation="vertical" size="1" />
+      <Separator orientation="vertical" />
 
       {/* ---- Reload. ----------------------------------------------------- */}
-      <IconButton variant="ghost" onClick={onReload}>
-        <ReloadIcon size={16} />
+      <IconButton size="2" onClick={onReload}>
+        <IconReload />
       </IconButton>
 
-      <Separator orientation="vertical" size="1" />
+      <Separator orientation="vertical" />
 
       {/* ---- Home. ------------------------------------------------------- */}
-      <IconButton variant="ghost" onClick={onHome}>
-        <HomeIcon size={16} />
+      <IconButton size="2" onClick={onHome}>
+        <IconHome />
       </IconButton>
 
-      <Separator orientation="vertical" size="1" />
+      <Separator orientation="vertical" />
 
       {/* ---- URL. -------------------------------------------------------- */}
       <Flex
@@ -102,24 +101,24 @@ export function Toolbar({
         gap="2"
         px="3"
         py="1"
-        className={toolbarPill()}
+        className={cn(surface(), "rounded-full border [&_svg]:shrink-0")}
       >
-        {state === "loading" ? <Spinner size="1" /> : <WorldIcon size={14} />}
-
-        <Text size="1" color="gray" truncate>
+        {state === "loading" ? <Spinner /> : <IconWorld className="size-3.5" />}
+        <Text color="subtle" truncate className="min-w-0 flex-1">
           {url}
         </Text>
       </Flex>
 
-      <Separator orientation="vertical" size="1" />
+      <Separator orientation="vertical" />
 
       {/* ---- Search. ----------------------------------------------------- */}
-      <TextField.Root
+      <TextInput
         value={searchQuery}
-        size="1"
+        radius="full"
         placeholder="Find in page"
-        onChange={(event) => {
-          onSearchQueryChanged(event.target.value);
+        slot={<IconSearch />}
+        onValueChange={(value) => {
+          onSearchQueryChanged(value);
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
@@ -132,79 +131,45 @@ export function Toolbar({
             onSearchQueryChanged("");
           }
         }}
-        className={toolbarPill({ interactive: true })}
+        className={
+          searchQuery.trim() === ""
+            ? undefined
+            : "[&_input]:pr-14 [&_input]:sm:pr-22"
+        }
       >
-        <TextField.Slot>
-          <SearchIcon size={12} />
-        </TextField.Slot>
-
         {searchQuery.trim() !== "" && (
           <>
             {searchResult && (
-              <TextField.Slot side="right" pr="1">
-                <Text size="1" color="gray">
-                  {`${searchResult.activeMatch}/${searchResult.matches}`}
-                </Text>
-              </TextField.Slot>
+              <Text color="subtle" className="hidden sm:block">
+                {`${searchResult.activeMatch}/${searchResult.matches}`}
+              </Text>
             )}
-
-            <TextField.Slot side="right" pr="2">
-              <IconButton
-                size="1"
-                variant="ghost"
-                color="gray"
-                aria-label="Clear search"
-                onClick={() => {
-                  onSearchQueryChanged("");
-                }}
-              >
-                <ClearIcon size={12} />
-              </IconButton>
-            </TextField.Slot>
+            <IconButton
+              aria-label="Clear search"
+              className="pointer-events-auto"
+              onClick={() => {
+                onSearchQueryChanged("");
+              }}
+            >
+              <IconX />
+            </IconButton>
           </>
         )}
-      </TextField.Root>
+      </TextInput>
 
       {searchQuery.trim() !== "" && (
         <>
-          <IconButton variant="ghost" onClick={onSearchPrevious}>
-            <FindPreviousIcon size={16} />
+          <IconButton size="2" onClick={onSearchPrevious}>
+            <IconChevronUp />
           </IconButton>
 
-          <IconButton variant="ghost" onClick={onSearchNext}>
-            <FindNextIcon size={16} />
+          <IconButton size="2" onClick={onSearchNext}>
+            <IconChevronDown />
           </IconButton>
         </>
       )}
     </Flex>
   );
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-const toolbarPill = cva(
-  [
-    "rounded-full border",
-    "light:border-slate-300/90",
-    "light:bg-white/82",
-    "dark:border-slate-700/60",
-    "dark:bg-slate-950/72",
-  ],
-  {
-    variants: {
-      interactive: {
-        false: "",
-        true: [
-          "transition-colors",
-          "light:hover:border-slate-400/90",
-          "dark:hover:border-slate-600/70",
-        ],
-      },
-    },
-    defaultVariants: {
-      interactive: false,
-    },
-  },
-);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -4,31 +4,116 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 @import "tailwindcss";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
 @source "./";
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-@custom-variant light (&:where(.light, .light *));
-@custom-variant dark (&:where(.dark, .dark *));
+:root {
+  /* ---- Fonts. ------------------------------------------------------------ */
+  --font-sans: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-mono:
+    "IBM Plex Mono", "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --text-1: 12px;
+  --text-2: 13px;
+  --text-3: 14px;
+  --leading-1: 14px;
+  --leading-2: 16px;
+  --leading-3: 18px;
+  --tracking-label-1: 0.08em;
+  --tracking-label-2: 0.05em;
+
+  /* ---- Backgrounds. ------------------------------------------------------ */
+  --bg-1: var(--color-slate-200);
+  --bg-2: var(--color-slate-200);
+  --bg-3: white;
+  --bg-4: var(--color-slate-100);
+  --bg-5: var(--color-slate-300);
+  --bg-6: color-mix(in srgb, var(--color-slate-400) 60%, transparent);
+  --accent-bg-1: var(--color-indigo-50);
+  --accent-bg-2: var(--color-indigo-100);
+  --accent-bg-3: var(--color-indigo-500);
+  --accent-bg-4: var(--color-indigo-700);
+
+  /* ---- Foregrounds. ------------------------------------------------------ */
+  --fg-1: var(--color-slate-900);
+  --fg-2: var(--color-slate-700);
+  --fg-3: var(--color-slate-600);
+  --fg-4: var(--color-slate-500);
+  --fg-5: var(--color-slate-400);
+  --accent-fg-1: var(--color-indigo-700);
+  --accent-fg-2: var(--color-indigo-600);
+  --accent-fg-3: var(--color-indigo-500);
+  --accent-fg-4: var(--color-indigo-400);
+  --accent-fg-5: white;
+
+  /* ---- Chrome. ----------------------------------------------------------- */
+  --chrome-1: var(--color-slate-300);
+  --chrome-2: var(--color-slate-400);
+  --shadow-popup:
+    0 10px 15px -3px rgb(226 232 240 / 0.6),
+    0 4px 6px -4px rgb(226 232 240 / 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* ---- Backgrounds. ---------------------------------------------------- */
+    --bg-1: var(--color-slate-900);
+    --bg-2: var(--color-slate-700);
+    --bg-3: var(--color-slate-800);
+    --bg-4: var(--color-slate-700);
+    --bg-5: var(--color-slate-600);
+    --bg-6: color-mix(in srgb, var(--color-slate-600) 60%, transparent);
+    --accent-bg-1: color-mix(in srgb, var(--color-indigo-950) 40%, transparent);
+    --accent-bg-2: color-mix(in srgb, var(--color-indigo-900) 60%, transparent);
+    --accent-bg-3: var(--color-indigo-400);
+    --accent-bg-4: var(--color-indigo-600);
+
+    /* ---- Foregrounds. ---------------------------------------------------- */
+    --fg-1: var(--color-slate-100);
+    --fg-2: var(--color-slate-300);
+    --fg-3: var(--color-slate-400);
+    --fg-4: var(--color-slate-400);
+    --fg-5: var(--color-slate-500);
+    --accent-fg-1: var(--color-indigo-300);
+    --accent-fg-2: var(--color-indigo-400);
+    --accent-fg-3: var(--color-indigo-400);
+    --accent-fg-4: var(--color-indigo-400);
+    --accent-fg-5: white;
+
+    /* ---- Chrome. --------------------------------------------------------- */
+    --chrome-1: var(--color-slate-600);
+    --chrome-2: var(--color-slate-500);
+    --shadow-popup:
+      0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  }
+}
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-.radix-themes {
-  --default-font-family:
-    "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
-  --strong-font-family: var(--default-font-family);
-  --heading-font-family: var(--default-font-family);
-  --code-font-family:
-    "IBM Plex Mono", "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
-  --em-font-family: var(--code-font-family);
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-1);
+  background: var(--bg-1);
 }
 
-.radix-themes.light {
-  --color-panel-solid: var(--color-slate-100);
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+::selection {
+  color: var(--accent-fg-5);
+  background: var(--accent-bg-3);
 }
 
-.radix-themes.dark {
-  --color-panel-solid: var(--color-slate-900);
+::-moz-selection {
+  color: var(--accent-fg-5);
+  background: var(--accent-bg-3);
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */

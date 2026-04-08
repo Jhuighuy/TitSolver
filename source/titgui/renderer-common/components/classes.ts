@@ -7,45 +7,24 @@ import { cva } from "class-variance-authority";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export const chrome = cva(
-  [
-    "border",
-    [
-      "light:border-slate-300/90",
-      "dark:border-slate-700/60", //
-    ],
-    [
-      "light:shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]",
-      "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
-    ],
-    [
-      "light:from-slate-200 light:to-slate-300",
-      "dark:from-slate-700 dark:to-slate-800",
-    ],
-  ],
-  {
-    variants: {
-      direction: {
-        br: "bg-linear-to-br",
-        bl: "bg-linear-to-bl",
-      },
-    },
-    defaultVariants: {
-      direction: "br",
-    },
-  },
-);
+export const chrome = cva([
+  "bg-slate-200 dark:bg-slate-700",
+  "border border-slate-300/90 dark:border-slate-800",
+  "shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+]);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export const surface = cva([
-  "border",
-  ["light:border-slate-300/90", "dark:border-slate-700/60"],
-  ["light:bg-slate-100", "dark:bg-slate-900"],
+  "rounded",
+  "bg-slate-100 dark:bg-slate-800",
+  "border border-slate-300/90 dark:border-slate-800",
 ]);
 
-export const hoverSurface = cva([
-  ["light:hover:bg-slate-300/70", "dark:hover:bg-slate-600/60"],
-]);
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export const hoverSurface = cva(
+  "hover:bg-slate-300/70 dark:hover:bg-slate-600/60",
+);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

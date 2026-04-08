@@ -3,7 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Card, Flex, Strong, Text } from "@radix-ui/themes";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -11,8 +10,11 @@ import {
   useState,
 } from "react";
 import { Box2, Vector2 } from "three";
-import { chrome, surface } from "~/renderer-common/components/classes";
 
+import { Card } from "~/renderer-common/components/card";
+import { surface } from "~/renderer-common/components/classes";
+import { Box, Flex } from "~/renderer-common/components/layout";
+import { Strong, Text } from "~/renderer-common/components/text";
 import { cn } from "~/renderer-common/components/utils";
 import { Polygon2 } from "~/renderer-common/visual/polygon2";
 import type {
@@ -86,8 +88,8 @@ export function ViewSelection({
   return (
     <Box
       flexGrow="1"
-      width="100%"
-      height="100%"
+      mx="1"
+      mb="1"
       position="relative"
       overflow="hidden"
       tabIndex={-1}
@@ -96,7 +98,7 @@ export function ViewSelection({
       }}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
-      className={cn(chrome({ direction: "bl" }), "focus:outline-none")}
+      className={cn(surface(), "focus:outline-none")}
     >
       {children}
       {(selectionCount > 0 || toolMode !== "normal") && (
@@ -211,7 +213,7 @@ function SelectionOverlay({
 
   // ---- Layout. --------------------------------------------------------------
 
-  const props = {
+  const svgProps = {
     fill: "rgba(59, 130, 246, 0.15)",
     stroke: "rgb(59, 130, 246)",
     strokeWidth: "1.5",
@@ -220,8 +222,7 @@ function SelectionOverlay({
 
   return (
     <Box
-      width="100%"
-      height="100%"
+      size="100%"
       tabIndex={-1}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -241,14 +242,14 @@ function SelectionOverlay({
             y={shape.min.y}
             width={shape.max.x - shape.min.x}
             height={shape.max.y - shape.min.y}
-            {...props}
+            {...svgProps}
           />
         )}
 
         {shape instanceof Polygon2 && (
           <polyline
             points={shape.points.map(({ x, y }) => `${x},${y}`).join(" ")}
-            {...props}
+            {...svgProps}
             strokeLinejoin="round"
           />
         )}
@@ -295,10 +296,10 @@ function SelectionHint({
   })();
 
   return (
-    <Card size="1" className={cn(surface(), "shadow-md")}>
+    <Card className="shadow-md">
       <Flex direction="column" gap="1">
         {toolLabel !== undefined && (
-          <Text size="1">
+          <Text>
             {toolLabel}
             {actionLabel !== undefined && (
               <>
@@ -310,13 +311,13 @@ function SelectionHint({
           </Text>
         )}
         {selectionCount > 0 && (
-          <Text size="1">
+          <Text>
             <Strong>{selectionCount}</Strong>{" "}
             {selectionCount === 1 ? "particle" : "particles"} selected.
           </Text>
         )}
         {selectionCount > 0 && (
-          <Text size="1">
+          <Text>
             Press <Strong>Esc</Strong> to clear selection.
           </Text>
         )}
