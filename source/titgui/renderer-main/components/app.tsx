@@ -3,24 +3,24 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex } from "@radix-ui/themes";
 import {
-  TbDashboard as DashboardIcon,
-  TbHelp as HelpIcon,
-  TbLogs as LogsIcon,
-  TbServer as ServerIcon,
-  TbSettings as SettingsIcon,
-  TbDatabase as StorageIcon,
-  TbTerminal as TerminalIcon,
-} from "react-icons/tb";
+  IconDashboard,
+  IconDatabase,
+  IconHelp,
+  IconLogs,
+  IconServer,
+  IconSettings,
+  IconTerminal,
+} from "@tabler/icons-react";
 
+import { Box, Flex } from "~/renderer-common/components/layout";
+import { Menu } from "~/renderer-common/components/menu";
 import { Window } from "~/renderer-common/components/window";
 import { ConnectionProvider } from "~/renderer-main/components/connection";
-import { Menu } from "~/renderer-main/components/menu";
-import { HelpMenu } from "~/renderer-main/components/menu-help";
-import { LogsMenu } from "~/renderer-main/components/menu-logs";
-import { RunMenu } from "~/renderer-main/components/menu-run";
-import { SettingsMenu } from "~/renderer-main/components/menu-settings";
+import { DashboardMenu } from "~/renderer-main/components/dashboard-menu";
+import { HelpMenu } from "~/renderer-main/components/help-menu";
+import { LogsMenu } from "~/renderer-main/components/logs-menu";
+import { SettingsMenu } from "~/renderer-main/components/settings-menu";
 import { SolverProvider } from "~/renderer-main/components/solver";
 import { StorageProvider } from "~/renderer-main/components/storage";
 import { Timeline } from "~/renderer-main/components/timeline";
@@ -46,41 +46,33 @@ export function App() {
 
 function Page() {
   return (
-    <Flex direction="row" width="100%" height="100%" minHeight="0" gap="1px">
-      <Menu side="left">
-        <Menu.Item group={0} name="Storage" icon={<StorageIcon size={32} />} />
-        <Menu.Item
-          group={0}
-          name="Dashboard"
-          icon={<DashboardIcon size={32} />}
-        >
-          <RunMenu />
+    <Flex size="100%" minHeight="0" gap="1px">
+      <Menu.Root side="left">
+        <Menu.Item group={0} name="Storage" icon={<IconDatabase />} />
+        <Menu.Item group={0} name="Dashboard" icon={<IconDashboard />}>
+          <DashboardMenu />
         </Menu.Item>
-        <Menu.Item group={1} name="Help" icon={<HelpIcon size={32} />}>
+        <Menu.Item group={1} name="Help" icon={<IconHelp />}>
           <HelpMenu />
         </Menu.Item>
-        <Menu.Item group={1} name="Settings" icon={<SettingsIcon size={32} />}>
+        <Menu.Item group={1} name="Settings" icon={<IconSettings />}>
           <SettingsMenu />
         </Menu.Item>
-      </Menu>
+      </Menu.Root>
 
-      <Flex direction="column" width="100%" height="100%" gap="1px">
-        <Box flexGrow="1">
+      <Flex direction="column" size="100%" gap="1px">
+        <Box flexGrow="1" minHeight="0">
           <Viewport />
         </Box>
         <Timeline />
 
-        <Menu side="bottom">
-          <Menu.Item group={0} name="Logs" icon={<LogsIcon size={16} />}>
+        <Menu.Root side="bottom">
+          <Menu.Item group={0} name="Logs" icon={<IconLogs />}>
             <LogsMenu />
           </Menu.Item>
-          <Menu.Item
-            group={0}
-            name="Terminal"
-            icon={<TerminalIcon size={16} />}
-          />
-          <Menu.Item group={0} name="Server" icon={<ServerIcon size={16} />} />
-        </Menu>
+          <Menu.Item group={0} name="Terminal" icon={<IconTerminal />} />
+          <Menu.Item group={0} name="Server" icon={<IconServer />} />
+        </Menu.Root>
       </Flex>
     </Flex>
   );

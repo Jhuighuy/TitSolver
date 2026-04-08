@@ -3,24 +3,25 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex, IconButton, Separator, Tooltip } from "@radix-ui/themes";
+import {
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconPlayerSkipBack,
+  IconPlayerSkipForward,
+  IconPlayerTrackNext,
+  IconPlayerTrackPrev,
+  IconRefresh,
+  IconRepeat,
+} from "@tabler/icons-react";
 import { useEffect, useEffectEvent, useState } from "react";
-import {
-  FaBackward as BackIcon,
-  FaForward as ForwardIcon,
-  FaPause as PauseIcon,
-  FaPlay as PlayIcon,
-  FaStepBackward as StepBackwardIcon,
-  FaStepForward as StepForwardIcon,
-} from "react-icons/fa";
-import {
-  FaArrowsRotate as RefreshIcon,
-  FaRepeat as RepeatIcon,
-} from "react-icons/fa6";
 import ScrollContainer from "react-indiana-drag-scroll";
 
-import { TechText } from "~/renderer-common/components/basic";
+import { IconButton } from "~/renderer-common/components/button";
 import { chrome, hoverSurface } from "~/renderer-common/components/classes";
+import { Box, Flex } from "~/renderer-common/components/layout";
+import { Separator } from "~/renderer-common/components/separator";
+import { Text } from "~/renderer-common/components/text";
+import { Tooltip } from "~/renderer-common/components/tooltip";
 import { useStorage } from "~/renderer-main/components/storage";
 import { assert, iota } from "~/shared/utils";
 
@@ -75,142 +76,127 @@ export function Timeline() {
 
   // ---- Layout. --------------------------------------------------------------
 
-  const iconSize = 16;
   const alignedNumFrames =
     10 ** Math.ceil(Math.log10(Math.max(numFrames, 1))) + 1;
 
   return (
     <Flex
-      direction="row"
       align="center"
-      height="36px"
+      height="9"
+      minHeight="9"
+      maxHeight="9"
       px="2"
-      py="4px"
+      py="1"
       gap="1"
       className={chrome({ direction: "br" })}
     >
       {/* ---- Playback controls. ------------------------------------------ */}
-      <Flex direction="row" align="center" gap="4" mx="2">
+      <Flex align="center" gap="4" mx="2">
         <Tooltip content="Toggle repeat">
           <IconButton
-            variant="ghost"
-            color={isRepeating ? "blue" : "gray"}
+            size="2"
             radius="full"
+            active={isRepeating || undefined}
             onClick={() => {
               setIsRepeating(!isRepeating);
             }}
           >
-            <RepeatIcon size={iconSize} />
+            <IconRepeat />
           </IconButton>
         </Tooltip>
 
-        <Separator orientation="vertical" size="1" />
+        <Separator orientation="vertical" />
 
         <Tooltip content="Go to start">
           <IconButton
-            variant="ghost"
-            color="gray"
+            size="2"
             radius="full"
             disabled={numFrames === 0 || frameIndex === null}
             onClick={() => {
               requestFrame(0);
             }}
           >
-            <BackIcon size={iconSize} />
+            <IconPlayerTrackPrev />
           </IconButton>
         </Tooltip>
 
-        <Separator orientation="vertical" size="1" />
+        <Separator orientation="vertical" />
 
         <Tooltip content="Go to previous step">
           <IconButton
-            variant="ghost"
-            color="gray"
+            size="2"
             radius="full"
             disabled={numFrames === 0 || frameIndex === null}
             onClick={setPrevFrame}
           >
-            <StepBackwardIcon size={iconSize} />
+            <IconPlayerSkipBack />
           </IconButton>
         </Tooltip>
 
-        <Separator orientation="vertical" size="1" />
+        <Separator orientation="vertical" />
 
         <Tooltip content={isPlaying ? "Pause" : "Play"}>
           <IconButton
-            variant="ghost"
-            color="gray"
+            size="2"
             radius="full"
             disabled={numFrames === 0 || frameIndex === null}
             onClick={() => {
               setIsPlaying((x) => !x);
             }}
           >
-            {isPlaying ? (
-              <PauseIcon size={iconSize} />
-            ) : (
-              <PlayIcon size={iconSize} />
-            )}
+            {isPlaying ? <IconPlayerPause /> : <IconPlayerPlay />}
           </IconButton>
         </Tooltip>
 
-        <Separator orientation="vertical" size="1" />
+        <Separator orientation="vertical" />
 
         <Tooltip content="Go to next step">
           <IconButton
-            variant="ghost"
-            color="gray"
+            size="2"
             radius="full"
             disabled={numFrames === 0 || frameIndex === null}
             onClick={setNextFrame}
           >
-            <StepForwardIcon size={iconSize} />
+            <IconPlayerSkipForward />
           </IconButton>
         </Tooltip>
 
-        <Separator orientation="vertical" size="1" />
+        <Separator orientation="vertical" />
 
         <Tooltip content="Go to end">
           <IconButton
-            variant="ghost"
-            color="gray"
+            size="2"
             radius="full"
             disabled={numFrames === 0 || frameIndex === null}
             onClick={() => {
               requestFrame(numFrames - 1);
             }}
           >
-            <ForwardIcon size={iconSize} />
+            <IconPlayerTrackNext />
           </IconButton>
         </Tooltip>
       </Flex>
 
-      <Separator orientation="vertical" size="4" />
+      <Separator orientation="vertical" size="full" />
 
-      <Flex direction="row" align="center" gap="2" mx="2">
+      <Flex align="center" gap="2" mx="2">
         <Tooltip content="Refresh">
-          <IconButton
-            variant="ghost"
-            color="gray"
-            radius="full"
-            onClick={refresh}
-          >
-            <RefreshIcon size={iconSize} />
+          <IconButton size="2" radius="full" onClick={refresh}>
+            <IconRefresh />
           </IconButton>
         </Tooltip>
       </Flex>
 
-      <Separator orientation="vertical" size="4" />
+      <Separator orientation="vertical" size="full" />
 
       {/* ---- Time steps. ------------------------------------------------- */}
-      <Box asChild flexGrow="1" width="100%" height="100%">
-        <ScrollContainer vertical={false}>
+      <Box flexGrow="1" size="100%">
+        <ScrollContainer vertical={false} className="h-full w-full">
           <Box position="relative" height="100%">
             {iota(alignedNumFrames).map((tickIndex) => {
               const inRange = tickIndex < numFrames;
               const isLarge = tickIndex % 10 === 0;
               const sizeMultiplier = isLarge ? 2 : 1;
-              const color = inRange ? "var(--gray-11)" : "var(--gray-8)";
 
               return (
                 <Box
@@ -238,7 +224,7 @@ export function Timeline() {
                         : "100%"
                     }
                     height="2px"
-                    style={{ backgroundColor: color }}
+                    className={inRange ? "bg-(--fg-3)" : "bg-(--fg-5)"}
                   />
 
                   {/* ---- Vertical bar. ----------------------------------- */}
@@ -248,9 +234,9 @@ export function Timeline() {
                     left="50%"
                     width={`calc(${sizeMultiplier} * 1px)`}
                     height={`calc(${sizeMultiplier} * 20%)`}
+                    className={inRange ? "bg-(--fg-3)" : "bg-(--fg-5)"}
                     style={{
                       transform: "translateX(-50%)",
-                      backgroundColor: color,
                     }}
                   />
 
@@ -259,12 +245,15 @@ export function Timeline() {
                     <Box
                       position="absolute"
                       left="50%"
-                      top="30%"
+                      top="40%"
                       style={{ zIndex: 10, transform: "translateX(-50%)" }}
                     >
-                      <TechText size="1" style={{ color }}>
+                      <Text
+                        mono
+                        className={inRange ? "text-(--fg-3)" : "text-(--fg-5)"}
+                      >
                         {tickIndex}
-                      </TechText>
+                      </Text>
                     </Box>
                   )}
 
@@ -272,21 +261,19 @@ export function Timeline() {
                   {tickIndex === frameIndex && (
                     <Box
                       position="absolute"
-                      width="10px"
-                      height="10px"
+                      size="10px"
+                      className="bg-(--accent-bg-3)"
                       style={{
                         borderTopLeftRadius: "0.25rem",
                         borderTopRightRadius: "0.25rem",
-                        backgroundColor: "var(--accent-11)",
                       }}
                     >
                       <Box
                         position="absolute"
                         left="50%"
-                        width={`calc(100% / ${Math.SQRT2})`}
-                        height={`calc(100% / ${Math.SQRT2})`}
+                        size={`calc(100% / ${Math.SQRT2})`}
+                        className="bg-(--accent-bg-3)"
                         style={{
-                          backgroundColor: "var(--accent-11)",
                           transform: "translate(-50%, 100%) rotate(45deg)",
                         }}
                       />

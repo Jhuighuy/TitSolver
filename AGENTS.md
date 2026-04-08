@@ -195,8 +195,7 @@ TIT_ENSURE(expr, "message")
 ### GUI (`source/titgui/`)
 
 - Stack: Electron Forge, Vite, React 19, TypeScript, Three.js.
-- Styling/tooling present: ESLint, Tailwind CSS v4, Radix UI Themes, Zod,
-  React Query.
+- Styling/tooling present: ESLint, Tailwind CSS v4, Base UI, Zod, React Query.
 - Common npm scripts:
 
 ```bash

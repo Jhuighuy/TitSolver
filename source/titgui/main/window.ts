@@ -3,7 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { BrowserWindow } from "electron";
+import { BrowserWindow, nativeTheme } from "electron";
 import path from "node:path";
 import { z } from "zod";
 
@@ -68,12 +68,14 @@ export class WindowController {
 
     // Create the window.
     this.window = new BrowserWindow({
+      show: false,
       x,
       y,
       width,
       height,
       minWidth: WINDOW_MIN_WIDTH,
       minHeight: WINDOW_MIN_HEIGHT,
+      backgroundColor: getWindowBackgroundColor(),
       titleBarStyle: "hidden",
       webPreferences: {
         preload: path.join(__dirname, "preload.js"),
@@ -152,6 +154,13 @@ export class WindowController {
     if (this.window === undefined) return;
     this.window.close();
   }
+
+  /**
+   * Refresh the native window background color.
+   */
+  public updateBackgroundColor() {
+    this.window?.setBackgroundColor(getWindowBackgroundColor());
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -187,6 +196,15 @@ export class WindowManager {
       (controller) => controller.window === window,
     );
   }
+
+  /**
+   * Refresh native background colors for all open windows.
+   */
+  public updateBackgroundColors() {
+    for (const controller of Object.values(this.controllers)) {
+      controller.updateBackgroundColor();
+    }
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -201,5 +219,10 @@ const WINDOW_WIDTH_KEY = `${WINDOW}.width`;
 const WINDOW_HEIGHT_KEY = `${WINDOW}.height`;
 const WINDOW_MAXIMIZED_KEY = `${WINDOW}.is-maximized`;
 const WINDOW_FULLSCREEN_KEY = `${WINDOW}.is-full-screen`;
+
+function getWindowBackgroundColor() {
+  // Note: These colors match the CSS variable `var(--bg-1)`.
+  return nativeTheme.shouldUseDarkColors ? "#0f172a" : "#e2e8f0";
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

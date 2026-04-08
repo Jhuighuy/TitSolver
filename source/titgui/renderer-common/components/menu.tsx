@@ -3,15 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import {
-  Box,
-  Flex,
-  IconButton,
-  ScrollArea,
-  Separator,
-  Text,
-  Tooltip,
-} from "@radix-ui/themes";
+import { IconX } from "@tabler/icons-react";
+import { cva } from "class-variance-authority";
 import {
   Activity,
   createContext,
@@ -23,23 +16,70 @@ import {
   useMemo,
   useState,
 } from "react";
-import { TbMinimize as MinimizeIcon } from "react-icons/tb";
 import { z } from "zod";
 
+import { IconButton } from "~/renderer-common/components/button";
 import { chrome, surface } from "~/renderer-common/components/classes";
+import { Box, Flex } from "~/renderer-common/components/layout";
 import { Resizable } from "~/renderer-common/components/resizable";
+import { ScrollArea } from "~/renderer-common/components/scroll-area";
+import { Separator } from "~/renderer-common/components/separator";
+import { Text } from "~/renderer-common/components/text";
+import { Tooltip } from "~/renderer-common/components/tooltip";
 import { cn } from "~/renderer-common/components/utils";
 import { useWindowState } from "~/renderer-common/hooks/use-window";
 import { assert, iota, items } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface MenuProps {
+const menuTriggerVariants = cva(
+  "cursor-pointer transition-colors select-none",
+  {
+    variants: {
+      orientation: {
+        vertical: "border-l-[3px] [&_svg]:size-8",
+        horizontal: "border-b-2 [&_svg]:size-4",
+      },
+      state: {
+        active: "text-(--fg-1)",
+        inactive: "text-(--fg-4) hover:text-(--fg-1)",
+      },
+    },
+    compoundVariants: [
+      {
+        orientation: "vertical",
+        state: "active",
+        className: "border-l-(--accent-fg-3)",
+      },
+      {
+        orientation: "vertical",
+        state: "inactive",
+        className: "border-l-transparent",
+      },
+      {
+        orientation: "horizontal",
+        state: "active",
+        className: "border-b-(--accent-fg-3)",
+      },
+      {
+        orientation: "horizontal",
+        state: "inactive",
+        className: "border-b-transparent",
+      },
+    ],
+    defaultVariants: {
+      orientation: "vertical",
+      state: "inactive",
+    },
+  },
+);
+
+interface MenuRootProps {
   side: "left" | "right" | "top" | "bottom";
   children: ReactElement<MenuItemProps> | ReactElement<MenuItemProps>[];
 }
 
-export function Menu({ side, children }: Readonly<MenuProps>) {
+function MenuRoot({ side, children }: Readonly<MenuRootProps>) {
   // ---- State. --------------------------------------------------------------
 
   const [size, setSize] = useWindowState(
@@ -73,7 +113,8 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
         return "top";
     }
   })();
-  const flexDirection = (() => {
+
+  const direction = (() => {
     switch (side) {
       case "left":
         return "row";
@@ -93,7 +134,7 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
   );
 
   return (
-    <Flex direction={flexDirection} gap="1px">
+    <Flex direction={direction} gap="1px">
       {/* ---- Menu bar. --------------------------------------------------- */}
       <Flex
         align="center"
@@ -123,43 +164,40 @@ export function Menu({ side, children }: Readonly<MenuProps>) {
                     <Flex
                       align="center"
                       justify="center"
-                      width="56px"
-                      height="56px"
+                      size="14"
                       onClick={() => {
                         setActiveItemOrToggle(index);
                       }}
                       aria-label={item.props.name}
-                      className={cn(
-                        "border-l-3 hover:text-(--accent-11)",
-                        index === activeItem
-                          ? "border-l-(--gray-12) text-(--gray-12) hover:border-l-(--accent-11)"
-                          : "border-l-transparent text-(--gray-11)",
-                      )}
+                      className={menuTriggerVariants({
+                        orientation: "vertical",
+                        state: index === activeItem ? "active" : "inactive",
+                      })}
                     >
                       {item.props.icon}
                     </Flex>
                   </Tooltip>
                 ) : (
                   <Fragment key={item.props.name}>
-                    {index > 0 && <Separator orientation="vertical" size="1" />}
+                    {index > 0 && <Separator orientation="vertical" />}
                     <Flex
                       align="center"
                       justify="center"
                       gap="1"
-                      height="32px"
+                      height="8"
                       onClick={() => {
                         setActiveItemOrToggle(index);
                       }}
                       aria-label={item.props.name}
-                      className={cn(
-                        "border-b-2 hover:text-(--accent-11)",
-                        index === activeItem
-                          ? "border-b-(--gray-12) text-(--gray-12) hover:border-b-(--accent-11)"
-                          : "border-b-transparent text-(--gray-11)",
-                      )}
+                      className={menuTriggerVariants({
+                        orientation: "horizontal",
+                        state: index === activeItem ? "active" : "inactive",
+                      })}
                     >
                       {item.props.icon}
-                      <Text size="1">{item.props.name}</Text>
+                      <span className="text-(length:--text-1) leading-(--leading-1)">
+                        {item.props.name}
+                      </span>
                     </Flex>
                   </Fragment>
                 )),
@@ -248,26 +286,23 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
 
   return (
     <Flex
-      p="2"
-      gap="2"
-      height="100%"
       direction="column"
+      height="100%"
+      px="1"
+      pb="1"
       className={chrome({ direction: "bl" })}
     >
       {/* ---- Header. ----------------------------------------------------- */}
-      <Flex gap="2" direction="row" align="center">
-        <Box asChild flexGrow="1">
-          <Text weight="bold" size="1" truncate>
-            {name.toLocaleUpperCase()}
+      <Flex gap="2" align="center" height="8" minHeight="8" maxHeight="8">
+        <Box flexGrow="1">
+          <Text variant="label" size="2" color="muted" truncate>
+            {name}
           </Text>
         </Box>
 
         {actions.map((action) => (
           <Tooltip key={action.name} content={action.name}>
             <IconButton
-              size="1"
-              variant="ghost"
-              color="gray"
               disabled={action.disabled}
               onClick={action.onClick}
               aria-label={action.name}
@@ -279,13 +314,10 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
 
         <Tooltip content="Close">
           <IconButton
-            size="1"
-            variant="ghost"
-            color="gray"
             onClick={undefined /** @todo Implement me. */}
             aria-label="Close"
           >
-            <MinimizeIcon />
+            <IconX />
           </IconButton>
         </Tooltip>
       </Flex>
@@ -302,6 +334,11 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
   );
 }
 
-Menu.Item = MenuItem;
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export const Menu = Object.assign(MenuRoot, {
+  Root: MenuRoot,
+  Item: MenuItem,
+});
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3,14 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex, Theme } from "@radix-ui/themes";
 import type { ReactNode } from "react";
 
+import { Box, Flex } from "~/renderer-common/components/layout";
 import { TitleBar } from "~/renderer-common/components/title-bar";
-import {
-  useWindowIsFullScreen,
-  useWindowTheme,
-} from "~/renderer-common/hooks/use-window";
+import { useWindowIsFullScreen } from "~/renderer-common/hooks/use-window";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -19,18 +16,21 @@ interface WindowProps {
 }
 
 export function Window({ children }: Readonly<WindowProps>) {
-  const theme = useWindowTheme();
   const isFullScreen = useWindowIsFullScreen();
 
   return (
-    <Theme appearance={theme} accentColor="indigo" grayColor="slate">
-      <Flex direction="column" width="100vw" height="100vh" gap="1px">
-        {isFullScreen || <TitleBar />}
-        <Box asChild flexGrow="1" minHeight="0">
-          {children}
-        </Box>
-      </Flex>
-    </Theme>
+    <Flex
+      direction="column"
+      gap="1px"
+      width="100vw"
+      height="100vh"
+      className="bg-(--bg-1) text-(--fg-1)"
+    >
+      {isFullScreen || <TitleBar />}
+      <Box flexGrow="1" minHeight="0">
+        {children}
+      </Box>
+    </Flex>
   );
 }
 

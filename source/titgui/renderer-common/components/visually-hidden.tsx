@@ -3,23 +3,17 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Text } from "@radix-ui/themes";
 import type { ComponentProps } from "react";
 
 import { cn } from "~/renderer-common/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export function TechText({
+export function VisuallyHidden({
   className,
   ...props
-}: Readonly<ComponentProps<typeof Text>>) {
-  return (
-    <Text
-      {...props}
-      className={cn("[font-family:var(--code-font-family)]", className)}
-    />
-  );
+}: Readonly<ComponentProps<"span">>) {
+  return <span {...props} className={cn("sr-only", className)} />;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

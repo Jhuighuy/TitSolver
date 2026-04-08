@@ -3,10 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { Euler, Vector3 } from "three";
 
+import { Box, Flex } from "~/renderer-common/components/layout";
 import { useSignalValue } from "~/renderer-common/hooks/use-signal";
 import { derived, scoped, signal } from "~/renderer-common/signals";
 import {
@@ -110,7 +110,7 @@ export function Viewport() {
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" gap="1px" width="100%" height="100%">
+    <Flex direction="column" gap="1px" size="100%">
       {/* ---- Controls. --------------------------------------------------- */}
       <ViewControls
         // Tool.
@@ -195,6 +195,8 @@ export function Viewport() {
           model.legendTickCount.set(value);
         }}
       />
+
+      {/* ---- Viewport. ----------------------------------------------------*/}
       <ViewSelection
         toolMode={toolMode}
         setToolMode={(value) => {
@@ -209,13 +211,12 @@ export function Viewport() {
 
         <Box
           position="absolute"
-          right="8"
-          top="8"
+          right="12"
+          top="12"
           style={{ transform: "translate(50%, -50%)" }}
         >
           <ViewCube
-            width="100px"
-            height="100px"
+            size="24"
             rotation={cameraRotation}
             setRotation={(value) => {
               model.cameraRotation.set(value);
@@ -226,7 +227,7 @@ export function Viewport() {
         {legendEnabled && (
           <Box
             position="absolute"
-            left="8"
+            left="12"
             top="50%"
             style={{ transform: "translate(-50%, -50%)" }}
           >
@@ -236,8 +237,8 @@ export function Viewport() {
               min={colorRange.min}
               max={colorRange.max}
               ticks={legendTickCount}
-              width="20px"
-              height="500px"
+              width="5"
+              height="125"
             />
           </Box>
         )}
@@ -260,7 +261,7 @@ class ViewportModel {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public readonly projection = signal<Projection>("orthographic");
-  public readonly backgroundColorName = signal<BackgroundColorName>("none");
+  public readonly backgroundColorName = signal<BackgroundColorName>("default");
   public readonly cameraPosition = signal(new Vector3());
   public readonly cameraRotation = signal(new Euler());
 

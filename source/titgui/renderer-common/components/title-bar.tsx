@@ -3,10 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Flex, Text } from "@radix-ui/themes";
-
 import BlueTitIcon from "~/assets/icon.svg?react";
 import { chrome } from "~/renderer-common/components/classes";
+import { Flex } from "~/renderer-common/components/layout";
+import { Text } from "~/renderer-common/components/text";
 import { cn } from "~/renderer-common/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -14,7 +14,6 @@ import { cn } from "~/renderer-common/components/utils";
 export function TitleBar() {
   return (
     <Flex
-      direction="row"
       align="center"
       justify="center"
       gap="1"
@@ -30,7 +29,7 @@ export function TitleBar() {
         aria-label="BlueTit logo"
         role="img"
       />
-      <Text size="1" weight="bold">
+      <Text size="2" weight="bold">
         {document.title}
       </Text>
     </Flex>

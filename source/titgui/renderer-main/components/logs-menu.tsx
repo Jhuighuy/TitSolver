@@ -3,25 +3,27 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex, IconButton, Text } from "@radix-ui/themes";
-import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  TbClearAll as ClearIcon,
-  TbChevronLeft as CollapsedIcon,
-  TbDownload as DownloadIcon,
-  TbAlertCircle as ErrorIcon,
-  TbChevronDown as ExpandedIcon,
-  TbInfoSquare as InfoIcon,
-  TbAlertTriangle as WarningIcon,
-} from "react-icons/tb";
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconChevronDown,
+  IconChevronLeft,
+  IconClearAll,
+  IconDownload,
+  IconInfoSquare,
+} from "@tabler/icons-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useSignalValue } from "~/renderer-common/hooks/use-signal";
-import { logger, type Message } from "~/renderer-common/logging";
-import { downloadText } from "~/renderer-common/utils";
+import { IconButton } from "~/renderer-common/components/button";
+import { Box, Flex } from "~/renderer-common/components/layout";
 import {
   type MenuAction,
   useMenuAction,
-} from "~/renderer-main/components/menu";
+} from "~/renderer-common/components/menu";
+import { Text } from "~/renderer-common/components/text";
+import { useSignalValue } from "~/renderer-common/hooks/use-signal";
+import { logger, type Message } from "~/renderer-common/logging";
+import { downloadText } from "~/renderer-common/utils";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,7 +36,7 @@ export function LogsMenu() {
   const stopAction = useMemo<MenuAction>(
     () => ({
       name: "Save Logs",
-      icon: <DownloadIcon size={16} />,
+      icon: <IconDownload />,
       disabled: messages.length === 0,
       onClick: () => {
         downloadText(
@@ -53,7 +55,7 @@ export function LogsMenu() {
   const runAction = useMemo<MenuAction>(
     () => ({
       name: "Clear Logs",
-      icon: <ClearIcon size={16} />,
+      icon: <IconClearAll />,
       disabled: messages.length === 0,
       onClick: () => {
         logger.clear();
@@ -74,9 +76,9 @@ export function LogsMenu() {
   }, [messages]);
 
   return (
-    <Box width="100%" height="100%" className="select-text">
+    <Box size="100%" className="select-text">
       {messages.map(({ id, type, text }) => (
-        <Box key={id} p="1" className="even:bg-(--accent-3)">
+        <Box key={id} p="1" className="even:bg-(--bg-6)">
           <LogMessage type={type} text={text} />
         </Box>
       ))}
@@ -92,27 +94,26 @@ type LogMessageProps = Pick<Message, "type" | "text">;
 function LogMessage({ type, text }: Readonly<LogMessageProps>) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const color = useMemo(() => {
+  const colorClass = useMemo(() => {
     switch (type) {
       case "log":
-        return "gray";
+        return "text-(--fg-4)";
       case "warning":
-        return "orange";
+        return "text-orange-600 dark:text-orange-400";
       case "error":
-        return "red";
+        return "text-red-600 dark:text-red-400";
     }
     assert(false);
   }, [type]);
 
   const icon = useMemo(() => {
-    const iconSize = 16;
     switch (type) {
       case "log":
-        return <InfoIcon size={iconSize} />;
+        return <IconInfoSquare className="size-4 shrink-0" />;
       case "warning":
-        return <WarningIcon size={iconSize} />;
+        return <IconAlertTriangle className="size-4 shrink-0" />;
       case "error":
-        return <ErrorIcon size={iconSize} />;
+        return <IconAlertCircle className="size-4 shrink-0" />;
     }
     assert(false);
   }, [type]);
@@ -123,24 +124,18 @@ function LogMessage({ type, text }: Readonly<LogMessageProps>) {
   }, [text]);
 
   return (
-    <Text size="1" color={color}>
-      <Flex align="center" height="3" gap="1">
+    <Text className={colorClass}>
+      <Flex align="center" gap="1" height="3">
         {icon}
         {title}
         {isMultiline && (
           <IconButton
-            size="1"
-            variant="ghost"
             aria-label="Expand / collapse"
             onClick={() => {
               setIsExpanded((prev) => !prev);
             }}
           >
-            {isExpanded ? (
-              <ExpandedIcon size={10} />
-            ) : (
-              <CollapsedIcon size={10} />
-            )}
+            {isExpanded ? <IconChevronDown /> : <IconChevronLeft />}
           </IconButton>
         )}
       </Flex>

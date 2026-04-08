@@ -4,7 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { type ZodType } from "zod";
 
 import { logger } from "~/renderer-common/logging";
@@ -91,30 +91,5 @@ export function useWindowIsFullScreen() {
 
   return isFullScreen ?? false;
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-export function useWindowTheme() {
-  const [prefersDarkTheme, setPrefersDarkTheme] = useState(
-    prefersDarkThemeQuery.matches,
-  );
-
-  useEffect(() => {
-    const listener = (event: MediaQueryListEvent) => {
-      setPrefersDarkTheme(event.matches);
-    };
-
-    prefersDarkThemeQuery.addEventListener("change", listener);
-    return () => {
-      prefersDarkThemeQuery.removeEventListener("change", listener);
-    };
-  }, []);
-
-  return prefersDarkTheme ? "dark" : "light";
-}
-
-const prefersDarkThemeQuery = globalThis.matchMedia(
-  "(prefers-color-scheme: dark)",
-);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

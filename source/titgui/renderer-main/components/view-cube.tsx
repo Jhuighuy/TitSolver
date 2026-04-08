@@ -3,9 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { Box, Flex, Strong, Text } from "@radix-ui/themes";
 import { type ComponentProps, Fragment } from "react";
 import { Euler, Quaternion, Vector3 } from "three";
+
+import { Box, Flex } from "~/renderer-common/components/layout";
+import { Strong, Text } from "~/renderer-common/components/text";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -43,8 +45,7 @@ export function ViewCube({
                 position="absolute"
                 left={`calc(50% + ${sign * e.x} * ${length})`}
                 top={`calc(50% + ${sign * e.y} * ${length})`}
-                width={diameter}
-                height={diameter}
+                size={diameter}
                 onClick={() => setRotation?.(axisRotations[signedAxis])}
                 className={sign > 0 ? colorCn : altColorCn}
                 style={{
@@ -54,7 +55,7 @@ export function ViewCube({
                 }}
               >
                 {sign > 0 && (
-                  <Text size="1" className="text-gray-800">
+                  <Text className="text-(--fg-2)">
                     <Strong>{axis.toUpperCase()}</Strong>
                   </Text>
                 )}
