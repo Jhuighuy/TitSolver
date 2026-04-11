@@ -67,7 +67,7 @@ export function Toolbar({
       maxHeight="9"
       px="2"
       gap="3"
-      className={chrome({ direction: "br" })}
+      className={chrome()}
     >
       {/* ---- Back / Forward. --------------------------------------------- */}
       <IconButton size="2" disabled={!canGoBack} onClick={onBack}>

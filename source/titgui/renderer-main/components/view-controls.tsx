@@ -118,10 +118,13 @@ export function ViewControls({
   return (
     <Flex
       align="center"
-      px="2"
       gap="1"
+      height="9"
+      minHeight="9"
+      maxHeight="9"
+      px="2"
       py="1"
-      className={`h-9 ${chrome({ direction: "br" })}`}
+      className={chrome()}
     >
       {/* ---- Tool. ------------------------------------------------------- */}
       <ToolControls toolMode={toolMode} setToolMode={setToolMode} />
@@ -298,7 +301,7 @@ function CameraControls({
                     size="4"
                     {...(color === null
                       ? {
-                          className: chrome({ direction: "br" }),
+                          className: chrome(),
                         }
                       : {
                           style: { backgroundColor: toCSSColor(color) },

@@ -97,7 +97,7 @@ export function ViewSelection({
       }}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
-      className={cn(chrome({ direction: "bl" }), "focus:outline-none")}
+      className={cn(chrome(), "focus:outline-none")}
     >
       {children}
       {(selectionCount > 0 || toolMode !== "normal") && (

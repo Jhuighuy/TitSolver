@@ -21,7 +21,7 @@ export function TitleBar() {
       height="30px"
       minHeight="30px"
       maxHeight="30px"
-      className={cn("title-bar-drag", chrome({ direction: "br" }))}
+      className={cn("title-bar-drag", chrome())}
     >
       <BlueTitIcon
         width={16}

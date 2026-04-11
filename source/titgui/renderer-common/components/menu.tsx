@@ -142,7 +142,7 @@ function MenuRoot({ side, children }: Readonly<MenuRootProps>) {
         {...(vertical
           ? { direction: "column", height: "100%" }
           : { direction: "row", width: "100%", px: "4" })}
-        className={chrome({ direction: "bl" })}
+        className={chrome()}
       >
         {iota(maxGroup + 1).map((group) => (
           <Flex
@@ -285,13 +285,7 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex
-      direction="column"
-      height="100%"
-      px="1"
-      pb="1"
-      className={chrome({ direction: "bl" })}
-    >
+    <Flex direction="column" height="100%" px="1" pb="1" className={chrome()}>
       {/* ---- Header. ----------------------------------------------------- */}
       <Flex gap="2" align="center" height="8" minHeight="8" maxHeight="8">
         <Box flexGrow="1">

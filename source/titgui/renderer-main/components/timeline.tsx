@@ -88,7 +88,7 @@ export function Timeline() {
       px="2"
       py="1"
       gap="1"
-      className={chrome({ direction: "br" })}
+      className={chrome()}
     >
       {/* ---- Playback controls. ------------------------------------------ */}
       <Flex align="center" gap="4" mx="2">

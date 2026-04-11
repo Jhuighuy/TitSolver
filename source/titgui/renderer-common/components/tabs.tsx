@@ -70,11 +70,7 @@ function TabsList({
   return (
     <BaseTabs.List
       {...props}
-      className={cn(
-        "flex h-8 items-end px-1 pt-1",
-        chrome({ direction: "bl" }),
-        className,
-      )}
+      className={cn("flex h-8 items-end px-1 pt-1", chrome(), className)}
     >
       <Flex align="center" justify="end" gap="1px">
         {children}
