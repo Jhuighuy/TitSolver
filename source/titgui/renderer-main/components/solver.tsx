@@ -8,13 +8,13 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { z } from "zod";
 
-import { useConnection } from "~/renderer-main/components/connection";
+import { solverEventSchema } from "~/shared/solver";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,11 +41,35 @@ interface SolverProviderProps {
 }
 
 export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
-  const { sendMessage } = useConnection();
-
   const isSolverRunningRef = useRef(false);
   const [isSolverRunning, setIsSolverRunning] = useState(false);
   const [solverOutput, setSolverOutput] = useState("");
+
+  useEffect(() => {
+    void globalThis.session?.isSolverRunning().then((running) => {
+      isSolverRunningRef.current = running;
+      setIsSolverRunning(running);
+    });
+
+    return globalThis.session?.onSolverEvent((responseRaw) => {
+      const response = solverEventSchema.parse(responseRaw);
+      switch (response.kind) {
+        case "stdout":
+        case "stderr":
+          setSolverOutput((prev) => prev + response.data);
+          break;
+
+        case "exit":
+          setSolverOutput(
+            (prev) =>
+              `${prev}\n[Process exited with code ${response.code}, signal ${response.signal}]\n`,
+          );
+          isSolverRunningRef.current = false;
+          setIsSolverRunning(false);
+          break;
+      }
+    });
+  }, []);
 
   const runSolver = useCallback(() => {
     assert(!isSolverRunningRef.current);
@@ -53,38 +77,13 @@ export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
     setIsSolverRunning(true);
 
     setSolverOutput("");
-
-    sendMessage({ type: "run" }, (responseRaw) => {
-      const response = runSchema.parse(responseRaw);
-      switch (response.kind) {
-        case "stdout":
-        case "stderr":
-          setSolverOutput((prev) => prev + response.data);
-          break;
-
-        case "exit": {
-          const { code, signal } = response;
-          setSolverOutput(
-            (prev) =>
-              `${prev}\n[Process exited with code ${code}, signal ${signal}]\n`,
-          );
-
-          isSolverRunningRef.current = false;
-          setIsSolverRunning(false);
-          break;
-        }
-
-        default:
-          assert(false);
-      }
-    });
-  }, [sendMessage]);
+    void globalThis.session?.runSolver();
+  }, []);
 
   const stopSolver = useCallback(() => {
     assert(isSolverRunningRef.current);
-
-    sendMessage({ type: "stop" });
-  }, [sendMessage]);
+    void globalThis.session?.stopSolver();
+  }, []);
 
   const solver = useMemo<Solver>(
     () => ({
@@ -100,23 +99,5 @@ export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
     <SolverContext.Provider value={solver}>{children}</SolverContext.Provider>
   );
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-const runSchema = z.union([
-  z.object({
-    kind: z.literal("stdout"),
-    data: z.string(),
-  }),
-  z.object({
-    kind: z.literal("stderr"),
-    data: z.string(),
-  }),
-  z.object({
-    kind: z.literal("exit"),
-    code: z.number(),
-    signal: z.number(),
-  }),
-]);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

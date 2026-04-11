@@ -13,11 +13,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { z } from "zod";
 
-import { decodeBase64 } from "~/renderer-common/utils";
 import { FieldMap } from "~/renderer-common/visual/fields";
-import { useConnection } from "~/renderer-main/components/connection";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,8 +49,6 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
   const [frameIndex, setFrameIndex] = useState<number | null>(null);
   const [frameData, setFrameData] = useState(new FieldMap({}));
 
-  const { sendMessage } = useConnection();
-
   // ---- Number of frames. ----------------------------------------------------
 
   const sessionIDRef = useRef(0);
@@ -61,10 +56,9 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
   const requestNumFramesEvent = useEffectEvent(() => {
     const sessionID = ++sessionIDRef.current;
 
-    sendMessage({ type: "num-frames" }, (result) => {
+    void globalThis.session?.getFrameCount().then((numFrames) => {
       if (sessionID !== sessionIDRef.current) return;
 
-      const numFrames = numFramesSchema.parse(result);
       assert(numFrames >= 0);
       setNumFrames(numFrames);
 
@@ -87,17 +81,15 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
     const sessionID = sessionIDRef.current;
     const requestID = ++requestIDRef.current;
 
-    sendMessage({ type: "frame", index: requestedFrameIndex }, (result) => {
+    void globalThis.session?.getFrame(requestedFrameIndex).then((result) => {
       if (sessionID !== sessionIDRef.current) return;
       if (requestID !== requestIDRef.current) return;
 
-      const rawFrameData = frameDataSchema.parse(result);
-
       const fieldMap = new FieldMap(
         Object.fromEntries(
-          Object.entries(rawFrameData).map(([fieldName, { kind, data }]) => [
+          Object.entries(result).map(([fieldName, { data }]) => [
             fieldName,
-            decodeBase64(data, kind),
+            data,
           ]),
         ),
       );
@@ -143,17 +135,5 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
     </StorageContext.Provider>
   );
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-const numFramesSchema = z.number().min(0);
-
-const frameDataSchema = z.record(
-  z.string(),
-  z.object({
-    kind: z.string(),
-    data: z.string(),
-  }),
-);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

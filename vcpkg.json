@@ -10,6 +10,7 @@
     "highway",
     "mimalloc",
     "nlohmann-json",
+    "node-addon-api",
     "sqlite3",
     "tbb",
     "tinyxml2",

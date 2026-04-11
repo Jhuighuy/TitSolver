@@ -19,6 +19,17 @@ export const WINDOW_FULL_SCREEN_CHANGED_CHANNEL = `${WINDOW}:full-screen-changed
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+const SESSION = "session";
+export const SESSION_FRAME_COUNT_CHANNEL = `${SESSION}:frame:count`;
+export const SESSION_FRAME_GET_CHANNEL = `${SESSION}:frame:get`;
+export const SESSION_EXPORT_RUN_CHANNEL = `${SESSION}:export:run`;
+export const SESSION_SOLVER_RUN_CHANNEL = `${SESSION}:solver:run`;
+export const SESSION_SOLVER_STOP_CHANNEL = `${SESSION}:solver:stop`;
+export const SESSION_SOLVER_IS_RUNNING_CHANNEL = `${SESSION}:solver:is-running`;
+export const SESSION_SOLVER_EVENT_CHANNEL = `${SESSION}:solver:event`;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 const HELP = "help";
 export const HELP_GET_SESSION_CHANNEL = `${HELP}:get-session`;
 export const HELP_SESSION_CHANGED_CHANNEL = `${HELP}:session-changed`;

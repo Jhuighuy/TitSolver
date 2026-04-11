@@ -30,10 +30,10 @@ export class Installation {
   }
 
   /**
-   * The path to the server binary.
+   * The path to the solver binary.
    */
-  public get serverPath() {
-    return path.join(this.binPath, "titback");
+  public get solverPath() {
+    return path.join(this.binPath, "titwcsph");
   }
 
   /**
@@ -83,7 +83,7 @@ export class Installation {
   // Returns `undefined` if the installation root is invalid.
   private static tryResolveFromPath(rootPath: string) {
     const installation = new Installation(rootPath);
-    if (canExecute(installation.serverPath)) return installation;
+    if (canExecute(installation.solverPath)) return installation;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

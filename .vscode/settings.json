@@ -55,6 +55,7 @@
     "**/.vite": true,
     "**/compile_flags.txt": true,
     "**/dist": true,
+    "**/native": true,
     "**/node_modules/**": true,
     "**/package-lock.json": true,
     "output": true
@@ -66,6 +67,7 @@
     "**/.vite/**": true,
     "**/compile_flags.txt": true,
     "**/dist/**": true,
+    "**/native/**": true,
     "**/node_modules/**": true,
     "**/package-lock.json": true,
     "output/**": true

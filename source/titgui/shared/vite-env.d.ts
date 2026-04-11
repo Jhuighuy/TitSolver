@@ -6,6 +6,8 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-svgr/client" />
 import type { HelpSession } from "~/shared/help-session";
+import type { SolverEvent } from "~/shared/solver";
+import type { Frame } from "~/shared/storage";
 import type { Theme } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,6 +28,18 @@ interface WindowStateAPI {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+interface SessionAPI {
+  getFrameCount: () => Promise<number>;
+  getFrame: (index: number) => Promise<Frame>;
+  export: () => Promise<void>;
+  runSolver: () => Promise<void>;
+  stopSolver: () => Promise<void>;
+  isSolverRunning: () => Promise<boolean>;
+  onSolverEvent: (listener: (event: SolverEvent) => void) => () => void;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 interface HelpAPI {
   getSession: () => Promise<HelpSession>;
   onSessionChanged: (listener: (session: HelpSession) => void) => () => void;
@@ -40,6 +54,7 @@ interface HelpAPI {
 declare global {
   var theme: ThemeAPI | undefined;
   var windowState: WindowStateAPI | undefined;
+  var session: SessionAPI | undefined;
   var help: HelpAPI | undefined;
 }
 

@@ -60,6 +60,7 @@
 # Ignore in-tree artifacts.
 .vite/
 dist/
+native/
 node_modules/
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
