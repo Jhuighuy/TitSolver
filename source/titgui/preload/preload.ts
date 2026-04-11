@@ -12,6 +12,13 @@ import {
   HELP_NAVIGATE_TAB_CHANNEL,
   HELP_SELECT_TAB_CHANNEL,
   HELP_SESSION_CHANGED_CHANNEL,
+  SESSION_EXPORT_RUN_CHANNEL,
+  SESSION_FRAME_COUNT_CHANNEL,
+  SESSION_FRAME_GET_CHANNEL,
+  SESSION_SOLVER_EVENT_CHANNEL,
+  SESSION_SOLVER_IS_RUNNING_CHANNEL,
+  SESSION_SOLVER_RUN_CHANNEL,
+  SESSION_SOLVER_STOP_CHANNEL,
   THEME_GET_CHANNEL,
   THEME_SET_CHANNEL,
   WINDOW_FULL_SCREEN_CHANGED_CHANNEL,
@@ -20,6 +27,7 @@ import {
   WINDOW_PERSIST_SET_CHANNEL,
 } from "~/shared/channels";
 import type { HelpSession } from "~/shared/help-session";
+import type { SolverEvent } from "~/shared/solver";
 import type { Theme } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,6 +61,38 @@ contextBridge.exposeInMainWorld("windowState", {
     };
     ipcRenderer.on(WINDOW_FULL_SCREEN_CHANGED_CHANNEL, callback);
     return () => ipcRenderer.off(WINDOW_FULL_SCREEN_CHANGED_CHANNEL, callback);
+  },
+});
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type SolverEventListener = (event: SolverEvent) => void;
+
+contextBridge.exposeInMainWorld("session", {
+  getFrameCount() {
+    return ipcRenderer.invoke(SESSION_FRAME_COUNT_CHANNEL);
+  },
+  getFrame(index: number) {
+    return ipcRenderer.invoke(SESSION_FRAME_GET_CHANNEL, index);
+  },
+  export() {
+    return ipcRenderer.invoke(SESSION_EXPORT_RUN_CHANNEL);
+  },
+  runSolver() {
+    return ipcRenderer.invoke(SESSION_SOLVER_RUN_CHANNEL);
+  },
+  stopSolver() {
+    return ipcRenderer.invoke(SESSION_SOLVER_STOP_CHANNEL);
+  },
+  isSolverRunning() {
+    return ipcRenderer.invoke(SESSION_SOLVER_IS_RUNNING_CHANNEL);
+  },
+  onSolverEvent(listener: SolverEventListener) {
+    const callback = (_event: IpcRendererEvent, event: SolverEvent) => {
+      listener(event);
+    };
+    ipcRenderer.on(SESSION_SOLVER_EVENT_CHANNEL, callback);
+    return () => ipcRenderer.off(SESSION_SOLVER_EVENT_CHANNEL, callback);
   },
 });
 

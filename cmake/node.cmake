@@ -21,7 +21,7 @@ find_program(NPX_EXE NAMES "npx" REQUIRED)
 #
 function(add_tit_node_package)
   # Parse and check arguments.
-  cmake_parse_arguments(TARGET "" "NAME" "" ${ARGN})
+  cmake_parse_arguments(TARGET "" "NAME" "DEPENDS" ${ARGN})
   set(TARGET "${TARGET_NAME}")
 
   # Find "package.json".
@@ -75,7 +75,7 @@ function(add_tit_node_package)
     COMMENT "Installing dependencies for Node package ${TARGET}"
     COMMAND "${CHRONIC_EXE}" "${NPM_EXE}" install
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    DEPENDS "${TARGET_PACKAGE_JSON}"
+    DEPENDS "${TARGET_PACKAGE_JSON}" ${TARGET_DEPENDS}
     OUTPUT "${STAMP}"
   )
   add_custom_target("${TARGET}_install" ALL DEPENDS "${STAMP}")

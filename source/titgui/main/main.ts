@@ -3,14 +3,21 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { app, BrowserWindow, ipcMain, nativeTheme } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  nativeTheme,
+  type OpenDialogOptions,
+} from "electron";
 import path from "node:path";
 import { z } from "zod";
 
 import { HelpManager } from "~/main/help";
 import { Installation } from "~/main/installation";
 import { PersistedState } from "~/main/persisted-state";
-import { ServerManager } from "~/main/server";
+import { SessionManager } from "~/main/session";
 import { WindowManager } from "~/main/window";
 import {
   HELP_ADD_TAB_CHANNEL,
@@ -18,6 +25,12 @@ import {
   HELP_GET_SESSION_CHANNEL,
   HELP_NAVIGATE_TAB_CHANNEL,
   HELP_SELECT_TAB_CHANNEL,
+  SESSION_EXPORT_RUN_CHANNEL,
+  SESSION_FRAME_COUNT_CHANNEL,
+  SESSION_FRAME_GET_CHANNEL,
+  SESSION_SOLVER_IS_RUNNING_CHANNEL,
+  SESSION_SOLVER_RUN_CHANNEL,
+  SESSION_SOLVER_STOP_CHANNEL,
   THEME_GET_CHANNEL,
   THEME_SET_CHANNEL,
   WINDOW_IS_FULL_SCREEN_CHANNEL,
@@ -30,14 +43,14 @@ import { Theme, themeSchema } from "~/shared/theme";
 
 class Application {
   private install?: Installation;
-  private server?: ServerManager;
+  private session?: SessionManager;
   private persist?: PersistedState;
   private windowManager?: WindowManager;
   private helpManager?: HelpManager;
 
   public run() {
     app.on("ready", () => {
-      this.onReady();
+      void this.onReady();
     });
     app.on("window-all-closed", () => {
       this.onWindowAllClosed();
@@ -47,14 +60,16 @@ class Application {
     });
   }
 
-  private onReady() {
+  private async onReady() {
     // Find the installation root.
     this.install = Installation.resolve();
+
+    // Work directory is hardcoded at the moment.
     const workDir = path.resolve(this.install.rootPath, "../..");
 
-    // Start the backend.
-    this.server = new ServerManager(this.install);
-    this.server.start(workDir);
+    // Start the session.
+    this.session = new SessionManager(this.install, workDir);
+    await this.session.start();
 
     // Load persisted state.
     this.persist = PersistedState.load(
@@ -85,7 +100,7 @@ class Application {
   }
 
   private onWillQuit() {
-    this.server?.stop();
+    this.session?.stop();
     this.persist?.save();
   }
 
@@ -121,6 +136,47 @@ class Application {
     ipcMain.handle(WINDOW_IS_FULL_SCREEN_CHANNEL, (event) => {
       const window = BrowserWindow.fromWebContents(event.sender);
       return window?.isFullScreen() ?? false;
+    });
+
+    ipcMain.removeHandler(SESSION_FRAME_COUNT_CHANNEL);
+    ipcMain.handle(SESSION_FRAME_COUNT_CHANNEL, async () => {
+      return await this.session?.getFrameCount();
+    });
+
+    ipcMain.removeHandler(SESSION_FRAME_GET_CHANNEL);
+    ipcMain.handle(SESSION_FRAME_GET_CHANNEL, async (_event, index: number) => {
+      return await this.session?.getFrame(index);
+    });
+
+    ipcMain.removeHandler(SESSION_EXPORT_RUN_CHANNEL);
+    ipcMain.handle(SESSION_EXPORT_RUN_CHANNEL, async (event) => {
+      const options: OpenDialogOptions = {
+        title: "Export Data",
+        buttonLabel: "Export",
+        properties: ["openDirectory", "createDirectory"],
+      };
+      const window = BrowserWindow.fromWebContents(event.sender);
+      const result =
+        window === null
+          ? await dialog.showOpenDialog(options)
+          : await dialog.showOpenDialog(window, options);
+      if (result.canceled) return;
+      await this.session?.export(result.filePaths[0]);
+    });
+
+    ipcMain.removeHandler(SESSION_SOLVER_RUN_CHANNEL);
+    ipcMain.handle(SESSION_SOLVER_RUN_CHANNEL, () => {
+      this.session?.runSolver();
+    });
+
+    ipcMain.removeHandler(SESSION_SOLVER_STOP_CHANNEL);
+    ipcMain.handle(SESSION_SOLVER_STOP_CHANNEL, () => {
+      this.session?.stopSolver();
+    });
+
+    ipcMain.removeHandler(SESSION_SOLVER_IS_RUNNING_CHANNEL);
+    ipcMain.handle(SESSION_SOLVER_IS_RUNNING_CHANNEL, () => {
+      return this.session?.isSolverRunning();
     });
 
     ipcMain.removeHandler(HELP_GET_SESSION_CHANNEL);

@@ -8,7 +8,6 @@ import {
   IconDatabase,
   IconHelp,
   IconLogs,
-  IconServer,
   IconSettings,
   IconTerminal,
 } from "@tabler/icons-react";
@@ -16,7 +15,6 @@ import {
 import { Box, Flex } from "~/renderer-common/components/layout";
 import { Menu } from "~/renderer-common/components/menu";
 import { Window } from "~/renderer-common/components/window";
-import { ConnectionProvider } from "~/renderer-main/components/connection";
 import { DashboardMenu } from "~/renderer-main/components/dashboard-menu";
 import { HelpMenu } from "~/renderer-main/components/help-menu";
 import { LogsMenu } from "~/renderer-main/components/logs-menu";
@@ -30,15 +28,13 @@ import { Viewport } from "~/renderer-main/components/viewport";
 
 export function App() {
   return (
-    <ConnectionProvider>
-      <SolverProvider>
-        <StorageProvider>
-          <Window>
-            <Page />
-          </Window>
-        </StorageProvider>
-      </SolverProvider>
-    </ConnectionProvider>
+    <SolverProvider>
+      <StorageProvider>
+        <Window>
+          <Page />
+        </Window>
+      </StorageProvider>
+    </SolverProvider>
   );
 }
 
@@ -71,7 +67,6 @@ function Page() {
             <LogsMenu />
           </Menu.Item>
           <Menu.Item group={0} name="Terminal" icon={<IconTerminal />} />
-          <Menu.Item group={0} name="Server" icon={<IconServer />} />
         </Menu.Root>
       </Flex>
     </Flex>

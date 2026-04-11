@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <chrono>
 #include <csignal>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -194,6 +195,18 @@ auto crash_report_mutex() -> std::recursive_mutex& {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+void setup_stdio_buffering() {
+  // Enable line buffering for stdout.
+  TIT_ENSURE_ERRNO(std::setvbuf(stdout, nullptr, _IOLBF, 0) == 0,
+                   "Unable to configure stdout buffering.");
+
+  // Disable buffering for stderr.
+  TIT_ENSURE_ERRNO(std::setvbuf(stderr, nullptr, _IONBF, 0) == 0,
+                   "Unable to configure stderr buffering.");
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 void setup_signal_handlers() noexcept {
   // Preload `libgcc` beforehand to increase the chances of `backtrace` being
   // safe to call from a signal handler.
@@ -351,6 +364,9 @@ auto run_main(int argc,
 
   // Handlers are set up now, run the main function inside a safe block.
   terminate_on_exception([argc, argv, &main] {
+    // Configure buffering for stdout and stderr.
+    setup_stdio_buffering();
+
     // Print the logo and system information. Skip the logo if requested. If
     // logo is printed, set the variable to prevent printing it again in the
     // child processes.

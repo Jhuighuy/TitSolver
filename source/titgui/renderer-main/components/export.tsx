@@ -4,11 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { type ComponentProps, useState } from "react";
-import { z } from "zod";
-
 import { Button } from "~/renderer-common/components/button";
-import { downloadFile } from "~/renderer-common/utils";
-import { useConnection } from "~/renderer-main/components/connection";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,7 +15,6 @@ export function ExportButton({
   ...props
 }: Readonly<Omit<ComponentProps<typeof Button>, "onClick">>) {
   const [isExporting, setIsExporting] = useState(false);
-  const { sendMessage } = useConnection();
 
   return (
     <Button
@@ -28,10 +23,8 @@ export function ExportButton({
         assert(!isExporting);
         setIsExporting(true);
 
-        sendMessage({ type: "export" }, (result) => {
+        void globalThis.session?.export().finally(() => {
           setIsExporting(false);
-          const fileName = z.string().parse(result);
-          downloadFile(fileName, `/export/${fileName}`);
         });
       }}
       {...props}

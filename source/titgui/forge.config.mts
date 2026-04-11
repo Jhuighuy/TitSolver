@@ -13,6 +13,7 @@ export default {
   packagerConfig: {
     asar: true,
     icon: "assets/icon",
+    extraResource: ["native"],
   },
   plugins: [
     new VitePlugin({
