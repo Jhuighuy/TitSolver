@@ -80,32 +80,6 @@ function(add_tit_node_package)
   )
   add_custom_target("${TARGET}_install" ALL DEPENDS "${STAMP}")
 
-  # Run `npm run build`.
-  set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.stamp")
-  add_custom_command(
-    COMMENT "Building Node package ${TARGET}"
-    COMMAND "${CHRONIC_EXE}" "${NPM_EXE}" run build
-    COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    DEPENDS ${TARGET_SOURCES} "${TARGET}_install"
-    OUTPUT "${STAMP}"
-  )
-  add_custom_target("${TARGET}" ALL DEPENDS "${STAMP}")
-
-  # Run the linters.
-  if(NOT SKIP_ANALYSIS)
-    set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_lint.stamp")
-    add_custom_command(
-      COMMENT "Linting Node package ${TARGET}"
-      COMMAND "${CHRONIC_EXE}" "${NPM_EXE}" run lint
-      COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      DEPENDS ${TARGET_SOURCES} "${TARGET}"
-      OUTPUT "${STAMP}"
-    )
-    add_custom_target("${TARGET}_lint" ALL DEPENDS "${STAMP}")
-  endif()
-
   # Run `npx generate-license-file` to create a file with full license text for
   # all the third-party dependencies.
   set(LICENSES "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_third_party_licenses.txt")
@@ -125,6 +99,32 @@ function(add_tit_node_package)
   )
   add_custom_target("${TARGET}_licenses" ALL DEPENDS "${LICENSES}")
   install(FILES "${LICENSES}" DESTINATION "licenses")
+
+  # Run `npm run build`.
+  set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.stamp")
+  add_custom_command(
+    COMMENT "Building Node package ${TARGET}"
+    COMMAND "${CHRONIC_EXE}" "${NPM_EXE}" run build
+    COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    DEPENDS ${TARGET_SOURCES} "${TARGET}_install" "${TARGET}_licenses"
+    OUTPUT "${STAMP}"
+  )
+  add_custom_target("${TARGET}" ALL DEPENDS "${STAMP}")
+
+  # Run the linters.
+  if(NOT SKIP_ANALYSIS)
+    set(STAMP "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_lint.stamp")
+    add_custom_command(
+      COMMENT "Linting Node package ${TARGET}"
+      COMMAND "${CHRONIC_EXE}" "${NPM_EXE}" run lint
+      COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP}"
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      DEPENDS ${TARGET_SOURCES} "${TARGET}"
+      OUTPUT "${STAMP}"
+    )
+    add_custom_target("${TARGET}_lint" ALL DEPENDS "${STAMP}")
+  endif()
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

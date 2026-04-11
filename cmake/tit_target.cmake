@@ -74,7 +74,7 @@ function(add_tit_library)
   # Setup the library type and visibility parameter.
   if(TARGET_TYPE)
     # Library type is specified.
-    set(ALL_TARGET_TYPES INTERFACE OBJECT STATIC SHARED)
+    set(ALL_TARGET_TYPES INTERFACE OBJECT STATIC SHARED MODULE)
     if(NOT TARGET_TYPE IN_LIST ALL_TARGET_TYPES)
       list(JOIN ALL_TARGET_TYPES ", " ALL_TARGET_TYPES)
       message(FATAL_ERROR "Library type must be one of: ${ALL_TARGET_TYPES}.")
@@ -115,8 +115,12 @@ function(add_tit_library)
 
   # Install the library.
   if(TARGET_DESTINATION)
-    if(NOT TARGET_TYPE STREQUAL "SHARED")
-      message(FATAL_ERROR "Only shared libraries can be installed.")
+    set(SHARED_TARGET_TYPES SHARED MODULE)
+    if(NOT TARGET_TYPE IN_LIST SHARED_TARGET_TYPES)
+      list(JOIN SHARED_TARGET_TYPES ", " SHARED_TARGET_TYPES)
+      message(FATAL_ERROR
+        "Only the library of types: ${SHARED_TARGET_TYPES} can be installed."
+      )
     endif()
     install_tit_target(LIBRARY ${TARGET} "${TARGET_DESTINATION}")
   endif()

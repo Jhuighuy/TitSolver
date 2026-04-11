@@ -59,4 +59,13 @@ string(REPLACE "\n" ";" GIT_INDEXED_FILES "${GIT_INDEXED_FILES}")
 list(TRANSFORM GIT_INDEXED_FILES STRIP)
 list(TRANSFORM GIT_INDEXED_FILES PREPEND "${CMAKE_SOURCE_DIR}/")
 
+# Skip files that were deleted locally but are still present in the Git index.
+set(GIT_INDEXED_EXISTING_FILES)
+foreach(FILE ${GIT_INDEXED_FILES})
+  if(EXISTS "${FILE}")
+    list(APPEND GIT_INDEXED_EXISTING_FILES "${FILE}")
+  endif()
+endforeach()
+set(GIT_INDEXED_FILES "${GIT_INDEXED_EXISTING_FILES}")
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
