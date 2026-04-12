@@ -421,7 +421,7 @@ public:
            pow<7>(q - Num{2.0});
   }
 
-}; // class SixthOrderWendlandKernel
+}; // class EighthOrderWendlandKernel
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

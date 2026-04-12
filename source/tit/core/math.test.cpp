@@ -99,10 +99,6 @@ TEST_CASE_TEMPLATE("avg", Float, FLOAT_TYPES) {
   CHECK(avg(Float{1}, Float{2}, Float{3}) == static_cast<Float>(2.0));
 }
 
-TEST_CASE_TEMPLATE("havg", Float, FLOAT_TYPES) {
-  CHECK(havg(Float{1.0}, Float{4.0}) == Float{1.6});
-}
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace

@@ -16,14 +16,10 @@
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/par/algorithms.hpp"
-#include "tit/sph/bcs.hpp"
-#include "tit/sph/continuity_equation.hpp"
-#include "tit/sph/energy_equation.hpp"
+#include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
-#include "tit/sph/momentum_equation.hpp"
-#include "tit/sph/motion_equation.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 
@@ -32,58 +28,54 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Fluid equations with fixed kernel width and continuity equation.
-template<motion_equation MotionEquation,
-         continuity_equation ContinuityEquation,
-         momentum_equation MomentumEquation,
-         energy_equation EnergyEquation,
-         equation_of_state EquationOfState,
+template<class Num,
+         equation_of_state<Num> EquationOfState,
+         artificial_viscosity<Num> ArtificialViscosity,
          kernel Kernel>
 class FluidEquations final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =   //
-      MotionEquation::required_fields |     //
-      ContinuityEquation::required_fields | //
-      MomentumEquation::required_fields |   //
-      EnergyEquation::required_fields |     //
-      EquationOfState::required_fields |    //
-      Kernel::required_fields | TypeSet{h, m, r, rho, p, v, dv_dt};
+  static constexpr auto required_fields =    //
+      EquationOfState::required_fields |     //
+      ArtificialViscosity::required_fields | //
+      Kernel::required_fields |
+      TypeSet{h, m, r, dr, rho, p, v, dv_dt, L, N, FS};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      MotionEquation::modified_fields |       //
-      ContinuityEquation::modified_fields |   //
-      MomentumEquation::modified_fields |     //
-      EnergyEquation::modified_fields |       //
       EquationOfState::modified_fields |      //
+      ArtificialViscosity::modified_fields |  //
       Kernel::modified_fields |               //
       TypeSet{rho, drho_dt, grad_rho, N, L} | //
       TypeSet{p, v, dv_dt} |                  //
-      TypeSet{u, du_dt} |                     //
       TypeSet{dr, FS};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct the fluid equations.
   ///
-  /// @param motion_equation     Motion equation.
-  /// @param continuity_equation Continuity equation.
-  /// @param momentum_equation   Momentum equation.
-  /// @param energy_equation     Energy equation.
-  /// @param equation_of_state   Equation of state.
-  /// @param kernel              Kernel.
-  constexpr explicit FluidEquations(MotionEquation motion_equation,
-                                    ContinuityEquation continuity_equation,
-                                    MomentumEquation momentum_equation,
-                                    EnergyEquation energy_equation,
+  /// @param rho_0                Reference density.
+  /// @param cs_0                 Reference sound speed.
+  /// @param g                    Gravitational acceleration.
+  /// @param R                    Kernel support radius scale factor.
+  /// @param Ma                   Mach number.
+  /// @param CFL                  CFL number.
+  /// @param equation_of_state    Equation of state.
+  /// @param artificial_viscosity Artificial viscosity.
+  /// @param kernel               Kernel.
+  constexpr explicit FluidEquations(Num rho_0,
+                                    Num cs_0,
+                                    Num g,
+                                    Num R,
+                                    Num Ma,
+                                    Num CFL,
                                     EquationOfState eos,
+                                    ArtificialViscosity artificial_viscosity,
                                     Kernel kernel) noexcept
-      : motion_equation_{std::move(motion_equation)},
-        continuity_equation_{std::move(continuity_equation)},
-        momentum_equation_{std::move(momentum_equation)},
-        energy_equation_{std::move(energy_equation)}, //
-        eos_{std::move(eos)},                         //
+      : rho_0_{rho_0}, cs_0_{cs_0}, g_{g}, R_{R}, Ma_{Ma}, CFL_{CFL}, //
+        eos_{std::move(eos)},
+        artificial_viscosity_{std::move(artificial_viscosity)},
         kernel_{std::move(kernel)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,7 +94,70 @@ public:
            particle_array<required_fields> ParticleArray>
   void setup_boundary(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
-    apply_bcs(kernel_, mesh, particles);
+    using PV = ParticleView<ParticleArray>;
+    static constexpr auto Dim = particle_dim_v<ParticleArray>;
+
+    // Interpolate the field values on the boundary.
+    par::for_each(particles.fixed(), [this, &mesh](PV b) {
+      /// @todo Once we have a proper geometry library, we should use
+      ///       here and clean up the code.
+      const auto& search_point = r[b];
+      const auto clipped_point = Domain<Num>.clamp(search_point);
+      const auto r_ghost = 2 * clipped_point - search_point;
+      const auto SN = normalize(search_point - clipped_point);
+      const auto SD = norm(r_ghost - r[b]);
+
+      // Compute the interpolation weights, both for the constant and
+      // linear interpolations.
+      Num S{};
+      Mat<Num, Dim + 1> M{};
+      const auto h_ghost = RADIUS_SCALE * h[b];
+      for (const PV a : mesh.fixed_interp(b)) {
+        const auto r_delta = r_ghost - r[a];
+        const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
+        const auto W_delta = kernel_(r_delta, h_ghost);
+        S += W_delta * m[a] / rho[a];
+        M += outer(B_delta, B_delta * W_delta * m[a] / rho[a]);
+      }
+
+      if (const auto fact = ldl(M); fact) {
+        // Linear interpolation succeeds, use it.
+        clear(b, rho, v);
+        const auto E = fact->solve(unit<0>(M[0]));
+        for (const PV a : mesh.fixed_interp(b)) {
+          const auto r_delta = r_ghost - r[a];
+          const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
+          const auto W_delta = dot(E, B_delta) * kernel_(r_delta, h_ghost);
+          rho[b] += m[a] * W_delta;
+          v[b] += m[a] / rho[a] * v[a] * W_delta;
+        }
+      } else if (!is_tiny(S)) {
+        // Constant interpolation succeeds, use it.
+        clear(b, rho, v);
+        const auto E = inverse(S);
+        for (const PV a : mesh.fixed_interp(b)) {
+          const auto r_delta = r_ghost - r[a];
+          const auto W_delta = E * kernel_(r_delta, h_ghost);
+          rho[b] += m[a] * W_delta;
+          v[b] += m[a] / rho[a] * v[a] * W_delta;
+        }
+      } else {
+        // Both interpolations fail, leave the particle as it is.
+        rho[b] = rho_0_;
+        v[b] = {};
+        return;
+      }
+
+      // Compute the density at the boundary.
+      // drho/dn = rho_0/(cs_0^2)*dot(g,n).
+      const auto G = unit<1>(r[b], -g_);
+      rho[b] += SD * rho_0_ / pow2(cs_0_) * dot(G, SN);
+
+      // Compute the velocity at the boundary (slip wall boundary condition).
+      const auto Vn = dot(v[b], SN) * SN;
+      const auto Vt = v[b] - Vn;
+      v[b] = Vt - Vn;
+    });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,72 +169,64 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::compute_density()");
     using PV = ParticleView<ParticleArray>;
 
-    // Clean-up continuity equation fields and apply source terms.
-    par::for_each(particles.all(), [this](PV a) {
-      // Clean-up continuity equation fields.
-      clear(a, drho_dt, grad_rho, N, L);
-
-      // Apply continuity equation source terms.
-      std::apply([a](const auto&... f) { ((drho_dt[a] += f(a)), ...); },
-                 continuity_equation_.mass_sources());
+    // Clean-up continuity equation fields.
+    par::for_each(particles.all(), [](PV a) {
+      drho_dt[a] = {};
+      grad_rho[a] = {};
+      L[a] = {};
+      N[a] = {};
     });
 
-    // Compute density gradient and renormalization fields.
-    if constexpr (has_any<PV>(grad_rho, N, L)) {
-      // Precompute the fields.
-      par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
-        const auto [a, b] = ab;
-        const auto V_a = m[a] / rho[a];
-        const auto V_b = m[b] / rho[b];
-        const auto grad_W_ab = kernel_.grad(a, b);
+    // Compute density gradient and normalization fields.
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
 
-        // Update density gradient.
-        if constexpr (has<PV>(grad_rho)) {
-          const auto grad_flux = rho[b, a] * grad_W_ab;
-          grad_rho[a] += V_b * grad_flux;
-          grad_rho[b] += V_a * grad_flux;
-        }
+      // Compute volumes and kernel gradient.
+      const auto V_a = m[a] / rho[a];
+      const auto V_b = m[b] / rho[b];
+      const auto grad_W_ab = kernel_.grad(a, b);
 
-        // Update normal vector.
-        if constexpr (has<PV>(N)) {
-          N[a] += V_b * grad_W_ab;
-          N[b] -= V_a * grad_W_ab;
-        }
+      // Update density gradient.
+      const auto grad_flux = rho[b, a] * grad_W_ab;
+      grad_rho[a] += V_b * grad_flux;
+      grad_rho[b] += V_a * grad_flux;
 
-        // Update renormalization matrix.
-        if constexpr (has<PV>(L)) {
-          const auto L_flux = outer(r[b, a], grad_W_ab);
-          L[a] += V_b * L_flux;
-          L[b] += V_a * L_flux;
-        }
-      });
+      // Update normal vector.
+      const auto N_flux = grad_W_ab;
+      N[a] += V_b * N_flux;
+      N[b] -= V_a * N_flux;
 
-      // Renormalize fields.
-      par::for_each(particles.all(), [](PV a) {
-        // Renormalize density gradient and normal vector, if possible.
-        if constexpr (has<PV>(L) && has_any<PV>(N, grad_rho)) {
-          if (const auto fact = ldl(L[a]); fact) {
-            if constexpr (has<PV>(N)) N[a] = fact->solve(N[a]);
-            if constexpr (has<PV>(grad_rho))
-              grad_rho[a] = fact->solve(grad_rho[a]);
-          } else {
-            L[a] = eye(L[a]);
-          }
-        }
+      // Update normalization matrix.
+      const auto L_flux = outer(r[b, a], grad_W_ab);
+      L[a] += V_b * L_flux;
+      L[b] += V_a * L_flux;
+    });
 
-        // Finalize the normal vector.
-        if constexpr (has<PV>(N)) N[a] = normalize(N[a]);
-      });
-    }
+    // Finalize the normalization fields.
+    par::for_each(particles.all(), [](PV a) {
+      // If normalization matrix is invertible, invert it.
+      if (const auto fact = ldl(L[a])) {
+        L[a] = fact->inverse();
+      } else {
+        L[a] = eye(L[a]);
+      }
+
+      // Apply the normalization matrix.
+      grad_rho[a] = L[a] * grad_rho[a];
+      N[a] = normalize(L[a] * N[a]);
+    });
 
     // Compute density time derivative.
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
+
+      // Compute the kernel gradient.
       const auto grad_W_ab = kernel_.grad(a, b);
 
+      // Compute the artificial viscosity density term.
+      const auto Psi_ab = artificial_viscosity_.density_term(a, b);
+
       // Update density time derivative.
-      const auto Psi_ab =
-          momentum_equation_.artificial_viscosity().density_term(a, b);
       drho_dt[a] -= m[b] * dot(v[b, a] - Psi_ab / rho[b], grad_W_ab);
       drho_dt[b] -= m[a] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
     });
@@ -194,23 +241,10 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::compute_forces()");
     using PV = ParticleView<ParticleArray>;
 
-    // Clean-up momentum and energy equation fields, compute pressure,
-    // sound speed and apply source terms.
+    // Initialize the momentum and compute pressure.
     par::for_each(particles.all(), [this](PV a) {
-      // Clean-up momentum and energy equation fields.
-      clear(a, dv_dt, du_dt);
-
-      // Apply source terms.
-      std::apply(
-          [a](const auto&... g) {
-            ((dv_dt[a] += g(a)), ...);
-            if constexpr (has<PV>(du_dt)) ((du_dt[a] += dot(g(a), v[a])), ...);
-          },
-          momentum_equation_.momentum_sources());
-      if constexpr (has<PV>(du_dt)) {
-        std::apply([a](const auto&... q) { ((du_dt[a] += q(a)), ...); },
-                   energy_equation_.energy_sources());
-      }
+      // Initialize the momentum time derivative with the gravity source.
+      dv_dt[a] = unit<1>(r[a], -g_);
 
       // Compute pressure and sound speed.
       p[a] = eos_.pressure(a);
@@ -220,24 +254,19 @@ public:
     // Compute velocity and internal energy time derivatives.
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
+
+      // Compute the kernel gradient.
       const auto grad_W_ab = kernel_.grad(a, b);
 
-      // Update velocity time derivative.
+      // Compute the artificial viscosity velocity term.
+      const auto Pi_ab = artificial_viscosity_.velocity_term(a, b);
+
+      // Update momentum time derivative.
       const auto P_a = p[a] / pow2(rho[a]);
       const auto P_b = p[b] / pow2(rho[b]);
-      const auto Pi_ab =
-          momentum_equation_.viscosity()(a, b) +
-          momentum_equation_.artificial_viscosity().velocity_term(a, b);
       const auto v_flux = (-P_a - P_b + Pi_ab) * grad_W_ab;
       dv_dt[a] += m[b] * v_flux;
       dv_dt[b] -= m[a] * v_flux;
-
-      // Update internal energy time derivative.
-      if constexpr (has<PV>(du_dt)) {
-        const auto Q_ab = energy_equation_.heat_conductivity()(a, b);
-        du_dt[a] -= m[b] * dot((P_a - Pi_ab / 2) * v[b, a] - Q_ab, grad_W_ab);
-        du_dt[b] -= m[a] * dot((P_b - Pi_ab / 2) * v[b, a] + Q_ab, grad_W_ab);
-      }
     });
   }
 
@@ -250,11 +279,6 @@ public:
                                 ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_shifts()");
     using PV = ParticleView<ParticleArray>;
-    using Num = particle_num_t<PV>;
-
-    const auto R = motion_equation_.particle_shifting().R();
-    const auto Ma = motion_equation_.particle_shifting().Ma();
-    const auto CFL = motion_equation_.particle_shifting().CFL();
 
     // Initialize the free surface flag values and clear the particle shifts.
     // - Positive value `FS_FAR` means that the particle is far from the free
@@ -266,7 +290,7 @@ public:
     //   essentially zero, but we use a very small number to avoid spurious
     //   comparisons.
     const auto a_0 = particles[0];
-    const auto FS_FAR = 2 * CFL * Ma * pow2(h[a_0]);
+    const auto FS_FAR = 2 * CFL_ * Ma_ * pow2(h[a_0]);
     static constexpr auto FS_ON = std::numeric_limits<Num>::min();
     par::for_each(particles.fluid(), [](PV a) { FS[a] = FS_ON, dr[a] = {}; });
     par::for_each(particles.fixed(), [FS_FAR](PV a) { FS[a] = FS_FAR; });
@@ -334,13 +358,13 @@ public:
     const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h[a_0] / 2), h[a_0]));
     par::block_for_each(
         mesh.block_pairs(particles),
-        [inv_W_0, FS_FAR, R, this](auto ab) {
+        [inv_W_0, FS_FAR, this](auto ab) {
           const auto [a, b] = ab;
           const auto W_ab = kernel_(a, b);
           const auto grad_W_ab = kernel_.grad(a, b);
 
           // Update the particle shifts.
-          const auto Chi_ab = R * pow<4>(W_ab * inv_W_0);
+          const auto Chi_ab = R_ * pow<4>(W_ab * inv_W_0);
           const auto Xi_a = static_cast<Num>(bitwise_equal(FS[a], FS_FAR));
           const auto Xi_b = static_cast<Num>(bitwise_equal(FS[b], FS_FAR));
           dr[a] -= (Xi_a + Chi_ab) * FS[a] * m[b] / rho[b] * grad_W_ab;
@@ -352,11 +376,14 @@ public:
 
 private:
 
-  [[no_unique_address]] MotionEquation motion_equation_;
-  [[no_unique_address]] ContinuityEquation continuity_equation_;
-  [[no_unique_address]] MomentumEquation momentum_equation_;
-  [[no_unique_address]] EnergyEquation energy_equation_;
+  Num rho_0_;
+  Num cs_0_;
+  Num g_;
+  Num R_;
+  Num Ma_;
+  Num CFL_;
   [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] ArtificialViscosity artificial_viscosity_;
   [[no_unique_address]] Kernel kernel_;
 
 }; // class FluidEquations
