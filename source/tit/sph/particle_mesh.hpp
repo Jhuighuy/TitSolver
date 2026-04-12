@@ -187,18 +187,18 @@ private:
   void partition_(ParticleArray& particles, size_t num_levels = 2) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
     TIT_ASSERT(num_levels > 0, "Number of levels must be positive!");
-    TIT_ASSERT(num_levels < PartVec::MaxNumLevels,
+    TIT_ASSERT(num_levels < max_num_levels_,
                "Number of levels exceeds the predefined maximum!");
 
     // Initialize the partitioning.
     const auto num_threads = par::num_threads();
     const auto num_parts = num_levels * num_threads + 1;
-    constexpr auto max_num_parts = std::numeric_limits<PartIndex>::max();
+    constexpr auto max_num_parts = std::numeric_limits<PartIndex_>::max();
     TIT_ENSURE(num_parts < max_num_parts,
                "Number of parts exceeded the limit of {}.",
                max_num_parts);
-    const auto parts = parinfo[particles];
-    std::ranges::fill(parts, PartVec(static_cast<PartIndex>(num_parts - 1)));
+    std::vector parts(particles.size(),
+                      PartVec_(static_cast<PartIndex_>(num_parts - 1)));
 
     // Build the multi-level partitioning.
     const auto positions = r[particles];
@@ -211,17 +211,17 @@ private:
       // Partition the particles.
       const auto level_parts =
           parts | std::views::transform(
-                      [level](PartVec& part) -> auto& { return part[level]; });
+                      [level](PartVec_& part) -> auto& { return part[level]; });
       if (is_first_level) {
         partition_func_(positions,
                         level_parts,
-                        static_cast<PartIndex>(num_threads));
+                        static_cast<PartIndex_>(num_threads));
       } else {
         interface_partition_func_(
             permuted_view(positions, interface),
             permuted_view(level_parts, interface),
-            static_cast<PartIndex>(num_threads),
-            /*init_part=*/static_cast<PartIndex>(level * num_threads));
+            static_cast<PartIndex_>(num_threads),
+            /*init_part=*/static_cast<PartIndex_>(level * num_threads));
       }
       if (is_last_level) break;
 
@@ -254,13 +254,20 @@ private:
       const auto index = static_cast<size_t>(index_);
       for (const auto neighbor : neighbors) {
         if (neighbor >= index) break;
-        const auto part = PartVec::common(parts[index], parts[neighbor]);
+        const auto level = find_true(parts[index] == parts[neighbor]);
+        TIT_ASSERT(level >= 0, "No common partition index!");
+        const auto part = parts[index][level];
         block_edges_[part].emplace_back(index, neighbor);
       }
     }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  static constexpr size_t max_num_levels_ = 8;
+
+  using PartIndex_ = uint8_t;
+  using PartVec_ = Vec<PartIndex_, max_num_levels_>;
 
   std::vector<std::vector<size_t>> adjacency_;
   std::vector<std::vector<size_t>> interp_adjacency_;

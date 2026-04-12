@@ -36,11 +36,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{r, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+      Equations::modified_fields | TypeSet{r, v, u};
 
   /// Construct time integrator.
   ///
@@ -100,11 +100,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{r, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+      Equations::modified_fields | TypeSet{r, v, u};
 
   /// Construct time integrator.
   ///
@@ -173,11 +173,11 @@ public:
 
   /// Set of particle fields that are required.
   static constexpr auto required_fields =
-      Equations::required_fields | TypeSet{parinfo, r, v, dv_dt};
+      Equations::required_fields | TypeSet{r, v, dv_dt};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      Equations::modified_fields | TypeSet{parinfo, r, v, u};
+      Equations::modified_fields | TypeSet{r, v, u};
 
   /// Construct time integrator.
   constexpr explicit RungeKuttaIntegrator(Equations equations) noexcept
