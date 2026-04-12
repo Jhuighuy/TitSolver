@@ -75,12 +75,12 @@ TEST_CASE("data::SeriesView") {
   SUBCASE("empty storage") {
     const data::Storage storage{":memory:"};
     CHECK(storage.num_series() == 0);
-    // CHECK(std::ranges::empty(storage.series_ids()));
   }
   SUBCASE("create series") {
     data::Storage storage{":memory:"};
     REQUIRE(storage.max_series() >= 3);
 
+    // Create a series one by one.
     const auto series_1 = storage.create_series("1");
     REQUIRE(storage.check_series(series_1));
     CHECK(series_1 == data::SeriesID{1});
@@ -104,6 +104,12 @@ TEST_CASE("data::SeriesView") {
     CHECK(storage.num_series() == 3);
     CHECK_RANGE_EQ(storage.series(), {series_1, series_2, series_3});
     CHECK(storage.last_series() == series_3);
+
+    // Check access by index.
+    CHECK(storage.series(0) == series_1);
+    CHECK(storage.series(1) == series_2);
+    CHECK(storage.series(2) == series_3);
+    CHECK_THROWS_MSG(storage.series(3), Exception, "out of bounds");
   }
   SUBCASE("create more series than the maximum") {
     data::Storage storage{":memory:"};
@@ -198,12 +204,12 @@ TEST_CASE("data::FrameView") {
     data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
     CHECK(series.num_frames() == 0);
-    // CHECK(std::ranges::empty(series.frames()));
   }
   SUBCASE("create frames") {
     data::Storage storage{":memory:"};
     const auto series = storage.create_series("");
 
+    // Create a frame one by one.
     const auto frame_1 = series.create_frame(0.0);
     REQUIRE(storage.check_frame(frame_1));
     CHECK(frame_1 == data::FrameID{1});
@@ -227,6 +233,12 @@ TEST_CASE("data::FrameView") {
     CHECK(series.num_frames() == 3);
     CHECK_RANGE_EQ(series.frames(), {frame_1, frame_2, frame_3});
     CHECK(series.last_frame() == frame_3);
+
+    // Check access by index.
+    CHECK(series.frame(0) == frame_1);
+    CHECK(series.frame(1) == frame_2);
+    CHECK(series.frame(2) == frame_3);
+    CHECK_THROWS_MSG(series.frame(3), Exception, "out of bounds");
   }
   SUBCASE("create frames in different series") {
     data::Storage storage{":memory:"};
@@ -313,6 +325,7 @@ TEST_CASE("data::ArrayView") {
     const auto series = storage.create_series("");
     const auto frame = series.create_frame(0.0);
 
+    // Create an array one by one.
     const auto array_1 = frame.create_array("array_1");
     array_1.write(std::vector{std::numbers::pi});
     REQUIRE(storage.check_array(array_1));

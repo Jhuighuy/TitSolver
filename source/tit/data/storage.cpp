@@ -73,12 +73,12 @@ auto Storage::max_series() const -> size_t {
   sqlite::Statement statement{db_, R"SQL(
     SELECT max_series FROM Settings
   )SQL"};
-  TIT_ENSURE(statement.step(), "Unable to get maximum number of data series!");
+  TIT_ENSURE(statement.step(), "Unable to get maximum number of series!");
   return statement.column<size_t>();
 }
 
 void Storage::set_max_series(size_t value) {
-  TIT_ASSERT(value > 0, "Maximum number of data series must be positive!");
+  TIT_ASSERT(value > 0, "Maximum number of series must be positive!");
   sqlite::Statement update_statement{db_, R"SQL(
     UPDATE Settings SET max_series = ?
   )SQL"};
@@ -97,8 +97,17 @@ auto Storage::num_series() const -> size_t {
   sqlite::Statement statement{db_, R"SQL(
     SELECT COUNT(*) FROM DataSeries
   )SQL"};
-  TIT_ENSURE(statement.step(), "Unable to count data series!");
+  TIT_ENSURE(statement.step(), "Unable to count series!");
   return statement.column<size_t>();
+}
+
+auto Storage::series_id(size_t index) const -> SeriesID {
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT id FROM DataSeries ORDER BY id ASC LIMIT 1 OFFSET ?
+  )SQL"};
+  statement.bind(index);
+  TIT_ENSURE(statement.step(), "Series index '{}' out of bounds.", index);
+  return statement.column<SeriesID>();
 }
 
 auto Storage::series_ids() const -> std::generator<SeriesID> {
@@ -109,11 +118,11 @@ auto Storage::series_ids() const -> std::generator<SeriesID> {
 }
 
 auto Storage::last_series_id() const -> SeriesID {
-  TIT_ASSERT(num_series() > 0, "No data series in the storage!");
+  TIT_ASSERT(num_series() > 0, "No series in the storage!");
   sqlite::Statement statement{db_, R"SQL(
     SELECT id FROM DataSeries ORDER BY id DESC LIMIT 1
   )SQL"};
-  TIT_ENSURE(statement.step(), "Unable to get last data series!");
+  TIT_ENSURE(statement.step(), "Unable to get last series!");
   return statement.column<SeriesID>();
 }
 
@@ -167,8 +176,22 @@ auto Storage::series_num_frames(SeriesID series_id) const -> size_t {
     SELECT COUNT(*) FROM DataFrames WHERE series_id = ?
   )SQL"};
   statement.bind(series_id);
-  TIT_ENSURE(statement.step(), "Unable to count data frames!");
+  TIT_ENSURE(statement.step(), "Unable to count frames!");
   return statement.column<size_t>();
+}
+
+auto Storage::series_frame_id(SeriesID series_id, size_t index) const
+    -> FrameID {
+  TIT_ASSERT(check_series(series_id), "Invalid series ID!");
+  sqlite::Statement statement{db_, R"SQL(
+    SELECT id FROM DataFrames
+    WHERE series_id = ?
+    ORDER BY id ASC
+    LIMIT 1 OFFSET ?
+  )SQL"};
+  statement.bind(series_id, index);
+  TIT_ENSURE(statement.step(), "Frame index '{}' out of bounds.", index);
+  return statement.column<FrameID>();
 }
 
 auto Storage::series_frame_ids(SeriesID series_id) const
@@ -239,7 +262,7 @@ auto Storage::frame_num_arrays(FrameID frame_id) const -> size_t {
     SELECT COUNT(*) FROM DataArrays WHERE frame_id = ?
   )SQL"};
   statement.bind(frame_id);
-  TIT_ENSURE(statement.step(), "Unable to count data arrays!");
+  TIT_ENSURE(statement.step(), "Unable to count arrays!");
   return statement.column<size_t>();
 }
 
@@ -279,7 +302,7 @@ auto Storage::frame_create_array_id(FrameID frame_id, std::string_view name)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void Storage::delete_array(ArrayID array_id) {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(check_array(array_id), "Invalid array ID!");
   sqlite::Statement statement{db_, R"SQL(
     DELETE FROM DataArrays WHERE id = ?
   )SQL"};
@@ -295,38 +318,38 @@ auto Storage::check_array(ArrayID array_id) const -> bool {
 }
 
 auto Storage::array_name(ArrayID array_id) const -> std::string {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(check_array(array_id), "Invalid array ID!");
   sqlite::Statement statement{db_, R"SQL(
     SELECT name FROM DataArrays WHERE id = ?
   )SQL"};
   statement.bind(array_id);
-  TIT_ENSURE(statement.step(), "Unable to get data array name!");
+  TIT_ENSURE(statement.step(), "Unable to get array name!");
   return statement.column<std::string>();
 }
 
 auto Storage::array_type(ArrayID array_id) const -> Type {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(check_array(array_id), "Invalid array ID!");
   sqlite::Statement statement{db_, R"SQL(
     SELECT type FROM DataArrays WHERE id = ?
   )SQL"};
   statement.bind(array_id);
-  TIT_ENSURE(statement.step(), "Unable to get data array data type!");
+  TIT_ENSURE(statement.step(), "Unable to get array type!");
   return Type{statement.column<uint32_t>()};
 }
 
 auto Storage::array_size(ArrayID array_id) const -> size_t {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(check_array(array_id), "Invalid array ID!");
   sqlite::Statement statement{db_, R"SQL(
     SELECT size FROM DataArrays WHERE id = ?
   )SQL"};
   statement.bind(array_id);
-  TIT_ENSURE(statement.step(), "Unable to get data array size!");
+  TIT_ENSURE(statement.step(), "Unable to get array size!");
   return statement.column<size_t>();
 }
 
 auto Storage::array_open_write_(ArrayID array_id, Type type, size_t size)
     -> OutputStreamPtr<std::byte> {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(check_array(array_id), "Invalid array ID!");
   sqlite::Statement statement{db_, R"SQL(
     UPDATE DataArrays SET type = ?, size = ? WHERE id = ?
   )SQL"};
@@ -340,7 +363,7 @@ auto Storage::array_open_write_(ArrayID array_id, Type type, size_t size)
 
 auto Storage::array_open_read_(ArrayID array_id) const
     -> InputStreamPtr<std::byte> {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(check_array(array_id), "Invalid array ID!");
   return make_zstd_stream_decompressor(
       sqlite::make_blob_reader(db_,
                                "DataArrays",
@@ -351,13 +374,13 @@ auto Storage::array_open_read_(ArrayID array_id) const
 void Storage::array_write(ArrayID array_id,
                           Type type,
                           std::span<const std::byte> data) {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(check_array(array_id), "Invalid array ID!");
   TIT_ASSERT(data.size() % type.width() == 0, "Data size mismatch!");
   array_open_write_(array_id, type, data.size() / type.width())->write(data);
 }
 
 void Storage::array_read(ArrayID array_id, std::span<std::byte> data) const {
-  TIT_ASSERT(check_array(array_id), "Invalid data array ID!");
+  TIT_ASSERT(check_array(array_id), "Invalid array ID!");
   TIT_ASSERT(data.size() == array_size(array_id) * array_type(array_id).width(),
              "Data size mismatch!");
   array_open_read_(array_id)->read(data);
