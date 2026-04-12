@@ -32,7 +32,6 @@ typedef struct ttdb_array ttdb_array_t;
 
 void ttdb_array__close(ttdb_array_t* array);
 const char* ttdb_array__name(ttdb_array_t* array);
-
 uint64_t ttdb_array__size(ttdb_array_t* array);
 ttdb_type_t ttdb_array__type(ttdb_array_t* array);
 void ttdb_array__read(ttdb_array_t* array, void* data);
@@ -63,9 +62,9 @@ typedef struct ttdb_series ttdb_series_t;
 
 void ttdb_series__close(ttdb_series_t* series);
 uint64_t ttdb_series__num_frames(ttdb_series_t* series);
-
-ttdb_frame_t* ttdb_series__last_frame(ttdb_series_t* series);
+ttdb_frame_t* ttdb_series__frame_at(ttdb_series_t* series, uint64_t index);
 ttdb_frame_iter_t* ttdb_series__frames(ttdb_series_t* series);
+ttdb_frame_t* ttdb_series__last_frame(ttdb_series_t* series);
 
 typedef struct ttdb_series_iter ttdb_series_iter_t;
 
@@ -79,9 +78,9 @@ typedef struct ttdb ttdb_t;
 void ttdb__close(ttdb_t* db);
 ttdb_t* ttdb__open(const char* path);
 uint64_t ttdb__num_series(ttdb_t* db);
-
-ttdb_series_t* ttdb__last_series(ttdb_t* db);
+ttdb_series_t* ttdb__series_at(ttdb_t* db, uint64_t index);
 ttdb_series_iter_t* ttdb__series(ttdb_t* db);
+ttdb_series_t* ttdb__last_series(ttdb_t* db);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
