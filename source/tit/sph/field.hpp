@@ -11,13 +11,10 @@
 #include <utility>
 
 #include "tit/core/basic_types.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
-#include "tit/data/type.hpp"
 
 namespace tit {
 
@@ -98,7 +95,7 @@ concept field_set = impl::is_field_set_v<FieldSet>;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Declare a particle field.
-#define TIT_DEFINE_FIELD(type, name, ...)                                      \
+#define TIT_DEFINE_FIELD(name, ...)                                            \
   class name##_t final : public BaseField {                                    \
   public:                                                                      \
                                                                                \
@@ -107,22 +104,22 @@ concept field_set = impl::is_field_set_v<FieldSet>;
                                                                                \
     /** Field type. */                                                         \
     template<class Real, size_t Dim>                                           \
-    using field_value_type = type;                                             \
+      requires (std::same_as<__VA_ARGS__, Real> ||                             \
+                std::same_as<__VA_ARGS__, Vec<Real, Dim>> ||                   \
+                std::same_as<__VA_ARGS__, Mat<Real, Dim>>)                     \
+    using field_value_type = __VA_ARGS__;                                      \
                                                                                \
   }; /* class name##_t */                                                      \
-  inline constexpr name##_t name __VA_OPT__(, __VA_ARGS__);
+  inline constexpr name##_t name
 
 /// Declare a scalar particle field.
-#define TIT_DEFINE_SCALAR_FIELD(name, ...)                                     \
-  TIT_DEFINE_FIELD(Real, name __VA_OPT__(, __VA_ARGS__))
+#define TIT_DEFINE_SCALAR_FIELD(name) TIT_DEFINE_FIELD(name, Real)
 
 /// Declare a vector particle field.
-#define TIT_DEFINE_VECTOR_FIELD(name, ...)                                     \
-  TIT_DEFINE_FIELD(TIT_PASS(Vec<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
+#define TIT_DEFINE_VECTOR_FIELD(name) TIT_DEFINE_FIELD(name, Vec<Real, Dim>)
 
 /// Declare a matrix particle field.
-#define TIT_DEFINE_MATRIX_FIELD(name, ...)                                     \
-  TIT_DEFINE_FIELD(TIT_PASS(Mat<Real, Dim>), name __VA_OPT__(, __VA_ARGS__))
+#define TIT_DEFINE_MATRIX_FIELD(name) TIT_DEFINE_FIELD(name, Mat<Real, Dim>)
 
 /// Field name.
 template<empty_type Field>
@@ -158,119 +155,55 @@ using field_value_t = field_value<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Particle partition index.
-using PartIndex = uint8_t;
-
-/// Particle multilevel partition index.
-class PartVec final {
-public:
-
-  /// Number of partition levels.
-  static constexpr size_t MaxNumLevels = 8;
-
-  /// Construct a multilevel partition index.
-  /// @{
-  constexpr PartVec() = default;
-  constexpr explicit PartVec(PartIndex part) noexcept : vec_(part) {}
-  /// @}
-
-  /// Get the partition index at the specified level.
-  /// @{
-  constexpr auto operator[](size_t i) noexcept -> PartIndex& {
-    TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
-    return vec_[i];
-  }
-  constexpr auto operator[](size_t i) const noexcept -> const PartIndex& {
-    TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
-    return vec_[i];
-  }
-  /// @}
-
-  /// Find the last assigned partition index.
-  constexpr auto last() const noexcept -> PartIndex {
-    for (ssize_t i = (MaxNumLevels - 2); i >= 0; --i) {
-      if (vec_[i] != vec_[i + 1]) return vec_[i];
-    }
-    return vec_[0];
-  }
-
-  /// Find the first common partition index.
-  static constexpr auto common(const PartVec& a, const PartVec& b) noexcept
-      -> PartIndex {
-    const auto level = find_true(a.vec_ == b.vec_);
-    TIT_ASSERT(level >= 0, "No common partition index!");
-    return a[level];
-  }
-
-private:
-
-  Vec<PartIndex, MaxNumLevels> vec_;
-
-}; // class PartVec
-
-template<>
-inline constexpr auto data::type_of<PartVec> = data::type_of<uint64_t>;
-
-template<class Stream>
-constexpr void serialize(Stream& out, const PartVec& pvec) {
-  serialize(out, static_cast<uint64_t>(pvec.last()));
-}
-
-/// Particle partition information.
-TIT_DEFINE_FIELD(PartVec, parinfo)
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 namespace sph {
 /// Particle position.
-TIT_DEFINE_VECTOR_FIELD(r)
+TIT_DEFINE_VECTOR_FIELD(r);
 } // namespace sph
-TIT_DEFINE_VECTOR_FIELD(dr)
+/// Particle offset.
+TIT_DEFINE_VECTOR_FIELD(dr);
 
 /// Particle velocity.
-TIT_DEFINE_VECTOR_FIELD(v)
+TIT_DEFINE_VECTOR_FIELD(v);
 /// Particle acceleration.
-TIT_DEFINE_VECTOR_FIELD(dv_dt)
+TIT_DEFINE_VECTOR_FIELD(dv_dt);
 /// Particle velocity gradient.
-TIT_DEFINE_MATRIX_FIELD(grad_v)
+TIT_DEFINE_MATRIX_FIELD(grad_v);
 
 /// Particle mass.
-TIT_DEFINE_SCALAR_FIELD(m)
+TIT_DEFINE_SCALAR_FIELD(m);
 /// Particle density.
-TIT_DEFINE_SCALAR_FIELD(rho)
+TIT_DEFINE_SCALAR_FIELD(rho);
 /// Particle density gradient.
-TIT_DEFINE_VECTOR_FIELD(grad_rho)
+TIT_DEFINE_VECTOR_FIELD(grad_rho);
 /// Particle density time derivative.
-TIT_DEFINE_SCALAR_FIELD(drho_dt)
+TIT_DEFINE_SCALAR_FIELD(drho_dt);
 
 /// Particle width.
-TIT_DEFINE_SCALAR_FIELD(h)
+TIT_DEFINE_SCALAR_FIELD(h);
 
 /// Particle pressure.
-TIT_DEFINE_SCALAR_FIELD(p)
+TIT_DEFINE_SCALAR_FIELD(p);
 /// Particle sound speed.
-TIT_DEFINE_SCALAR_FIELD(cs)
+TIT_DEFINE_SCALAR_FIELD(cs);
 
 /// Particle thermal energy.
-TIT_DEFINE_SCALAR_FIELD(u)
+TIT_DEFINE_SCALAR_FIELD(u);
 /// Particle thermal energy time derivative.
-TIT_DEFINE_SCALAR_FIELD(du_dt)
+TIT_DEFINE_SCALAR_FIELD(du_dt);
 
 /// Particle dynamic viscosity.
-TIT_DEFINE_SCALAR_FIELD(mu)
+TIT_DEFINE_SCALAR_FIELD(mu);
 /// Particle heat conductivity coefficient.
-TIT_DEFINE_SCALAR_FIELD(kappa)
+TIT_DEFINE_SCALAR_FIELD(kappa);
 
 /// Particle normal vector.
-TIT_DEFINE_VECTOR_FIELD(N)
+TIT_DEFINE_VECTOR_FIELD(N);
 /// Particle renormalization matrix.
-TIT_DEFINE_MATRIX_FIELD(L)
+TIT_DEFINE_MATRIX_FIELD(L);
 
 /// Particle free surface flag.
-TIT_DEFINE_SCALAR_FIELD(FS)
+TIT_DEFINE_SCALAR_FIELD(FS);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

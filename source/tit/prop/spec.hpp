@@ -51,11 +51,11 @@ public:
   /// Specification is not copy-constructible.
   Spec(const Spec&) = delete;
 
-  /// Copy-assign a specification (deleted).
-  auto operator=(const Spec&) -> Spec& = delete;
-
   /// Move-assign a specification.
   auto operator=(Spec&&) noexcept -> Spec& = default;
+
+  /// Specification is not copy-assignable.
+  auto operator=(const Spec&) -> Spec& = delete;
 
   /// Destruct the specification.
   virtual ~Spec() = default;
