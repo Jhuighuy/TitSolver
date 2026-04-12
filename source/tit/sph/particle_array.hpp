@@ -191,7 +191,7 @@ public:
   constexpr explicit ParticleArray(Space /*space*/,
                                    Equations /*equations*/) noexcept {}
 
-  /// Write a particle array into a data series.
+  /// Write a particle array into a series.
   void write(field_value_t<h_t, Space> time,
              data::SeriesView<data::Storage> series) const {
     auto frame = series.create_frame(static_cast<float64_t>(time));

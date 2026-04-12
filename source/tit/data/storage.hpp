@@ -28,16 +28,16 @@ namespace tit::data {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Data series ID type.
+/// Series ID type.
 enum class SeriesID : sqlite::RowID {};
 
-/// Data frame ID type.
+/// Frame ID type.
 enum class FrameID : sqlite::RowID {};
 
-/// Data array ID type.
+/// Array ID type.
 enum class ArrayID : sqlite::RowID {};
 
-/// Data storage type.
+/// Storage type.
 template<class S>
 concept storage = std::same_as<std::remove_const_t<S>, class Storage>;
 
@@ -48,14 +48,14 @@ template<storage Storage>
 class ArrayView final {
 public:
 
-  /// Construct a null data array view.
+  /// Construct a null array view.
   constexpr ArrayView() noexcept = default;
 
-  /// Construct a data array view.
+  /// Construct an array view.
   /// @{
   constexpr explicit ArrayView(Storage& storage, ArrayID array_id)
       : storage_{&storage}, array_id_{array_id} {
-    TIT_ASSERT(storage.check_array(array_id_), "Invalid data array ID!");
+    TIT_ASSERT(storage.check_array(array_id_), "Invalid array ID!");
   }
   template<storage Other>
     requires (!std::same_as<Other, Storage> &&
@@ -64,13 +64,13 @@ public:
       : storage_{&other.storage()}, array_id_{other.id()} {}
   /// @}
 
-  /// Get the data storage.
+  /// Get the storage.
   constexpr auto storage() const noexcept -> Storage& {
     TIT_ASSERT(storage_ != nullptr, "Storage is null!");
     return *storage_;
   }
 
-  /// Get the data array ID.
+  /// Get the array ID.
   /// @{
   constexpr auto id() const noexcept -> ArrayID {
     TIT_ASSERT(array_id_ != ArrayID{0}, "Array ID is null!");
@@ -81,29 +81,29 @@ public:
   }
   /// @}
 
-  /// Compare data array views by ID.
+  /// Compare array views by ID.
   friend constexpr auto operator==(ArrayView lhs, ArrayView rhs) noexcept
       -> bool {
     TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
     return lhs.array_id_ == rhs.array_id_;
   }
 
-  /// Get the name of the data array.
+  /// Get the name of the array.
   auto name() const -> std::string {
     return storage().array_name(array_id_);
   }
 
-  /// Get the data type of the data array.
+  /// Get the data type of the array.
   auto type() const -> Type {
     return storage().array_type(array_id_);
   }
 
-  /// Get the size of a data array (in elements).
+  /// Get the size of an array (in elements).
   auto size() const -> size_t {
     return storage().array_size(array_id_);
   }
 
-  /// Write data to the data array.
+  /// Write data to the array.
   /// @{
   void write(Type type, std::span<const std::byte> data) const {
     storage().array_write(array_id_, type, data);
@@ -116,7 +116,7 @@ public:
   }
   /// @}
 
-  /// Read data from the data array.
+  /// Read data from the array.
   /// @{
   void read(std::span<std::byte> data) const {
     storage().array_read(array_id_, data);
@@ -150,10 +150,10 @@ template<storage Storage>
 class FrameView final {
 public:
 
-  /// Construct a null data frame view.
+  /// Construct a null frame view.
   constexpr FrameView() noexcept = default;
 
-  /// Construct a data frame view.
+  /// Construct a frame view.
   /// @{
   constexpr explicit FrameView(Storage& storage, FrameID frame_id)
       : storage_{&storage}, frame_id_{frame_id} {
@@ -166,7 +166,7 @@ public:
       : storage_{&other.storage()}, frame_id_{other.id()} {}
   /// @}
 
-  /// Get the data storage.
+  /// Get the storage.
   constexpr auto storage() const noexcept -> Storage& {
     TIT_ASSERT(storage_ != nullptr, "Storage is null!");
     return *storage_;
@@ -183,34 +183,34 @@ public:
   }
   /// @}
 
-  /// Compare data frame views by ID.
+  /// Compare frame views by ID.
   friend constexpr auto operator==(FrameView lhs, FrameView rhs) noexcept
       -> bool {
     TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
     return lhs.frame_id_ == rhs.frame_id_;
   }
 
-  /// Get the time of the data frame.
+  /// Get the time of the frame.
   auto time() const -> float64_t {
     return storage().frame_time(frame_id_);
   }
 
-  /// Get the number of data arrays in the frame.
+  /// Get the number of arrays in the frame.
   auto num_arrays() const -> size_t {
     return storage().frame_num_arrays(frame_id_);
   }
 
-  /// Enumerate all data arrays in the frame.
+  /// Enumerate all arrays in the frame.
   auto arrays() const {
     return storage().frame_arrays(frame_id_);
   }
 
-  /// Find the data array with the given name.
+  /// Find the array with the given name.
   auto find_array(std::string_view name) const {
     return storage().frame_find_array(frame_id_, name);
   }
 
-  /// Create a new data array in the frame.
+  /// Create a new array in the frame.
   auto create_array(std::string_view name) const -> ArrayView<Storage>
     requires (!std::is_const_v<Storage>)
   {
@@ -231,10 +231,10 @@ template<storage Storage>
 class SeriesView final {
 public:
 
-  /// Construct a null data series view.
+  /// Construct a null series view.
   constexpr SeriesView() noexcept = default;
 
-  /// Construct a data series view.
+  /// Construct a series view.
   /// @{
   constexpr explicit SeriesView(Storage& storage, SeriesID series_id)
       : storage_{&storage}, series_id_{series_id} {
@@ -247,13 +247,13 @@ public:
       : storage_{&other.storage()}, series_id_{other.id()} {}
   /// @}
 
-  /// Get the data storage.
+  /// Get the storage.
   constexpr auto storage() const noexcept -> Storage& {
     TIT_ASSERT(storage_ != nullptr, "Storage is null!");
     return *storage_;
   }
 
-  /// Get the data series ID.
+  /// Get the series ID.
   /// @{
   constexpr auto id() const noexcept -> SeriesID {
     TIT_ASSERT(series_id_ != SeriesID{0}, "Series ID is null!");
@@ -264,23 +264,28 @@ public:
   }
   /// @}
 
-  /// Compare data series views by ID.
+  /// Compare series views by ID.
   friend constexpr auto operator==(SeriesView lhs, SeriesView rhs) noexcept {
     TIT_ASSERT(&lhs.storage() == &rhs.storage(), "Incompatible data storages!");
     return lhs.series_id_ == rhs.series_id_;
   }
 
-  /// Get the name of the data series.
+  /// Get the name of the series.
   auto name() const -> std::string {
     return storage().series_name(series_id_);
   }
 
-  /// Get the number of frames in the data series.
+  /// Get the number of frames in the series.
   auto num_frames() const -> size_t {
     return storage().series_num_frames(series_id_);
   }
 
-  /// Enumerate all frames in the data series.
+  /// Get a frame in the series by its index.
+  auto frame(size_t index) const -> FrameView<Storage> {
+    return storage().series_frame(series_id_, index);
+  }
+
+  /// Enumerate all frames in the series.
   auto frames() const {
     return storage().series_frames(series_id_);
   }
@@ -290,7 +295,7 @@ public:
     return storage().series_last_frame(series_id_);
   }
 
-  /// Create a new frame in the data series.
+  /// Create a new frame in the series.
   auto create_frame(float64_t time) const -> FrameView<Storage>
     requires (!std::is_const_v<Storage>)
   {
@@ -320,17 +325,25 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Get the maximum number of data series.
+  /// Get the maximum number of series.
   auto max_series() const -> size_t;
 
-  /// Set the maximum number of data series. If the number of series exceeds the
+  /// Set the maximum number of series. If the number of series exceeds the
   /// maximum, the oldest series will be deleted.
   void set_max_series(size_t value);
 
-  /// Number of data series in the storage.
+  /// Number of series in the storage.
   auto num_series() const -> size_t;
 
-  /// Enumerate all data series.
+  /// Get the series by index.
+  /// @{
+  auto series_id(size_t index) const -> SeriesID;
+  auto series(this auto& self, size_t index) {
+    return SeriesView{self, self.series_id(index)};
+  }
+  /// @}
+
+  /// Enumerate all series.
   /// @{
   auto series_ids() const -> std::generator<SeriesID>;
   auto series(this auto& self) {
@@ -348,7 +361,7 @@ public:
   }
   /// @}
 
-  /// Create a new data series.
+  /// Create a new series.
   /// @{
   auto create_series_id(std::string_view name = "") -> SeriesID;
   auto create_series(std::string_view name = "") -> SeriesView<Storage> {
@@ -358,19 +371,27 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Delete a data series.
+  /// Delete a series.
   void delete_series(SeriesID series_id);
 
-  /// Check if a data series with the given ID exists.
+  /// Check if a series with the given ID exists.
   auto check_series(SeriesID series_id) const -> bool;
 
-  /// Get the name of a data series.
+  /// Get the name of a series.
   auto series_name(SeriesID series_id) const -> std::string;
 
   /// Number of frames in the series.
   auto series_num_frames(SeriesID series_id) const -> size_t;
 
-  /// Enumerate all frames in the data series.
+  /// Get the series frame by zero-based index.
+  /// @{
+  auto series_frame_id(SeriesID series_id, size_t index) const -> FrameID;
+  auto series_frame(this auto& self, SeriesID series_id, size_t index) {
+    return FrameView{self, self.series_frame_id(series_id, index)};
+  }
+  /// @}
+
+  /// Enumerate all frames in the series.
   /// @{
   auto series_frame_ids(SeriesID series_id) const -> std::generator<FrameID>;
   auto series_frames(this auto& self, SeriesID series_id) {
@@ -408,10 +429,10 @@ public:
   /// Get the time of a frame.
   auto frame_time(FrameID frame_id) const -> float64_t;
 
-  /// Number of data arrays in the frame.
+  /// Number of arrays in the frame.
   auto frame_num_arrays(FrameID frame_id) const -> size_t;
 
-  /// Enumerate all data arrays in the frame.
+  /// Enumerate all arrays in the frame.
   /// @{
   auto frame_array_ids(FrameID frame_id) const -> std::generator<ArrayID>;
   auto frame_arrays(this auto& self, FrameID frame_id) {
@@ -421,7 +442,7 @@ public:
   }
   /// @}
 
-  /// Find the data array with the given name.
+  /// Find the array with the given name.
   /// @{
   auto frame_find_array_id(FrameID frame_id, std::string_view name) const
       -> std::optional<ArrayID>;
@@ -434,7 +455,7 @@ public:
   }
   /// @}
 
-  /// Create a new data array in the frame.
+  /// Create a new array in the frame.
   /// @{
   auto frame_create_array_id(FrameID frame_id, std::string_view name)
       -> ArrayID;
@@ -446,22 +467,22 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Delete a data array.
+  /// Delete an array.
   void delete_array(ArrayID array_id);
 
-  /// Check if a data array with the given ID exists.
+  /// Check if an array with the given ID exists.
   auto check_array(ArrayID array_id) const -> bool;
 
-  /// Get the name of a data array.
+  /// Get the name of an array.
   auto array_name(ArrayID array_id) const -> std::string;
 
-  /// Get the data type of the data array.
+  /// Get the type of an array.
   auto array_type(ArrayID array_id) const -> Type;
 
-  /// Get the number of elements in the data array.
+  /// Get the number of elements in the array.
   auto array_size(ArrayID array_id) const -> size_t;
 
-  /// Write data to a data array.
+  /// Write data to an array.
   /// @{
   void array_write(ArrayID array_id,
                    Type type,
@@ -477,7 +498,7 @@ public:
   }
   /// @}
 
-  /// Read data from a data array.
+  /// Read data from an array.
   /// @{
   void array_read(ArrayID array_id, std::span<std::byte> data) const;
   auto array_read(ArrayID array_id) const -> std::vector<std::byte>;
@@ -502,11 +523,11 @@ public:
 
 private:
 
-  // Open an output stream to write the data of a data array.
+  // Open an output stream to write the data of an array.
   auto array_open_write_(ArrayID array_id, Type type, size_t size)
       -> OutputStreamPtr<std::byte>;
 
-  // Open an input stream to read the data of a data array.
+  // Open an input stream to read the data of an array.
   auto array_open_read_(ArrayID array_id) const -> InputStreamPtr<std::byte>;
 
   mutable sqlite::Database db_;

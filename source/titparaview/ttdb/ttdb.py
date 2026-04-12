@@ -361,13 +361,17 @@ ttdb_series__num_frames: Final = cast(
     Callable[[ttdb_series_t], int],
     lib.func("ttdb_series__num_frames", (c_void_p,), c_uint64),
 )
-ttdb_series__last_frame: Final = cast(
-    Callable[[ttdb_series_t], ttdb_frame_t],
-    lib.func("ttdb_series__last_frame", (c_void_p,), c_void_p),
+ttdb_series__frame_at: Final = cast(
+    Callable[[ttdb_series_t, int], ttdb_frame_t],
+    lib.func("ttdb_series__frame_at", (c_void_p, c_uint64), c_void_p),
 )
 ttdb_series__frames: Final = cast(
     Callable[[ttdb_series_t], ttdb_frame_iter_t],
     lib.func("ttdb_series__frames", (c_void_p,), c_void_p),
+)
+ttdb_series__last_frame: Final = cast(
+    Callable[[ttdb_series_t], ttdb_frame_t],
+    lib.func("ttdb_series__last_frame", (c_void_p,), c_void_p),
 )
 
 
@@ -390,14 +394,18 @@ class Series:
         """Number of frames in the series."""
         return ttdb_series__num_frames(self.__series)
 
-    @property
-    def last_frame(self) -> Frame:
-        """Last frame in the series."""
-        return Frame(ttdb_series__last_frame(self.__series))
+    def frame_at(self, index: int) -> Frame:
+        """Get the frame at the given index."""
+        return Frame(ttdb_series__frame_at(self.__series, index))
 
     def frames(self) -> FrameIter:
         """Iterate over all frames in the series."""
         return FrameIter(ttdb_series__frames(self.__series))
+
+    @property
+    def last_frame(self) -> Frame:
+        """Last frame in the series."""
+        return Frame(ttdb_series__last_frame(self.__series))
 
 
 ttdb_series_iter_t = NewType("ttdb_series_iter_t", c_void_p)
@@ -452,13 +460,17 @@ ttdb__num_series: Final = cast(
     Callable[[ttdb_t], int],
     lib.func("ttdb__num_series", (c_void_p,), c_uint64),
 )
-ttdb__last_series: Final = cast(
-    Callable[[ttdb_t], ttdb_series_t],
-    lib.func("ttdb__last_series", (c_void_p,), c_void_p),
+ttdb__series_at: Final = cast(
+    Callable[[ttdb_t, int], ttdb_series_t],
+    lib.func("ttdb__series_at", (c_void_p, c_uint64), c_void_p),
 )
 ttdb__series: Final = cast(
     Callable[[ttdb_t], ttdb_series_iter_t],
     lib.func("ttdb__series", (c_void_p,), c_void_p),
+)
+ttdb__last_series: Final = cast(
+    Callable[[ttdb_t], ttdb_series_t],
+    lib.func("ttdb__last_series", (c_void_p,), c_void_p),
 )
 
 
@@ -481,14 +493,18 @@ class Storage:
         """Number of series in the storage."""
         return ttdb__num_series(self.__ttdb)
 
-    @property
-    def last_series(self) -> Series:
-        """Last series in the storage."""
-        return Series(ttdb__last_series(self.__ttdb))
+    def series_at(self, index: int) -> Series:
+        """Get the series at the given index."""
+        return Series(ttdb__series_at(self.__ttdb, index))
 
     def series(self) -> SeriesIter:
         """Iterate over all series in the storage."""
         return SeriesIter(ttdb__series(self.__ttdb))
+
+    @property
+    def last_series(self) -> Series:
+        """Last series in the storage."""
+        return Series(ttdb__last_series(self.__ttdb))
 
 
 def open_storage(path: str) -> Storage:

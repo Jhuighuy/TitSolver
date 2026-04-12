@@ -134,7 +134,7 @@ class TTDBReader(VTKPythonAlgorithmBase):
         if frame is None:
             return False
 
-        # Extract the data arrays.
+        # Extract the arrays.
         arrays = {
             array.name: array.data
             for array in frame.arrays()

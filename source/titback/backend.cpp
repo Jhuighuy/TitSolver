@@ -12,10 +12,8 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
-#include <iterator>
 #include <memory>
 #include <mutex>
-#include <ranges>
 #include <string>
 #include <thread>
 #include <utility>
@@ -163,12 +161,7 @@ TIT_IMPLEMENT_MAIN([](int /*argc*/, char** argv) {
         // ---------------------------------------------------------------------
         if (type == "frame") {
           const auto frame_index = message["index"].get<size_t>();
-          auto frames = storage.last_series().frames();
-          auto frame_iter = std::ranges::begin(frames);
-          const auto frames_end = std::ranges::end(frames);
-          std::ranges::advance(frame_iter, frame_index, frames_end);
-          TIT_ENSURE(frame_iter != frames_end, "Frame index out of bounds.");
-          const auto& frame = *frame_iter;
+          const auto frame = storage.last_series().frame(frame_index);
 
           json::json result;
           for (const auto& array : frame.arrays()) {

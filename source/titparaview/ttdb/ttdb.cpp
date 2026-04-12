@@ -222,12 +222,14 @@ uint64_t ttdb_series__num_frames(ttdb_series_t* series) {
   });
 }
 
-ttdb_frame_t* ttdb_series__last_frame(ttdb_series_t* series) {
-  return safe_call([series] {
+ttdb_frame_t* ttdb_series__frame_at(ttdb_series_t* series, uint64_t index) {
+  return safe_call([series, index] {
     TIT_ENSURE(series != nullptr, "Series pointer is null.");
+    TIT_ENSURE(index < series->storage->series_num_frames(series->id),
+               "Frame index out of bounds.");
     return new ttdb_frame{
         .storage = series->storage,
-        .id = series->storage->series_last_frame_id(series->id),
+        .id = series->storage->series_frame_id(series->id, index),
     };
   });
 }
@@ -239,6 +241,16 @@ ttdb_frame_iter_t* ttdb_series__frames(ttdb_series_t* series) {
         .storage = series->storage,
         .ids = make_range_input_stream(
             series->storage->series_frame_ids(series->id)),
+    };
+  });
+}
+
+ttdb_frame_t* ttdb_series__last_frame(ttdb_series_t* series) {
+  return safe_call([series] {
+    TIT_ENSURE(series != nullptr, "Series pointer is null.");
+    return new ttdb_frame{
+        .storage = series->storage,
+        .id = series->storage->series_last_frame_id(series->id),
     };
   });
 }
@@ -287,12 +299,14 @@ uint64_t ttdb__num_series(ttdb_t* db) {
   });
 }
 
-ttdb_series_t* ttdb__last_series(ttdb_t* db) {
-  return safe_call([db] {
+ttdb_series_t* ttdb__series_at(ttdb_t* db, uint64_t index) {
+  return safe_call([db, index] {
     TIT_ENSURE(db != nullptr, "Database pointer is null.");
+    TIT_ENSURE(index < db->storage->num_series(),
+               "Series index out of bounds.");
     return new ttdb_series{
         .storage = db->storage,
-        .id = db->storage->last_series_id(),
+        .id = db->storage->series_id(index),
     };
   });
 }
@@ -303,6 +317,16 @@ ttdb_series_iter_t* ttdb__series(ttdb_t* db) {
     return new ttdb_series_iter{
         .storage = db->storage,
         .ids = make_range_input_stream(db->storage->series_ids()),
+    };
+  });
+}
+
+ttdb_series_t* ttdb__last_series(ttdb_t* db) {
+  return safe_call([db] {
+    TIT_ENSURE(db != nullptr, "Database pointer is null.");
+    return new ttdb_series{
+        .storage = db->storage,
+        .id = db->storage->last_series_id(),
     };
   });
 }
