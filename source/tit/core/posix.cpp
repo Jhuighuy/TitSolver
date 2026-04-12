@@ -75,9 +75,7 @@ auto checked_read(fd_t fd, std::span<std::byte> buffer) -> size_t {
   return static_cast<size_t>(num_bytes);
 }
 auto checked_read(fd_t fd, std::span<char> buffer) -> size_t {
-  return checked_read(
-      fd,
-      std::span{safe_bit_ptr_cast<std::byte*>(buffer.data()), buffer.size()});
+  return checked_read(fd, std::as_writable_bytes(buffer));
 }
 
 auto checked_write(fd_t fd, std::span<const std::byte> buffer) -> size_t {
@@ -89,10 +87,7 @@ auto checked_write(fd_t fd, std::span<const std::byte> buffer) -> size_t {
   return static_cast<size_t>(num_bytes);
 }
 auto checked_write(fd_t fd, std::span<const char> buffer) -> size_t {
-  return checked_write(
-      fd,
-      std::span{safe_bit_ptr_cast<const std::byte*>(buffer.data()),
-                buffer.size()});
+  return checked_write(fd, std::as_bytes(buffer));
 }
 
 void checked_dup2(fd_t fd, fd_t new_fd) {
