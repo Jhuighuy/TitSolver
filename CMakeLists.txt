@@ -16,13 +16,11 @@ project(tit VERSION "${TIT_VERSION}" LANGUAGES CXX)
 
 # Find the third-party libraries.
 find_package(Boost CONFIG REQUIRED COMPONENTS container stacktrace_addr2line)
-find_package(Crow CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(HighFive CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
-find_package(miniz CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
@@ -59,13 +57,11 @@ add_tit_library(
   DEPENDS
     Boost::container
     Boost::stacktrace_addr2line
-    Crow::Crow
     doctest::doctest
     gcem
     HighFive::HighFive
     hwy::hwy
     mimalloc-static
-    miniz::miniz
     nlohmann_json::nlohmann_json
     TBB::tbb
     tinyxml2::tinyxml2

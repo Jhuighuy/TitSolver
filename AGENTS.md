@@ -18,7 +18,6 @@ Primary areas:
   - `testing` – doctest-based test support
 - `source/titwcsph/` – WCSPH executable
 - `source/titesph/` – elastic/SPH executable
-- `source/titback/` – backend executable using Crow + JSON
 - `source/titgui/` – Electron + React + TypeScript GUI
 - `source/titparaview/` – ParaView integration:
   - `ttdb/` – shared library plugin
@@ -158,7 +157,6 @@ Executable targets observed in-tree include:
 - `tit::prop_tests`
 - `tit::sph_tests`
 - `tit::testing_tests`
-- `tit::titback`
 - `tit::titwcsph`
 - `tit::titesph`
 
