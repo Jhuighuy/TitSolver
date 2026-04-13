@@ -4,13 +4,11 @@
   "dependencies": [
     "boost-container",
     { "name": "boost-stacktrace", "default-features": false },
-    "crow",
     "doctest",
     "gcem",
     "highfive",
     "highway",
     "mimalloc",
-    "miniz",
     "nlohmann-json",
     "sqlite3",
     "tbb",

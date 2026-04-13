@@ -46,8 +46,6 @@ add_tit_library(
     "mat.hpp"
     "math.hpp"
     "mdvector.hpp"
-    "posix.cpp"
-    "posix.hpp"
     "print.cpp"
     "print.hpp"
     "profiler.cpp"
@@ -70,15 +68,12 @@ add_tit_library(
     "type.hpp"
     "utils.hpp"
     "vec.hpp"
-    "zip.cpp"
-    "zip.hpp"
     "zstd.cpp"
     "zstd.hpp"
   DEPENDS
     $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:tit::malloc>
     gcem
     hwy::hwy
-    miniz::miniz
     nlohmann_json::nlohmann_json
     zstd::libzstd
 )
@@ -102,7 +97,6 @@ add_tit_executable(
     "env.test.cpp"
     "math.test.cpp"
     "mdvector.test.cpp"
-    "posix.test.cpp"
     "serialization.test.cpp"
     "str.test.cpp"
     "time.test.cpp"
