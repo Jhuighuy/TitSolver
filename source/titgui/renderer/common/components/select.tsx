@@ -34,8 +34,8 @@ interface SelectRootProps<Value extends string = string> extends Omit<
   ComponentProps<typeof BaseSelect.Root>,
   "onValueChange"
 > {
-  value?: Value;
-  defaultValue?: Value;
+  value?: Value | null;
+  defaultValue?: Value | null;
   onValueChange?: (value: Value) => void;
 }
 

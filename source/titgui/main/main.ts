@@ -26,6 +26,10 @@ import {
   HELP_GET_SESSION_CHANNEL,
   HELP_NAVIGATE_TAB_CHANNEL,
   HELP_SELECT_TAB_CHANNEL,
+  PROPERTIES_GET_DOCUMENT_CHANNEL,
+  PROPERTIES_RELOAD_CHANNEL,
+  PROPERTIES_SAVE_CHANNEL,
+  PROPERTIES_UPDATE_TREE_CHANNEL,
   SESSION_EXPORT_RUN_CHANNEL,
   SESSION_FRAME_COUNT_CHANNEL,
   SESSION_FRAME_GET_CHANNEL,
@@ -38,6 +42,7 @@ import {
   WINDOW_PERSIST_GET_CHANNEL,
   WINDOW_PERSIST_SET_CHANNEL,
 } from "~/shared/channels";
+import type { Tree } from "~/shared/properties";
 import { type Theme, themeSchema } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -178,6 +183,29 @@ class Application {
     ipcMain.removeHandler(SESSION_SOLVER_IS_RUNNING_CHANNEL);
     ipcMain.handle(SESSION_SOLVER_IS_RUNNING_CHANNEL, () => {
       return this.session?.isSolverRunning();
+    });
+
+    ipcMain.removeHandler(PROPERTIES_GET_DOCUMENT_CHANNEL);
+    ipcMain.handle(PROPERTIES_GET_DOCUMENT_CHANNEL, () => {
+      return this.session?.getPropertiesDocument();
+    });
+
+    ipcMain.removeHandler(PROPERTIES_UPDATE_TREE_CHANNEL);
+    ipcMain.handle(
+      PROPERTIES_UPDATE_TREE_CHANNEL,
+      (_event, tree: Tree, revision: number) => {
+        return this.session?.updatePropertiesTree(tree, revision);
+      },
+    );
+
+    ipcMain.removeHandler(PROPERTIES_SAVE_CHANNEL);
+    ipcMain.handle(PROPERTIES_SAVE_CHANNEL, (_event, revision: number) => {
+      return this.session?.saveProperties(revision);
+    });
+
+    ipcMain.removeHandler(PROPERTIES_RELOAD_CHANNEL);
+    ipcMain.handle(PROPERTIES_RELOAD_CHANNEL, () => {
+      return this.session?.reloadProperties();
     });
 
     ipcMain.removeHandler(HELP_GET_SESSION_CHANNEL);

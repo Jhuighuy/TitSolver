@@ -30,6 +30,14 @@ export const SESSION_SOLVER_EVENT_CHANNEL = `${SESSION}:solver:event`;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+const PROPERTIES = "properties";
+export const PROPERTIES_GET_DOCUMENT_CHANNEL = `${PROPERTIES}:get-document`;
+export const PROPERTIES_UPDATE_TREE_CHANNEL = `${PROPERTIES}:update-tree`;
+export const PROPERTIES_SAVE_CHANNEL = `${PROPERTIES}:save`;
+export const PROPERTIES_RELOAD_CHANNEL = `${PROPERTIES}:reload`;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 const HELP = "help";
 export const HELP_GET_SESSION_CHANNEL = `${HELP}:get-session`;
 export const HELP_SESSION_CHANGED_CHANNEL = `${HELP}:session-changed`;

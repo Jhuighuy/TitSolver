@@ -6,6 +6,7 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-svgr/client" />
 import type { HelpSession } from "~/shared/help-session";
+import type { PropertyDocument, Tree } from "~/shared/properties";
 import type { SolverEvent } from "~/shared/solver";
 import type { Frame } from "~/shared/storage";
 import type { Theme } from "~/shared/theme";
@@ -40,6 +41,15 @@ interface SessionAPI {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+interface PropertiesAPI {
+  getDocument: () => Promise<PropertyDocument>;
+  updateTree: (tree: Tree, revision: number) => Promise<PropertyDocument>;
+  save: (revision: number) => Promise<PropertyDocument>;
+  reload: () => Promise<PropertyDocument>;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 interface HelpAPI {
   getSession: () => Promise<HelpSession>;
   onSessionChanged: (listener: (session: HelpSession) => void) => () => void;
@@ -55,6 +65,7 @@ declare global {
   var theme: ThemeAPI | undefined;
   var windowState: WindowStateAPI | undefined;
   var session: SessionAPI | undefined;
+  var properties: PropertiesAPI | undefined;
   var help: HelpAPI | undefined;
 }
 
