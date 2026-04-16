@@ -4,23 +4,28 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { ScrollArea as BaseScrollArea } from "@base-ui/react/scroll-area";
-import type { ComponentProps } from "react";
+import type { ComponentProps, Ref } from "react";
 
 import { cn } from "~/renderer-common/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+interface ScrollAreaProps extends ComponentProps<typeof BaseScrollArea.Root> {
+  viewportRef?: Ref<HTMLDivElement>;
+}
+
 export function ScrollArea({
   className,
   children,
+  viewportRef,
   ...props
-}: Readonly<ComponentProps<typeof BaseScrollArea.Root>>) {
+}: Readonly<ScrollAreaProps>) {
   return (
     <BaseScrollArea.Root
       {...props}
       className={cn("relative h-full w-full overflow-hidden", className)}
     >
-      <BaseScrollArea.Viewport className="h-full w-full">
+      <BaseScrollArea.Viewport ref={viewportRef} className="h-full w-full">
         {children}
       </BaseScrollArea.Viewport>
       <BaseScrollArea.Scrollbar

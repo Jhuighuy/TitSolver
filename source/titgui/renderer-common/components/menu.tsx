@@ -241,17 +241,27 @@ export interface MenuActions {
   addAction: (action: MenuAction) => () => void;
 }
 
-const MenuActionsContext = createContext<MenuActions | null>(null);
+interface MenuItemContextValue extends MenuActions {
+  scrollViewport: HTMLDivElement | null;
+}
+
+const MenuItemContext = createContext<MenuItemContextValue | null>(null);
 
 function useMenuActions(): MenuActions {
-  const context = useContext(MenuActionsContext);
+  const context = useContext(MenuItemContext);
   assert(context !== null, "Menu actions are not available.");
-  return context;
+  return {
+    addAction: context.addAction,
+  };
 }
 
 export function useMenuAction(action: MenuAction) {
   const { addAction } = useMenuActions();
   useEffect(() => addAction(action), [action, addAction]);
+}
+
+export function useMenuScrollViewport() {
+  return useContext(MenuItemContext)?.scrollViewport ?? null;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -267,6 +277,9 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
   // ---- Actions. -------------------------------------------------------------
 
   const [actions, setActions] = useState<MenuAction[]>([]);
+  const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(
+    null,
+  );
 
   const menuActions = useMemo<MenuActions>(
     () => ({
@@ -325,10 +338,15 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
 
       {/* ---- Contents. --------------------------------------------------- */}
       <Box flexGrow="1" overflow="auto" className={surface()}>
-        <ScrollArea>
-          <MenuActionsContext.Provider value={menuActions}>
+        <ScrollArea viewportRef={setScrollViewport}>
+          <MenuItemContext.Provider
+            value={{
+              ...menuActions,
+              scrollViewport,
+            }}
+          >
             {children}
-          </MenuActionsContext.Provider>
+          </MenuItemContext.Provider>
         </ScrollArea>
       </Box>
     </Flex>
