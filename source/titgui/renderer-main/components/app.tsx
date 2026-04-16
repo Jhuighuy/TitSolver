@@ -9,6 +9,7 @@ import {
   IconHelp,
   IconLogs,
   IconSettings,
+  IconBinaryTree as IconSetup,
   IconTerminal,
 } from "@tabler/icons-react";
 
@@ -19,6 +20,7 @@ import { DashboardMenu } from "~/renderer-main/components/dashboard-menu";
 import { HelpMenu } from "~/renderer-main/components/help-menu";
 import { LogsMenu } from "~/renderer-main/components/logs-menu";
 import { SettingsMenu } from "~/renderer-main/components/settings-menu";
+import { SetupMenu } from "~/renderer-main/components/setup-menu";
 import { SolverProvider } from "~/renderer-main/components/solver";
 import { StorageProvider } from "~/renderer-main/components/storage";
 import { Timeline } from "~/renderer-main/components/timeline";
@@ -45,6 +47,9 @@ function Page() {
     <Flex size="100%" minHeight="0">
       <Menu.Root side="left">
         <Menu.Item group={0} name="Storage" icon={<IconDatabase />} />
+        <Menu.Item group={0} name="Setup" icon={<IconSetup />}>
+          <SetupMenu />
+        </Menu.Item>
         <Menu.Item group={0} name="Dashboard" icon={<IconDashboard />}>
           <DashboardMenu />
         </Menu.Item>
