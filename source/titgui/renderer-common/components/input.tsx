@@ -134,12 +134,12 @@ interface NumberInputProps extends VariantProps<typeof inputRootVariants> {
   disabled?: boolean;
   slot?: ReactNode;
   placeholder?: string;
-  type?: "int" | "float";
+  type?: "int" | "real";
   min?: number;
   max?: number;
   step?: number;
-  value: number;
-  onValueChange: (value: number) => void;
+  value: number | null;
+  onValueChange: (value: number | null) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
 }
 
@@ -150,7 +150,7 @@ export function NumberInput({
   radius,
   slot,
   placeholder,
-  type = "float",
+  type = "real",
   min = Number.NEGATIVE_INFINITY,
   max = Number.POSITIVE_INFINITY,
   step,
@@ -158,8 +158,12 @@ export function NumberInput({
   onValueChange,
   onBlur,
 }: Readonly<NumberInputProps>) {
-  assert(type === "float" || Number.isInteger(value));
-  assert(min <= value && value <= max);
+  assert(
+    value === null ||
+      ((type === "real" || Number.isInteger(value)) &&
+        min <= value &&
+        value <= max),
+  );
 
   if (step === undefined) {
     if (type === "int") {
@@ -182,7 +186,6 @@ export function NumberInput({
       smallStep={step}
       largeStep={step * 10}
       onValueChange={(next) => {
-        if (next === null) return;
         if (type === "int" && !Number.isInteger(next)) return;
         onValueChange(next);
       }}

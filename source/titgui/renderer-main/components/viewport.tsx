@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Euler, Vector3 } from "three";
+import { chrome } from "~/renderer-common/components/classes";
 
 import { Box, Flex } from "~/renderer-common/components/layout";
 import { useSignalValue } from "~/renderer-common/hooks/use-signal";
@@ -110,7 +111,7 @@ export function Viewport() {
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" size="100%">
+    <Flex direction="column" size="100%" className={chrome()}>
       {/* ---- Controls. --------------------------------------------------- */}
       <ViewControls
         // Tool.

@@ -31,7 +31,7 @@ import {
 import type { ComponentProps } from "react";
 import { Euler, MathUtils, Vector3 } from "three";
 
-import { chrome } from "~/renderer-common/components/classes";
+import { surface } from "~/renderer-common/components/classes";
 import { ColorBox } from "~/renderer-common/components/color-box";
 import { DropdownMenu } from "~/renderer-common/components/dropdown-menu";
 import { NumberInput } from "~/renderer-common/components/input";
@@ -119,12 +119,11 @@ export function ViewControls({
     <Flex
       align="center"
       gap="1"
-      height="9"
-      minHeight="9"
-      maxHeight="9"
+      height="8"
+      minHeight="8"
+      maxHeight="8"
       px="2"
       py="1"
-      className={chrome()}
     >
       {/* ---- Tool. ------------------------------------------------------- */}
       <ToolControls toolMode={toolMode} setToolMode={setToolMode} />
@@ -301,7 +300,7 @@ function CameraControls({
                     size="4"
                     {...(color === null
                       ? {
-                          className: chrome(),
+                          className: surface(),
                         }
                       : {
                           style: { backgroundColor: toCSSColor(color) },
@@ -323,6 +322,7 @@ function CameraControls({
               slot={axis.toUpperCase()}
               value={cameraPosition[axis]}
               onValueChange={(value) => {
+                if (value === null) return;
                 const next = new Vector3().copy(cameraPosition);
                 next[axis] = value;
                 setCameraPosition(next);
@@ -338,6 +338,7 @@ function CameraControls({
               slot={axis.toUpperCase()}
               value={MathUtils.radToDeg(cameraRotation[axis])}
               onValueChange={(value) => {
+                if (value === null) return;
                 const next = new Euler().copy(cameraRotation);
                 next[axis] = MathUtils.degToRad(value);
                 setCameraRotation(next);
@@ -449,7 +450,10 @@ function DisplayControls({
                 slot={<IconArrowsHorizontal />}
                 min={0}
                 value={pointSize}
-                onValueChange={setPointSize}
+                onValueChange={(value) => {
+                  if (value === null) return;
+                  setPointSize(value);
+                }}
               />
             </>
           )}
@@ -481,7 +485,10 @@ function DisplayControls({
                 slot={<IconArrowsHorizontal />}
                 min={0}
                 value={glyphScale}
-                onValueChange={setGlyphScale}
+                onValueChange={(value) => {
+                  if (value === null) return;
+                  setGlyphScale(value);
+                }}
               />
             </>
           )}
@@ -533,6 +540,7 @@ function DisplayControls({
                 max={colorRange.max}
                 value={colorRange.min}
                 onValueChange={(value) => {
+                  if (value === null) return;
                   setColorRange({ ...colorRange, min: value });
                 }}
               />
@@ -542,6 +550,7 @@ function DisplayControls({
                 min={colorRange.min}
                 value={colorRange.max}
                 onValueChange={(value) => {
+                  if (value === null) return;
                   setColorRange({ ...colorRange, max: value });
                 }}
               />
@@ -752,7 +761,10 @@ function RenderControls({
                 max={10}
                 slot={<IconTicks />}
                 value={legendTickCount}
-                onValueChange={setLegendTickCount}
+                onValueChange={(value) => {
+                  if (value === null) return;
+                  setLegendTickCount(value);
+                }}
               />
             </>
           )}
