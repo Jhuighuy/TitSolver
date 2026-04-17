@@ -284,16 +284,15 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" height="100%">
+    <Flex direction="column" height="100%" className={chrome()}>
       {/* ---- Header. ----------------------------------------------------- */}
       <Flex
-        gap="2"
         align="center"
+        gap="2"
         px="1"
         height="8"
         minHeight="8"
         maxHeight="8"
-        className={chrome()}
       >
         <Box flexGrow="1">
           <Text variant="label" size="2" color="muted" truncate>
@@ -324,7 +323,7 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
       </Flex>
 
       {/* ---- Contents. --------------------------------------------------- */}
-      <Box flexGrow="1" overflow="auto" className={surface()}>
+      <Box flexGrow="1" mx="1" mb="1" overflow="auto" className={surface()}>
         <ScrollArea>
           <MenuActionsContext.Provider value={menuActions}>
             {children}

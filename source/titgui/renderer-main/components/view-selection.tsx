@@ -12,7 +12,7 @@ import {
 import { Box2, Vector2 } from "three";
 
 import { Card } from "~/renderer-common/components/card";
-import { chrome } from "~/renderer-common/components/classes";
+import { surface } from "~/renderer-common/components/classes";
 import { Box, Flex } from "~/renderer-common/components/layout";
 import { Strong, Text } from "~/renderer-common/components/text";
 import { cn } from "~/renderer-common/components/utils";
@@ -88,7 +88,8 @@ export function ViewSelection({
   return (
     <Box
       flexGrow="1"
-      size="100%"
+      mx="1"
+      mb="1"
       position="relative"
       overflow="hidden"
       tabIndex={-1}
@@ -97,7 +98,7 @@ export function ViewSelection({
       }}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
-      className={cn(chrome(), "focus:outline-none")}
+      className={cn(surface(), "focus:outline-none")}
     >
       {children}
       {(selectionCount > 0 || toolMode !== "normal") && (

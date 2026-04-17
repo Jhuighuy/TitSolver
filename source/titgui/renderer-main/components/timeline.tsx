@@ -105,7 +105,7 @@ export function Timeline() {
           </IconButton>
         </Tooltip>
 
-        <Separator orientation="vertical" />
+        <Separator orientation="vertical" size="2" />
 
         <Tooltip content="Go to start">
           <IconButton
@@ -177,7 +177,7 @@ export function Timeline() {
         </Tooltip>
       </Flex>
 
-      <Separator orientation="vertical" size="full" />
+      <Separator orientation="vertical" size="2" />
 
       <Flex align="center" gap="2" mx="2">
         <Tooltip content="Refresh">
@@ -187,7 +187,7 @@ export function Timeline() {
         </Tooltip>
       </Flex>
 
-      <Separator orientation="vertical" size="full" />
+      <Separator orientation="vertical" size="2" />
 
       {/* ---- Time steps. ------------------------------------------------- */}
       <Box flexGrow="1" size="100%">

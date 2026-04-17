@@ -11,21 +11,30 @@ import { cn } from "~/renderer-common/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-const separatorVariants = cva("shrink-0 bg-(--bg-6)", {
+const separatorVariants = cva("shrink-0 bg-(--fg-5)", {
   variants: {
     orientation: {
-      horizontal: "h-px w-full",
+      horizontal: "h-px",
       vertical: "w-px",
     },
     size: {
       "1": "",
       "2": "",
+      "3": "",
+      "4": "",
       full: "",
     },
   },
   compoundVariants: [
+    { orientation: "horizontal", size: "1", className: "w-4" },
+    { orientation: "horizontal", size: "2", className: "w-6" },
+    { orientation: "horizontal", size: "3", className: "w-8" },
+    { orientation: "horizontal", size: "4", className: "w-10" },
+    { orientation: "horizontal", size: "full", className: "w-full" },
     { orientation: "vertical", size: "1", className: "h-4" },
     { orientation: "vertical", size: "2", className: "h-6" },
+    { orientation: "vertical", size: "3", className: "h-8" },
+    { orientation: "vertical", size: "4", className: "h-10" },
     { orientation: "vertical", size: "full", className: "h-full" },
   ],
   defaultVariants: {

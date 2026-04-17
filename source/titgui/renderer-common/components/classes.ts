@@ -16,7 +16,7 @@ export const chrome = cva([
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export const surface = cva([
-  "bg-slate-100 dark:bg-slate-900",
+  "bg-slate-100 dark:bg-slate-800",
   "border border-slate-300/90 dark:border-slate-800",
 ]);
 
