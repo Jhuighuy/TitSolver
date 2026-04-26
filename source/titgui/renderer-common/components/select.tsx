@@ -85,7 +85,7 @@ function SelectRoot<Value = string>({
   return (
     <SelectContext.Provider value={context}>
       <BaseSelect.Root
-        {...(props as ComponentProps<typeof BaseSelect.Root>)}
+        {...props}
         value={value}
         defaultValue={defaultValue}
         onValueChange={(value) => {

@@ -60,7 +60,7 @@ export function Timeline() {
   }
 
   const playNextFrameEvent = useEffectEvent(() => {
-    assert(frameIndex !== null);
+    if (frameIndex === null) return;
     if (!isRepeating && frameIndex === numFrames - 1) {
       setIsPlaying(false);
       return;
@@ -70,9 +70,13 @@ export function Timeline() {
   });
 
   useEffect(() => {
-    if (frameIndex === null) return;
-    if (isPlaying) playNextFrameEvent();
-  }, [isPlaying, frameIndex]);
+    if (isPlaying) {
+      const timeout = setInterval(playNextFrameEvent, 1000 / 60);
+      return () => {
+        clearInterval(timeout);
+      };
+    }
+  }, [isPlaying]);
 
   // ---- Layout. --------------------------------------------------------------
 
