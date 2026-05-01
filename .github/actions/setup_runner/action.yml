@@ -45,7 +45,6 @@ runs:
           gcovr
           llvm@$LLVM_VERSION
           node
-          sphinx-doc
         )
         if [[ "$OSTYPE" == "darwin"* ]]; then
           PACKAGES+=(

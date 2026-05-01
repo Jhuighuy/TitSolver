@@ -18,9 +18,6 @@
   "[javascriptreact]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
-  "[jinja-html]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
   "[json]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
@@ -67,7 +64,6 @@
     "*.cpp.in": "cpp",
     "*.ipp": "cpp",
     "*.tcc": "cpp",
-    "**/_templates/**.html": "jinja-html",
     "__availability": "cpp",
     "__bit_reference": "cpp",
     "__bits": "cpp",
