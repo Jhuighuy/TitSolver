@@ -12,7 +12,6 @@
 
 #include <zstd.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
@@ -22,8 +21,8 @@ namespace tit {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-const size_t ZSTDStreamCompressor::in_chunk_size_ = ZSTD_CStreamInSize();
-const size_t ZSTDStreamCompressor::out_chunk_size_ = ZSTD_CStreamOutSize();
+const std::size_t ZSTDStreamCompressor::in_chunk_size_ = ZSTD_CStreamInSize();
+const std::size_t ZSTDStreamCompressor::out_chunk_size_ = ZSTD_CStreamOutSize();
 
 ZSTDStreamCompressor::ZSTDStreamCompressor(OutputStreamPtr<std::byte> stream)
     : stream_{std::move(stream)}, context_{ZSTD_createCCtx()} {
@@ -107,8 +106,9 @@ auto make_zstd_stream_compressor(OutputStreamPtr<std::byte> stream)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-const size_t ZSTDStreamDecompressor::in_chunk_size_ = ZSTD_DStreamInSize();
-const size_t ZSTDStreamDecompressor::out_chunk_size_ = ZSTD_DStreamOutSize();
+const std::size_t ZSTDStreamDecompressor::in_chunk_size_ = ZSTD_DStreamInSize();
+const std::size_t ZSTDStreamDecompressor::out_chunk_size_ =
+    ZSTD_DStreamOutSize();
 
 ZSTDStreamDecompressor::ZSTDStreamDecompressor(InputStreamPtr<std::byte> stream)
     : stream_{std::move(stream)}, context_{ZSTD_createDCtx()} {
@@ -120,7 +120,7 @@ void ZSTDStreamDecompressor::Deleter_::operator()(
   ZSTD_freeDCtx(context);
 }
 
-auto ZSTDStreamDecompressor::read(std::span<std::byte> data) -> size_t {
+auto ZSTDStreamDecompressor::read(std::span<std::byte> data) -> std::size_t {
   TIT_ASSERT(context_ != nullptr, "ZSTD context is null!");
   TIT_ASSERT(stream_ != nullptr, "Stream is null!");
 
@@ -128,7 +128,7 @@ auto ZSTDStreamDecompressor::read(std::span<std::byte> data) -> size_t {
   if (in_buffer_.capacity() == 0) in_buffer_.reserve(in_chunk_size_);
   if (out_buffer_.capacity() == 0) out_buffer_.reserve(out_chunk_size_);
 
-  size_t total_copied = 0;
+  std::size_t total_copied = 0;
   while (!data.empty()) {
     // If the output buffer is exhausted, decompress more data.
     if (out_offset_ == out_buffer_.size()) {
@@ -173,7 +173,8 @@ auto ZSTDStreamDecompressor::read(std::span<std::byte> data) -> size_t {
     // Copy what we have in the output buffer.
     TIT_ASSERT(out_offset_ <= out_buffer_.size(), "Offset is out of range!");
     const auto copied = std::min(out_buffer_.size() - out_offset_, data.size());
-    std::copy_n(out_buffer_.begin() + static_cast<ssize_t>(out_offset_),
+    std::copy_n(std::next(out_buffer_.begin(),
+                          static_cast<std::ptrdiff_t>(out_offset_)),
                 copied,
                 data.begin());
     total_copied += copied;

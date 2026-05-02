@@ -4,8 +4,8 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstddef>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/mdvector.hpp"
 #include "tit/testing/test.hpp"
 
@@ -18,7 +18,7 @@ TEST_CASE("Mdspan") {
   SUBCASE("construction") {
     SUBCASE("from shape and values") {
       const std::array vals{1, 2, 3, 4, 5, 6, 7, 8, 9};
-      const auto shape = std::to_array<size_t>({3, 3});
+      const auto shape = std::to_array<std::size_t>({3, 3});
       const Mdspan mdspan{vals.begin(), shape};
       CHECK(mdspan.size() == 9);
       CHECK(mdspan.data() == vals.data());
@@ -28,7 +28,7 @@ TEST_CASE("Mdspan") {
   }
   SUBCASE("operator[]") {
     const std::array vals{1, 2, 3, 4, 5, 6, 7, 8};
-    const auto shape = std::to_array<size_t>({2, 2, 2});
+    const auto shape = std::to_array<std::size_t>({2, 2, 2});
     const Mdspan mdspan{vals.begin(), shape};
     CHECK(mdspan[{0, 1, 0}] == 3);
     CHECK(mdspan[{1, 0, 1}] == 6);
@@ -42,7 +42,7 @@ TEST_CASE("Mdvector") {
     SUBCASE("empty") {
       const Mdvector<int, 2> mdvector;
       CHECK(mdvector.size() == 0);
-      CHECK_RANGE_EQ(mdvector.shape(), std::array<size_t, 2>{});
+      CHECK_RANGE_EQ(mdvector.shape(), std::array<std::size_t, 2>{});
       CHECK(mdvector.data() == nullptr);
     }
     SUBCASE("from shape") {
@@ -65,7 +65,7 @@ TEST_CASE("Mdvector") {
       mdvector.clear();
       CHECK(mdvector.size() == 0);
       CHECK(mdvector.data() != nullptr); // no deallocation should happen.
-      CHECK_RANGE_EQ(mdvector.shape(), std::array<size_t, 3>{});
+      CHECK_RANGE_EQ(mdvector.shape(), std::array<std::size_t, 3>{});
     }
     SUBCASE("assign") {
       auto* const old_data = mdvector.data();

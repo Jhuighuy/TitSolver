@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <limits>
 #include <memory>
@@ -18,8 +19,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/stream.hpp"
 
 struct sqlite3;
@@ -29,7 +30,7 @@ struct sqlite3_blob;
 namespace tit::data::sqlite {
 
 /// SQLite row ID type.
-using RowID = int64_t;
+using RowID = std::int64_t;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -119,11 +120,11 @@ public:
     TIT_ASSERT(sizeof...(Args) == num_params_(),
                "Number of arguments does not match the number of parameters!");
     if (state_ == State_::finished) reset();
-    auto index = std::numeric_limits<size_t>::max();
+    auto index = std::numeric_limits<std::size_t>::max();
     (..., [&index, this]<class Arg>(const Arg& arg) {
       index += 1;
       if constexpr (std::integral<Arg> || std::is_enum_v<Arg>) {
-        bind_(index, static_cast<int64_t>(arg));
+        bind_(index, static_cast<std::int64_t>(arg));
       } else if constexpr (std::floating_point<Arg>) {
         bind_(index, static_cast<float64_t>(arg));
       } else if constexpr (str_like<Arg> || blob_arg<Arg>) {
@@ -180,7 +181,7 @@ public:
   auto columns() const -> std::tuple<Columns...> {
     TIT_ASSERT(sizeof...(Columns) == num_columns_(),
                "Number of return values does not match the number of columns!");
-    size_t index = std::numeric_limits<size_t>::max();
+    auto index = std::numeric_limits<std::size_t>::max();
     return {[&index, this]<class Column>() {
       index += 1;
       if constexpr (std::integral<Column> || std::is_enum_v<Column>) {
@@ -209,7 +210,7 @@ public:
 
 private:
 
-  enum class State_ : uint8_t {
+  enum class State_ : std::uint8_t {
     invalid,
     prepared,
     executing,
@@ -221,19 +222,19 @@ private:
   };
 
   // Bind the statement arguments.
-  auto num_params_() const -> size_t;
-  void bind_(size_t index, int64_t value) const;
-  void bind_(size_t index, float64_t value) const;
-  void bind_(size_t index, std::string_view value) const;
-  void bind_(size_t index, BlobView value) const;
+  auto num_params_() const -> std::size_t;
+  void bind_(std::size_t index, std::int64_t value) const;
+  void bind_(std::size_t index, float64_t value) const;
+  void bind_(std::size_t index, std::string_view value) const;
+  void bind_(std::size_t index, BlobView value) const;
 
   // Get the statement columns.
-  auto num_columns_() const -> size_t;
-  auto column_type_(size_t index) const -> int;
-  auto column_int_(size_t index) const -> int64_t;
-  auto column_real_(size_t index) const -> float64_t;
-  auto column_text_(size_t index) const -> std::string_view;
-  auto column_blob_(size_t index) const -> BlobView;
+  auto num_columns_() const -> std::size_t;
+  auto column_type_(std::size_t index) const -> int;
+  auto column_int_(std::size_t index) const -> std::int64_t;
+  auto column_real_(std::size_t index) const -> float64_t;
+  auto column_text_(std::size_t index) const -> std::string_view;
+  auto column_blob_(std::size_t index) const -> BlobView;
 
   Database* db_;
   std::unique_ptr<sqlite3_stmt, Finalizer_> stmt_;
@@ -257,7 +258,7 @@ public:
   auto base() const noexcept -> sqlite3_blob*;
 
   /// Read the next bytes from the blob.
-  auto read(std::span<std::byte> data) -> size_t override;
+  auto read(std::span<std::byte> data) -> std::size_t override;
 
 private:
 
@@ -267,8 +268,8 @@ private:
 
   const Database* db_;
   std::unique_ptr<sqlite3_blob, Finalizer_> blob_;
-  size_t size_ = 0;
-  size_t offset_ = 0;
+  std::size_t size_ = 0;
+  std::size_t offset_ = 0;
 
 }; // class BlobReader
 

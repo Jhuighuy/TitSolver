@@ -3,8 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/basic_types.hpp"
+#include <cstdint>
+
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/type.hpp"
@@ -31,9 +33,9 @@ TEST_CASE("data::Kind") {
 }
 
 TEST_CASE("data::kind_of") {
-  CHECK(data::kind_of<int16_t>.id() == data::Kind::ID::int16);
+  CHECK(data::kind_of<std::int16_t>.id() == data::Kind::ID::int16);
   CHECK(data::kind_of<float32_t>.id() == data::Kind::ID::float32);
-  CHECK(data::kind_of<uint64_t>.id() == data::Kind::ID::uint64);
+  CHECK(data::kind_of<std::uint64_t>.id() == data::Kind::ID::uint64);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,8 +59,8 @@ TEST_CASE("data::Type") {
       CHECK(type.name() == "Vec<float64_t, 2>");
     }
     SUBCASE("matrix") {
-      const data::Type type{data::kind_of<int16_t>, data::Rank::matrix, 3};
-      CHECK(type.kind() == data::kind_of<int16_t>);
+      const data::Type type{data::kind_of<std::int16_t>, data::Rank::matrix, 3};
+      CHECK(type.kind() == data::kind_of<std::int16_t>);
       CHECK(type.rank() == data::Rank::matrix);
       CHECK(type.dim() == 3);
       CHECK(type.width() == 3 * 3 * 2);
@@ -112,8 +114,8 @@ TEST_CASE("data::type_of") {
     CHECK(type.dim() == 1);
   }
   SUBCASE("vector") {
-    const auto type = data::type_of<Vec<int16_t, 7>>;
-    CHECK(type.kind() == data::kind_of<int16_t>);
+    const auto type = data::type_of<Vec<std::int16_t, 7>>;
+    CHECK(type.kind() == data::kind_of<std::int16_t>);
     CHECK(type.rank() == data::Rank::vector);
     CHECK(type.dim() == 7);
   }

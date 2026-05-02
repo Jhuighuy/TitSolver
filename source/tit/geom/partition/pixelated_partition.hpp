@@ -12,11 +12,11 @@
 #endif
 
 #include <concepts>
+#include <cstddef>
 #include <limits>
 #include <ranges>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/mdvector.hpp"
 #include "tit/core/profiler.hpp"
@@ -69,7 +69,7 @@ public:
 
     // Identify the active pixels and collect their coordinates.
     struct Pixel {
-      size_t index = std::numeric_limits<size_t>::max();
+      std::size_t index = std::numeric_limits<std::size_t>::max();
       bool active = false;
     };
     Mdvector<Pixel, point_range_dim_v<Points>> pixels{grid.num_cells().elems()};

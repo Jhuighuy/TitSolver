@@ -6,12 +6,14 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/str.hpp"
 
 namespace tit::prop {
@@ -38,8 +40,9 @@ public:
 
   /// Construct an integer node.
   /// @{
-  explicit Tree(int64_t val);
-  explicit Tree(std::integral auto val) : Tree(static_cast<int64_t>(val)) {}
+  explicit Tree(std::int64_t val);
+  explicit Tree(std::integral auto val)
+      : Tree(static_cast<std::int64_t>(val)) {}
   /// @}
 
   /// Construct a real node.
@@ -94,7 +97,7 @@ public:
   auto as_bool() const -> bool;
 
   /// Return the value as a 64-bit integer.
-  auto as_int() const -> int64_t;
+  auto as_int() const -> std::int64_t;
 
   /// Return the value as a 64-bit floating-point number.
   auto as_real() const -> float64_t;
@@ -117,12 +120,12 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Number of elements (array) or fields (map) in this node.
-  auto size() const -> size_t;
+  auto size() const -> std::size_t;
 
   /// Return the element at @p index.
   /// @{
-  auto get(size_t index) -> Tree&;
-  auto get(size_t index) const -> const Tree&;
+  auto get(std::size_t index) -> Tree&;
+  auto get(std::size_t index) const -> const Tree&;
   /// @}
 
   /// Return true if this map node contains the given key.
@@ -151,9 +154,9 @@ public:
 
   /// Set an integer value.
   /// @{
-  void set(int64_t val);
+  void set(std::int64_t val);
   void set(std::integral auto val) {
-    set(static_cast<int64_t>(val));
+    set(static_cast<std::int64_t>(val));
   }
 
   /// Set a real value.
@@ -185,7 +188,7 @@ private:
   std::variant< //
       std::monostate,
       bool,
-      int64_t,
+      std::int64_t,
       float64_t,
       std::string,
       Array,

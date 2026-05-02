@@ -6,12 +6,12 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <functional>
 #include <numbers>
 #include <ranges>
 #include <type_traits>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
@@ -35,7 +35,7 @@ constexpr auto integrate_piece(Func f, const geom::BBox<Vec<Num, 1>>& box) {
                             std::invoke(f, Vec{c - w}))) *
          half_h;
 }
-template<class Func, class Num, size_t Dim>
+template<class Func, class Num, std::size_t Dim>
 constexpr auto integrate_piece(Func f, const geom::BBox<Vec<Num, Dim>>& box) {
   const geom::BBox box_head{vec_head(box.low()), vec_head(box.high())};
   const geom::BBox box_tail{vec_tail(box.low()), vec_tail(box.high())};
@@ -53,7 +53,7 @@ constexpr auto integrate_piece(Func f, const geom::BBox<Vec<Num, Dim>>& box) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Integrate a function over a box.
-template<class Func, class Num, size_t Dim>
+template<class Func, class Num, std::size_t Dim>
 constexpr auto integrate(Func f,
                          const geom::BBox<Vec<Num, Dim>>& box,
                          std::type_identity_t<Num> eps = tiny_v<Num>) {

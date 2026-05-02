@@ -14,8 +14,7 @@
 
 #include <bit>
 #include <concepts>
-
-#include "tit/core/basic_types.hpp"
+#include <cstddef>
 
 namespace tit::simd {
 
@@ -48,7 +47,7 @@ concept castable_to_type =
 /// hardware.
 ///
 /// That is 16 bytes for all supported instruction sets.
-inline constexpr size_t min_reg_byte_width_v{
+inline constexpr std::size_t min_reg_byte_width_v{
 #ifdef __SSE__
     16
 #elifdef __ARM_NEON
@@ -63,7 +62,7 @@ inline constexpr size_t min_reg_byte_width_v{
 ///
 /// That is 16 bytes for NEON and SSE instruction set, 32 and 64 bytes for
 /// AVX and AVX-512 respectively.
-inline constexpr size_t max_reg_byte_width_v{
+inline constexpr std::size_t max_reg_byte_width_v{
 #ifdef __AVX512F__
     64
 #elifdef __AVX__
@@ -81,21 +80,23 @@ static_assert(max_reg_byte_width_v >= min_reg_byte_width_v &&
 
 /// Minimal SIMD register size for the specified type.
 template<supported_type Num>
-inline constexpr size_t min_reg_size_v = min_reg_byte_width_v / sizeof(Num);
+inline constexpr std::size_t min_reg_size_v =
+    min_reg_byte_width_v / sizeof(Num);
 
 /// Maximal SIMD register size for the specified type.
 template<supported_type Num>
-inline constexpr size_t max_reg_size_v = max_reg_byte_width_v / sizeof(Num);
+inline constexpr std::size_t max_reg_size_v =
+    max_reg_byte_width_v / sizeof(Num);
 
 /// Is SIMD supported for the specified numeric type and size?
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
 concept supported =
     supported_type<Num> &&
     (min_reg_size_v<Num> <= Size && Size <= max_reg_size_v<Num>) &&
     (Size % min_reg_size_v<Num> == 0);
 
 // Is SIMD castable from one type to another?
-template<class From, class To, size_t Size>
+template<class From, class To, std::size_t Size>
 concept castable_to =
     supported<To, Size> && supported<From, Size> && castable_to_type<From, To>;
 

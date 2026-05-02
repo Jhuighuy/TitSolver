@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <chrono>
 #include <csignal>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -26,7 +27,6 @@
 #include <execinfo.h>
 #include <unistd.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/build_info.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
@@ -172,7 +172,7 @@ void println_logo_and_system_info() {
   /// @todo `std::ranges::shift_right` is not available in libstdc++ yet.
   std::shift_right(info_lines.begin(), // NOLINT(modernize-use-ranges)
                    info_lines.end(),
-                   static_cast<ssize_t>(padding));
+                   static_cast<std::ptrdiff_t>(padding));
 
   println();
   println_separator('~');

@@ -15,7 +15,6 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/mat.hpp"
@@ -104,14 +103,14 @@ constexpr auto deserialize(InputStream<std::byte>& in, Tuple& tuple) -> bool {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Serialize a vector into the output stream.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr void serialize(OutputStream<std::byte>& out,
                          const Vec<Num, Dim>& vec) {
   serialize(out, vec.elems());
 }
 
 /// Deserialize a vector from the input stream.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto deserialize(InputStream<std::byte>& in, Vec<Num, Dim>& vec)
     -> bool {
   return deserialize(in, vec.elems());
@@ -120,14 +119,14 @@ constexpr auto deserialize(InputStream<std::byte>& in, Vec<Num, Dim>& vec)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Serialize a matrix into the output stream.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr void serialize(OutputStream<std::byte>& out,
                          const Mat<Num, Dim>& mat) {
   serialize(out, mat.rows());
 }
 
 /// Deserialize a matrix from the input stream.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto deserialize(InputStream<std::byte>& in, Mat<Num, Dim>& mat)
     -> bool {
   return deserialize(in, mat.rows());
@@ -184,9 +183,9 @@ public:
       : stream_{std::move(stream)} {}
 
   /// Read the bytes from the stream and deserialize thems.
-  constexpr auto read(std::span<Item> items) -> size_t override {
+  constexpr auto read(std::span<Item> items) -> std::size_t override {
     TIT_ASSERT(stream_ != nullptr, "Stream is null!");
-    for (size_t i = 0; i < items.size(); ++i) {
+    for (std::size_t i = 0; i < items.size(); ++i) {
       if (!deserialize(*stream_, items[i])) return i;
     }
     return items.size();

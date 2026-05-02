@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <numeric>
 #include <ranges>
@@ -13,7 +14,6 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
@@ -53,8 +53,8 @@ public:
     }
 
     // Initialize the permutation.
-    std::vector<size_t> perm(std::ranges::size(points));
-    std::ranges::iota(perm, size_t{0});
+    std::vector<std::size_t> perm(std::ranges::size(points));
+    std::ranges::iota(perm, std::size_t{0});
 
     // Partition the points.
     par::TaskGroup tasks{};
@@ -62,7 +62,7 @@ public:
                           this const auto& self,
                           std::ranges::range_value_t<Parts> my_num_parts,
                           std::ranges::range_value_t<Parts> my_part,
-                          std::span<size_t> my_perm) {
+                          std::span<std::size_t> my_perm) {
       TIT_ASSERT(my_perm.size() >= my_num_parts,
                  "Number of points cannot be less than the number of parts!");
       if (my_num_parts == 1) {

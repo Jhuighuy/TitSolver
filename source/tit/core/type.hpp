@@ -7,6 +7,8 @@
 
 #include <bit>
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -15,7 +17,7 @@
 #include <typeinfo>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
+#include "tit/core/float.hpp"
 
 namespace tit {
 
@@ -81,10 +83,11 @@ namespace impl {
 template<class Tuple>
 concept has_tuple_size =
     requires { typename std::tuple_size<Tuple>::type; } &&
-    std::derived_from<std::tuple_size<Tuple>,
-                      std::integral_constant<size_t, std::tuple_size_v<Tuple>>>;
+    std::derived_from<
+        std::tuple_size<Tuple>,
+        std::integral_constant<std::size_t, std::tuple_size_v<Tuple>>>;
 
-template<class Tuple, size_t Index>
+template<class Tuple, std::size_t Index>
 concept has_tuple_element = requires {
   typename std::tuple_element_t<Index, std::remove_const_t<Tuple>>;
 } && requires (Tuple& tuple) {
@@ -93,11 +96,11 @@ concept has_tuple_element = requires {
   } -> std::convertible_to<const std::tuple_element_t<Index, Tuple>&>;
 };
 
-template<class Tuple, size_t Size>
+template<class Tuple, std::size_t Size>
 concept tuple_size_is =
     has_tuple_size<Tuple> && (std::tuple_size_v<Tuple> == Size);
 
-template<class Tuple, size_t Index, class Elem>
+template<class Tuple, std::size_t Index, class Elem>
 concept tuple_element_is =
     has_tuple_element<Tuple, Index> &&
     std::constructible_from<Elem, std::tuple_element_t<Index, Tuple>>;
@@ -110,12 +113,12 @@ concept tuple_element_is =
 template<class Tuple, class... Items>
 concept tuple_like =
     std::is_object_v<Tuple> && impl::has_tuple_size<Tuple> &&
-    []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
+    []<std::size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
       return (impl::has_tuple_element<Tuple, Indices> && ...);
     }(std::make_index_sequence<std::tuple_size_v<Tuple>>()) &&
     ((sizeof...(Items) == 0) ||
      (impl::tuple_size_is<Tuple, sizeof...(Items)> &&
-      []<size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
+      []<std::size_t... Indices>(std::index_sequence<Indices...> /*indices*/) {
         return (impl::tuple_element_is<Tuple, Indices, Items> && ...);
       }(std::make_index_sequence<sizeof...(Items)>())));
 
@@ -153,19 +156,19 @@ struct normalize_type : std::type_identity<T> {};
 
 template<std::unsigned_integral UInt>
   requires (sizeof(UInt) == 1)
-struct normalize_type<UInt> : std::type_identity<uint8_t> {};
+struct normalize_type<UInt> : std::type_identity<std::uint8_t> {};
 
 template<std::unsigned_integral UInt>
   requires (sizeof(UInt) == 2)
-struct normalize_type<UInt> : std::type_identity<uint16_t> {};
+struct normalize_type<UInt> : std::type_identity<std::uint16_t> {};
 
 template<std::unsigned_integral UInt>
   requires (sizeof(UInt) == 4)
-struct normalize_type<UInt> : std::type_identity<uint32_t> {};
+struct normalize_type<UInt> : std::type_identity<std::uint32_t> {};
 
 template<std::unsigned_integral UInt>
   requires (sizeof(UInt) == 8)
-struct normalize_type<UInt> : std::type_identity<uint64_t> {};
+struct normalize_type<UInt> : std::type_identity<std::uint64_t> {};
 
 template<std::floating_point Float>
   requires (sizeof(Float) == 4)
@@ -184,12 +187,12 @@ struct normalize_type<SInt> :
 
 /// @brief "Normalize" a type.
 ///
-/// One may explicitly specialize a template for `int64_t`, for example, and
-/// assume that it will work for all 64-bit signed integer types. But, that
-/// may not work as expected, if, for example, `int64_t` is defined as `long`
-/// on some platforms, the specialization for `long long` would be missing.
-/// Even if `long` and `long long` have the same size, they are not the same
-/// type:
+/// One may explicitly specialize a template for `std::int64_t`, for example,
+/// and assume that it will work for all 64-bit signed integer types. But, that
+/// may not work as expected, if, for example, `std::int64_t` is defined as
+/// `long` on some platforms, the specialization for `long long` would be
+/// missing. Even if `long` and `long long` have the same size, they are not the
+/// same type:
 ///
 /// ```cpp
 /// static_assert(sizeof(long) == sizeof(long long) &&
@@ -198,9 +201,9 @@ struct normalize_type<SInt> :
 ///
 /// In a perfect world, the developer must always acknowledge that. But, we
 /// cannot always rely on that. For example, Highway has specializations only
-/// for standard fixed-width types, like `int64_t`, So, before passing a type
-/// to a third-party template, we need to "normalize" it, by replacing it with
-/// the standard fixed-width type, if possible.
+/// for standard fixed-width types, like `std::int64_t`, So, before passing a
+/// type to a third-party template, we need to "normalize" it, by replacing it
+/// with the standard fixed-width type, if possible.
 template<class T>
 using normalize_type_t = impl::normalize_type<T>::type;
 
@@ -215,10 +218,10 @@ inline constexpr bool contains_v = (... || std::is_same_v<T, Us>);
 namespace impl {
 
 template<class T, class U, class... Us>
-inline constexpr size_t index_of_v = 1 + index_of_v<T, Us...>;
+inline constexpr std::size_t index_of_v = 1 + index_of_v<T, Us...>;
 
 template<class T, class... Us>
-inline constexpr size_t index_of_v<T, T, Us...> = 0;
+inline constexpr std::size_t index_of_v<T, T, Us...> = 0;
 
 } // namespace impl
 
@@ -278,7 +281,7 @@ public:
   /// Index of the type in the range.
   template<empty_type U>
     requires contains_v<U, Ts...>
-  constexpr auto find(U /*elem*/) const noexcept -> size_t {
+  constexpr auto find(U /*elem*/) const noexcept -> std::size_t {
     return index_of_v<U, Ts...>;
   }
 

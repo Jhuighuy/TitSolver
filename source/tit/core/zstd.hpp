@@ -10,7 +10,6 @@
 #include <span>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/stream.hpp"
 
 struct ZSTD_CCtx_s;
@@ -45,8 +44,8 @@ private:
   std::vector<std::byte> in_buffer_;
   std::vector<std::byte> out_buffer_;
 
-  static const size_t in_chunk_size_;
-  static const size_t out_chunk_size_;
+  static const std::size_t in_chunk_size_;
+  static const std::size_t out_chunk_size_;
 
 }; // class ZSTDStreamCompressor
 
@@ -65,7 +64,7 @@ public:
   explicit ZSTDStreamDecompressor(InputStreamPtr<std::byte> stream);
 
   /// Decompress the data.
-  auto read(std::span<std::byte> data) -> size_t override;
+  auto read(std::span<std::byte> data) -> std::size_t override;
 
 private:
 
@@ -77,12 +76,12 @@ private:
   std::unique_ptr<ZSTD_DCtx_s, Deleter_> context_;
   std::vector<std::byte> in_buffer_;
   std::vector<std::byte> out_buffer_;
-  size_t in_offset_ = 0;
-  size_t out_offset_ = 0;
-  size_t last_status_ = 0;
+  std::size_t in_offset_ = 0;
+  std::size_t out_offset_ = 0;
+  std::size_t last_status_ = 0;
 
-  static const size_t in_chunk_size_;
-  static const size_t out_chunk_size_;
+  static const std::size_t in_chunk_size_;
+  static const std::size_t out_chunk_size_;
 
 }; // class ZSTDStreamDecompressor
 

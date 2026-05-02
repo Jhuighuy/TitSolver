@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "tit/core/basic_types.hpp"
+#include <cstddef>
 
 namespace tit::par {
 
@@ -17,10 +17,10 @@ void init();
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Get number of the worker threads.
-auto num_threads() noexcept -> size_t;
+auto num_threads() noexcept -> std::size_t;
 
 /// Set number of the worker threads.
-void set_num_threads(size_t value);
+void set_num_threads(std::size_t value);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

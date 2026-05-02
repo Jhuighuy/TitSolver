@@ -5,12 +5,13 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/core/stream.hpp"
@@ -24,7 +25,7 @@ namespace {
 
 // Test serialization of a type.
 template<class T>
-void test_serialization(const T& input, size_t expected_size) {
+void test_serialization(const T& input, std::size_t expected_size) {
   std::vector<std::byte> bytes{};
   serialize(*make_container_output_stream(bytes), input);
   CHECK(bytes.size() == expected_size);
@@ -45,23 +46,25 @@ void test_serialization(const T& input, size_t expected_size) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("serialize<trivial-type>") {
-  test_serialization(1, sizeof(int32_t));
+  test_serialization(1, sizeof(std::int32_t));
   test_serialization(1.0, sizeof(float64_t));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("serialize<std::pair<...>>") {
-  test_serialization(std::pair{1, 2.0}, sizeof(int32_t) + sizeof(float64_t));
+  test_serialization(std::pair{1, 2.0},
+                     sizeof(std::int32_t) + sizeof(float64_t));
 }
 
 TEST_CASE("serialize<std::tuple<...>>") {
   test_serialization(std::tuple{1, 2.0, 3.0F},
-                     sizeof(int32_t) + sizeof(float64_t) + sizeof(float32_t));
+                     sizeof(std::int32_t) + sizeof(float64_t) +
+                         sizeof(float32_t));
 }
 
 TEST_CASE("serialize<std::array<...>>") {
-  test_serialization(std::array{1, 2, 3}, sizeof(int32_t) * 3);
+  test_serialization(std::array{1, 2, 3}, sizeof(std::int32_t) * 3);
 }
 
 TEST_CASE("serialize<Vec<...>>") {
@@ -82,19 +85,19 @@ TEST_CASE("serialize<Mat<...>>") {
 
 TEST_CASE("StreamSerializer") {
   std::vector<std::byte> bytes{};
-  make_stream_serializer<int32_t>(make_container_output_stream(bytes))
+  make_stream_serializer<std::int32_t>(make_container_output_stream(bytes))
       ->write(std::array{1, 2, 3});
 
-  std::vector<int32_t> result(10);
+  std::vector<std::int32_t> result(10);
   SUBCASE("full") {
-    CHECK(make_stream_deserializer<int32_t>(make_range_input_stream(bytes))
+    CHECK(make_stream_deserializer<std::int32_t>(make_range_input_stream(bytes))
               ->read(result) == 3);
     CHECK(result >= std::vector{1, 2, 3});
   }
   SUBCASE("truncated") {
     bytes.pop_back();
     CHECK_THROWS_MSG(
-        make_stream_deserializer<int32_t>(make_range_input_stream(bytes))
+        make_stream_deserializer<std::int32_t>(make_range_input_stream(bytes))
             ->read(result),
         Exception,
         "Deserialization failed");

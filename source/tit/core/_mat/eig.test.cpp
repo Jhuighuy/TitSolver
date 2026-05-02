@@ -3,7 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/basic_types.hpp"
+#include <cstddef>
+
 #include "tit/core/mat.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/testing/test.hpp"
@@ -31,7 +32,7 @@ TEST_CASE("Mat::jacobi") {
       const auto eig = jacobi(A);
       REQUIRE(eig);
       const auto& [V, d] = *eig;
-      for (size_t i = 0; i < 2; ++i) CHECK(norm(V[i]) > 0.0);
+      for (std::size_t i = 0; i < 2; ++i) CHECK(norm(V[i]) > 0.0);
       CHECK_APPROX_EQ(V * A, diag(d) * V);
     }
   }
@@ -46,7 +47,7 @@ TEST_CASE("Mat::jacobi") {
       const auto eig = jacobi(A);
       REQUIRE(eig);
       const auto& [V, d] = *eig;
-      for (size_t i = 0; i < 4; ++i) CHECK(norm(V[i]) > 0.0);
+      for (std::size_t i = 0; i < 4; ++i) CHECK(norm(V[i]) > 0.0);
       CHECK_APPROX_EQ(V * A, diag(d) * V);
     }
   }

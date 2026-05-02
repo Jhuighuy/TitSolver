@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <ranges>
@@ -17,9 +19,9 @@
 #include <highfive/H5File.hpp>
 #include <tinyxml2.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/type.hpp"
 #include "tit/data/hdf5.hpp"
 #include "tit/data/storage.hpp"
@@ -218,7 +220,7 @@ private:
                              const std::filesystem::path& hdf5_rel_path,
                              std::string_view frame_name,
                              std::string_view array_name,
-                             size_t size,
+                             std::size_t size,
                              Type type) {
     TIT_ASSERT(parent_elem != nullptr, "Parent element is null!");
     TIT_ASSERT(!frame_name.empty(), "Frame name is empty!");
@@ -317,8 +319,8 @@ void export_hdf5(const std::filesystem::path& path,
   const auto hdf5_path = path / "particles.h5";
 
   const auto num_frames = series.num_frames();
-  const auto padding =
-      static_cast<size_t>(std::ceil(std::log10(std::max(1UZ, num_frames))));
+  const auto padding = static_cast<std::size_t>(
+      std::ceil(std::log10(std::max(1UZ, num_frames))));
 
   HDF5Writer hdf5_writer{hdf5_path};
   XDMF3Writer xdmf_writer{};

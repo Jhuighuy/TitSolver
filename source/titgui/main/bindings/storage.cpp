@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <memory>
@@ -17,8 +18,8 @@
 
 #include <napi.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/type.hpp"
 #include "tit/data/hdf5.hpp"
 #include "tit/data/storage.hpp"
@@ -82,7 +83,7 @@ auto StorageWrap::seriesCount(const Napi::CallbackInfo& info) -> Napi::Value {
         return holder->access(
             [](const data::Storage& storage) { return storage.num_series(); });
       },
-      [](Napi::Env env, size_t series_count) {
+      [](Napi::Env env, std::size_t series_count) {
         return Napi::Number::New(env, static_cast<double>(series_count));
       });
 }
@@ -91,7 +92,7 @@ auto StorageWrap::series(const Napi::CallbackInfo& info) -> Napi::Value {
   TIT_ENSURE(info.Length() >= 1, "Missing argument.");
   TIT_ENSURE(info[0].IsNumber(), "Argument must be a number.");
   const auto index =
-      static_cast<size_t>(info[0].As<Napi::Number>().Int64Value());
+      static_cast<std::size_t>(info[0].As<Napi::Number>().Int64Value());
 
   return enqueue(
       info.Env(),
@@ -160,7 +161,7 @@ auto SeriesWrap::frameCount(const Napi::CallbackInfo& info) -> Napi::Value {
           return storage.series_num_frames(series_id);
         });
       },
-      [](Napi::Env env, size_t frame_count) {
+      [](Napi::Env env, std::size_t frame_count) {
         return Napi::Number::New(env, static_cast<double>(frame_count));
       });
 }
@@ -169,7 +170,7 @@ auto SeriesWrap::frame(const Napi::CallbackInfo& info) -> Napi::Value {
   TIT_ENSURE(info.Length() >= 1, "Missing argument.");
   TIT_ENSURE(info[0].IsNumber(), "Argument must be a number.");
   const auto index =
-      static_cast<size_t>(info[0].As<Napi::Number>().Int64Value());
+      static_cast<std::size_t>(info[0].As<Napi::Number>().Int64Value());
 
   return enqueue(
       info.Env(),
@@ -247,7 +248,7 @@ auto FrameWrap::fields(const Napi::CallbackInfo& info) -> Napi::Value {
       },
       [](Napi::Env env, std::vector<std::string> names) {
         auto result = Napi::Array::New(env, names.size());
-        for (uint32_t index = 0; index < names.size(); index++) {
+        for (std::uint32_t index = 0; index < names.size(); index++) {
           result.Set(index, names[index]);
         }
         return result;
@@ -364,19 +365,19 @@ auto FieldWrap::data(const Napi::CallbackInfo& info) -> Napi::Value {
           // Convert to floats in-place.
           auto* const out = safe_bit_ptr_cast<float64_t*>(data.data());
           if (type.kind().id() == data::Kind::ID::int64) {
-            const std::span<const int64_t> in{
-                safe_bit_ptr_cast<const int64_t*>(data.data()),
-                data.size() / sizeof(int64_t),
+            const std::span<const std::int64_t> in{
+                safe_bit_ptr_cast<const std::int64_t*>(data.data()),
+                data.size() / sizeof(std::int64_t),
             };
-            std::ranges::transform(in, out, [](int64_t value) {
+            std::ranges::transform(in, out, [](std::int64_t value) {
               return static_cast<float64_t>(value);
             });
           } else if (type.kind().id() == data::Kind::ID::uint64) {
-            const std::span<const uint64_t> in{
-                safe_bit_ptr_cast<const uint64_t*>(data.data()),
-                data.size() / sizeof(uint64_t),
+            const std::span<const std::uint64_t> in{
+                safe_bit_ptr_cast<const std::uint64_t*>(data.data()),
+                data.size() / sizeof(std::uint64_t),
             };
-            std::ranges::transform(in, out, [](uint64_t value) {
+            std::ranges::transform(in, out, [](std::uint64_t value) {
               return static_cast<float64_t>(value);
             });
           } else {
@@ -387,7 +388,7 @@ auto FieldWrap::data(const Napi::CallbackInfo& info) -> Napi::Value {
           type = data::Type{
               data::kind_of<float64_t>,
               type.rank(),
-              static_cast<uint8_t>(type.dim()),
+              static_cast<std::uint8_t>(type.dim()),
           };
         }
 

@@ -3,7 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/basic_types.hpp"
+#include <cstddef>
+
+#include "tit/core/float.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
@@ -128,8 +130,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   };
 
   // Generate individual particles.
-  size_t num_fixed_particles = 0;
-  size_t num_fluid_particles = 0;
+  std::size_t num_fixed_particles = 0;
+  std::size_t num_fluid_particles = 0;
   for (auto i = -N_FIXED; i < POOL_M + N_FIXED; ++i) {
     for (auto j = -N_FIXED; j < POOL_N; ++j) {
       const bool is_fixed = (i < 0 || i >= POOL_M) || (j < 0);
@@ -162,7 +164,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
     const auto x = r[a][0];
     const auto y = r[a][1];
     auto p_a = rho_0 * g * (H - y);
-    for (size_t N = 1; N < 100; N += 2) {
+    for (std::size_t N = 1; N < 100; N += 2) {
       constexpr auto pi = std::numbers::pi_v<Real>;
       const auto n = static_cast<Real>(N);
       p_a -= 8 * rho_0 * g * H / pow2(pi) *
@@ -195,7 +197,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   Real time{};
   Stopwatch exectime{};
   Stopwatch printtime{};
-  for (size_t n = 0;; ++n) {
+  for (std::size_t n = 0;; ++n) {
     log("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
         n,
         time * sqrt(g / H),
@@ -228,8 +230,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
   par::init();
   if (argc > 1 && std::string_view{argv[1]} == "riemann") {
-    sph::wcsph::sph_main<float64_t, true>(argc, argv);
+    sph::wcsph::sph_main<tit::float64_t, true>(argc, argv);
   } else {
-    sph::wcsph::sph_main<float64_t, false>(argc, argv);
+    sph::wcsph::sph_main<tit::float64_t, false>(argc, argv);
   }
 });

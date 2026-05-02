@@ -12,13 +12,13 @@
 #endif
 
 #include <bit>
+#include <cstddef>
 #include <span>
 
 #include <hwy/highway.h>
 
 #include "tit/core/_simd/mask.hpp"
 #include "tit/core/_simd/traits.hpp"
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 
@@ -29,7 +29,7 @@ namespace hn = hwy::HWY_NAMESPACE;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD register mask.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 class alignas(sizeof(Num) * Size) RegMask final {
 public:
@@ -122,10 +122,10 @@ public:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD take first N elements, fill the rest with false.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto take_n(size_t n, const RegMask<Num, Size>& a) noexcept
+inline auto take_n(std::size_t n, const RegMask<Num, Size>& a) noexcept
     -> RegMask<Num, Size> {
   TIT_ASSERT(n <= Size, "'n' must be less than or equal to the vector size");
   return hn::And(hn::FirstN(typename RegMask<Num, Size>::Tag{}, n), a.base);
@@ -133,10 +133,10 @@ inline auto take_n(size_t n, const RegMask<Num, Size>& a) noexcept
 
 /// SIMD take first N elements from the first register, and the rest from the
 /// second register.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto merge_n(size_t n,
+inline auto merge_n(std::size_t n,
                     const RegMask<Num, Size>& a,
                     const RegMask<Num, Size>& b) noexcept
     -> RegMask<Num, Size> {
@@ -148,7 +148,7 @@ inline auto merge_n(size_t n,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Check if any SIMD register mask element is set to true.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto any(const RegMask<Num, Size>& m) noexcept -> bool {
@@ -156,7 +156,7 @@ inline auto any(const RegMask<Num, Size>& m) noexcept -> bool {
 }
 
 /// Check if all SIMD register mask elements are set to true.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto all(const RegMask<Num, Size>& m) noexcept -> bool {
@@ -165,10 +165,10 @@ inline auto all(const RegMask<Num, Size>& m) noexcept -> bool {
 
 /// Try to find the first true value in the SIMD register mask.
 /// Return `-1` if all values are false.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto find_true(const RegMask<Num, Size>& m) noexcept -> ssize_t {
+inline auto find_true(const RegMask<Num, Size>& m) noexcept -> std::ptrdiff_t {
   return hn::FindFirstTrue(typename RegMask<Num, Size>::Tag{}, m.base);
 }
 

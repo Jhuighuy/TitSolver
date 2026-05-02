@@ -6,10 +6,11 @@
 #pragma once
 
 #include <chrono>
+#include <cstddef>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/float.hpp"
 
 namespace tit {
 
@@ -34,7 +35,7 @@ public:
   }
 
   /// Get the total measured time (in nanoseconds).
-  constexpr auto total_ns() const noexcept -> size_t {
+  constexpr auto total_ns() const noexcept -> std::size_t {
     return total_.count();
   }
 
@@ -44,7 +45,7 @@ public:
   }
 
   /// Get the average cycle time (in nanoseconds).
-  constexpr auto cycle_ns() const noexcept -> size_t {
+  constexpr auto cycle_ns() const noexcept -> std::size_t {
     return cycles_ > 0 ? total_ns() / cycles_ : 0;
   }
 
@@ -54,7 +55,7 @@ public:
   }
 
   /// Amount of cycles.
-  constexpr auto cycles() const noexcept -> size_t {
+  constexpr auto cycles() const noexcept -> std::size_t {
     return cycles_;
   }
 
@@ -68,7 +69,7 @@ private:
 
   std::chrono::time_point<std::chrono::steady_clock> start_;
   std::chrono::nanoseconds total_{};
-  size_t cycles_{};
+  std::size_t cycles_{};
 
 }; // class Stopwatch
 

@@ -8,6 +8,7 @@
 #include <bit>
 #include <cmath>
 #include <concepts>
+#include <cstdint>
 #include <initializer_list>
 #include <limits>
 #include <ranges>
@@ -17,7 +18,6 @@
 #include <gcem.hpp> // IWYU pragma: keep
 #endif
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 
 namespace tit {
@@ -163,8 +163,9 @@ constexpr auto approx_equal_to(Num a, Num b) -> bool {
 template<std::floating_point Num>
 [[gnu::always_inline]]
 constexpr auto bitwise_equal(Num a, Num b) noexcept -> bool {
-  using Bits =
-      std::conditional_t<sizeof(Num) == sizeof(uint32_t), uint32_t, uint64_t>;
+  using Bits = std::conditional_t<sizeof(Num) == sizeof(std::uint32_t),
+                                  std::uint32_t,
+                                  std::uint64_t>;
   return std::bit_cast<Bits>(a) == std::bit_cast<Bits>(b);
 }
 

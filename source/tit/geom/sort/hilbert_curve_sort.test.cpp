@@ -4,8 +4,8 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstddef>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/sort/hilbert_curve_sort.hpp"
 #include "tit/testing/test.hpp"
@@ -22,10 +22,10 @@ TEST_CASE("geom::HilbertCurveSort") {
   SUBCASE("2D") {
     // Create points on a 8x8 lattice.
     std::array<Vec2D, 64> points{};
-    for (size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
+    for (std::size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
 
     // Sort points using the Hilbert curve.
-    std::array<size_t, 64> perm{};
+    std::array<std::size_t, 64> perm{};
     geom::hilbert_curve_sort(points, perm);
 
     // Ensure the resulting permutation is correct.
@@ -62,10 +62,12 @@ TEST_CASE("geom::HilbertCurveSort") {
   SUBCASE("3D") {
     // Create points on a 4x4x4 lattice.
     std::array<Vec3D, 64> points{};
-    for (size_t i = 0; i < 64; ++i) points[i] = {i % 4, (i / 4) % 4, i / 16};
+    for (std::size_t i = 0; i < 64; ++i) {
+      points[i] = {i % 4, (i / 4) % 4, i / 16};
+    }
 
     // Sort points using the Hilbert curve.
-    std::array<size_t, 64> perm{};
+    std::array<std::size_t, 64> perm{};
     geom::hilbert_curve_sort(points, perm);
 
     // Ensure the resulting permutation is correct.

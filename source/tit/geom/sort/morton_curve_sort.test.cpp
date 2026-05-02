@@ -4,8 +4,8 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstddef>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/sort/morton_curve_sort.hpp"
 #include "tit/testing/test.hpp"
@@ -20,10 +20,10 @@ using Vec2D = Vec<double, 2>;
 TEST_CASE("geom::MortonCurveSort") {
   // Create points on a 8x8 lattice.
   std::array<Vec2D, 64> points{};
-  for (size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
+  for (std::size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
 
   // Sort points using the Morton curve.
-  std::array<size_t, 64> perm{};
+  std::array<std::size_t, 64> perm{};
   geom::morton_curve_sort(points, perm);
 
   // Ensure the resulting permutation is correct.

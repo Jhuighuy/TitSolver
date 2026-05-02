@@ -6,13 +6,14 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <random>
 #include <ranges>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
@@ -31,7 +32,7 @@ public:
 
   /// Construct a K-means clustering function.
   constexpr explicit KMeansClustering(float64_t eps = 1.0e-4,
-                                      size_t max_iters = 10) noexcept
+                                      std::size_t max_iters = 10) noexcept
       : eps_{eps}, max_iters_{max_iters} {
     TIT_ASSERT(eps_ > 0.0, "Tolerance must be positive!");
     TIT_ASSERT(max_iters_ > 0, "Number of iterations must be positive!");
@@ -89,8 +90,8 @@ public:
 
     // Run K-means algorithm.
     std::vector<Vec> prev_centroids(num_clusters);
-    std::vector<size_t> cluster_counts(num_clusters);
-    for (size_t iter = 0; iter < max_iters_; ++iter) {
+    std::vector<std::size_t> cluster_counts(num_clusters);
+    for (std::size_t iter = 0; iter < max_iters_; ++iter) {
       // Assign points to the closest centroid.
       std::ranges::fill(cluster_counts, 0);
       for (auto&& [point, cluster] : std::views::zip(points, clusters)) {
@@ -129,7 +130,7 @@ public:
 private:
 
   float64_t eps_;
-  size_t max_iters_;
+  std::size_t max_iters_;
 
 }; // class KMeansClustering
 

@@ -5,6 +5,7 @@
 
 #ifdef __linux__
 
+#include <cstdint>
 #include <format>
 #include <fstream>
 #include <optional>
@@ -16,7 +17,6 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/sys_info.hpp"
@@ -90,23 +90,23 @@ auto cpu_name() -> std::string {
   return query_cpuinfo("model name").front();
 }
 
-auto cpu_sockets() -> uint64_t {
+auto cpu_sockets() -> std::uint64_t {
   return (query_cpuinfo("physical id") | std::ranges::to<StrHashSet>()).size();
 }
 
-auto cpu_perf_cores() -> uint64_t {
+auto cpu_perf_cores() -> std::uint64_t {
   // Note: Linux currently has no way to robustly distinguish between
   //       performance and efficiency cores.
   return cpu_cores();
 }
 
-auto cpu_perf_core_frequency() -> uint64_t {
+auto cpu_perf_core_frequency() -> std::uint64_t {
   constexpr const auto* path =
       "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq";
   std::ifstream stream{path};
   TIT_ENSURE(stream.is_open(), "Unable to open '{}'.", path);
 
-  uint64_t result_kHz{};
+  std::uint64_t result_kHz{};
   stream >> result_kHz;
   TIT_ENSURE(stream.good() && result_kHz > 0,
              "Failed to read valid CPU frequency from '{}'.",

@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -10,8 +12,8 @@
 #include <nlohmann/json.hpp> // NOLINT(misc-include-cleaner)
 #include <nlohmann/json_fwd.hpp>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/prop/tree.hpp"
 
 namespace tit::prop {
@@ -31,7 +33,7 @@ auto tree_to_json(const Tree& tree) -> JSON {
   if (tree.is_string()) return tree.as_string();
   if (tree.is_array()) {
     auto json = JSON::array();
-    for (size_t i = 0; i < tree.size(); ++i) {
+    for (std::size_t i = 0; i < tree.size(); ++i) {
       json.push_back(tree_to_json(tree.get(i)));
     }
     return json;
@@ -51,7 +53,7 @@ auto tree_to_json(const Tree& tree) -> JSON {
 auto tree_from_json(const JSON& json) -> Tree {
   if (json.is_null()) return Tree{};
   if (json.is_boolean()) return Tree{json.get<bool>()};
-  if (json.is_number_integer()) return Tree{json.get<int64_t>()};
+  if (json.is_number_integer()) return Tree{json.get<std::int64_t>()};
   if (json.is_number()) return Tree{json.get<float64_t>()};
   if (json.is_string()) return Tree{json.get<std::string>()};
   if (json.is_array()) {

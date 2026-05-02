@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <concepts>
+#include <cstddef>
 #include <exception>
 #include <iterator>
 #include <memory>
@@ -16,7 +17,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/type.hpp"
@@ -40,7 +40,7 @@ public:
   ///              maximum number of items to read.
   ///
   /// @returns Number of items actually read.
-  constexpr virtual auto read(std::span<Item> items) -> size_t = 0;
+  constexpr virtual auto read(std::span<Item> items) -> std::size_t = 0;
 
   /// Read the next item from the stream.
   ///
@@ -149,7 +149,7 @@ public:
 
   /// Read the next items from the stream.
   constexpr auto read(std::span<std::ranges::range_value_t<Range>> items)
-      -> size_t override {
+      -> std::size_t override {
     auto out_iter = items.begin();
     while (out_iter != items.end() && iter_ != std::ranges::end(range_)) {
       *out_iter = *iter_;

@@ -6,12 +6,13 @@
 // IWYU pragma: private, include "tit/core/mat.hpp"
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <type_traits>
 #include <utility>
 
 #include "tit/core/_mat/mat.hpp"
-#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
 
@@ -20,20 +21,20 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Matrix eigenvectors and eigenvalues.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 struct MatEig {
   Mat<Num, Dim> vecs; ///< Eigenvectors of a matrix.
   Vec<Num, Dim> vals; ///< Eigenvalues of a matrix.
 };
 
 /// Matrix eigensolver error type.
-enum class MatEigError : uint8_t {
+enum class MatEigError : std::uint8_t {
   no_error,      ///< No error.
   not_converged, ///< The eigensolver failed to converge.
 };
 
 /// Matrix eigenvalue problem result.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 using MatEigResult = std::expected<MatEig<Num, Dim>, MatEigError>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,21 +48,22 @@ using MatEigResult = std::expected<MatEig<Num, Dim>, MatEigError>;
 /// and `A * V[k] == d[k] * V[k]`.
 ///
 /// Only the lower-triangular part of the input matrix is accessed.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto jacobi(Mat<Num, Dim> A,
                       std::type_identity_t<Num> eps = tiny_v<Num>,
-                      size_t max_iter = Dim * 32) -> MatEigResult<Num, Dim> {
+                      std::size_t max_iter = Dim * 32)
+    -> MatEigResult<Num, Dim> {
   auto V = eye(A);
   if constexpr (Dim == 1) {
     return MatEig{std::move(V), Vec{std::move(A[0, 0])}};
   }
 
-  for (size_t iter = 0; iter < max_iter; ++iter) {
+  for (std::size_t iter = 0; iter < max_iter; ++iter) {
     // Find maximum off-diagonal element.
-    size_t p = 1;
-    size_t q = 0;
-    for (size_t i = 2; i < Dim; ++i) {
-      for (size_t j = 0; j < i; ++j) {
+    std::size_t p = 1;
+    std::size_t q = 0;
+    for (std::size_t i = 2; i < Dim; ++i) {
+      for (std::size_t j = 0; j < i; ++j) {
         if (abs(A[i, j]) > abs(A[p, q])) {
           p = i;
           q = j;
@@ -81,7 +83,7 @@ constexpr auto jacobi(Mat<Num, Dim> A,
     const auto s = sin(theta);
 
     // Update the matrix.
-    for (size_t i = 0; i < Dim; ++i) {
+    for (std::size_t i = 0; i < Dim; ++i) {
       if (i == p || i == q) continue;
       const auto Api = A[p, i];
       const auto Aqi = A[q, i];
@@ -96,7 +98,7 @@ constexpr auto jacobi(Mat<Num, Dim> A,
     A[p, q] = A[q, p] = {};
 
     // Update the eigenvectors.
-    for (size_t i = 0; i < Dim; ++i) {
+    for (std::size_t i = 0; i < Dim; ++i) {
       const auto Vpi = V[p, i];
       const auto Vqi = V[q, i];
       V[p, i] = c * Vpi - s * Vqi;

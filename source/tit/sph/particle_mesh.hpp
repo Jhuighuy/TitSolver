@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <iterator>
 #include <limits>
@@ -14,7 +15,6 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/profiler.hpp"
@@ -67,7 +67,7 @@ public:
     auto& particles = a.array();
     return adjacency_[a.index()] |
            std::views::transform(
-               [&particles](size_t b) { return particles[b]; });
+               [&particles](std::size_t b) { return particles[b]; });
   }
 
   /// Particles used for interpolation for the fixed particles.
@@ -76,10 +76,10 @@ public:
     TIT_ASSERT(a.has_type(ParticleType::fixed),
                "Particle must be of the fixed type!");
     auto& particles = a.array();
-    const size_t i = a - *particles.fixed().begin();
+    const std::size_t i = a - *particles.fixed().begin();
     return interp_adjacency_[i] | //
            std::views::transform(
-               [&particles](size_t b) { return particles[b]; });
+               [&particles](std::size_t b) { return particles[b]; });
   }
 
   /// Unique pairs of the adjacent particles.
@@ -155,7 +155,7 @@ private:
           std::views::enumerate(particles.fixed()),
           [&radius_func, &search_index, &particles, this](const auto& ia) {
             const auto& [i_, a] = ia;
-            const auto i = static_cast<size_t>(i_);
+            const auto i = static_cast<std::size_t>(i_);
 
             /// @todo Once we have a proper geometry library, we should use
             ///       here and clean up the code.
@@ -173,7 +173,7 @@ private:
                 interp_point,
                 search_radius,
                 std::back_inserter(search_results),
-                [&particles](size_t b) {
+                [&particles](std::size_t b) {
                   return particles.has_type(b, ParticleType::fluid);
                 });
             std::ranges::sort(search_results);
@@ -184,7 +184,7 @@ private:
   }
 
   template<particle_array ParticleArray>
-  void partition_(ParticleArray& particles, size_t num_levels = 2) {
+  void partition_(ParticleArray& particles, std::size_t num_levels = 2) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
     TIT_ASSERT(num_levels > 0, "Number of levels must be positive!");
     TIT_ASSERT(num_levels < PartVec::MaxNumLevels,
@@ -202,9 +202,9 @@ private:
 
     // Build the multi-level partitioning.
     const auto positions = r[particles];
-    std::vector<size_t> interface{};
-    std::vector<size_t> prev_interface{};
-    for (size_t level = 0; level < num_levels; ++level) {
+    std::vector<std::size_t> interface{};
+    std::vector<std::size_t> prev_interface{};
+    for (std::size_t level = 0; level < num_levels; ++level) {
       const auto is_first_level = level == 0;
       const auto is_last_level = level == (num_levels - 1);
 
@@ -226,7 +226,7 @@ private:
       if (is_last_level) break;
 
       // Update the interface particles.
-      const auto is_interface = [level_parts, this](size_t a) {
+      const auto is_interface = [level_parts, this](std::size_t a) {
         return std::ranges::any_of(
             permuted_view(level_parts, adjacency_[a]),
             std::bind_front(std::not_equal_to{}, level_parts[a]));
@@ -239,7 +239,7 @@ private:
             interface.end());
       };
       if (is_first_level) {
-        update_interface(std::views::iota(size_t{0}, particles.size()));
+        update_interface(std::views::iota(std::size_t{0}, particles.size()));
       } else {
         interface.swap(prev_interface);
         update_interface(prev_interface);
@@ -251,7 +251,7 @@ private:
     for (auto& block : block_edges_) block.clear();
     for (const auto& [index_, neighbors] :
          std::views::enumerate(adjacency_) | std::views::as_const) {
-      const auto index = static_cast<size_t>(index_);
+      const auto index = static_cast<std::size_t>(index_);
       for (const auto neighbor : neighbors) {
         if (neighbor >= index) break;
         const auto part = PartVec::common(parts[index], parts[neighbor]);
@@ -262,9 +262,9 @@ private:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  std::vector<std::vector<size_t>> adjacency_;
-  std::vector<std::vector<size_t>> interp_adjacency_;
-  std::vector<std::vector<std::pair<size_t, size_t>>> block_edges_;
+  std::vector<std::vector<std::size_t>> adjacency_;
+  std::vector<std::vector<std::size_t>> interp_adjacency_;
+  std::vector<std::vector<std::pair<std::size_t, std::size_t>>> block_edges_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;
   [[no_unique_address]] InterfacePartitionFunc interface_partition_func_;

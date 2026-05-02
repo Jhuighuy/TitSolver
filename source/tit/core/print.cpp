@@ -3,13 +3,14 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
+
 #ifdef __APPLE__
 #include <sys/ttycom.h>
 #endif
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
 
@@ -21,7 +22,7 @@ namespace {
 
 constexpr auto default_terminal_width = 80;
 
-auto terminal_width(int fd) -> size_t {
+auto terminal_width(int fd) -> std::size_t {
   if (isatty(fd) == 0) return default_terminal_width;
 
   winsize window_size = {}; // NOLINTNEXTLINE(*-include-cleaner)
@@ -38,12 +39,16 @@ auto terminal_width(int fd) -> size_t {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void println_separator(char c) {
-  for (size_t i = 0; i < terminal_width(STDOUT_FILENO); ++i) print("{}", c);
+  for (std::size_t i = 0; i < terminal_width(STDOUT_FILENO); ++i) {
+    print("{}", c);
+  }
   print("\n");
 }
 
 void eprintln_separator(char c) {
-  for (size_t i = 0; i < terminal_width(STDERR_FILENO); ++i) eprint("{}", c);
+  for (std::size_t i = 0; i < terminal_width(STDERR_FILENO); ++i) {
+    eprint("{}", c);
+  }
   eprint("\n");
 }
 

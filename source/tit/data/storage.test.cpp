@@ -8,8 +8,8 @@
 #include <set>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/data/type.hpp"

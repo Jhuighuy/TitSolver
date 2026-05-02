@@ -6,10 +6,11 @@
 // IWYU pragma: private, include "tit/core/simd.hpp"
 #pragma once
 
+#include <cstddef>
+
 #include "tit/core/_simd/reg.hpp"
 #include "tit/core/_simd/reg_mask.hpp"
 #include "tit/core/_simd/traits.hpp"
-#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 
 namespace tit::simd {
@@ -31,25 +32,26 @@ namespace tit::simd {
 /// @{
 
 /// Deduce SIMD register to operate the given amount of scalars.
-template<supported_type Num, size_t Dim>
-inline constexpr size_t deduce_size_v = [](this auto self, size_t reg_size) {
-  if (Dim <= reg_size) return reg_size;
-  if (reg_size >= max_reg_size_v<Num>) return max_reg_size_v<Num>;
-  return self(reg_size * 2);
-}(min_reg_size_v<Num>);
+template<supported_type Num, std::size_t Dim>
+inline constexpr std::size_t deduce_size_v =
+    [](this auto self, std::size_t reg_size) {
+      if (Dim <= reg_size) return reg_size;
+      if (reg_size >= max_reg_size_v<Num>) return max_reg_size_v<Num>;
+      return self(reg_size * 2);
+    }(min_reg_size_v<Num>);
 
 /// Amount of deduced SIMD registers required to store the given amount of
 /// scalars.
-template<supported_type Num, size_t Dim>
-inline constexpr size_t deduce_count_v =
+template<supported_type Num, std::size_t Dim>
+inline constexpr std::size_t deduce_count_v =
     divide_up(Dim, deduce_size_v<Num, Dim>);
 
 /// Deduced SIMD register type to operate the given amount of scalars.
-template<supported_type Num, size_t Dim>
+template<supported_type Num, std::size_t Dim>
 using deduce_reg_t = Reg<Num, deduce_size_v<Num, Dim>>;
 
 /// Deduced SIMD register mask type to operate the given amount of scalars.
-template<supported_type Num, size_t Dim>
+template<supported_type Num, std::size_t Dim>
 using deduce_reg_mask_t = RegMask<Num, deduce_size_v<Num, Dim>>;
 
 /// @}

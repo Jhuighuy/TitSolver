@@ -9,6 +9,8 @@
 #include <cctype>
 #include <charconv>
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <map>
@@ -20,8 +22,6 @@
 #include <system_error>
 #include <unordered_map>
 #include <unordered_set>
-
-#include "tit/core/basic_types.hpp"
 
 namespace tit {
 
@@ -144,16 +144,16 @@ template<
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Format memory size in bytes as a pretty string.
-auto fmt_memsize(uint64_t value, size_t precision = 1) -> std::string;
+auto fmt_memsize(std::uint64_t value, std::size_t precision = 1) -> std::string;
 
 /// Format quantity as a pretty string with SI prefix.
 /// @{
 auto fmt_quantity(long double value,
                   std::string_view unit,
-                  size_t precision = 1) -> std::string;
+                  std::size_t precision = 1) -> std::string;
 template<class Val>
   requires std::integral<Val> || std::floating_point<Val>
-auto fmt_quantity(Val value, std::string_view unit, size_t precision = 1)
+auto fmt_quantity(Val value, std::string_view unit, std::size_t precision = 1)
     -> std::string {
   return fmt_quantity(static_cast<long double>(value), unit, precision);
 }

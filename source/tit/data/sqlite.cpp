@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -15,9 +16,9 @@
 
 #include <sqlite3.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/stream.hpp"
 #include "tit/core/type.hpp"
@@ -145,11 +146,11 @@ auto Statement::base() const noexcept -> sqlite3_stmt* {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto Statement::num_params_() const -> size_t {
-  return static_cast<size_t>(sqlite3_bind_parameter_count(base()));
+auto Statement::num_params_() const -> std::size_t {
+  return static_cast<std::size_t>(sqlite3_bind_parameter_count(base()));
 }
 
-void Statement::bind_(size_t index, int64_t value) const {
+void Statement::bind_(std::size_t index, std::int64_t value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(index < num_params_(), "Param index is out of range!");
 
@@ -163,7 +164,7 @@ void Statement::bind_(size_t index, int64_t value) const {
   }
 }
 
-void Statement::bind_(size_t index, float64_t value) const {
+void Statement::bind_(std::size_t index, float64_t value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(index < num_params_(), "Param index is out of range!");
 
@@ -177,7 +178,7 @@ void Statement::bind_(size_t index, float64_t value) const {
   }
 }
 
-void Statement::bind_(size_t index, std::string_view value) const {
+void Statement::bind_(std::size_t index, std::string_view value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(index < num_params_(), "Param index is out of range!");
   TIT_ASSERT(is_safe_cast<int>(value.size()),
@@ -196,7 +197,7 @@ void Statement::bind_(size_t index, std::string_view value) const {
   }
 }
 
-void Statement::bind_(size_t index, BlobView value) const {
+void Statement::bind_(std::size_t index, BlobView value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(index < num_params_(), "Param index is out of range!");
   TIT_ASSERT(is_safe_cast<int>(value.size()),
@@ -248,7 +249,7 @@ void Statement::run() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto Statement::num_columns_() const -> size_t {
+auto Statement::num_columns_() const -> std::size_t {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
 
   const auto count = sqlite3_column_count(base());
@@ -257,10 +258,10 @@ auto Statement::num_columns_() const -> size_t {
               error_message(sqlite3_errcode(db_->base()), db_->base()));
   }
 
-  return static_cast<size_t>(count);
+  return static_cast<std::size_t>(count);
 }
 
-auto Statement::column_type_(size_t index) const -> int {
+auto Statement::column_type_(std::size_t index) const -> int {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
   TIT_ASSERT(index < num_columns_(), "Column index is out of range!");
 
@@ -274,7 +275,7 @@ auto Statement::column_type_(size_t index) const -> int {
   return type;
 }
 
-auto Statement::column_int_(size_t index) const -> int64_t {
+auto Statement::column_int_(std::size_t index) const -> std::int64_t {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
   TIT_ASSERT(index < num_columns_(), "Column index is out of range!");
   TIT_ASSERT(column_type_(index) == SQLITE_INTEGER, "Column type mismatch!");
@@ -282,7 +283,7 @@ auto Statement::column_int_(size_t index) const -> int64_t {
   return sqlite3_column_int64(base(), static_cast<int>(index));
 }
 
-auto Statement::column_real_(size_t index) const -> float64_t {
+auto Statement::column_real_(std::size_t index) const -> float64_t {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
   TIT_ASSERT(index < num_columns_(), "Column index is out of range!");
   TIT_ASSERT(column_type_(index) == SQLITE_FLOAT, "Column type mismatch!");
@@ -290,7 +291,7 @@ auto Statement::column_real_(size_t index) const -> float64_t {
   return sqlite3_column_double(base(), static_cast<int>(index));
 }
 
-auto Statement::column_text_(size_t index) const -> std::string_view {
+auto Statement::column_text_(std::size_t index) const -> std::string_view {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
   TIT_ASSERT(index < num_columns_(), "Column index is out of range!");
   TIT_ASSERT(column_type_(index) == SQLITE_TEXT, "Column type mismatch!");
@@ -311,10 +312,10 @@ auto Statement::column_text_(size_t index) const -> std::string_view {
   }
 
   return {safe_bit_ptr_cast<const char*>(value_uchar_ptr),
-          static_cast<size_t>(num_bytes_int)};
+          static_cast<std::size_t>(num_bytes_int)};
 }
 
-auto Statement::column_blob_(size_t index) const -> BlobView {
+auto Statement::column_blob_(std::size_t index) const -> BlobView {
   TIT_ASSERT(state_ == State_::executing, "Statement is not executing!");
   TIT_ASSERT(index < num_columns_(), "Column index is out of range!");
   if (column_type_(index) == SQLITE_NULL) return {};
@@ -336,7 +337,7 @@ auto Statement::column_blob_(size_t index) const -> BlobView {
   }
 
   return {static_cast<const std::byte*>(value_void_ptr),
-          static_cast<size_t>(num_bytes_int)};
+          static_cast<std::size_t>(num_bytes_int)};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -379,7 +380,7 @@ auto BlobReader::base() const noexcept -> sqlite3_blob* {
   return blob_.get();
 }
 
-auto BlobReader::read(std::span<std::byte> data) -> size_t {
+auto BlobReader::read(std::span<std::byte> data) -> std::size_t {
   TIT_ASSERT(is_safe_cast<int>(data.size()), "Data size is too large!");
 
   TIT_ASSERT(offset_ <= size_, "Offset is out of range!");

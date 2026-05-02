@@ -7,13 +7,14 @@
 #include <array>
 #include <cctype>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <format>
 #include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/str.hpp"
 
 namespace tit {
@@ -41,7 +42,7 @@ auto str_is_identifier(std::string_view str) -> bool {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto fmt_memsize(uint64_t value, size_t precision) -> std::string {
+auto fmt_memsize(std::uint64_t value, std::size_t precision) -> std::string {
   static constexpr const auto prefixes = std::to_array<std::string_view>({
       "bytes", // 1024^0
       "KiB",   // 1024^1, kibi
@@ -59,15 +60,16 @@ auto fmt_memsize(uint64_t value, size_t precision) -> std::string {
   constexpr long double base = 1024.0;
   const auto val_float = static_cast<long double>(value);
   const auto exp_float = std::floor(std::log2(val_float) / std::log2(base));
-  const auto exp_index = static_cast<size_t>(exp_float);
+  const auto exp_index = static_cast<std::size_t>(exp_float);
   const auto scaled = val_float / std::pow(base, exp_float);
   const auto index = std::min(exp_index, prefixes.size() - 1);
 
   return std::format("{:.{}f} {}", scaled, precision, prefixes[index]);
 }
 
-auto fmt_quantity(long double value, std::string_view unit, size_t precision)
-    -> std::string {
+auto fmt_quantity(long double value,
+                  std::string_view unit,
+                  std::size_t precision) -> std::string {
   constexpr const auto prefixes = std::to_array<std::string_view>({
       "y", // 10^-24, yocto
       "z", // 10^-21, zepto
@@ -94,7 +96,7 @@ auto fmt_quantity(long double value, std::string_view unit, size_t precision)
   constexpr long double base = 1000.0;
   const auto exp_float =
       std::floor(std::log10(std::abs(value)) / std::log10(base));
-  const auto exp_index = center + static_cast<ssize_t>(exp_float);
+  const auto exp_index = center + static_cast<std::ptrdiff_t>(exp_float);
   const auto scaled = value / std::pow(base, exp_float);
   const auto index = std::clamp(exp_index, 0Z, std::ssize(prefixes) - 1);
 

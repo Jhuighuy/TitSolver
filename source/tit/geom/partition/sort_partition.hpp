@@ -6,10 +6,10 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <ranges>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
@@ -51,7 +51,7 @@ public:
 
     // Build the permutation using the spatial sort.
     const auto num_points = std::ranges::size(points);
-    std::vector<size_t> perm(num_points);
+    std::vector<std::size_t> perm(num_points);
     sort_(points, perm);
 
     // Assign the partitions.
@@ -59,10 +59,12 @@ public:
     const auto remainder = num_points % num_parts;
     for (std::ranges::range_value_t<Parts> part = 0; part < num_parts; ++part) {
       const auto first = part * part_size + //
-                         std::min(static_cast<size_t>(part), remainder);
+                         std::min(static_cast<std::size_t>(part), remainder);
       const auto last = (part + 1) * part_size +
-                        std::min(static_cast<size_t>(part + 1), remainder);
-      for (size_t i = first; i < last; ++i) parts[perm[i]] = init_part + part;
+                        std::min(static_cast<std::size_t>(part + 1), remainder);
+      for (std::size_t i = first; i < last; ++i) {
+        parts[perm[i]] = init_part + part;
+      }
     }
   }
 

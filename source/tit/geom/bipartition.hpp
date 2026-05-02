@@ -6,12 +6,13 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
+#include <iterator>
 #include <ranges>
 #include <span>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/point_range.hpp"
@@ -27,23 +28,23 @@ public:
   /// Bisect the points along axis, spaned by the given coordinate axis.
   template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            std::span<size_t> perm,
+                            std::span<std::size_t> perm,
                             point_range_num_t<Points> pivot,
-                            size_t axis,
+                            std::size_t axis,
                             bool reverse = false) const
-      -> std::pair<std::span<size_t>, std::span<size_t>> {
+      -> std::pair<std::span<std::size_t>, std::span<std::size_t>> {
     TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
-    std::span<size_t> right_perm;
+    std::span<std::size_t> right_perm;
     if (reverse) {
       right_perm = std::ranges::partition(
           perm,
           std::bind_back(std::greater{}, pivot),
-          [&points, axis](size_t index) { return points[index][axis]; });
+          [&points, axis](std::size_t index) { return points[index][axis]; });
     } else {
       right_perm = std::ranges::partition(
           perm,
           std::bind_back(std::less{}, pivot),
-          [&points, axis](size_t index) { return points[index][axis]; });
+          [&points, axis](std::size_t index) { return points[index][axis]; });
     }
     return {
         {std::ranges::begin(perm), std::ranges::begin(right_perm)},
@@ -65,22 +66,24 @@ public:
   /// Bisect the points along axis, spaned by the given direction.
   template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            std::span<size_t> perm,
+                            std::span<std::size_t> perm,
                             point_range_num_t<Points> pivot,
                             const point_range_vec_t<Points>& dir,
                             bool reverse = false) const
-      -> std::pair<std::span<size_t>, std::span<size_t>> {
-    std::span<size_t> right_perm;
+      -> std::pair<std::span<std::size_t>, std::span<std::size_t>> {
+    std::span<std::size_t> right_perm;
     if (reverse) {
-      right_perm = std::ranges::partition(
-          perm,
-          std::bind_back(std::greater{}, pivot),
-          [&points, &dir](size_t index) { return dot(points[index], dir); });
+      right_perm = std::ranges::partition(perm,
+                                          std::bind_back(std::greater{}, pivot),
+                                          [&points, &dir](std::size_t index) {
+                                            return dot(points[index], dir);
+                                          });
     } else {
-      right_perm = std::ranges::partition(
-          perm,
-          std::bind_back(std::less{}, pivot),
-          [&points, &dir](size_t index) { return dot(points[index], dir); });
+      right_perm = std::ranges::partition(perm,
+                                          std::bind_back(std::less{}, pivot),
+                                          [&points, &dir](std::size_t index) {
+                                            return dot(points[index], dir);
+                                          });
     }
     return {
         {std::ranges::begin(perm), std::ranges::begin(right_perm)},
@@ -103,17 +106,18 @@ public:
   /// given coordinate axis.
   template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            std::span<size_t> perm,
-                            size_t median_index,
-                            size_t axis) const
-      -> std::pair<std::span<size_t>, std::span<size_t>> {
+                            std::span<std::size_t> perm,
+                            std::size_t median_index,
+                            std::size_t axis) const
+      -> std::pair<std::span<std::size_t>, std::span<std::size_t>> {
     TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
-    const auto median = perm.begin() + static_cast<ssize_t>(median_index);
+    const auto median =
+        std::next(perm.begin(), static_cast<std::ptrdiff_t>(median_index));
     std::ranges::nth_element(
         perm,
         median,
         std::less{},
-        [&points, axis](size_t index) { return points[index][axis]; });
+        [&points, axis](std::size_t index) { return points[index][axis]; });
     return {
         {std::ranges::begin(perm), median},
         {median, std::ranges::end(perm)},
@@ -124,9 +128,9 @@ public:
   /// of the points bounding box.
   template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            std::span<size_t> perm,
-                            size_t median_index) const
-      -> std::pair<std::span<size_t>, std::span<size_t>> {
+                            std::span<std::size_t> perm,
+                            std::size_t median_index) const
+      -> std::pair<std::span<std::size_t>, std::span<std::size_t>> {
     const auto box = compute_bbox(points, perm);
     const auto axis = max_value_index(box.extents());
     return (*this)(points, perm, median_index, axis);
@@ -147,15 +151,16 @@ public:
   /// the given direction.
   template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            std::span<size_t> perm,
-                            size_t median_index,
+                            std::span<std::size_t> perm,
+                            std::size_t median_index,
                             const point_range_vec_t<Points>& dir) const
-      -> std::pair<std::span<size_t>, std::span<size_t>> {
-    const auto median = perm.begin() + static_cast<ssize_t>(median_index);
+      -> std::pair<std::span<std::size_t>, std::span<std::size_t>> {
+    const auto median =
+        std::next(perm.begin(), static_cast<std::ptrdiff_t>(median_index));
     std::ranges::nth_element( //
         perm,
         median,
-        [&points, &dir](size_t i, size_t j) {
+        [&points, &dir](std::size_t i, std::size_t j) {
           return dot(points[i] - points[j], dir) < 0;
         });
     return {
@@ -180,11 +185,11 @@ public:
   /// the given fallback vector is used instead.
   template<point_range Points>
   constexpr auto operator()(Points&& points,
-                            std::span<size_t> perm,
-                            size_t median_index,
+                            std::span<std::size_t> perm,
+                            std::size_t median_index,
                             const point_range_vec_t<Points>& fallback_dir =
                                 unit(point_range_vec_t<Points>{})) const
-      -> std::pair<std::span<size_t>, std::span<size_t>> {
+      -> std::pair<std::span<std::size_t>, std::span<std::size_t>> {
     const auto dir =
         compute_largest_inertia_axis(points, perm).value_or(fallback_dir);
     return dir_median_split(points, perm, median_index, dir);

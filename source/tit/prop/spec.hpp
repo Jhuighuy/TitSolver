@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -14,15 +15,15 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/float.hpp"
 
 namespace tit::prop {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Specification type.
-enum class SpecType : uint8_t {
+enum class SpecType : std::uint8_t {
   Bool,
   Int,
   Real,
@@ -117,34 +118,34 @@ public:
   IntSpec() = default;
 
   /// Get the minimum value.
-  auto min() const noexcept -> std::optional<int64_t>;
+  auto min() const noexcept -> std::optional<std::int64_t>;
 
   /// Set the minimum value.
-  auto min(int64_t val) && -> IntSpec&&;
+  auto min(std::int64_t val) && -> IntSpec&&;
 
   /// Set the maximum value.
-  auto max(int64_t val) && -> IntSpec&&;
+  auto max(std::int64_t val) && -> IntSpec&&;
 
   /// Get the maximum value.
-  auto max() const noexcept -> std::optional<int64_t>;
+  auto max() const noexcept -> std::optional<std::int64_t>;
 
   /// Set the range of allowed values.
-  auto range(int64_t min_val, int64_t max_val) && -> IntSpec&&;
+  auto range(std::int64_t min_val, std::int64_t max_val) && -> IntSpec&&;
 
   /// Set the default value.
-  auto default_value(int64_t val) && -> IntSpec&&;
+  auto default_value(std::int64_t val) && -> IntSpec&&;
 
   /// Get the default value.
-  auto default_value() const noexcept -> std::optional<int64_t>;
+  auto default_value() const noexcept -> std::optional<std::int64_t>;
 
   auto type() const noexcept -> SpecType override;
   void validate(Tree& tree, std::string_view path) const override;
 
 private:
 
-  std::optional<int64_t> default_;
-  std::optional<int64_t> min_;
-  std::optional<int64_t> max_;
+  std::optional<std::int64_t> default_;
+  std::optional<std::int64_t> min_;
+  std::optional<std::int64_t> max_;
 
 }; // class IntSpec
 

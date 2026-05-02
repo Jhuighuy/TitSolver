@@ -4,13 +4,13 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstdint>
 #include <format>
 #include <string>
 
 #include <sys/utsname.h>
 #include <unistd.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/sys_info.hpp"
@@ -66,7 +66,7 @@ auto cpu_arch() -> std::string {
   return static_cast<const char*>(uts.machine);
 }
 
-auto cpu_cores() -> uint64_t {
+auto cpu_cores() -> std::uint64_t {
   return checked_sysconf(_SC_NPROCESSORS_CONF);
 }
 
@@ -84,10 +84,11 @@ auto cpu_info() -> std::string {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto ram_size() -> uint64_t {
+auto ram_size() -> std::uint64_t {
   const auto pages = checked_sysconf(_SC_PHYS_PAGES);
   const auto page_size = checked_sysconf(_SC_PAGE_SIZE);
-  return static_cast<uint64_t>(pages) * static_cast<uint64_t>(page_size);
+  return static_cast<std::uint64_t>(pages) *
+         static_cast<std::uint64_t>(page_size);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

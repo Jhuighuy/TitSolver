@@ -7,10 +7,10 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <type_traits>
 
 #include "tit/core/_mat/mat.hpp"
-#include "tit/core/basic_types.hpp"
 
 namespace tit {
 
@@ -19,7 +19,7 @@ namespace tit {
 namespace impl {
 template<class>
 inline constexpr bool is_mat_v = false;
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 inline constexpr bool is_mat_v<Mat<Num, Dim>> = true;
 } // namespace impl
 

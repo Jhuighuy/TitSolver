@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <concepts>
+#include <cstddef>
 #include <functional>
 #include <iterator>
 #include <ranges>
@@ -19,7 +20,6 @@
 #include <oneapi/tbb/parallel_reduce.h>
 #include <oneapi/tbb/parallel_sort.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/par/atomic.hpp"
 #include "tit/par/control.hpp"
 
@@ -148,7 +148,7 @@ struct UnstableCopyIf final {
     requires std::indirectly_copyable<std::ranges::iterator_t<Range>, OutIter>
   static auto operator()(Range&& range, OutIter out, Pred pred, Proj proj = {})
       -> OutIter {
-    ssize_t index = 0;
+    std::ptrdiff_t index = 0;
     for_each_range(
         std::forward<Range>(range),
         [&index, out, &pred, &proj](std::ranges::view auto subrange) {
@@ -156,7 +156,7 @@ struct UnstableCopyIf final {
           // into the output range. Intermediate buffer is used to reduce the
           // number of atomic operations.
           using Val = std::ranges::range_value_t<Range>;
-          static constexpr size_t BufferCap = 64;
+          static constexpr std::size_t BufferCap = 64;
           boost::container::static_vector<Val, BufferCap> buffer{};
           for (const auto& chunk :
                std::views::chunk(std::move(subrange), BufferCap)) {
@@ -164,12 +164,13 @@ struct UnstableCopyIf final {
                                  std::back_inserter(buffer),
                                  std::ref(pred),
                                  std::ref(proj));
-            std::ranges::move(buffer,
-                              out + fetch_and_add(index, buffer.size()));
+            std::ranges::move(
+                buffer,
+                std::next(out, fetch_and_add(index, buffer.size())));
             buffer.clear();
           }
         });
-    return out + index;
+    return std::next(out, index);
   }
 };
 

@@ -3,11 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
 #include <optional>
 
 #include <oneapi/tbb/global_control.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/sys_info.hpp"
@@ -23,12 +23,12 @@ void init() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto num_threads() noexcept -> size_t {
+auto num_threads() noexcept -> std::size_t {
   return tbb::global_control::active_value(
       tbb::global_control::max_allowed_parallelism);
 }
 
-void set_num_threads(size_t value) {
+void set_num_threads(std::size_t value) {
   TIT_ASSERT(value > 0, "Invalid number of the worker threads!");
   if (num_threads() == value) return;
   static std::optional<tbb::global_control> control{};

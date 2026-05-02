@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <functional>
 #include <iterator>
 #include <ranges>
@@ -14,7 +15,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 
 namespace tit {
@@ -22,13 +22,13 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Basic multidimensional non-owning container.
-template<class Val, size_t Rank>
+template<class Val, std::size_t Rank>
   requires (Rank >= 1)
 class Mdspan final {
 public:
 
   /// Shape type.
-  using Shape = std::span<const size_t, Rank>;
+  using Shape = std::span<const std::size_t, Rank>;
 
   /// Construct a multidimensional span from values iterator and shape.
   template<std::contiguous_iterator ValIter>
@@ -37,7 +37,7 @@ public:
         shape_{shape} {}
 
   /// Amount of elements.
-  constexpr auto size() const noexcept -> size_t {
+  constexpr auto size() const noexcept -> std::size_t {
     return vals_.size();
   }
 
@@ -66,9 +66,9 @@ public:
   }
 
   /// Reference to span element or sub-span.
-  constexpr auto operator[](const std::array<size_t, Rank>& indices)
+  constexpr auto operator[](const std::array<std::size_t, Rank>& indices)
       const noexcept -> decltype(auto) {
-    size_t offset = 0;
+    std::size_t offset = 0;
     for (const auto [extent, index] : std::views::zip(shape_, indices)) {
       TIT_ASSERT(index < extent, "Index is out of range!");
       offset = index + offset * extent;
@@ -101,7 +101,7 @@ Mdspan(ValIter, Shape&&)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Basic multidimensional owning container.
-template<class Val, size_t Rank>
+template<class Val, std::size_t Rank>
   requires (Rank >= 1)
 class Mdvector final {
 public:
@@ -110,23 +110,24 @@ public:
   constexpr Mdvector() noexcept = default;
 
   /// Construct a multidimensional vector with given shape and clear values.
-  constexpr explicit Mdvector(const std::array<size_t, Rank>& shape) {
+  constexpr explicit Mdvector(const std::array<std::size_t, Rank>& shape) {
     assign(shape);
   }
 
   /// Construct a multidimensional vector with given shape and values.
   constexpr explicit Mdvector(std::forward_iterator auto iter,
-                              const std::array<size_t, Rank>& shape) {
+                              const std::array<std::size_t, Rank>& shape) {
     assign(iter, shape);
   }
 
   /// Vector size.
-  constexpr auto size() const noexcept -> size_t {
+  constexpr auto size() const noexcept -> std::size_t {
     return vals_.size();
   }
 
   /// Vector shape.
-  constexpr auto shape() const noexcept -> const std::array<size_t, Rank>& {
+  constexpr auto shape() const noexcept
+      -> const std::array<std::size_t, Rank>& {
     return shape_;
   }
 
@@ -152,7 +153,7 @@ public:
   }
 
   /// Reshape the vector and clear values.
-  constexpr void assign(const std::array<size_t, Rank>& shape) {
+  constexpr void assign(const std::array<std::size_t, Rank>& shape) {
     shape_ = shape;
     vals_.clear();
     vals_.resize(std::ranges::fold_left(shape_, 1, std::multiplies{}));
@@ -160,27 +161,27 @@ public:
 
   /// Reshape the vector and assign values.
   constexpr void assign(std::forward_iterator auto iter,
-                        const std::array<size_t, Rank>& shape) {
+                        const std::array<std::size_t, Rank>& shape) {
     assign(shape);
     std::ranges::copy(iter, iter + size(), vals_.begin());
   }
 
   /// Reference to vector element or sub-vector span.
-  constexpr auto operator[](this auto& self,
-                            const std::array<size_t, Rank>& indices) noexcept
-      -> decltype(auto) {
+  constexpr auto operator[](
+      this auto& self,
+      const std::array<std::size_t, Rank>& indices) noexcept -> decltype(auto) {
     return Mdspan{self.vals_.begin(), self.shape_}[indices];
   }
 
 private:
 
-  std::array<size_t, Rank> shape_{};
+  std::array<std::size_t, Rank> shape_{};
   std::vector<Val> vals_;
 
 }; // class Mdvector
 
-template<std::contiguous_iterator ValIter, size_t Rank>
-Mdvector(ValIter, const std::array<size_t, Rank>&)
+template<std::contiguous_iterator ValIter, std::size_t Rank>
+Mdvector(ValIter, const std::array<std::size_t, Rank>&)
     -> Mdvector<std::iter_value_t<ValIter>, Rank>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -189,6 +190,6 @@ Mdvector(ValIter, const std::array<size_t, Rank>&)
 
 // Enable borrowed range support for Mdspan, allowing it to be used safely
 // in range expressions where the range must outlive the operation.
-template<class Val, tit::size_t Rank>
+template<class Val, std::size_t Rank>
 constexpr bool std::ranges::enable_borrowed_range<tit::Mdspan<Val, Rank>> =
     true;

@@ -5,10 +5,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <numeric>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
@@ -24,14 +24,14 @@ using Vec2D = Vec<double, 2>;
 TEST_CASE("geom::CoordBisection") {
   // Create points on a 4x4 lattice.
   std::array<Vec2D, 16> points{};
-  for (size_t i = 0; i < 16; ++i) points[i] = {i % 4, i / 4};
+  for (std::size_t i = 0; i < 16; ++i) points[i] = {i % 4, i / 4};
 
   // Initialize the permutation.
-  std::array<size_t, 16> perm{};
-  std::ranges::iota(perm, size_t{0});
+  std::array<std::size_t, 16> perm{};
+  std::ranges::iota(perm, std::size_t{0});
 
   // Partition and ensure the result is correct.
-  constexpr size_t axis = 0;
+  constexpr std::size_t axis = 0;
   constexpr auto pivot = 2.5;
   for (const auto reverse : {false, true}) {
     // Partition the points.
@@ -53,11 +53,11 @@ TEST_CASE("geom::CoordBisection") {
 TEST_CASE("geom::DirBisection") {
   // Create points on a 4x4 lattice.
   std::array<Vec2D, 16> points{};
-  for (size_t i = 0; i < 16; ++i) points[i] = {i % 4, i / 4};
+  for (std::size_t i = 0; i < 16; ++i) points[i] = {i % 4, i / 4};
 
   // Initialize the permutation.
-  std::array<size_t, 16> perm{};
-  std::ranges::iota(perm, size_t{0});
+  std::array<std::size_t, 16> perm{};
+  std::ranges::iota(perm, std::size_t{0});
 
   // Partition and ensure the result is correct.
   const auto dir = normalize(Vec2D{1, 1});
@@ -83,14 +83,14 @@ TEST_CASE("geom::CoordMedianSplit") {
   SUBCASE("specified axis") {
     // Create points on a 4x4 lattice.
     std::array<Vec2D, 16> points{};
-    for (size_t i = 0; i < 16; ++i) points[i] = {i % 4, i / 4};
+    for (std::size_t i = 0; i < 16; ++i) points[i] = {i % 4, i / 4};
 
     // Initialize the permutation.
-    std::array<size_t, 16> perm{};
-    std::ranges::iota(perm, size_t{0});
+    std::array<std::size_t, 16> perm{};
+    std::ranges::iota(perm, std::size_t{0});
 
     // Partition the points.
-    constexpr size_t axis = 0;
+    constexpr std::size_t axis = 0;
     const auto [left_perm, right_perm] =
         geom::coord_median_split(points, perm, 8, axis);
 
@@ -104,11 +104,11 @@ TEST_CASE("geom::CoordMedianSplit") {
   SUBCASE("longes axis") {
     // Create points on a 5x4 lattice.
     std::array<Vec2D, 20> points{};
-    for (size_t i = 0; i < 20; ++i) points[i] = {i % 5, i / 5};
+    for (std::size_t i = 0; i < 20; ++i) points[i] = {i % 5, i / 5};
 
     // Initialize the permutation.
-    std::array<size_t, 20> perm{};
-    std::ranges::iota(perm, size_t{0});
+    std::array<std::size_t, 20> perm{};
+    std::ranges::iota(perm, std::size_t{0});
 
     // Partition the points.
     const auto [left_perm, right_perm] =
@@ -128,11 +128,11 @@ TEST_CASE("geom::CoordMedianSplit") {
 TEST_CASE("geom::DirMedianSplit") {
   // Create points on a 4x4 lattice.
   std::array<Vec2D, 16> points{};
-  for (size_t i = 0; i < 16; ++i) points[i] = {i % 4, i / 4};
+  for (std::size_t i = 0; i < 16; ++i) points[i] = {i % 4, i / 4};
 
   // Initialize the permutation.
-  std::array<size_t, 16> perm{};
-  std::ranges::iota(perm, size_t{0});
+  std::array<std::size_t, 16> perm{};
+  std::ranges::iota(perm, std::size_t{0});
 
   // Partition the points.
   const auto dir = normalize(Vec2D{1, 1});
@@ -156,7 +156,7 @@ TEST_CASE("geom::InertialMedianSplit") {
   // a scaled identity matrix, and the partitioning won't produce the
   // expected result.
   std::array<Vec2D, 20> rotated_points{};
-  for (size_t i = 0; i < 20; ++i) {
+  for (std::size_t i = 0; i < 20; ++i) {
     const Vec2D point{i % 5, i / 5};
     rotated_points[i] = {point[0] + point[1], point[0] - point[1]};
   }
@@ -167,8 +167,8 @@ TEST_CASE("geom::InertialMedianSplit") {
   REQUIRE_APPROX_EQ(normalize(*inertia_axis), normalize(Vec2D{1, 1}));
 
   // Initialize the permutation.
-  std::array<size_t, 20> perm{};
-  std::ranges::iota(perm, size_t{0});
+  std::array<std::size_t, 20> perm{};
+  std::ranges::iota(perm, std::size_t{0});
 
   // Partition the points.
   const auto [left_perm, right_perm] =

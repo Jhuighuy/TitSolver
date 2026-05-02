@@ -7,10 +7,11 @@
 #pragma once
 
 #include <concepts>
+#include <cstdint>
 #include <type_traits>
 
 #include "tit/core/_simd/traits.hpp"
-#include "tit/core/basic_types.hpp"
+#include "tit/core/float.hpp"
 
 namespace tit::simd {
 
@@ -23,10 +24,10 @@ template<std::integral Int>
 struct mask_bits<Int> : std::make_unsigned<Int> {};
 
 template<>
-struct mask_bits<float32_t> : std::type_identity<uint32_t> {};
+struct mask_bits<float32_t> : std::type_identity<std::uint32_t> {};
 
 template<>
-struct mask_bits<float64_t> : std::type_identity<uint64_t> {};
+struct mask_bits<float64_t> : std::type_identity<std::uint64_t> {};
 
 template<supported_type Num>
 using mask_bits_t = impl::mask_bits<Num>::type;

@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <cstddef>
 #include <expected>
 #include <iterator>
 #include <ranges>
 #include <span>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/range.hpp"
@@ -67,7 +67,8 @@ constexpr auto compute_center(Points&& points) -> point_range_vec_t<Points> {
   return sum / count_points(points);
 }
 template<point_range Points>
-constexpr auto compute_center(Points&& points, std::span<const size_t> perm)
+constexpr auto compute_center(Points&& points,
+                              std::span<const std::size_t> perm)
     -> point_range_vec_t<Points> {
   return compute_center(permuted_view(points, perm));
 }
@@ -85,7 +86,7 @@ constexpr auto compute_bbox(Points&& points) -> point_range_bbox_t<Points> {
   return box;
 }
 template<point_range Points>
-constexpr auto compute_bbox(Points&& points, std::span<const size_t> perm)
+constexpr auto compute_bbox(Points&& points, std::span<const std::size_t> perm)
     -> point_range_bbox_t<Points> {
   return compute_bbox(permuted_view(points, perm));
 }
@@ -114,7 +115,7 @@ constexpr auto compute_inertia_tensor(Points&& points)
 }
 template<point_range Points>
 constexpr auto compute_inertia_tensor(Points&& points,
-                                      std::span<const size_t> perm)
+                                      std::span<const std::size_t> perm)
     -> point_range_mat_t<Points> {
   return compute_inertia_tensor(permuted_view(points, perm));
 }
@@ -136,7 +137,7 @@ constexpr auto compute_largest_inertia_axis(Points&& points)
 }
 template<point_range Points>
 constexpr auto compute_largest_inertia_axis(Points&& points,
-                                            std::span<const size_t> perm)
+                                            std::span<const std::size_t> perm)
     -> std::expected<point_range_vec_t<Points>, MatEigError> {
   return compute_largest_inertia_axis(permuted_view(points, perm));
 }

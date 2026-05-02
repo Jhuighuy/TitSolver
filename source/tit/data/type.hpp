@@ -5,13 +5,15 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <format>
 #include <string>
 #include <type_traits>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/type.hpp"
@@ -53,7 +55,7 @@ public:
   }
 
   /// Data kind width (in bytes).
-  constexpr auto width() const -> size_t {
+  constexpr auto width() const -> std::size_t {
     using enum ID;
     switch (id_) {
       case int8:    [[fallthrough]];
@@ -103,28 +105,28 @@ template<class Val>
 inline constexpr auto kind_id_of = Kind::ID::unknown_;
 
 template<>
-inline constexpr auto kind_id_of<int8_t> = Kind::ID::int8;
+inline constexpr auto kind_id_of<std::int8_t> = Kind::ID::int8;
 
 template<>
-inline constexpr auto kind_id_of<uint8_t> = Kind::ID::uint8;
+inline constexpr auto kind_id_of<std::uint8_t> = Kind::ID::uint8;
 
 template<>
-inline constexpr auto kind_id_of<int16_t> = Kind::ID::int16;
+inline constexpr auto kind_id_of<std::int16_t> = Kind::ID::int16;
 
 template<>
-inline constexpr auto kind_id_of<uint16_t> = Kind::ID::uint16;
+inline constexpr auto kind_id_of<std::uint16_t> = Kind::ID::uint16;
 
 template<>
-inline constexpr auto kind_id_of<int32_t> = Kind::ID::int32;
+inline constexpr auto kind_id_of<std::int32_t> = Kind::ID::int32;
 
 template<>
-inline constexpr auto kind_id_of<uint32_t> = Kind::ID::uint32;
+inline constexpr auto kind_id_of<std::uint32_t> = Kind::ID::uint32;
 
 template<>
-inline constexpr auto kind_id_of<int64_t> = Kind::ID::int64;
+inline constexpr auto kind_id_of<std::int64_t> = Kind::ID::int64;
 
 template<>
-inline constexpr auto kind_id_of<uint64_t> = Kind::ID::uint64;
+inline constexpr auto kind_id_of<std::uint64_t> = Kind::ID::uint64;
 
 template<>
 inline constexpr auto kind_id_of<float32_t> = Kind::ID::float32;
@@ -147,7 +149,7 @@ inline constexpr Kind kind_of = Kind{impl::kind_id_of<Val>};
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Data type rank.
-enum class Rank : uint8_t {
+enum class Rank : std::uint8_t {
   scalar,
   vector,
   matrix,
@@ -161,7 +163,7 @@ public:
   /// Construct a data type.
   /// @{
   constexpr explicit Type(Kind kind) : Type{kind, Rank::scalar, 1} {}
-  constexpr explicit Type(Kind kind, Rank rank, uint8_t dim)
+  constexpr explicit Type(Kind kind, Rank rank, std::uint8_t dim)
       : kind_{kind}, rank_{rank}, dim_{dim} {
     TIT_ENSURE(rank < Rank::count_,
                "Invalid data type rank: {}.",
@@ -174,16 +176,16 @@ public:
   /// @}
 
   /// Construct a data type from integer identifier.
-  constexpr explicit Type(uint32_t id)
+  constexpr explicit Type(std::uint32_t id)
       : Type{Kind{static_cast<Kind::ID>((id - 1) & 0xFF)},
              static_cast<Rank>((id >> 8) & 0xFF),
-             static_cast<uint8_t>((id >> 16) & 0xFF)} {}
+             static_cast<std::uint8_t>((id >> 16) & 0xFF)} {}
 
   /// Data type integer identifier.
-  constexpr auto id() const -> uint32_t {
-    return static_cast<uint32_t>(std::to_underlying(kind_.id()) + 1) |
-           static_cast<uint32_t>(std::to_underlying(rank_)) << 8 |
-           static_cast<uint32_t>(dim_) << 16;
+  constexpr auto id() const -> std::uint32_t {
+    return static_cast<std::uint32_t>(std::to_underlying(kind_.id()) + 1) |
+           static_cast<std::uint32_t>(std::to_underlying(rank_)) << 8 |
+           static_cast<std::uint32_t>(dim_) << 16;
   }
 
   /// Data type kind.
@@ -197,12 +199,12 @@ public:
   }
 
   /// Data type dimensionality. Always 1 for scalars.
-  constexpr auto dim() const noexcept -> size_t {
+  constexpr auto dim() const noexcept -> std::size_t {
     return dim_;
   }
 
   /// Data type width (in bytes).
-  constexpr auto width() const -> size_t {
+  constexpr auto width() const -> std::size_t {
     return kind().width() * pow(dim(), std::to_underlying(rank()));
   }
 
@@ -224,7 +226,7 @@ private:
 
   Kind kind_;
   Rank rank_;
-  uint8_t dim_;
+  std::uint8_t dim_;
 
 }; // class Type
 
@@ -235,10 +237,10 @@ namespace impl {
 template<class Val>
 inline constexpr Type type_of{kind_of<Val>};
 
-template<known_kind_of Num, size_t Dim>
+template<known_kind_of Num, std::size_t Dim>
 inline constexpr Type type_of<Vec<Num, Dim>>{kind_of<Num>, Rank::vector, Dim};
 
-template<known_kind_of Num, size_t Dim>
+template<known_kind_of Num, std::size_t Dim>
 inline constexpr Type type_of<Mat<Num, Dim>>{kind_of<Num>, Rank::matrix, Dim};
 
 } // namespace impl

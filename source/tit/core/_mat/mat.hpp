@@ -8,10 +8,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <format>
 #include <initializer_list>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
@@ -21,7 +21,7 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Row-major square matrix.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 class Mat final {
 public:
 
@@ -35,7 +35,7 @@ public:
 
   /// Fill-initialize the matrix diagonal with the value @p q.
   constexpr explicit(Dim > 1) Mat(const Num& q) {
-    for (size_t i = 0; i < Dim; ++i) {
+    for (std::size_t i = 0; i < Dim; ++i) {
       rows_[i] = {};
       rows_[i][i] = q;
     }
@@ -59,11 +59,11 @@ public:
 
   /// Matrix row at index.
   /// @{
-  constexpr auto operator[](size_t i) noexcept -> Row& {
+  constexpr auto operator[](std::size_t i) noexcept -> Row& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     return rows_[i];
   }
-  constexpr auto operator[](size_t i) const noexcept -> const Row& {
+  constexpr auto operator[](std::size_t i) const noexcept -> const Row& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     return rows_[i];
   }
@@ -71,12 +71,13 @@ public:
 
   /// Matrix element at index.
   /// @{
-  constexpr auto operator[](size_t i, size_t j) noexcept -> Num& {
+  constexpr auto operator[](std::size_t i, std::size_t j) noexcept -> Num& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
     return rows_[i][j];
   }
-  constexpr auto operator[](size_t i, size_t j) const noexcept -> const Num& {
+  constexpr auto operator[](std::size_t i, std::size_t j) const noexcept
+      -> const Num& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
     return rows_[i][j];
@@ -93,33 +94,33 @@ public:
   /// Matrix addition.
   friend constexpr auto operator+(const Mat& A, const Mat& B) -> Mat {
     Mat R;
-    for (size_t i = 0; i < Dim; ++i) R[i] = A[i] + B[i];
+    for (std::size_t i = 0; i < Dim; ++i) R[i] = A[i] + B[i];
     return R;
   }
 
   /// Matrix addition with assignment.
   friend constexpr auto operator+=(Mat& A, const Mat& B) -> Mat& {
-    for (size_t i = 0; i < Dim; ++i) A[i] += B[i];
+    for (std::size_t i = 0; i < Dim; ++i) A[i] += B[i];
     return A;
   }
 
   /// Matrix negation.
   friend constexpr auto operator-(const Mat& A) -> Mat {
     Mat R;
-    for (size_t i = 0; i < Dim; ++i) R[i] = -A[i];
+    for (std::size_t i = 0; i < Dim; ++i) R[i] = -A[i];
     return R;
   }
 
   /// Matrix subtraction.
   friend constexpr auto operator-(const Mat& A, const Mat& B) -> Mat {
     Mat R;
-    for (size_t i = 0; i < Dim; ++i) R[i] = A[i] - B[i];
+    for (std::size_t i = 0; i < Dim; ++i) R[i] = A[i] - B[i];
     return R;
   }
 
   /// Matrix subtraction with assignment.
   friend constexpr auto operator-=(Mat& A, const Mat& B) -> Mat& {
-    for (size_t i = 0; i < Dim; ++i) A[i] -= B[i];
+    for (std::size_t i = 0; i < Dim; ++i) A[i] -= B[i];
     return A;
   }
 
@@ -130,14 +131,14 @@ public:
   }
   friend constexpr auto operator*(const Mat& A, const Num& b) -> Mat {
     Mat R;
-    for (size_t i = 0; i < Dim; ++i) R[i] = A[i] * b;
+    for (std::size_t i = 0; i < Dim; ++i) R[i] = A[i] * b;
     return R;
   }
   /// @}
 
   /// Matrix-scalar multiplication with assignment.
   friend constexpr auto operator*=(Mat& A, const Num& b) -> Mat& {
-    for (size_t i = 0; i < Dim; ++i) A[i] *= b;
+    for (std::size_t i = 0; i < Dim; ++i) A[i] *= b;
     return A;
   }
 
@@ -145,16 +146,16 @@ public:
   friend constexpr auto operator*(const Mat& A, const Row& b) -> Row {
     const auto T = transpose(A);
     auto r = T[0] * b[0];
-    for (size_t i = 1; i < Dim; ++i) r += T[i] * b[i];
+    for (std::size_t i = 1; i < Dim; ++i) r += T[i] * b[i];
     return r;
   }
 
   /// Matrix-matrix multiplication.
   friend constexpr auto operator*(const Mat& A, const Mat& B) -> Mat {
     Mat R(0.0);
-    for (size_t i = 0; i < Dim; ++i) {
-      for (size_t j = 0; j < Dim; ++j) {
-        for (size_t k = 0; k < Dim; ++k) R[i, j] += A[i, k] * B[k, j];
+    for (std::size_t i = 0; i < Dim; ++i) {
+      for (std::size_t j = 0; j < Dim; ++j) {
+        for (std::size_t k = 0; k < Dim; ++k) R[i, j] += A[i, k] * B[k, j];
       }
     }
     return R;
@@ -178,7 +179,7 @@ public:
   /// Matrix exact equality operator.
   friend constexpr auto operator==(const Mat& A, const Mat& B) noexcept
       -> bool {
-    for (size_t i = 0; i < Dim; ++i) {
+    for (std::size_t i = 0; i < Dim; ++i) {
       if (any(A[i] != B[i])) return false;
     }
     return true;
@@ -207,56 +208,56 @@ Mat(const Num (&row)[1 + sizeof...(RestNums)],
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Make a diagonal matrix.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto eye(const Mat<Num, Dim>& /*A*/, const Num& q = Num{1.0})
     -> Mat<Num, Dim> {
   return Mat<Num, Dim>(q);
 }
 
 /// Make a diagonal matrix.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto diag(const Vec<Num, Dim>& d) -> Mat<Num, Dim> {
   Mat<Num, Dim> D{};
-  for (size_t i = 0; i < Dim; ++i) D[i, i] = d[i];
+  for (std::size_t i = 0; i < Dim; ++i) D[i, i] = d[i];
   return D;
 }
 
 /// Extract matrix diagonal.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto diag(const Mat<Num, Dim>& D) -> Vec<Num, Dim> {
   Vec<Num, Dim> d{};
-  for (size_t i = 0; i < Dim; ++i) d[i] = D[i, i];
+  for (std::size_t i = 0; i < Dim; ++i) d[i] = D[i, i];
   return d;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Trace of the matrix.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto tr(const Mat<Num, Dim>& A) -> Num {
   auto r = A[0, 0];
-  for (size_t i = 1; i < Dim; ++i) r += A[i, i];
+  for (std::size_t i = 1; i < Dim; ++i) r += A[i, i];
   return r;
 }
 
 /// Product of the diagonal elements.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto prod_diag(const Mat<Num, Dim>& A) -> Num {
   auto r = A[0, 0];
-  for (size_t i = 1; i < Dim; ++i) r *= A[i, i];
+  for (std::size_t i = 1; i < Dim; ++i) r *= A[i, i];
   return r;
 }
 
 /// Vector outer product.
 /// @{
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto outer(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
     -> Mat<Num, Dim> {
   Mat<Num, Dim> R;
-  for (size_t i = 0; i < Dim; ++i) R[i] = a[i] * b;
+  for (std::size_t i = 0; i < Dim; ++i) R[i] = a[i] * b;
   return R;
 }
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto outer_sqr(const Vec<Num, Dim>& a) -> Mat<Num, Dim> {
   return outer(a, a);
 }
@@ -265,10 +266,10 @@ constexpr auto outer_sqr(const Vec<Num, Dim>& a) -> Mat<Num, Dim> {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Matrix approximate equality operator.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto approx_equal_to(const Mat<Num, Dim>& A,
                                const Mat<Num, Dim>& B) noexcept -> bool {
-  for (size_t i = 0; i < Dim; ++i) {
+  for (std::size_t i = 0; i < Dim; ++i) {
     if (!approx_equal_to(A[i], B[i])) return false;
   }
   return true;
@@ -279,7 +280,7 @@ constexpr auto approx_equal_to(const Mat<Num, Dim>& A,
 } // namespace tit
 
 // Matrix formatter.
-template<class Num, tit::size_t Dim>
+template<class Num, std::size_t Dim>
 struct std::formatter<tit::Mat<Num, Dim>> {
   static constexpr auto parse(const std::format_parse_context& context) {
     return context.begin();
@@ -287,7 +288,7 @@ struct std::formatter<tit::Mat<Num, Dim>> {
   static constexpr auto format(const tit::Mat<Num, Dim>& A,
                                std::format_context& context) {
     auto out = std::format_to(context.out(), "{}", A[0]);
-    for (tit::size_t i = 1; i < Dim; ++i) {
+    for (std::size_t i = 1; i < Dim; ++i) {
       out = std::format_to(out, " {}", A[i]);
     }
     return out;

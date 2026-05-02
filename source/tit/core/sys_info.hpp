@@ -5,9 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
-
-#include "tit/core/basic_types.hpp"
 
 namespace tit::sys_info {
 
@@ -36,16 +35,16 @@ auto cpu_arch() -> std::string;
 auto cpu_name() -> std::string;
 
 /// Get number of CPU sockets.
-auto cpu_sockets() -> uint64_t;
+auto cpu_sockets() -> std::uint64_t;
 
 /// Get number of all (logical) CPU cores.
-auto cpu_cores() -> uint64_t;
+auto cpu_cores() -> std::uint64_t;
 
 /// Get number of performance (logical) CPU cores.
-auto cpu_perf_cores() -> uint64_t;
+auto cpu_perf_cores() -> std::uint64_t;
 
 /// Get CPU frequency in Hz.
-auto cpu_perf_core_frequency() -> uint64_t;
+auto cpu_perf_core_frequency() -> std::uint64_t;
 
 /// Get overall CPU information.
 auto cpu_info() -> std::string;
@@ -53,7 +52,7 @@ auto cpu_info() -> std::string;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Get RAM size in bytes.
-auto ram_size() -> uint64_t;
+auto ram_size() -> std::uint64_t;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

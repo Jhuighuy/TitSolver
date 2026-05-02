@@ -6,13 +6,13 @@
 #ifdef __APPLE__
 
 #include <array>
+#include <cstdint>
 #include <format>
 #include <string>
 
 #include <sys/sysctl.h>
 #include <sys/time.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/sys_info.hpp"
 
@@ -55,25 +55,25 @@ auto cpu_name() -> std::string {
   return checked_sysctlbyname("machdep.cpu.brand_string");
 }
 
-auto cpu_sockets() -> uint64_t {
-  return checked_sysctlbyname<uint64_t>("hw.packages");
+auto cpu_sockets() -> std::uint64_t {
+  return checked_sysctlbyname<std::uint64_t>("hw.packages");
 }
 
-auto cpu_perf_cores() -> uint64_t {
+auto cpu_perf_cores() -> std::uint64_t {
   try {
-    return checked_sysctlbyname<uint64_t>("hw.perflevel0.logicalcpu_max");
+    return checked_sysctlbyname<std::uint64_t>("hw.perflevel0.logicalcpu_max");
   } catch (const ErrnoException& /*e*/) {
-    return checked_sysctlbyname<uint64_t>("hw.logicalcpu_max");
+    return checked_sysctlbyname<std::uint64_t>("hw.logicalcpu_max");
   }
 }
 
-auto cpu_perf_core_frequency() -> uint64_t {
+auto cpu_perf_core_frequency() -> std::uint64_t {
   // Note: "hw.cpufrequency[_max]" may not be available on Apple Silicon. See:
   // https://github.com/giampaolo/psutil/issues/1892#issuecomment-1187911499
   try {
-    return checked_sysctlbyname<uint64_t>("hw.cpufrequency_max");
+    return checked_sysctlbyname<std::uint64_t>("hw.cpufrequency_max");
   } catch (const ErrnoException& /*e*/) {
-    return checked_sysctlbyname<uint64_t>("hw.tbfrequency") *
+    return checked_sysctlbyname<std::uint64_t>("hw.tbfrequency") *
            checked_sysctlbyname<clockinfo>("kern.clockrate").hz;
   }
 }

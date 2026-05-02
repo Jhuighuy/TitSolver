@@ -3,13 +3,13 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
 #include <iterator>
 #include <random>
 #include <ranges>
 #include <set>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/search.hpp"
@@ -23,7 +23,7 @@ using Vec3D = Vec<double, 3>;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Nearest neighbor search result.
-using SearchResult = std::vector<std::vector<size_t>>;
+using SearchResult = std::vector<std::vector<std::size_t>>;
 
 // Match the two nearest neighbor search results.
 void match_search_results(const SearchResult& expected_result,
@@ -46,9 +46,9 @@ auto search_naive(const std::vector<Vec3D>& points, double search_radius)
     -> SearchResult {
   const auto search_radius_sq = pow2(search_radius);
   SearchResult result(points.size());
-  for (size_t i = 0; i < points.size(); ++i) {
+  for (std::size_t i = 0; i < points.size(); ++i) {
     result[i] = {i};
-    for (size_t j = 0; j < i; ++j) {
+    for (std::size_t j = 0; j < i; ++j) {
       if (norm2(points[i] - points[j]) < search_radius_sq) {
         result[i].push_back(j);
         result[j].push_back(i);
@@ -102,7 +102,7 @@ TEST_CASE("geom::Search") {
     std::uniform_real_distribution<double> dist{0.0, 1.0};
     std::vector<Vec3D> points_(1000);
     for (auto& point : points_) {
-      for (size_t i = 0; i < 3; ++i) point[i] = dist(random_engine);
+      for (std::size_t i = 0; i < 3; ++i) point[i] = dist(random_engine);
     }
     return points_;
   }();

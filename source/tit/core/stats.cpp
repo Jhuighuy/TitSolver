@@ -4,12 +4,12 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdlib>
 #include <memory>
 #include <ranges>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/stats.hpp"
@@ -39,7 +39,7 @@ void Stats::report_() {
                     [](const auto* var) -> const auto& { return var->first; });
 
   // Print the report table.
-  constexpr size_t name_width = 19;
+  constexpr std::size_t name_width = 19;
   constexpr const auto* name_title = "name";
   constexpr const auto* values_title = "value";
   println();

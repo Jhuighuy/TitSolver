@@ -12,8 +12,8 @@
 #include <tuple>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/data/sqlite.hpp"
 #include "tit/testing/test.hpp"
@@ -245,15 +245,15 @@ TEST_CASE("data::sqlite::Statement::column") {
       SELECT * FROM Constants
     )SQL"};
     REQUIRE(statement.step());
-    CHECK(statement.columns<size_t, std::string, float64_t, Blob>() ==
+    CHECK(statement.columns<std::size_t, std::string, float64_t, Blob>() ==
           std::tuple{1, "pi", 3.14, to_bytes(std::numbers::pi_v<float>)});
     REQUIRE(statement.step());
-    CHECK(statement.columns<size_t, std::string_view, float64_t, Blob>() ==
+    CHECK(statement.columns<std::size_t, std::string_view, float64_t, Blob>() ==
           std::tuple{2, "e", 2.71, to_bytes(std::numbers::e_v<long double>)});
     REQUIRE(statement.step());
     {
       const auto [id, name, approx, exact] =
-          statement.columns<size_t, std::string, float64_t, BlobView>();
+          statement.columns<std::size_t, std::string, float64_t, BlobView>();
       CHECK(id == 3);
       CHECK(name == "phi");
       CHECK(approx == 1.61);

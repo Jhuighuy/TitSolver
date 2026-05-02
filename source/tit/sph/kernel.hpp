@@ -6,9 +6,9 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <numbers>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/type.hpp"
@@ -93,7 +93,7 @@ public:
   }
 
   /// Value of the smoothing kernel at point.
-  template<class Self, class Num, size_t Dim>
+  template<class Self, class Num, std::size_t Dim>
   constexpr auto operator()(this Self& self,
                             const Vec<Num, Dim>& x,
                             const Num& h) noexcept -> Num {
@@ -105,7 +105,7 @@ public:
   }
 
   /// Spatial gradient of the smoothing kernel at point.
-  template<class Self, class Num, size_t Dim>
+  template<class Self, class Num, std::size_t Dim>
   constexpr auto grad(this Self& self,
                       const Vec<Num, Dim>& x,
                       const Num& h) noexcept -> Vec<Num, Dim> {
@@ -118,7 +118,7 @@ public:
   }
 
   /// Width derivative of the smoothing kernel at point.
-  template<class Self, class Num, size_t Dim>
+  template<class Self, class Num, std::size_t Dim>
   constexpr auto width_deriv(this Self& self,
                              const Vec<Num, Dim>& x,
                              const Num& h) noexcept -> Num {
@@ -143,7 +143,7 @@ class GaussianKernel final : public Kernel {
 public:
 
   /// Kernel weight.
-  template<class Num, size_t Dim>
+  template<class Num, std::size_t Dim>
   static consteval auto weight() noexcept -> Num {
     static_assert(1 <= Dim);
     return Num{pow(std::numbers::inv_sqrtpi, Dim)};
@@ -179,7 +179,7 @@ class CubicSplineKernel final : public Kernel {
 public:
 
   /// Kernel weight.
-  template<class Num, size_t Dim>
+  template<class Num, std::size_t Dim>
   static consteval auto weight() noexcept -> Num {
     if constexpr (Dim == 1) return Num{2.0 / 3.0};
     else if constexpr (Dim == 2) return Num{10.0 / 7.0 * std::numbers::inv_pi};
@@ -220,7 +220,7 @@ class QuarticSplineKernel final : public Kernel {
 public:
 
   /// Kernel weight.
-  template<class Num, size_t Dim>
+  template<class Num, std::size_t Dim>
   static consteval auto weight() noexcept -> Num {
     using std::numbers::inv_pi;
     if constexpr (Dim == 1) return Num{1.0 / 24.0};
@@ -262,7 +262,7 @@ class QuinticSplineKernel final : public Kernel {
 public:
 
   /// Kernel weight.
-  template<class Num, size_t Dim>
+  template<class Num, std::size_t Dim>
   static consteval auto weight() noexcept {
     using std::numbers::inv_pi;
     if constexpr (Dim == 1) return Num{1.0 / 120.0};
@@ -334,7 +334,7 @@ class QuarticWendlandKernel final : public WendlandKernel {
 public:
 
   /// Kernel weight.
-  template<class Num, size_t Dim>
+  template<class Num, std::size_t Dim>
   static consteval auto weight() noexcept -> Num {
     using std::numbers::inv_pi;
     if constexpr (Dim == 1) return Num{3.0 / 4.0};
@@ -366,7 +366,7 @@ class SixthOrderWendlandKernel final : public WendlandKernel {
 public:
 
   /// Kernel weight.
-  template<class Num, size_t Dim>
+  template<class Num, std::size_t Dim>
   static consteval auto weight() noexcept -> Num {
     using std::numbers::inv_pi;
     if constexpr (Dim == 1) return Num{27.0 / 32.0};
@@ -398,7 +398,7 @@ class EighthOrderWendlandKernel final : public WendlandKernel {
 public:
 
   /// Kernel weight.
-  template<class Num, size_t Dim>
+  template<class Num, std::size_t Dim>
   static consteval auto weight() noexcept -> Num {
     using std::numbers::inv_pi;
     if constexpr (Dim == 1) return Num{15.0 / 16.0};

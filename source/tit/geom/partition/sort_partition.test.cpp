@@ -4,8 +4,8 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstddef>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/partition/sort_partition.hpp"
 #include "tit/testing/test.hpp"
@@ -20,10 +20,10 @@ using Vec2D = Vec<double, 2>;
 TEST_CASE("geom::MortonCurvePartition") {
   // Create points on a 8x8 lattice.
   std::array<Vec2D, 64> points{};
-  for (size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
+  for (std::size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
 
   // Partition the points using the Hilbert curve algorithm.
-  std::array<size_t, 64> parts{};
+  std::array<std::size_t, 64> parts{};
   geom::morton_curve_partition(points, parts, 16);
 
   // Ensure the resulting partitioning is correct.
@@ -65,10 +65,10 @@ TEST_CASE("geom::MortonCurvePartition") {
 TEST_CASE("geom::HilbertCurvePartition") {
   // Create points on a 8x8 lattice.
   std::array<Vec2D, 64> points{};
-  for (size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
+  for (std::size_t i = 0; i < 64; ++i) points[i] = {i % 8, i / 8};
 
   // Partition the points using the Morton curve algorithm.
-  std::array<size_t, 64> parts{};
+  std::array<std::size_t, 64> parts{};
   geom::hilbert_curve_partition(points, parts, 16);
 
   // Ensure the resulting partitioning is correct.

@@ -11,13 +11,13 @@
 #undef __AVX512F__
 #endif
 
+#include <cstddef>
 #include <span>
 
 #include <hwy/highway.h>
 
 #include "tit/core/_simd/reg_mask.hpp"
 #include "tit/core/_simd/traits.hpp"
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/type.hpp"
 
@@ -28,7 +28,7 @@ namespace hn = hwy::HWY_NAMESPACE;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD register.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 class alignas(sizeof(Num) * Size) Reg final {
 public:
@@ -187,7 +187,7 @@ public:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD element-wise cast.
-template<class To, class From, size_t Size>
+template<class To, class From, std::size_t Size>
   requires castable_to<From, To, Size>
 [[gnu::always_inline]]
 inline auto reg_cast(const Reg<From, Size>& a) noexcept -> Reg<To, Size> {
@@ -197,7 +197,7 @@ inline auto reg_cast(const Reg<From, Size>& a) noexcept -> Reg<To, Size> {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD element-wise minimum algorithm.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto min(const Reg<Num, Size>& a, const Reg<Num, Size>& b) noexcept
@@ -206,7 +206,7 @@ inline auto min(const Reg<Num, Size>& a, const Reg<Num, Size>& b) noexcept
 }
 
 /// SIMD element-wise maximum algorithm.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto max(const Reg<Num, Size>& a, const Reg<Num, Size>& b) noexcept
@@ -215,7 +215,7 @@ inline auto max(const Reg<Num, Size>& a, const Reg<Num, Size>& b) noexcept
 }
 
 /// SIMD element-wise filter algorithm.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto filter(const RegMask<Num, Size>& m,
@@ -224,7 +224,7 @@ inline auto filter(const RegMask<Num, Size>& m,
 }
 
 /// SIMD element-wise select algorithm.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto select(const RegMask<Num, Size>& m,
@@ -234,10 +234,10 @@ inline auto select(const RegMask<Num, Size>& m,
 }
 
 /// SIMD take first N elements, fill the rest with zeroes.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto take_n(size_t n, const Reg<Num, Size>& a) noexcept
+inline auto take_n(std::size_t n, const Reg<Num, Size>& a) noexcept
     -> Reg<Num, Size> {
   TIT_ASSERT(n <= Size, "'n' must be less than or equal to the vector size!");
   return hn::IfThenElseZero(hn::FirstN(typename Reg<Num, Size>::Tag{}, n),
@@ -246,10 +246,10 @@ inline auto take_n(size_t n, const Reg<Num, Size>& a) noexcept
 
 /// SIMD take first N elements from the first register, and the rest from the
 /// second register.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
-inline auto merge_n(size_t n,
+inline auto merge_n(std::size_t n,
                     const Reg<Num, Size>& a,
                     const Reg<Num, Size>& b) noexcept -> Reg<Num, Size> {
   TIT_ASSERT(n <= Size, "'n' must be less than or equal to the vector size");
@@ -259,7 +259,7 @@ inline auto merge_n(size_t n,
 }
 
 /// Broadcast the first lane of the SIMD register to all lanes.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto broadcast(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
@@ -269,7 +269,7 @@ inline auto broadcast(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD `floor` function overload.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto floor(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
@@ -277,7 +277,7 @@ inline auto floor(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
 }
 
 /// SIMD `round` function overload.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto round(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
@@ -285,7 +285,7 @@ inline auto round(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
 }
 
 /// SIMD `ceil` function overload.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto ceil(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
@@ -293,7 +293,7 @@ inline auto ceil(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
 }
 
 /// SIMD fused multiply-add operation.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto fma(const Reg<Num, Size>& a,
@@ -305,7 +305,7 @@ inline auto fma(const Reg<Num, Size>& a,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD horizontal sum reduction.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto sum(const Reg<Num, Size>& a) noexcept -> Num {
@@ -313,7 +313,7 @@ inline auto sum(const Reg<Num, Size>& a) noexcept -> Num {
 }
 
 /// SIMD horizontal minimum reduction.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto min_value(const Reg<Num, Size>& a) noexcept -> Num {
@@ -321,7 +321,7 @@ inline auto min_value(const Reg<Num, Size>& a) noexcept -> Num {
 }
 
 /// SIMD horizontal maximum reduction.
-template<class Num, size_t Size>
+template<class Num, std::size_t Size>
   requires supported<Num, Size>
 [[gnu::always_inline]]
 inline auto max_value(const Reg<Num, Size>& a) noexcept -> Num {

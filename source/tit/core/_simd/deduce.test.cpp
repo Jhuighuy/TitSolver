@@ -4,18 +4,18 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstddef>
 #include <type_traits>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/simd.hpp"
 
 namespace tit {
 namespace {
 
-template<size_t Size, size_t Count>
+template<std::size_t Size, std::size_t Count>
 using RegArray = std::array<simd::Reg<float, Size>, Count>;
 
-template<size_t Dim>
+template<std::size_t Dim>
 using DeducedRegArray = std::array<simd::deduce_reg_t<float, Dim>,
                                    simd::deduce_count_v<float, Dim>>;
 

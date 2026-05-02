@@ -4,9 +4,9 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <chrono>
+#include <cstddef>
 #include <thread>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 
@@ -24,14 +24,14 @@ namespace {
 [[gnu::noinline]] void func_2() {
   TIT_PROFILE_SECTION("func_2");
   println("func_2");
-  for (size_t i = 0; i < 3; ++i) func_3();
+  for (std::size_t i = 0; i < 3; ++i) func_3();
   std::this_thread::sleep_for(std::chrono::microseconds(20));
 }
 
 [[gnu::noinline]] void func_1() {
   TIT_PROFILE_SECTION("func_1");
   println("func_1");
-  for (size_t i = 0; i < 3; ++i) func_2();
+  for (std::size_t i = 0; i < 3; ++i) func_2();
   std::this_thread::sleep_for(std::chrono::microseconds(40));
 }
 

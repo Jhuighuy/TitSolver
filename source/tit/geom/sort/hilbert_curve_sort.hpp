@@ -6,12 +6,12 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <numeric>
 #include <ranges>
 #include <span>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/geom/bipartition.hpp"
@@ -25,17 +25,17 @@ namespace tit::geom {
 namespace impl {
 
 // Hilbert sorting rotation state.
-template<size_t Dim>
+template<std::size_t Dim>
 class HilbertRotation final {
 public:
 
   // Construct a rotation state.
   constexpr HilbertRotation() = default;
-  constexpr HilbertRotation(size_t axis, int dirs) noexcept
+  constexpr HilbertRotation(std::size_t axis, int dirs) noexcept
       : axis_{axis}, dirs_{dirs} {}
 
   // Get the current axis.
-  constexpr auto axis() const noexcept -> size_t {
+  constexpr auto axis() const noexcept -> std::size_t {
     return axis_;
   }
 
@@ -55,9 +55,9 @@ public:
   }
 
   // Compute the next rotation state.
-  constexpr auto next(size_t index) const noexcept -> HilbertRotation {
+  constexpr auto next(std::size_t index) const noexcept -> HilbertRotation {
     TIT_ASSERT(index < (1U << Dim), "Index is out of range!");
-    const auto [shift, flip] = [index] -> std::pair<size_t, int> {
+    const auto [shift, flip] = [index] -> std::pair<std::size_t, int> {
       if constexpr (Dim == 1) {
         return {0, 0};
       } else if constexpr (Dim == 2) {
@@ -76,11 +76,12 @@ public:
   }
 
   // Compute the index of the current rotation on the lowest level of recursion.
-  constexpr auto index(const HilbertRotation& init) const noexcept -> size_t {
+  constexpr auto index(const HilbertRotation& init) const noexcept
+      -> std::size_t {
     TIT_ASSERT(axis_ == init.axis_, "Axis mismatch!");
     const auto flips = dirs_ ^ init.dirs_;
-    size_t dist = 0;
-    for (size_t i = 0; i < Dim; ++i) {
+    std::size_t dist = 0;
+    for (std::size_t i = 0; i < Dim; ++i) {
       const auto axis = (axis_ + i) % Dim;
       const auto flipped = (flips & (1 << axis)) >> axis;
       dist |= flipped << (Dim - i - 1);
@@ -90,13 +91,13 @@ public:
 
 private:
 
-  size_t axis_ = 0;
+  std::size_t axis_ = 0;
   int dirs_ = 0;
 
 }; // class HilbertRotation
 
 // Hilbert sorting state.
-template<size_t Dim>
+template<std::size_t Dim>
 class HilbertState final {
 public:
 
@@ -109,7 +110,7 @@ public:
       : init_rot_{init_rot}, curr_rot_{curr_rot} {}
 
   // Get the current axis.
-  constexpr auto axis() const noexcept -> size_t {
+  constexpr auto axis() const noexcept -> std::size_t {
     return curr_rot_.axis();
   }
 
@@ -150,7 +151,7 @@ public:
 
   /// Order the points along the Hilbert space filling curve.
   template<point_range Points>
-  void operator()(Points&& points, std::span<size_t> perm) const {
+  void operator()(Points&& points, std::span<std::size_t> perm) const {
     TIT_PROFILE_SECTION("HilbertCurveSort::operator()");
     using Box = point_range_bbox_t<Points>;
     static constexpr auto Dim = point_range_dim_v<Points>;
@@ -158,7 +159,7 @@ public:
 
     // Initialize sorting.
     const auto box = compute_bbox(points);
-    std::ranges::iota(perm, size_t{0});
+    std::ranges::iota(perm, std::size_t{0});
 
     // Recursively partition the points along the Hilbert curve.
     par::TaskGroup tasks{};
@@ -179,7 +180,7 @@ public:
 
       // Recursively sort the parts along the next axis.
       const auto [left_state, right_state] = state.next();
-      constexpr size_t min_par_size = 50;
+      constexpr std::size_t min_par_size = 50;
       using enum par::RunMode;
       tasks.run(std::bind_front(self, left_box, left_perm, left_state),
                 std::ranges::size(left_perm) >= min_par_size ? parallel :

@@ -7,6 +7,8 @@
 
 #include <array>
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
 #include <ranges>
 #include <span>
 #include <tuple>
@@ -14,8 +16,8 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
@@ -26,7 +28,7 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle type.
-enum class ParticleType : uint8_t {
+enum class ParticleType : std::uint8_t {
   fluid, ///< Fluid particle.
   fixed, ///< Fixed (boundary) particle.
   count, ///< Number of particle types.
@@ -61,7 +63,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct a particle view.
-  constexpr ParticleView(ParticleArray& array, size_t index) noexcept
+  constexpr ParticleView(ParticleArray& array, std::size_t index) noexcept
       : array_{&array}, index_{index} {}
 
   /// Construct a particle view with additional overridden fields.
@@ -83,7 +85,7 @@ public:
   }
 
   /// Associated particle index.
-  constexpr auto index() const noexcept -> size_t {
+  constexpr auto index() const noexcept -> std::size_t {
     return index_;
   }
 
@@ -127,7 +129,7 @@ public:
 
   /// Distance between particle view indices.
   friend constexpr auto operator-(ParticleView a, ParticleView b) noexcept
-      -> ssize_t {
+      -> std::ptrdiff_t {
     TIT_ASSERT(a.array().size() == b.array().size(),
                "Particle arrays must be of the same size!");
     return a.index() - b.index();
@@ -138,7 +140,7 @@ public:
 private:
 
   ParticleArray* array_;
-  size_t index_;
+  std::size_t index_;
 
   [[no_unique_address]] decltype([]<class... Fields>(TypeSet<Fields...> /*f*/) {
     return std::tuple<field_value_t<Fields, decltype(auto{space})>...>{};
@@ -204,12 +206,12 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Number of particles.
-  constexpr auto size() const noexcept -> size_t {
+  constexpr auto size() const noexcept -> std::size_t {
     return std::get<0>(varying_data_).size();
   }
 
   /// Reserve amount of particles.
-  constexpr void reserve(size_t capacity) {
+  constexpr void reserve(std::size_t capacity) {
     std::apply([capacity](auto&... cols) { ((cols.reserve(capacity)), ...); },
                varying_data_);
   }
@@ -220,7 +222,7 @@ public:
     const auto type_index = std::to_underlying(type);
     // Get the index of the next particle of the specified type and increment
     // the range of particles for the next types.
-    const size_t index = particle_ranges_[type_index + 1];
+    const std::size_t index = particle_ranges_[type_index + 1];
     for (auto& p : particle_ranges_ | std::views::drop(type_index + 1)) p += 1;
     // Insert the new particle.
     std::apply(
@@ -233,8 +235,9 @@ public:
 
   /// All particles.
   constexpr auto all(this auto& self) noexcept {
-    return std::views::iota(size_t{0}, self.size()) |
-           std::views::transform([&self](size_t index) { return self[index]; });
+    return std::views::iota(std::size_t{0}, self.size()) |
+           std::views::transform(
+               [&self](std::size_t index) { return self[index]; });
   }
 
   /// Particles of the specified type.
@@ -243,7 +246,8 @@ public:
     const auto type_index = std::to_underlying(type);
     return std::views::iota(self.particle_ranges_[type_index],
                             self.particle_ranges_[type_index + 1]) |
-           std::views::transform([&self](size_t index) { return self[index]; });
+           std::views::transform(
+               [&self](std::size_t index) { return self[index]; });
   }
 
   /// Fluid particles.
@@ -259,7 +263,7 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Check if the particle has the specified type.
-  constexpr auto has_type(size_t index, ParticleType type) const noexcept
+  constexpr auto has_type(std::size_t index, ParticleType type) const noexcept
       -> bool {
     TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
     const auto type_index = std::to_underlying(type);
@@ -268,7 +272,7 @@ public:
   }
 
   /// Particle at index.
-  constexpr auto operator[](this auto& self, size_t index) noexcept {
+  constexpr auto operator[](this auto& self, std::size_t index) noexcept {
     TIT_ASSERT(index < self.size(), "Particle index is out of range.");
     return ParticleView{self, index};
   }
@@ -276,7 +280,7 @@ public:
   /// Particle field at index.
   template<field Field>
   constexpr auto operator[](this auto& self,
-                            [[maybe_unused]] size_t index,
+                            [[maybe_unused]] std::size_t index,
                             Field /*field*/) noexcept -> decltype(auto) {
     static_assert(fields.contains(Field{}));
     TIT_ASSERT(index < self.size(), "Particle index is out of range.");
@@ -308,7 +312,7 @@ public:
 
 private:
 
-  std::array<size_t, std::to_underlying(ParticleType::count) + 1>
+  std::array<std::size_t, std::to_underlying(ParticleType::count) + 1>
       particle_ranges_{0};
 
   [[no_unique_address]] decltype([]<class... Fields>(TypeSet<Fields...> /*f*/) {

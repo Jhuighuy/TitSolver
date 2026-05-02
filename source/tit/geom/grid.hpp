@@ -5,10 +5,10 @@
 
 #pragma once
 
+#include <cstddef>
 #include <ranges>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
@@ -26,7 +26,7 @@ public:
   using Box = BBox<Vec>;
 
   // Index type.
-  using VecIndex = decltype(vec_cast<size_t>(std::declval<Vec>()));
+  using VecIndex = decltype(vec_cast<std::size_t>(std::declval<Vec>()));
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -54,7 +54,7 @@ public:
   }
 
   /// Get the flat number of cells.
-  constexpr auto flat_num_cells() const noexcept -> size_t {
+  constexpr auto flat_num_cells() const noexcept -> std::size_t {
     return prod(num_cells_);
   }
 
@@ -68,7 +68,7 @@ public:
   }
 
   /// Extend the number of cells by the given amount in each direction.
-  constexpr auto extend(size_t amount) -> Grid& {
+  constexpr auto extend(std::size_t amount) -> Grid& {
     TIT_ASSERT(amount > 0, "Amount must be positive!");
     num_cells_ += VecIndex(2 * amount);
     box_.grow(cell_extents_ * static_cast<vec_num_t<Vec>>(amount));
@@ -92,7 +92,7 @@ public:
     TIT_ASSERT(size_hint > Vec(0), "Cell size hint must be positive!");
     const auto extents = box_.extents();
     const auto num_cells_float = maximum(ceil(extents / size_hint), Vec(1));
-    num_cells_ = vec_cast<size_t>(num_cells_float);
+    num_cells_ = vec_cast<std::size_t>(num_cells_float);
     cell_extents_ = extents / num_cells_float;
     inv_cell_extents_ = Vec(1) / cell_extents_;
     return *this;
@@ -109,19 +109,20 @@ public:
     TIT_ASSERT(index_float >= Vec(0), "Point is out of range!");
     TIT_ASSERT(index_float < vec_cast<vec_num_t<Vec>>(num_cells_),
                "Point is out of range!");
-    return vec_cast<size_t>(index_float);
+    return vec_cast<std::size_t>(index_float);
   }
 
   /// Flat index of the cell containing the given point.
-  constexpr auto flat_cell_index(const Vec& point) const -> size_t {
+  constexpr auto flat_cell_index(const Vec& point) const -> std::size_t {
     return flatten_cell_index(cell_index(point));
   }
 
   /// Flat index of the cell containing the given index.
-  constexpr auto flatten_cell_index(const VecIndex& index) const -> size_t {
+  constexpr auto flatten_cell_index(const VecIndex& index) const
+      -> std::size_t {
     TIT_ASSERT(index < num_cells_, "Index is out of bounds!");
     auto flat_index = index[0];
-    for (size_t i = 1; i < vec_dim_v<Vec>; ++i) {
+    for (std::size_t i = 1; i < vec_dim_v<Vec>; ++i) {
       flat_index = num_cells_[i] * flat_index + index[i];
     }
     return flat_index;
@@ -134,7 +135,7 @@ public:
                        const VecIndex& high) const noexcept {
     TIT_ASSERT(low <= high, "Invalid cell range!");
     TIT_ASSERT(high <= num_cells_, "Invalid cell range!");
-    return [&]<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+    return [&]<std::size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
       return std::views::cartesian_product(
                  std::views::iota(low[Axes], high[Axes])...) |
              std::views::transform([](const auto& index_tuple) {
@@ -152,7 +153,7 @@ public:
   }
 
   /// Range of cell indices, such that `n <= index < num_cells - n`.
-  constexpr auto cells(size_t n = 0) const noexcept {
+  constexpr auto cells(std::size_t n = 0) const noexcept {
     return cells(VecIndex(n), num_cells_ - VecIndex(n));
   }
 

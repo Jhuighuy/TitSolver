@@ -8,9 +8,9 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include <cstddef>
 #include <tuple>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/sph/field.hpp"
@@ -101,7 +101,7 @@ private:
   template<class Num>
   static constexpr auto reconstruct_forward_(
       const std::array<Num, 4>& q) noexcept -> Num {
-    constexpr size_t i = 1;
+    constexpr std::size_t i = 1;
 
     // Compute the smoothness indicators and weights.
     static constexpr Num eps{1.0e-6};

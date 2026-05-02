@@ -6,11 +6,12 @@
 // IWYU pragma: private, include "tit/core/mat.hpp"
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <utility>
 
 #include "tit/core/_mat/mat.hpp"
 #include "tit/core/_mat/traits.hpp"
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 
 namespace tit {
@@ -18,7 +19,7 @@ namespace tit {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Matrix part specification.
-enum class MatPart : uint8_t {
+enum class MatPart : std::uint8_t {
   diag = 1 << 0,             ///< Diagonal.
   unit = 1 << 1,             ///< Unit diagonal.
   lower = 1 << 2,            ///< Lower triangular.
@@ -45,9 +46,10 @@ constexpr auto operator|(MatPart f, MatPart g) noexcept -> MatPart {
 /// Matrix part element getter.
 template<MatPart Part>
 struct MatPartAt {
-  template<class Num, size_t Dim>
-  static constexpr auto operator()(const Mat<Num, Dim>& A, size_t i, size_t j)
-      -> Num {
+  template<class Num, std::size_t Dim>
+  static constexpr auto operator()(const Mat<Num, Dim>& A,
+                                   std::size_t i,
+                                   std::size_t j) -> Num {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     TIT_ASSERT(j < Dim, "Column index is out of range!");
     using enum MatPart;
@@ -72,11 +74,11 @@ inline constexpr MatPartAt<Part> part_at{};
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Copy the matrix part.
-template<MatPart Part, class Num, size_t Dim>
+template<MatPart Part, class Num, std::size_t Dim>
 constexpr auto copy_part(const Mat<Num, Dim>& A) -> Mat<Num, Dim> {
   Mat<Num, Dim> R;
-  for (size_t i = 0; i < Dim; ++i) {
-    for (size_t j = 0; j < Dim; ++j) R[i, j] = part_at<Part>(A, i, j);
+  for (std::size_t i = 0; i < Dim; ++i) {
+    for (std::size_t j = 0; j < Dim; ++j) R[i, j] = part_at<Part>(A, i, j);
   }
   return R;
 }
@@ -94,7 +96,7 @@ constexpr auto transpose(const Mat& A) -> Mat {
 /// `x := copy_part<Part>(A)^-1 * x`.
 template<MatPart Part,
          class Num,
-         size_t Dim,
+         std::size_t Dim,
          mat_multiplier<Mat<Num, Dim>> Mult>
 constexpr void part_solve_inplace(const Mat<Num, Dim>& A, Mult& x) {
   using enum MatPart;
@@ -102,17 +104,17 @@ constexpr void part_solve_inplace(const Mat<Num, Dim>& A, Mult& x) {
   static_assert(Part & (diag | unit), "Diagonal bit must be set!");
   if constexpr (Part & lower) {
     static_assert(!(Part & upper), "Only one triangular part bit must be set!");
-    for (size_t i = 0; i < Dim; ++i) {
-      for (size_t j = 0; j < i; ++j) x[i] -= at(A, i, j) * x[j];
+    for (std::size_t i = 0; i < Dim; ++i) {
+      for (std::size_t j = 0; j < i; ++j) x[i] -= at(A, i, j) * x[j];
       x[i] /= at(A, i, i);
     }
   } else if constexpr (Part & upper) {
-    for (ssize_t i = Dim - 1; i >= 0; --i) {
-      for (size_t j = i + 1; j < Dim; ++j) x[i] -= at(A, i, j) * x[j];
+    for (std::ptrdiff_t i = Dim - 1; i >= 0; --i) {
+      for (std::size_t j = i + 1; j < Dim; ++j) x[i] -= at(A, i, j) * x[j];
       x[i] /= at(A, i, i);
     }
   } else if constexpr (Part & diag) {
-    for (size_t i = 0; i < Dim; ++i) x[i] /= at(A, i, i);
+    for (std::size_t i = 0; i < Dim; ++i) x[i] /= at(A, i, i);
   } else {
     static_assert(Part & unit);
   }

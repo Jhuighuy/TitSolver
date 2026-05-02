@@ -6,13 +6,13 @@
 #pragma once
 
 #include <concepts>
+#include <cstdint>
 #include <memory>
 #include <type_traits>
 #include <utility>
 
 #include <oneapi/tbb/task_group.h>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 
 namespace tit::par {
@@ -27,7 +27,7 @@ concept task =
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Task run mode.
-enum class RunMode : uint8_t {
+enum class RunMode : std::uint8_t {
   parallel,
   sequential,
 };

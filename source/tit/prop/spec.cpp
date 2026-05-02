@@ -4,6 +4,8 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <format>
 #include <memory>
 #include <optional>
@@ -13,9 +15,9 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/str.hpp"
 #include "tit/prop/spec.hpp"
 #include "tit/prop/tree.hpp"
@@ -64,11 +66,11 @@ auto IntSpec::type() const noexcept -> SpecType {
   return SpecType::Int;
 }
 
-auto IntSpec::min() const noexcept -> std::optional<int64_t> {
+auto IntSpec::min() const noexcept -> std::optional<std::int64_t> {
   return min_;
 }
 
-auto IntSpec::min(int64_t val) && -> IntSpec&& {
+auto IntSpec::min(std::int64_t val) && -> IntSpec&& {
   if (max_.has_value()) {
     TIT_ENSURE(val <= max_.value(),
                "Min value '{}' must be <= max value '{}'.",
@@ -86,11 +88,11 @@ auto IntSpec::min(int64_t val) && -> IntSpec&& {
   return std::move(*this);
 }
 
-auto IntSpec::max() const noexcept -> std::optional<int64_t> {
+auto IntSpec::max() const noexcept -> std::optional<std::int64_t> {
   return max_;
 }
 
-auto IntSpec::max(int64_t val) && -> IntSpec&& {
+auto IntSpec::max(std::int64_t val) && -> IntSpec&& {
   if (min_.has_value()) {
     TIT_ENSURE(val >= min_.value(),
                "Max value '{}' must be >= min value '{}'.",
@@ -108,15 +110,16 @@ auto IntSpec::max(int64_t val) && -> IntSpec&& {
   return std::move(*this);
 }
 
-auto IntSpec::range(int64_t min_val, int64_t max_val) && -> IntSpec&& {
+auto IntSpec::range(std::int64_t min_val,
+                    std::int64_t max_val) && -> IntSpec&& {
   return std::move(*this).min(min_val).max(max_val);
 }
 
-auto IntSpec::default_value() const noexcept -> std::optional<int64_t> {
+auto IntSpec::default_value() const noexcept -> std::optional<std::int64_t> {
   return default_;
 }
 
-auto IntSpec::default_value(int64_t val) && -> IntSpec&& {
+auto IntSpec::default_value(std::int64_t val) && -> IntSpec&& {
   if (min_.has_value()) {
     TIT_ENSURE(val >= min_.value(),
                "Default value '{}' must be >= min value '{}'.",
@@ -415,7 +418,7 @@ void ArraySpec::validate(Tree& tree, std::string_view path) const {
              tree.type_name());
 
   // Validate each element.
-  for (size_t i = 0; i < tree.size(); ++i) {
+  for (std::size_t i = 0; i < tree.size(); ++i) {
     item().validate(tree.get(i), std::format("{}[{}]", path, i));
   }
 }

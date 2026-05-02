@@ -6,11 +6,12 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
@@ -106,7 +107,7 @@ concept field_set = impl::is_field_set_v<FieldSet>;
     static constexpr std::string_view field_name = #name;                      \
                                                                                \
     /** Field type. */                                                         \
-    template<class Real, size_t Dim>                                           \
+    template<class Real, std::size_t Dim>                                      \
     using field_value_type = type;                                             \
                                                                                \
   }; /* class name##_t */                                                      \
@@ -130,13 +131,13 @@ inline constexpr auto field_name_v = std::remove_cvref_t<Field>::field_name;
 
 /// Space specification.
 /// @todo We shall think more about the concept of space.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 struct Space {};
 
 namespace impl {
 template<class T>
 struct is_space : std::false_type {};
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 struct is_space<Space<Num, Dim>> : std::true_type {};
 } // namespace impl
 
@@ -147,7 +148,7 @@ concept space = impl::is_space<S>::value;
 template<empty_type Field, class Space>
 struct field_value;
 
-template<empty_type Field, class Real, size_t Dim>
+template<empty_type Field, class Real, std::size_t Dim>
 struct field_value<Field, Space<Real, Dim>> {
   using type = std::remove_cvref_t<Field>::template field_value_type<Real, Dim>;
 };
@@ -159,14 +160,14 @@ using field_value_t = field_value<Field, Space>::type;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Particle partition index.
-using PartIndex = uint8_t;
+using PartIndex = std::uint8_t;
 
 /// Particle multilevel partition index.
 class PartVec final {
 public:
 
   /// Number of partition levels.
-  static constexpr size_t MaxNumLevels = 8;
+  static constexpr std::size_t MaxNumLevels = 8;
 
   /// Construct a multilevel partition index.
   /// @{
@@ -176,11 +177,11 @@ public:
 
   /// Get the partition index at the specified level.
   /// @{
-  constexpr auto operator[](size_t i) noexcept -> PartIndex& {
+  constexpr auto operator[](std::size_t i) noexcept -> PartIndex& {
     TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
     return vec_[i];
   }
-  constexpr auto operator[](size_t i) const noexcept -> const PartIndex& {
+  constexpr auto operator[](std::size_t i) const noexcept -> const PartIndex& {
     TIT_ASSERT(i < MaxNumLevels, "Level index is out of range!");
     return vec_[i];
   }
@@ -188,7 +189,7 @@ public:
 
   /// Find the last assigned partition index.
   constexpr auto last() const noexcept -> PartIndex {
-    for (ssize_t i = (MaxNumLevels - 2); i >= 0; --i) {
+    for (std::ptrdiff_t i = (MaxNumLevels - 2); i >= 0; --i) {
       if (vec_[i] != vec_[i + 1]) return vec_[i];
     }
     return vec_[0];
@@ -209,11 +210,11 @@ private:
 }; // class PartVec
 
 template<>
-inline constexpr auto data::type_of<PartVec> = data::type_of<uint64_t>;
+inline constexpr auto data::type_of<PartVec> = data::type_of<std::uint64_t>;
 
 template<class Stream>
 constexpr void serialize(Stream& out, const PartVec& pvec) {
-  serialize(out, static_cast<uint64_t>(pvec.last()));
+  serialize(out, static_cast<std::uint64_t>(pvec.last()));
 }
 
 /// Particle partition information.

@@ -3,9 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/testing/numbers/tagged.hpp"
@@ -90,7 +90,7 @@ TEST_CASE_TEMPLATE("VecMask::operator!=", Num, NUM_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("VecMask::any", Num, NUM_TYPES) {
-  const auto run = []<size_t Dim>(std::index_sequence<Dim> /*dim*/) {
+  const auto run = []<std::size_t Dim>(std::index_sequence<Dim> /*dim*/) {
     FSUBCASE("Dim = {}", Dim) {
       SUBCASE("all false") {
         const VecMask<Num, Dim> m(false);
@@ -112,13 +112,13 @@ TEST_CASE_TEMPLATE("VecMask::any", Num, NUM_TYPES) {
       }
     }
   };
-  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+  [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::index_sequence<Dims + 1>{}), ...);
   }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
 TEST_CASE_TEMPLATE("VecMask::all", Num, NUM_TYPES) {
-  const auto run = []<size_t Dim>(std::index_sequence<Dim> /*dim*/) {
+  const auto run = []<std::size_t Dim>(std::index_sequence<Dim> /*dim*/) {
     FSUBCASE("Dim = {}", Dim) {
       SUBCASE("all false") {
         const VecMask<Num, Dim> m(false);
@@ -144,13 +144,13 @@ TEST_CASE_TEMPLATE("VecMask::all", Num, NUM_TYPES) {
       }
     }
   };
-  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+  [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::index_sequence<Dims + 1>{}), ...);
   }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
 TEST_CASE_TEMPLATE("VecMask::find_true", Num, NUM_TYPES) {
-  const auto run = []<size_t Dim>(std::index_sequence<Dim> /*dim*/) {
+  const auto run = []<std::size_t Dim>(std::index_sequence<Dim> /*dim*/) {
     FSUBCASE("Dim = {}", Dim) {
       SUBCASE("all true") {
         const VecMask<Num, Dim> m(true);
@@ -172,7 +172,7 @@ TEST_CASE_TEMPLATE("VecMask::find_true", Num, NUM_TYPES) {
       }
     }
   };
-  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+  [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::index_sequence<Dims + 1>{}), ...);
   }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }

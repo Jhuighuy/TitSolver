@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
+#include <cstdint>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -10,8 +12,8 @@
 #include <variant>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/float.hpp"
 #include "tit/prop/tree.hpp"
 
 namespace tit::prop {
@@ -19,7 +21,7 @@ namespace tit::prop {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Tree::Tree(bool val) : data_{val} {}
-Tree::Tree(int64_t val) : data_{val} {}
+Tree::Tree(std::int64_t val) : data_{val} {}
 Tree::Tree(float64_t val) : data_{val} {}
 Tree::Tree(std::string val) : data_{std::move(val)} {}
 Tree::Tree(Array val) : data_{std::move(val)} {}
@@ -36,7 +38,7 @@ auto Tree::is_bool() const noexcept -> bool {
 }
 
 auto Tree::is_int() const noexcept -> bool {
-  return std::holds_alternative<int64_t>(data_);
+  return std::holds_alternative<std::int64_t>(data_);
 }
 
 auto Tree::is_real() const noexcept -> bool {
@@ -73,9 +75,9 @@ auto Tree::as_bool() const -> bool {
   return std::get<bool>(data_);
 }
 
-auto Tree::as_int() const -> int64_t {
+auto Tree::as_int() const -> std::int64_t {
   TIT_ENSURE(is_int(), "Property is not an integer.");
-  return std::get<int64_t>(data_);
+  return std::get<std::int64_t>(data_);
 }
 
 auto Tree::as_real() const -> float64_t {
@@ -108,12 +110,12 @@ auto Tree::as_map() const -> const Map& {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-auto Tree::size() const -> size_t {
+auto Tree::size() const -> std::size_t {
   TIT_ENSURE(is_array() || is_map(), "Property is not an array or map.");
   return is_array() ? as_array().size() : as_map().size();
 }
 
-auto Tree::get(size_t index) -> Tree& {
+auto Tree::get(std::size_t index) -> Tree& {
   auto& array = as_array();
   TIT_ENSURE(index < array.size(),
              "Array index {} is out of range (size {}).",
@@ -121,7 +123,7 @@ auto Tree::get(size_t index) -> Tree& {
              array.size());
   return array[index];
 }
-auto Tree::get(size_t index) const -> const Tree& {
+auto Tree::get(std::size_t index) const -> const Tree& {
   const auto& array = as_array();
   TIT_ENSURE(index < array.size(),
              "Array index {} is out of range (size {}).",
@@ -173,7 +175,7 @@ void Tree::set(bool val) {
   data_ = val;
 }
 
-void Tree::set(int64_t val) {
+void Tree::set(std::int64_t val) {
   data_ = val;
 }
 

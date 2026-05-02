@@ -6,10 +6,10 @@
 #pragma once
 
 #include <concepts>
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/type.hpp"
 
 namespace tit::par {
@@ -21,7 +21,7 @@ template<class Val>
 concept atomic = std::integral<Val> || std::is_pointer_v<Val>;
 
 /// Memory order.
-enum class MemOrder : uint8_t {
+enum class MemOrder : std::uint8_t {
   relaxed = __ATOMIC_RELAXED, ///< Relaxed memory order.
   acquire = __ATOMIC_ACQUIRE, ///< Acquire memory order.
   release = __ATOMIC_RELEASE, ///< Release memory order.

@@ -3,7 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/core/basic_types.hpp"
+#include <cstddef>
+
+#include "tit/core/float.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
@@ -62,8 +64,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   };
 
   // Generate individual particles.
-  size_t num_fixed_particles = 0;
-  size_t num_struct_particles = 0;
+  std::size_t num_fixed_particles = 0;
+  std::size_t num_struct_particles = 0;
   for (auto i = -N_FIXED; i < BAR_M; ++i) {
     for (auto j = 0; j < BAR_N; ++j) {
       const bool is_fixed = i < 0;
@@ -104,7 +106,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   Real time{};
   Stopwatch exectime{};
   Stopwatch printtime{};
-  for (size_t n = 0;; ++n) {
+  for (std::size_t n = 0;; ++n) {
     log("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
         n,
         time * sqrt(g / H),
@@ -135,5 +137,5 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 } // namespace tit::sph::tlsph
 
 TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
-  sph::tlsph::sph_main<float64_t>(argc, argv);
+  sph::tlsph::sph_main<tit::float64_t>(argc, argv);
 });

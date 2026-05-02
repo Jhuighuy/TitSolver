@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <format>
 #include <functional>
 #include <memory>
@@ -15,7 +16,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/type.hpp"
@@ -46,7 +46,7 @@ public:
 template<class Val>
 concept stattable =
     std::is_object_v<Val> && std::semiregular<Val> &&
-    std::formattable<Val, char> && requires (Val val, size_t n) {
+    std::formattable<Val, char> && requires (Val val, std::size_t n) {
       // Can compute the average value.
       { val += val } -> std::convertible_to<Val&>;
       { val / n } -> std::convertible_to<Val>;
@@ -87,7 +87,7 @@ public:
 
 private:
 
-  size_t count_ = 0;
+  std::size_t count_ = 0;
   Val sum_{};
   Val min_{};
   Val max_{};
@@ -138,7 +138,7 @@ public:
 
 private:
 
-  size_t count_ = 0;
+  std::size_t count_ = 0;
   std::vector<Val> sum_{};
   std::vector<Val> min_{};
   std::vector<Val> max_{};

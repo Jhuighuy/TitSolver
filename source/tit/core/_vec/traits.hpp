@@ -6,10 +6,10 @@
 // IWYU pragma: private, include "tit/core/vec.hpp"
 #pragma once
 
+#include <cstddef>
 #include <type_traits>
 
 #include "tit/core/_vec/vec.hpp"
-#include "tit/core/basic_types.hpp"
 
 namespace tit {
 
@@ -18,7 +18,7 @@ namespace tit {
 namespace impl {
 template<class>
 inline constexpr bool is_vec_v = false;
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 inline constexpr bool is_vec_v<Vec<Num, Dim>> = true;
 } // namespace impl
 
@@ -34,7 +34,7 @@ using vec_num_t = std::remove_cvref_t<decltype(Vec{}[0])>;
 /// Dimensionality of the vector.
 template<class Vec>
   requires is_vec_v<Vec>
-inline constexpr size_t vec_dim_v = Vec{}.dim();
+inline constexpr std::size_t vec_dim_v = Vec{}.dim();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -6,13 +6,13 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <iterator>
 #include <numeric>
 #include <ranges>
 #include <span>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
@@ -60,18 +60,18 @@ public:
     if (std::ranges::empty(points_)) return;
 
     // Initialize the permutation.
-    std::vector<size_t> perm(std::ranges::size(points));
-    std::ranges::iota(perm, size_t{0});
+    std::vector<std::size_t> perm(std::ranges::size(points));
+    std::ranges::iota(perm, std::size_t{0});
 
     // Initialize the node storage.
     nodes_.resize(std::ranges::size(points_));
-    size_t node_counter = 0;
+    std::size_t node_counter = 0;
 
     // Recursively construct the tree.
     par::TaskGroup tasks{};
     [&my_points = points_, &nodes = nodes_, &node_counter, &tasks](
         this const auto& self,
-        std::span<size_t> my_perm) {
+        std::span<std::size_t> my_perm) {
       // Allocate the node.
       auto* const node = &nodes[par::fetch_and_add(node_counter, 1)];
 
@@ -90,7 +90,7 @@ public:
       node->index = my_perm[median_index];
 
       // Recursively partition the halves.
-      constexpr size_t min_par_size = 50;
+      constexpr std::size_t min_par_size = 50;
       using enum par::RunMode;
       tasks.run(
           [node, left_perm, self] {
@@ -114,8 +114,8 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Find the points within the radius to the given point.
-  template<std::output_iterator<size_t> OutIter,
-           std::predicate<size_t> Pred = AlwaysTrue>
+  template<std::output_iterator<std::size_t> OutIter,
+           std::predicate<std::size_t> Pred = AlwaysTrue>
   auto search(const Vec& search_point,
               vec_num_t<Vec> search_radius,
               OutIter out,
@@ -155,8 +155,8 @@ public:
 private:
 
   struct KDTreeNode_ final {
-    size_t index = 0;
-    size_t axis = 0;
+    std::size_t index = 0;
+    std::size_t axis = 0;
     const KDTreeNode_* left = nullptr;
     const KDTreeNode_* right = nullptr;
   };

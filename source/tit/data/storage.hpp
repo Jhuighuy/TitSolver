@@ -17,8 +17,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/core/stream.hpp"
 #include "tit/data/sqlite.hpp"
@@ -99,7 +99,7 @@ public:
   }
 
   /// Get the size of an array (in elements).
-  auto size() const -> size_t {
+  auto size() const -> std::size_t {
     return storage().array_size(array_id_);
   }
 
@@ -196,7 +196,7 @@ public:
   }
 
   /// Get the number of arrays in the frame.
-  auto num_arrays() const -> size_t {
+  auto num_arrays() const -> std::size_t {
     return storage().frame_num_arrays(frame_id_);
   }
 
@@ -276,12 +276,12 @@ public:
   }
 
   /// Get the number of frames in the series.
-  auto num_frames() const -> size_t {
+  auto num_frames() const -> std::size_t {
     return storage().series_num_frames(series_id_);
   }
 
   /// Get a frame in the series by its index.
-  auto frame(size_t index) const -> FrameView<Storage> {
+  auto frame(std::size_t index) const -> FrameView<Storage> {
     return storage().series_frame(series_id_, index);
   }
 
@@ -326,19 +326,19 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Get the maximum number of series.
-  auto max_series() const -> size_t;
+  auto max_series() const -> std::size_t;
 
   /// Set the maximum number of series. If the number of series exceeds the
   /// maximum, the oldest series will be deleted.
-  void set_max_series(size_t value);
+  void set_max_series(std::size_t value);
 
   /// Number of series in the storage.
-  auto num_series() const -> size_t;
+  auto num_series() const -> std::size_t;
 
   /// Get the series by index.
   /// @{
-  auto series_id(size_t index) const -> SeriesID;
-  auto series(this auto& self, size_t index) {
+  auto series_id(std::size_t index) const -> SeriesID;
+  auto series(this auto& self, std::size_t index) {
     return SeriesView{self, self.series_id(index)};
   }
   /// @}
@@ -381,12 +381,12 @@ public:
   auto series_name(SeriesID series_id) const -> std::string;
 
   /// Number of frames in the series.
-  auto series_num_frames(SeriesID series_id) const -> size_t;
+  auto series_num_frames(SeriesID series_id) const -> std::size_t;
 
   /// Get the series frame by zero-based index.
   /// @{
-  auto series_frame_id(SeriesID series_id, size_t index) const -> FrameID;
-  auto series_frame(this auto& self, SeriesID series_id, size_t index) {
+  auto series_frame_id(SeriesID series_id, std::size_t index) const -> FrameID;
+  auto series_frame(this auto& self, SeriesID series_id, std::size_t index) {
     return FrameView{self, self.series_frame_id(series_id, index)};
   }
   /// @}
@@ -430,7 +430,7 @@ public:
   auto frame_time(FrameID frame_id) const -> float64_t;
 
   /// Number of arrays in the frame.
-  auto frame_num_arrays(FrameID frame_id) const -> size_t;
+  auto frame_num_arrays(FrameID frame_id) const -> std::size_t;
 
   /// Enumerate all arrays in the frame.
   /// @{
@@ -480,7 +480,7 @@ public:
   auto array_type(ArrayID array_id) const -> Type;
 
   /// Get the number of elements in the array.
-  auto array_size(ArrayID array_id) const -> size_t;
+  auto array_size(ArrayID array_id) const -> std::size_t;
 
   /// Write data to an array.
   /// @{
@@ -524,7 +524,7 @@ public:
 private:
 
   // Open an output stream to write the data of an array.
-  auto array_open_write_(ArrayID array_id, Type type, size_t size)
+  auto array_open_write_(ArrayID array_id, Type type, std::size_t size)
       -> OutputStreamPtr<std::byte>;
 
   // Open an input stream to read the data of an array.

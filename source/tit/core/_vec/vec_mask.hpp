@@ -8,9 +8,9 @@
 
 #include <array>
 #include <concepts>
+#include <cstddef>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/simd.hpp"
 
@@ -21,7 +21,7 @@ namespace tit {
 namespace impl {
 
 // Register specification for generic vector masks.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 struct VecMaskSIMD {
   using Mask = bool;
   using RegMask = bool;
@@ -30,7 +30,7 @@ struct VecMaskSIMD {
 };
 
 // Register specification for SIMD vector masks.
-template<simd::supported_type Num, size_t Dim>
+template<simd::supported_type Num, std::size_t Dim>
 struct VecMaskSIMD<Num, Dim> {
   using Mask = simd::Mask<Num>;
   using RegMask = simd::deduce_reg_mask_t<Num, Dim>;
@@ -41,7 +41,7 @@ struct VecMaskSIMD<Num, Dim> {
 } // namespace impl
 
 /// Column vector element-wise boolean mask with SIMD support.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 class VecMask final {
 public:
 
@@ -86,11 +86,11 @@ public:
 
   /// Vector mask element at index.
   /// @{
-  constexpr auto operator[](size_t i) noexcept -> Mask& {
+  constexpr auto operator[](std::size_t i) noexcept -> Mask& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     return col_[i];
   }
-  constexpr auto operator[](size_t i) const noexcept -> const Mask& {
+  constexpr auto operator[](std::size_t i) const noexcept -> const Mask& {
     TIT_ASSERT(i < Dim, "Row index is out of range!");
     return col_[i];
   }
@@ -98,11 +98,11 @@ public:
 
   /// Underlying register at index.
   /// @{
-  auto reg(size_t i) noexcept -> RegMask& {
+  auto reg(std::size_t i) noexcept -> RegMask& {
     TIT_ASSERT(i < RegCount, "Register index is out of range!");
     return regs_[i];
   }
-  auto reg(size_t i) const noexcept -> const RegMask& {
+  auto reg(std::size_t i) const noexcept -> const RegMask& {
     TIT_ASSERT(i < RegCount, "Register index is out of range!");
     return regs_[i];
   }
@@ -121,10 +121,10 @@ public:
   friend constexpr auto operator!(const VecMask& m) -> VecMask {
     VecMask r;
     TIT_IF_SIMD_AVALIABLE(Num) {
-      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = !m.reg(i);
+      for (std::size_t i = 0; i < RegCount; ++i) r.reg(i) = !m.reg(i);
       return r;
     }
-    for (size_t i = 0; i < Dim; ++i) r[i] = !m[i];
+    for (std::size_t i = 0; i < Dim; ++i) r[i] = !m[i];
     return r;
   }
 
@@ -133,10 +133,12 @@ public:
       -> VecMask {
     VecMask r;
     TIT_IF_SIMD_AVALIABLE(Num) {
-      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = m.reg(i) && n.reg(i);
+      for (std::size_t i = 0; i < RegCount; ++i) {
+        r.reg(i) = m.reg(i) && n.reg(i);
+      }
       return r;
     }
-    for (size_t i = 0; i < Dim; ++i) r[i] = m[i] && n[i];
+    for (std::size_t i = 0; i < Dim; ++i) r[i] = m[i] && n[i];
     return r;
   }
 
@@ -145,10 +147,12 @@ public:
       -> VecMask {
     VecMask r;
     TIT_IF_SIMD_AVALIABLE(Num) {
-      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = m.reg(i) || n.reg(i);
+      for (std::size_t i = 0; i < RegCount; ++i) {
+        r.reg(i) = m.reg(i) || n.reg(i);
+      }
       return r;
     }
-    for (size_t i = 0; i < Dim; ++i) r[i] = m[i] || n[i];
+    for (std::size_t i = 0; i < Dim; ++i) r[i] = m[i] || n[i];
     return r;
   }
 
@@ -159,10 +163,12 @@ public:
       -> VecMask {
     VecMask r;
     TIT_IF_SIMD_AVALIABLE(Num) {
-      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = m.reg(i) == n.reg(i);
+      for (std::size_t i = 0; i < RegCount; ++i) {
+        r.reg(i) = m.reg(i) == n.reg(i);
+      }
       return r;
     }
-    for (size_t i = 0; i < Dim; ++i) r[i] = m[i] == n[i];
+    for (std::size_t i = 0; i < Dim; ++i) r[i] = m[i] == n[i];
     return r;
   }
 
@@ -171,10 +177,12 @@ public:
       -> VecMask {
     VecMask r;
     TIT_IF_SIMD_AVALIABLE(Num) {
-      for (size_t i = 0; i < RegCount; ++i) r.reg(i) = m.reg(i) != n.reg(i);
+      for (std::size_t i = 0; i < RegCount; ++i) {
+        r.reg(i) = m.reg(i) != n.reg(i);
+      }
       return r;
     }
-    for (size_t i = 0; i < Dim; ++i) r[i] = m[i] != n[i];
+    for (std::size_t i = 0; i < Dim; ++i) r[i] = m[i] != n[i];
     return r;
   }
 
@@ -192,7 +200,7 @@ private:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Check if any vector mask element is set to true.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto any(const VecMask<Num, Dim>& m) -> bool {
   TIT_IF_SIMD_AVALIABLE(Num) {
     constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
@@ -200,7 +208,7 @@ constexpr auto any(const VecMask<Num, Dim>& m) -> bool {
       return simd::any(simd::take_n(Dim, m.reg(0)));
     } else {
       auto r_reg = m.reg(0);
-      for (size_t i = 1; i < NFullRegs; ++i) {
+      for (std::size_t i = 1; i < NFullRegs; ++i) {
         r_reg = r_reg || m.reg(i);
       }
       if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
@@ -209,14 +217,14 @@ constexpr auto any(const VecMask<Num, Dim>& m) -> bool {
       return simd::any(r_reg);
     }
   }
-  for (size_t i = 0; i < Dim; ++i) {
+  for (std::size_t i = 0; i < Dim; ++i) {
     if (m[i]) return true;
   }
   return false;
 }
 
 /// Check if all vector mask elements are set to true.
-template<class Num, size_t Dim>
+template<class Num, std::size_t Dim>
 constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
   TIT_IF_SIMD_AVALIABLE(Num) {
     using RegMask = VecMask<Num, Dim>::RegMask;
@@ -225,7 +233,7 @@ constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
       return simd::all(simd::merge_n(Dim, m.reg(0), RegMask(true)));
     } else {
       auto r_reg = m.reg(0);
-      for (size_t i = 1; i < NFullRegs; ++i) {
+      for (std::size_t i = 1; i < NFullRegs; ++i) {
         r_reg = r_reg && m.reg(i);
       }
       if constexpr (constexpr auto Rem = Dim % RegSize; Rem != 0) {
@@ -234,7 +242,7 @@ constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
       return simd::all(r_reg);
     }
   }
-  for (size_t i = 0; i < Dim; ++i) {
+  for (std::size_t i = 0; i < Dim; ++i) {
     if (!m[i]) return false;
   }
   return true;
@@ -242,14 +250,14 @@ constexpr auto all(const VecMask<Num, Dim>& m) -> bool {
 
 /// Find the first true value in the vector mask.
 /// Return `-1` if all values are false.
-template<class Num, size_t Dim>
-constexpr auto find_true(const VecMask<Num, Dim>& m) -> ssize_t {
+template<class Num, std::size_t Dim>
+constexpr auto find_true(const VecMask<Num, Dim>& m) -> std::ptrdiff_t {
   TIT_IF_SIMD_AVALIABLE(Num) {
     constexpr auto RegSize = VecMask<Num, Dim>::RegSize;
     if constexpr (constexpr auto NFullRegs = Dim / RegSize; NFullRegs == 0) {
       return simd::find_true(simd::take_n(Dim, m.reg(0)));
     } else {
-      for (size_t i = 0; i < NFullRegs; ++i) {
+      for (std::size_t i = 0; i < NFullRegs; ++i) {
         const auto true_index = simd::find_true(m.reg(i));
         if (true_index != -1) return true_index + i * RegSize;
       }
@@ -261,8 +269,8 @@ constexpr auto find_true(const VecMask<Num, Dim>& m) -> ssize_t {
       return -1;
     }
   }
-  for (size_t i = 0; i < Dim; ++i) {
-    if (m[i]) return static_cast<ssize_t>(i);
+  for (std::size_t i = 0; i < Dim; ++i) {
+    if (m[i]) return static_cast<std::ptrdiff_t>(i);
   }
   return -1;
 }

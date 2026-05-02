@@ -5,11 +5,11 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <format>
 #include <random>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/simd.hpp"
 #include "tit/core/vec.hpp"
@@ -250,13 +250,13 @@ TEST_CASE_TEMPLATE("Vec::ceil", Num, NUM_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("Vec::sum", Num, NUM_TYPES) {
-  const auto run = []<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+  const auto run = []<std::size_t... Axes>(std::index_sequence<Axes...> /*a*/) {
     FSUBCASE("Dim = {}", sizeof...(Axes)) {
       const Vec v{Num{Axes + 1}...};
       CHECK(sum(v) == Num{((Axes + 1) + ...)});
     }
   };
-  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+  [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::make_index_sequence<Dims + 1>{}), ...);
   }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
@@ -269,7 +269,7 @@ TEST_CASE_TEMPLATE("Vec::prod", Num, NUM_TYPES) {
 }
 
 TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
-  const auto run = []<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+  const auto run = []<std::size_t... Axes>(std::index_sequence<Axes...> /*a*/) {
     FSUBCASE("Dim = {}", sizeof...(Axes)) {
       SUBCASE("all positive") {
         Vec v{Num{Axes + 1}...};
@@ -277,27 +277,27 @@ TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
         CHECK(min_value(v) == Num{1});
       }
       SUBCASE("all negative") {
-        Vec v{Num{-ssize_t{Axes} - 1}...};
+        Vec v{Num{-int{Axes} - 1}...};
         std::ranges::shuffle(v.elems(), std::mt19937_64{});
-        CHECK(min_value(v) == Num{-ssize_t{sizeof...(Axes)}});
+        CHECK(min_value(v) == Num{-int{sizeof...(Axes)}});
       }
       SUBCASE("even positive") {
-        const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * ssize_t{Axes}}...};
+        const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * int{Axes}}...};
         CHECK(min_value(v) == Num{*std::ranges::min_element(v.elems())});
       }
       SUBCASE("even negative") {
-        const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * ssize_t{Axes}}...};
+        const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * int{Axes}}...};
         CHECK(min_value(v) == Num{*std::ranges::min_element(v.elems())});
       }
     }
   };
-  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+  [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::make_index_sequence<Dims + 1>{}), ...);
   }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
 
 TEST_CASE_TEMPLATE("Vec::max_value", Num, NUM_TYPES) {
-  const auto run = []<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+  const auto run = []<std::size_t... Axes>(std::index_sequence<Axes...> /*a*/) {
     FSUBCASE("Dim = {}", sizeof...(Axes)) {
       SUBCASE("all positive") {
         Vec v{Num{Axes + 1}...};
@@ -305,21 +305,21 @@ TEST_CASE_TEMPLATE("Vec::max_value", Num, NUM_TYPES) {
         CHECK(max_value(v) == Num{sizeof...(Axes)});
       }
       SUBCASE("all negative") {
-        Vec v{Num{-ssize_t{Axes} - 1}...};
+        Vec v{Num{-int{Axes} - 1}...};
         std::ranges::shuffle(v.elems(), std::mt19937_64{});
         CHECK(max_value(v) == Num{-1});
       }
       SUBCASE("even positive") {
-        const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * ssize_t{Axes}}...};
+        const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * int{Axes}}...};
         CHECK(max_value(v) == Num{*std::ranges::max_element(v.elems())});
       }
       SUBCASE("even negative") {
-        const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * ssize_t{Axes}}...};
+        const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * int{Axes}}...};
         CHECK(max_value(v) == Num{*std::ranges::max_element(v.elems())});
       }
     }
   };
-  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+  [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::make_index_sequence<Dims + 1>{}), ...);
   }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }
@@ -340,14 +340,14 @@ TEST_CASE_TEMPLATE("Vec::max_value_index", Num, NUM_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("Vec::dot", Num, NUM_TYPES) {
-  const auto run = []<size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
+  const auto run = []<std::size_t... Axes>(std::index_sequence<Axes...> /*a*/) {
     FSUBCASE("Dim = {}", sizeof...(Axes)) {
       const Vec v{Num{Axes + 1}...};
       const Vec w{Num{Axes + 2}...};
       CHECK(dot(v, w) == Num{(((Axes + 1) * (Axes + 2)) + ...)});
     }
   };
-  [&run]<size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
+  [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::make_index_sequence<Dims + 1>{}), ...);
   }(std::make_index_sequence<2 * simd::max_reg_size_v<double>>{});
 }

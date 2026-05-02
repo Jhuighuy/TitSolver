@@ -5,12 +5,12 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iterator>
 #include <numbers>
 #include <random>
 #include <ranges>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/serialization.hpp"
 #include "tit/core/stream.hpp"
@@ -68,15 +68,15 @@ TEST_CASE("zstd::small_data") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("zstd::large_data") {
-  constexpr auto run_test = [](size_t size_multiplier) {
+  constexpr auto run_test = [](std::size_t size_multiplier) {
     const auto large_data =
         std::views::repeat(to_byte_array(std::numbers::pi), size_multiplier) |
         std::views::join | std::ranges::to<std::vector>();
 
     // Note: ZSTD's preferred chunk size is around 128 KiB.
-    constexpr size_t small_chunk_size = 8;
-    constexpr size_t moderate_chunk_size = small_chunk_size * 125;
-    constexpr size_t large_chunk_size = moderate_chunk_size * 1000;
+    constexpr std::size_t small_chunk_size = 8;
+    constexpr std::size_t moderate_chunk_size = small_chunk_size * 125;
+    constexpr std::size_t large_chunk_size = moderate_chunk_size * 1000;
 
     SUBCASE("single chunk") {
       std::vector<std::byte> compressed_data;
@@ -97,7 +97,7 @@ TEST_CASE("zstd::large_data") {
     }
 
     SUBCASE("compress in chunks") {
-      const auto run_subcase = [&large_data](size_t chunk_size) {
+      const auto run_subcase = [&large_data](std::size_t chunk_size) {
         std::vector<std::byte> compressed_data;
         auto compressor = make_zstd_stream_compressor(
             make_container_output_stream(compressed_data));
@@ -127,7 +127,7 @@ TEST_CASE("zstd::large_data") {
     }
 
     SUBCASE("decompress in chunks") {
-      const auto run_subcase = [&large_data](size_t chunk_size) {
+      const auto run_subcase = [&large_data](std::size_t chunk_size) {
         std::vector<std::byte> compressed_data;
         make_zstd_stream_compressor(
             make_container_output_stream(compressed_data))
@@ -137,7 +137,7 @@ TEST_CASE("zstd::large_data") {
         std::vector<std::byte> decompressed_data(chunk_size);
         auto decompressor = make_zstd_stream_decompressor(
             make_range_input_stream(compressed_data));
-        for (size_t offset = 0; offset < large_data.size();
+        for (std::size_t offset = 0; offset < large_data.size();
              offset += chunk_size) {
           const auto copied = std::min(chunk_size, large_data.size() - offset);
           REQUIRE(decompressor->read(decompressed_data) == copied);
@@ -184,7 +184,7 @@ TEST_CASE("data::zstd::errors") {
   }
   SUBCASE("partially invalid data") {
     // 1MiB of data.
-    constexpr size_t size_multiplier = 1024 * 1024UZ;
+    constexpr std::size_t size_multiplier = 1024 * 1024UZ;
     const auto data =
         std::views::repeat(to_byte_array(std::numbers::pi), size_multiplier) |
         std::views::join | std::ranges::to<std::vector>();
@@ -208,10 +208,10 @@ TEST_CASE("data::zstd::errors") {
     SUBCASE("trailing garbage") {
       const auto old_size = compressed_data.size();
       compressed_data.resize(old_size + 128);
-      std::ranges::generate( //
-          compressed_data.begin() + static_cast<ssize_t>(old_size),
-          compressed_data.end(),
-          [] { return static_cast<std::byte>(rng()); });
+      std::ranges::generate(std::next(compressed_data.begin(),
+                                      static_cast<std::ptrdiff_t>(old_size)),
+                            compressed_data.end(),
+                            [] { return static_cast<std::byte>(rng()); });
       CHECK_THROWS_MSG(make_zstd_stream_decompressor(
                            make_range_input_stream(compressed_data))
                            ->read(result),

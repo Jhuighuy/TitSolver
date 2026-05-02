@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 
-#include "tit/core/basic_types.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/time.hpp"
 #include "tit/testing/test.hpp"
 

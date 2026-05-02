@@ -6,12 +6,12 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <functional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
@@ -110,7 +110,7 @@ public:
   }
 
   /// Split the bounding box into two parts by the plane.
-  constexpr auto split(size_t axis,
+  constexpr auto split(std::size_t axis,
                        const vec_num_t<Vec>& val,
                        bool reverse = false) const -> std::pair<BBox, BBox> {
     TIT_ASSERT(axis < vec_dim_v<Vec>, "Split axis is out of range!");
@@ -129,19 +129,20 @@ public:
       -> std::array<BBox, (1 << vec_dim_v<Vec>)> {
     TIT_ASSERT(point >= low_, "Split point is below lower bounds!");
     TIT_ASSERT(point <= high_, "Split point is above upper bounds!");
-    const auto tuple = [&point]<size_t Axis>(
+    const auto tuple = [&point]<std::size_t Axis>(
                            this const auto& self,
-                           std::integral_constant<size_t, Axis> /*axis*/,
+                           std::integral_constant<std::size_t, Axis> /*axis*/,
                            const auto&... boxes) {
       auto split_boxes = std::tuple_cat(boxes.split(Axis, point[Axis])...);
       if constexpr (Axis == vec_dim_v<Vec> - 1) {
         return split_boxes;
       } else {
         return std::apply(
-            std::bind_front(self, std::integral_constant<size_t, Axis + 1>{}),
+            std::bind_front(self,
+                            std::integral_constant<std::size_t, Axis + 1>{}),
             split_boxes);
       }
-    }(std::integral_constant<size_t, 0>{}, *this);
+    }(std::integral_constant<std::size_t, 0>{}, *this);
     return std::apply([](const auto&... boxes) { return std::array{boxes...}; },
                       tuple);
   }

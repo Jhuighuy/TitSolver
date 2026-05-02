@@ -7,13 +7,13 @@
 
 #include <algorithm>
 #include <concepts>
+#include <cstddef>
 #include <iterator>
 #include <limits>
 #include <ranges>
 #include <utility>
 #include <vector>
 
-#include "tit/core/basic_types.hpp"
 #include "tit/core/checks.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
@@ -61,8 +61,8 @@ public:
   }
 
   /// Find the points within the radius to the given point.
-  template<std::output_iterator<size_t> OutIter,
-           std::predicate<size_t> Pred = AlwaysTrue>
+  template<std::output_iterator<std::size_t> OutIter,
+           std::predicate<std::size_t> Pred = AlwaysTrue>
   auto search(const Vec& search_point,
               vec_num_t<Vec> search_radius,
               OutIter out,
@@ -89,9 +89,9 @@ private:
 
   Points points_;
   Grid<Vec> grid_;
-  std::vector<size_t> first_point_;
-  std::vector<size_t> next_point_;
-  static constexpr auto sentinel_ = std::numeric_limits<size_t>::max();
+  std::vector<std::size_t> first_point_;
+  std::vector<std::size_t> next_point_;
+  static constexpr auto sentinel_ = std::numeric_limits<std::size_t>::max();
 
 }; // class GridIndex
 
