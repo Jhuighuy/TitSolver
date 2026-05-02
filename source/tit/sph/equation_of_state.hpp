@@ -9,7 +9,7 @@
 #include <concepts>
 #include <utility>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/type.hpp"
 #include "tit/sph/field.hpp"

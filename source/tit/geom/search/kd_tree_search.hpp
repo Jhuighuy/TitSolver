@@ -13,7 +13,7 @@
 #include <span>
 #include <vector>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"

@@ -8,7 +8,7 @@
 
 #include <oneapi/tbb/global_control.h>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/sys_info.hpp"
 #include "tit/par/control.hpp"

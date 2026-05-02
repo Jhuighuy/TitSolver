@@ -18,7 +18,7 @@
 #include <gcem.hpp> // IWYU pragma: keep
 #endif
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 
 namespace tit {
 

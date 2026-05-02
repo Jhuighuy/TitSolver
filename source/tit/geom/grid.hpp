@@ -9,7 +9,7 @@
 #include <ranges>
 #include <utility>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
 

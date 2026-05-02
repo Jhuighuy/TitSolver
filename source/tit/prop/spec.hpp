@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/float.hpp"
 
 namespace tit::prop {

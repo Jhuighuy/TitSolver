@@ -11,7 +11,7 @@
 #include <cstddef>
 #include <utility>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/simd.hpp"
 
 namespace tit {

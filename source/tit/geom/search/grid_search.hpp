@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"

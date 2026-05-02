@@ -11,7 +11,7 @@
 #include <ranges>
 #include <span>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/range.hpp"
 #include "tit/core/vec.hpp"

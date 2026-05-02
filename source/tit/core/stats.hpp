@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"

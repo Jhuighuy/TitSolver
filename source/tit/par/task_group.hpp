@@ -13,7 +13,7 @@
 
 #include <oneapi/tbb/task_group.h>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 
 namespace tit::par {
 

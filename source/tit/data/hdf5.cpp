@@ -19,7 +19,7 @@
 #include <highfive/H5File.hpp>
 #include <tinyxml2.h>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/type.hpp"

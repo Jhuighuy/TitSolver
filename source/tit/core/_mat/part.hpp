@@ -12,7 +12,7 @@
 
 #include "tit/core/_mat/mat.hpp"
 #include "tit/core/_mat/traits.hpp"
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 
 namespace tit {
 

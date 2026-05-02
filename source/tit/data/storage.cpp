@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/stream.hpp"

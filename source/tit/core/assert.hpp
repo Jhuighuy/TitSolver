@@ -12,7 +12,7 @@
 
 /// Check that the given expression holds (always).
 #define TIT_ALWAYS_ASSERT(expr, message)                                       \
-  tit::checks::run_assert((expr), (#expr), message)
+  tit::assert_::run((expr), (#expr), message)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -32,14 +32,14 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-namespace tit::checks {
+namespace tit::assert_ {
 
 // Report an assertion failure.
 //
 // Note: Implemented in `main.cpp`.
-[[noreturn]] void report_assert_failure(std::string_view expression,
-                                        std::string_view message,
-                                        std::source_location location) noexcept;
+[[noreturn]] void report_failure(std::string_view expression,
+                                 std::string_view message,
+                                 std::source_location location) noexcept;
 
 // Check that the given expression holds.
 //
@@ -52,14 +52,14 @@ namespace tit::checks {
 #else
 [[gnu::noinline]]
 #endif
-constexpr void run_assert(
+constexpr void run(
     bool condition,
     std::string_view expression,
     std::string_view message,
     std::source_location location = std::source_location::current()) noexcept {
-  if (!condition) report_assert_failure(expression, message, location);
+  if (!condition) report_failure(expression, message, location);
 }
 
-} // namespace tit::checks
+} // namespace tit::assert_
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

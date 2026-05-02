@@ -12,7 +12,7 @@
 #include <span>
 #include <utility>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"

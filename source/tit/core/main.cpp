@@ -27,8 +27,8 @@
 #include <execinfo.h>
 #include <unistd.h>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/build_info.hpp"
-#include "tit/core/checks.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/main.hpp"
@@ -334,8 +334,8 @@ void setup_terminate_handler() noexcept {
 
 } // namespace
 
-// Note: Declared in `checks.hpp`.
-[[noreturn]] void checks::report_assert_failure(
+// Note: Declared in `assert.hpp`.
+[[noreturn]] void assert_::report_failure(
     std::string_view expression,
     std::string_view message,
     std::source_location location) noexcept {

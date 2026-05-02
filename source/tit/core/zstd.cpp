@@ -12,7 +12,7 @@
 
 #include <zstd.h>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stream.hpp"
 #include "tit/core/zstd.hpp"

@@ -16,7 +16,7 @@
 
 #include <sqlite3.h>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/print.hpp"

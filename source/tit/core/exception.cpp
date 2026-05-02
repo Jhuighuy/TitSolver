@@ -10,7 +10,7 @@
 #include <string>
 #include <utility>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/stacktrace.hpp"
 

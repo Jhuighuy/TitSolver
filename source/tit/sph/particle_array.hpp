@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"

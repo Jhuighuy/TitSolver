@@ -10,7 +10,7 @@
 #include <ranges>
 #include <vector>
 
-#include "tit/core/checks.hpp"
+#include "tit/core/assert.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/range.hpp"
 #include "tit/geom/point_range.hpp"
