@@ -19,7 +19,7 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
-#include "tit/core/print.hpp"
+#include "tit/core/logging.hpp"
 #include "tit/core/stream.hpp"
 #include "tit/core/type.hpp"
 #include "tit/data/sqlite.hpp"

@@ -4,10 +4,11 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <chrono>
+#include <iostream>
+#include <print>
 #include <thread>
 
 #include "tit/core/main.hpp"
-#include "tit/core/print.hpp"
 
 namespace tit {
 namespace {
@@ -15,19 +16,19 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [[gnu::noinline]] void func_3() {
-  eprintln("func_3");
-  eprintln("Creating a joinable thread...");
+  std::println(std::cerr, "func_3");
+  std::println(std::cerr, "Creating a joinable thread...");
   std::thread(
       [] { std::this_thread::sleep_for(std::chrono::milliseconds(100)); });
 }
 
 [[gnu::noinline]] void func_2() {
-  eprintln("func_2");
+  std::println(std::cerr, "func_2");
   func_3();
 }
 
 [[gnu::noinline]] void func_1() {
-  eprintln("func_1");
+  std::println(std::cerr, "func_1");
   func_2();
 }
 
@@ -38,5 +39,5 @@ namespace {
 
 TIT_IMPLEMENT_MAIN([] {
   func_1();
-  eprintln("This line should not be executed.");
+  std::println(std::cerr, "This line should not be executed.");
 });

@@ -3,9 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <iostream>
+#include <print>
+
 #include "tit/core/assert.hpp"
 #include "tit/core/main.hpp"
-#include "tit/core/print.hpp"
 
 namespace tit {
 namespace {
@@ -13,18 +15,18 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [[gnu::noinline]] void func_3() {
-  eprintln("func_3");
-  eprintln("Checking how floating point arithmetic works...");
+  std::println(std::cerr, "func_3");
+  std::println(std::cerr, "Checking how floating point arithmetic works...");
   TIT_ALWAYS_ASSERT(0.1 + 0.2 == 0.3, "Right?!");
 }
 
 [[gnu::noinline]] void func_2() {
-  eprintln("func_2");
+  std::println(std::cerr, "func_2");
   func_3();
 }
 
 [[gnu::noinline]] void func_1() {
-  eprintln("func_1");
+  std::println(std::cerr, "func_1");
   func_2();
 }
 
@@ -35,5 +37,5 @@ namespace {
 
 TIT_IMPLEMENT_MAIN([] {
   func_1();
-  eprintln("This line should not be executed.");
+  std::println(std::cerr, "This line should not be executed.");
 });

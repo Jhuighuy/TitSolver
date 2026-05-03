@@ -18,7 +18,7 @@
 #include <utility>
 
 #include "tit/core/exception.hpp"
-#include "tit/core/print.hpp"
+#include "tit/core/logging.hpp"
 #include "tit/core/type.hpp"
 
 namespace tit {

@@ -6,8 +6,8 @@
 #include <cstddef>
 
 #include "tit/core/float.hpp"
+#include "tit/core/logging.hpp"
 #include "tit/core/main.hpp"
-#include "tit/core/print.hpp"
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"

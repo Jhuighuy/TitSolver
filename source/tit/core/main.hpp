@@ -32,10 +32,4 @@ auto run_main(int argc,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Exit the current process without invoking the at-exit handlers.
-/// Unlike `std::_Exit`, this function does dump the coverage data.
-[[noreturn]] void fast_exit(int exit_code) noexcept;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace tit

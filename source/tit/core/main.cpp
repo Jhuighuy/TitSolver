@@ -16,7 +16,9 @@
 #include <filesystem>
 #include <format>
 #include <functional>
+#include <iostream>
 #include <mutex>
+#include <print>
 #include <ranges>
 #include <source_location>
 #include <string>
@@ -31,8 +33,8 @@
 #include "tit/core/build_info.hpp"
 #include "tit/core/env.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/core/logging.hpp"
 #include "tit/core/main.hpp"
-#include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stacktrace.hpp"
 #include "tit/core/str.hpp"
@@ -48,41 +50,43 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void ewrite(std::string_view message) noexcept {
-  static_cast<void>(write(STDERR_FILENO, message.data(), message.size()));
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-void eprintln_crash_report(
+void print_crash_report(
     std::string_view message,
     std::string_view cause = "",
     std::string_view cause_description = "",
     std::source_location loc = std::source_location::current(),
     Stacktrace stacktrace = Stacktrace::current()) {
-  eprintln();
-  eprintln();
-  eprint("{}:{}:{}: {}", loc.file_name(), loc.line(), loc.column(), message);
+  std::println(std::cerr);
+  std::println(std::cerr);
+  std::println(std::cerr,
+               "{}:{}:{}: {}",
+               loc.file_name(),
+               loc.line(),
+               loc.column(),
+               message);
 
   if (!cause.empty()) {
-    eprintln();
-    eprintln();
-    eprintln("  {}", cause);
+    std::println(std::cerr);
+    std::println(std::cerr, "  {}", cause);
     if (!cause_description.empty()) {
-      eprintln("  ^{:~>{}} {}", "", cause.size() - 1, cause_description);
+      std::println(std::cerr,
+                   "  ^{:~>{}} {}",
+                   "",
+                   cause.size() - 1,
+                   cause_description);
     }
   }
 
-  eprintln();
-  eprintln();
-  eprintln("Stack trace:");
-  eprintln();
-  eprintln("{}", stacktrace);
+  std::println(std::cerr);
+  std::println(std::cerr);
+  std::println(std::cerr, "Stack trace:");
+  std::println(std::cerr);
+  std::println(std::cerr, "{}", stacktrace);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void println_logo_and_system_info() {
+void print_logo_and_system_info() {
   constexpr auto logo_lines = std::to_array<std::string_view>({
       R"(               ############               )",
       R"(          ######################          )",
@@ -173,23 +177,12 @@ void println_logo_and_system_info() {
                    info_lines.end(),
                    static_cast<std::ptrdiff_t>(padding));
 
-  println();
-  println_separator('~');
-  println();
+  std::println();
   for (const auto& [logo_line, info_line] :
        std::views::zip(logo_lines, info_lines) | std::views::as_const) {
-    println("{}   {}", logo_line, info_line);
+    std::println("{}   {}", logo_line, info_line);
   }
-  println();
-  println_separator('~');
-  println();
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-auto crash_report_mutex() -> std::recursive_mutex& {
-  static std::recursive_mutex mutex;
-  return mutex;
+  std::println();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -202,6 +195,22 @@ void setup_stdio_buffering() {
   // Disable buffering for stderr.
   TIT_ENSURE_ERRNO(std::setvbuf(stderr, nullptr, _IONBF, 0) == 0,
                    "Unable to configure stderr buffering.");
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[[noreturn]] void fast_exit(int exit_code) noexcept {
+#ifdef TIT_HAVE_GCOV
+  __gcov_dump();
+#endif
+  std::_Exit(exit_code);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto crash_report_mutex() -> std::recursive_mutex& {
+  static std::recursive_mutex mutex;
+  return mutex;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -236,6 +245,11 @@ void setup_signal_handlers() noexcept {
   for (const auto& [signum, descr] : signals) {
     const auto prev_handler = std::signal(signum, [] [[noreturn]] (int sig) {
       const std::scoped_lock lock{crash_report_mutex()};
+
+      // In a signal handler, we can print using `write` syscall only.
+      static constexpr auto ewrite = [](std::string_view message) {
+        static_cast<void>(write(STDERR_FILENO, message.data(), message.size()));
+      };
 
       // Report the signal.
       ewrite("\n");
@@ -283,23 +297,21 @@ void setup_terminate_handler() noexcept {
         std::rethrow_exception(exception_ptr);
       } catch (const Exception& e) {
         terminate_on_exception([&e] {
-          eprintln_crash_report(
-              "Terminating due to an unhandled exception.",
-              std::format("throw {}{{...}};", type_name_of(e)),
-              e.what(),
-              e.where(),
-              e.when());
+          print_crash_report("Terminating due to an unhandled exception.",
+                             std::format("throw {}{{...}};", type_name_of(e)),
+                             e.what(),
+                             e.where(),
+                             e.when());
         });
       } catch (const std::exception& e) {
         terminate_on_exception([&e] {
-          eprintln_crash_report(
-              "Terminating due to an unhandled exception.",
-              std::format("throw {}{{...}};", type_name_of(e)),
-              e.what());
+          print_crash_report("Terminating due to an unhandled exception.",
+                             std::format("throw {}{{...}};", type_name_of(e)),
+                             e.what());
         });
       } catch (...) {
         terminate_on_exception([] {
-          eprintln_crash_report("Terminating due to an unhandled exception.");
+          print_crash_report("Terminating due to an unhandled exception.");
         });
 
         // Default handler should provide more information. It will likely
@@ -315,7 +327,7 @@ void setup_terminate_handler() noexcept {
       }
     } else {
       terminate_on_exception([] {
-        eprintln_crash_report("Terminating due to a call to std::terminate().");
+        print_crash_report("Terminating due to a call to std::terminate().");
       });
     }
 
@@ -342,10 +354,10 @@ void setup_terminate_handler() noexcept {
 
   // Report the assertion failure.
   terminate_on_exception([expression, message, location] {
-    eprintln_crash_report("Internal consistency check failed!",
-                          expression,
-                          message,
-                          location);
+    print_crash_report("Internal consistency check failed!",
+                       expression,
+                       message,
+                       location);
   });
 
   // Exit the process.
@@ -370,7 +382,7 @@ auto run_main(int argc,
     // logo is printed, set the variable to prevent printing it again in the
     // child processes.
     if (!get_env("TIT_NO_BANNER", false)) {
-      println_logo_and_system_info();
+      print_logo_and_system_info();
       set_env("TIT_NO_BANNER", true);
     }
 
@@ -390,15 +402,6 @@ auto run_main(int argc,
   return run_main(argc, argv, [&main](int /*argc*/, char** /*argv*/) {
     main();
   });
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-[[noreturn]] void fast_exit(int exit_code) noexcept {
-#ifdef TIT_HAVE_GCOV
-  __gcov_dump();
-#endif
-  std::_Exit(exit_code);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
