@@ -54,8 +54,6 @@ add_tit_library(
     "serialization.hpp"
     "simd.hpp"
     "stacktrace.hpp"
-    "stats.cpp"
-    "stats.hpp"
     "str.cpp"
     "str.hpp"
     "stream.hpp"

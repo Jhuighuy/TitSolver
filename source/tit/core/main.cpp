@@ -35,7 +35,6 @@
 #include "tit/core/print.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/stacktrace.hpp"
-#include "tit/core/stats.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/sys_info.hpp"
 #include "tit/core/type.hpp"
@@ -375,8 +374,7 @@ auto run_main(int argc,
       set_env("TIT_NO_BANNER", true);
     }
 
-    // Enable subsystems.
-    if (get_env("TIT_ENABLE_STATS", false)) Stats::enable();
+    // Enable profiler.
     if (get_env("TIT_ENABLE_PROFILER", false)) Profiler::enable();
 
     // Run the main function.
