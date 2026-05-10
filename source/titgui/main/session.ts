@@ -11,8 +11,8 @@ import path from "node:path";
 import {
   openStorage as nativeOpenStorage,
   type Storage as NativeStorage,
-} from "~/main/bindings";
-import { Installation } from "~/main/installation";
+} from "~/bindings";
+import type { Installation } from "~/main/installation";
 import { SESSION_SOLVER_EVENT_CHANNEL } from "~/shared/channels";
 import type { SolverEvent } from "~/shared/solver";
 import type { Frame } from "~/shared/storage";

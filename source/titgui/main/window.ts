@@ -122,7 +122,7 @@ export class WindowController {
     });
 
     // Load the content and show the window.
-    const pagePath = path.join(`renderer-${this.kind}`, "index.html");
+    const pagePath = path.join("renderer", this.kind, "index.html");
     if (RENDERER_VITE_DEV_SERVER_URL === undefined) {
       // .vite
       // |_ build <-- __dirname
@@ -139,11 +139,11 @@ export class WindowController {
       );
       void this.window.loadFile(fullPagePath);
     } else {
-      const pageUrl = new URL(
+      const fullPageUrl = new URL(
         pagePath,
         RENDERER_VITE_DEV_SERVER_URL,
       ).toString();
-      void this.window.loadURL(pageUrl);
+      void this.window.loadURL(fullPageUrl);
     }
   }
 

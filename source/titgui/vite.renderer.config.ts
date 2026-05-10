@@ -18,14 +18,16 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        "renderer-main/index": path.resolve(
+        "renderer/main/index": path.resolve(
           __dirname,
-          "renderer-main",
+          "renderer",
+          "main",
           "index.html",
         ),
-        "renderer-help/index": path.resolve(
+        "renderer/help/index": path.resolve(
           __dirname,
-          "renderer-help",
+          "renderer",
+          "help",
           "index.html",
         ),
       },
