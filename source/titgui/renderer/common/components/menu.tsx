@@ -89,7 +89,7 @@ function MenuRoot({ side, children }: Readonly<MenuRootProps>) {
 
   const [activeItem, setActiveItem] = useWindowState(
     `menu.${side}.active-item`,
-    z.int().min(-1).max(items(children).length - 1), // prettier-ignore
+    z.int().min(-1).max(items(children).length - 1), // oxfmt-ignore
     -1,
   );
 
@@ -272,9 +272,12 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
     () => ({
       addAction(action) {
         const filterByName = ({ name }: MenuAction) => name !== action.name;
-        setActions((prev) => [...prev.filter(filterByName), action]);
+        setActions((prev) => [
+          ...prev.filter((action) => filterByName(action)),
+          action,
+        ]);
         return () => {
-          setActions((prev) => prev.filter(filterByName));
+          setActions((prev) => prev.filter((action) => filterByName(action)));
         };
       },
     }),

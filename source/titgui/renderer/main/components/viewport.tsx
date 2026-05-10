@@ -5,13 +5,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Euler, Vector3 } from "three";
-import { chrome } from "~/renderer/common/components/classes";
 
+import { chrome } from "~/renderer/common/components/classes";
 import { Box, Flex } from "~/renderer/common/components/layout";
 import { useSignalValue } from "~/renderer/common/hooks/use-signal";
 import { derived, scoped, signal } from "~/renderer/common/signals";
 import {
-  BackgroundColorName,
+  type BackgroundColorName,
   backgroundColors,
 } from "~/renderer/common/visual/background-color";
 import type { Projection } from "~/renderer/common/visual/camera";
@@ -39,8 +39,10 @@ import { useStorage } from "~/renderer/main/components/storage";
 import { ViewColorLegend } from "~/renderer/main/components/view-color-legend";
 import { ViewControls } from "~/renderer/main/components/view-controls";
 import { ViewCube } from "~/renderer/main/components/view-cube";
-import type { ToolMode } from "~/renderer/main/components/view-selection";
-import { ViewSelection } from "~/renderer/main/components/view-selection";
+import {
+  type ToolMode,
+  ViewSelection,
+} from "~/renderer/main/components/view-selection";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -370,20 +372,20 @@ class ViewportModel {
       this.pushSelectionCommand();
     });
 
-    this.projection.subscribe(() =>
-      this.renderer?.setProjection(this.projection.get()),
-    );
-    this.backgroundColorName.subscribe(() =>
+    this.projection.subscribe(() => {
+      this.renderer?.setProjection(this.projection.get());
+    });
+    this.backgroundColorName.subscribe(() => {
       this.renderer?.setBackgroundColor(
         backgroundColors[this.backgroundColorName.get()],
-      ),
-    );
-    this.cameraPosition.subscribe(() =>
-      this.renderer?.cameraController.position.copy(this.cameraPosition.get()),
-    );
-    this.cameraRotation.subscribe(() =>
-      this.renderer?.cameraController.rotation.copy(this.cameraRotation.get()),
-    );
+      );
+    });
+    this.cameraPosition.subscribe(() => {
+      this.renderer?.cameraController.position.copy(this.cameraPosition.get());
+    });
+    this.cameraRotation.subscribe(() => {
+      this.renderer?.cameraController.rotation.copy(this.cameraRotation.get());
+    });
 
     this.field.subscribe(() => {
       this.pushFieldsAndColoring();

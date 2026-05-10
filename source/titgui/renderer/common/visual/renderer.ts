@@ -125,7 +125,7 @@ export class Renderer {
     }
 
     const positionField = data.get("r");
-    assert(positionField);
+    assert(positionField !== undefined);
     const positionValues = new Float32Array(data.count * 3);
     for (let i = 0; i < data.count; i++) {
       const components = positionField.components(i);

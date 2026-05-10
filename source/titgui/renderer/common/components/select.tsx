@@ -30,7 +30,7 @@ const SelectContext = createContext<SelectContext | null>(null);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface SelectRootProps<Value = string> extends Omit<
+interface SelectRootProps<Value extends string = string> extends Omit<
   ComponentProps<typeof BaseSelect.Root>,
   "onValueChange"
 > {
@@ -39,18 +39,16 @@ interface SelectRootProps<Value = string> extends Omit<
   onValueChange?: (value: Value) => void;
 }
 
-function SelectRoot<Value = string>({
+function SelectRoot<Value extends string = string>({
   value,
   defaultValue,
   onValueChange,
   children,
   ...props
 }: Readonly<SelectRootProps<Value>>) {
-  const [internalValue, setInternalValue] = useState(
-    (defaultValue as string | undefined) ?? null,
-  );
+  const [internalValue, setInternalValue] = useState(defaultValue ?? null);
 
-  const currentValue = value === undefined ? internalValue : (value as string);
+  const currentValue = value ?? internalValue;
 
   const registry = useMemo<ReadonlyMap<string, ReactNode>>(() => {
     const map = new Map<string, ReactNode>();
@@ -68,7 +66,7 @@ function SelectRoot<Value = string>({
           return; // Don't recurse into item children.
         }
 
-        if (props.children != null) collectItems(props.children as ReactNode);
+        if (props.children !== null) collectItems(props.children as ReactNode);
       });
     }
 
@@ -89,7 +87,7 @@ function SelectRoot<Value = string>({
         value={value}
         defaultValue={defaultValue}
         onValueChange={(value) => {
-          setInternalValue(value as string);
+          setInternalValue(value as Value);
           onValueChange?.(value as Value);
         }}
       >
@@ -204,14 +202,12 @@ function SelectContent({
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 function SelectItem({
-  value,
   className,
   children,
   ...props
 }: Readonly<ComponentProps<typeof BaseSelect.Item>>) {
   return (
     <BaseSelect.Item
-      value={value as string}
       {...props}
       className={cn(
         "flex cursor-pointer items-center gap-2 px-3 py-1 text-(length:--text-1) leading-(--leading-1) text-(--fg-2) transition-colors select-none data-highlighted:bg-(--accent-bg-1) data-highlighted:text-(--accent-fg-1) data-selected:font-medium data-selected:text-(--accent-fg-1) [&_svg]:size-[1.5em] [&_svg]:shrink-0",

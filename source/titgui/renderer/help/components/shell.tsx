@@ -45,7 +45,7 @@ export function Shell() {
       </Tabs.List>
 
       {tabs.map((tab) => (
-        <Tabs.Panel key={tab.id} value={tab.id} keepMounted={true}>
+        <Tabs.Panel key={tab.id} value={tab.id} keepMounted>
           <TabPane
             url={tab.url}
             onNavigate={(url) => {

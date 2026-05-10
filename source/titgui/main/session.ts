@@ -3,10 +3,11 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { BrowserWindow } from "electron";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import path from "node:path";
+
+import { BrowserWindow } from "electron";
 
 import {
   openStorage as nativeOpenStorage,
@@ -146,7 +147,7 @@ export class SessionManager {
   // Get the last series.
   private async getSeries() {
     assert(this.storage !== undefined);
-    return await this.storage.lastSeries();
+    return this.storage.lastSeries();
   }
 
   /**
@@ -154,7 +155,7 @@ export class SessionManager {
    */
   public async getFrameCount() {
     const series = await this.getSeries();
-    return await series.frameCount();
+    return series.frameCount();
   }
 
   /**

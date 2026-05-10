@@ -54,6 +54,8 @@
 !*.mts
 !*.ts
 !*.tsx
+!.oxfmtrc.json
+!.oxlintrc.json
 !package.json
 !tsconfig.json
 

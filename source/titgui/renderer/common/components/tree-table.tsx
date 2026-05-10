@@ -61,7 +61,7 @@ function TreeTableNode({
 }: Readonly<TreeTableNodeProps>) {
   const [open, setOpen] = useState(true);
   const level = useContext(TreeTableLevelContext);
-  const isExpandable = !!children;
+  const isExpandable = Boolean(children);
   const chevronLeft = level * INDENT + Math.round(INDENT / 3);
 
   return (
@@ -98,7 +98,7 @@ function TreeTableNode({
             <span className="shrink-0" style={{ width: INDENT }} />
           )}
           <span className="flex items-center gap-1.5 pr-2">
-            {icon && (
+            {Boolean(icon) && (
               <span className="shrink-0 text-(--fg-5) [&_svg]:size-[1.5em]">
                 {icon}
               </span>

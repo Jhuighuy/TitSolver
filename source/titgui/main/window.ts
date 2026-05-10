@@ -3,11 +3,12 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { BrowserWindow, nativeTheme } from "electron";
 import path from "node:path";
+
+import { BrowserWindow, nativeTheme } from "electron";
 import { z } from "zod";
 
-import { PersistedState } from "~/main/persisted-state";
+import type { PersistedState } from "~/main/persisted-state";
 import { WINDOW_FULL_SCREEN_CHANGED_CHANNEL } from "~/shared/channels";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

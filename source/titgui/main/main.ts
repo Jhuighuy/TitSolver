@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import path from "node:path";
+
 import {
   app,
   BrowserWindow,
@@ -11,7 +13,6 @@ import {
   nativeTheme,
   type OpenDialogOptions,
 } from "electron";
-import path from "node:path";
 import { z } from "zod";
 
 import { HelpManager } from "~/main/help";
@@ -37,7 +38,7 @@ import {
   WINDOW_PERSIST_GET_CHANNEL,
   WINDOW_PERSIST_SET_CHANNEL,
 } from "~/shared/channels";
-import { Theme, themeSchema } from "~/shared/theme";
+import { type Theme, themeSchema } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -140,12 +141,12 @@ class Application {
 
     ipcMain.removeHandler(SESSION_FRAME_COUNT_CHANNEL);
     ipcMain.handle(SESSION_FRAME_COUNT_CHANNEL, async () => {
-      return await this.session?.getFrameCount();
+      return this.session?.getFrameCount();
     });
 
     ipcMain.removeHandler(SESSION_FRAME_GET_CHANNEL);
     ipcMain.handle(SESSION_FRAME_GET_CHANNEL, async (_event, index: number) => {
-      return await this.session?.getFrame(index);
+      return this.session?.getFrame(index);
     });
 
     ipcMain.removeHandler(SESSION_EXPORT_RUN_CHANNEL);

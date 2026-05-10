@@ -5,7 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
-import { type ZodType } from "zod";
+import type { ZodType } from "zod";
 
 import { logger } from "~/renderer/common/logging";
 import { applyStateUpdate, type SetStateAction } from "~/renderer/common/utils";
@@ -77,7 +77,7 @@ export function useWindowIsFullScreen() {
     queryKey,
     queryFn: async () => {
       if (globalThis.windowState === undefined) return false;
-      return await globalThis.windowState.isFullScreen();
+      return globalThis.windowState.isFullScreen();
     },
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,

@@ -51,7 +51,6 @@ export class Spheres
         shadingMix: { value: 0 },
       },
     });
-    (this.material.extensions as { fragDepth?: boolean }).fragDepth = true;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

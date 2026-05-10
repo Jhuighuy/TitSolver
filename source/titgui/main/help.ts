@@ -3,20 +3,21 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
 import {
   app,
   BrowserWindow,
   clipboard,
   Menu,
-  MenuItemConstructorOptions,
+  type MenuItemConstructorOptions,
   shell,
 } from "electron";
-import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
 import z from "zod";
 
-import { Installation } from "~/main/installation";
-import { WindowController } from "~/main/window";
+import type { Installation } from "~/main/installation";
+import type { WindowController } from "~/main/window";
 import {
   HELP_SESSION_CHANGED_CHANNEL,
   WEBVIEW_OPEN_IN_TAB_CHANNEL,
@@ -204,45 +205,49 @@ export class HelpManager {
                   { type: "separator" },
                 );
               }
+            } else if (this.isManualURL(url)) {
+              menuItems.push(
+                {
+                  label: "Open Link",
+                  click: () => {
+                    void contents.loadURL(url);
+                  },
+                },
+                {
+                  label: "Open Link in New Tab",
+                  click: () => {
+                    contents.send(WEBVIEW_OPEN_IN_TAB_CHANNEL, url);
+                  },
+                },
+              );
             } else {
-              if (this.isManualURL(url)) {
-                menuItems.push(
-                  {
-                    label: "Open Link",
-                    click: () => {
-                      void contents.loadURL(url);
-                    },
+              menuItems.push(
+                {
+                  label: "Open Link Externally",
+                  click: () => {
+                    void shell.openExternal(url);
                   },
-                  {
-                    label: "Open Link in New Tab",
-                    click: () => {
-                      contents.send(WEBVIEW_OPEN_IN_TAB_CHANNEL, url);
-                    },
+                },
+                {
+                  label: "Copy Link Address",
+                  click: () => {
+                    clipboard.clear();
+                    clipboard.writeText(url);
                   },
-                );
-              } else {
-                menuItems.push(
-                  {
-                    label: "Open Link Externally",
-                    click: () => {
-                      void shell.openExternal(url);
-                    },
-                  },
-                  {
-                    label: "Copy Link Address",
-                    click: () => {
-                      clipboard.clear();
-                      clipboard.writeText(url);
-                    },
-                  },
-                );
-              }
+                },
+              );
             }
             const menu = Menu.buildFromTemplate(menuItems);
             menu.popup({ x: params.x, y: params.y });
           });
           break;
         }
+        case "backgroundPage":
+        case "browserView":
+        case "offscreen":
+        case "remote":
+          // Do nothing.
+          break;
       }
     });
   }

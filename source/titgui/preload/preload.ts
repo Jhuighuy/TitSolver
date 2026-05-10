@@ -30,13 +30,15 @@ import type { HelpSession } from "~/shared/help-session";
 import type { SolverEvent } from "~/shared/solver";
 import type { Theme } from "~/shared/theme";
 
+// oxlint-disable no-unsafe-return
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 contextBridge.exposeInMainWorld("theme", {
-  get() {
+  async get() {
     return ipcRenderer.invoke(THEME_GET_CHANNEL);
   },
-  set(theme: Theme) {
+  async set(theme: Theme) {
     return ipcRenderer.invoke(THEME_SET_CHANNEL, theme);
   },
 });
@@ -46,13 +48,13 @@ contextBridge.exposeInMainWorld("theme", {
 type FullScreenListener = (isFullScreen: boolean) => void;
 
 contextBridge.exposeInMainWorld("windowState", {
-  persistGet(key: string) {
+  async persistGet(key: string) {
     return ipcRenderer.invoke(WINDOW_PERSIST_GET_CHANNEL, key);
   },
-  persistSet(key: string, value: unknown) {
+  async persistSet(key: string, value: unknown) {
     return ipcRenderer.invoke(WINDOW_PERSIST_SET_CHANNEL, key, value);
   },
-  isFullScreen() {
+  async isFullScreen() {
     return ipcRenderer.invoke(WINDOW_IS_FULL_SCREEN_CHANNEL);
   },
   onFullScreenChanged(listener: FullScreenListener) {
@@ -69,22 +71,22 @@ contextBridge.exposeInMainWorld("windowState", {
 type SolverEventListener = (event: SolverEvent) => void;
 
 contextBridge.exposeInMainWorld("session", {
-  getFrameCount() {
+  async getFrameCount() {
     return ipcRenderer.invoke(SESSION_FRAME_COUNT_CHANNEL);
   },
-  getFrame(index: number) {
+  async getFrame(index: number) {
     return ipcRenderer.invoke(SESSION_FRAME_GET_CHANNEL, index);
   },
-  export() {
+  async export() {
     return ipcRenderer.invoke(SESSION_EXPORT_RUN_CHANNEL);
   },
-  runSolver() {
+  async runSolver() {
     return ipcRenderer.invoke(SESSION_SOLVER_RUN_CHANNEL);
   },
-  stopSolver() {
+  async stopSolver() {
     return ipcRenderer.invoke(SESSION_SOLVER_STOP_CHANNEL);
   },
-  isSolverRunning() {
+  async isSolverRunning() {
     return ipcRenderer.invoke(SESSION_SOLVER_IS_RUNNING_CHANNEL);
   },
   onSolverEvent(listener: SolverEventListener) {
@@ -101,7 +103,7 @@ contextBridge.exposeInMainWorld("session", {
 type HelpSessionListener = (session: HelpSession) => void;
 
 contextBridge.exposeInMainWorld("help", {
-  getSession() {
+  async getSession() {
     return ipcRenderer.invoke(HELP_GET_SESSION_CHANNEL);
   },
   onSessionChanged(listener: HelpSessionListener) {
@@ -111,16 +113,16 @@ contextBridge.exposeInMainWorld("help", {
     ipcRenderer.on(HELP_SESSION_CHANGED_CHANNEL, callback);
     return () => ipcRenderer.off(HELP_SESSION_CHANGED_CHANNEL, callback);
   },
-  addTab(url?: string) {
+  async addTab(url?: string) {
     return ipcRenderer.invoke(HELP_ADD_TAB_CHANNEL, url);
   },
-  closeTab(id: number) {
+  async closeTab(id: number) {
     return ipcRenderer.invoke(HELP_CLOSE_TAB_CHANNEL, id);
   },
-  selectTab(id: number) {
+  async selectTab(id: number) {
     return ipcRenderer.invoke(HELP_SELECT_TAB_CHANNEL, id);
   },
-  navigateTab(id: number, url?: string) {
+  async navigateTab(id: number, url?: string) {
     return ipcRenderer.invoke(HELP_NAVIGATE_TAB_CHANNEL, id, url);
   },
 });

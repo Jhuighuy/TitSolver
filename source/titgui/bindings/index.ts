@@ -43,7 +43,7 @@ const native = (() => {
 
 export type * from "~/bindings/storage";
 
-export function openStorage(path: string) {
+export async function openStorage(path: string) {
   return native.openStorage(path);
 }
 

@@ -101,8 +101,9 @@ export class FieldMap extends Map<string, Field> {
 
     // Dimensionality is inferred from density and position fields.
     this.count = rho.length;
-    this.dim = (r.length / rho.length) as FieldDim;
-    assert(2 <= this.dim && this.dim <= 3);
+    const dim = r.length / this.count;
+    assert(dim === 2 || dim === 3);
+    this.dim = dim;
     assert(r.length === this.count * this.dim);
 
     // Assign fields.

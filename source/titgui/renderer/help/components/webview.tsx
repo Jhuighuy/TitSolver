@@ -83,7 +83,7 @@ export function WebView({
   });
 
   const handleNavigation = useEffectEvent(() => {
-    if (webview == null) return;
+    if (webview === null) return;
 
     onNavigationChange({
       state: "ready",
@@ -108,7 +108,7 @@ export function WebView({
   });
 
   useEffect(() => {
-    if (webview == null) return;
+    if (webview === null) return;
 
     webview.addEventListener("did-start-loading", handleStartLoad);
     webview.addEventListener("dom-ready", handleNavigation);
@@ -135,7 +135,7 @@ export function WebView({
   // Web view can emit its first loading/title events immediately, so wiring
   // listeners first keeps the initial navigation observable.
   useEffect(() => {
-    if (webview == null || webview.src === url) return;
+    if (webview === null || webview.src === url) return;
     webview.setAttribute("src", url);
   }, [url, webview]);
 

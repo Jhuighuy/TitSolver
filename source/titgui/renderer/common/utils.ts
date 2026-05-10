@@ -8,49 +8,6 @@ import { assert } from "~/shared/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * Decode a Base64-encoded string to a typed array.
- *
- * Note: 64-bit integer types are converted to `Float64Array`, which may lose
- *       precision for values outside the safe integer range.
- */
-export function decodeBase64(b64: string, type: string) {
-  const typeMap = {
-    int8_t: Int8Array,
-    uint8_t: Uint8Array,
-    int16_t: Int16Array,
-    uint16_t: Uint16Array,
-    int32_t: Int32Array,
-    uint32_t: Uint32Array,
-    int64_t: BigInt64Array,
-    uint64_t: BigUint64Array,
-    float32_t: Float32Array,
-    float64_t: Float64Array,
-  };
-
-  assert(type in typeMap);
-  const ctor = typeMap[type as keyof typeof typeMap];
-
-  const bytes = Uint8Array.from(atob(b64), (c) => c.codePointAt(0) ?? 0);
-  assert(
-    bytes.byteLength % ctor.BYTES_PER_ELEMENT === 0,
-    `Byte length ${bytes.byteLength} is not a multiple of ${ctor.BYTES_PER_ELEMENT} for type ${type}`,
-  );
-
-  const vals = new ctor(
-    bytes.buffer,
-    bytes.byteOffset,
-    bytes.byteLength / ctor.BYTES_PER_ELEMENT,
-  );
-
-  // Convert `bigint` arrays to number arrays.
-  return vals instanceof BigInt64Array || vals instanceof BigUint64Array
-    ? Float64Array.from(vals, Number)
-    : vals;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/**
  * Convert a number representing color to a CSS color string.
  */
 export function toCSSColor(num: number): string {

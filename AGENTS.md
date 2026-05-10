@@ -16,9 +16,7 @@ Primary areas:
   - `sph` – SPH kernels, equations, particle structures, integrators.
   - `testing` – doctest-based test support.
 - `source/titwcsph/` – WCSPH solver executable.
-- `source/titesph/` – elastic/SPH solver executable.
 - `source/titgui/` – Electron + React + TypeScript GUI.
-- `source/titparaview/` – ParaView integration.
 - `manual/` – Sphinx documentation.
 - `tests/` – CTest registrations, behavioral tests, application tests, and test
   driver validation.
@@ -120,11 +118,12 @@ TIT_ENSURE(expr, "message");
 ### GUI
 
 - Stack: Electron Forge, Vite, React 19, TypeScript, Three.js.
-- Styling/tooling present: ESLint, Tailwind CSS v4, Base UI, Zod, React Query.
+- Styling/tooling present: tsgo, Oxlint, Oxfmt, Tailwind CSS v4, Base UI, Zod, React Query.
 - Common npm scripts:
 
 ```bash
 npm run dev
 npm run build
 npm run lint
+npm run format
 ```

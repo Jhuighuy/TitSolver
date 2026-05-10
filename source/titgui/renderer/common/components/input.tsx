@@ -73,7 +73,7 @@ interface TextInputProps
 }
 
 export function TextInput({
-  disabled,
+  disabled = false,
   size,
   radius,
   slot,
@@ -95,7 +95,7 @@ export function TextInput({
         className,
       )}
     >
-      {slot && <div className={inputSlotClasses}>{slot}</div>}
+      {Boolean(slot) && <div className={inputSlotClasses}>{slot}</div>}
       <BaseInput
         disabled={disabled}
         value={value}
@@ -200,7 +200,7 @@ export function NumberInput({
           )
         }
       >
-        {slot && <div className={inputSlotClasses}>{slot}</div>}
+        {Boolean(slot) && <div className={inputSlotClasses}>{slot}</div>}
 
         <BaseNumberField.Input
           placeholder={placeholder}

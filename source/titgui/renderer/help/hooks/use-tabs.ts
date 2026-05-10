@@ -14,7 +14,7 @@ export function useTabs() {
 
   const { data: session } = useQuery({
     queryKey,
-    queryFn: async () => await globalThis.help?.getSession(),
+    queryFn: async () => globalThis.help?.getSession(),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,
   });

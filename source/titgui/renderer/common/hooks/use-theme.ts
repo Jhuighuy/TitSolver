@@ -18,7 +18,7 @@ export function useThemeState() {
 
   const { data: theme } = useQuery({
     queryKey,
-    queryFn: async () => await globalThis.theme?.get(),
+    queryFn: async () => globalThis.theme?.get(),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,
   });

@@ -37,7 +37,7 @@ export function ViewColorLegend({
       className="border-2 text-(--fg-2)"
     >
       {/* ---- Title. ------------------------------------------------------ */}
-      {title && (
+      {title !== undefined && (
         <Box
           position="absolute"
           left="-150%"

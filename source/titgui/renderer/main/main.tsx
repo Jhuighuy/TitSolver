@@ -17,7 +17,7 @@ import { assert } from "~/shared/utils";
 const queryClient = new QueryClient();
 
 // Find the root element.
-const root = document.getElementById("root");
+const root = document.querySelector("#root");
 assert(root !== null, "Root element not found.");
 
 // Render the app.

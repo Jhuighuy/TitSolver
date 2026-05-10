@@ -57,7 +57,7 @@ export function Toolbar({
 }: Readonly<ToolbarProps>) {
   // ---- Layout. --------------------------------------------------------------
 
-  const { url, state, canGoBack, canGoForward } = navigation;
+  const { url, state, canGoBack = false, canGoForward = false } = navigation;
 
   return (
     <Flex

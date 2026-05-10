@@ -5,7 +5,7 @@
 
 import { Vector2, Vector3 } from "three";
 
-import { Camera } from "~/renderer/common/visual/camera";
+import type { Camera } from "~/renderer/common/visual/camera";
 import type {
   SelectionAction,
   SelectionCommand,
@@ -86,6 +86,7 @@ export class ParticleSelection {
       this.selectionValues.fill(0);
       this.selectionCount = 0;
     }
+    if (action === "clear") return 0;
 
     const worldPosition = new Vector3();
     const projectedPosition = new Vector3();

@@ -3,9 +3,10 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { app, dialog } from "electron";
 import path from "node:path";
 import process from "node:process";
+
+import { app, dialog } from "electron";
 
 import { canExecute } from "~/main/utils";
 import { assert } from "~/shared/utils";

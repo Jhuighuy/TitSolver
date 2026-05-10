@@ -86,8 +86,6 @@ export function Resizable({
         event.preventDefault();
         updateSize(delta);
         break;
-      default:
-        return;
     }
   }
 

@@ -585,9 +585,7 @@ function DisplayControls({
                     : colorFieldModifier
                 }
                 onValueChange={(value) => {
-                  setColorFieldModifier(
-                    (value === "component" ? 0 : value) as FieldModifier,
-                  );
+                  setColorFieldModifier(value === "component" ? 0 : value);
                 }}
               >
                 <Select.Trigger />
@@ -641,9 +639,7 @@ function DisplayControls({
                     : colorFieldModifier
                 }
                 onValueChange={(value) => {
-                  setColorFieldModifier(
-                    (value === "component" ? 0 : value) as FieldModifier,
-                  );
+                  setColorFieldModifier(value === "component" ? 0 : value);
                 }}
               >
                 <Select.Trigger />
