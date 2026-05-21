@@ -87,24 +87,24 @@ public:
   }
   /// @}
 
-  /// Expand to align the edges with the given @p point.
+  /// Expand to include the given @p point.
   constexpr auto expand(const Vec& point) -> BBox& {
     low_ = minimum(low_, point);
     high_ = maximum(high_, point);
     return *this;
   }
 
-  /// Intersect the bounding box with another @p bbox.
-  constexpr auto intersect(const BBox& bbox) -> BBox& {
-    low_ = maximum(low_, bbox.low());
-    high_ = minimum(high_, bbox.high());
+  /// Intersect the bounding box with another @p box.
+  constexpr auto intersect(const BBox& box) -> BBox& {
+    low_ = maximum(low_, box.low());
+    high_ = minimum(high_, box.high());
     return *this;
   }
 
-  /// Join the bounding box with another @p bbox.
-  constexpr auto join(const BBox& bbox) -> BBox& {
-    low_ = minimum(low_, bbox.low());
-    high_ = maximum(high_, bbox.high());
+  /// Join the bounding box with another @p box.
+  constexpr auto join(const BBox& box) -> BBox& {
+    low_ = minimum(low_, box.low());
+    high_ = maximum(high_, box.high());
     return *this;
   }
 

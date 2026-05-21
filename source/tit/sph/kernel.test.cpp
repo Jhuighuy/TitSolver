@@ -9,6 +9,7 @@
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/bsphere.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/testing/math/integrals.hpp"
 #include "tit/testing/numbers/dual.hpp"
@@ -35,16 +36,20 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
   SUBCASE("over sphere") {
     using std::numbers::pi;
     SUBCASE("2D") {
+      using Sphere2D = geom::BSphere<Vec<double, 2>>;
       for (const double h : {1.0, 0.1, 0.01}) {
+        CAPTURE(h);
         const auto r = w.radius(h);
-        const auto i = integrate_cr(std::bind_back(w, h), r);
+        const auto i = integrate(std::bind_back(w, h), Sphere2D{{}, r});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
     SUBCASE("3D") {
+      using Sphere3D = geom::BSphere<Vec<double, 3>>;
       for (const double h : {1.0, 0.1, 0.01}) {
+        CAPTURE(h);
         const auto r = w.radius(h);
-        const auto i = integrate_sp(std::bind_back(w, h), r);
+        const auto i = integrate(std::bind_back(w, h), Sphere3D{{}, r});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
@@ -55,16 +60,18 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
   // outside the support sphere.
   SUBCASE("over box") {
     SUBCASE("1D") {
+      using Box1D = geom::BBox<Vec<double, 1>>;
       for (const double h : {1.0, 0.1, 0.01}) {
-        using Box1D = geom::BBox<Vec<double, 1>>;
+        CAPTURE(h);
         const auto r = w.radius(h);
         const auto i = integrate(std::bind_back(w, h), Box1D{-r, +r});
         CHECK(approx_equal_to(i, 1.0));
       }
     }
     SUBCASE("2D") {
+      using Box2D = geom::BBox<Vec<double, 2>>;
       for (const double h : {1.0, 0.1, 0.01}) {
-        using Box2D = geom::BBox<Vec<double, 2>>;
+        CAPTURE(h);
         const auto r = w.radius(h);
         const auto i =
             integrate(std::bind_back(w, h), Box2D{{-r, -r}, {+r, +r}});
@@ -72,8 +79,9 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
       }
     }
     SUBCASE("3D") {
+      using Box3D = geom::BBox<Vec<double, 3>>;
       for (const double h : {1.0, 0.1, 0.01}) {
-        using Box3D = geom::BBox<Vec<double, 3>>;
+        CAPTURE(h);
         const auto r = w.radius(h);
         const auto i =
             integrate(std::bind_back(w, h), Box3D{{-r, -r, -r}, {+r, +r, +r}});
@@ -92,6 +100,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::grad", Kernel, KERNEL_TYPES) {
   const Kernel w{};
   SUBCASE("single component") {
     for (const double h : {1.0, 0.1, 0.01}) {
+      CAPTURE(h);
       REQUIRE(w.radius(h) >= h * std::numbers::sqrt3);
       const auto x = pow2(h) * Vec{0.1, 0.1, 0.1};
       const auto value =
@@ -102,6 +111,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::grad", Kernel, KERNEL_TYPES) {
   }
   SUBCASE("multiple components") {
     for (const double h : {1.0, 0.1, 0.01}) {
+      CAPTURE(h);
       REQUIRE(w.radius(h) >= h * std::numbers::sqrt3);
       const auto x = pow2(h) * Vec{0.1, 0.1, 0.1};
       const auto value =
@@ -120,6 +130,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::width_deriv", Kernel, KERNEL_TYPES) {
   // and compare it to the exact width derivative.
   const Kernel w{};
   for (const double h : {1.0, 0.1, 0.01}) {
+    CAPTURE(h);
     REQUIRE(w.radius(h) >= h * std::numbers::sqrt3);
     const auto x = pow2(h) * Vec{0.1, 0.1, 0.1};
     const auto value = w(vec_cast<Dual<double>>(x), Dual{h, 1.0});

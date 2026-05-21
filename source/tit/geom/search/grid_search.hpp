@@ -15,12 +15,11 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
-#include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
-#include "tit/geom/bbox.hpp"
+#include "tit/geom/bsphere.hpp"
 #include "tit/geom/grid.hpp"
 #include "tit/geom/point_range.hpp"
 #include "tit/par/algorithms.hpp"
@@ -60,22 +59,19 @@ public:
                   });
   }
 
-  /// Find the points within the radius to the given point.
+  /// Find the points within the given sphere.
   template<std::output_iterator<std::size_t> OutIter,
            std::predicate<std::size_t> Pred = AlwaysTrue>
-  auto search(const Vec& search_point,
-              vec_num_t<Vec> search_radius,
+  auto search(const BSphere<Vec>& search_sphere,
               OutIter out,
               Pred pred = {}) const -> OutIter {
-    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive!");
-    const auto search_box = BBox{search_point}.grow(search_radius);
-    const auto search_radius_sq = pow2(search_radius);
-    for (const auto& cell : grid_.cells_intersecting(search_box)) {
+    TIT_ASSERT(search_sphere.radius() > 0.0,
+               "Search radius should be positive!");
+    for (const auto& cell : grid_.cells_intersecting(search_sphere.box())) {
       for (auto index = first_point_[grid_.flatten_cell_index(cell)];
            index != sentinel_;
            index = next_point_[index]) {
-        if (pred(index) &&
-            norm2(points_[index] - search_point) < search_radius_sq) {
+        if (pred(index) && search_sphere.contains(points_[index])) {
           *out++ = index;
         }
       }
