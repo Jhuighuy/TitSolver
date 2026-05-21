@@ -12,6 +12,7 @@
 
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
+#include "tit/geom/bsphere.hpp"
 #include "tit/geom/search.hpp"
 #include "tit/testing/test.hpp"
 
@@ -71,7 +72,8 @@ auto search_grid(const std::vector<Vec3D>& points,
   // Perform the nearest neighbor search.
   SearchResult result(points.size());
   for (const auto& [point, result_row] : std::views::zip(points, result)) {
-    grid_index.search(point, search_radius, std::back_inserter(result_row));
+    grid_index.search(geom::BSphere{point, search_radius},
+                      std::back_inserter(result_row));
   }
   return result;
 }
@@ -88,7 +90,8 @@ auto search_kd_tree(const std::vector<Vec3D>& points, double search_radius)
   // Perform the nearest neighbor search.
   SearchResult result(points.size());
   for (const auto& [point, result_row] : std::views::zip(points, result)) {
-    kd_tree_index.search(point, search_radius, std::back_inserter(result_row));
+    kd_tree_index.search(geom::BSphere{point, search_radius},
+                         std::back_inserter(result_row));
   }
   return result;
 }

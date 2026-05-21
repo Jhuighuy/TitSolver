@@ -43,10 +43,14 @@ TEST_CASE("geom::BBox::center_and_extents") {
 
 TEST_CASE("geom::BBox::clamp") {
   const geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
-  CHECK(box.clamp({-1.0, -1.0}) == box.low());
-  CHECK(box.clamp({3.0, 3.0}) == box.high());
-  CHECK(box.clamp({1.0, 1.0}) == Vec{1.0, 1.0});
-  CHECK(box.clamp({3.0, 1.0}) == Vec{2.0, 1.0});
+  SUBCASE("point inside") {
+    CHECK(box.clamp({1.0, 1.0}) == Vec{1.0, 1.0});
+    CHECK(box.clamp({3.0, 1.0}) == Vec{2.0, 1.0});
+  }
+  SUBCASE("point outside") {
+    CHECK(box.clamp({-1.0, -1.0}) == box.low());
+    CHECK(box.clamp({3.0, 3.0}) == box.high());
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
