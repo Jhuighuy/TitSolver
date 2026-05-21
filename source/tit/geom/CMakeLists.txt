@@ -9,6 +9,7 @@ add_tit_library(
   SOURCES
     "bbox.hpp"
     "bipartition.hpp"
+    "bsphere.hpp"
     "grid.hpp"
     "partition.hpp"
     "partition/kmeans_clustering.hpp"
@@ -35,12 +36,13 @@ add_tit_executable(
   SOURCES
     "bbox.test.cpp"
     "bipartition.test.cpp"
+    "bsphere.test.cpp"
     "grid.test.cpp"
-    "point_range.test.cpp"
     "partition/kmeans_clustering.test.cpp"
     "partition/pixelated_partition.test.cpp"
     "partition/recursive_bisection.test.cpp"
     "partition/sort_partition.test.cpp"
+    "point_range.test.cpp"
     "search.test.cpp"
     "sort/hilbert_curve_sort.test.cpp"
     "sort/morton_curve_sort.test.cpp"
