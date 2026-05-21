@@ -27,6 +27,7 @@ add_tit_library(
     "sort/hilbert_curve_sort.hpp"
     "sort/morton_curve_sort.hpp"
     "surface.hpp"
+    "tessellation.hpp"
     "triangle.hpp"
   DEPENDS
     tit::core
@@ -54,6 +55,7 @@ add_tit_executable(
     "sort/hilbert_curve_sort.test.cpp"
     "sort/morton_curve_sort.test.cpp"
     "surface.test.cpp"
+    "tessellation.test.cpp"
     "triangle.test.cpp"
   DEPENDS
     tit::geom
