@@ -14,6 +14,7 @@
 #include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/bsphere.hpp"
 
 namespace tit {
 
@@ -21,9 +22,8 @@ namespace tit {
 
 namespace impl {
 
-// Integral over a single segment.
-template<class Func, class Num>
-constexpr auto integrate_piece(Func f, const geom::BBox<Vec<Num, 1>>& box) {
+template<class Num>
+constexpr auto integrate_piece(auto&& f, const geom::BBox<Vec<Num, 1>>& box) {
   const auto& a = box.low()[0];
   const auto& b = box.high()[0];
   const auto c = avg(a, b);
@@ -34,14 +34,17 @@ constexpr auto integrate_piece(Func f, const geom::BBox<Vec<Num, 1>>& box) {
                             std::invoke(f, Vec{c - w}))) *
          half_h;
 }
-template<class Func, class Num, std::size_t Dim>
-constexpr auto integrate_piece(Func f, const geom::BBox<Vec<Num, Dim>>& box) {
+
+template<class Num, std::size_t Dim>
+constexpr auto integrate_piece(auto&& f, const geom::BBox<Vec<Num, Dim>>& box) {
   const geom::BBox box_head{vec_head(box.low()), vec_head(box.high())};
   const geom::BBox box_tail{vec_tail(box.low()), vec_tail(box.high())};
   return integrate_piece(
       [&f, &box_head](const Vec<Num, Dim - 1>& y) {
         return integrate_piece(
-            [&f, &y](const Vec<Num, 1>& x) { return f(vec_cat(x, y)); },
+            [&f, &y](const Vec<Num, 1>& x) {
+              return std::invoke(f, vec_cat(x, y));
+            },
             box_head);
       },
       box_tail);
@@ -52,8 +55,8 @@ constexpr auto integrate_piece(Func f, const geom::BBox<Vec<Num, Dim>>& box) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Integrate a function over a box.
-template<class Func, class Num, std::size_t Dim>
-constexpr auto integrate(Func f,
+template<class Num, std::size_t Dim>
+constexpr auto integrate(auto&& f,
                          const geom::BBox<Vec<Num, Dim>>& box,
                          std::type_identity_t<Num> eps = tiny_v<Num>) {
   return [&f](this auto self,
@@ -73,41 +76,48 @@ constexpr auto integrate(Func f,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Integrate a function over a circle.
-template<class Func, class Num>
-constexpr auto integrate_cr(Func f,
-                            const Num& radius,
-                            std::type_identity_t<Num> eps = tiny_v<Num>) {
-  const auto from_polar = [&f](const Vec<Num, 2>& point) {
-    const auto& r = point[0];
-    const auto& phi = point[1];
-    const auto x = r * cos(phi);
-    const auto y = r * sin(phi);
-    const auto J = r;
-    return J * std::invoke(f, Vec{x, y});
-  };
-  const geom::BBox box{Vec<Num, 2>{}, Vec{radius, Num{2 * std::numbers::pi}}};
-  return integrate(from_polar, box, eps);
-}
-
 /// Integrate a function over a sphere.
-template<class Func, class Num>
-constexpr auto integrate_sp(Func f,
-                            const Num& radius,
-                            std::type_identity_t<Num> eps = tiny_v<Num>) {
-  const auto from_spherical = [&f](const Vec<Num, 3>& point) {
-    const auto& r = point[0];
-    const auto& theta = point[1];
-    const auto& phi = point[2];
-    const auto x = r * sin(theta) * cos(phi);
-    const auto y = r * sin(theta) * sin(phi);
-    const auto z = r * cos(theta);
-    const auto J = pow2(r) * sin(theta);
-    return J * std::invoke(f, Vec{x, y, z});
-  };
+template<class Num, std::size_t Dim>
+constexpr auto integrate(auto&& f,
+                         const geom::BSphere<Vec<Num, Dim>>& domain,
+                         std::type_identity_t<Num> eps = tiny_v<Num>) {
   using std::numbers::pi;
-  const geom::BBox box{Vec<Num, 3>{}, Vec{radius, Num{pi}, Num{2.0 * pi}}};
-  return integrate(from_spherical, box, eps);
+  if constexpr (Dim == 1) {
+    const geom::BBox box{
+        domain.center() - Vec{domain.radius()},
+        domain.center() + Vec{domain.radius()},
+    };
+    return integrate(f, box, eps);
+  } else if constexpr (Dim == 2) {
+    const auto from_polar = [&f, &domain](const Vec<Num, 2>& point) {
+      const auto& [r, phi] = point.elems();
+      const auto x = r * cos(phi);
+      const auto y = r * sin(phi);
+      const auto J = r;
+      return J * std::invoke(f, Vec{x, y} + domain.center());
+    };
+    const geom::BBox box{
+        Vec<Num, 2>{},
+        Vec{domain.radius(), Num{2.0 * pi}},
+    };
+    return integrate(from_polar, box, eps);
+  } else if constexpr (Dim == 3) {
+    const auto from_spherical = [&f, &domain](const Vec<Num, 3>& point) {
+      const auto& [r, theta, phi] = point.elems();
+      const auto x = r * sin(theta) * cos(phi);
+      const auto y = r * sin(theta) * sin(phi);
+      const auto z = r * cos(theta);
+      const auto J = pow2(r) * sin(theta);
+      return J * std::invoke(f, Vec{x, y, z} + domain.center());
+    };
+    const geom::BBox box{
+        Vec<Num, 3>{},
+        Vec{domain.radius(), Num{pi}, Num{2.0 * pi}},
+    };
+    return integrate(from_spherical, box, eps);
+  } else {
+    static_assert(false);
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

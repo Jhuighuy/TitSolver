@@ -19,6 +19,7 @@
 #include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bipartition.hpp"
+#include "tit/geom/bsphere.hpp"
 #include "tit/geom/point_range.hpp"
 #include "tit/par/atomic.hpp"
 #include "tit/par/task_group.hpp"
@@ -113,38 +114,31 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Find the points within the radius to the given point.
+  /// Find the points within the given sphere.
   template<std::output_iterator<std::size_t> OutIter,
            std::predicate<std::size_t> Pred = AlwaysTrue>
-  auto search(const Vec& search_point,
-              vec_num_t<Vec> search_radius,
+  auto search(const BSphere<Vec>& search_sphere,
               OutIter out,
               Pred pred = {}) const -> OutIter {
-    TIT_ASSERT(search_radius > 0.0, "Search radius should be positive!");
-    const auto search_radius_sq = pow2(search_radius);
     const auto* const root_node = &nodes_.front();
-    [&search_point, &search_radius_sq, &pred, &points = points_, &out](
-        this const auto& self,
-        const KDTreeNode_* node) {
+    [&search_sphere, &pred, &points = points_, &out](this const auto& self,
+                                                     const KDTreeNode_* node) {
       if (node == nullptr) return;
       const auto& [index, axis, left, right] = *node;
       TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
 
       // Check if the point is within the search radius.
       const auto& point = points[index];
-      if (pred(index) && norm2(point - search_point) < search_radius_sq) {
-        *out++ = index;
-      }
+      if (pred(index) && search_sphere.contains(point)) *out++ = index;
 
       // Recursively search the subtrees.
-      const auto delta = search_point[axis] - point[axis];
-      const auto delta_sq = pow2(delta);
-      if (delta < vec_num_t<Vec>{}) {
+      if (const auto delta = search_sphere.center()[axis] - point[axis];
+          delta < vec_num_t<Vec>{}) {
         self(left);
-        if (delta_sq < search_radius_sq) self(right);
+        if (pow2(delta) < pow2(search_sphere.radius())) self(right);
       } else {
         self(right);
-        if (delta_sq < search_radius_sq) self(left);
+        if (pow2(delta) < pow2(search_sphere.radius())) self(left);
       }
     }(root_node);
     return out;
