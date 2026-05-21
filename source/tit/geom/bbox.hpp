@@ -54,6 +54,16 @@ public:
     return high_ - low_;
   }
 
+  /// Check if the point is inside the bounding box (inclusive).
+  constexpr auto contains(const Vec& point) const noexcept -> bool {
+    return all(low_ <= point && point <= high_);
+  }
+
+  /// Check if the bounding box intersects with another @p box.
+  constexpr auto intersects(const BBox& box) const noexcept -> bool {
+    return all(low_ <= box.high() && box.low() <= high_);
+  }
+
   /// Find the point inside of bounding box that is closest to @p point.
   constexpr auto clamp(Vec point) const -> Vec {
     point = maximum(low_, point);
