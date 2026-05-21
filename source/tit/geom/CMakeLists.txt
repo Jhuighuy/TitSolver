@@ -8,6 +8,7 @@ add_tit_library(
     geom
   SOURCES
     "bbox.hpp"
+    "bsphere.hpp"
     "bipartition.hpp"
     "grid.hpp"
     "partition.hpp"
@@ -34,6 +35,7 @@ add_tit_executable(
     geom_tests
   SOURCES
     "bbox.test.cpp"
+    "bsphere.test.cpp"
     "bipartition.test.cpp"
     "grid.test.cpp"
     "point_range.test.cpp"
