@@ -22,6 +22,7 @@
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bbox.hpp"
+#include "tit/geom/bsphere.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
 #include "tit/par/algorithms.hpp"
@@ -142,8 +143,7 @@ private:
         // sorted results.
         auto& search_results = adjacency_[a.index()];
         search_results.clear();
-        search_index.search(search_point,
-                            search_radius,
+        search_index.search(geom::BSphere{search_point, search_radius},
                             std::back_inserter(search_results));
         std::ranges::sort(search_results);
       });
@@ -171,8 +171,7 @@ private:
             auto& search_results = interp_adjacency_[i];
             search_results.clear();
             search_index.search( //
-                interp_point,
-                search_radius,
+                geom::BSphere{interp_point, search_radius},
                 std::back_inserter(search_results),
                 [&particles](std::size_t b) {
                   return particles.has_type(b, ParticleType::fluid);
