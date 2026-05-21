@@ -9,7 +9,7 @@
 #include <concepts>
 #include <cstddef>
 #include <iterator>
-#include <limits>
+#include <numeric>
 #include <ranges>
 #include <utility>
 #include <vector>
@@ -46,17 +46,43 @@ public:
   GridIndex(Points points, vec_num_t<Vec> size_hint)
       : points_{std::move(points)} {
     TIT_ASSERT(size_hint > 0.0, "Cell size hint must be positive!");
+
+    // Early exit if the no points are provided.
+    if (std::ranges::empty(points_)) return;
+    const auto point_indices =
+        std::views::iota(std::size_t{0}, std::ranges::size(points_));
+
+    // Compute the bounding box.
     const auto box = compute_bbox(points_).grow(size_hint / 2);
     grid_ = Grid{box}.set_cell_extents(size_hint);
-    first_point_.assign(grid_.flat_num_cells(), sentinel_);
-    next_point_.resize(std::ranges::size(points_));
-    par::for_each(std::views::enumerate(std::views::zip(points_, next_point_)),
-                  [this](auto&& index_and_points) {
-                    auto&& [index, point_and_next_point] = index_and_points;
-                    auto&& [point, next_point] = point_and_next_point;
-                    const auto cell = grid_.flat_cell_index(point);
-                    next_point = par::exchange(first_point_[cell], index);
-                  });
+
+    // Count the points in each cell. Counts are shifted by two so that the
+    // fill positions turn into the final cell offsets in-place.
+    cell_point_offsets_.resize(grid_.flat_num_cells() + 2);
+    par::for_each(point_indices, [this](std::size_t point_index) {
+      const auto flat_cell = grid_.flat_cell_index(points_[point_index]);
+      TIT_ASSERT(flat_cell < grid_.flat_num_cells(),
+                 "Cell index is out of range!");
+      par::fetch_and_add(cell_point_offsets_[flat_cell + 2], 1);
+    });
+
+    // Convert the cell counts to offsets and allocate the point indices.
+    std::partial_sum(cell_point_offsets_.begin() + 2,
+                     cell_point_offsets_.end(),
+                     cell_point_offsets_.begin() + 2);
+    cell_points_.resize(cell_point_offsets_.back());
+
+    // Fill each cell range in parallel. Incrementing the shifted offsets
+    // leaves the final CSR offsets in the first `num_cells + 1` entries.
+    par::for_each(point_indices, [this](std::size_t point_index) {
+      const auto flat_cell = grid_.flat_cell_index(points_[point_index]);
+      TIT_ASSERT(flat_cell < grid_.flat_num_cells(),
+                 "Cell index is out of range!");
+      const auto position =
+          par::fetch_and_add(cell_point_offsets_[flat_cell + 1], 1);
+      cell_points_[position] = point_index;
+    });
+    cell_point_offsets_.pop_back();
   }
 
   /// Find the points within the given sphere.
@@ -65,12 +91,16 @@ public:
   auto search(const BSphere<Vec>& search_sphere,
               OutIter out,
               Pred pred = {}) const -> OutIter {
+    if (std::ranges::empty(points_)) return out;
     for (const auto& cell : grid_.cells_intersecting(search_sphere.box())) {
-      for (auto index = first_point_[grid_.flatten_cell_index(cell)];
-           index != sentinel_;
-           index = next_point_[index]) {
-        if (pred(index) && search_sphere.contains(points_[index])) {
-          *out++ = index;
+      const auto flat_cell = grid_.flatten_cell_index(cell);
+      const auto first = cell_point_offsets_[flat_cell];
+      const auto last = cell_point_offsets_[flat_cell + 1];
+      for (const auto point_index :
+           std::ranges::subrange(std::next(cell_points_.begin(), first),
+                                 std::next(cell_points_.begin(), last))) {
+        if (pred(point_index) && search_sphere.contains(points_[point_index])) {
+          *out++ = point_index;
         }
       }
     }
@@ -83,9 +113,8 @@ private:
 
   Points points_;
   Grid<Vec> grid_;
-  std::vector<std::size_t> first_point_;
-  std::vector<std::size_t> next_point_;
-  static constexpr auto sentinel_ = std::numeric_limits<std::size_t>::max();
+  std::vector<std::size_t> cell_point_offsets_;
+  std::vector<std::size_t> cell_points_;
 
 }; // class GridIndex
 
