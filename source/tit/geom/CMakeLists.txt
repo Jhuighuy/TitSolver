@@ -20,9 +20,12 @@ add_tit_library(
     "search.hpp"
     "search/grid_search.hpp"
     "search/kd_tree_search.hpp"
+    "segment.hpp"
     "sort.hpp"
     "sort/hilbert_curve_sort.hpp"
     "sort/morton_curve_sort.hpp"
+    "surface.hpp"
+    "triangle.hpp"
   DEPENDS
     tit::core
     tit::par
@@ -44,8 +47,11 @@ add_tit_executable(
     "partition/sort_partition.test.cpp"
     "point_range.test.cpp"
     "search.test.cpp"
+    "segment.test.cpp"
     "sort/hilbert_curve_sort.test.cpp"
     "sort/morton_curve_sort.test.cpp"
+    "surface.test.cpp"
+    "triangle.test.cpp"
   DEPENDS
     tit::geom
     tit::testing
