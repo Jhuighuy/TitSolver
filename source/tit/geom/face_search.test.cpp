@@ -11,10 +11,10 @@
 #include <set>
 #include <vector>
 
-#include "tit/core/math.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bsphere.hpp"
-#include "tit/geom/search.hpp"
+#include "tit/geom/face_search.hpp"
+#include "tit/geom/surface.hpp"
 #include "tit/par/algorithms.hpp"
 #include "tit/par/control.hpp"
 #include "tit/testing/test.hpp"
@@ -24,10 +24,10 @@ namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Nearest neighbor search result.
+// Face search result.
 using SearchResult = std::vector<std::vector<std::size_t>>;
 
-// Match the two nearest neighbor search results.
+// Match the two face search results.
 void match_search_results(const SearchResult& expected_result,
                           const SearchResult& actual_result) {
   REQUIRE(expected_result.size() == actual_result.size());
@@ -45,104 +45,79 @@ void match_search_results(const SearchResult& expected_result,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Naive O(N^2) implementation of a nearest neighbor search.
+// Naive implementation of a face search.
 template<class Vec>
-auto search_naive(const std::vector<Vec>& points, vec_num_t<Vec> search_radius)
-    -> SearchResult {
-  const auto search_radius_sq = pow2(search_radius);
+auto search_naive(const geom::Surface<Vec>& surface,
+                  const std::vector<Vec>& points,
+                  vec_num_t<Vec> search_radius) {
   SearchResult result(points.size());
-  for (std::size_t i = 0; i < points.size(); ++i) {
-    result[i] = {i};
-    for (std::size_t j = 0; j < i; ++j) {
-      if (norm2(points[i] - points[j]) < search_radius_sq) {
-        result[i].push_back(j);
-        result[j].push_back(i);
-      }
+  par::set_num_threads(4);
+  par::for_each(std::views::zip(points, result), [&](auto&& pair) {
+    auto&& [point, result_row] = pair;
+    const geom::BSphere search_sphere{point, search_radius};
+    for (const auto& [face_index, face] :
+         std::views::enumerate(surface.faces())) {
+      if (face.intersects(search_sphere)) result_row.push_back(face_index);
     }
-  }
+  });
   return result;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Nearest neighbor search via a grid.
+// Face search via a grid.
 template<class Vec>
-auto search_grid(const std::vector<Vec>& points,
+auto search_grid(const geom::Surface<Vec>& surface,
+                 const std::vector<Vec>& points,
                  vec_num_t<Vec> search_radius,
                  vec_num_t<Vec> size_hint) -> SearchResult {
   // Construct the grid.
-  const geom::GridSearch grid_search{size_hint};
-  const auto grid_index = grid_search(points);
+  const geom::GridFaceSearch grid_face_search{size_hint};
+  const auto grid_face_index = grid_face_search(surface);
 
-  // Perform the nearest neighbor search.
+  // Perform the face search.
   SearchResult result(points.size());
   par::set_num_threads(4);
   par::for_each(std::views::zip(points, result), [&](auto&& pair) {
     auto&& [point, result_row] = pair;
-    grid_index.search(geom::BSphere{point, search_radius},
-                      std::back_inserter(result_row));
+    grid_face_index.search(geom::BSphere{point, search_radius},
+                           std::back_inserter(result_row));
   });
   return result;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Nearest neighbor search via a K-dimensional tree.
+// Run a face search test.
 template<class Vec>
-auto search_kd_tree(const std::vector<Vec>& points,
-                    vec_num_t<Vec> search_radius) -> SearchResult {
-  // Construct the K-dimensional tree.
-  const geom::KDTreeSearch kd_tree_search{};
-  const auto kd_tree_index = kd_tree_search(points);
-
-  // Perform the nearest neighbor search.
-  SearchResult result(points.size());
-  par::set_num_threads(4);
-  par::for_each(std::views::zip(points, result), [&](auto&& pair) {
-    auto&& [point, result_row] = pair;
-    kd_tree_index.search(geom::BSphere{point, search_radius},
-                         std::back_inserter(result_row));
-  });
-  return result;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// Run a search test.
-template<class Vec>
-void run_search_test(const std::vector<Vec>& points,
-                     vec_num_t<Vec> search_radius) {
+void run_face_search_test(const geom::Surface<Vec>& surface,
+                          const std::vector<Vec>& points,
+                          vec_num_t<Vec> search_radius) {
   // Naive search as a baseline.
-  const auto result_naive = search_naive(points, search_radius);
+  const auto result_naive = search_naive(surface, points, search_radius);
   SUBCASE("naive") {
     match_search_results(result_naive, result_naive);
     REQUIRE_FALSE(std::ranges::all_of(result_naive, std::ranges::empty));
   }
 
-  // Nearest neighbor search with a grid.
+  // Face search with a grid.
   SUBCASE("grid") {
     SUBCASE("size hint = 0.5 * search radius") {
       const auto result_grid =
-          search_grid(points, search_radius, 0.5 * search_radius);
+          search_grid(surface, points, search_radius, 0.5 * search_radius);
       match_search_results(result_naive, result_grid);
     }
     SUBCASE("size hint = 5.0 * search radius") {
       const auto result_grid =
-          search_grid(points, search_radius, 5.0 * search_radius);
+          search_grid(surface, points, search_radius, 5.0 * search_radius);
       match_search_results(result_naive, result_grid);
     }
-  }
-
-  // Nearest neighbor search with a K-dimensional tree.
-  SUBCASE("KD tree") {
-    const auto result_kd_tree = search_kd_tree(points, search_radius);
-    match_search_results(result_naive, result_kd_tree);
   }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("geom::search") {
+TEST_CASE("geom::face_search") {
   std::mt19937 random_engine{/*seed=*/123};
   std::uniform_real_distribution<double> dist{0.0, 1.0};
   SUBCASE("2D") {
@@ -152,10 +127,20 @@ TEST_CASE("geom::search") {
       for (std::size_t i = 0; i < 2; ++i) point[i] = dist(random_engine);
     }
 
+    // Some surface.
+    /// @todo Replace with a more complex surface.
+    geom::Surface<Vec<double, 2>> surface;
+    surface.append_vert({0.0, 0.0});
+    surface.append_vert({1.0, 0.0});
+    surface.append_vert({0.0, 1.0});
+    surface.append_face({0, 1});
+    surface.append_face({1, 2});
+    surface.append_face({2, 0});
+
     // Run the nearest neighbor search tests for various search radii.
     for (const auto search_radius : {0.01, 0.1, 0.5, 1.0, 10.0}) {
       CAPTURE(search_radius);
-      run_search_test(points, search_radius);
+      run_face_search_test(surface, points, search_radius);
     }
   }
   SUBCASE("3D") {
@@ -165,10 +150,22 @@ TEST_CASE("geom::search") {
       for (std::size_t i = 0; i < 3; ++i) point[i] = dist(random_engine);
     }
 
+    // Some surface.
+    /// @todo Replace with a more complex surface.
+    geom::Surface<Vec<double, 3>> surface;
+    surface.append_vert({0.0, 0.0, 0.0});
+    surface.append_vert({1.0, 0.0, 0.0});
+    surface.append_vert({0.0, 1.0, 0.0});
+    surface.append_vert({0.0, 0.0, 1.0});
+    surface.append_face({0, 1, 2});
+    surface.append_face({0, 3, 2});
+    surface.append_face({0, 2, 3});
+    surface.append_face({1, 2, 3});
+
     // Run the nearest neighbor search tests for various search radii.
     for (const auto search_radius : {0.01, 0.1, 0.5, 1.0, 10.0}) {
       CAPTURE(search_radius);
-      run_search_test(points, search_radius);
+      run_face_search_test(surface, points, search_radius);
     }
   }
 }
