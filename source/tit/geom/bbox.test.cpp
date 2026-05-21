@@ -55,6 +55,24 @@ TEST_CASE("geom::BBox::clamp") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("geom::BBox::contains") {
+  const geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
+  SUBCASE("point inside") {
+    CHECK(box.contains(Vec{1.0, 1.0}));
+  }
+  SUBCASE("point on boundary") {
+    CHECK(box.contains(Vec{0.0, 0.0}));
+    CHECK(box.contains(Vec{2.0, 2.0}));
+    CHECK(box.contains(Vec{0.0, 1.0}));
+  }
+  SUBCASE("point outside") {
+    CHECK_FALSE(box.contains(Vec{-1.0, 1.0}));
+    CHECK_FALSE(box.contains(Vec{3.0, 3.0}));
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("geom::BBox::grow") {
   geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
   box.grow(0.5);
