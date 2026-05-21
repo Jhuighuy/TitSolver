@@ -372,10 +372,15 @@ TEST_CASE_TEMPLATE("Vec::approx_equal_to", Num, NUM_TYPES) {
 }
 
 TEST_CASE_TEMPLATE("Vec::cross", Num, NUM_TYPES) {
-  CHECK(cross(Vec{Num{1}, Num{0}, Num{0}}, Vec{Num{0}, Num{1}, Num{0}}) ==
-        Vec{Num{0}, Num{0}, Num{1}});
-  CHECK(cross(Vec{Num{1}, Num{2}, Num{3}}, Vec{Num{4}, Num{5}, Num{6}}) ==
-        Vec{-Num{3}, Num{6}, -Num{3}});
+  SUBCASE("2D") {
+    CHECK(cross(Vec{Num{1}, Num{2}}) == Vec{Num{2}, -Num{1}});
+  }
+  SUBCASE("3D") {
+    CHECK(cross(Vec{Num{1}, Num{0}, Num{0}}, //
+                Vec{Num{0}, Num{1}, Num{0}}) == Vec{Num{0}, Num{0}, Num{1}});
+    CHECK(cross(Vec{Num{1}, Num{2}, Num{3}}, //
+                Vec{Num{4}, Num{5}, Num{6}}) == Vec{-Num{3}, Num{6}, -Num{3}});
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
