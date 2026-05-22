@@ -102,6 +102,16 @@ public:
     return atan2(det(ap, bp, cp), den) / Num{0.5 * unit_sphere_area_v<3>};
   }
 
+  /// Project a triangle into the coordinate system induced by the triangle
+  /// plane and with the given point as the origin.
+  constexpr auto project(const Vec& origin) const noexcept
+      -> std::array<tit::Vec<Num, 2>, 3> {
+    const auto& [... vs] = verts();
+    const auto e1 = normalize(ba());
+    const auto e2 = normalize(cross(wnormal(), e1));
+    return {tit::Vec{dot(vs - origin, e1), dot(vs - origin, e2)}...};
+  }
+
   /// Find the point inside of the triangle that is closest to @p point.
   constexpr auto clamp(const Vec& point) const noexcept -> Vec {
     if (is_tiny(area())) {
