@@ -149,6 +149,14 @@ constexpr auto tiny_v<Dual<Float, Deriv>> = Dual{tiny_v<Float>, Deriv{}};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Absolute value of a dual number.
+template<class Num, class Deriv>
+constexpr auto abs(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {
+  return f.val() >= Num{0.0} ? f : -f;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Square root of a dual number.
 template<class Num, class Deriv>
 constexpr auto sqrt(const Dual<Num, Deriv>& f) -> Dual<Num, Deriv> {

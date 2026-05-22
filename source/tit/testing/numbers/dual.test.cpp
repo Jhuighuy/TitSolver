@@ -144,6 +144,21 @@ TEST_CASE("Dual::operator<=>") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("Dual::abs") {
+  SUBCASE("positive") {
+    const auto d = abs(Dual{2.0, 1.0});
+    CHECK(d.val() == 2.0);
+    CHECK(d.deriv() == 1.0);
+  }
+  SUBCASE("negative") {
+    const auto d = abs(Dual{-2.0, 1.0});
+    CHECK(d.val() == 2.0);
+    CHECK(d.deriv() == -1.0);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("Dual::sqrt") {
   const auto d = sqrt(Dual{4.0, 1.0});
   CHECK(d.val() == 2.0);
