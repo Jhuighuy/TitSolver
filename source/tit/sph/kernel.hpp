@@ -5,8 +5,11 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <concepts>
 #include <cstddef>
+#include <utility>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
@@ -186,24 +189,163 @@ public:
   }
 
   /// Kernel flux over a face.
-  /// @todo Below is a very crude approximation. Replace with proper formulas.
   template<class Num, std::size_t Dim, class Self>
   constexpr auto flux(this Self& self,
                       const geom::Surface<Vec<Num, Dim>>::Face& face,
                       const Vec<Num, Dim>& x,
                       Num h) noexcept -> Vec<Num, Dim> {
     TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
-    return face.wnormal() * self(x - face.center(), h);
+    const auto h_inverse = inverse(h);
+    const auto w = self.template weight<Num, Dim>() * h_inverse;
+    const auto n = face.normal();
+    const auto d = dot(x - face.a(), n) * h_inverse;
+    const auto [... ps] = face.project(x);
+    return n * w * self.unit_flux(abs(d), (ps * h_inverse)...);
   }
 
   /// Antigradient flux over a face.
-  /// @todo Below is a very crude approximation. Replace with proper formulas.
   template<class Num, std::size_t Dim, class Self>
   constexpr auto antigrad_flux(this Self& self,
                                const geom::Surface<Vec<Num, Dim>>::Face& face,
                                const Vec<Num, Dim>& x,
-                               Num& h) noexcept -> Num {
-    return -dot(face.wnormal(), self.antigrad(x - face.center(), h));
+                               Num h) noexcept -> Num {
+    TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
+    const auto h_inverse = inverse(h);
+    const auto w = self.template weight<Num, Dim>();
+    const auto d = dot(x - face.a(), face.normal()) * h_inverse;
+    const auto [... ps] = face.project(x);
+    return copysign(w, d) *
+           self.unit_antigrad_flux(abs(d), (ps * h_inverse)...);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+protected:
+
+  /// Integrate a scalar primitive over a clipped 2D segment support piece.
+  template<class Num>
+  static constexpr auto unit_segment_integral(Num cutoff,
+                                              Num eta,
+                                              Num z_min,
+                                              Num z_max,
+                                              auto&& primitive) noexcept
+      -> Num {
+    TIT_ASSERT(cutoff > Num{0.0}, "Cutoff must be positive!");
+    TIT_ASSERT(eta >= Num{0.0}, "Eta must be non-negative!");
+    if (eta >= cutoff) return {};
+
+    // Clip the segment endpoints.
+    const auto z_clip = sqrt(pow2(cutoff) - pow2(eta));
+    const auto z_lo = std::max(z_min, -z_clip);
+    const auto z_hi = std::min(z_max, +z_clip);
+    if (z_lo >= z_hi) return {};
+
+    // Evaluate the primitive.
+    const auto eta_sqr = pow2(eta);
+    const auto eval = [&eta, &eta_sqr, &primitive](Num z) {
+      const auto rho = sqrt(pow2(z) + eta_sqr);
+      const auto A = atan2(z, eta);
+      const auto L = is_tiny(eta) ? Num{0.0} : asinh(z / eta);
+      return std::invoke(primitive, eta, z, rho, A, L);
+    };
+
+    // Evaluate the integral.
+    return eval(z_hi) - eval(z_lo);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  //
+  // Temporary numerical integration for 3D fluxes.
+  //
+
+  /// Scalar kernel flux over a triangle.
+  template<class Self, class Num>
+  constexpr auto unit_flux(this Self& self,
+                           Num eta,
+                           const Vec<Num, 2>& a,
+                           const Vec<Num, 2>& b,
+                           const Vec<Num, 2>& c) noexcept -> Num {
+    const auto f = [&self](Num q) { return self.unit_value(q); };
+    return unit_flux_impl(f, eta, a, b, c);
+  }
+
+  /// Scalar antigradient flux over a triangle.
+  template<class Self, class Num>
+  constexpr auto unit_antigrad_flux(this Self& self,
+                                    Num eta,
+                                    const Vec<Num, 2>& a,
+                                    const Vec<Num, 2>& b,
+                                    const Vec<Num, 2>& c) noexcept -> Num {
+    const auto f = [&self](Num q) {
+      return self.template unit_antideriv_moment<3>(q) / pow<3>(q);
+    };
+    return eta * unit_flux_impl(f, eta, a, b, c);
+  }
+
+private:
+
+  template<class Func, class Num>
+  static constexpr auto unit_flux_impl(const Func& func,
+                                       Num eta,
+                                       const Vec<Num, 2>& a,
+                                       const Vec<Num, 2>& b,
+                                       const Vec<Num, 2>& c) noexcept -> Num {
+    using Node = std::pair<Vec<Num, 3>, Num>;
+    static constexpr auto quadrature = std::to_array<Node>({
+        // clang-format off
+        {{Num{1.0 / 3.0}, Num{1.0 / 3.0}, Num{1.0 / 3.0}}, Num{0.14431560767778716825}},
+
+        {{Num{0.08141482341455368794}, Num{0.45929258829272315603}, Num{0.45929258829272315603}}, Num{0.09509163426728462479}},
+        {{Num{0.45929258829272315603}, Num{0.08141482341455368794}, Num{0.45929258829272315603}}, Num{0.09509163426728462479}},
+        {{Num{0.45929258829272315603}, Num{0.45929258829272315603}, Num{0.08141482341455368794}}, Num{0.09509163426728462479}},
+
+        {{Num{0.65886138449647958676}, Num{0.17056930775176020662}, Num{0.17056930775176020662}}, Num{0.10321737053471825028}},
+        {{Num{0.17056930775176020662}, Num{0.65886138449647958676}, Num{0.17056930775176020662}}, Num{0.10321737053471825028}},
+        {{Num{0.17056930775176020662}, Num{0.17056930775176020662}, Num{0.65886138449647958676}}, Num{0.10321737053471825028}},
+
+        {{Num{0.89890554336593788332}, Num{0.05054722831703105834}, Num{0.05054722831703105834}}, Num{0.03245849762319808031}},
+        {{Num{0.05054722831703105834}, Num{0.89890554336593788332}, Num{0.05054722831703105834}}, Num{0.03245849762319808031}},
+        {{Num{0.05054722831703105834}, Num{0.05054722831703105834}, Num{0.89890554336593788332}}, Num{0.03245849762319808031}},
+
+        {{Num{0.00839477740995760534}, Num{0.26311282963463811342}, Num{0.72849239295540428124}}, Num{0.02723031417443499426}},
+        {{Num{0.00839477740995760534}, Num{0.72849239295540428124}, Num{0.26311282963463811342}}, Num{0.02723031417443499426}},
+        {{Num{0.26311282963463811342}, Num{0.00839477740995760534}, Num{0.72849239295540428124}}, Num{0.02723031417443499426}},
+        {{Num{0.26311282963463811342}, Num{0.72849239295540428124}, Num{0.00839477740995760534}}, Num{0.02723031417443499426}},
+        {{Num{0.72849239295540428124}, Num{0.00839477740995760534}, Num{0.26311282963463811342}}, Num{0.02723031417443499426}},
+        {{Num{0.72849239295540428124}, Num{0.26311282963463811342}, Num{0.00839477740995760534}}, Num{0.02723031417443499426}},
+        // clang-format on
+    });
+
+    const auto area = Num{0.5} * abs((b[0] - a[0]) * (c[1] - a[1]) -
+                                     (b[1] - a[1]) * (c[0] - a[0]));
+    const auto eval = [&a, &b, &c, &eta, &area, &func](const Vec<Num, 2>& u,
+                                                       const Vec<Num, 2>& v,
+                                                       const Vec<Num, 2>& w) {
+      Num result{};
+      for (const auto& [lambda, weight] : quadrature) {
+        const auto p = lambda[0] * u + lambda[1] * v + lambda[2] * w;
+        const auto y = a + p[0] * (b - a) + p[1] * (c - a);
+        const auto q = sqrt(pow2(eta) + norm2(y));
+        result += area * weight * func(q);
+      }
+      return result;
+    };
+
+    Num result{};
+    constexpr std::size_t num_subdivs = 48;
+    constexpr auto step = inverse(static_cast<Num>(num_subdivs));
+    for (std::size_t i = 0; i < num_subdivs; ++i) {
+      for (std::size_t j = 0; j < num_subdivs - i; ++j) {
+        const auto u = vec_cast<Num>(Vec{i, j}) * step;
+        const auto v = u + Vec{step, Num{0.0}};
+        const auto w = u + Vec{Num{0.0}, step};
+        result += eval(u, v, w);
+        if (i + j + 1 < num_subdivs) {
+          result += eval(v, v + Vec{Num{0.0}, step}, w);
+        }
+      }
+    }
+    return result / static_cast<Num>(pow2(num_subdivs));
   }
 
 }; // class Kernel
@@ -216,6 +358,9 @@ public:
 /// Cubic B-spline (M4) smoothing kernel.
 class CubicSplineKernel final : public Kernel {
 public:
+
+  using Kernel::unit_antigrad_flux;
+  using Kernel::unit_flux;
 
   /// Unit support radius.
   template<class Num>
@@ -262,6 +407,65 @@ public:
     }
   }
 
+  /// Scalar kernel flux over a segment.
+  template<class Num>
+  static constexpr auto unit_flux(Num eta, Num z_min, Num z_max) noexcept
+      -> Num {
+    // clang-format off
+    const auto primitive = [](Num a, Num eta_, Num z, Num rho, Num /*A*/, Num L) {
+      // clang-format on
+      const auto eta2 = pow2(eta_);
+      const auto J0 = z;
+      const auto J1 = Num{0.5} * (z * rho + eta2 * L);
+      const auto J2 = z * pow<2>(rho) / Num{3.0} + Num{2.0 / 3.0} * eta2 * J0;
+      const auto J3 = z * pow<3>(rho) / Num{4.0} + Num{3.0 / 4.0} * eta2 * J1;
+      return horner(a, {-J3, Num{3.0} * J2, -Num{3.0} * J1, J0});
+    };
+    return Num{0.25} *
+               unit_segment_integral(Num{2.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{2.0})) -
+           Num{1.0} *
+               unit_segment_integral(Num{1.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{1.0}));
+  }
+
+  /// Scalar antigradient flux over a segment.
+  template<class Num>
+  static constexpr auto unit_antigrad_flux(Num eta,
+                                           Num z_min,
+                                           Num z_max) noexcept -> Num {
+    const auto primitive = [](Num a, Num eta_, Num z, Num rho, Num A, Num L) {
+      const auto eta2 = pow2(eta_);
+      const auto J0 = z;
+      const auto J1 = Num{0.5} * (z * rho + eta2 * L);
+      const auto J2 = z * pow<2>(rho) / Num{3.0} + Num{2.0 / 3.0} * eta2 * J0;
+      const auto J3 = z * pow<3>(rho) / Num{4.0} + Num{3.0 / 4.0} * eta2 * J1;
+      return A * pow<5>(a) / Num{20.0} + eta_ * horner(a,
+                                                       {J3 / Num{5.0}, //
+                                                        -Num{3.0 / 4.0} * J2,
+                                                        J1,
+                                                        -J0 / Num{2.0}});
+    };
+    return Num{0.25} *
+               unit_segment_integral(Num{2.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{2.0})) -
+           Num{1.0} *
+               unit_segment_integral(Num{1.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{1.0}));
+  }
+
 }; // class CubicSplineKernel
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -269,6 +473,9 @@ public:
 /// The quartic B-spline (M5) smoothing kernel.
 class QuarticSplineKernel final : public Kernel {
 public:
+
+  using Kernel::unit_antigrad_flux;
+  using Kernel::unit_flux;
 
   /// Unit support radius.
   template<class Num>
@@ -315,6 +522,80 @@ public:
     }
   }
 
+  /// Scalar kernel flux over a segment.
+  template<class Num>
+  static constexpr auto unit_flux(Num eta, Num z_min, Num z_max) noexcept
+      -> Num {
+    // clang-format off
+    const auto primitive = [](Num a, Num eta_, Num z, Num rho, Num /*A*/, Num L) {
+      // clang-format on
+      const auto eta2 = pow2(eta_);
+      const auto J0 = z;
+      const auto J1 = Num{0.5} * (z * rho + eta2 * L);
+      const auto J2 = z * pow<2>(rho) / Num{3.0} + Num{2.0 / 3.0} * eta2 * J0;
+      const auto J3 = z * pow<3>(rho) / Num{4.0} + Num{3.0 / 4.0} * eta2 * J1;
+      const auto J4 = z * pow<4>(rho) / Num{5.0} + Num{4.0 / 5.0} * eta2 * J2;
+      return horner(a, {J4, -Num{4.0} * J3, Num{6.0} * J2, -Num{4.0} * J1, J0});
+    };
+    return Num{1.0} *
+               unit_segment_integral(Num{2.5},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{2.5})) -
+           Num{5.0} *
+               unit_segment_integral(Num{1.5},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{1.5})) +
+           Num{10.0} *
+               unit_segment_integral(Num{0.5},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{0.5}));
+  }
+
+  /// Scalar antigradient flux over a segment.
+  template<class Num>
+  static constexpr auto unit_antigrad_flux(Num eta,
+                                           Num z_min,
+                                           Num z_max) noexcept -> Num {
+    const auto primitive = [](Num a, Num eta_, Num z, Num rho, Num A, Num L) {
+      const auto eta2 = pow2(eta_);
+      const auto J0 = z;
+      const auto J1 = Num{0.5} * (z * rho + eta2 * L);
+      const auto J2 = z * pow<2>(rho) / Num{3.0} + Num{2.0 / 3.0} * eta2 * J0;
+      const auto J3 = z * pow<3>(rho) / Num{4.0} + Num{3.0 / 4.0} * eta2 * J1;
+      const auto J4 = z * pow<4>(rho) / Num{5.0} + Num{4.0 / 5.0} * eta2 * J2;
+      return A * pow<6>(a) / Num{30.0} + eta_ * horner(a,
+                                                       {-J4 / Num{6.0},
+                                                        Num{4.0 / 5.0} * J3,
+                                                        -Num{3.0 / 2.0} * J2,
+                                                        Num{4.0 / 3.0} * J1,
+                                                        -J0 / Num{2.0}});
+    };
+    return Num{1.0} *
+               unit_segment_integral(Num{2.5},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{2.5})) -
+           Num{5.0} *
+               unit_segment_integral(Num{1.5},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{1.5})) +
+           Num{10.0} *
+               unit_segment_integral(Num{0.5},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{0.5}));
+  }
+
 }; // class QuarticSplineKernel
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -322,6 +603,9 @@ public:
 /// Quintic B-spline (M6) smoothing kernel.
 class QuinticSplineKernel final : public Kernel {
 public:
+
+  using Kernel::unit_antigrad_flux;
+  using Kernel::unit_flux;
 
   /// Unit support radius.
   template<class Num>
@@ -368,6 +652,89 @@ public:
     }
   }
 
+  /// Scalar kernel flux over a segment.
+  template<class Num>
+  static constexpr auto unit_flux(Num eta, Num z_min, Num z_max) noexcept
+      -> Num {
+    // clang-format off
+    const auto primitive = [](Num a, Num eta_, Num z, Num rho, Num /*A*/, Num L) {
+      // clang-format on
+      const auto eta2 = pow2(eta_);
+      const auto J0 = z;
+      const auto J1 = Num{0.5} * (z * rho + eta2 * L);
+      const auto J2 = z * pow<2>(rho) / Num{3.0} + Num{2.0 / 3.0} * eta2 * J0;
+      const auto J3 = z * pow<3>(rho) / Num{4.0} + Num{3.0 / 4.0} * eta2 * J1;
+      const auto J4 = z * pow<4>(rho) / Num{5.0} + Num{4.0 / 5.0} * eta2 * J2;
+      const auto J5 = z * pow<5>(rho) / Num{6.0} + Num{5.0 / 6.0} * eta2 * J3;
+      return horner(a,
+                    {-J5,
+                     Num{5.0} * J4,
+                     -Num{10.0} * J3,
+                     Num{10.0} * J2,
+                     -Num{5.0} * J1,
+                     J0});
+    };
+    return Num{1.0} *
+               unit_segment_integral(Num{3.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{3.0})) -
+           Num{6.0} *
+               unit_segment_integral(Num{2.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{2.0})) +
+           Num{15.0} *
+               unit_segment_integral(Num{1.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{1.0}));
+  }
+
+  /// Scalar antigradient flux over a segment.
+  template<class Num>
+  static constexpr auto unit_antigrad_flux(Num eta,
+                                           Num z_min,
+                                           Num z_max) noexcept -> Num {
+    const auto primitive = [](Num a, Num eta_, Num z, Num rho, Num A, Num L) {
+      const auto eta2 = pow2(eta_);
+      const auto J0 = z;
+      const auto J1 = Num{0.5} * (z * rho + eta2 * L);
+      const auto J2 = z * pow<2>(rho) / Num{3.0} + Num{2.0 / 3.0} * eta2 * J0;
+      const auto J3 = z * pow<3>(rho) / Num{4.0} + Num{3.0 / 4.0} * eta2 * J1;
+      const auto J4 = z * pow<4>(rho) / Num{5.0} + Num{4.0 / 5.0} * eta2 * J2;
+      const auto J5 = z * pow<5>(rho) / Num{6.0} + Num{5.0 / 6.0} * eta2 * J3;
+      return A * pow<7>(a) / Num{42.0} + eta_ * horner(a,
+                                                       {J5 / Num{7.0},
+                                                        -Num{5.0 / 6.0} * J4,
+                                                        Num{2.0} * J3,
+                                                        -Num{5.0 / 2.0} * J2,
+                                                        Num{5.0 / 3.0} * J1,
+                                                        -J0 / Num{2.0}});
+    };
+    return Num{1.0} *
+               unit_segment_integral(Num{3.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{3.0})) -
+           Num{6.0} *
+               unit_segment_integral(Num{2.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{2.0})) +
+           Num{15.0} *
+               unit_segment_integral(Num{1.0},
+                                     eta,
+                                     z_min,
+                                     z_max,
+                                     std::bind_front(primitive, Num{1.0}));
+  }
+
 }; // class QuinticSplineKernel
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -378,6 +745,9 @@ public:
 /// Wendland's quartic (C2) smoothing kernel (Wendland, 1995).
 class QuarticWendlandKernel final : public Kernel {
 public:
+
+  using Kernel::unit_antigrad_flux;
+  using Kernel::unit_flux;
 
   /// Unit support radius.
   template<class Num>
@@ -419,6 +789,46 @@ public:
     }
   }
 
+  /// Scalar kernel flux over a segment.
+  template<class Num>
+  static constexpr auto unit_flux(Num eta, Num z_min, Num z_max) noexcept
+      -> Num {
+    constexpr auto primitive = [](Num eta_, Num z, Num rho, Num /*A*/, Num L) {
+      const auto eta2 = pow2(eta_);
+      const std::array rho_coeffs{
+          horner<1.0, -5.0 / 3.0, -1.0 / 2.0>(eta2),
+          horner<15.0 / 16.0, 5.0 / 128.0>(eta2) * eta2,
+          horner<-5.0 / 6.0, -1.0 / 4.0>(eta2),
+          horner<5.0 / 8.0, 5.0 / 192.0>(eta2),
+          -Num{3.0 / 16.0},
+          Num{1.0 / 48.0},
+      };
+      return L * rho_coeffs[1] * eta2 + z * horner(rho, rho_coeffs);
+    };
+    return unit_segment_integral(Num{2.0}, eta, z_min, z_max, primitive);
+  }
+
+  /// Scalar antigradient flux over a segment.
+  template<class Num>
+  static constexpr auto unit_antigrad_flux(Num eta,
+                                           Num z_min,
+                                           Num z_max) noexcept -> Num {
+    constexpr auto primitive = [](Num eta_, Num z, Num rho, Num A, Num L) {
+      const auto eta2 = pow2(eta_);
+      const std::array rho_coeffs{
+          horner<-1.0 / 2.0, 5.0 / 12.0, 1.0 / 12.0>(eta2),
+          horner<-3.0 / 16.0, -5.0 / 896.0>(eta2) * eta2,
+          horner<5.0 / 24.0, 1.0 / 24.0>(eta2),
+          horner<-1.0 / 8.0, -5.0 / 1344.0>(eta2),
+          Num{1.0 / 32.0},
+          -Num{1.0 / 336.0},
+      };
+      return Num{2.0 / 7.0} * A +
+             eta_ * (L * rho_coeffs[1] * eta2 + z * horner(rho, rho_coeffs));
+    };
+    return unit_segment_integral(Num{2.0}, eta, z_min, z_max, primitive);
+  }
+
 }; // class QuarticWendlandKernel
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -426,6 +836,9 @@ public:
 /// Wendland's 6-th order (C4) smoothing kernel (Wendland, 1995).
 class SixthOrderWendlandKernel final : public Kernel {
 public:
+
+  using Kernel::unit_antigrad_flux;
+  using Kernel::unit_flux;
 
   /// Unit support radius.
   template<class Num>
@@ -467,6 +880,56 @@ public:
     }
   }
 
+  /// Scalar kernel flux over a segment.
+  template<class Num>
+  static constexpr auto unit_flux(Num eta, Num z_min, Num z_max) noexcept
+      -> Num {
+    constexpr auto primitive = [](Num eta_, Num z, Num rho, Num /*A*/, Num L) {
+      const auto eta2 = pow2(eta_);
+      const auto eta4 = pow2(eta2);
+      const std::array rho_coeffs{
+          horner<1.0, -14.0 / 9.0, 7.0 / 3.0, 1.0, 1.0 / 54.0>(eta2),
+          horner<-35.0 / 24.0, -35.0 / 256.0>(eta2) * eta4,
+          horner<-7.0 / 9.0, 7.0 / 6.0, 1.0 / 2.0, 1.0 / 108.0>(eta2),
+          horner<-35.0 / 36.0, -35.0 / 384.0>(eta2) * eta2,
+          horner<7.0 / 8.0, 3.0 / 8.0, 1.0 / 144.0>(eta2),
+          horner<-7.0 / 9.0, -7.0 / 96.0>(eta2),
+          horner<5.0 / 16.0, 5.0 / 864.0>(eta2),
+          -Num{1.0 / 16.0},
+          Num{35.0 / 6912.0},
+      };
+      return L * rho_coeffs[1] * eta2 + z * horner(rho, rho_coeffs);
+    };
+    return unit_segment_integral(Num{2.0}, eta, z_min, z_max, primitive);
+  }
+
+  /// Scalar antigradient flux over a segment.
+  template<class Num>
+  static constexpr auto unit_antigrad_flux(Num eta,
+                                           Num z_min,
+                                           Num z_max) noexcept -> Num {
+    constexpr auto primitive = [](Num eta_, Num z, Num rho, Num A, Num L) {
+      const auto eta2 = pow2(eta_);
+      const auto eta4 = pow2(eta2);
+      // clang-format off
+      const std::array rho_coeffs{
+          horner<-1.0 / 2.0, 7.0 / 18.0, -7.0 / 18.0, -1.0 / 8.0, -1.0 / 540.0>(eta2),
+          horner<5.0 / 24.0, 35.0 / 2304.0>(eta2) * eta4,
+          horner<7.0 / 36.0, -7.0 / 36.0, -1.0 / 16.0, -1.0 / 1080.0>(eta2),
+          horner<5.0 / 36.0, 35.0 / 3456.0>(eta2) * eta2,
+          horner<-7.0 / 48.0, -3.0 / 64.0, -1.0 / 1440.0>(eta2),
+          horner<1.0 / 9.0, 7.0 / 864.0>(eta2),
+          horner<-5.0 / 128.0, -1.0 / 1728.0>(eta2),
+          Num{1.0 / 144.0},
+          -Num{7.0 / 13824.0},
+      };
+      // clang-format on
+      return Num{2.0 / 9.0} * A +
+             eta_ * (L * rho_coeffs[1] * eta2 + z * horner(rho, rho_coeffs));
+    };
+    return unit_segment_integral(Num{2.0}, eta, z_min, z_max, primitive);
+  }
+
 }; // class SixthOrderWendlandKernel
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -474,6 +937,9 @@ public:
 /// Wendland's 8-th order (C6) smoothing kernel (Wendland, 1995).
 class EighthOrderWendlandKernel final : public Kernel {
 public:
+
+  using Kernel::unit_antigrad_flux;
+  using Kernel::unit_flux;
 
   /// Unit support radius.
   template<class Num>
@@ -518,6 +984,66 @@ public:
     } else {
       static_assert(false);
     }
+  }
+
+  /// Scalar kernel flux over a segment.
+  template<class Num>
+  static constexpr auto unit_flux(Num eta, Num z_min, Num z_max) noexcept
+      -> Num {
+    constexpr auto primitive = [](Num eta_, Num z, Num rho, Num /*A*/, Num L) {
+      const auto eta2 = pow2(eta_);
+      const auto eta4 = pow2(eta2);
+      const auto eta6 = eta4 * eta2;
+      // clang-format off
+      const std::array rho_coeffs{
+          horner<1.0, -11.0 / 6.0, 11.0 / 5.0, -33.0 / 10.0, -11.0 / 6.0, -1.0 / 12.0>(eta2),
+          horner<1155.0 / 512.0, 693.0 / 2048.0, 231.0 / 65536.0>(eta2) * eta6,
+          horner<-11.0 / 12.0, 11.0 / 10.0, -33.0 / 20.0, -11.0 / 12.0, -1.0 / 24.0>(eta2),
+          horner<385.0 / 256.0, 231.0 / 1024.0, 77.0 / 32768.0>(eta2) * eta4,
+          horner<33.0 / 40.0, -99.0 / 80.0, -11.0 / 16.0, -1.0 / 32.0>(eta2),
+          horner<77.0 / 64.0, 231.0 / 1280.0, 77.0 / 40960.0>(eta2) * eta2,
+          horner<-33.0 / 32.0, -55.0 / 96.0, -5.0 / 192.0>(eta2),
+          horner<33.0 / 32.0, 99.0 / 640.0, 33.0 / 20480.0>(eta2),
+          horner<-385.0 / 768.0, -35.0 / 1536.0>(eta2),
+          horner<11.0 / 80.0, 11.0 / 7680.0>(eta2),
+          -Num{21.0 / 1024.0},
+          Num{1.0 / 768.0},
+      };
+      // clang-format on
+      return L * rho_coeffs[1] * eta2 + z * horner(rho, rho_coeffs);
+    };
+    return unit_segment_integral(Num{2.0}, eta, z_min, z_max, primitive);
+  }
+
+  /// Scalar antigradient flux over a segment.
+  template<class Num>
+  static constexpr auto unit_antigrad_flux(Num eta,
+                                           Num z_min,
+                                           Num z_max) noexcept -> Num {
+    constexpr auto primitive = [](Num eta_, Num z, Num rho, Num A, Num L) {
+      const auto eta2 = pow2(eta_);
+      const auto eta4 = pow2(eta2);
+      const auto eta6 = eta4 * eta2;
+      // clang-format off
+      const std::array rho_coeffs{
+          horner<-1.0 / 2.0, 11.0 / 24.0, -11.0 / 30.0, 33.0 / 80.0, 11.0 / 60.0, 1.0 / 144.0>(eta2),
+          horner<-385.0 / 1536.0, -63.0 / 2048.0, -231.0 / 851968.0>(eta2) * eta6,
+          horner<11.0 / 48.0, -11.0 / 60.0, 33.0 / 160.0, 11.0 / 120.0, 1.0 / 288.0>(eta2),
+          horner<-385.0 / 2304.0, -21.0 / 1024.0, -77.0 / 425984.0>(eta2) * eta4,
+          horner<-11.0 / 80.0, 99.0 / 640.0, 11.0 / 160.0, 1.0 / 384.0>(eta2),
+          horner<-77.0 / 576.0, -21.0 / 1280.0, -77.0 / 532480.0>(eta2) * eta2,
+          horner<33.0 / 256.0, 11.0 / 192.0, 5.0 / 2304.0>(eta2),
+          horner<-11.0 / 96.0, -9.0 / 640.0, -33.0 / 266240.0>(eta2),
+          horner<77.0 / 1536.0, 35.0 / 18432.0>(eta2),
+          horner<-1.0 / 80.0, -11.0 / 99840.0>(eta2),
+          Num{7.0 / 4096.0},
+          -Num{1.0 / 9984.0},
+      };
+      // clang-format on
+      return Num{7.0 / 39.0} * A +
+             eta_ * (L * rho_coeffs[1] * eta2 + z * horner(rho, rho_coeffs));
+    };
+    return unit_segment_integral(Num{2.0}, eta, z_min, z_max, primitive);
   }
 
 }; // class EighthOrderWendlandKernel
