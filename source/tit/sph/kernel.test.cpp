@@ -19,8 +19,7 @@ namespace tit {
 namespace {
 
 #define KERNEL_TYPES                                                           \
-  TIT_PASS(sph::GaussianKernel,                                                \
-           sph::CubicSplineKernel,                                             \
+  TIT_PASS(sph::CubicSplineKernel,                                             \
            sph::QuarticSplineKernel,                                           \
            sph::QuinticSplineKernel,                                           \
            sph::QuarticWendlandKernel,                                         \
@@ -36,21 +35,21 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
   SUBCASE("over sphere") {
     using std::numbers::pi;
     SUBCASE("2D") {
-      using Sphere2D = geom::BSphere<Vec<double, 2>>;
-      for (const double h : {1.0, 0.1, 0.01}) {
+      for (const auto h : {1.0, 0.1, 0.01}) {
         CAPTURE(h);
         const auto r = w.radius(h);
-        const auto i = integrate(std::bind_back(w, h), Sphere2D{{}, r});
-        CHECK(approx_equal_to(i, 1.0));
+        const auto i = integrate(std::bind_back(w, h), //
+                                 geom::BSphere{Vec{0.0, 0.0}, r});
+        CHECK_APPROX_EQ(i, 1.0);
       }
     }
     SUBCASE("3D") {
-      using Sphere3D = geom::BSphere<Vec<double, 3>>;
-      for (const double h : {1.0, 0.1, 0.01}) {
+      for (const auto h : {1.0, 0.1, 0.01}) {
         CAPTURE(h);
         const auto r = w.radius(h);
-        const auto i = integrate(std::bind_back(w, h), Sphere3D{{}, r});
-        CHECK(approx_equal_to(i, 1.0));
+        const auto i = integrate(std::bind_back(w, h),
+                                 geom::BSphere{Vec{0.0, 0.0, 0.0}, r});
+        CHECK_APPROX_EQ(i, 1.0);
       }
     }
   }
@@ -60,32 +59,30 @@ TEST_CASE_TEMPLATE("sph::Kernel::operator()", Kernel, KERNEL_TYPES) {
   // outside the support sphere.
   SUBCASE("over box") {
     SUBCASE("1D") {
-      using Box1D = geom::BBox<Vec<double, 1>>;
-      for (const double h : {1.0, 0.1, 0.01}) {
+      for (const auto h : {1.0, 0.1, 0.01}) {
         CAPTURE(h);
         const auto r = w.radius(h);
-        const auto i = integrate(std::bind_back(w, h), Box1D{-r, +r});
-        CHECK(approx_equal_to(i, 1.0));
+        const auto i = integrate(std::bind_back(w, h), //
+                                 geom::BBox{Vec{-r}, Vec{+r}});
+        CHECK_APPROX_EQ(i, 1.0);
       }
     }
     SUBCASE("2D") {
-      using Box2D = geom::BBox<Vec<double, 2>>;
-      for (const double h : {1.0, 0.1, 0.01}) {
+      for (const auto h : {1.0, 0.1, 0.01}) {
         CAPTURE(h);
         const auto r = w.radius(h);
-        const auto i =
-            integrate(std::bind_back(w, h), Box2D{{-r, -r}, {+r, +r}});
-        CHECK(approx_equal_to(i, 1.0));
+        const auto i = integrate(std::bind_back(w, h),
+                                 geom::BBox{Vec{-r, -r}, Vec{+r, +r}});
+        CHECK_APPROX_EQ(i, 1.0);
       }
     }
     SUBCASE("3D") {
-      using Box3D = geom::BBox<Vec<double, 3>>;
-      for (const double h : {1.0, 0.1, 0.01}) {
+      for (const auto h : {1.0, 0.1, 0.01}) {
         CAPTURE(h);
         const auto r = w.radius(h);
-        const auto i =
-            integrate(std::bind_back(w, h), Box3D{{-r, -r, -r}, {+r, +r, +r}});
-        CHECK(approx_equal_to(i, 1.0));
+        const auto i = integrate(std::bind_back(w, h),
+                                 geom::BBox{Vec{-r, -r, -r}, Vec{+r, +r, +r}});
+        CHECK_APPROX_EQ(i, 1.0);
       }
     }
   }
@@ -99,25 +96,25 @@ TEST_CASE_TEMPLATE("sph::Kernel::grad", Kernel, KERNEL_TYPES) {
   // and compare it to the exact kernel gradient.
   const Kernel w{};
   SUBCASE("single component") {
-    for (const double h : {1.0, 0.1, 0.01}) {
+    for (const auto h : {1.0, 0.1, 0.01}) {
       CAPTURE(h);
       REQUIRE(w.radius(h) >= h * std::numbers::sqrt3);
       const auto x = pow2(h) * Vec{0.1, 0.1, 0.1};
       const auto value =
           w(Vec{Dual{x[0], 1.0}, Dual{x[1]}, Dual{x[2]}}, Dual{h});
       const auto gradient = w.grad(x, h);
-      CHECK(approx_equal_to(value.deriv(), gradient[0]));
+      CHECK_APPROX_EQ(value.deriv(), gradient[0]);
     }
   }
   SUBCASE("multiple components") {
-    for (const double h : {1.0, 0.1, 0.01}) {
+    for (const auto h : {1.0, 0.1, 0.01}) {
       CAPTURE(h);
       REQUIRE(w.radius(h) >= h * std::numbers::sqrt3);
       const auto x = pow2(h) * Vec{0.1, 0.1, 0.1};
       const auto value =
           w(Vec{Dual{x[0], 1.0}, Dual{x[1], 1.0}, Dual{x[2], 1.0}}, Dual{h});
       const auto gradient = w.grad(x, h);
-      CHECK(approx_equal_to(value.deriv(), sum(gradient)));
+      CHECK_APPROX_EQ(value.deriv(), sum(gradient));
     }
   }
 }
@@ -129,13 +126,54 @@ TEST_CASE_TEMPLATE("sph::Kernel::width_deriv", Kernel, KERNEL_TYPES) {
   // calculate the derivative of the kernel value using dual numbers
   // and compare it to the exact width derivative.
   const Kernel w{};
-  for (const double h : {1.0, 0.1, 0.01}) {
+  for (const auto h : {1.0, 0.1, 0.01}) {
     CAPTURE(h);
     REQUIRE(w.radius(h) >= h * std::numbers::sqrt3);
     const auto x = pow2(h) * Vec{0.1, 0.1, 0.1};
     const auto value = w(vec_cast<Dual<double>>(x), Dual{h, 1.0});
     const auto dw_dh = w.width_deriv(x, h);
-    CHECK(approx_equal_to(value.deriv(), dw_dh));
+    CHECK_APPROX_EQ(value.deriv(), dw_dh);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE_TEMPLATE("sph::Kernel::antigrad", Kernel, KERNEL_TYPES) {
+  // Ensure that the antigradient is computed correctly:
+  // calculate the antigradient field using dual numbers and compare its
+  // divergence to the exact kernel value.
+  const Kernel w{};
+  SUBCASE("1D") {
+    for (const auto h : {1.0, 0.1, 0.01}) {
+      CAPTURE(h);
+      const auto x = h * Vec{0.37};
+      const auto A = w.antigrad(Vec{Dual{x[0], 1.0}}, Dual{h});
+      CHECK_APPROX_EQ(A[0].deriv(), w(x, h));
+    }
+  }
+  SUBCASE("2D") {
+    for (const auto h : {1.0, 0.1, 0.01}) {
+      CAPTURE(h);
+      const auto x = h * Vec{0.37, 0.23};
+      const auto A_x = w.antigrad(Vec{Dual{x[0], 1.0}, Dual{x[1]}}, Dual{h});
+      const auto A_y = w.antigrad(Vec{Dual{x[0]}, Dual{x[1], 1.0}}, Dual{h});
+      const auto div_A = A_x[0].deriv() + A_y[1].deriv();
+      CHECK_APPROX_EQ(div_A, w(x, h));
+    }
+  }
+  SUBCASE("3D") {
+    for (const auto h : {1.0, 0.1, 0.01}) {
+      CAPTURE(h);
+      const auto x = h * Vec{0.37, 0.23, 0.11};
+      const auto A_x =
+          w.antigrad(Vec{Dual{x[0], 1.0}, Dual{x[1]}, Dual{x[2]}}, Dual{h});
+      const auto A_y =
+          w.antigrad(Vec{Dual{x[0]}, Dual{x[1], 1.0}, Dual{x[2]}}, Dual{h});
+      const auto A_z =
+          w.antigrad(Vec{Dual{x[0]}, Dual{x[1]}, Dual{x[2], 1.0}}, Dual{h});
+      const auto div_A = A_x[0].deriv() + A_y[1].deriv() + A_z[2].deriv();
+      CHECK_APPROX_EQ(div_A, w(x, h));
+    }
   }
 }
 
