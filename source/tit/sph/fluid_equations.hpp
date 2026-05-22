@@ -318,7 +318,7 @@ public:
 
       // Ferrari artificial density diffusion term (Ferrari et al., 2009).
       const auto cs_ab = std::max(cs[a], cs[b]);
-      const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a] - r[b]);
+      const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a, b]);
 
       drho_dt[a] += m[b] / gamma[a] * dot(v[a, b] + Psi_ab / rho[b], grad_W_ab);
       drho_dt[b] -= m[a] / gamma[b] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);

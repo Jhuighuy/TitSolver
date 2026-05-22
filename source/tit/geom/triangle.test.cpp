@@ -3,6 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <numbers>
 #include <utility>
 
 #include "tit/core/vec.hpp"
@@ -113,6 +114,22 @@ TEST_CASE("geom::Triangle::winding_number") {
     const geom::Triangle triangle{scale * a, scale * b, scale * c};
     CHECK_APPROX_EQ(triangle.winding_number(scale * point), 0.125);
   }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("geom::Triangle::project") {
+  using std::numbers::sqrt2;
+  using std::numbers::sqrt3;
+  const geom::Triangle tri{
+      Vec{1.0, 0.0, 0.0},
+      Vec{0.0, 1.0, 0.0},
+      Vec{0.0, 0.0, 1.0},
+  };
+  const auto [a, b, c] = tri.project(tri.center());
+  CHECK_APPROX_EQ(a, Vec{-1.0 / sqrt2, -1.0 / (sqrt2 * sqrt3)});
+  CHECK_APPROX_EQ(b, Vec{+1.0 / sqrt2, -1.0 / (sqrt2 * sqrt3)});
+  CHECK_APPROX_EQ(c, Vec{0.0, sqrt2 / sqrt3});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
