@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <numbers>
+
 #include "tit/core/vec.hpp"
 #include "tit/geom/bsphere.hpp"
 #include "tit/geom/segment.hpp"
@@ -88,6 +90,19 @@ TEST_CASE("geom::Segment::winding_number") {
     const geom::Segment segment{scale * a, scale * b};
     CHECK_APPROX_EQ(segment.winding_number(scale * point), 0.25);
   }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("geom::Segment::project") {
+  using std::numbers::sqrt2;
+  const geom::Segment seg{
+      Vec{1.0, 0.0},
+      Vec{0.0, 1.0},
+  };
+  const auto [a, b] = seg.project(seg.center());
+  CHECK_APPROX_EQ(a, -sqrt2 / 2);
+  CHECK_APPROX_EQ(b, +sqrt2 / 2);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
