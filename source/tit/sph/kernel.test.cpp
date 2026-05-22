@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <cstddef>
 #include <numbers>
 
 #include "tit/core/math.hpp"
@@ -142,6 +143,64 @@ TEST_CASE_TEMPLATE("sph::Kernel::width_deriv", Kernel, KERNEL_TYPES) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE_TEMPLATE("sph::Kernel::antigrad", Kernel, KERNEL_TYPES) {
+  // Ensure that the compact antigradient field vanishes at the support radius,
+  // points inward inside the support, and has the kernel value as its
+  // divergence away from the origin.
+  const Kernel w{};
+  SUBCASE("support") {
+    for (const double h : {1.0, 0.1, 0.01}) {
+      CAPTURE(h);
+      const auto r_support = w.radius(h);
+      CHECK(w.antigrad(Vec{r_support}, h) == Vec{0.0});
+      CHECK(w.antigrad(Vec{1.01 * r_support}, h) == Vec{0.0});
+      CHECK(w.antigrad(Vec{r_support, 0.0}, h) == Vec{0.0, 0.0});
+      CHECK(w.antigrad(Vec{1.01 * r_support, 0.0}, h) == Vec{0.0, 0.0});
+      CHECK(w.antigrad(Vec{r_support, 0.0, 0.0}, h) == Vec{0.0, 0.0, 0.0});
+      CHECK(w.antigrad(Vec{1.01 * r_support, 0.0, 0.0}, h) ==
+            Vec{0.0, 0.0, 0.0});
+
+      const auto x = Vec{0.9 * r_support, 0.0, 0.0};
+      const auto S = w.antigrad(x, h);
+      CHECK(dot(S, x) < 0.0);
+      CHECK(norm2(S) > 0.0);
+    }
+  }
+  SUBCASE("divergence") {
+    SUBCASE("1D") {
+      for (const double h : {1.0, 0.1, 0.01}) {
+        CAPTURE(h);
+        const auto x = h * Vec{0.37};
+        const auto S = w.antigrad(Vec{Dual{x[0], 1.0}}, Dual{h});
+        CHECK(approx_equal_to(S[0].deriv(), w(x, h)));
+      }
+    }
+    SUBCASE("2D") {
+      for (const double h : {1.0, 0.1, 0.01}) {
+        CAPTURE(h);
+        const auto x = h * Vec{0.37, 0.23};
+        const auto S_x = w.antigrad(Vec{Dual{x[0], 1.0}, Dual{x[1]}}, Dual{h});
+        const auto S_y = w.antigrad(Vec{Dual{x[0]}, Dual{x[1], 1.0}}, Dual{h});
+        CHECK(approx_equal_to(S_x[0].deriv() + S_y[1].deriv(), w(x, h)));
+      }
+    }
+    SUBCASE("3D") {
+      for (const double h : {1.0, 0.1, 0.01}) {
+        CAPTURE(h);
+        const auto x = h * Vec{0.37, 0.23, 0.11};
+        const auto S_x =
+            w.antigrad(Vec{Dual{x[0], 1.0}, Dual{x[1]}, Dual{x[2]}}, Dual{h});
+        const auto S_y =
+            w.antigrad(Vec{Dual{x[0]}, Dual{x[1], 1.0}, Dual{x[2]}}, Dual{h});
+        const auto S_z =
+            w.antigrad(Vec{Dual{x[0]}, Dual{x[1]}, Dual{x[2], 1.0}}, Dual{h});
+        CHECK(approx_equal_to(S_x[0].deriv() + S_y[1].deriv() + S_z[2].deriv(),
+                              w(x, h)));
+      }
+    }
+  }
+}
+
 template<class Kernel>
 void check_flux(const Kernel& w,
                 const geom::Face<Vec<double, 2>>& face,
@@ -203,6 +262,73 @@ void check_flux(const Kernel& w,
   CHECK(norm(actual - expected) < tolerance);
 }
 
+template<class Kernel>
+void check_antigradient_flux(const Kernel& w,
+                             const geom::Face<Vec<double, 2>>& face,
+                             const Vec<double, 2>& x,
+                             const double h,
+                             const double tolerance = 1.0e-7) {
+  const auto& [a, b] = face.verts();
+  const auto e = b - a;
+  const auto n = face.normal();
+  const auto l = face.area();
+
+  const auto expected = integrate(
+      [&](const Vec<double, 1>& p) {
+        const auto t = p[0];
+        const auto y = a + t * e;
+        return -l * dot(n, w.antigrad(x - y, h));
+      },
+      geom::BBox{Vec{0.0}, Vec{1.0}},
+      1.0e-9);
+  REQUIRE(std::isfinite(expected));
+
+  const auto actual = w.antigrad_flux(face, x, h);
+  REQUIRE(std::isfinite(actual));
+
+  CHECK(abs(actual - expected) < tolerance);
+}
+
+template<class Kernel>
+void check_antigradient_flux(const Kernel& w,
+                             const geom::Face<Vec<double, 3>>& face,
+                             const Vec<double, 3>& x,
+                             const double h,
+                             const double tolerance = 1.0e-7) {
+  const auto& [a, b, c] = face.verts();
+  const auto e1 = b - a;
+  const auto e2 = c - a;
+  const auto n = face.normal();
+  const auto l = face.area();
+
+  const auto expected = integrate(
+      [&](const Vec<double, 2>& p) {
+        const auto s = p[0];
+        const auto t = p[1];
+        const auto y = a + s * ((1.0 - t) * e1 + t * e2);
+        return -2.0 * l * s * dot(n, w.antigrad(x - y, h));
+      },
+      geom::BBox{Vec{0.0, 0.0}, Vec{1.0, 1.0}},
+      1.0e-9);
+  REQUIRE(std::isfinite(expected));
+
+  const auto actual = w.antigrad_flux(face, x, h);
+  REQUIRE(std::isfinite(actual));
+
+  CHECK(abs(actual - expected) < tolerance);
+}
+
+template<class Kernel, std::size_t Dim>
+void check_fluxes(const Kernel& w,
+                  const geom::Face<Vec<double, Dim>>& face,
+                  const Vec<double, Dim>& x,
+                  const double h,
+                  const double kernel_tolerance = 1.0e-7,
+                  const double antigrad_tolerance = 1.0e-7) {
+  check_flux(w, face, x, h, kernel_tolerance);
+  check_antigradient_flux(w, face, x, h, antigrad_tolerance);
+}
+
 TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
   const Kernel w{};
   SUBCASE("outside support") {
@@ -214,6 +340,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       for (const double h : {1.0, 0.1, 0.01}) {
         CAPTURE(h);
         CHECK(w.flux(face, Vec{0.0, 0.0}, h) == Vec{0.0, 0.0});
+        CHECK(w.antigrad_flux(face, Vec{0.0, 1.0}, h) == 0.0);
       }
     }
     SUBCASE("3D") {
@@ -225,6 +352,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       for (const double h : {1.0, 0.1, 0.01}) {
         CAPTURE(h);
         CHECK(w.flux(face, Vec{0.0, 0.0, 0.0}, h) == Vec{0.0, 0.0, 0.0});
+        CHECK(w.antigrad_flux(face, Vec{0.0, 0.0, 1.0}, h) == 0.0);
       }
     }
   }
@@ -237,7 +365,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       }};
       for (const double h : {2.0, 1.0, 0.5}) {
         CAPTURE(h);
-        check_flux(w, face, x, h);
+        check_fluxes(w, face, x, h);
       }
     }
     SUBCASE("3D") {
@@ -249,7 +377,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       }};
       for (const double h : {2.0, 1.0, 0.5}) {
         CAPTURE(h);
-        check_flux(w, face, x, h);
+        check_fluxes(w, face, x, h);
       }
     }
   }
@@ -262,7 +390,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       }};
       for (const double h : {2.0, 1.0, 0.5}) {
         CAPTURE(h);
-        check_flux(w, face, x, h);
+        check_fluxes(w, face, x, h);
       }
     }
     SUBCASE("3D") {
@@ -274,7 +402,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       }};
       for (const double h : {2.0, 1.0, 0.5}) {
         CAPTURE(h);
-        check_flux(w, face, x, h);
+        check_fluxes(w, face, x, h);
       }
     }
   }
@@ -287,7 +415,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       }};
       for (const double h : {2.0, 1.0, 0.5}) {
         CAPTURE(h);
-        check_flux(w, face, x, h);
+        check_fluxes(w, face, x, h);
       }
     }
     SUBCASE("3D") {
@@ -299,7 +427,7 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       }};
       for (const double h : {2.0, 1.0, 0.5}) {
         CAPTURE(h);
-        check_flux(w, face, x, h);
+        check_fluxes(w, face, x, h);
       }
     }
   }
@@ -313,9 +441,12 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       for (const double h : {2.0, 1.0, 0.5}) {
         CAPTURE(h);
         check_flux(w, face, x, h);
+        CHECK(std::isfinite(w.antigrad_flux(face, x, h)));
       }
     }
     SUBCASE("3D") {
+      // Note: Here we do not check antigradient fluxes, because the 3D
+      //       triangle trace is still singular in this implementation.
       const Vec x{0.5, 0.5, 0.0};
       const geom::Face face{std::array{
           Vec{0.0, 0.0, 0.0},
@@ -325,6 +456,56 @@ TEST_CASE_TEMPLATE("sph::Kernel::flux", Kernel, KERNEL_TYPES) {
       for (const double h : {2.0, 1.0, 0.5}) {
         CAPTURE(h);
         check_flux(w, face, x, h);
+      }
+    }
+  }
+  SUBCASE("singularity value") {
+    constexpr auto eps = 1.0e-8;
+    SUBCASE("2D") {
+      SUBCASE("on supporting line") {
+        for (const double h : {1.0, 0.1, 0.01}) {
+          CAPTURE(h);
+          const auto r = w.radius(h);
+          const geom::Face face{std::array{
+              Vec{r, 0.0},
+              Vec{3.0 * r, 0.0},
+          }};
+          const auto n = face.normal();
+          const auto trace = w.antigrad_flux(face, Vec{0.0, 0.0}, h);
+          const auto limit = w.antigrad_flux(face, h * eps * n, h);
+          CHECK(approx_equal_to(trace, 0.0));
+          CHECK(abs(trace - limit) < 1.0e-6);
+        }
+      }
+      SUBCASE("on face") {
+        for (const double h : {1.0, 0.1, 0.01}) {
+          CAPTURE(h);
+          const auto r = w.radius(h);
+          const geom::Face face{std::array{
+              Vec{-2.0 * r, 0.0},
+              Vec{+2.0 * r, 0.0},
+          }};
+          const auto n = face.normal();
+          const auto trace = w.antigrad_flux(face, Vec{0.0, 0.0}, h);
+          const auto limit = w.antigrad_flux(face, h * eps * n, h);
+          CHECK(approx_equal_to(trace, 0.5));
+          CHECK(abs(trace - limit) < 1.0e-6);
+        }
+      }
+      SUBCASE("on face vertex") {
+        for (const double h : {1.0, 0.1, 0.01}) {
+          CAPTURE(h);
+          const auto r = w.radius(h);
+          const geom::Face face{std::array{
+              Vec{0.0, 0.0},
+              Vec{2.0 * r, 0.0},
+          }};
+          const auto n = face.normal();
+          const auto trace = w.antigrad_flux(face, Vec{0.0, 0.0}, h);
+          const auto limit = w.antigrad_flux(face, h * eps * n, h);
+          CHECK(approx_equal_to(trace, 0.25));
+          CHECK(abs(trace - limit) < 1.0e-6);
+        }
       }
     }
   }
