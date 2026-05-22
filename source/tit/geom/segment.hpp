@@ -79,6 +79,15 @@ public:
     return atan2(det(ap, bp), dot(ap, bp)) / unit_sphere_area_v<2, Num>;
   }
 
+  /// Project a segment into the coordinate system induced by the segment
+  /// plane and with the given point as the origin.
+  constexpr auto project(const Vec& origin) const noexcept
+      -> std::array<Num, 2> {
+    const auto& [... vs] = verts();
+    const auto e = normalize(ba());
+    return {dot(vs - origin, e)...};
+  }
+
   /// Find the point inside of the segment that is closest to @p point.
   constexpr auto clamp(const Vec& point) const noexcept -> Vec {
     const auto len_sqr = norm2(ba());
