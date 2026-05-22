@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <array>
 #include <bit>
 #include <cmath>
 #include <concepts>
@@ -42,8 +43,10 @@ namespace tit {
   }
 #endif
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(abs)
+TIT_MAKE_CONSTEXPR_MATH_FUNC_(asinh)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(atan2)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(ceil)
+TIT_MAKE_CONSTEXPR_MATH_FUNC_(copysign)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(cos)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(exp)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(floor)
@@ -98,12 +101,19 @@ constexpr auto pow(Float a, std::floating_point auto power) noexcept -> Float {
 }
 
 /// Evaluate polynomial @f$ \sum c_k x^k @f$ value.
-template<class Num>
-constexpr auto horner(Num x, std::initializer_list<Num> ci) {
+/// @{
+template<class Num,
+         std::ranges::bidirectional_range Coeffs = std::initializer_list<Num>>
+constexpr auto horner(Num x, Coeffs&& ci) {
   Num r{0};
   for (const auto c : ci | std::views::reverse) r = r * x + c;
   return r;
 }
+template<std::floating_point auto... Ck, class Num>
+constexpr auto horner(Num x) {
+  return horner(x, std::array{Num{Ck}...});
+}
+/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
