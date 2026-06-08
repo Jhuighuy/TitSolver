@@ -59,9 +59,11 @@ public:
     par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
 
     equations_.compute_momentum(mesh, particles);
+    equations_.compute_temperature(mesh, particles);
     par::for_each(particles.fluid(), [dt](PV a) {
       v[a] += dt * dv_dt[a];
       r[a] += dt * v[a];
+      T[a] += dt * dT_dt[a];
     });
 
     equations_.post_integrate(mesh, particles);
@@ -106,8 +108,10 @@ public:
     const auto dt_2 = dt / 2;
 
     equations_.compute_momentum(mesh, particles);
+    equations_.compute_temperature(mesh, particles);
     par::for_each(particles.fluid(), [dt, dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a];
+      T[a] += dt_2 * dT_dt[a];
       r[a] += dt * v[a];
     });
 
@@ -116,7 +120,11 @@ public:
     par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
 
     equations_.compute_momentum(mesh, particles);
-    par::for_each(particles.fluid(), [dt_2](PV a) { v[a] += dt_2 * dv_dt[a]; });
+    equations_.compute_temperature(mesh, particles);
+    par::for_each(particles.fluid(), [dt_2](PV a) {
+      v[a] += dt_2 * dv_dt[a];
+      T[a] += dt_2 * dT_dt[a];
+    });
 
     equations_.post_integrate(mesh, particles);
     return dt;
@@ -199,10 +207,12 @@ private:
 
     equations_.compute_continuity(mesh, particles);
     equations_.compute_momentum(mesh, particles);
+    equations_.compute_temperature(mesh, particles);
 
     par::for_each(particles.fluid(), [dt_](PV a) {
       r[a] += dt_ * v[a];
       v[a] += dt_ * dv_dt[a];
+      T[a] += dt_ * dT_dt[a];
       rho[a] += dt_ * drho_dt[a];
     });
 
@@ -218,6 +228,7 @@ private:
       const auto a = particles[out_a.index()];
       r[out_a] = (1 - weight) * r[a] + weight * r[out_a];
       v[out_a] = (1 - weight) * v[a] + weight * v[out_a];
+      T[out_a] = (1 - weight) * T[a] + weight * T[out_a];
       rho[out_a] = (1 - weight) * rho[a] + weight * rho[out_a];
     });
   }
