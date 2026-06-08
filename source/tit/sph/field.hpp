@@ -224,6 +224,11 @@ TIT_DEFINE_VECTOR_FIELD(grad_T);
 /// Particle temperature time derivative.
 TIT_DEFINE_SCALAR_FIELD(dT_dt);
 
+/// Particle dynamic viscosity.
+TIT_DEFINE_SCALAR_FIELD(mu);
+/// Particle thermal diffusivity coefficient.
+TIT_DEFINE_SCALAR_FIELD(kappa);
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

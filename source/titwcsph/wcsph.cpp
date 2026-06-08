@@ -27,6 +27,7 @@
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
+#include "tit/sph/viscosity.hpp"
 
 namespace tit::sph::wcsph {
 namespace {
@@ -54,6 +55,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real T_0 = 300.0;
   constexpr Real k_0 = 0.6 / 4186.0;
   constexpr Real alpha_T = 2.0e-4;
+  constexpr Real beta = 0.02;
 
   // Setup the SPH equations.
   geom::Surface<Vec<Real, 2>> domain;
@@ -83,13 +85,13 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   const FluidEquations equations{
       // Constants.
       g,
-      mu_0,
-      k_0,
       // Wall boundary.
       domain,
       containment,
       // Weakly compressible equation of state.
       TaitEquationOfState{cs_0, rho_0},
+      // Temperature-dependent viscosity.
+      ReynoldsTemperatureViscosity{mu_0, T_0, beta},
       // Thermal buoyancy model.
       BoussinesqBuoyancy{alpha_T, T_0},
       // C4 Wendland's spline kernel.
@@ -125,6 +127,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
     m[a] = m_0;
     rho[a] = rho_0;
     T[a] = T_0;
+    kappa[a] = k_0;
   }
 
   // Density hydrostatic initialization.
