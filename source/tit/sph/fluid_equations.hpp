@@ -24,6 +24,7 @@
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
+#include "tit/sph/turbulence_model.hpp"
 #include "tit/sph/viscosity.hpp"
 
 namespace tit::sph {
@@ -34,6 +35,7 @@ namespace tit::sph {
 template<class Num,
          equation_of_state<Num> EquationOfState,
          viscosity_model<Num> ViscosityModel,
+         turbulence_model<Num> TurbulenceModel,
          buoyancy_model<Num> BuoyancyModel,
          kernel Kernel,
          class Domain,
@@ -57,24 +59,27 @@ public:
 
   /// Construct the fluid equations.
   ///
-  /// @param g               Gravitational acceleration.
-  /// @param domain          Boundary domain.
-  /// @param containment     Domain containment function.
-  /// @param eos             Equation of state.
-  /// @param viscosity_model Viscosity model.
-  /// @param buoyancy_model  Buoyancy model.
-  /// @param kernel          Kernel.
+  /// @param g                Gravitational acceleration.
+  /// @param domain           Boundary domain.
+  /// @param containment      Domain containment function.
+  /// @param eos              Equation of state.
+  /// @param viscosity_model  Viscosity model.
+  /// @param turbulence_model Turbulence model.
+  /// @param buoyancy_model   Buoyancy model.
+  /// @param kernel           Kernel.
   constexpr explicit FluidEquations(Num g,
                                     const Domain& domain,
                                     const Containment& containment,
                                     EquationOfState eos,
                                     ViscosityModel viscosity_model,
+                                    TurbulenceModel turbulence_model,
                                     BuoyancyModel buoyancy_model,
                                     Kernel kernel) noexcept
       : g_{g},                                                 //
         domain_{std::move(domain)}, containment_{containment}, //
         eos_{std::move(eos)},                                  //
         viscosity_model_{std::move(viscosity_model)},          //
+        turbulence_model_{std::move(turbulence_model)},        //
         buoyancy_model_{std::move(buoyancy_model)},            //
         kernel_{std::move(kernel)} {}
 
@@ -332,7 +337,8 @@ public:
       const auto S_a = (grad_v[a] + transpose(grad_v[a])) / 2;
       const auto S_mag_a = sqrt(2 * tr(S_a * transpose(S_a)));
       p[a] = eos_.pressure_from_density(rho[a]);
-      mu[a] = viscosity_model_.dynamic_viscosity(T[a], S_mag_a);
+      mu[a] = viscosity_model_.dynamic_viscosity(T[a], S_mag_a) +
+              turbulence_model_.eddy_viscosity(rho[a], S_mag_a);
     });
 
     // Compute velocity time derivative.
@@ -620,6 +626,7 @@ private:
   [[no_unique_address]] Containment containment_;
   [[no_unique_address]] EquationOfState eos_;
   [[no_unique_address]] ViscosityModel viscosity_model_;
+  [[no_unique_address]] TurbulenceModel turbulence_model_;
   [[no_unique_address]] BuoyancyModel buoyancy_model_;
   [[no_unique_address]] Kernel kernel_;
 
