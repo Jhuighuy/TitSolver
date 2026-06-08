@@ -24,6 +24,7 @@
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
+#include "tit/sph/viscosity.hpp"
 
 namespace tit::sph {
 
@@ -32,6 +33,7 @@ namespace tit::sph {
 /// Fluid equations with fixed kernel width and continuity equation.
 template<class Num,
          equation_of_state<Num> EquationOfState,
+         viscosity_model<Num> ViscosityModel,
          buoyancy_model<Num> BuoyancyModel,
          kernel Kernel,
          class Domain>
@@ -42,36 +44,35 @@ public:
   static constexpr auto required_fields = //
       TypeSet{h, m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
       TypeSet{v, dv_dt, grad_v, r, dr, L, N, phi, rho_raw} |
-      TypeSet{T, dT_dt, grad_T};
+      TypeSet{T, dT_dt, grad_T, mu, kappa};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
       TypeSet{m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
       TypeSet{v, dv_dt, grad_v, r, dr, N, L, phi, rho_raw} |
-      TypeSet{T, dT_dt, grad_T};
+      TypeSet{T, dT_dt, grad_T, mu, kappa};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct the fluid equations.
   ///
   /// @param g                   Gravitational acceleration.
-  /// @param mu                  Viscosity coefficient.
-  /// @param k                   Thermal diffusivity coefficient.
   /// @param domain              Boundary domain.
   /// @param eos                 Equation of state.
+  /// @param viscosity_model     Viscosity model.
   /// @param buoyancy_model      Buoyancy model.
   /// @param kernel              Kernel.
   constexpr explicit FluidEquations(Num g,
-                                    Num mu,
-                                    Num k,
                                     const Domain& domain,
                                     EquationOfState eos,
+                                    ViscosityModel viscosity_model,
                                     BuoyancyModel buoyancy_model,
                                     Kernel kernel) noexcept
-      : g_{g}, mu_{mu}, k_{k},                      //
-        domain_{std::move(domain)},                 //
-        eos_{std::move(eos)},                       //
-        buoyancy_model_{std::move(buoyancy_model)}, //
+      : g_{g},                                        //
+        domain_{std::move(domain)},                   //
+        eos_{std::move(eos)},                         //
+        viscosity_model_{std::move(viscosity_model)}, //
+        buoyancy_model_{std::move(buoyancy_model)},   //
         kernel_{std::move(kernel)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -262,18 +263,49 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::compute_time_step()");
     using PV = ParticleView<ParticleArray>;
 
+    // Compute velocity gradient.
+    par::for_each(particles.all(), [&mesh, this](PV a) {
+      L[a] = {};
+      grad_v[a] = {};
+      for (const auto& [s_face, s] : mesh[domain_, a]) {
+        const auto grad_gamma_as = kernel_.flux(s_face, a);
+        L[a] -= outer(r[s, a], grad_gamma_as) / gamma[a];
+        grad_v[a] -= outer(v[s, a], grad_gamma_as) / gamma[a];
+      }
+    });
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
+      const auto V_a = m[a] / rho[a];
+      const auto V_b = m[b] / rho[b];
+      const auto grad_W_ab = kernel_.grad(a, b);
+
+      L[a] += V_b / gamma[a] * outer(r[b, a], grad_W_ab);
+      L[b] -= V_a / gamma[b] * outer(r[a, b], grad_W_ab);
+      grad_v[a] += V_b / gamma[a] * outer(v[b, a], grad_W_ab);
+      grad_v[b] -= V_a / gamma[b] * outer(v[a, b], grad_W_ab);
+    });
+
     return par::fold(
         particles.fluid(),
         std::numeric_limits<Num>::max(),
         [&mesh, this](Num dt, PV a) {
+          if (const auto fact = lu(transpose(L[a]))) {
+            L[a] = fact->inverse();
+            grad_v[a] = grad_v[a] * transpose(L[a]);
+          } else {
+            L[a] = eye(L[a]);
+          }
+          const auto S_a = (grad_v[a] + transpose(grad_v[a])) / 2;
+          const auto S_mag_a = sqrt(2 * tr(S_a * transpose(S_a)));
+          const auto mu_a = viscosity_model_.dynamic_viscosity(T[a], S_mag_a);
+          const auto cs_a = eos_.sound_speed_from_density(rho[a]);
+
           // Acoustic time step.
-          const auto dt_acoustic =
-              CFL_ * h[a] /
-              (eos_.sound_speed_from_density(rho[a]) + norm(v[a]));
+          const auto dt_acoustic = CFL_ * h[a] / (cs_a + norm(v[a]));
 
           // Diffusion time step.
           const auto dt_diff =
-              C_diff_ * pow2(h[a]) * rho[a] / std::max(mu_, k_);
+              C_diff_ * pow2(h[a]) * rho[a] / std::max(mu_a, kappa[a]);
 
           // Force time step.
           const auto dt_force =
@@ -360,9 +392,41 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::compute_momentum()");
     using PV = ParticleView<ParticleArray>;
 
-    // Compute pressure from density.
-    par::for_each(particles.all(),
-                  [this](PV a) { p[a] = eos_.pressure_from_density(rho[a]); });
+    // Compute velocity gradient.
+    par::for_each(particles.all(), [&mesh, this](PV a) {
+      L[a] = {};
+      grad_v[a] = {};
+      for (const auto& [s_face, s] : mesh[domain_, a]) {
+        const auto grad_gamma_as = kernel_.flux(s_face, a);
+        L[a] -= outer(r[s, a], grad_gamma_as) / gamma[a];
+        grad_v[a] -= outer(v[s, a], grad_gamma_as) / gamma[a];
+      }
+    });
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
+      const auto V_a = m[a] / rho[a];
+      const auto V_b = m[b] / rho[b];
+      const auto grad_W_ab = kernel_.grad(a, b);
+
+      L[a] += V_b / gamma[a] * outer(r[b, a], grad_W_ab);
+      L[b] -= V_a / gamma[b] * outer(r[a, b], grad_W_ab);
+      grad_v[a] += V_b / gamma[a] * outer(v[b, a], grad_W_ab);
+      grad_v[b] -= V_a / gamma[b] * outer(v[a, b], grad_W_ab);
+    });
+
+    // Finalize velocity gradients and compute thermodynamic properties.
+    par::for_each(particles.all(), [this](PV a) {
+      if (const auto fact = lu(transpose(L[a]))) {
+        L[a] = fact->inverse();
+        grad_v[a] = grad_v[a] * transpose(L[a]);
+      } else {
+        L[a] = eye(L[a]);
+      }
+      const auto S_a = (grad_v[a] + transpose(grad_v[a])) / 2;
+      const auto S_mag_a = sqrt(2 * tr(S_a * transpose(S_a)));
+      p[a] = eos_.pressure_from_density(rho[a]);
+      mu[a] = viscosity_model_.dynamic_viscosity(T[a], S_mag_a);
+    });
 
     // Compute velocity time derivative.
     par::for_each(particles.fluid(), [&mesh, this](PV a) {
@@ -376,7 +440,7 @@ public:
         const auto t_as = normalize(v[a, s] - dot(v[a, s], n_s) * n_s);
         const auto dr_as = std::max(h[a] / 2, dot(r[a, s], n_s));
         const auto Pi_as =
-            2 * mu_ / (rho[a] * dr_as) * dot(v[a, s], t_as) * t_as;
+            (mu[a] + mu[s]) / (rho[a] * dr_as) * dot(v[a, s], t_as) * t_as;
 
         dv_dt[a] +=
             (P_as * grad_gamma_as - Pi_as * norm(grad_gamma_as)) / gamma[a];
@@ -388,8 +452,8 @@ public:
 
       const auto P_ab = p[a] / pow2(rho[a]) + p[b] / pow2(rho[b]);
 
-      const auto Pi_ab =
-          2 * mu_ * dot(v[a, b], r[a, b]) / (rho[a] * rho[b] * norm2(r[a, b]));
+      const auto Pi_ab = 2 * mu.avg(a, b) * dot(v[a, b], r[a, b]) /
+                         (rho[a] * rho[b] * norm2(r[a, b]));
 
       dv_dt[a] += m[b] / gamma[a] * (Pi_ab - P_ab) * grad_W_ab;
       dv_dt[b] -= m[a] / gamma[b] * (Pi_ab - P_ab) * grad_W_ab;
@@ -411,8 +475,8 @@ public:
       const auto [a, b] = ab;
       const auto grad_W_ab = kernel_.grad(a, b);
 
-      const auto Q_ab =
-          2 * k_ * T[a, b] * r[a, b] / (rho[a] * rho[b] * norm2(r[a, b]));
+      const auto Q_ab = 2 * kappa.avg(a, b) * T[a, b] * r[a, b] /
+                        (rho[a] * rho[b] * norm2(r[a, b]));
 
       dT_dt[a] += m[b] / gamma[a] * dot(Q_ab, grad_W_ab);
       dT_dt[b] -= m[a] / gamma[b] * dot(Q_ab, grad_W_ab);
@@ -649,10 +713,9 @@ private:
   static constexpr Num K_free_surface_{-log(Num{0.05}) / pow2(Num{0.01})};
 
   Num g_;
-  Num mu_;
-  Num k_;
   [[no_unique_address]] Domain domain_;
   [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] ViscosityModel viscosity_model_;
   [[no_unique_address]] BuoyancyModel buoyancy_model_;
   [[no_unique_address]] Kernel kernel_;
 

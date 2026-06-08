@@ -37,6 +37,7 @@ add_tit_library(
     "particle_array.hpp"
     "particle_mesh.hpp"
     "time_integrator.hpp"
+    "viscosity.hpp"
   DEPENDS
     tit::core
     tit::data
