@@ -18,6 +18,7 @@
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/par/algorithms.hpp"
+#include "tit/sph/buoyancy.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
@@ -31,6 +32,7 @@ namespace tit::sph {
 /// Fluid equations with fixed kernel width and continuity equation.
 template<class Num,
          equation_of_state<Num> EquationOfState,
+         buoyancy_model<Num> BuoyancyModel,
          kernel Kernel,
          class Domain>
 class FluidEquations final {
@@ -39,29 +41,37 @@ public:
   /// Set of particle fields that are required.
   static constexpr auto required_fields = //
       TypeSet{h, m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
-      TypeSet{v, dv_dt, grad_v, r, dr, L, N, phi, rho_raw};
+      TypeSet{v, dv_dt, grad_v, r, dr, L, N, phi, rho_raw} |
+      TypeSet{T, dT_dt, grad_T};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
       TypeSet{m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
-      TypeSet{v, dv_dt, grad_v, r, dr, N, L, phi, rho_raw};
+      TypeSet{v, dv_dt, grad_v, r, dr, N, L, phi, rho_raw} |
+      TypeSet{T, dT_dt, grad_T};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct the fluid equations.
   ///
-  /// @param rho_0  Reference density.
-  /// @param g      Gravitational acceleration.
-  /// @param mu     Viscosity coefficient.
-  /// @param domain Boundary domain.
-  /// @param eos    Equation of state.
-  /// @param kernel Kernel.
+  /// @param g                   Gravitational acceleration.
+  /// @param mu                  Viscosity coefficient.
+  /// @param k                   Thermal diffusivity coefficient.
+  /// @param domain              Boundary domain.
+  /// @param eos                 Equation of state.
+  /// @param buoyancy_model      Buoyancy model.
+  /// @param kernel              Kernel.
   constexpr explicit FluidEquations(Num g,
                                     Num mu,
+                                    Num k,
                                     const Domain& domain,
                                     EquationOfState eos,
+                                    BuoyancyModel buoyancy_model,
                                     Kernel kernel) noexcept
-      : g_{g}, mu_{mu}, domain_{std::move(domain)}, eos_{std::move(eos)},
+      : g_{g}, mu_{mu}, k_{k},                      //
+        domain_{std::move(domain)},                 //
+        eos_{std::move(eos)},                       //
+        buoyancy_model_{std::move(buoyancy_model)}, //
         kernel_{std::move(kernel)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -226,6 +236,19 @@ public:
         H_e += V_b * (H_b + g_ * dot(r_be, n_e) * n_e[1]) * W_be;
       }
       rho[e] = eos_.density_from_potential(is_tiny(S_e) ? Num{0} : H_e / S_e);
+
+      // Neumann equation for temperature.
+      Num T_e{};
+      for (const PV b : mesh[e]) {
+        if (!b.is_fluid()) continue;
+
+        const auto V_b = m[b] / rho[b];
+        const auto r_be = r[b] - r[e];
+        const auto W_be = kernel_(r_be, h[e]);
+
+        T_e += V_b * T[b] * W_be;
+      }
+      if (!is_tiny(S_e)) T[e] = T_e / S_e;
     });
   }
 
@@ -248,12 +271,15 @@ public:
               CFL_ * h[a] /
               (eos_.sound_speed_from_density(rho[a]) + norm(v[a]));
 
-          // Viscous time step.
-          const auto dt_visc = C_visc_ * pow2(h[a]) * rho[a] / mu_;
+          // Diffusion time step.
+          const auto dt_diff =
+              C_diff_ * pow2(h[a]) * rho[a] / std::max(mu_, k_);
 
           // Force time step.
           const auto dt_force =
-              C_force_ * sqrt(h[a] / std::max(norm(dv_dt[a]), g_));
+              C_force_ *
+              sqrt(h[a] /
+                   std::max(norm(dv_dt[a]), g_ * buoyancy_model_.coeff(T[a])));
 
           // Gamma time step.
           auto dt_gamma = std::numeric_limits<Num>::max();
@@ -264,7 +290,7 @@ public:
                 C_gamma_ / abs(dot(grad_gamma_as, v[a, s]) + tiny_v<Num>));
           }
 
-          return std::min({dt, dt_acoustic, dt_visc, dt_force, dt_gamma});
+          return std::min({dt, dt_acoustic, dt_diff, dt_force, dt_gamma});
         },
         [](Num dt_a, Num dt_b) { return std::min(dt_a, dt_b); });
   }
@@ -318,7 +344,7 @@ public:
 
       // Ferrari artificial density diffusion term (Ferrari et al., 2009).
       const auto cs_ab = std::max(cs[a], cs[b]);
-      const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a] - r[b]);
+      const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a, b]);
 
       drho_dt[a] += m[b] / gamma[a] * dot(v[a, b] + Psi_ab / rho[b], grad_W_ab);
       drho_dt[b] -= m[a] / gamma[b] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
@@ -340,7 +366,7 @@ public:
 
     // Compute velocity time derivative.
     par::for_each(particles.fluid(), [&mesh, this](PV a) {
-      dv_dt[a] = unit<1>(r[a], -g_);
+      dv_dt[a] = unit<1>(r[a], -g_ * buoyancy_model_.coeff(T[a]));
       for (const auto& [s_face, s] : mesh[domain_, a]) {
         const auto grad_gamma_as = kernel_.flux(s_face, a);
 
@@ -367,6 +393,29 @@ public:
 
       dv_dt[a] += m[b] / gamma[a] * (Pi_ab - P_ab) * grad_W_ab;
       dv_dt[b] -= m[a] / gamma[b] * (Pi_ab - P_ab) * grad_W_ab;
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Compute temperature equation right-hand side.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void compute_temperature(ParticleMesh& mesh, ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::compute_temperature()");
+    using PV = ParticleView<ParticleArray>;
+
+    // Compute temperature time derivative.
+    par::for_each(particles.fluid(), [](PV a) { dT_dt[a] = {}; });
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
+      const auto grad_W_ab = kernel_.grad(a, b);
+
+      const auto Q_ab =
+          2 * k_ * T[a, b] * r[a, b] / (rho[a] * rho[b] * norm2(r[a, b]));
+
+      dT_dt[a] += m[b] / gamma[a] * dot(Q_ab, grad_W_ab);
+      dT_dt[b] -= m[a] / gamma[b] * dot(Q_ab, grad_W_ab);
     });
   }
 
@@ -404,6 +453,7 @@ public:
       N[a] = {};
       L[a] = {};
       grad_v[a] = {};
+      grad_T[a] = {};
       grad_rho[a] = {};
       grad_gamma[a] = {};
       for (const auto& [s_face, s] : mesh[domain_, a]) {
@@ -412,6 +462,7 @@ public:
         N[a] -= grad_gamma_as / gamma[a];
         L[a] -= outer(r[s, a], grad_gamma_as) / gamma[a];
         grad_v[a] -= outer(v[s, a], grad_gamma_as) / gamma[a];
+        grad_T[a] -= T[s, a] * grad_gamma_as / gamma[a];
         grad_rho[a] -= rho[s, a] * grad_gamma_as / gamma[a];
         grad_gamma[a] += grad_gamma_as;
       }
@@ -428,6 +479,8 @@ public:
       L[b] -= V_a / gamma[b] * outer(r[a, b], grad_W_ab);
       grad_v[a] += V_b / gamma[a] * outer(v[b, a], grad_W_ab);
       grad_v[b] -= V_a / gamma[b] * outer(v[a, b], grad_W_ab);
+      grad_T[a] += V_b / gamma[a] * T[b, a] * grad_W_ab;
+      grad_T[b] -= V_a / gamma[b] * T[a, b] * grad_W_ab;
       grad_rho[a] += V_b / gamma[a] * rho[b, a] * grad_W_ab;
       grad_rho[b] -= V_a / gamma[b] * rho[a, b] * grad_W_ab;
     });
@@ -437,6 +490,7 @@ public:
         L[a] = fact->inverse();
         N[a] = L[a] * N[a];
         grad_v[a] = grad_v[a] * transpose(L[a]);
+        grad_T[a] = L[a] * grad_T[a];
         grad_rho[a] = L[a] * grad_rho[a];
       } else {
         L[a] = eye(L[a]);
@@ -534,6 +588,7 @@ public:
       // but applying it near the walls can cause sudden significant changes to
       // the velocity field even for slow laminar flows.
       if (approx_equal_to(gamma[a], Num{1})) v[a] += grad_v[a] * dr[a];
+      T[a] += dot(grad_T[a], dr[a]);
       rho[a] += dot(grad_rho[a], dr[a]);
       gamma[a] += dot(grad_gamma[a], dr[a]);
     });
@@ -586,7 +641,7 @@ private:
 
   static constexpr Num CFL_{0.4};
   static constexpr Num C_force_{0.25};
-  static constexpr Num C_visc_{0.125};
+  static constexpr Num C_diff_{0.125};
   static constexpr Num C_gamma_{0.004};
   static constexpr Num C_shift_{0.2};
   static constexpr Num phi_max_{1};
@@ -595,8 +650,10 @@ private:
 
   Num g_;
   Num mu_;
+  Num k_;
   [[no_unique_address]] Domain domain_;
   [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] BuoyancyModel buoyancy_model_;
   [[no_unique_address]] Kernel kernel_;
 
 }; // class FluidEquations

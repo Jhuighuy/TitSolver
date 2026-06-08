@@ -17,6 +17,7 @@
 #include "tit/geom/surface.hpp"
 #include "tit/geom/tessellation.hpp"
 #include "tit/par/control.hpp"
+#include "tit/sph/buoyancy.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
@@ -47,7 +48,10 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2);
-  constexpr Real mu = 0.001;
+  constexpr Real mu_0 = 0.001;
+  constexpr Real T_0 = 300.0;
+  constexpr Real k_0 = 0.6 / 4186.0;
+  constexpr Real alpha_T = 2.0e-4;
 
   // Setup the SPH equations.
   geom::Surface<Vec<Real, 2>> domain;
@@ -64,11 +68,14 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   const FluidEquations equations{
       // Constants.
       g,
-      mu,
+      mu_0,
+      k_0,
       // Wall boundary.
       domain,
       // Weakly compressible equation of state.
       TaitEquationOfState{cs_0, rho_0},
+      // Thermal buoyancy model.
+      BoussinesqBuoyancy{alpha_T, T_0},
       // C4 Wendland's spline kernel.
       SixthOrderWendlandKernel{},
   };
@@ -101,6 +108,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   for (const auto a : particles.all()) {
     m[a] = m_0;
     rho[a] = rho_0;
+    T[a] = T_0;
   }
 
   // Initialize the particles.
