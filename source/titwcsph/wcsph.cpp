@@ -25,6 +25,7 @@
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
+#include "tit/sph/turbulence_model.hpp"
 #include "tit/sph/viscosity.hpp"
 
 namespace tit::sph::wcsph {
@@ -54,6 +55,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real k_0 = 0.6 / 4186.0;
   constexpr Real alpha_T = 2.0e-4;
   constexpr Real beta = 0.02;
+  constexpr Real C_smag = 0.12;
 
   // Setup the SPH equations.
   geom::Surface<Vec<Real, 2>> domain;
@@ -76,6 +78,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       TaitEquationOfState{cs_0, rho_0},
       // Temperature-dependent viscosity.
       ReynoldsTemperatureViscosity{mu_0, T_0, beta},
+      // LES-SGS turbulence model.
+      SmagorinskyLillyTurbulenceModel{C_smag, h_0},
       // Thermal buoyancy model.
       BoussinesqBuoyancy{alpha_T, T_0},
       // C4 Wendland's spline kernel.
