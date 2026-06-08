@@ -217,6 +217,16 @@ TIT_DEFINE_VECTOR_FIELD(dr);
 /// Scratch field for free surface correction.
 TIT_DEFINE_SCALAR_FIELD(rho_raw);
 
+/// Particle temperature.
+TIT_DEFINE_SCALAR_FIELD(T);
+/// Particle temperature gradient.
+TIT_DEFINE_VECTOR_FIELD(grad_T);
+/// Particle temperature time derivative.
+TIT_DEFINE_SCALAR_FIELD(dT_dt);
+
+/// Particle dynamic viscosity.
+TIT_DEFINE_SCALAR_FIELD(mu);
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace tit

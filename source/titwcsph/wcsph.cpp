@@ -17,6 +17,7 @@
 #include "tit/geom/surface.hpp"
 #include "tit/geom/tessellation.hpp"
 #include "tit/par/control.hpp"
+#include "tit/sph/buoyancy.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
@@ -24,6 +25,9 @@
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
+#include "tit/sph/turbulence_model.hpp"
+#include "tit/sph/viscosity.hpp"
+#include "tit/sph/wall_model.hpp"
 
 namespace tit::sph::wcsph {
 namespace {
@@ -47,7 +51,16 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2);
-  constexpr Real mu = 0.001;
+
+  // Temperature and viscosity parameters, roughly matching water near room
+  // temperature.
+  constexpr Real T_0 = 300.0;      // K
+  constexpr Real alpha_T = 2.0e-4; // 1/K
+  constexpr Real k_0 = 0.6;        // W/(m*K)
+  constexpr Real c_v_0 = 4186.0;   // J/(kg*K)
+  constexpr Real mu_0 = 0.001;     // Pa*s
+  constexpr Real beta = 0.02;      // 1/K
+  constexpr Real C_smag = 0.12;    // Smagorinsky constant
 
   // Setup the SPH equations.
   geom::Surface<Vec<Real, 2>> domain;
@@ -64,11 +77,24 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   const FluidEquations equations{
       // Constants.
       g,
-      mu,
+      k_0,
+      c_v_0,
       // Wall boundary.
       domain,
       // Weakly compressible equation of state.
-      TaitEquationOfState{cs_0, rho_0},
+      LinearTaitEquationOfState{cs_0, rho_0},
+      // Temperature-dependent viscosity.
+      ReynoldsTemperatureViscosity{mu_0, T_0, beta},
+      // LES-SGS turbulence model.
+      SmagorinskyLillyTurbulenceModel{C_smag, h_0},
+      // Thermal buoyancy model.
+      BoussinesqBuoyancy{alpha_T, T_0},
+      // Pressure wall model.
+      PressureWallModel<Real>{},
+      // Turbulent velocity wall model.
+      LogLawVelocityWallModel<Real>{},
+      // Adiabatic thermal wall model.
+      AdiabaticThermalWallModel<Real>{},
       // C4 Wendland's spline kernel.
       SixthOrderWendlandKernel{},
   };
@@ -101,6 +127,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   for (const auto a : particles.all()) {
     m[a] = m_0;
     rho[a] = rho_0;
+    T[a] = T_0;
   }
 
   // Initialize the particles.

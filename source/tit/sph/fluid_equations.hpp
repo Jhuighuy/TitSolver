@@ -12,17 +12,22 @@
 #include <ranges>
 #include <utility>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/mat.hpp"
 #include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/par/algorithms.hpp"
+#include "tit/sph/buoyancy.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
+#include "tit/sph/turbulence_model.hpp"
+#include "tit/sph/viscosity.hpp"
+#include "tit/sph/wall_model.hpp"
 
 namespace tit::sph {
 
@@ -31,6 +36,12 @@ namespace tit::sph {
 /// Fluid equations with fixed kernel width and continuity equation.
 template<class Num,
          equation_of_state<Num> EquationOfState,
+         viscosity_model<Num> ViscosityModel,
+         turbulence_model<Num> TurbulenceModel,
+         buoyancy_model<Num> BuoyancyModel,
+         pressure_wall_model<Num> PressureWallModel,
+         velocity_wall_model<Num> VelocityWallModel,
+         thermal_wall_model<Num> ThermalWallModel,
          kernel Kernel,
          class Domain>
 class FluidEquations final {
@@ -39,30 +50,55 @@ public:
   /// Set of particle fields that are required.
   static constexpr auto required_fields = //
       TypeSet{h, m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
-      TypeSet{v, dv_dt, grad_v, r, dr, L, N, phi, rho_raw};
+      TypeSet{v, dv_dt, grad_v, r, dr, L, N, phi, rho_raw} |
+      TypeSet{T, dT_dt, grad_T, mu};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
       TypeSet{m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
-      TypeSet{v, dv_dt, grad_v, r, dr, N, L, phi, rho_raw};
+      TypeSet{v, dv_dt, grad_v, r, dr, N, L, phi, rho_raw} |
+      TypeSet{T, dT_dt, grad_T, mu};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct the fluid equations.
   ///
-  /// @param rho_0  Reference density.
-  /// @param g      Gravitational acceleration.
-  /// @param mu     Viscosity coefficient.
-  /// @param domain Boundary domain.
-  /// @param eos    Equation of state.
-  /// @param kernel Kernel.
+  /// @param g                   Gravitational acceleration.
+  /// @param k                   Thermal conductivity.
+  /// @param c_v                 Specific heat at constant volume.
+  /// @param domain              Boundary domain.
+  /// @param eos                 Equation of state.
+  /// @param viscosity_model     Viscosity model.
+  /// @param turbulence_model    Turbulence model.
+  /// @param buoyancy_model      Buoyancy model.
+  /// @param pressure_wall_model Pressure wall model.
+  /// @param velocity_wall_model Velocity wall model.
+  /// @param thermal_wall_model  Thermal wall model.
+  /// @param kernel              Kernel.
   constexpr explicit FluidEquations(Num g,
-                                    Num mu,
+                                    Num k,
+                                    Num c_v,
                                     const Domain& domain,
                                     EquationOfState eos,
+                                    ViscosityModel viscosity_model,
+                                    TurbulenceModel turbulence_model,
+                                    BuoyancyModel buoyancy_model,
+                                    PressureWallModel pressure_wall_model,
+                                    VelocityWallModel velocity_wall_model,
+                                    ThermalWallModel thermal_wall_model,
                                     Kernel kernel) noexcept
-      : g_{g}, mu_{mu}, domain_{std::move(domain)}, eos_{std::move(eos)},
-        kernel_{std::move(kernel)} {}
+      : g_{g}, k_{k}, c_v_{c_v}, //
+        domain_{std::move(domain)}, eos_{std::move(eos)},
+        viscosity_model_{std::move(viscosity_model)},
+        turbulence_model_{std::move(turbulence_model)},
+        buoyancy_model_{std::move(buoyancy_model)}, //
+        pressure_wall_model_{std::move(pressure_wall_model)},
+        velocity_wall_model_{std::move(velocity_wall_model)},
+        thermal_wall_model_{std::move(thermal_wall_model)},
+        kernel_{std::move(kernel)} {
+    TIT_ASSERT(k_ >= Num{0}, "Thermal conductivity must be non-negative!");
+    TIT_ASSERT(c_v_ > Num{0}, "Specific heat capacity must be positive!");
+  }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   //
@@ -76,6 +112,12 @@ public:
     using PV = ParticleView<ParticleArray>;
 
     initialize_gamma(particles);
+
+    // Compute derived fields.
+    par::for_each(particles.all(), [this](PV a) {
+      cs[a] = eos_.sound_speed_from_density(rho[a]);
+      mu[a] = viscosity_model_.dynamic_viscosity(T[a], Num{});
+    });
 
     // Fixed particles have mass fractions.
     par::for_each(particles.fixed(), [](PV a) { m[a] *= gamma[a]; });
@@ -189,43 +231,53 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
     using PV = ParticleView<ParticleArray>;
 
+    par::for_each(particles.fluid(),
+                  [this](PV a) { p[a] = eos_.pressure_from_density(rho[a]); });
+
     // Reconstruct the state on the wall particles from nearby fluid.
     par::for_each(particles.fixed(), [this, &mesh](PV e) {
-      // No-slip the velocity on the wall.
-      v[e] = {};
-
-      // Neumann equation for density.
-      //
-      //   ∂p/∂n = ρg·n ↔ cs^2/ρ ∂ρ/∂n = g·n.
-      //
-      // Define:
-      //
-      //   H(ρ) := ∫ cs^2(ζ)/ζ dζ from ρ_0 to ρ.
-      //   → H(ρ) = cs_0^2 log(ρ / ρ_0) if ξ = 1,
-      //   → H(ρ) = cs_0^2/(ξ - 1) [(ρ / ρ_0)^(ξ - 1) - 1] if ξ > 1.
-      //
-      // Since g·n = ∇(g·r)·n = ∂/∂n (g·r) , the Neumann equation can be
-      // rewritten as:
-      //
-      //   ∂/∂n (H(ρ) + g·r) = 0.
-      //
-      // Evaluate H(ρ) + g·r via Ferrand style extrapolation, solve for ρ.
-      Num S_e{};
-      Num H_e{};
       const auto n_e = normalize(grad_gamma[e]);
-      for (const PV b : mesh[e]) {
-        if (!b.is_fluid()) continue;
+      const auto g_vec = unit<1>(r[e], -g_);
+      const auto neighbors = mesh[e];
 
-        const auto V_b = m[b] / rho[b];
+      const auto weight = [this, e](PV b) {
+        if (!b.is_fluid()) return Num{};
+        return m[b] / rho[b] * kernel_(r[b] - r[e], h[e]);
+      };
+      const auto normal_distance = [e, n_e](PV b) {
+        return dot(r[b] - r[e], n_e);
+      };
+      const auto tangential_offset = [e, n_e](PV b) {
         const auto r_be = r[b] - r[e];
-        const auto W_be = kernel_(r_be, h[e]);
+        return r_be - dot(r_be, n_e) * n_e;
+      };
 
-        const auto H_b = eos_.potential_from_density(rho[b]);
-
-        S_e += V_b * W_be;
-        H_e += V_b * (H_b + g_ * dot(r_be, n_e) * n_e[1]) * W_be;
-      }
-      rho[e] = eos_.density_from_potential(is_tiny(S_e) ? Num{0} : H_e / S_e);
+      p[e] = pressure_wall_model_.pressure(
+          neighbors,
+          normal_distance,
+          weight,
+          [](PV b) { return p[b]; },
+          [](PV b) { return rho[b]; },
+          tangential_offset,
+          n_e,
+          g_vec,
+          Num{});
+      rho[e] = eos_.density_from_pressure(p[e]);
+      cs[e] = eos_.sound_speed_from_density(rho[e]);
+      v[e] = velocity_wall_model_.velocity(
+          neighbors,
+          normal_distance,
+          weight,
+          [](PV b) { return v[b]; },
+          n_e);
+      T[e] = thermal_wall_model_.temperature(
+          neighbors,
+          normal_distance,
+          weight,
+          [](PV b) { return T[b]; },
+          k_,
+          T[e]);
+      mu[e] = viscosity_model_.dynamic_viscosity(T[e], Num{});
     });
   }
 
@@ -244,12 +296,15 @@ public:
         std::numeric_limits<Num>::max(),
         [&mesh, this](Num dt, PV a) {
           // Acoustic time step.
-          const auto dt_acoustic =
-              CFL_ * h[a] /
-              (eos_.sound_speed_from_density(rho[a]) + norm(v[a]));
+          const auto dt_acoustic = CFL_ * h[a] / (cs[a] + norm(v[a]));
 
           // Viscous time step.
-          const auto dt_visc = C_visc_ * pow2(h[a]) * rho[a] / mu_;
+          const auto dt_visc =
+              C_diff_ * pow2(h[a]) * rho[a] / std::max(mu[a], tiny_v<Num>);
+
+          // Thermal diffusion time step.
+          const auto dt_thermal =
+              C_diff_ * pow2(h[a]) * rho[a] * c_v_ / std::max(k_, tiny_v<Num>);
 
           // Force time step.
           const auto dt_force =
@@ -264,7 +319,14 @@ public:
                 C_gamma_ / abs(dot(grad_gamma_as, v[a, s]) + tiny_v<Num>));
           }
 
-          return std::min({dt, dt_acoustic, dt_visc, dt_force, dt_gamma});
+          return std::min({
+              dt,
+              dt_acoustic,
+              dt_visc,
+              dt_thermal,
+              dt_force,
+              dt_gamma,
+          });
         },
         [](Num dt_a, Num dt_b) { return std::min(dt_a, dt_b); });
   }
@@ -318,7 +380,7 @@ public:
 
       // Ferrari artificial density diffusion term (Ferrari et al., 2009).
       const auto cs_ab = std::max(cs[a], cs[b]);
-      const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a] - r[b]);
+      const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a, b]);
 
       drho_dt[a] += m[b] / gamma[a] * dot(v[a, b] + Psi_ab / rho[b], grad_W_ab);
       drho_dt[b] -= m[a] / gamma[b] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
@@ -334,39 +396,94 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::compute_momentum()");
     using PV = ParticleView<ParticleArray>;
 
-    // Compute pressure from density.
-    par::for_each(particles.all(),
-                  [this](PV a) { p[a] = eos_.pressure_from_density(rho[a]); });
-
-    // Compute velocity time derivative.
-    par::for_each(particles.fluid(), [&mesh, this](PV a) {
-      dv_dt[a] = unit<1>(r[a], -g_);
+    // Compute velocity gradient.
+    par::for_each(particles.all(), [&mesh, this](PV a) {
+      L[a] = {};
+      grad_v[a] = {};
       for (const auto& [s_face, s] : mesh[domain_, a]) {
         const auto grad_gamma_as = kernel_.flux(s_face, a);
-
-        const auto P_as = rho[s] * (p[a] / pow2(rho[a]) + p[s] / pow2(rho[s]));
-
-        const auto n_s = normalize(grad_gamma_as);
-        const auto t_as = normalize(v[a, s] - dot(v[a, s], n_s) * n_s);
-        const auto dr_as = std::max(h[a] / 2, dot(r[a, s], n_s));
-        const auto Pi_as =
-            2 * mu_ / (rho[a] * dr_as) * dot(v[a, s], t_as) * t_as;
-
-        dv_dt[a] +=
-            (P_as * grad_gamma_as - Pi_as * norm(grad_gamma_as)) / gamma[a];
+        L[a] -= outer(r[s, a], grad_gamma_as) / gamma[a];
+        grad_v[a] -= outer(v[s, a], grad_gamma_as) / gamma[a];
       }
     });
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
+      const auto V_a = m[a] / rho[a];
+      const auto V_b = m[b] / rho[b];
       const auto grad_W_ab = kernel_.grad(a, b);
 
-      const auto P_ab = p[a] / pow2(rho[a]) + p[b] / pow2(rho[b]);
+      L[a] += V_b / gamma[a] * outer(r[b, a], grad_W_ab);
+      L[b] -= V_a / gamma[b] * outer(r[a, b], grad_W_ab);
+      grad_v[a] += V_b / gamma[a] * outer(v[b, a], grad_W_ab);
+      grad_v[b] -= V_a / gamma[b] * outer(v[a, b], grad_W_ab);
+    });
 
-      const auto Pi_ab =
-          2 * mu_ * dot(v[a, b], r[a, b]) / (rho[a] * rho[b] * norm2(r[a, b]));
+    // Finalize velocity gradients and compute thermodynamic properties.
+    par::for_each(particles.all(), [this](PV a) {
+      if (const auto fact = lu(transpose(L[a]))) {
+        L[a] = fact->inverse();
+        grad_v[a] = grad_v[a] * transpose(L[a]);
+      } else {
+        L[a] = eye(L[a]);
+      }
+      const auto S_a = (grad_v[a] + transpose(grad_v[a])) / 2;
+      const auto S_mag_a = sqrt(2 * tr(S_a * transpose(S_a)));
+      p[a] = eos_.pressure_from_density(rho[a]);
+      mu[a] = viscosity_model_.dynamic_viscosity(T[a], S_mag_a) +
+              turbulence_model_.eddy_viscosity(rho[a], S_mag_a);
+    });
 
-      dv_dt[a] += m[b] / gamma[a] * (Pi_ab - P_ab) * grad_W_ab;
-      dv_dt[b] -= m[a] / gamma[b] * (Pi_ab - P_ab) * grad_W_ab;
+    // Compute velocity and temperature time derivatives.
+    par::for_each(particles.fluid(), [&mesh, this](PV a) {
+      dv_dt[a] = unit<1>(r[a], -g_) * (1 + buoyancy_model_.coeff(T[a]));
+      dT_dt[a] = {};
+      for (const auto& [s_face, s] : mesh[domain_, a]) {
+        const auto grad_gamma_as = kernel_.flux(s_face, a);
+
+        const auto n_s = s_face.normal();
+        const auto v_tangent_as = v[a, s] - dot(v[a, s], n_s) * n_s;
+        const auto dr_as = std::max(h[a] / 2, dot(r[a, s], n_s));
+
+        const auto F_pres_as =
+            rho[s] * (p[a] / pow2(rho[a]) + p[s] / pow2(rho[s]));
+        const auto F_visc_as =
+            2 / rho[a] *
+            velocity_wall_model_.shear_stress(rho[a],
+                                              (mu[a] + mu[s]) / 2,
+                                              dr_as,
+                                              v_tangent_as);
+
+        dv_dt[a] +=
+            (F_pres_as * grad_gamma_as - F_visc_as * norm(grad_gamma_as)) /
+            gamma[a];
+
+        const auto Q_visc_as =
+            (2 / rho[a] * c_v_) * dot(F_visc_as, v_tangent_as);
+        const auto Q_diff_as =
+            (2 / rho[a] * c_v_) *
+            thermal_wall_model_.heat_flux(k_, T[a], T[s], r[a, s], n_s);
+
+        dT_dt[a] += (Q_visc_as - Q_diff_as) * norm(grad_gamma_as) / gamma[a];
+      }
+    });
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
+      const auto r2_ab = norm2(r[a, b]) + pow2(Num{0.01} * h.avg(a, b));
+      const auto grad_W_ab = kernel_.grad(a, b);
+
+      const auto F_pres_ab = p[a] / pow2(rho[a]) + p[b] / pow2(rho[b]);
+      const auto F_visc_ab =
+          2 * mu.avg(a, b) * dot(v[a, b], r[a, b]) / (rho[a] * rho[b] * r2_ab);
+
+      dv_dt[a] += m[b] / gamma[a] * (F_visc_ab - F_pres_ab) * grad_W_ab;
+      dv_dt[b] -= m[a] / gamma[b] * (F_visc_ab - F_pres_ab) * grad_W_ab;
+
+      const auto Q_visc_ab = F_visc_ab * v[a, b] / (2 * c_v_);
+      const auto Q_diff_ab =
+          2 * k_ * T[a, b] * r[a, b] / (c_v_ * rho[a] * rho[b] * r2_ab);
+
+      dT_dt[a] += m[b] / gamma[a] * dot(Q_diff_ab + Q_visc_ab, grad_W_ab);
+      dT_dt[b] -= m[a] / gamma[b] * dot(Q_diff_ab - Q_visc_ab, grad_W_ab);
     });
   }
 
@@ -404,6 +521,7 @@ public:
       N[a] = {};
       L[a] = {};
       grad_v[a] = {};
+      grad_T[a] = {};
       grad_rho[a] = {};
       grad_gamma[a] = {};
       for (const auto& [s_face, s] : mesh[domain_, a]) {
@@ -412,6 +530,7 @@ public:
         N[a] -= grad_gamma_as / gamma[a];
         L[a] -= outer(r[s, a], grad_gamma_as) / gamma[a];
         grad_v[a] -= outer(v[s, a], grad_gamma_as) / gamma[a];
+        grad_T[a] -= T[s, a] * grad_gamma_as / gamma[a];
         grad_rho[a] -= rho[s, a] * grad_gamma_as / gamma[a];
         grad_gamma[a] += grad_gamma_as;
       }
@@ -428,6 +547,8 @@ public:
       L[b] -= V_a / gamma[b] * outer(r[a, b], grad_W_ab);
       grad_v[a] += V_b / gamma[a] * outer(v[b, a], grad_W_ab);
       grad_v[b] -= V_a / gamma[b] * outer(v[a, b], grad_W_ab);
+      grad_T[a] += V_b / gamma[a] * T[b, a] * grad_W_ab;
+      grad_T[b] -= V_a / gamma[b] * T[a, b] * grad_W_ab;
       grad_rho[a] += V_b / gamma[a] * rho[b, a] * grad_W_ab;
       grad_rho[b] -= V_a / gamma[b] * rho[a, b] * grad_W_ab;
     });
@@ -437,6 +558,7 @@ public:
         L[a] = fact->inverse();
         N[a] = L[a] * N[a];
         grad_v[a] = grad_v[a] * transpose(L[a]);
+        grad_T[a] = L[a] * grad_T[a];
         grad_rho[a] = L[a] * grad_rho[a];
       } else {
         L[a] = eye(L[a]);
@@ -534,6 +656,7 @@ public:
       // but applying it near the walls can cause sudden significant changes to
       // the velocity field even for slow laminar flows.
       if (approx_equal_to(gamma[a], Num{1})) v[a] += grad_v[a] * dr[a];
+      T[a] += dot(grad_T[a], dr[a]);
       rho[a] += dot(grad_rho[a], dr[a]);
       gamma[a] += dot(grad_gamma[a], dr[a]);
     });
@@ -586,7 +709,7 @@ private:
 
   static constexpr Num CFL_{0.4};
   static constexpr Num C_force_{0.25};
-  static constexpr Num C_visc_{0.125};
+  static constexpr Num C_diff_{0.125};
   static constexpr Num C_gamma_{0.004};
   static constexpr Num C_shift_{0.2};
   static constexpr Num phi_max_{1};
@@ -594,9 +717,16 @@ private:
   static constexpr Num K_free_surface_{-log(Num{0.05}) / pow2(Num{0.01})};
 
   Num g_;
-  Num mu_;
+  Num k_;
+  Num c_v_;
   [[no_unique_address]] Domain domain_;
   [[no_unique_address]] EquationOfState eos_;
+  [[no_unique_address]] ViscosityModel viscosity_model_;
+  [[no_unique_address]] TurbulenceModel turbulence_model_;
+  [[no_unique_address]] BuoyancyModel buoyancy_model_;
+  [[no_unique_address]] PressureWallModel pressure_wall_model_;
+  [[no_unique_address]] VelocityWallModel velocity_wall_model_;
+  [[no_unique_address]] ThermalWallModel thermal_wall_model_;
   [[no_unique_address]] Kernel kernel_;
 
 }; // class FluidEquations

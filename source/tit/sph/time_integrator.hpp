@@ -61,6 +61,7 @@ public:
     equations_.compute_momentum(mesh, particles);
     equations_.compute_gamma_gradient(mesh, particles);
     par::for_each(particles.fluid(), [dt](PV a) {
+      T[a] += dt * dT_dt[a];
       v[a] += dt * dv_dt[a];
       r[a] += dt * v[a];
       gamma[a] += dt * dot(v[a], grad_gamma[a]);
@@ -117,7 +118,10 @@ public:
 
     equations_.prepare(mesh, particles);
     equations_.compute_continuity(mesh, particles);
-    par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
+    par::for_each(particles.fluid(), [dt](PV a) {
+      rho[a] += dt * drho_dt[a];
+      T[a] += dt * dT_dt[a];
+    });
 
     equations_.compute_momentum(mesh, particles);
     par::for_each(particles.fluid(), [dt_2](PV a) { v[a] += dt_2 * dv_dt[a]; });
@@ -209,6 +213,7 @@ private:
       r[a] += dt_ * v[a];
       v[a] += dt_ * dv_dt[a];
       rho[a] += dt_ * drho_dt[a];
+      T[a] += dt_ * dT_dt[a];
       gamma[a] += dt_ * dot(v[a], grad_gamma[a]);
     });
 
@@ -225,6 +230,7 @@ private:
       r[out_a] = (1 - weight) * r[a] + weight * r[out_a];
       v[out_a] = (1 - weight) * v[a] + weight * v[out_a];
       rho[out_a] = (1 - weight) * rho[a] + weight * rho[out_a];
+      T[out_a] = (1 - weight) * T[a] + weight * T[out_a];
       gamma[out_a] = (1 - weight) * gamma[a] + weight * gamma[out_a];
     });
   }
