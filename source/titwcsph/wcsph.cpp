@@ -27,6 +27,7 @@
 #include "tit/sph/time_integrator.hpp"
 #include "tit/sph/turbulence_model.hpp"
 #include "tit/sph/viscosity.hpp"
+#include "tit/sph/wall_model.hpp"
 
 namespace tit::sph::wcsph {
 namespace {
@@ -82,6 +83,12 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       SmagorinskyLillyTurbulenceModel{C_smag, h_0},
       // Thermal buoyancy model.
       BoussinesqBuoyancy{alpha_T, T_0},
+      // Pressure wall model.
+      PressureWallModel<Real>{},
+      // Turbulent velocity wall model.
+      LogLawVelocityWallModel<Real>{},
+      // Adiabatic thermal wall model.
+      AdiabaticThermalWallModel<Real>{},
       // C4 Wendland's spline kernel.
       SixthOrderWendlandKernel{},
   };

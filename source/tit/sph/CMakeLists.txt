@@ -28,6 +28,7 @@ add_tit_library(
   NAME
     sph
   SOURCES
+    "boundary_extrapolation.hpp"
     "buoyancy.hpp"
     "equation_of_state.hpp"
     "field.hpp"
@@ -39,6 +40,7 @@ add_tit_library(
     "time_integrator.hpp"
     "turbulence_model.hpp"
     "viscosity.hpp"
+    "wall_model.hpp"
   DEPENDS
     tit::core
     tit::data
