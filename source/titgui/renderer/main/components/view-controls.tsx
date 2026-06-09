@@ -608,7 +608,7 @@ function DisplayControls({
                   <Select.Root
                     value={colorFieldModifier.toString()}
                     onValueChange={(value) => {
-                      setColorFieldModifier(Number.parseInt(value, 10));
+                      setColorFieldModifier(Math.trunc(Number(value)));
                     }}
                   >
                     <Select.Trigger />
@@ -662,7 +662,7 @@ function DisplayControls({
                   <Select.Root
                     value={colorFieldModifier.toString()}
                     onValueChange={(value) => {
-                      setColorFieldModifier(Number.parseInt(value, 10));
+                      setColorFieldModifier(Math.trunc(Number(value)));
                     }}
                   >
                     <Select.Trigger />
