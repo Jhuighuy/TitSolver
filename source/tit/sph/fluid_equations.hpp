@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <numbers>
 #include <ranges>
@@ -15,8 +16,8 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
+#include "tit/geom/shape/face.hpp"
 #include "tit/par/algorithms.hpp"
-#include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
@@ -30,360 +31,571 @@ namespace tit::sph {
 /// Fluid equations with fixed kernel width and continuity equation.
 template<class Num,
          equation_of_state<Num> EquationOfState,
-         artificial_viscosity<Num> ArtificialViscosity,
-         kernel Kernel>
+         kernel Kernel,
+         class Domain>
 class FluidEquations final {
 public:
 
   /// Set of particle fields that are required.
-  static constexpr auto required_fields =    //
-      EquationOfState::required_fields |     //
-      ArtificialViscosity::required_fields | //
-      Kernel::required_fields |
-      TypeSet{h, m, r, dr, rho, p, v, dv_dt, L, N, FS};
+  static constexpr auto required_fields = //
+      TypeSet{h, m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
+      TypeSet{v, dv_dt, grad_v, r, dr, L, N, phi, rho_raw};
 
   /// Set of particle fields that are modified.
   static constexpr auto modified_fields =
-      EquationOfState::modified_fields |      //
-      ArtificialViscosity::modified_fields |  //
-      Kernel::modified_fields |               //
-      TypeSet{rho, drho_dt, grad_rho, N, L} | //
-      TypeSet{p, v, dv_dt} |                  //
-      TypeSet{dr, FS};
+      TypeSet{m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
+      TypeSet{v, dv_dt, grad_v, r, dr, N, L, phi, rho_raw};
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct the fluid equations.
   ///
-  /// @param rho_0                Reference density.
-  /// @param cs_0                 Reference sound speed.
-  /// @param g                    Gravitational acceleration.
-  /// @param R                    Kernel support radius scale factor.
-  /// @param Ma                   Mach number.
-  /// @param CFL                  CFL number.
-  /// @param equation_of_state    Equation of state.
-  /// @param artificial_viscosity Artificial viscosity.
-  /// @param kernel               Kernel.
-  constexpr explicit FluidEquations(Num rho_0,
-                                    Num cs_0,
-                                    Num g,
-                                    Num R,
-                                    Num Ma,
-                                    Num CFL,
+  /// @param rho_0  Reference density.
+  /// @param g      Gravitational acceleration.
+  /// @param mu     Viscosity coefficient.
+  /// @param domain Boundary domain.
+  /// @param eos    Equation of state.
+  /// @param kernel Kernel.
+  constexpr explicit FluidEquations(Num g,
+                                    Num mu,
+                                    const Domain& domain,
                                     EquationOfState eos,
-                                    ArtificialViscosity artificial_viscosity,
                                     Kernel kernel) noexcept
-      : rho_0_{rho_0}, cs_0_{cs_0}, g_{g}, R_{R}, Ma_{Ma}, CFL_{CFL}, //
-        eos_{std::move(eos)},
-        artificial_viscosity_{std::move(artificial_viscosity)},
+      : g_{g}, mu_{mu}, domain_{std::move(domain)}, eos_{std::move(eos)},
         kernel_{std::move(kernel)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  //
+  // Initialization steps.
+  //
 
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  void index(ParticleMesh& mesh, ParticleArray& particles) const {
+  /// Initialize equation-owned particle fields.
+  template<particle_array<required_fields> ParticleArray>
+  void initialize(ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::initialize()");
     using PV = ParticleView<ParticleArray>;
-    mesh.update(particles, [this](PV a) { return kernel_.radius(a); });
+
+    initialize_gamma(particles);
+
+    // Fixed particles have mass fractions.
+    par::for_each(particles.fixed(), [](PV a) { m[a] *= gamma[a]; });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Setup boundary particles.
+  /// Initialize the boundary renormalization field.
+  template<particle_array<required_fields> ParticleArray>
+  void initialize_gamma(ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::initialize_gamma()");
+    using PV = ParticleView<ParticleArray>;
+    using Vec = particle_vec_t<ParticleArray>;
+
+    // Compute gamma at the initial time using Ferrand's algorithm
+    // (Ferrand et al., 2012).
+    //
+    // For each particle, first compute ∇γ. From this, two cases arise:
+    //
+    // - ∇γ is zero, the particle is far from the boundary.
+    //   In this case, we can simply set γ = 1.
+    //
+    // - ∇γ is non-zero, the particle is near the boundary, and γ < 1.
+    //   Define:
+    //
+    //     n := ∇γ / |∇γ|, ẟ := -2 R n, where R is the kernel radius.
+    //
+    //   One can virtually translate particle by -ẟ, where it is safe to assume
+    //   γ(r - ẟ) = 1. γ(r) can be computed by integrating ODEs with respect to
+    //   virtual time τ at τ=1:
+    //
+    //     dx/dτ = ẟ,       x(τ=0) = r - ẟ,
+    //     dγ/dτ = ẟ⋅∇γ(x), γ(τ=0) = 1.
+    //
+    par::for_each(particles.all(), [this](PV a) {
+      const auto grad_gamma_at = [this, a](const Vec& x) {
+        Vec grad{};
+        for (std::size_t s = 0; s < domain_.num_faces(); ++s) {
+          const geom::Face face{domain_.face(s)};
+          grad += kernel_.flux(face, x, h[a]);
+        }
+        return grad;
+      };
+
+      grad_gamma[a] = grad_gamma_at(r[a]);
+      gamma[a] = Num{1};
+
+      const auto grad_gamma_0_norm = norm(grad_gamma[a]);
+      if (is_tiny(grad_gamma_0_norm)) return;
+
+      const auto n = grad_gamma[a] / grad_gamma_0_norm;
+      const auto delta = -Num{2} * kernel_.radius(h[a]) * n;
+      const auto max_abs_dgamma_dtau = abs(dot(grad_gamma[a], delta));
+
+      auto x = r[a] - delta;
+      auto grad_gamma_x = grad_gamma_at(x);
+      for (Num tau{}; tau < Num{1};) {
+        const auto remaining = Num{1} - tau;
+        const auto abs_dgamma_dtau = abs(dot(grad_gamma_x, delta));
+        const auto denom = std::max(abs_dgamma_dtau, max_abs_dgamma_dtau);
+        auto dtau =
+            is_tiny(denom) ? remaining : std::min(remaining, C_gamma_ / denom);
+        if (tau + dtau <= tau) dtau = remaining;
+
+        const auto dx = dtau * delta;
+        const auto next_x = x + dx;
+        const auto next_grad_gamma_x = grad_gamma_at(next_x);
+
+        gamma[a] += dot(grad_gamma_x + next_grad_gamma_x, dx) / 2;
+
+        x = next_x;
+        grad_gamma_x = next_grad_gamma_x;
+
+        tau += dtau;
+      }
+
+      gamma[a] = std::clamp(gamma[a], Num{0}, Num{1});
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  //
+  // Preparation steps.
+  //
+
+  /// Refresh mesh and boundary state before evaluating equations.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void prepare(ParticleMesh& mesh, ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::prepare()");
+
+    index(mesh, particles);
+    setup_boundary(mesh, particles);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Update the particle mesh.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void index(ParticleMesh& mesh, ParticleArray& particles) const {
+    using PV = ParticleView<ParticleArray>;
+    mesh.update(domain_, particles, [this](PV a) { return kernel_.radius(a); });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Extrapolate the near-wall particles into the boundary.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void setup_boundary(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::setup_boundary()");
     using PV = ParticleView<ParticleArray>;
-    static constexpr auto Dim = particle_dim_v<ParticleArray>;
 
-    // Interpolate the field values on the boundary.
-    par::for_each(particles.fixed(), [this, &mesh](PV b) {
-      /// @todo Once we have a proper geometry library, we should use
-      ///       here and clean up the code.
-      const auto& search_point = r[b];
-      const auto clipped_point = Domain<Num>.clamp(search_point);
-      const auto r_ghost = 2 * clipped_point - search_point;
-      const auto SN = normalize(search_point - clipped_point);
-      const auto SD = norm(r_ghost - r[b]);
+    // Reconstruct the state on the wall particles from nearby fluid.
+    par::for_each(particles.fixed(), [this, &mesh](PV e) {
+      // No-slip the velocity on the wall.
+      v[e] = {};
 
-      // Compute the interpolation weights, both for the constant and
-      // linear interpolations.
-      Num S{};
-      Mat<Num, Dim + 1> M{};
-      const auto h_ghost = RADIUS_SCALE * h[b];
-      for (const PV a : mesh.fixed_interp(b)) {
-        const auto r_delta = r_ghost - r[a];
-        const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
-        const auto W_delta = kernel_(r_delta, h_ghost);
-        S += W_delta * m[a] / rho[a];
-        M += outer(B_delta, B_delta * W_delta * m[a] / rho[a]);
+      // Neumann equation for density.
+      //
+      //   ∂p/∂n = ρg·n ↔ cs^2/ρ ∂ρ/∂n = g·n.
+      //
+      // Define:
+      //
+      //   H(ρ) := ∫ cs^2(ζ)/ζ dζ from ρ_0 to ρ.
+      //   → H(ρ) = cs_0^2 log(ρ / ρ_0) if ξ = 1,
+      //   → H(ρ) = cs_0^2/(ξ - 1) [(ρ / ρ_0)^(ξ - 1) - 1] if ξ > 1.
+      //
+      // Since g·n = ∇(g·r)·n = ∂/∂n (g·r) , the Neumann equation can be
+      // rewritten as:
+      //
+      //   ∂/∂n (H(ρ) + g·r) = 0.
+      //
+      // Evaluate H(ρ) + g·r via Ferrand style extrapolation, solve for ρ.
+      Num S_e{};
+      Num H_e{};
+      const auto n_e = normalize(grad_gamma[e]);
+      for (const PV b : mesh[e]) {
+        if (!b.is_fluid()) continue;
+
+        const auto V_b = m[b] / rho[b];
+        const auto r_be = r[b] - r[e];
+        const auto W_be = kernel_(r_be, h[e]);
+
+        const auto H_b = eos_.potential_from_density(rho[b]);
+
+        S_e += V_b * W_be;
+        H_e += V_b * (H_b + g_ * dot(r_be, n_e) * n_e[1]) * W_be;
       }
-
-      if (const auto fact = ldl(M); fact) {
-        // Linear interpolation succeeds, use it.
-        clear(b, rho, v);
-        const auto E = fact->solve(unit<0>(M[0]));
-        for (const PV a : mesh.fixed_interp(b)) {
-          const auto r_delta = r_ghost - r[a];
-          const auto B_delta = vec_cat(Vec{Num{1.0}}, r_delta);
-          const auto W_delta = dot(E, B_delta) * kernel_(r_delta, h_ghost);
-          rho[b] += m[a] * W_delta;
-          v[b] += m[a] / rho[a] * v[a] * W_delta;
-        }
-      } else if (!is_tiny(S)) {
-        // Constant interpolation succeeds, use it.
-        clear(b, rho, v);
-        const auto E = inverse(S);
-        for (const PV a : mesh.fixed_interp(b)) {
-          const auto r_delta = r_ghost - r[a];
-          const auto W_delta = E * kernel_(r_delta, h_ghost);
-          rho[b] += m[a] * W_delta;
-          v[b] += m[a] / rho[a] * v[a] * W_delta;
-        }
-      } else {
-        // Both interpolations fail, leave the particle as it is.
-        rho[b] = rho_0_;
-        v[b] = {};
-        return;
-      }
-
-      // Compute the density at the boundary.
-      // drho/dn = rho_0/(cs_0^2)*dot(g,n).
-      const auto G = unit<1>(r[b], -g_);
-      rho[b] += SD * rho_0_ / pow2(cs_0_) * dot(G, SN);
-
-      // Compute the velocity at the boundary (slip wall boundary condition).
-      const auto Vn = dot(v[b], SN) * SN;
-      const auto Vt = v[b] - Vn;
-      v[b] = Vt - Vn;
+      rho[e] = is_tiny(S_e) ? eos_.density_from_pressure(Num{0}) :
+                              eos_.density_from_potential(H_e / S_e);
     });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Compute density-related fields.
+  /// Compute the maximum allowed time step.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  void compute_density(ParticleMesh& mesh, ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::compute_density()");
+  auto compute_time_step(ParticleMesh& mesh, ParticleArray& particles) const
+      -> Num {
+    TIT_PROFILE_SECTION("FluidEquations::compute_time_step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Clean-up continuity equation fields.
-    par::for_each(particles.all(), [](PV a) {
-      drho_dt[a] = {};
-      grad_rho[a] = {};
-      L[a] = {};
-      N[a] = {};
+    return par::fold(
+        particles.fluid(),
+        std::numeric_limits<Num>::infinity(),
+        [&mesh, this](Num dt, PV a) {
+          const auto dt_acoustic =
+              CFL_ * h[a] /
+              (eos_.sound_speed_from_density(rho[a]) + norm(v[a]));
+
+          const auto dt_visc = C_visc_ * pow2(h[a]) * rho[a] / mu_;
+
+          const auto dt_force =
+              C_force_ * sqrt(h[a] / std::max(norm(dv_dt[a]), g_));
+
+          auto dt_gamma = std::numeric_limits<Num>::infinity();
+          for (const auto& [s_index, s] : mesh[domain_, a]) {
+            const geom::Face face{domain_.face(s_index)};
+            const auto grad_gamma_as = kernel_.flux(face, a);
+
+            dt_gamma = std::min(
+                dt_gamma,
+                C_gamma_ / abs(dot(grad_gamma_as, v[a, s]) + tiny_v<Num>));
+          }
+
+          return std::min({dt, dt_acoustic, dt_visc, dt_force, dt_gamma});
+        },
+        [](Num dt_a, Num dt_b) { return std::min(dt_a, dt_b); });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  //
+  // Integration steps.
+  //
+
+  /// Compute gradient of gamma.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void compute_gamma_gradient(ParticleMesh& mesh,
+                              ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::compute_gamma_gradient()");
+    using PV = ParticleView<ParticleArray>;
+
+    par::for_each(particles.fluid(), [&mesh, this](PV a) {
+      grad_gamma[a] = {};
+      for (const auto& [s, _] : mesh[domain_, a]) {
+        const geom::Face face{domain_.face(s)};
+        grad_gamma[a] += kernel_.flux(face, a);
+      }
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Compute continuity equation right-hand side.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void compute_continuity(ParticleMesh& mesh, ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::compute_continuity()");
+    using PV = ParticleView<ParticleArray>;
+
+    par::for_each(particles.all(), [this](PV a) {
+      cs[a] = eos_.sound_speed_from_density(rho[a]);
     });
 
-    // Compute density gradient and normalization fields.
+    par::for_each(particles.fluid(), [&mesh, this](PV a) {
+      drho_dt[a] = {};
+      for (const auto& [s_index, s] : mesh[domain_, a]) {
+        const geom::Face face{domain_.face(s_index)};
+        const auto grad_gamma_as = kernel_.flux(face, a);
+
+        drho_dt[a] -= rho[s] * dot(v[a, s], grad_gamma_as) / gamma[a];
+      }
+    });
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
+      const auto grad_W_ab = kernel_.grad(a, b);
 
-      // Compute volumes and kernel gradient.
+      // Ferrari artificial density diffusion term (Ferrari et al., 2009).
+      const auto cs_ab = std::max(cs[a], cs[b]);
+      const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a] - r[b]);
+
+      drho_dt[a] += m[b] / gamma[a] * dot(v[a, b] + Psi_ab / rho[b], grad_W_ab);
+      drho_dt[b] -= m[a] / gamma[b] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Compute momentum equation right-hand side.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void compute_momentum(ParticleMesh& mesh, ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::compute_momentum()");
+    using PV = ParticleView<ParticleArray>;
+
+    par::for_each(particles.all(),
+                  [this](PV a) { p[a] = eos_.pressure_from_density(rho[a]); });
+
+    par::for_each(particles.fluid(), [&mesh, this](PV a) {
+      dv_dt[a] = unit<1>(r[a], -g_);
+      for (const auto& [s_index, s] : mesh[domain_, a]) {
+        const geom::Face face{domain_.face(s_index)};
+        const auto grad_gamma_as = kernel_.flux(face, a);
+
+        const auto P_as = rho[s] * (p[a] / pow2(rho[a]) + p[s] / pow2(rho[s]));
+
+        const auto n_s = normalize(grad_gamma_as);
+        const auto t_as = normalize(v[a, s] - dot(v[a, s], n_s) * n_s);
+        const auto dr_as = std::max(h[a] / 2, dot(r[a, s], n_s));
+        const auto Pi_as =
+            2 * mu_ / (rho[a] * dr_as) * dot(v[a, s], t_as) * t_as;
+
+        dv_dt[a] +=
+            (P_as * grad_gamma_as - Pi_as * norm(grad_gamma_as)) / gamma[a];
+      }
+    });
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
+      const auto grad_W_ab = kernel_.grad(a, b);
+
+      const auto P_ab = p[a] / pow2(rho[a]) + p[b] / pow2(rho[b]);
+
+      const auto Pi_ab =
+          2 * mu_ * dot(v[a, b], r[a, b]) / (rho[a] * rho[b] * norm2(r[a, b]));
+
+      dv_dt[a] += m[b] / gamma[a] * (Pi_ab - P_ab) * grad_W_ab;
+      dv_dt[b] -= m[a] / gamma[b] * (Pi_ab - P_ab) * grad_W_ab;
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  //
+  // Post-integration steps.
+  //
+
+  /// Run post-integration mesh refresh and correction steps.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void post_integrate(ParticleMesh& mesh, ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::post_integrate()");
+
+    prepare(mesh, particles);
+    apply_shifts(mesh, particles);
+    apply_free_surface_correction(mesh, particles);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Apply particle shifts and correct shifted fields.
+  ///
+  /// This is a post-integration step, thus it requires updated mesh and
+  /// boundary extrapolation.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void apply_shifts(ParticleMesh& mesh, ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::apply_shifts()");
+    using PV = ParticleView<ParticleArray>;
+
+    par::for_each(particles.all(), [&mesh, this](PV a) {
+      N[a] = {};
+      L[a] = {};
+      grad_v[a] = {};
+      grad_rho[a] = {};
+      grad_gamma[a] = {};
+      for (const auto& [s_index, s] : mesh[domain_, a]) {
+        const geom::Face face{domain_.face(s_index)};
+        const auto grad_gamma_as = kernel_.flux(face, a);
+
+        N[a] -= grad_gamma_as / gamma[a];
+        L[a] -= outer(r[s, a], grad_gamma_as) / gamma[a];
+        grad_v[a] -= outer(v[s, a], grad_gamma_as) / gamma[a];
+        grad_rho[a] -= rho[s, a] * grad_gamma_as / gamma[a];
+        grad_gamma[a] += grad_gamma_as;
+      }
+    });
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
+      const auto [a, b] = ab;
       const auto V_a = m[a] / rho[a];
       const auto V_b = m[b] / rho[b];
       const auto grad_W_ab = kernel_.grad(a, b);
 
-      // Update density gradient.
-      const auto grad_flux = rho[b, a] * grad_W_ab;
-      grad_rho[a] += V_b * grad_flux;
-      grad_rho[b] += V_a * grad_flux;
-
-      // Update normal vector.
-      const auto N_flux = grad_W_ab;
-      N[a] += V_b * N_flux;
-      N[b] -= V_a * N_flux;
-
-      // Update normalization matrix.
-      const auto L_flux = outer(r[b, a], grad_W_ab);
-      L[a] += V_b * L_flux;
-      L[b] += V_a * L_flux;
+      N[a] += V_b / gamma[a] * grad_W_ab;
+      N[b] -= V_a / gamma[b] * grad_W_ab;
+      L[a] += V_b / gamma[a] * outer(r[b, a], grad_W_ab);
+      L[b] -= V_a / gamma[b] * outer(r[a, b], grad_W_ab);
+      grad_v[a] += V_b / gamma[a] * outer(v[b, a], grad_W_ab);
+      grad_v[b] -= V_a / gamma[b] * outer(v[a, b], grad_W_ab);
+      grad_rho[a] += V_b / gamma[a] * rho[b, a] * grad_W_ab;
+      grad_rho[b] -= V_a / gamma[b] * rho[a, b] * grad_W_ab;
     });
-
-    // Finalize the normalization fields.
     par::for_each(particles.all(), [](PV a) {
-      // If normalization matrix is invertible, invert it.
-      if (const auto fact = ldl(L[a])) {
+      dr[a] = N[a];
+      if (const auto fact = lu(transpose(L[a]))) {
         L[a] = fact->inverse();
+        N[a] = L[a] * N[a];
+        grad_v[a] = grad_v[a] * transpose(L[a]);
+        grad_rho[a] = L[a] * grad_rho[a];
       } else {
         L[a] = eye(L[a]);
       }
-
-      // Apply the normalization matrix.
-      grad_rho[a] = L[a] * grad_rho[a];
-      N[a] = normalize(L[a] * N[a]);
+      N[a] = normalize(N[a]);
     });
 
-    // Compute density time derivative.
-    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
-      const auto [a, b] = ab;
-
-      // Compute the kernel gradient.
-      const auto grad_W_ab = kernel_.grad(a, b);
-
-      // Compute the artificial viscosity density term.
-      const auto Psi_ab = artificial_viscosity_.density_term(a, b);
-
-      // Update density time derivative.
-      drho_dt[a] -= m[b] * dot(v[b, a] - Psi_ab / rho[b], grad_W_ab);
-      drho_dt[b] -= m[a] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
-    });
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /// Compute velocity-related fields.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  void compute_forces(ParticleMesh& mesh, ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::compute_forces()");
-    using PV = ParticleView<ParticleArray>;
-
-    // Initialize the momentum and compute pressure.
-    par::for_each(particles.all(), [this](PV a) {
-      // Initialize the momentum time derivative with the gravity source.
-      dv_dt[a] = unit<1>(r[a], -g_);
-
-      // Compute pressure and sound speed.
-      p[a] = eos_.pressure(a);
-      if constexpr (has<PV>(cs)) cs[a] = eos_.sound_speed(a);
-    });
-
-    // Compute velocity and internal energy time derivatives.
-    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
-      const auto [a, b] = ab;
-
-      // Compute the kernel gradient.
-      const auto grad_W_ab = kernel_.grad(a, b);
-
-      // Compute the artificial viscosity velocity term.
-      const auto Pi_ab = artificial_viscosity_.velocity_term(a, b);
-
-      // Update momentum time derivative.
-      const auto P_a = p[a] / pow2(rho[a]);
-      const auto P_b = p[b] / pow2(rho[b]);
-      const auto v_flux = (-P_a - P_b + Pi_ab) * grad_W_ab;
-      dv_dt[a] += m[b] * v_flux;
-      dv_dt[b] -= m[a] * v_flux;
-    });
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /// Compute particle shifts.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  constexpr void compute_shifts(ParticleMesh& mesh,
-                                ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::compute_shifts()");
-    using PV = ParticleView<ParticleArray>;
-
-    // Initialize the free surface flag values and clear the particle shifts.
-    // - Positive value `FS_FAR` means that the particle is far from the free
-    //   surface.
-    // - Any positive value in the range `(FS_FAR, FS_ON)` means that the
-    //   particle is near the free surface (has at least one neighbor that is on
-    //   the free surface).
-    // - Value `FS_ON` means that the particle is on the free surface. It is
+    // Initialize the free surface flag indicators.
+    // - `phi_max = 1` means that the particle is far from the free surface.
+    // - Any value in the range `(phi_min, phi_max)` means that the particle is
+    //   near the free surface (has at least one neighbor that is on the free
+    //   surface).
+    // - Value `phi_min` means that the particle is on the free surface. It is
     //   essentially zero, but we use a very small number to avoid spurious
     //   comparisons.
-    const auto a_0 = particles[0];
-    const auto FS_FAR = 2 * CFL_ * Ma_ * pow2(h[a_0]);
-    static constexpr auto FS_ON = std::numeric_limits<Num>::min();
-    par::for_each(particles.fluid(), [](PV a) { FS[a] = FS_ON, dr[a] = {}; });
-    par::for_each(particles.fixed(), [FS_FAR](PV a) { FS[a] = FS_FAR; });
+    par::for_each(particles.fixed(), [](PV a) { phi[a] = phi_max_; });
+    par::for_each(particles.fluid(), [](PV a) { phi[a] = phi_min_; });
 
     // Classify the particles into free surface and non-free surface.
     //
-    // Here we are reading and writing the same field `FS` in the parallel loop.
-    // There is no race condition because we read the neighbor to compare it
-    // with `FS_ON`, and non-free-surface particles are updated in the loop.
-    par::block_for_each(mesh.block_pairs(particles), [FS_FAR](auto ab) {
+    // Here we are reading and writing the same field `phi` in the parallel
+    // loop. There is no race condition because we read the neighbor to compare
+    // it with `phi_min`, and non-free-surface particles are updated in the
+    // loop.
+    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
       const auto [a, b] = ab;
 
       // Skip the particles that are too far away.
-      const auto r_ab = norm2(r[a, b]);
-      if (const auto dist_threshold = pow2(2 * h[a]); r_ab > dist_threshold) {
-        return;
-      }
+      const auto r2_ab = norm2(r[a, b]);
+      const auto dist_threshold = avg(kernel_.radius(a), kernel_.radius(b));
+      if (r2_ab > pow2(dist_threshold)) return;
 
       // Perform "visibility" test. The actual test is just an optimized
       // version of `acos(n_{a,b} / sqrt(r_ab)) <= fov`.
       constexpr auto cos_fov = static_cast<Num>(cos(std::numbers::pi / 4));
-      const auto fov_threshold = cos_fov * r_ab;
-      if (bitwise_equal(FS[a], FS_ON)) {
+      const auto fov_threshold = pow2(cos_fov) * r2_ab;
+      if (bitwise_equal(phi[a], phi_min_)) {
         const auto n_a = dot(N[a], r[a, b]);
-        if (n_a > 0 && pow2(n_a) >= fov_threshold) FS[a] = FS_FAR;
+        if (n_a > 0 && pow2(n_a) >= fov_threshold) phi[a] = phi_max_;
       }
-      if (bitwise_equal(FS[b], FS_ON)) {
+      if (bitwise_equal(phi[b], phi_min_)) {
         const auto n_b = dot(N[b], r[a, b]);
-        if (n_b < 0 && pow2(n_b) >= fov_threshold) FS[b] = FS_FAR;
+        if (n_b < 0 && pow2(n_b) >= fov_threshold) phi[b] = phi_max_;
       }
+    });
+
+    // Mark splashes as free surface particle.
+    par::for_each(particles.fluid(), [&mesh](PV a) {
+      // We shall consider a particle as a splash if it has:
+      // - less than 8 neighbors in 2D and
+      // - less than 26 neighbors in 3D.
+      static constexpr std::size_t neighbor_cutoff =
+          particle_dim_v<PV> == 2 ? 8 : 26;
+      if (std::ranges::size(mesh[a]) <= neighbor_cutoff) phi[a] = phi_min_;
     });
 
     // Classify the non-free surface particles into near and far categories.
     //
-    // Here we are reading and writing the same field `FS` in the parallel loop.
-    // There is no race condition because we update the field only when
-    // the particle has `FS_ON`, and read the field only to compare it with
-    // `FS_ON`.
+    // Here we are reading and writing the same field `phi` in the parallel
+    // loop. There is no race condition because we update the field only when
+    // the particle has `phi_min`, and read the field only to compare it with
+    // `phi_min`.
     //
-    // A distinct non-zero bit pattern of `FS_ON` is essential for
+    // A distinct non-zero bit pattern of `phi_min` is essential for
     // correctness. We may read a garbage value while memory is being updated by
     // some other thread, and the chances of a false positive comparison with
     // distinct bits are very small, at least orders of magnitude smaller than
     // if we used zero.
-    par::for_each(particles.fluid(), [FS_FAR, &mesh, this](PV a) {
-      if (!bitwise_equal(FS[a], FS_FAR)) return;
+    par::for_each(particles.fluid(), [&mesh, this](PV a) {
+      if (!bitwise_equal(phi[a], phi_max_)) return;
 
-      // Do not apply the shifts to the particles near the walls.
-      /// @todo No article mentions this. We shall investigate it.
-      if (std::ranges::any_of(mesh[a], [](PV b) { return b.is_fixed(); })) {
-        FS[a] = Num{1.0e-30} * FS_FAR;
-        return;
-      }
-
-      constexpr auto on_fs = [](PV b) { return bitwise_equal(FS[b], FS_ON); };
+      constexpr auto on_fs = [](PV b) {
+        return bitwise_equal(phi[b], phi_min_);
+      };
       if (std::ranges::any_of(mesh[a], on_fs)) {
         auto fs_neighbors = std::views::filter(mesh[a], on_fs);
         const auto dist_to_a = [a](PV b) { return norm2(r[a, b]); };
         const auto b = *std::ranges::min_element(fs_neighbors, {}, dist_to_a);
-        FS[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius(a);
+        phi[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius(a);
       }
     });
 
-    // Compute the particle shifts.
-    const auto inv_W_0 = inverse(kernel_(unit(r[a_0], h[a_0] / 2), h[a_0]));
-    par::block_for_each(
-        mesh.block_pairs(particles),
-        [inv_W_0, FS_FAR, this](auto ab) {
-          const auto [a, b] = ab;
-          const auto W_ab = kernel_(a, b);
-          const auto grad_W_ab = kernel_.grad(a, b);
+    // Apply the particle shifts and correct fields.
+    par::for_each(particles.fluid(), [](PV a) {
+      // Here we'll follow Leroy's PhD thesis (2014) and apply shifts only to
+      // the far-away particles.
+      if (!bitwise_equal(phi[a], phi_max_)) {
+        dr[a] = {};
+        return;
+      }
 
-          // Update the particle shifts.
-          const auto Chi_ab = R_ * pow<4>(W_ab * inv_W_0);
-          const auto Xi_a = static_cast<Num>(bitwise_equal(FS[a], FS_FAR));
-          const auto Xi_b = static_cast<Num>(bitwise_equal(FS[b], FS_FAR));
-          dr[a] -= (Xi_a + Chi_ab) * FS[a] * m[b] / rho[b] * grad_W_ab;
-          dr[b] += (Xi_b + Chi_ab) * FS[b] * m[a] / rho[a] * grad_W_ab;
-        });
+      dr[a] *= -CFL_ * C_shift_ * pow2(h[a]);
+      r[a] += dr[a];
+      // Theoretically, the correction below should be applied unconditionally,
+      // but applying it near the walls can cause sudden significant changes to
+      // the velocity field even for slow laminar flows.
+      if (approx_equal_to(gamma[a], Num{1})) v[a] += grad_v[a] * dr[a];
+      rho[a] += dot(grad_rho[a], dr[a]);
+      gamma[a] += dot(grad_gamma[a], dr[a]);
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Apply free-surface density correction.
+  ///
+  /// This is a post-shifting step: it uses the free-surface marker produced
+  /// while shifting. The caller may refresh the mesh and boundary state before
+  /// calling this method, but this is usually unnecessary because the
+  /// correction is applied only to unshifted particles whose kernel deficit is
+  /// not already explained by gamma.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void apply_free_surface_correction(ParticleMesh& mesh,
+                                     ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::apply_free_surface_correction()");
+    using PV = ParticleView<ParticleArray>;
+
+    par::for_each(particles.all(), [](PV a) { rho_raw[a] = rho[a]; });
+
+    par::for_each(particles.fluid(), [&mesh, this](PV a) {
+      // Correction is not applied to far-away particles.
+      if (bitwise_equal(phi[a], phi_max_)) return;
+
+      // Compute Shepard's filter value and direct density estimate.
+      Num alpha_a{};
+      Num rho_tilde_a{};
+      for (const auto b : mesh[a]) {
+        const auto W_ab = kernel_(a, b);
+        alpha_a += m[b] / rho_raw[b] * W_ab;
+        rho_tilde_a += m[b] * W_ab;
+      }
+
+      // Skip particles whose kernel deficit is already explained by gamma.
+      const auto alpha_ratio = std::min(Num{1}, alpha_a / gamma[a]);
+      if (alpha_ratio > Num{0.99}) return;
+
+      const auto beta = exp(-K_free_surface_ * pow2(alpha_ratio - 1));
+      const auto correction = beta * gamma[a] + (1 - beta) * alpha_a;
+      if (!is_tiny(correction)) rho[a] = rho_tilde_a / correction;
+    });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 private:
 
-  Num rho_0_;
-  Num cs_0_;
+  static constexpr Num CFL_{0.4};
+  static constexpr Num C_force_{0.25};
+  static constexpr Num C_visc_{0.125};
+  static constexpr Num C_gamma_{0.004};
+  static constexpr Num C_shift_{0.2};
+  static constexpr Num phi_max_{1};
+  static constexpr Num phi_min_{std::numeric_limits<Num>::min()};
+  static constexpr Num K_free_surface_{-log(Num{0.05}) / pow2(Num{0.01})};
+
   Num g_;
-  Num R_;
-  Num Ma_;
-  Num CFL_;
+  Num mu_;
+  [[no_unique_address]] Domain domain_;
   [[no_unique_address]] EquationOfState eos_;
-  [[no_unique_address]] ArtificialViscosity artificial_viscosity_;
   [[no_unique_address]] Kernel kernel_;
 
 }; // class FluidEquations

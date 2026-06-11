@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <flat_set>
 #include <functional>
 #include <iterator>
 #include <limits>
@@ -21,22 +22,14 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
-#include "tit/geom/bbox.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
 #include "tit/par/algorithms.hpp"
 #include "tit/par/control.hpp"
-#include "tit/par/task_group.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
-
-/// @todo Move it to an appropriate place!
-constexpr auto RADIUS_SCALE = 3;
-template<class Num>
-inline constexpr auto Domain =
-    geom::BBox{Vec<Num, 2>{0.0, 0.0}, Vec<Num, 2>{3.2196, 1.5}};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,18 +64,6 @@ public:
                [&particles](std::size_t b) { return particles[b]; });
   }
 
-  /// Particles used for interpolation for the fixed particles.
-  template<particle_view PV>
-  constexpr auto fixed_interp(PV a) const noexcept {
-    TIT_ASSERT(a.has_type(ParticleType::fixed),
-               "Particle must be of the fixed type!");
-    auto& particles = a.array();
-    const std::size_t i = a - *particles.fixed().begin();
-    return interp_adjacency_[i] | //
-           std::views::transform(
-               [&particles](std::size_t b) { return particles[b]; });
-  }
-
   /// Unique pairs of the adjacent particles.
   template<particle_array ParticleArray>
   constexpr auto pairs(ParticleArray& particles) const noexcept {
@@ -104,15 +85,32 @@ public:
            });
   }
 
+  /// Adjacent faces.
+  template<class Domain, particle_view PV>
+  constexpr auto operator[](const Domain& domain, PV a) const noexcept {
+    auto& particles = a.array();
+    return face_adjacency_[a.index()] |
+           std::views::transform([&domain, &particles](std::size_t face_index) {
+             return std::pair{face_index,
+                              std::apply(
+                                  [&particles](const auto&... es) {
+                                    return std::tuple{particles.fixed()[es]...};
+                                  },
+                                  domain.face_nodes(face_index))};
+           });
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Update the adjacency graph.
-  template<particle_array ParticleArray, class SearchRadiusFunc>
-  void update(ParticleArray& particles, const SearchRadiusFunc& radius_func) {
+  template<class Domain, particle_array ParticleArray, class SearchRadiusFunc>
+  void update(const Domain& domain,
+              ParticleArray& particles,
+              const SearchRadiusFunc& radius_func) {
     TIT_PROFILE_SECTION("ParticleMesh::update()");
 
     // Update the adjacency graphs.
-    search_(particles, radius_func);
+    search_(domain, particles, radius_func);
 
     // Partition the adjacency graph by the block.
     partition_(particles);
@@ -120,8 +118,10 @@ public:
 
 private:
 
-  template<particle_array ParticleArray, class SearchRadiusFunc>
-  void search_(ParticleArray& particles, const SearchRadiusFunc& radius_func) {
+  template<class Domain, particle_array ParticleArray, class SearchRadiusFunc>
+  void search_(const Domain& domain,
+               ParticleArray& particles,
+               const SearchRadiusFunc& radius_func) {
     TIT_PROFILE_SECTION("ParticleMesh::search()");
     using PV = ParticleView<ParticleArray>;
 
@@ -130,62 +130,37 @@ private:
     const auto search_index = search_func_(positions);
 
     // Search for the neighbors.
-    par::TaskGroup search_tasks{};
-    search_tasks.run([&particles, &radius_func, &search_index, this] {
-      adjacency_.resize(particles.size());
-      par::for_each(particles.all(), [&radius_func, &search_index, this](PV a) {
-        const auto& search_point = r[a];
-        const auto search_radius = radius_func(a);
-        TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
+    adjacency_.resize(particles.size());
+    par::for_each(particles.all(), [&radius_func, &search_index, this](PV a) {
+      const auto& search_point = r[a];
+      const auto search_radius = radius_func(a);
+      TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
 
-        // Search for the neighbors for the current particle and store the
-        // sorted results.
-        auto& search_results = adjacency_[a.index()];
-        search_results.clear();
-        search_index.search(search_point,
-                            search_radius,
-                            std::back_inserter(search_results));
-        std::ranges::sort(search_results);
-      });
+      // Search for the neighbors for the current particle and store the
+      // sorted results.
+      auto& search_results = adjacency_[a.index()];
+      search_results.clear();
+      search_index.search(search_point,
+                          search_radius,
+                          std::back_inserter(search_results));
+      std::ranges::sort(search_results);
     });
 
-    // Search for the interpolation points for the fixed particles.
-    search_tasks.run([&particles, &radius_func, &search_index, this] {
-      interp_adjacency_.resize(particles.fixed().size());
-      par::for_each( //
-          std::views::enumerate(particles.fixed()),
-          [&radius_func, &search_index, &particles, this](const auto& ia) {
-            const auto& [i_, a] = ia;
-            const auto i = static_cast<std::size_t>(i_);
-
-            /// @todo Once we have a proper geometry library, we should use
-            ///       here and clean up the code.
-            const auto& search_point = r[a];
-            const auto search_radius = RADIUS_SCALE * radius_func(a);
-            const auto point_on_boundary =
-                Domain<particle_num_t<PV>>.clamp(search_point);
-            const auto interp_point = 2 * point_on_boundary - search_point;
-
-            // Search for the neighbors for the interpolation point and
-            // store the sorted results.
-            auto& search_results = interp_adjacency_[i];
-            search_results.clear();
-            search_index.search( //
-                interp_point,
-                search_radius,
-                std::back_inserter(search_results),
-                [&particles](std::size_t b) {
-                  return particles.has_type(b, ParticleType::fluid);
-                });
-            std::ranges::sort(search_results);
-          });
+    // Search for the adjacent faces.
+    const auto fixed_offset = particles.fixed().front().index();
+    face_adjacency_.resize(particles.size());
+    par::for_each(particles.all(), [&domain, fixed_offset, this](PV a) {
+      auto& search_results = face_adjacency_[a.index()];
+      search_results.clear();
+      for (const PV b : (*this)[a]) {
+        if (!b.has_type(ParticleType::fixed)) continue;
+        search_results.insert_range(domain.faces(b.index() - fixed_offset));
+      }
     });
-
-    search_tasks.wait();
   }
 
   template<particle_array ParticleArray>
-  void partition_(ParticleArray& particles, std::size_t num_levels = 2) {
+  void partition_(const ParticleArray& particles, std::size_t num_levels = 2) {
     TIT_PROFILE_SECTION("ParticleMesh::partition()");
     TIT_ASSERT(num_levels > 0, "Number of levels must be positive!");
     TIT_ASSERT(num_levels < max_num_levels_,
@@ -271,8 +246,8 @@ private:
   using PartVec_ = Vec<PartIndex_, max_num_levels_>;
 
   std::vector<std::vector<std::size_t>> adjacency_;
-  std::vector<std::vector<std::size_t>> interp_adjacency_;
   std::vector<std::vector<std::pair<std::size_t, std::size_t>>> block_edges_;
+  std::vector<std::flat_set<std::size_t>> face_adjacency_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;
   [[no_unique_address]] InterfacePartitionFunc interface_partition_func_;

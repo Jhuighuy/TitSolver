@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <numeric>
@@ -16,7 +15,6 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/point_range.hpp"
@@ -114,16 +112,14 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Find the points within the radius to the given point.
-  template<std::output_iterator<std::size_t> OutIter,
-           std::predicate<std::size_t> Pred = AlwaysTrue>
+  template<std::output_iterator<std::size_t> OutIter>
   auto search(const Vec& search_point,
               vec_num_t<Vec> search_radius,
-              OutIter out,
-              Pred pred = {}) const -> OutIter {
+              OutIter out) const -> OutIter {
     TIT_ASSERT(search_radius > 0.0, "Search radius should be positive!");
     const auto search_radius_sq = pow2(search_radius);
     const auto* const root_node = &nodes_.front();
-    [&search_point, &search_radius_sq, &pred, &points = points_, &out](
+    [&search_point, &search_radius_sq, &points = points_, &out](
         this const auto& self,
         const KDTreeNode_* node) {
       if (node == nullptr) return;
@@ -132,9 +128,7 @@ public:
 
       // Check if the point is within the search radius.
       const auto& point = points[index];
-      if (pred(index) && norm2(point - search_point) < search_radius_sq) {
-        *out++ = index;
-      }
+      if (norm2(point - search_point) < search_radius_sq) *out++ = index;
 
       // Recursively search the subtrees.
       const auto delta = search_point[axis] - point[axis];
