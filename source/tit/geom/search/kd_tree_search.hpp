@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <numeric>
@@ -16,7 +15,6 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bipartition.hpp"
 #include "tit/geom/bsphere.hpp"
@@ -115,21 +113,18 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Find the points within the given sphere.
-  template<std::output_iterator<std::size_t> OutIter,
-           std::predicate<std::size_t> Pred = AlwaysTrue>
-  auto search(const BSphere<Vec>& search_sphere,
-              OutIter out,
-              Pred pred = {}) const -> OutIter {
+  template<std::output_iterator<std::size_t> OutIter>
+  auto search(const BSphere<Vec>& search_sphere, OutIter out) const -> OutIter {
     const auto* const root_node = &nodes_.front();
-    [&search_sphere, &pred, &points = points_, &out](this const auto& self,
-                                                     const KDTreeNode_* node) {
+    [&search_sphere, &points = points_, &out](this const auto& self,
+                                              const KDTreeNode_* node) {
       if (node == nullptr) return;
       const auto& [index, axis, left, right] = *node;
       TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
 
       // Check if the point is within the search radius.
       const auto& point = points[index];
-      if (pred(index) && search_sphere.contains(point)) *out++ = index;
+      if (search_sphere.contains(point)) *out++ = index;
 
       // Recursively search the subtrees.
       if (const auto delta = search_sphere.center()[axis] - point[axis];
