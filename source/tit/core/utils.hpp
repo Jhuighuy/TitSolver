@@ -52,13 +52,4 @@ constexpr auto make_array(std::size_t size) -> T* {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Predicate that is always true.
-struct AlwaysTrue final {
-  constexpr auto operator()(const auto& /*arg*/) const noexcept -> bool {
-    return true;
-  }
-};
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 } // namespace tit

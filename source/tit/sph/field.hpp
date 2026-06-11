@@ -8,6 +8,7 @@
 #include <concepts>
 #include <cstddef>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -53,10 +54,38 @@ public:
   }
 
   /// Average of the field values over the specified particle views.
+  /// @{
   template<class Self, impl::has_field_<Self>... PVs>
   constexpr auto avg(this const Self& self, PVs&&... ai) {
     return tit::avg(std::forward<PVs>(ai)[self]...);
   }
+  template<class Self, impl::has_field_<Self>... PVs>
+  constexpr auto operator[](this const Self& self, std::tuple<PVs...> a) {
+    return std::apply([&self](PVs... as) { return self.avg(as...); }, a);
+  }
+  /// @}
+
+  /// Field value delta for the specified particle view and average of tuple.
+  /// @{
+  template<class Self,
+           impl::has_field_<Self> PVa,
+           impl::has_field_<Self>... PVs>
+  constexpr auto operator[](this const Self& self,
+                            PVa&& a,
+                            std::tuple<PVs...> b) {
+    return std::forward<PVa>(a)[self] -
+           std::apply([&self](PVs... bs) { return self.avg(bs...); }, b);
+  }
+  template<class Self,
+           impl::has_field_<Self> PVb,
+           impl::has_field_<Self>... PVs>
+  constexpr auto operator[](this const Self& self,
+                            std::tuple<PVs...> a,
+                            PVb&& b) {
+    return std::apply([&self](PVs... as) { return self.avg(as...); }, a) -
+           std::forward<PVb>(b)[self];
+  }
+  /// @}
 
 }; // class BaseField
 
@@ -140,12 +169,15 @@ using field_value_t = field_value<Field, Space>::type;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Particle width.
+TIT_DEFINE_SCALAR_FIELD(h);
+/// Particle mass.
+TIT_DEFINE_SCALAR_FIELD(m);
+
 namespace sph {
 /// Particle position.
 TIT_DEFINE_VECTOR_FIELD(r);
 } // namespace sph
-/// Particle offset.
-TIT_DEFINE_VECTOR_FIELD(dr);
 
 /// Particle velocity.
 TIT_DEFINE_VECTOR_FIELD(v);
@@ -154,10 +186,10 @@ TIT_DEFINE_VECTOR_FIELD(dv_dt);
 /// Particle velocity gradient.
 TIT_DEFINE_MATRIX_FIELD(grad_v);
 
-/// Particle width.
-TIT_DEFINE_SCALAR_FIELD(h);
-/// Particle mass.
-TIT_DEFINE_SCALAR_FIELD(m);
+/// Particle semi-analytical volume correction.
+TIT_DEFINE_SCALAR_FIELD(gamma);
+/// Particle semi-analytical volume correction gradient.
+TIT_DEFINE_VECTOR_FIELD(grad_gamma);
 
 /// Particle density.
 TIT_DEFINE_SCALAR_FIELD(rho);
@@ -175,8 +207,15 @@ TIT_DEFINE_SCALAR_FIELD(cs);
 TIT_DEFINE_VECTOR_FIELD(N);
 /// Particle renormalization matrix.
 TIT_DEFINE_MATRIX_FIELD(L);
-/// Particle free surface flag.
-TIT_DEFINE_SCALAR_FIELD(FS);
+namespace sph {
+/// Particle free surface indicator.
+TIT_DEFINE_SCALAR_FIELD(phi);
+} // namespace sph
+/// Particle shift.
+TIT_DEFINE_VECTOR_FIELD(dr);
+
+/// Scratch field for free surface correction.
+TIT_DEFINE_SCALAR_FIELD(rho_raw);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -11,10 +11,12 @@
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
+#include "tit/geom/face_search.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
+#include "tit/geom/surface.hpp"
+#include "tit/geom/tessellation.hpp"
 #include "tit/par/control.hpp"
-#include "tit/sph/artificial_viscosity.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
@@ -34,44 +36,45 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   constexpr Real L = 2 * H; // Water column length.
 
   constexpr Real POOL_WIDTH = 5.366 * H; // Pool width.
-  constexpr Real POOL_HEIGHT = 2.5 * H;  // Pool height.
+  constexpr Real POOL_HEIGHT = 4.0 * H;  // Pool height.
 
   constexpr Real dr = H / 80.0; // Initial particle spacing.
   constexpr auto WATER_M = int(round(L / dr));
   constexpr auto WATER_N = int(round(H / dr));
-  constexpr auto POOL_M = int(round(POOL_WIDTH / dr));
-  constexpr auto POOL_N = int(round(POOL_HEIGHT / dr));
-  constexpr auto N_FIXED = 4;
 
   constexpr Real g = 9.81;
   constexpr Real rho_0 = 1000.0;
   constexpr Real cs_0 = 20 * sqrt(g * H);
   constexpr Real h_0 = 2.0 * dr;
   constexpr Real m_0 = rho_0 * pow(dr, 2);
-  constexpr Real R = 0.2;
-  constexpr Real Ma = 0.1;
-  constexpr Real CFL = 0.8;
-  constexpr Real dt = std::min(CFL * h_0 / cs_0, Real{0.25} * sqrt(h_0 / g));
+  constexpr Real mu = 0.001;
 
   // Setup the SPH equations.
+  geom::Surface<Vec<Real, 2>> domain;
+  domain.append_vert({0.0, POOL_HEIGHT});
+  domain.append_vert({POOL_WIDTH, POOL_HEIGHT});
+  domain.append_vert({POOL_WIDTH, 0.0});
+  domain.append_vert({0.0, 0.0});
+  domain.append_face({0, 1});
+  domain.append_face({1, 2});
+  domain.append_face({2, 3});
+  domain.append_face({3, 0});
+  domain = geom::tessellate(domain, dr);
+
   const FluidEquations equations{
       // Constants.
-      rho_0,
-      cs_0,
       g,
-      R,
-      Ma,
-      CFL,
+      mu,
+      // Wall boundary.
+      domain,
       // Weakly compressible equation of state.
-      LinearTaitEquationOfState{cs_0, rho_0},
-      // δ-SPH artificial viscosity formulation.
-      DeltaSPHArtificialViscosity{cs_0, rho_0},
-      // C2 Wendland's spline kernel.
-      QuarticWendlandKernel{},
+      TaitEquationOfState{cs_0, rho_0},
+      // C4 Wendland's spline kernel.
+      SixthOrderWendlandKernel{},
   };
 
   // Setup the time integrator.
-  const RungeKuttaIntegrator time_integrator{equations};
+  const SSPRKIntegrator time_integrator{equations, SSPRKOrder::three};
 
   // Setup the particles array:
   ParticleArray particles{
@@ -82,28 +85,26 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   };
 
   // Generate individual particles.
-  std::size_t num_fixed_particles = 0;
-  std::size_t num_fluid_particles = 0;
-  for (auto i = -N_FIXED; i < POOL_M + N_FIXED; ++i) {
-    for (auto j = -N_FIXED; j < POOL_N; ++j) {
-      const bool is_fixed = (i < 0 || i >= POOL_M) || (j < 0);
-      const bool is_fluid = (i < WATER_M) && (j < WATER_N);
-
-      if (is_fixed) num_fixed_particles += 1;
-      else if (is_fluid) num_fluid_particles += 1;
-      else continue;
-
-      auto a = particles.append(is_fixed ? ParticleType::fixed :
-                                           ParticleType::fluid);
-      r[a] = dr * Vec{i + Real{0.5}, j + Real{0.5}};
+  for (auto i = 0; i < WATER_M; ++i) {
+    for (auto j = 0; j < WATER_N; ++j) {
+      auto a = particles.append(ParticleType::fluid);
+      r[a] = dr * Vec{i + Real{1.0}, j + Real{1.0}};
     }
   }
-  log("Num. fixed particles: {}", num_fixed_particles);
-  log("Num. fluid particles: {}", num_fluid_particles);
+  for (std::size_t i = 0; i < domain.num_verts(); ++i) {
+    auto a = particles.append(ParticleType::fixed);
+    r[a] = domain.vert(i);
+  }
 
   // Set global particle constants.
-  m[particles] = m_0;
   h[particles] = h_0;
+  for (const auto a : particles.all()) {
+    m[a] = m_0;
+    rho[a] = rho_0;
+  }
+
+  // Initialize the particles.
+  equations.initialize(particles);
 
   // Density hydrostatic initialization.
   for (const auto a : particles.all()) {
@@ -131,6 +132,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   ParticleMesh mesh{
       // Search for the particles using the grid search.
       geom::GridSearch{h_0},
+      // Search for the boundary faces using the grid search.
+      geom::GridFaceSearch{h_0},
       // Use RIB as the primary partitioning method.
       geom::RecursiveInertialBisection{},
       // Use pixelated K-means as the interface partitioning method.
@@ -148,7 +151,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   Real time{};
   Stopwatch exec_time{};
   Stopwatch print_time{};
-  for (std::size_t step = 0;; ++step) {
+  for (std::size_t step = 1;; ++step) {
     const auto scaled_time = time * sqrt(g / H);
     log("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
         step,
@@ -156,14 +159,15 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
         exec_time.cycle(),
         print_time.cycle());
 
+    Real dt{};
     {
       const StopwatchCycle cycle{exec_time};
-      time_integrator.step(dt, mesh, particles);
+      dt = time_integrator.step(mesh, particles);
     }
 
     const auto end_time = 10.0;
     const auto end = scaled_time >= end_time;
-    if ((step % 100 == 0 && step != 0) || end) {
+    if ((step % 100 == 0) || end) {
       const StopwatchCycle cycle{print_time};
       particles.write(scaled_time, series);
     }
