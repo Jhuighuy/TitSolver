@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+#include <optional>
 #include <utility>
 
 #include "tit/core/profiler.hpp"
@@ -25,9 +27,9 @@ concept explicit_equations = specialization_of<EE, FluidEquations>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Kick-Drift Euler time integrator.
+/// Symplectic Euler time integrator.
 template<explicit_equations Equations>
-class KickDriftIntegrator final {
+class SymplecticEulerIntegrator final {
 public:
 
   /// Set of particle fields that are required.
@@ -39,53 +41,46 @@ public:
       Equations::modified_fields | TypeSet{r, v, rho};
 
   /// Construct time integrator.
-  ///
-  /// @param equations Equations to integrate.
-  constexpr explicit KickDriftIntegrator(Equations equations) noexcept
+  constexpr explicit SymplecticEulerIntegrator(Equations equations) noexcept
       : equations_{std::move(equations)} {}
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  void step(particle_num_t<ParticleArray> dt,
-            ParticleMesh& mesh,
-            ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("EulerIntegrator::step()");
+  auto step(ParticleMesh& mesh, ParticleArray& particles) const
+      -> particle_num_t<ParticleArray> {
+    TIT_PROFILE_SECTION("SymplecticEulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Setup the mesh.
-    equations_.index(mesh, particles);
+    equations_.prepare(mesh, particles);
+    const auto dt = equations_.compute_time_step(mesh, particles);
 
-    // Setup boundary conditions.
-    equations_.setup_boundary(mesh, particles);
-
-    // Update particle density.
-    equations_.compute_density(mesh, particles);
+    equations_.compute_continuity(mesh, particles);
     par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
 
-    // Update particle velocty, internal energy, etc.
-    equations_.compute_forces(mesh, particles);
+    equations_.compute_momentum(mesh, particles);
+    equations_.compute_gamma_gradient(mesh, particles);
     par::for_each(particles.fluid(), [dt](PV a) {
       v[a] += dt * dv_dt[a];
-      r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
+      r[a] += dt * v[a];
+      gamma[a] += dt * dot(v[a], grad_gamma[a]);
     });
 
-    // Apply particle shifting.
-    equations_.compute_shifts(mesh, particles);
-    par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+    equations_.post_integrate(mesh, particles);
+    return dt;
   }
 
 private:
 
   [[no_unique_address]] Equations equations_{};
 
-}; // class KickDriftIntegrator
+}; // class SymplecticEulerIntegrator
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Kick-Drift-Kick Leapfrog time integrator.
+/// Velocity Verlet time integrator.
 template<explicit_equations Equations>
-class KickDriftKickIntegrator final {
+class VelocityVerletIntegrator final {
 public:
 
   /// Set of particle fields that are required.
@@ -97,61 +92,57 @@ public:
       Equations::modified_fields | TypeSet{r, v, rho};
 
   /// Construct time integrator.
-  ///
-  /// @param equations Equations to integrate.
-  constexpr explicit KickDriftKickIntegrator(Equations equations) noexcept
+  constexpr explicit VelocityVerletIntegrator(Equations equations) noexcept
       : equations_{std::move(equations)} {}
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  void step(particle_num_t<ParticleArray> dt,
-            ParticleMesh& mesh,
-            ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("LeapfrogIntegrator::step()");
+  auto step(ParticleMesh& mesh, ParticleArray& particles) const
+      -> particle_num_t<ParticleArray> {
+    TIT_PROFILE_SECTION("VelocityVerletIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    // Setup the mesh.
-    equations_.index(mesh, particles);
-
-    // Setup boundary conditions.
-    equations_.setup_boundary(mesh, particles);
-
-    // Update particle velocity to the half step, and position to the full
-    // step.
+    equations_.prepare(mesh, particles);
+    const auto dt = equations_.compute_time_step(mesh, particles);
     const auto dt_2 = dt / 2;
-    equations_.compute_forces(mesh, particles);
+
+    equations_.compute_momentum(mesh, particles);
+    equations_.compute_gamma_gradient(mesh, particles);
     par::for_each(particles.fluid(), [dt, dt_2](PV a) {
       v[a] += dt_2 * dv_dt[a];
-      r[a] += dt * v[a]; // Kick-Drift: position is updated after velocity.
+      r[a] += dt * v[a];
+      gamma[a] += dt * dot(v[a], grad_gamma[a]);
     });
 
-    // Update particle velocity to the full step.
-    equations_.compute_density(mesh, particles);
+    equations_.prepare(mesh, particles);
+    equations_.compute_continuity(mesh, particles);
     par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
 
-    // Update particle velocity to the full step.
-    equations_.compute_forces(mesh, particles);
-    par::for_each(particles.fluid(), [dt_2](PV a) {
-      v[a] += dt_2 * dv_dt[a]; // Kick.
-    });
+    equations_.compute_momentum(mesh, particles);
+    par::for_each(particles.fluid(), [dt_2](PV a) { v[a] += dt_2 * dv_dt[a]; });
 
-    // Apply particle shifting.
-    equations_.compute_shifts(mesh, particles);
-    par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+    equations_.post_integrate(mesh, particles);
+    return dt;
   }
 
 private:
 
   [[no_unique_address]] Equations equations_{};
 
-}; // class KickDriftKickIntegrator
+}; // class VelocityVerletIntegrator
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Runge-Kutta time integrator (SSPRK(3,3)).
+/// Strong-stability-preserving Runge-Kutta order.
+enum class SSPRKOrder : std::uint8_t {
+  two,
+  three,
+};
+
+/// Strong-stability-preserving Runge-Kutta time integrator.
 template<explicit_equations Equations>
-class RungeKuttaIntegrator final {
+class SSPRKIntegrator final {
 public:
 
   /// Set of particle fields that are required.
@@ -163,78 +154,85 @@ public:
       Equations::modified_fields | TypeSet{r, v, rho};
 
   /// Construct time integrator.
-  constexpr explicit RungeKuttaIntegrator(Equations equations) noexcept
-      : equations_{std::move(equations)} {}
+  constexpr explicit SSPRKIntegrator(
+      Equations equations,
+      SSPRKOrder order = SSPRKOrder::three) noexcept
+      : equations_{std::move(equations)}, order_{order} {}
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  void step(particle_num_t<ParticleArray> dt,
-            ParticleMesh& mesh,
-            ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("RungeKuttaIntegrator::step()");
-    using PV = ParticleView<ParticleArray>;
-
-    // Setup the mesh.
-    equations_.index(mesh, particles);
-
-    // Run the SSPRK(3,3) substeps.
-    /// @todo We should copy only the needed fields, and not the whole array.
+  auto step(ParticleMesh& mesh, ParticleArray& particles) const
+      -> particle_num_t<ParticleArray> {
+    TIT_PROFILE_SECTION("SSPRKIntegrator::step()");
     const auto old_particles(particles);
-    substep_(dt, mesh, particles);
-    substep_(dt, mesh, particles);
-    lincomb_(0.75, old_particles, 0.25, particles);
-    substep_(dt, mesh, particles);
-    lincomb_(1.0 / 3.0, old_particles, 2.0 / 3.0, particles);
+    const auto dt = substep_(mesh, particles);
 
-    // Apply particle shifting.
-    equations_.compute_shifts(mesh, particles);
-    par::for_each(particles.fluid(), [](PV a) { r[a] += dr[a]; });
+    using Num = particle_num_t<ParticleArray>;
+    switch (order_) {
+      case SSPRKOrder::two:
+        substep_(mesh, particles, dt);
+        lincomb_(old_particles, particles, Num{1.0 / 2.0});
+        break;
+      case SSPRKOrder::three:
+        substep_(mesh, particles, dt);
+        lincomb_(old_particles, particles, Num{1.0 / 4.0});
+        substep_(mesh, particles, dt);
+        lincomb_(old_particles, particles, Num{2.0 / 3.0});
+        break;
+      default: std::unreachable();
+    }
+
+    equations_.post_integrate(mesh, particles);
+    return dt;
   }
 
 private:
 
-  // Do an explicit Euler substep.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  void substep_(particle_num_t<ParticleArray> dt,
-                ParticleMesh& mesh,
-                ParticleArray& particles) const {
+  auto substep_(ParticleMesh& mesh,
+                ParticleArray& particles,
+                std::optional<particle_num_t<ParticleArray>> dt =
+                    std::nullopt) const -> particle_num_t<ParticleArray> {
     using PV = ParticleView<ParticleArray>;
 
-    // Calculate right hand sides for the given particle array.
-    equations_.setup_boundary(mesh, particles);
-    equations_.compute_density(mesh, particles);
-    equations_.compute_forces(mesh, particles);
+    equations_.prepare(mesh, particles);
+    if (!dt.has_value()) dt = equations_.compute_time_step(mesh, particles);
+    const auto dt_ = dt.value();
 
-    // Integrate.
-    par::for_each(particles.fluid(), [dt](PV a) {
-      r[a] += dt * v[a]; // Drift-Kick: position is updated before velocity.
-      v[a] += dt * dv_dt[a];
-      rho[a] += dt * drho_dt[a];
+    equations_.compute_continuity(mesh, particles);
+    equations_.compute_momentum(mesh, particles);
+    equations_.compute_gamma_gradient(mesh, particles);
+
+    par::for_each(particles.fluid(), [dt_](PV a) {
+      r[a] += dt_ * v[a];
+      v[a] += dt_ * dv_dt[a];
+      rho[a] += dt_ * drho_dt[a];
+      gamma[a] += dt_ * dot(v[a], grad_gamma[a]);
     });
+
+    return dt_;
   }
 
-  // Compute the linear combination of the two substeps.
   template<particle_array<required_fields> ParticleArray>
-  static void lincomb_(particle_num_t<ParticleArray> weight,
-                       const ParticleArray& particles,
-                       particle_num_t<ParticleArray> out_weight,
-                       ParticleArray& out_particles) {
+  static void lincomb_(const ParticleArray& particles,
+                       ParticleArray& out_particles,
+                       particle_num_t<ParticleArray> weight) {
     using PV = ParticleView<ParticleArray>;
-    par::for_each( //
-        out_particles.fluid(),
-        [out_weight, weight, &particles](PV out_a) {
-          const auto a = particles[out_a.index()];
-          r[out_a] = weight * r[a] + out_weight * r[out_a];
-          v[out_a] = weight * v[a] + out_weight * v[out_a];
-          rho[out_a] = weight * rho[a] + out_weight * rho[out_a];
-        });
+    par::for_each(out_particles.fluid(), [weight, &particles](PV out_a) {
+      const auto a = particles[out_a.index()];
+      r[out_a] = (1 - weight) * r[a] + weight * r[out_a];
+      v[out_a] = (1 - weight) * v[a] + weight * v[out_a];
+      rho[out_a] = (1 - weight) * rho[a] + weight * rho[out_a];
+      gamma[out_a] = (1 - weight) * gamma[a] + weight * gamma[out_a];
+    });
   }
 
   [[no_unique_address]] Equations equations_;
+  SSPRKOrder order_{SSPRKOrder::three};
 
-}; // class RungeKuttaIntegrator
+}; // class SSPRKIntegrator
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

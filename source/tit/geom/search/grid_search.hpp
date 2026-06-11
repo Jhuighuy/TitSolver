@@ -17,7 +17,6 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
-#include "tit/core/utils.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/bsphere.hpp"
 #include "tit/geom/grid.hpp"
@@ -86,11 +85,8 @@ public:
   }
 
   /// Find the points within the given sphere.
-  template<std::output_iterator<std::size_t> OutIter,
-           std::predicate<std::size_t> Pred = AlwaysTrue>
-  auto search(const BSphere<Vec>& search_sphere,
-              OutIter out,
-              Pred pred = {}) const -> OutIter {
+  template<std::output_iterator<std::size_t> OutIter>
+  auto search(const BSphere<Vec>& search_sphere, OutIter out) const -> OutIter {
     if (std::ranges::empty(points_)) return out;
     for (const auto& cell : grid_.cells_intersecting(search_sphere.box())) {
       const auto flat_cell = grid_.flatten_cell_index(cell);
@@ -99,9 +95,7 @@ public:
       for (const auto point_index :
            std::ranges::subrange(std::next(cell_points_.begin(), first),
                                  std::next(cell_points_.begin(), last))) {
-        if (pred(point_index) && search_sphere.contains(points_[point_index])) {
-          *out++ = point_index;
-        }
+        if (search_sphere.contains(points_[point_index])) *out++ = point_index;
       }
     }
     return out;
