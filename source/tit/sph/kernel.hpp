@@ -13,6 +13,7 @@
 #include "tit/core/math.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
+#include "tit/geom/surface.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
 
@@ -83,6 +84,14 @@ public:
   }
   /// @}
 
+  /// Kernel flux over a face.
+  template<particle_view<required_fields> PV>
+  constexpr auto flux(this auto& self,
+                      const geom::Surface<particle_vec_t<PV>>::Face& face,
+                      PV a) noexcept {
+    return self.flux(face, r[a], h[a]);
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Support radius.
@@ -129,6 +138,17 @@ public:
     const auto q = h_inverse * norm(x);
     const auto dq_dh = -q * h_inverse;
     return dw_dh * self.unit_value(q) + w * self.unit_deriv(q) * dq_dh;
+  }
+
+  /// Kernel flux over a face.
+  /// @todo Below is a very crude approximation. Replace with proper formulas.
+  template<class Self, class Num, std::size_t Dim>
+  constexpr auto flux(this Self& self,
+                      const geom::Surface<Vec<Num, Dim>>::Face& face,
+                      const Vec<Num, Dim>& x,
+                      const Num& h) noexcept -> Vec<Num, Dim> {
+    TIT_ASSERT(h > Num{0.0}, "Kernel width must be positive!");
+    return face.wnormal() * self(x - face.center(), h);
   }
 
 }; // class Kernel
