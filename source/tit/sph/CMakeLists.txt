@@ -7,7 +7,6 @@ add_tit_library(
   NAME
     sph
   SOURCES
-    "artificial_viscosity.hpp"
     "equation_of_state.hpp"
     "field.hpp"
     "fluid_equations.hpp"
