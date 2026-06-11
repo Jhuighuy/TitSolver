@@ -5,171 +5,119 @@
 
 #pragma once
 
-#include <algorithm>
 #include <concepts>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
-#include "tit/core/type.hpp"
-#include "tit/sph/field.hpp"
-#include "tit/sph/particle_array.hpp"
 
 namespace tit::sph {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Adiabatic ideal gas equation of state.
-template<class Num>
-class AdiabaticIdealGasEquationOfState final {
-public:
-
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
-  /// Construct an equation of state.
-  ///
-  /// @param kappa Thermal conductivity coefficient.
-  /// @param gamma Adiabatic index.
-  constexpr explicit AdiabaticIdealGasEquationOfState(Num kappa = 1.0,
-                                                      Num gamma = 1.4) noexcept
-      : kappa_{kappa}, gamma_{gamma} {
-    TIT_ASSERT(kappa_ > 0.0, "Conductivity coefficient must be positive!");
-    TIT_ASSERT(gamma_ > 1.0, "Adiabatic index must be greater than 1!");
-  }
-
-  /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
-    return kappa_ * pow(rho[a], gamma_);
-  }
-
-  /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV a) const noexcept {
-    return sqrt(kappa_ * pow(rho[a], gamma_));
-  }
-
-private:
-
-  Num kappa_;
-  Num gamma_;
-
-}; // class GasEquationOfState
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Tait equation equation of state (for weakly-compressible fluids).
+/// Tait equation equation of state.
 template<class Num>
 class TaitEquationOfState final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct an equation of state.
   ///
-  /// @param cs_0  Reference sound speed, 10x of the expected velocity.
+  /// @param cs_0  Reference sound speed,.
   /// @param rho_0 Reference density.
-  /// @param p_0   Background pressure.
-  /// @param gamma Polytropic index.
+  /// @param xi    Equation of state index.
   constexpr explicit TaitEquationOfState(Num cs_0,
                                          Num rho_0,
-                                         Num p_0 = 0.0,
-                                         Num gamma = 7.0) noexcept
-      : cs_0_{cs_0}, rho_0_{rho_0}, p_0_{p_0}, gamma_{gamma} {
-    TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive!");
-    TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive!");
-    TIT_ASSERT(gamma_ > 1.0, "Polytropic index must be greater than 1!");
+                                         Num xi = Num{7}) noexcept
+      : cs_0_{cs_0}, rho_0_{rho_0}, xi_{xi} {
+    TIT_ASSERT(cs_0_ > Num{0}, "Reference sound speed must be positive!");
+    TIT_ASSERT(rho_0_ > Num{0}, "Reference density must be positive!");
+    TIT_ASSERT(xi_ > Num{1}, "Polytropic index must be greater than 1!");
   }
 
-  /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
-    const auto B = rho_0_ * pow2(cs_0_) / gamma_;
-    const auto rho_a = corrected_density_(a);
-    return p_0_ + B * (pow(rho_a / rho_0_, gamma_) - 1.0);
+  /// Compute pressure from density.
+  constexpr auto pressure_from_density(const Num& rho) const noexcept -> Num {
+    const auto B = rho_0_ * pow2(cs_0_) / xi_;
+    return B * (pow(rho / rho_0_, xi_) - 1);
   }
 
-  /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV a) const noexcept {
-    const auto rho_a = corrected_density_(a);
-    return cs_0_ * pow(rho_a / rho_0_, gamma_);
+  /// Compute density from pressure.
+  constexpr auto density_from_pressure(const Num& p) const noexcept -> Num {
+    const auto B = rho_0_ * pow2(cs_0_) / xi_;
+    return rho_0_ * pow(1 + p / B, inverse(xi_));
+  }
+
+  /// Compute sound speed from density.
+  constexpr auto sound_speed_from_density(const Num& rho) const noexcept
+      -> Num {
+    return cs_0_ * pow(rho / rho_0_, (xi_ - 1) / 2);
+  }
+
+  /// Compute pressure-density potential H(ρ) = ∫ cs^2(ζ)/ζ dζ from ρ_0 to ρ.
+  constexpr auto potential_from_density(const Num& rho) const noexcept -> Num {
+    const auto xi_1 = xi_ - 1;
+    return pow2(cs_0_) * (pow(rho / rho_0_, xi_1) - 1) / xi_1;
+  }
+
+  /// Compute density from pressure-density potential H(ρ).
+  constexpr auto density_from_potential(const Num& H) const noexcept -> Num {
+    const auto xi_1 = xi_ - 1;
+    return rho_0_ * pow(1 + xi_1 * H / pow2(cs_0_), inverse(xi_1));
   }
 
 private:
 
-  // Density value according to Hughes-Graham pressure-density correction
-  // scheme (Hughes, Graham, 2010).
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto corrected_density_(PV a) const noexcept {
-    return a.has_type(ParticleType::fixed) ? std::max(rho[a], rho_0_) : rho[a];
-  }
-
   Num cs_0_;
   Num rho_0_;
-  Num p_0_;
-  Num gamma_;
+  Num xi_;
 
 }; // class TaitEquationOfState
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Linear Tait equation equation of state (for weakly-compressible fluids).
+/// Linear Tait equation equation of state.
 template<class Num>
 class LinearTaitEquationOfState final {
 public:
 
-  /// Set of particle fields that are required.
-  static constexpr TypeSet required_fields{rho};
-
-  /// Set of particle fields that are modified.
-  static constexpr TypeSet modified_fields{/*empty*/};
-
   /// Construct an equation of state.
   ///
-  /// @param cs_0  Reference sound speed, 10x of the expected velocity.
+  /// @param cs_0  Reference sound speed.
   /// @param rho_0 Reference density.
-  /// @param p_0   Background pressure.
-  constexpr LinearTaitEquationOfState(Num cs_0,
-                                      Num rho_0,
-                                      Num p_0 = 0.0) noexcept
-      : cs_0_{cs_0}, rho_0_{rho_0}, p_0_{p_0} {
-    TIT_ASSERT(cs_0_ > 0.0, "Reference sound speed must be positive!");
-    TIT_ASSERT(rho_0_ > 0.0, "Reference density speed must be positive!");
+  constexpr LinearTaitEquationOfState(Num cs_0, Num rho_0) noexcept
+      : cs_0_{cs_0}, rho_0_{rho_0} {
+    TIT_ASSERT(cs_0_ > Num{0}, "Reference sound speed must be positive!");
+    TIT_ASSERT(rho_0_ > Num{0}, "Reference density must be positive!");
   }
 
-  /// Pressure value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto pressure(PV a) const noexcept {
-    const auto rho_a = corrected_density_(a);
-    return p_0_ + pow2(cs_0_) * (rho_a - rho_0_);
+  /// Compute pressure from density.
+  constexpr auto pressure_from_density(const Num& rho) const noexcept -> Num {
+    return pow2(cs_0_) * (rho - rho_0_);
   }
 
-  /// Sound speed value.
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto sound_speed(PV /*a*/) const noexcept {
+  /// Compute density from pressure.
+  constexpr auto density_from_pressure(const Num& p) const noexcept -> Num {
+    return rho_0_ + p / pow2(cs_0_);
+  }
+
+  /// Compute sound speed from density.
+  constexpr auto sound_speed_from_density(const Num& /*rho*/) const noexcept
+      -> const Num& {
     return cs_0_;
+  }
+
+  /// Compute pressure-density potential H(ρ) = ∫ cs^2(ζ)/ζ dζ from ρ_0 to ρ.
+  constexpr auto potential_from_density(const Num& rho) const noexcept -> Num {
+    return pow2(cs_0_) * log(rho / rho_0_);
+  }
+
+  /// Compute density from pressure-density potential H(ρ).
+  constexpr auto density_from_potential(const Num& H) const noexcept -> Num {
+    return rho_0_ * exp(H / pow2(cs_0_));
   }
 
 private:
 
-  // Density value according to Hughes-Graham pressure-density correction
-  // scheme (Hughes, Graham, 2010).
-  template<particle_view_n<Num, required_fields> PV>
-  constexpr auto corrected_density_(PV a) const noexcept {
-    return a.has_type(ParticleType::fixed) ? std::max(rho[a], rho_0_) : rho[a];
-  }
-
   Num cs_0_;
   Num rho_0_;
-  Num p_0_;
 
 }; // class LinearTaitEquationOfState
 
@@ -177,10 +125,8 @@ private:
 
 /// Equation of state type.
 template<class EOS, class Num>
-concept equation_of_state =
-    std::same_as<EOS, AdiabaticIdealGasEquationOfState<Num>> ||
-    std::same_as<EOS, TaitEquationOfState<Num>> ||
-    std::same_as<EOS, LinearTaitEquationOfState<Num>>;
+concept equation_of_state = std::same_as<EOS, TaitEquationOfState<Num>> ||
+                            std::same_as<EOS, LinearTaitEquationOfState<Num>>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
