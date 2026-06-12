@@ -17,6 +17,8 @@ add_tit_library(
     "tree-yaml.cpp"
     "tree.cpp"
     "tree.hpp"
+    "unit.cpp"
+    "unit.hpp"
     "validation.cpp"
     "validation.hpp"
   DEPENDS
@@ -34,6 +36,7 @@ add_tit_executable(
     "path.test.cpp"
     "spec.test.cpp"
     "tree.test.cpp"
+    "unit.test.cpp"
     "validation.test.cpp"
   DEPENDS
     tit::prop

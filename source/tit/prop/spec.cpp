@@ -23,6 +23,7 @@
 #include "tit/prop/path.hpp"
 #include "tit/prop/spec.hpp"
 #include "tit/prop/tree.hpp"
+#include "tit/prop/unit.hpp"
 #include "tit/prop/validation.hpp"
 
 namespace tit::prop {
@@ -285,6 +286,15 @@ auto RealSpec::default_value(float64_t val) && -> RealSpec&& {
   return std::move(*this);
 }
 
+auto RealSpec::unit() const noexcept -> const std::optional<Unit>& {
+  return unit_;
+}
+
+auto RealSpec::unit(Unit val) && -> RealSpec&& {
+  unit_ = std::move(val);
+  return std::move(*this);
+}
+
 void RealSpec::validate(Tree& tree,
                         const Path& path,
                         ValidationContext& context) const {
@@ -302,10 +312,33 @@ void RealSpec::validate(Tree& tree,
   // Check type.
   if (tree.is_int()) {
     tree.assign(static_cast<float64_t>(tree.as_int()));
+  } else if (tree.is_string()) {
+    if (unit_.has_value()) {
+      // Parse quantity string.
+      try {
+        tree.assign(unit_->convert(tree.as_string()));
+      } catch (const Exception& e) {
+        context.add_issue(path, IssueCode::invalid_value, "{}", e.what());
+        tree = default_value_tree();
+        return;
+      }
+    } else {
+      // Parse real string.
+      const auto value = str_to<float64_t>(tree.as_string());
+      if (!value.has_value()) {
+        context.add_issue(path,
+                          IssueCode::invalid_value,
+                          "Expected real value, got '{}'.",
+                          tree.as_string());
+        tree = default_value_tree();
+        return;
+      }
+      tree.assign(value.value());
+    }
   } else if (!tree.is_real()) {
     context.add_issue(path,
                       IssueCode::invalid_type,
-                      "Expected real, got {}.",
+                      "Expected number, got {}.",
                       tree.type_name());
     tree = default_value_tree();
     return;

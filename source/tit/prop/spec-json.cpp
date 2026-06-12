@@ -57,6 +57,9 @@ auto spec_to_json(const Spec& spec) -> JSON {
       set_optional(json, "min", real_spec.min());
       set_optional(json, "max", real_spec.max());
       set_optional(json, "default", real_spec.default_value());
+      if (const auto& unit = real_spec.unit(); unit.has_value()) {
+        json["unit"] = unit->symbol();
+      }
       break;
     }
 

@@ -21,6 +21,7 @@
 #include "tit/core/str.hpp"
 #include "tit/prop/path.hpp"
 #include "tit/prop/tree.hpp"
+#include "tit/prop/unit.hpp"
 #include "tit/prop/validation.hpp"
 
 namespace tit::prop {
@@ -205,6 +206,12 @@ public:
   /// Set the default value.
   auto default_value(float64_t val) && -> RealSpec&&;
 
+  /// Get the unit.
+  auto unit() const noexcept -> const std::optional<Unit>&;
+
+  /// Set the unit.
+  auto unit(Unit val) && -> RealSpec&&;
+
   auto type() const noexcept -> SpecType override;
   void validate(Tree& tree,
                 const Path& path,
@@ -215,6 +222,7 @@ private:
   std::optional<float64_t> default_;
   std::optional<float64_t> min_;
   std::optional<float64_t> max_;
+  std::optional<Unit> unit_;
 
 }; // class RealSpec
 
