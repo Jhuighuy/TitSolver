@@ -490,6 +490,15 @@ auto ArraySpec::item(SpecPtr spec) && -> ArraySpec&& {
   return std::move(*this);
 }
 
+auto ArraySpec::size() const noexcept -> std::optional<std::size_t> {
+  return size_;
+}
+
+auto ArraySpec::size(std::size_t val) && -> ArraySpec&& {
+  size_ = val;
+  return std::move(*this);
+}
+
 auto ArraySpec::namespaces() const -> StrSet {
   return item().namespaces();
 }
@@ -499,8 +508,7 @@ void ArraySpec::validate(Tree& tree,
                          ValidationContext& context) const {
   // Fill default value.
   if (tree.is_null()) {
-    tree.assign(Tree::Array{});
-    return;
+    tree.assign(Tree::Array(size_.value_or(0)));
   }
 
   // Check type.
@@ -509,7 +517,7 @@ void ArraySpec::validate(Tree& tree,
                       IssueCode::invalid_type,
                       "Expected array, got {}.",
                       tree.type_name());
-    tree.assign(Tree::Array{});
+    tree.assign(Tree::Array(size_.value_or(0)));
   }
 
   // Check size.

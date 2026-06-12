@@ -85,6 +85,7 @@ auto spec_to_json(const Spec& spec) -> JSON {
     case SpecType::Array: {
       const auto& arr_spec = spec_cast<ArraySpec>(spec);
       json["type"] = "array";
+      set_optional(json, "size", arr_spec.size());
       json["item"] = spec_to_json(arr_spec.item());
       break;
     }
