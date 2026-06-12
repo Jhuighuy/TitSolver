@@ -407,6 +407,13 @@ TEST_CASE("prop::ArraySpec") {
     SUBCASE("type") {
       CHECK(prop::ArraySpec{}.type() == prop::SpecType::Array);
     }
+    SUBCASE("size: absent") {
+      CHECK_FALSE(prop::ArraySpec{}.size().has_value());
+    }
+    SUBCASE("size: set") {
+      const auto spec = prop::ArraySpec{}.size(3);
+      CHECK(spec.size() == 3);
+    }
     SUBCASE("item: set and retrieved") {
       const auto spec = prop::ArraySpec{}.item(prop::IntSpec{});
       CHECK(spec.item().type() == prop::SpecType::Int);
@@ -467,8 +474,31 @@ TEST_CASE("prop::ArraySpec::validate") {
       }};
       CHECK_FALSE(prop::validate(spec, tree).has_issues());
     }
+    SUBCASE("exact size accepted") {
+      const auto spec = prop::ArraySpec{}.size(2).item(prop::IntSpec{});
+      auto tree = prop::Tree{prop::Tree::Array{
+          prop::Tree{3},
+          prop::Tree{7},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+    SUBCASE("null with exact size creates default-sized array") {
+      const auto spec =
+          prop::ArraySpec{}.size(2).item(prop::RealSpec{}.default_value(0.0));
+      auto tree = prop::Tree{};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK_RANGE_EQ(tree.as_array(), {prop::Tree{0.0}, prop::Tree{0.0}});
+    }
   }
   SUBCASE("error") {
+    SUBCASE("exact size mismatch") {
+      const auto spec = prop::ArraySpec{}.size(2).item(prop::IntSpec{});
+      auto tree = prop::Tree{prop::Tree::Array{
+          prop::Tree{3},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("Expected array of size"));
+      CHECK_RANGE_EQ(tree.as_array(), {prop::Tree{3}, prop::Tree{}});
+    }
     SUBCASE("item out of range") {
       const auto spec = prop::ArraySpec{}.item(prop::IntSpec{}.range(0, 9));
       auto tree = prop::Tree{prop::Tree::Array{
@@ -1110,9 +1140,10 @@ TEST_CASE("prop::spec_dump_json") {
 })");
   }
   SUBCASE("array") {
-    const auto spec = prop::ArraySpec{}.item(prop::IntSpec{});
+    const auto spec = prop::ArraySpec{}.size(3).item(prop::IntSpec{});
     CHECK(prop::spec_dump_json(spec) == R"({
   "type": "array",
+  "size": 3,
   "item": {
     "type": "int"
   }

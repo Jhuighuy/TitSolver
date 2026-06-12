@@ -307,6 +307,12 @@ public:
   /// Get the element specification.
   auto item() const -> const Spec&;
 
+  /// Get the exact size requirement.
+  auto size() const noexcept -> std::optional<std::size_t>;
+
+  /// Set the exact size requirement.
+  auto size(std::size_t val) && -> ArraySpec&&;
+
   auto type() const noexcept -> SpecType override;
   auto namespaces() const -> StrSet override;
   void validate(Tree& tree,
