@@ -6,6 +6,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/prop/spec.hpp"
 #include "tit/prop/tree.hpp"
+#include "tit/prop/unit.hpp"
 #include "tit/prop/validation.hpp"
 #include "tit/testing/test.hpp"
 
@@ -186,6 +187,12 @@ TEST_CASE("prop::RealSpec") {
       const auto spec = prop::RealSpec{}.default_value(3.14);
       CHECK(spec.default_value() == 3.14);
     }
+    SUBCASE("unit") {
+      const auto spec = prop::RealSpec{}.unit(prop::Unit{"kg/m^3"});
+      const auto& unit = spec.unit();
+      REQUIRE(unit.has_value());
+      CHECK(unit->symbol() == "kg/m^3"); // NOLINT(*-unchecked-optional-access)
+    }
   }
   SUBCASE("error") {
     SUBCASE("min > max") {
@@ -231,6 +238,20 @@ TEST_CASE("prop::RealSpec::validate") {
       CHECK(tree.is_real());
       CHECK(tree.as_real() == 3.0);
     }
+    SUBCASE("string with implied unit accepted") {
+      const auto spec = prop::RealSpec{}.unit(prop::Unit{"kg/m^3"});
+      auto tree = prop::Tree{"7850.0"};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK(tree.is_real());
+      CHECK(tree.as_real() == 7850.0);
+    }
+    SUBCASE("string with matching explicit unit accepted") {
+      const auto spec = prop::RealSpec{}.unit(prop::Unit{"kg/m^3"});
+      auto tree = prop::Tree{"7850.0 kg/m^3"};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK(tree.is_real());
+      CHECK(tree.as_real() == 7850.0);
+    }
   }
   SUBCASE("error") {
     SUBCASE("null without default") {
@@ -254,6 +275,19 @@ TEST_CASE("prop::RealSpec::validate") {
     SUBCASE("non-number") {
       const prop::RealSpec spec{};
       auto tree = prop::Tree{"not a number"};
+      CHECK(prop::validate(spec, tree).has_issue("Expected real"));
+      CHECK(tree.is_null());
+    }
+    SUBCASE("wrong explicit unit") {
+      const auto spec = prop::RealSpec{}.unit(prop::Unit{"kg/m^3"});
+      auto tree = prop::Tree{"7.85 g/cm^3"};
+      CHECK(prop::validate(spec, tree)
+                .has_issue("unit conversion is not implemented yet"));
+      CHECK(tree.is_null());
+    }
+    SUBCASE("explicit unit for unitless spec") {
+      const prop::RealSpec spec{};
+      auto tree = prop::Tree{"1.0 m"};
       CHECK(prop::validate(spec, tree).has_issue("Expected real"));
       CHECK(tree.is_null());
     }
@@ -1106,12 +1140,14 @@ TEST_CASE("prop::spec_dump_json") {
 })");
   }
   SUBCASE("real") {
-    const auto spec = prop::RealSpec{}.range(1.0, 10.0).default_value(5.0);
+    const auto spec = prop::RealSpec{}.range(1.0, 10.0).default_value(5.0).unit(
+        prop::Unit{"m/s"});
     CHECK(prop::spec_dump_json(spec) == R"({
   "type": "real",
   "min": 1.0,
   "max": 10.0,
-  "default": 5.0
+  "default": 5.0,
+  "unit": "m/s"
 })");
   }
   SUBCASE("string") {
