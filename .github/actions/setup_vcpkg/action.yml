@@ -39,11 +39,11 @@ runs:
 
     - name: Restore vcpkg binary cache
       id: vcpkg-cache-restore
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
-        key: vcpkg-bin-${{ runner.os }}-${{ env.COMPILER_HASH }}-${{ hashFiles('vcpkg.json') }}
+        key: vcpkg-bin-${{ runner.os }}-${{ runner.arch }}-${{ env.COMPILER_HASH }}-${{ hashFiles('vcpkg.json') }}
         restore-keys: |
-          vcpkg-bin-${{ runner.os }}-${{ env.COMPILER_HASH }}-
+          vcpkg-bin-${{ runner.os }}-${{ runner.arch }}-${{ env.COMPILER_HASH }}-
         path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
 
     - name: Install vcpkg packages

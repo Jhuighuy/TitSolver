@@ -29,13 +29,13 @@ find_program(CHRONIC_EXE
 # Get a selected subset of the target's compile options: include directories
 # and compile definitions.
 #
-macro(get_generated_compile_options TARGET OPTIONS_VAR)
+macro(get_compile_options TARGET RESULT_VAR)
   # Append include directories.
   foreach(PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
     set(TARGET_INCLUDE_DIRS "$<TARGET_PROPERTY:${TARGET},${PROP}>")
     set(TARGET_INCLUDE_DIRS "$<LIST:SORT,${TARGET_INCLUDE_DIRS}>")
     set(TARGET_INCLUDE_DIRS "$<REMOVE_DUPLICATES:${TARGET_INCLUDE_DIRS}>")
-    list(APPEND ${OPTIONS_VAR}
+    list(APPEND ${RESULT_VAR}
       "$<LIST:TRANSFORM,${TARGET_INCLUDE_DIRS},PREPEND,-I>"
     )
   endforeach()
@@ -46,7 +46,7 @@ macro(get_generated_compile_options TARGET OPTIONS_VAR)
     set(TARGET_DEFS "$<LIST:SORT,${TARGET_DEFS}>")
     set(TARGET_DEFS "$<REMOVE_DUPLICATES:${TARGET_DEFS}>")
     set(TARGET_DEFS "$<FILTER:${TARGET_DEFS},INCLUDE,.+>") # remove stray `;`.
-    list(APPEND ${OPTIONS_VAR}
+    list(APPEND ${RESULT_VAR}
       "$<LIST:TRANSFORM,${TARGET_DEFS},PREPEND,-D>"
     )
   endforeach()
