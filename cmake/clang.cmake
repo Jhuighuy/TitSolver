@@ -61,29 +61,34 @@ function(_make_libstdcpp_options RESULT_VAR)
   set(DIR_REGEX "gcc/([1-9]+(\\.[0-9]+)*(_[0-9]+)?/)?include/c\\+\\+/[1-9]+")
   foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
     if(DIR MATCHES "${DIR_REGEX}$")
-      set(FOUND_DIR "${DIR}")
+      cmake_path(SET FOUND_DIR "${DIR}")
       break() # I hope the first match is the right one.
     endif()
   endforeach()
   if(NOT FOUND_DIR)
+    message(WARNING "Cannot find the libstdc++ installation directory.")
     return()
   endif()
 
-  set(FOUND_PLATFORM_DIR)
-  set(PLATFORM_DIR_REGEX "${DIR_REGEX}/[^/]*-(apple|linux)-[^/]*")
-  foreach(DIR ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-    if(DIR STRGREATER "${FOUND_DIR}" AND DIR MATCHES "${PLATFORM_DIR_REGEX}$")
-      set(FOUND_PLATFORM_DIR "${DIR}")
-      break()
-    endif()
-  endforeach()
-  if(NOT FOUND_PLATFORM_DIR)
+  execute_process(
+    COMMAND "${CMAKE_CXX_COMPILER}" -dumpmachine
+    OUTPUT_VARIABLE MACHINE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE DUMP_MACHINE_RESULT
+  )
+  if(NOT DUMP_MACHINE_RESULT EQUAL 0)
+    message(WARNING "Cannot detect the libstdc++ machine directory.")
+    return()
+  endif()
+  cmake_path(SET MACHINE_DIR "${FOUND_DIR}/${MACHINE}")
+  if(NOT EXISTS "${MACHINE_DIR}")
+    message(WARNING "Cannot find the libstdc++ machine directory.")
     return()
   endif()
 
   set(${RESULT_VAR}
     -stdlib++-isystem "${FOUND_DIR}"
-    -cxx-isystem "${FOUND_PLATFORM_DIR}"
+    -cxx-isystem "${MACHINE_DIR}"
     PARENT_SCOPE
   )
 endfunction()

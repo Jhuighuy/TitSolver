@@ -19,7 +19,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup Homebrew
-      uses: Homebrew/actions/setup-homebrew@master
+      uses: Homebrew/actions/setup-homebrew@main
 
     - name: Setup Homebrew packages
       shell: bash
@@ -47,21 +47,12 @@ runs:
           node
           sphinx-doc
         )
-
-        case "$OSTYPE" in
-          linux-gnu*)
-            PACKAGES+=(
-              binutils
-            )
-            ;;
-
-          darwin*)
-            PACKAGES+=(
-              diffutils
-              gnu-sed
-            )
-            ;;
-        esac
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          PACKAGES+=(
+            diffutils
+            gnu-sed
+          )
+        fi
 
         HOMEBREW_NO_AUTO_UPDATE=1 brew install --quiet "${PACKAGES[@]}"
 
@@ -70,7 +61,7 @@ runs:
         # Setup compilers.
         #
 
-        # On MacOS, we XCode command line tools are required.
+        # On MacOS, the XCode command line tools are required.
         if [[ "$OSTYPE" == "darwin"* ]]; then
           sudo xcode-select -s /Library/Developer/CommandLineTools
         fi
@@ -100,12 +91,6 @@ runs:
           GCC)
             CC="gcc-$GCC_VERSION"
             CXX="g++-$GCC_VERSION"
-
-            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-              # System binutils might not be compatible with the latest GCC.
-              BINUTILS_PREFIX="$(brew --prefix binutils)"
-              echo "$BINUTILS_PREFIX/bin" >> "$GITHUB_PATH"
-            fi
             ;;
 
           Clang)
@@ -114,9 +99,10 @@ runs:
 
             if [[ "$OSTYPE" == "linux-gnu"* ]]; then
               # Use libstdc++ from our GCC installation.
+              GCC_MACHINE="$("$GCC_PATH/gcc-$GCC_VERSION" -dumpmachine)"
               GCC_INC_PATH="$GCC_ROOT/include/c++/$GCC_VERSION"
               GCC_LIB_PATH="$GCC_ROOT/lib/gcc/$GCC_VERSION"
-              ISYSTEM_FLAGS="-isystem $GCC_INC_PATH -isystem $GCC_INC_PATH/x86_64-pc-linux-gnu"
+              ISYSTEM_FLAGS="-isystem $GCC_INC_PATH -isystem $GCC_INC_PATH/$GCC_MACHINE"
               CFLAGS="$CFLAGS $ISYSTEM_FLAGS"
               CXXFLAGS="$CXXFLAGS $ISYSTEM_FLAGS"
               LDFLAGS="$LDFLAGS -L$GCC_LIB_PATH -Wl,-rpath,$GCC_LIB_PATH"

@@ -39,7 +39,7 @@ runs:
 
     - name: Restore vcpkg binary cache
       id: vcpkg-cache-restore
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         key: vcpkg-bin-${{ runner.os }}-${{ env.COMPILER_HASH }}-${{ hashFiles('vcpkg.json') }}
         restore-keys: |
