@@ -5,12 +5,6 @@
 
 #pragma once
 
-/// @todo For a very strange reason, fails somewhere deep inside the compiler
-///       in ranges constraint when using `<deque>` is not included here.
-#if __APPLE__ && __GNUC__ && !__clang__
-#include <deque> // IWYU pragma: keep
-#endif
-
 #include <concepts>
 #include <cstddef>
 #include <limits>
