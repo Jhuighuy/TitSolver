@@ -550,7 +550,7 @@ void VariantSpec::validate(Tree& tree, std::string_view path) const {
   // Get the active option.
   auto& active_node = tree.get("_active");
   if (active_node.is_null() && default_.has_value()) {
-    active_node.set(std::string{*default_});
+    active_node.set(*default_);
   } else {
     TIT_ENSURE(active_node.is_string(),
                "'{}': value of '_active' must be a string, got {}.",

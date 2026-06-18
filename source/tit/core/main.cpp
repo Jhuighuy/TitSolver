@@ -110,9 +110,8 @@ void print_logo_and_system_info() {
       R"(               ############               )",
   });
 
-  /// @todo In C++26 there would be no need for `std::string{...}`.
   std::chrono::year_month_day commit_date{};
-  std::istringstream{std::string{build_info::commit_date()}} >>
+  std::istringstream{build_info::commit_date()} >>
       std::chrono::parse("%F", commit_date);
 
   std::vector<std::string> info_lines{
@@ -154,9 +153,7 @@ void print_logo_and_system_info() {
 
   const auto current_path = std::filesystem::current_path();
   try {
-    /// @todo In C++26 there would be no need for `.string()`.
-    info_lines.push_back(
-        std::format("Work Dir ....... {}", current_path.string()));
+    info_lines.push_back(std::format("Work Dir ....... {}", current_path));
   } catch (const Exception& e) {
     err("Unable to get working directory: {}.", e.what());
   }
@@ -172,10 +169,7 @@ void print_logo_and_system_info() {
   TIT_ASSERT(info_lines.size() <= logo_lines.size(), "Too many lines!");
   const auto padding = (logo_lines.size() - info_lines.size()) / 2;
   info_lines.resize(logo_lines.size());
-  /// @todo `std::ranges::shift_right` is not available in libstdc++ yet.
-  std::shift_right(info_lines.begin(), // NOLINT(modernize-use-ranges)
-                   info_lines.end(),
-                   static_cast<std::ptrdiff_t>(padding));
+  std::ranges::shift_right(info_lines, static_cast<std::ptrdiff_t>(padding));
 
   std::println();
   for (const auto& [logo_line, info_line] :

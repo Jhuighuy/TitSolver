@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <functional>
 #include <numbers>
-#include <ranges>
 #include <type_traits>
 
 #include "tit/core/math.hpp"
@@ -61,29 +60,14 @@ constexpr auto integrate(Func f,
               const geom::BBox<Vec<Num, Dim>>& my_box,
               const auto& estimate,
               Num tolerance) {
-    // Split the box into pieces.
-    const auto center = my_box.center();
-    const auto pieces = my_box.split(center);
-
-    // Integrate the pieces.
-    const auto piece_integrals = std::apply(
-        [&f](const auto&... ps) {
-          return std::array{impl::integrate_piece(f, ps)...};
-        },
-        pieces);
-
-    // Calculate the total integral value.
-    auto integral = std::apply([](const auto&... is) { return (is + ...); },
-                               piece_integrals);
-    if (abs(integral - estimate) <= tolerance) return integral;
-
-    // Recurse into the pieces.
-    integral = {};
-    for (const auto& [piece, piece_integral] :
-         std::views::zip(pieces, piece_integrals)) {
-      integral += self(piece, piece_integral, tolerance / 2);
+    const auto [... pieces] = my_box.split(my_box.center());
+    const auto [... piece_integrals] =
+        std::array{impl::integrate_piece(f, pieces)...};
+    if (const auto total_integral = (piece_integrals + ...);
+        abs(total_integral - estimate) <= tolerance) {
+      return total_integral;
     }
-    return integral;
+    return (self(pieces, piece_integrals, tolerance / 2) + ...);
   }(box, impl::integrate_piece(f, box), eps);
 }
 

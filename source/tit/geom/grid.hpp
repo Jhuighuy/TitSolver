@@ -139,9 +139,8 @@ public:
       return std::views::cartesian_product(
                  std::views::iota(low[Axes], high[Axes])...) |
              std::views::transform([](const auto& index_tuple) {
-               return std::apply(
-                   [](const auto&... indices) { return VecIndex{indices...}; },
-                   index_tuple);
+               const auto& [... indices] = index_tuple;
+               return VecIndex{indices...};
              });
     }(std::make_index_sequence<vec_dim_v<Vec>>{});
   }
