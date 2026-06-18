@@ -20,6 +20,10 @@ set(CLANG_WARNINGS
   # Some extensions are allowed.
   -Wno-gnu-zero-variadic-macro-arguments
   -Wno-c2y-extensions
+  # Some libstdc++ features are using deprecated stuff, which triggers warnings
+  # (e.g., `std::is_trivial_v` in `inplace_vector` implementation). Once this
+  # is fixed, we can remove this flag.
+  -Wno-deprecated-declarations
 )
 
 # Define common compile options.

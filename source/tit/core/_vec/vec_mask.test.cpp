@@ -90,26 +90,40 @@ TEST_CASE_TEMPLATE("VecMask::operator!=", Num, NUM_TYPES) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("VecMask::any", Num, NUM_TYPES) {
+  /// @todo All the vector tests that currently use `std::index_sequence` can
+  ///       be replaced with `template for` loops from C++26, e.g.:
+  ///
+  ///       ```cpp
+  ///       template for (constexpr auto Dim :
+  ///                     std::views::iota(
+  ///                       1,
+  ///                       2 * simd::max_reg_size_v<double> + 1)) {
+  ///         CAPTURE(Dim);
+  ///         ...
+  ///       }
+  ///       ```
+  ///
+  ///       `template for` loops are defined in P1306R5, and are currently
+  ///       implemented in GCC only.
   const auto run = []<std::size_t Dim>(std::index_sequence<Dim> /*dim*/) {
-    FSUBCASE("Dim = {}", Dim) {
-      SUBCASE("all false") {
-        const VecMask<Num, Dim> m(false);
-        CHECK_FALSE(any(m));
-      }
-      SUBCASE("all true") {
-        const VecMask<Num, Dim> m(true);
-        CHECK(any(m));
-      }
-      SUBCASE("true in the middle") {
-        VecMask<Num, Dim> m(false);
-        m[Dim / 2] = true;
-        CHECK(any(m));
-      }
-      SUBCASE("true at the end") {
-        VecMask<Num, Dim> m(false);
-        m[Dim - 1] = true;
-        CHECK(any(m));
-      }
+    CAPTURE(Dim);
+    SUBCASE("all false") {
+      const VecMask<Num, Dim> m(false);
+      CHECK_FALSE(any(m));
+    }
+    SUBCASE("all true") {
+      const VecMask<Num, Dim> m(true);
+      CHECK(any(m));
+    }
+    SUBCASE("true in the middle") {
+      VecMask<Num, Dim> m(false);
+      m[Dim / 2] = true;
+      CHECK(any(m));
+    }
+    SUBCASE("true at the end") {
+      VecMask<Num, Dim> m(false);
+      m[Dim - 1] = true;
+      CHECK(any(m));
     }
   };
   [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
@@ -119,29 +133,28 @@ TEST_CASE_TEMPLATE("VecMask::any", Num, NUM_TYPES) {
 
 TEST_CASE_TEMPLATE("VecMask::all", Num, NUM_TYPES) {
   const auto run = []<std::size_t Dim>(std::index_sequence<Dim> /*dim*/) {
-    FSUBCASE("Dim = {}", Dim) {
-      SUBCASE("all false") {
-        const VecMask<Num, Dim> m(false);
-        CHECK_FALSE(m);
-        CHECK_FALSE(all(m));
-      }
-      SUBCASE("all true") {
-        const VecMask<Num, Dim> m(true);
-        CHECK(m);
-        CHECK(all(m));
-      }
-      SUBCASE("false in the middle") {
-        VecMask<Num, Dim> m(true);
-        m[Dim / 2] = false;
-        CHECK_FALSE(m);
-        CHECK_FALSE(all(m));
-      }
-      SUBCASE("false at the end") {
-        VecMask<Num, Dim> m(true);
-        m[Dim - 1] = false;
-        CHECK_FALSE(m);
-        CHECK_FALSE(all(m));
-      }
+    CAPTURE(Dim);
+    SUBCASE("all false") {
+      const VecMask<Num, Dim> m(false);
+      CHECK_FALSE(m);
+      CHECK_FALSE(all(m));
+    }
+    SUBCASE("all true") {
+      const VecMask<Num, Dim> m(true);
+      CHECK(m);
+      CHECK(all(m));
+    }
+    SUBCASE("false in the middle") {
+      VecMask<Num, Dim> m(true);
+      m[Dim / 2] = false;
+      CHECK_FALSE(m);
+      CHECK_FALSE(all(m));
+    }
+    SUBCASE("false at the end") {
+      VecMask<Num, Dim> m(true);
+      m[Dim - 1] = false;
+      CHECK_FALSE(m);
+      CHECK_FALSE(all(m));
     }
   };
   [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
@@ -151,25 +164,24 @@ TEST_CASE_TEMPLATE("VecMask::all", Num, NUM_TYPES) {
 
 TEST_CASE_TEMPLATE("VecMask::find_true", Num, NUM_TYPES) {
   const auto run = []<std::size_t Dim>(std::index_sequence<Dim> /*dim*/) {
-    FSUBCASE("Dim = {}", Dim) {
-      SUBCASE("all true") {
-        const VecMask<Num, Dim> m(true);
-        CHECK(find_true(m) == 0);
-      }
-      SUBCASE("all false") {
-        const VecMask<Num, Dim> m(false);
-        CHECK(find_true(m) == -1);
-      }
-      SUBCASE("true in the middle") {
-        VecMask<Num, Dim> m(false);
-        m[Dim / 2] = true;
-        CHECK(find_true(m) == Dim / 2);
-      }
-      SUBCASE("true at the end") {
-        VecMask<Num, Dim> m(false);
-        m[Dim - 1] = true;
-        CHECK(find_true(m) == Dim - 1);
-      }
+    CAPTURE(Dim);
+    SUBCASE("all true") {
+      const VecMask<Num, Dim> m(true);
+      CHECK(find_true(m) == 0);
+    }
+    SUBCASE("all false") {
+      const VecMask<Num, Dim> m(false);
+      CHECK(find_true(m) == -1);
+    }
+    SUBCASE("true in the middle") {
+      VecMask<Num, Dim> m(false);
+      m[Dim / 2] = true;
+      CHECK(find_true(m) == Dim / 2);
+    }
+    SUBCASE("true at the end") {
+      VecMask<Num, Dim> m(false);
+      m[Dim - 1] = true;
+      CHECK(find_true(m) == Dim - 1);
     }
   };
   [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {

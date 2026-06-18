@@ -7,7 +7,6 @@
 
 #include <cstddef>
 #include <ranges>
-#include <utility>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/vec.hpp"
@@ -130,31 +129,30 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// Range of all cell indices.
+  constexpr auto cells() const noexcept {
+    return cells(VecIndex{}, num_cells_);
+  }
+
   /// Range of cell indices, such that `low <= index < high`.
   constexpr auto cells(const VecIndex& low,
                        const VecIndex& high) const noexcept {
     TIT_ASSERT(low <= high, "Invalid cell range!");
     TIT_ASSERT(high <= num_cells_, "Invalid cell range!");
-    return [&]<std::size_t... Axes>(std::index_sequence<Axes...> /*axes*/) {
-      return std::views::cartesian_product(
-                 std::views::iota(low[Axes], high[Axes])...) |
-             std::views::transform([](const auto& index_tuple) {
-               return std::apply(
-                   [](const auto&... indices) { return VecIndex{indices...}; },
-                   index_tuple);
-             });
-    }(std::make_index_sequence<vec_dim_v<Vec>>{});
+    const auto& [... low_indices] = low.elems();
+    const auto& [... high_indices] = high.elems();
+    return std::views::cartesian_product(
+               std::views::iota(low_indices, high_indices)...) |
+           std::views::transform([](const auto& index_tuple) {
+             const auto& [... indices] = index_tuple;
+             return VecIndex{indices...};
+           });
   }
 
   /// Range of cell indices, such that `low <= index <= high`.
   constexpr auto cells_inclusive(const VecIndex& low,
                                  const VecIndex& high) const noexcept {
     return cells(low, high + VecIndex(1));
-  }
-
-  /// Range of cell indices, such that `n <= index < num_cells - n`.
-  constexpr auto cells(std::size_t n = 0) const noexcept {
-    return cells(VecIndex(n), num_cells_ - VecIndex(n));
   }
 
   /// Range of cell indices that intersect the given search box.

@@ -72,8 +72,6 @@ set(GNU_OPTIMIZE_OPTIONS
   -Ofast
   # Enable aggressive floating-point expression contraction.
   -ffp-contract=fast
-  # This warning produces a lot of false positives, disable it.
-  -Wno-maybe-uninitialized
 )
 
 # Define compile options for "Release" configuration.

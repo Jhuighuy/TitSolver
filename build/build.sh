@@ -38,8 +38,8 @@ TESTS=false
 LONG_TESTS=false
 TEST_PATTERNS=()
 JOBS=$(getconf _NPROCESSORS_ONLN)
-CC=${CC:-gcc-15}
-CXX=${CXX:-g++-15}
+CC=${CC:-gcc-16}
+CXX=${CXX:-g++-16}
 VCPKG_ROOT="${VCPKG_ROOT:-$HOME/vcpkg}"
 
 print-usage() {

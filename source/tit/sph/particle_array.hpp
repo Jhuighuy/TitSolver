@@ -180,8 +180,8 @@ public:
 
   /// Reserve amount of particles.
   constexpr void reserve(std::size_t capacity) {
-    std::apply([capacity](auto&... cols) { ((cols.reserve(capacity)), ...); },
-               varying_data_);
+    auto& [... cols] = varying_data_;
+    ((cols.reserve(capacity)), ...);
   }
 
   /// Appends a new particle of the specified type @p type.
@@ -193,9 +193,8 @@ public:
     const std::size_t index = particle_ranges_[type_index + 1];
     for (auto& p : particle_ranges_ | std::views::drop(type_index + 1)) p += 1;
     // Insert the new particle.
-    std::apply(
-        [index](auto&... cols) { ((cols.emplace(cols.begin() + index)), ...); },
-        varying_data_);
+    auto& [... cols] = varying_data_;
+    ((cols.emplace(cols.begin() + index)), ...);
     return (*this)[index];
   }
 

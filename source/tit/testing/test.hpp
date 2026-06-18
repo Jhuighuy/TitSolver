@@ -6,7 +6,6 @@
 #pragma once
 
 #include <algorithm>
-#include <format> // IWYU pragma: keep
 #include <initializer_list>
 #include <ranges>
 
@@ -20,11 +19,6 @@
 #endif
 
 namespace tit::testing {
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Subcase, name is runtime-formatted.
-#define FSUBCASE(...) SUBCASE(std::format(__VA_ARGS__).c_str())
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

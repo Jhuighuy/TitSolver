@@ -134,7 +134,7 @@ auto Tree::get(std::size_t index) const -> const Tree& {
 
 auto Tree::get(std::string_view key) -> Tree& {
   auto& map = as_map();
-  const auto [iter, _] = map.try_emplace(std::string{key});
+  const auto [iter, _] = map.try_emplace(key);
   return iter->second;
 }
 auto Tree::get(std::string_view key) const -> const Tree& {

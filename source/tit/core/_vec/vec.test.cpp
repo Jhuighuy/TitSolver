@@ -251,10 +251,9 @@ TEST_CASE_TEMPLATE("Vec::ceil", Num, NUM_TYPES) {
 
 TEST_CASE_TEMPLATE("Vec::sum", Num, NUM_TYPES) {
   const auto run = []<std::size_t... Axes>(std::index_sequence<Axes...> /*a*/) {
-    FSUBCASE("Dim = {}", sizeof...(Axes)) {
-      const Vec v{Num{Axes + 1}...};
-      CHECK(sum(v) == Num{((Axes + 1) + ...)});
-    }
+    CAPTURE(sizeof...(Axes));
+    const Vec v{Num{Axes + 1}...};
+    CHECK(sum(v) == Num{((Axes + 1) + ...)});
   };
   [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::make_index_sequence<Dims + 1>{}), ...);
@@ -270,25 +269,24 @@ TEST_CASE_TEMPLATE("Vec::prod", Num, NUM_TYPES) {
 
 TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
   const auto run = []<std::size_t... Axes>(std::index_sequence<Axes...> /*a*/) {
-    FSUBCASE("Dim = {}", sizeof...(Axes)) {
-      SUBCASE("all positive") {
-        Vec v{Num{Axes + 1}...};
-        std::ranges::shuffle(v.elems(), std::mt19937_64{});
-        CHECK(min_value(v) == Num{1});
-      }
-      SUBCASE("all negative") {
-        Vec v{Num{-int{Axes} - 1}...};
-        std::ranges::shuffle(v.elems(), std::mt19937_64{});
-        CHECK(min_value(v) == Num{-int{sizeof...(Axes)}});
-      }
-      SUBCASE("even positive") {
-        const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * int{Axes}}...};
-        CHECK(min_value(v) == Num{*std::ranges::min_element(v.elems())});
-      }
-      SUBCASE("even negative") {
-        const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * int{Axes}}...};
-        CHECK(min_value(v) == Num{*std::ranges::min_element(v.elems())});
-      }
+    CAPTURE(sizeof...(Axes));
+    SUBCASE("all positive") {
+      Vec v{Num{Axes + 1}...};
+      std::ranges::shuffle(v.elems(), std::mt19937_64{});
+      CHECK(min_value(v) == Num{1});
+    }
+    SUBCASE("all negative") {
+      Vec v{Num{-int{Axes} - 1}...};
+      std::ranges::shuffle(v.elems(), std::mt19937_64{});
+      CHECK(min_value(v) == Num{-int{sizeof...(Axes)}});
+    }
+    SUBCASE("even positive") {
+      const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * int{Axes}}...};
+      CHECK(min_value(v) == Num{*std::ranges::min_element(v.elems())});
+    }
+    SUBCASE("even negative") {
+      const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * int{Axes}}...};
+      CHECK(min_value(v) == Num{*std::ranges::min_element(v.elems())});
     }
   };
   [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
@@ -298,25 +296,24 @@ TEST_CASE_TEMPLATE("Vec::min_value", Num, NUM_TYPES) {
 
 TEST_CASE_TEMPLATE("Vec::max_value", Num, NUM_TYPES) {
   const auto run = []<std::size_t... Axes>(std::index_sequence<Axes...> /*a*/) {
-    FSUBCASE("Dim = {}", sizeof...(Axes)) {
-      SUBCASE("all positive") {
-        Vec v{Num{Axes + 1}...};
-        std::ranges::shuffle(v.elems(), std::mt19937_64{});
-        CHECK(max_value(v) == Num{sizeof...(Axes)});
-      }
-      SUBCASE("all negative") {
-        Vec v{Num{-int{Axes} - 1}...};
-        std::ranges::shuffle(v.elems(), std::mt19937_64{});
-        CHECK(max_value(v) == Num{-1});
-      }
-      SUBCASE("even positive") {
-        const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * int{Axes}}...};
-        CHECK(max_value(v) == Num{*std::ranges::max_element(v.elems())});
-      }
-      SUBCASE("even negative") {
-        const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * int{Axes}}...};
-        CHECK(max_value(v) == Num{*std::ranges::max_element(v.elems())});
-      }
+    CAPTURE(sizeof...(Axes));
+    SUBCASE("all positive") {
+      Vec v{Num{Axes + 1}...};
+      std::ranges::shuffle(v.elems(), std::mt19937_64{});
+      CHECK(max_value(v) == Num{sizeof...(Axes)});
+    }
+    SUBCASE("all negative") {
+      Vec v{Num{-int{Axes} - 1}...};
+      std::ranges::shuffle(v.elems(), std::mt19937_64{});
+      CHECK(max_value(v) == Num{-1});
+    }
+    SUBCASE("even positive") {
+      const Vec v{Num{(Axes % 2 == 0 ? 1 : -1) * int{Axes}}...};
+      CHECK(max_value(v) == Num{*std::ranges::max_element(v.elems())});
+    }
+    SUBCASE("even negative") {
+      const Vec v{Num{(Axes % 2 == 0 ? -1 : 1) * int{Axes}}...};
+      CHECK(max_value(v) == Num{*std::ranges::max_element(v.elems())});
     }
   };
   [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
@@ -341,11 +338,10 @@ TEST_CASE_TEMPLATE("Vec::max_value_index", Num, NUM_TYPES) {
 
 TEST_CASE_TEMPLATE("Vec::dot", Num, NUM_TYPES) {
   const auto run = []<std::size_t... Axes>(std::index_sequence<Axes...> /*a*/) {
-    FSUBCASE("Dim = {}", sizeof...(Axes)) {
-      const Vec v{Num{Axes + 1}...};
-      const Vec w{Num{Axes + 2}...};
-      CHECK(dot(v, w) == Num{(((Axes + 1) * (Axes + 2)) + ...)});
-    }
+    CAPTURE(sizeof...(Axes));
+    const Vec v{Num{Axes + 1}...};
+    const Vec w{Num{Axes + 2}...};
+    CHECK(dot(v, w) == Num{(((Axes + 1) * (Axes + 2)) + ...)});
   };
   [&run]<std::size_t... Dims>(std::index_sequence<Dims...> /*dims*/) {
     (run(std::make_index_sequence<Dims + 1>{}), ...);

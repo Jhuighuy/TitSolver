@@ -7,7 +7,6 @@
 
 #include <array>
 #include <cstddef>
-#include <functional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -116,9 +115,9 @@ public:
     TIT_ASSERT(axis < vec_dim_v<Vec>, "Split axis is out of range!");
     TIT_ASSERT(val >= low_[axis], "Split value is less than lower bound!");
     TIT_ASSERT(val <= high_[axis], "Split value is greater than upper bound!");
-    auto left = *this;
+    auto left{*this};
     left.high_[axis] = val;
-    auto right = *this;
+    auto right{*this};
     right.low_[axis] = val;
     if (reverse) return {right, left};
     return {left, right};
@@ -129,22 +128,19 @@ public:
       -> std::array<BBox, (1 << vec_dim_v<Vec>)> {
     TIT_ASSERT(point >= low_, "Split point is below lower bounds!");
     TIT_ASSERT(point <= high_, "Split point is above upper bounds!");
-    const auto tuple = [&point]<std::size_t Axis>(
-                           this const auto& self,
-                           std::integral_constant<std::size_t, Axis> /*axis*/,
-                           const auto&... boxes) {
-      auto split_boxes = std::tuple_cat(boxes.split(Axis, point[Axis])...);
+    return [&point]<std::size_t Axis>(
+               this const auto& self,
+               std::integral_constant<std::size_t, Axis> /*axis*/,
+               const auto&... boxes) {
+      const auto [... split_boxes] =
+          std::tuple_cat(boxes.split(Axis, point[Axis])...);
       if constexpr (Axis == vec_dim_v<Vec> - 1) {
-        return split_boxes;
+        return std::array{split_boxes...};
       } else {
-        return std::apply(
-            std::bind_front(self,
-                            std::integral_constant<std::size_t, Axis + 1>{}),
-            split_boxes);
+        return self(std::integral_constant<std::size_t, Axis + 1>{},
+                    split_boxes...);
       }
     }(std::integral_constant<std::size_t, 0>{}, *this);
-    return std::apply([](const auto&... boxes) { return std::array{boxes...}; },
-                      tuple);
   }
 
 private:

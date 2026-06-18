@@ -129,11 +129,6 @@ TEST_CASE("geom::Grid::cells") {
                     {2, 1},
                     {2, 2}});
   }
-  SUBCASE("all(n)") {
-    const geom::BBox box{Vec{0.0, 0.0}, Vec{4.0, 4.0}};
-    const geom::Grid grid{box, {4, 4}};
-    CHECK_RANGE_EQ(grid.cells(1), {{1, 1}, {1, 2}, {2, 1}, {2, 2}});
-  }
   SUBCASE("range") {
     const geom::BBox box{Vec{0.0, 0.0}, Vec{8.0, 8.0}};
     const geom::Grid grid{box, {8, 8}};

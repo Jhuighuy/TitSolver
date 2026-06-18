@@ -10,7 +10,6 @@
 #include <concepts>
 #include <cstddef>
 #include <span>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -83,21 +82,18 @@ constexpr auto deserialize(InputStream<std::byte>& in, Val& val) -> bool {
 /// Serialize a tuple of values into the output stream.
 template<tuple_like Tuple>
 constexpr void serialize(OutputStream<std::byte>& out, const Tuple& tuple) {
-  std::apply([&out](const auto&... items) { (serialize(out, items), ...); },
-             tuple);
+  const auto& [... items] = tuple;
+  (serialize(out, items), ...);
 }
 
 /// Deserialize a tuple of values from the input stream.
 template<tuple_like Tuple>
 constexpr auto deserialize(InputStream<std::byte>& in, Tuple& tuple) -> bool {
-  return std::apply(
-      [&in](auto& first_item, auto&... rest_items) {
-        if (!deserialize(in, first_item)) return false;
-        if ((deserialize(in, rest_items) && ...)) return true;
-        TIT_THROW("Deserialization failed: failed to deserialize {} items.",
-                  sizeof...(rest_items) + 1);
-      },
-      tuple);
+  auto& [first_item, ... rest_items] = tuple;
+  if (!deserialize(in, first_item)) return false;
+  if ((deserialize(in, rest_items) && ...)) return true;
+  TIT_THROW("Deserialization failed: failed to deserialize {} items.",
+            sizeof...(rest_items) + 1);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

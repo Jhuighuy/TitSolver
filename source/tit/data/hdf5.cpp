@@ -295,9 +295,8 @@ private:
       default: std::unreachable();
     }
 
-    /// @todo In C++26 there would be no need for `.string()`.
     data_item_elem->SetText(
-        std::format("{}:/{}/{}", hdf5_rel_path.string(), frame_name, array_name)
+        std::format("{}:/{}/{}", hdf5_rel_path, frame_name, array_name)
             .c_str());
   }
 

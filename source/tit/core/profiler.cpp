@@ -26,7 +26,8 @@ StrHashMap<Stopwatch> Profiler::sections_{};
 
 auto Profiler::section(std::string_view section_name) -> Stopwatch& {
   TIT_ASSERT(!section_name.empty(), "Section name must not be empty!");
-  /// @todo In C++26 there would be no need for `std::string{...}`.
+  /// @todo There's likely a bug in libstdc++ 16.1 that makes us need to add
+  ///       an explicit conversion to `std::string{...}` here.
   return sections_[std::string{section_name}];
 }
 
