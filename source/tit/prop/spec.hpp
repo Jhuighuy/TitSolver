@@ -17,6 +17,9 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/float.hpp"
+#include "tit/prop/path.hpp"
+#include "tit/prop/tree.hpp"
+#include "tit/prop/validation.hpp"
 
 namespace tit::prop {
 
@@ -64,9 +67,10 @@ public:
   /// Return the concrete type of this specification.
   virtual auto type() const noexcept -> SpecType = 0;
 
-  /// Validate @p data, filling in any missing defaults.
-  /// @p path is the dotted field path used in error messages (empty at root).
-  virtual void validate(class Tree& tree, std::string_view path) const = 0;
+  /// Validate @p tree using @p context and @p path.
+  virtual void validate(class Tree& tree,
+                        const Path& path,
+                        ValidationContext& context) const = 0;
 
   /// 'Box' the specification into a heap-allocated pointer.
   template<class Self>
@@ -74,7 +78,18 @@ public:
     return std::make_unique<std::decay_t<Self>>(std::forward<Self>(self));
   }
 
+  /// Return default value as a tree, or null when absent.
+  template<class Self>
+  auto default_value_tree(this const Self& self) -> Tree {
+    const auto& val = self.default_value();
+    return val.has_value() ? Tree{val.value()} : Tree{};
+  }
+
 }; // class Spec
+
+/// Validate @p tree against @p spec, filling in any missing defaults.
+[[nodiscard]]
+auto validate(const Spec& spec, Tree& tree) -> ValidationContext;
 
 /// Cast a specification to a concrete type.
 template<std::derived_from<Spec> T>
@@ -100,7 +115,9 @@ public:
   auto default_value(bool val) && -> BoolSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -139,7 +156,9 @@ public:
   auto default_value() const noexcept -> std::optional<std::int64_t>;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -180,7 +199,9 @@ public:
   auto default_value(float64_t val) && -> RealSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -206,7 +227,9 @@ public:
   auto default_value(std::string val) && -> StringSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -245,7 +268,9 @@ public:
   auto default_value(std::string val) && -> EnumSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -276,7 +301,9 @@ public:
   auto item() const -> const Spec&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -320,7 +347,9 @@ public:
   /// @}
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -373,7 +402,9 @@ public:
   auto default_value(std::string val) && -> VariantSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
