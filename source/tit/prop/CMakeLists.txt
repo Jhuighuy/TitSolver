@@ -7,6 +7,8 @@ add_tit_library(
   NAME
     prop
   SOURCES
+    "path.cpp"
+    "path.hpp"
     "spec-json.cpp"
     "spec.cpp"
     "spec.hpp"
@@ -15,6 +17,8 @@ add_tit_library(
     "tree-yaml.cpp"
     "tree.cpp"
     "tree.hpp"
+    "validation.cpp"
+    "validation.hpp"
   DEPENDS
     tit::core
     nlohmann_json::nlohmann_json
@@ -27,8 +31,10 @@ add_tit_executable(
   NAME
     prop_tests
   SOURCES
+    "path.test.cpp"
     "spec.test.cpp"
     "tree.test.cpp"
+    "validation.test.cpp"
   DEPENDS
     tit::prop
     tit::testing

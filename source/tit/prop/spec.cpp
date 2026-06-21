@@ -19,10 +19,24 @@
 #include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/str.hpp"
+#include "tit/core/utils.hpp"
+#include "tit/prop/path.hpp"
 #include "tit/prop/spec.hpp"
 #include "tit/prop/tree.hpp"
+#include "tit/prop/validation.hpp"
 
 namespace tit::prop {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Spec
+//
+
+auto validate(const Spec& spec, Tree& tree) -> ValidationContext {
+  ValidationContext context{};
+  spec.validate(tree, Path{}, context);
+  return context;
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
@@ -42,16 +56,23 @@ auto BoolSpec::default_value() const noexcept -> bool {
   return default_;
 }
 
-void BoolSpec::validate(Tree& tree, std::string_view path) const {
+void BoolSpec::validate(Tree& tree,
+                        const Path& path,
+                        ValidationContext& context) const {
+  // Fill default value.
   if (tree.is_null()) {
     tree.assign(default_);
     return;
   }
 
-  TIT_ENSURE(tree.is_bool(),
-             "'{}': expected boolean, got {}.",
-             path,
-             tree.type_name());
+  // Check type.
+  if (!tree.is_bool()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected boolean, got {}.",
+                      tree.type_name());
+    tree.assign(default_);
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -134,34 +155,49 @@ auto IntSpec::default_value(std::int64_t val) && -> IntSpec&& {
   return std::move(*this);
 }
 
-void IntSpec::validate(Tree& tree, std::string_view path) const {
+void IntSpec::validate(Tree& tree,
+                       const Path& path,
+                       ValidationContext& context) const {
+  // Fill default value.
   if (tree.is_null()) {
-    TIT_ENSURE(default_.has_value(),
-               "'{}': required integer property is missing.",
-               path);
-    tree.assign(default_.value());
+    tree = default_value_tree();
+    if (tree.is_null()) {
+      context.add_issue(path,
+                        IssueCode::missing_required,
+                        "Required integer property is missing.");
+    }
     return;
   }
 
-  TIT_ENSURE(tree.is_int(),
-             "'{}': expected integer, got {}.",
-             path,
-             tree.type_name());
-
-  const auto val = tree.as_int();
-  if (min_.has_value()) {
-    TIT_ENSURE(val >= min_.value(),
-               "'{}': value {} is below minimum {}.",
-               path,
-               val,
-               min_.value());
+  // Check type.
+  if (!tree.is_int()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected integer, got {}.",
+                      tree.type_name());
+    tree = default_value_tree();
+    return;
   }
-  if (max_.has_value()) {
-    TIT_ENSURE(val <= max_.value(),
-               "'{}': value {} is above maximum {}.",
-               path,
-               val,
-               max_.value());
+
+  // Check value.
+  const auto val = tree.as_int();
+  if (min_.has_value() && val < min_.value()) {
+    context.add_issue(path,
+                      IssueCode::below_minimum,
+                      "Value {} is below minimum {}.",
+                      val,
+                      min_.value());
+    tree.assign(min_.value());
+    return;
+  }
+  if (max_.has_value() && val > max_.value()) {
+    context.add_issue(path,
+                      IssueCode::above_maximum,
+                      "Value {} is above maximum {}.",
+                      val,
+                      max_.value());
+    tree.assign(max_.value());
+    return;
   }
 }
 
@@ -244,38 +280,51 @@ auto RealSpec::default_value(float64_t val) && -> RealSpec&& {
   return std::move(*this);
 }
 
-void RealSpec::validate(Tree& tree, std::string_view path) const {
+void RealSpec::validate(Tree& tree,
+                        const Path& path,
+                        ValidationContext& context) const {
+  // Fill default value.
   if (tree.is_null()) {
-    TIT_ENSURE(default_.has_value(),
-               "'{}': required real property is missing.",
-               path);
-    tree.assign(default_.value());
+    tree = default_value_tree();
+    if (tree.is_null()) {
+      context.add_issue(path,
+                        IssueCode::missing_required,
+                        "Required real property is missing.");
+    }
     return;
   }
 
+  // Check type.
   if (tree.is_int()) {
     tree.assign(static_cast<float64_t>(tree.as_int()));
-  } else {
-    TIT_ENSURE(tree.is_real(),
-               "'{}': expected number, got {}.",
-               path,
-               tree.type_name());
+  } else if (!tree.is_real()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected real, got {}.",
+                      tree.type_name());
+    tree = default_value_tree();
+    return;
   }
 
+  // Check value.
   const auto val = tree.as_real();
-  if (min_.has_value()) {
-    TIT_ENSURE(val >= min_.value(),
-               "'{}': value {} is below minimum {}.",
-               path,
-               val,
-               min_.value());
+  if (min_.has_value() && val < min_.value()) {
+    context.add_issue(path,
+                      IssueCode::below_minimum,
+                      "Value {} is below minimum {}.",
+                      val,
+                      min_.value());
+    tree.assign(min_.value());
+    return;
   }
-  if (max_.has_value()) {
-    TIT_ENSURE(val <= max_.value(),
-               "'{}': value {} is above maximum {}.",
-               path,
-               val,
-               max_.value());
+  if (max_.has_value() && val > max_.value()) {
+    context.add_issue(path,
+                      IssueCode::above_maximum,
+                      "Value {} is above maximum {}.",
+                      val,
+                      max_.value());
+    tree.assign(max_.value());
+    return;
   }
 }
 
@@ -298,19 +347,36 @@ auto StringSpec::default_value(std::string val) && -> StringSpec&& {
   return std::move(*this);
 }
 
-void StringSpec::validate(Tree& tree, std::string_view path) const {
+void StringSpec::validate(Tree& tree,
+                          const Path& path,
+                          ValidationContext& context) const {
+  // Fill default value.
   if (tree.is_null()) {
-    TIT_ENSURE(default_.has_value(),
-               "'{}': required string property is missing.",
-               path);
-    tree.assign(default_.value());
+    tree = default_value_tree();
+    if (tree.is_null()) {
+      context.add_issue(path,
+                        IssueCode::missing_required,
+                        "Required string property is missing.");
+    }
     return;
   }
 
-  TIT_ENSURE(tree.is_string(),
-             "'{}': expected string scalar, got {}.",
-             path,
-             tree.type_name());
+  // Check type.
+  if (tree.is_int()) {
+    tree.assign(std::format("{}", tree.as_int()));
+    return;
+  }
+  if (tree.is_real()) {
+    tree.assign(std::format("{}", tree.as_real()));
+    return;
+  }
+  if (!tree.is_string()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected string, got {}.",
+                      tree.type_name());
+    tree = default_value_tree();
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -327,10 +393,7 @@ auto EnumSpec::options() const noexcept -> const std::vector<Option>& {
 }
 
 auto EnumSpec::option(std::string_view id) const -> const Option* {
-  const auto iter = std::ranges::find(
-      options_,
-      id,
-      [](const Option& option) -> std::string_view { return option.id; });
+  const auto iter = std::ranges::find(options_, id, &Option::id);
   return iter == options_.end() ? nullptr : std::to_address(iter);
 }
 
@@ -361,25 +424,40 @@ auto EnumSpec::default_value(std::string val) && -> EnumSpec&& {
   return std::move(*this);
 }
 
-void EnumSpec::validate(Tree& tree, std::string_view path) const {
+void EnumSpec::validate(Tree& tree,
+                        const Path& path,
+                        ValidationContext& context) const {
+  // Fill default value.
   if (tree.is_null()) {
-    TIT_ENSURE(default_.has_value(),
-               "'{}': required enum property is missing.",
-               path);
-    tree.assign(default_.value());
+    tree = default_value_tree();
+    if (tree.is_null()) {
+      context.add_issue(path,
+                        IssueCode::missing_required,
+                        "Required enum property is missing.");
+    }
     return;
   }
 
-  TIT_ENSURE(tree.is_string(),
-             "'{}': expected string scalar, got {}.",
-             path,
-             tree.type_name());
+  // Check type.
+  if (!tree.is_string()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected string, got {}.",
+                      tree.type_name());
+    tree = default_value_tree();
+    return;
+  }
 
-  const auto val = tree.as_string();
-  TIT_ENSURE(option(val) != nullptr,
-             "'{}': '{}' is not a valid enum value.",
-             path,
-             val);
+  // Check value.
+  if (const auto val = tree.as_string(); option(val) == nullptr) {
+    context.add_issue(path,
+                      IssueCode::invalid_value,
+                      "Value '{}' is not a valid enum value. "
+                      "Expected one of: {}.",
+                      val,
+                      options_ | std::views::transform(&Option::id));
+    tree = default_value_tree();
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -403,20 +481,28 @@ auto ArraySpec::item(SpecPtr spec) && -> ArraySpec&& {
   return std::move(*this);
 }
 
-void ArraySpec::validate(Tree& tree, std::string_view path) const {
+void ArraySpec::validate(Tree& tree,
+                         const Path& path,
+                         ValidationContext& context) const {
+  // Fill default value.
   if (tree.is_null()) {
     tree.assign(Tree::Array{});
     return;
   }
 
-  TIT_ENSURE(tree.is_array(),
-             "'{}': expected array, got {}.",
-             path,
-             tree.type_name());
+  // Check type.
+  if (!tree.is_array()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected array, got {}.",
+                      tree.type_name());
+    tree.assign(Tree::Array{});
+    return;
+  }
 
   // Validate each element.
   for (std::size_t i = 0; i < tree.size(); ++i) {
-    item().validate(tree.get(i), std::format("{}[{}]", path, i));
+    item().validate(tree.get(i), path.child(i), context);
   }
 }
 
@@ -434,10 +520,7 @@ auto RecordSpec::fields() const noexcept -> const std::vector<Field>& {
 }
 
 auto RecordSpec::field(std::string_view id) const -> const Field* {
-  const auto iter = std::ranges::find(
-      fields_,
-      id,
-      [](const Field& field) -> std::string_view { return field.id; });
+  const auto iter = std::ranges::find(fields_, id, &Field::id);
   return iter == fields_.end() ? nullptr : std::to_address(iter);
 }
 
@@ -454,22 +537,35 @@ auto RecordSpec::field(std::string_view id,
   return std::move(*this);
 }
 
-void RecordSpec::validate(Tree& tree, std::string_view path) const {
+void RecordSpec::validate(Tree& tree,
+                          const Path& path,
+                          ValidationContext& context) const {
+  // Fill default value.
   if (tree.is_null()) tree.assign(Tree::Map{});
-  TIT_ENSURE(tree.is_map(),
-             "'{}': expected object (record), got {}.",
-             path,
-             tree.type_name());
+
+  // Check type.
+  if (!tree.is_map()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected object (record), got {}.",
+                      tree.type_name());
+    tree.assign(Tree::Map{});
+  }
 
   // Check for unknown keys.
   for (const auto& key : tree.keys()) {
-    TIT_ENSURE(field(key) != nullptr, "'{}': unknown field '{}'.", path, key);
+    if (field(key) == nullptr) {
+      context.add_issue(path,
+                        IssueCode::unknown_field,
+                        "Unknown field '{}'.",
+                        key);
+      tree.erase(key);
+    }
   }
 
   // Validate each field.
   for (const auto& field : fields_) {
-    field.spec->validate(tree.get(field.id),
-                         str_join_nonempty({path, field.id}, "."));
+    field.spec->validate(tree.get(field.id), path.child(field.id), context);
   }
 }
 
@@ -487,10 +583,7 @@ auto VariantSpec::options() const noexcept -> const std::vector<Option>& {
 }
 
 auto VariantSpec::option(std::string_view id) const -> const Option* {
-  const auto iter = std::ranges::find(
-      options_,
-      id,
-      [](const Option& option) -> std::string_view { return option.id; });
+  const auto iter = std::ranges::find(options_, id, &Option::id);
   return iter == options_.end() ? nullptr : std::to_address(iter);
 }
 
@@ -524,54 +617,117 @@ auto VariantSpec::default_value(std::string val) && -> VariantSpec&& {
   return std::move(*this);
 }
 
-void VariantSpec::validate(Tree& tree, std::string_view path) const {
-  if (tree.is_null()) {
+void VariantSpec::validate(Tree& tree,
+                           const Path& path,
+                           ValidationContext& context) const {
+  // Fill default value.
+  if (tree.is_null()) tree.assign(Tree::Map{});
+
+  // Check type.
+  if (!tree.is_map()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected object (variant), got {}.",
+                      tree.type_name());
     tree.assign(Tree::Map{});
-  } else {
-    TIT_ENSURE(tree.is_map(),
-               "'{}': expected object (variant), got {}.",
-               path,
-               tree.type_name());
   }
 
   // Check for unknown keys.
   for (const auto& key : tree.keys()) {
-    TIT_ENSURE(key == "_active" || option(key) != nullptr,
-               "'{}': unknown option '{}'. "
-               "Expected one of: {}.",
-               path,
-               key,
-               options_ | std::views::transform(&Option::id));
+    if (key != "_active" && option(key) == nullptr) {
+      context.add_issue(path,
+                        IssueCode::unknown_option,
+                        "Unknown option '{}'. "
+                        "Expected one of: {}.",
+                        key,
+                        options_ | std::views::transform(&Option::id));
+      tree.erase(key);
+    }
   }
 
   // Get the active option.
   auto& active_node = tree.get("_active");
-  if (active_node.is_null() && default_.has_value()) {
-    active_node.assign(*default_);
-  } else {
-    TIT_ENSURE(active_node.is_string(),
-               "'{}': value of '_active' must be a string, got {}.",
-               path,
-               active_node.type_name());
-  }
-  TIT_ENSURE(!active_node.is_null(),
-             "'{}': variant has no active option. "
-             "Provide '_active' key with one of: {}.",
-             path,
-             options_ | std::views::transform(&Option::id));
 
-  const auto active_id = active_node.as_string();
-  const auto* const active_option = option(active_id);
-  TIT_ENSURE(active_option != nullptr,
-             "'{}': variant active option '{}' is not valid. "
-             "Expected one of: {}.",
-             path,
-             active_id,
-             options_ | std::views::transform(&Option::id));
+  // Fill default active option.
+  if (active_node.is_null()) {
+    if (default_.has_value()) {
+      active_node.assign(default_.value());
+    } else {
+      // Infer active option if possible.
+      const auto present_keys =
+          tree.keys() |
+          std::views::filter([](const auto& key) { return key != "_active"; }) |
+          std::ranges::to<std::vector>();
+      if (present_keys.size() == 1) {
+        active_node.assign(present_keys.front());
+      } else if (present_keys.size() > 1) {
+        context.add_issue(path,
+                          IssueCode::missing_required,
+                          "Variant has multiple options but no "
+                          "'_active' key. Provide '_active' key with "
+                          "one of: {}.",
+                          options_ | std::views::transform(&Option::id));
+      }
+    }
+    if (active_node.is_null()) {
+      context.add_issue(path,
+                        IssueCode::missing_required,
+                        "Variant has no active option. "
+                        "Provide '_active' key with one of: {}.",
+                        options_ | std::views::transform(&Option::id));
+    }
+  }
+
+  // Check active option type.
+  if (!active_node.is_null() && !active_node.is_string()) {
+    context.add_issue(path.child("_active"),
+                      IssueCode::invalid_type,
+                      "Value of '_active' must be a string, got {}.",
+                      active_node.type_name());
+    active_node = Tree{};
+  }
+
+  // Check active option value.
+  if (!active_node.is_null()) {
+    const auto active_id = active_node.as_string();
+    const auto* const active_option = option(active_id);
+    if (active_option == nullptr) {
+      context.add_issue(path.child("_active"),
+                        IssueCode::invalid_value,
+                        "Variant active option '{}' is not valid. "
+                        "Expected one of: {}.",
+                        active_id,
+                        options_ | std::views::transform(&Option::id));
+      active_node = Tree{};
+    }
+  }
+
+  // Validate inactive options in a relaxed mode.
+  // In absence of active option, all options are considered inactive.
+  for (const auto& option : options_) {
+    if (!tree.has(option.id)) continue;
+    if (!active_node.is_null() && option.id == active_node.as_string()) {
+      continue;
+    }
+    const auto previous_suppressions = context.suppress({
+        IssueCode::missing_required,
+    });
+    const Defer restore_suppressions{[&context, previous_suppressions] {
+      context.set_suppressions(previous_suppressions);
+    }};
+    option.spec->validate(tree.get(option.id), path.child(option.id), context);
+  }
 
   // Validate the active option.
-  active_option->spec->validate(tree.get(active_id),
-                                str_join_nonempty({path, active_id}, "."));
+  if (!active_node.is_null()) {
+    const auto active_id = active_node.as_string();
+    if (const auto* const active_option = option(active_id);
+        active_option != nullptr) {
+      active_option->spec->validate(tree.get(active_id),
+                                    path.child(active_id),
+                                    context);
+    }
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
