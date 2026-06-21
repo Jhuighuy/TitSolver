@@ -16,6 +16,7 @@
     { "name": "symengine", "default-features": false },
     "tbb",
     "tinyxml2",
+    "yaml-cpp",
     "zstd"
   ]
 }

@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <filesystem>
+#include <fstream>
 #include <ranges>
 #include <set>
 #include <string_view>
@@ -266,6 +268,21 @@ TEST_CASE("prop::Tree::get(key)") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("prop::Tree::erase") {
+  prop::Tree tree{prop::Tree::Map{
+      {"a", prop::Tree{1}},
+      {"b", prop::Tree{2}},
+  }};
+  tree.erase("b");
+  tree.erase("c");
+  CHECK(tree.size() == 1);
+  CHECK(tree.get("a").as_int() == 1);
+  CHECK_FALSE(tree.has("b"));
+  CHECK_FALSE(tree.has("c"));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("prop::Tree::keys") {
   SUBCASE("success") {
     const prop::Tree tree{prop::Tree::Map{
@@ -278,39 +295,39 @@ TEST_CASE("prop::Tree::keys") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TEST_CASE("prop::Tree::set") {
-  SUBCASE("set bool") {
+TEST_CASE("prop::Tree::assign") {
+  SUBCASE("assign bool") {
     prop::Tree tree{};
-    tree.set(true);
+    tree.assign(true);
     CHECK(tree.as_bool() == true);
   }
-  SUBCASE("set int") {
+  SUBCASE("assign int") {
     prop::Tree tree{};
-    tree.set(99);
+    tree.assign(99);
     CHECK(tree.as_int() == 99);
   }
-  SUBCASE("set real") {
+  SUBCASE("assign real") {
     prop::Tree tree{};
-    tree.set(2.71);
+    tree.assign(2.71);
     CHECK(tree.as_real() == 2.71);
   }
-  SUBCASE("set string") {
+  SUBCASE("assign string") {
     prop::Tree tree{};
-    tree.set("hi");
+    tree.assign("hi");
     CHECK(tree.as_string() == "hi");
   }
-  SUBCASE("set array") {
+  SUBCASE("assign array") {
     prop::Tree tree{};
-    tree.set(prop::Tree::Array{
+    tree.assign(prop::Tree::Array{
         prop::Tree{1},
         prop::Tree{2},
     });
     CHECK(tree.is_array());
     CHECK(tree.size() == 2);
   }
-  SUBCASE("set map") {
+  SUBCASE("assign map") {
     prop::Tree tree{};
-    tree.set(prop::Tree::Map{
+    tree.assign(prop::Tree::Map{
         {"a", prop::Tree{1}},
         {"b", prop::Tree{2}},
     });
@@ -425,6 +442,85 @@ TEST_CASE("prop::tree_from_json") {
                        tit::Exception,
                        "Failed to parse JSON");
     }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("prop::tree_from_yaml") {
+  SUBCASE("success") {
+    const auto tree = prop::tree_from_yaml(R"(
+alpha: true
+count: 5
+ratio: 1.5
+name: test
+quantity: "7850.0 kg/m^3"
+items: [1, 2, 3]
+outer:
+  inner: 42
+)");
+    CHECK(tree.is_map());
+    CHECK(tree.get("alpha").as_bool() == true);
+    CHECK(tree.get("count").as_int() == 5);
+    CHECK(tree.get("ratio").as_real() == 1.5);
+    CHECK(tree.get("name").as_string() == "test");
+    CHECK(tree.get("quantity").as_string() == "7850.0 kg/m^3");
+    CHECK(tree.get("items").is_array());
+    CHECK(tree.get("items").size() == 3);
+    CHECK(tree.get("outer").get("inner").as_int() == 42);
+  }
+  SUBCASE("error") {
+    SUBCASE("invalid YAML") {
+      CHECK_THROWS_MSG(prop::tree_from_yaml("bad: [yaml"),
+                       tit::Exception,
+                       "Failed to parse YAML");
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("prop::tree_from_file") {
+  SUBCASE("JSON") {
+    const auto* const json_path = "tree_from_file.json";
+    std::ofstream{json_path} << R"({"kind": "json", "count": 2})";
+    CHECK(prop::tree_from_file(json_path).get("kind").as_string() == "json");
+  }
+  SUBCASE("YAML") {
+    const auto* const yaml_path = "tree_from_file.yaml";
+    std::ofstream{yaml_path} << "kind: yaml\ncount: 3\n";
+    CHECK(prop::tree_from_file(yaml_path).get("kind").as_string() == "yaml");
+  }
+  SUBCASE("unknown") {
+    const auto* const bad_path = "tree_from_file.txt";
+    std::ofstream{bad_path} << "kind >> text\n";
+    CHECK_THROWS_MSG(prop::tree_from_file(bad_path),
+                     tit::Exception,
+                     "Unsupported property file extension");
+  }
+}
+
+TEST_CASE("prop::tree_dump_file") {
+  const auto tree = prop::Tree{prop::Tree::Map{
+      {"kind", prop::Tree{"json"}},
+      {"count", prop::Tree{2}},
+  }};
+
+  SUBCASE("JSON") {
+    const auto* const json_path = "tree_dump_file.json";
+    prop::tree_dump_file(tree, json_path);
+    CHECK(prop::tree_from_file(json_path).get("kind").as_string() == "json");
+  }
+  SUBCASE("YAML") {
+    const auto* const yaml_path = "tree_dump_file.yaml";
+    prop::tree_dump_file(tree, yaml_path);
+    CHECK(prop::tree_from_file(yaml_path).get("count").as_int() == 2);
+  }
+  SUBCASE("unknown") {
+    const auto* const bad_path = "tree_dump_file.txt";
+    CHECK_THROWS_MSG(prop::tree_dump_file(tree, bad_path),
+                     tit::Exception,
+                     "Unsupported property file extension");
   }
 }
 
