@@ -32,9 +32,14 @@ namespace tit::prop {
 // Spec
 //
 
+auto Spec::namespaces() const -> StrSet {
+  return {};
+}
+
 auto validate(const Spec& spec, Tree& tree) -> ValidationContext {
   ValidationContext context{};
   spec.validate(tree, Path{}, context);
+  context.resolve_references();
   return context;
 }
 
@@ -476,9 +481,17 @@ auto ArraySpec::item() const -> const Spec& {
 
 auto ArraySpec::item(SpecPtr spec) && -> ArraySpec&& {
   TIT_ASSERT(spec != nullptr, "Array item spec must not be null.");
+  TIT_ENSURE(spec->namespaces().empty() ||
+                 (spec->type() == SpecType::Record &&
+                  spec_cast<RecordSpec>(*spec).is_entity_record()),
+             "Array item that declares a namespace must be an entity record.");
 
   item_spec_ = std::move(spec);
   return std::move(*this);
+}
+
+auto ArraySpec::namespaces() const -> StrSet {
+  return item().namespaces();
 }
 
 void ArraySpec::validate(Tree& tree,
@@ -497,7 +510,16 @@ void ArraySpec::validate(Tree& tree,
                       "Expected array, got {}.",
                       tree.type_name());
     tree.assign(Tree::Array{});
-    return;
+  }
+
+  // Check size.
+  if (size_.has_value() && tree.size() != size_.value()) {
+    context.add_issue(path,
+                      IssueCode::invalid_value,
+                      "Expected array of size {}, got {}.",
+                      size_.value(),
+                      tree.size());
+    tree.as_array().resize(size_.value());
   }
 
   // Validate each element.
@@ -515,6 +537,12 @@ auto RecordSpec::type() const noexcept -> SpecType {
   return SpecType::Record;
 }
 
+auto RecordSpec::is_entity_record() const noexcept -> bool {
+  return std::ranges::any_of(fields(), [](const Field& field) {
+    return field.spec->type() == SpecType::Symbol;
+  });
+}
+
 auto RecordSpec::fields() const noexcept -> const std::vector<Field>& {
   return fields_;
 }
@@ -527,14 +555,40 @@ auto RecordSpec::field(std::string_view id) const -> const Field* {
 auto RecordSpec::field(std::string_view id,
                        std::string_view name,
                        SpecPtr spec) && -> RecordSpec&& {
-  TIT_ASSERT(spec != nullptr, "Record field spec must not be null.");
   TIT_ENSURE(str_is_identifier(id),
              "Record field ID '{}' must be a valid identifier.",
              id);
   TIT_ENSURE(field(id) == nullptr, "Record field ID '{}' is duplicate.", id);
 
+  TIT_ASSERT(spec != nullptr, "Record field spec must not be null.");
+  if (spec->type() == SpecType::Symbol) {
+    TIT_ENSURE(
+        namespaces().empty(),
+        "Symbol field cannot be placed in a record that declares namespaces.");
+  } else if (!spec->namespaces().empty()) {
+    TIT_ENSURE(spec->type() != SpecType::Record ||
+                   !spec_cast<RecordSpec>(*spec).is_entity_record(),
+               "Entity record cannot be nested in another record.");
+    TIT_ENSURE(
+        !is_entity_record(),
+        "Field declaring namespace cannot be placed into entity record.");
+    for (const auto& ns : spec->namespaces()) {
+      TIT_ENSURE(!namespaces().contains(ns),
+                 "Record already declares namespace '{}'.",
+                 ns);
+    }
+  }
+
   fields_.emplace_back(std::string{id}, std::string{name}, std::move(spec));
   return std::move(*this);
+}
+
+auto RecordSpec::namespaces() const -> StrSet {
+  StrSet result{};
+  for (const auto& field : fields_) {
+    result.insert_range(field.spec->namespaces());
+  }
+  return result;
 }
 
 void RecordSpec::validate(Tree& tree,
@@ -590,12 +644,15 @@ auto VariantSpec::option(std::string_view id) const -> const Option* {
 auto VariantSpec::option(std::string_view id,
                          std::string_view name,
                          SpecPtr spec) && -> VariantSpec&& {
-  TIT_ASSERT(spec != nullptr, "Variant option spec must not be null.");
   TIT_ENSURE(id != "_active", "Variant option ID '_active' is reserved.");
   TIT_ENSURE(str_is_identifier(id),
              "Variant option ID '{}' must be a valid identifier.",
              id);
   TIT_ENSURE(option(id) == nullptr, "Variant option ID '{}' is duplicate.", id);
+
+  TIT_ASSERT(spec != nullptr, "Variant option spec must not be null.");
+  TIT_ENSURE(spec->namespaces().empty(),
+             "Variant option cannot declare a namespace.");
 
   options_.emplace_back(std::string{id}, std::string{name}, std::move(spec));
   return std::move(*this);
@@ -711,6 +768,7 @@ void VariantSpec::validate(Tree& tree,
     }
     const auto previous_suppressions = context.suppress({
         IssueCode::missing_required,
+        IssueCode::unresolved_ref,
     });
     const Defer restore_suppressions{[&context, previous_suppressions] {
       context.set_suppressions(previous_suppressions);
@@ -728,6 +786,130 @@ void VariantSpec::validate(Tree& tree,
                                     context);
     }
   }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// SymbolSpec
+//
+
+SymbolSpec::SymbolSpec(std::string ns) : ns_{std::move(ns)} {
+  TIT_ENSURE(str_is_identifier(ns_),
+             "Namespace '{}' must be a valid identifier.",
+             ns_);
+}
+
+auto SymbolSpec::type() const noexcept -> SpecType {
+  return SpecType::Symbol;
+}
+
+auto SymbolSpec::namespaces() const -> StrSet {
+  return {ns_};
+}
+
+void SymbolSpec::validate(Tree& tree,
+                          const Path& path,
+                          ValidationContext& context) const {
+  // Check presence.
+  if (tree.is_null()) {
+    context.add_issue(path,
+                      IssueCode::missing_required,
+                      "Required symbol is missing.");
+    return;
+  }
+
+  // Check type.
+  if (!tree.is_string()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected symbol string, got {}.",
+                      tree.type_name());
+    tree = Tree{};
+    return;
+  }
+
+  // Check value.
+  const auto value = tree.as_string();
+  if (value.empty()) {
+    context.add_issue(path,
+                      IssueCode::invalid_value,
+                      "Symbol must not be empty.");
+    tree = Tree{};
+    return;
+  }
+  if (!str_is_identifier(value)) {
+    context.add_issue(path,
+                      IssueCode::invalid_value,
+                      "Symbol '{}' must be a valid identifier.",
+                      value);
+    tree = Tree{};
+    return;
+  }
+
+  // Declare symbol.
+  if (!context.declare_symbol(ns_, value, path)) tree = Tree{};
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// RefSpec
+//
+
+RefSpec::RefSpec(std::string ns) : ns_{std::move(ns)} {
+  TIT_ENSURE(str_is_identifier(ns_),
+             "Namespace '{}' must be a valid identifier.",
+             ns_);
+}
+
+auto RefSpec::type() const noexcept -> SpecType {
+  return SpecType::Ref;
+}
+
+auto RefSpec::target_namespace() const noexcept -> std::string_view {
+  return ns_;
+}
+
+void RefSpec::validate(Tree& tree,
+                       const Path& path,
+                       ValidationContext& context) const {
+  // Check presence.
+  if (tree.is_null()) {
+    context.add_issue(path,
+                      IssueCode::missing_required,
+                      "Required reference is missing.");
+    return;
+  }
+
+  // Check type.
+  if (!tree.is_string()) {
+    context.add_issue(path,
+                      IssueCode::invalid_type,
+                      "Expected reference string, got {}.",
+                      tree.type_name());
+    tree = Tree{};
+    return;
+  }
+
+  // Check value.
+  const auto value = tree.as_string();
+  if (value.empty()) {
+    context.add_issue(path,
+                      IssueCode::invalid_value,
+                      "Reference must not be empty.");
+    tree = Tree{};
+    return;
+  }
+  if (!str_is_identifier(value)) {
+    context.add_issue(path,
+                      IssueCode::invalid_value,
+                      "Reference '{}' must be a valid identifier.",
+                      value);
+    tree = Tree{};
+    return;
+  }
+
+  // Declare reference.
+  context.declare_ref(ns_, value, path);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

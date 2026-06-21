@@ -6,6 +6,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/prop/spec.hpp"
 #include "tit/prop/tree.hpp"
+#include "tit/prop/validation.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -410,6 +411,42 @@ TEST_CASE("prop::ArraySpec") {
       const auto spec = prop::ArraySpec{}.item(prop::IntSpec{});
       CHECK(spec.item().type() == prop::SpecType::Int);
     }
+    SUBCASE("item: entity record") {
+      const auto spec = prop::ArraySpec{}.item(
+          prop::RecordSpec{}.field("id", "ID", prop::SymbolSpec{"namespace"}));
+      CHECK_RANGE_EQ(spec.item().namespaces(), {"namespace"});
+    }
+  }
+  SUBCASE("error") {
+    SUBCASE("only arrays of entity records are allowed") {
+      CHECK_THROWS_MSG(
+          prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+              "a",
+              "A",
+              prop::ArraySpec{}.item(
+                  prop::RecordSpec{}.field("id",
+                                           "ID",
+                                           prop::SymbolSpec{"namespace"})))),
+          Exception,
+          "Array item that declares a namespace must be an entity record.");
+      CHECK_THROWS_MSG(
+          prop::ArraySpec{}.item(
+              prop::RecordSpec{}
+                  .field("a",
+                         "A",
+                         prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                             "id",
+                             "ID",
+                             prop::SymbolSpec{"namespace_a"})))
+                  .field("b",
+                         "B",
+                         prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                             "id",
+                             "ID",
+                             prop::SymbolSpec{"namespace_b"})))),
+          Exception,
+          "Array item that declares a namespace must be an entity record.");
+    }
   }
 }
 
@@ -480,6 +517,23 @@ TEST_CASE("prop::RecordSpec") {
       CHECK(spec.field("beta")->name == "Beta");
       CHECK(spec.field("gamma") == nullptr);
     }
+    SUBCASE("field: entity record arrays") {
+      const auto spec =
+          prop::RecordSpec{}
+              .field("bucket1",
+                     "Bucket1",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id1",
+                         "ID1",
+                         prop::SymbolSpec{"namespace1"})))
+              .field("bucket2",
+                     "Bucket2",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id2",
+                         "ID2",
+                         prop::SymbolSpec{"namespace2"})));
+      CHECK_RANGE_EQ(spec.namespaces(), {"namespace1", "namespace2"});
+    }
   }
   SUBCASE("error") {
     SUBCASE("field: invalid id") {
@@ -494,6 +548,65 @@ TEST_CASE("prop::RecordSpec") {
                            .field("dup", "Second", prop::IntSpec{}),
                        tit::Exception,
                        "duplicate");
+    }
+    SUBCASE("field: entity record") {
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}.field(
+              "field",
+              "Field",
+              prop::RecordSpec{}.field("id1",
+                                       "ID1",
+                                       prop::SymbolSpec{"namespace"})),
+          tit::Exception,
+          "Entity record cannot be nested in another record.");
+    }
+    SUBCASE("field: multiple symbol fields") {
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}
+              .field("id1", "ID1", prop::SymbolSpec{"namespace1"})
+              .field("id2", "ID2", prop::SymbolSpec{"namespace2"}),
+          tit::Exception,
+          "Symbol field cannot be placed in a record that declares namespaces");
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}
+              .field("netsted",
+                     "Nested",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id1",
+                         "ID1",
+                         prop::SymbolSpec{"namespace1"})))
+              .field("id2", "ID2", prop::SymbolSpec{"namespace2"}),
+          tit::Exception,
+          "Symbol field cannot be placed in a record that declares namespaces");
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}
+              .field("id1", "ID1", prop::SymbolSpec{"namespace1"})
+              .field("netsted",
+                     "Nested",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id2",
+                         "ID2",
+                         prop::SymbolSpec{"namespace2"}))),
+          tit::Exception,
+          "Field declaring namespace cannot be placed into entity record");
+    }
+    SUBCASE("field: duplicate namespace") {
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}
+              .field("bucket1",
+                     "Bucket1",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id1",
+                         "ID1",
+                         prop::SymbolSpec{"namespace"})))
+              .field("bucket2",
+                     "Bucket2",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id2",
+                         "ID2",
+                         prop::SymbolSpec{"namespace"}))),
+          tit::Exception,
+          "already declares namespace");
     }
   }
 }
@@ -606,6 +719,12 @@ TEST_CASE("prop::VariantSpec") {
                            .option("dup", "Second", prop::IntSpec{}),
                        tit::Exception,
                        "duplicate");
+    }
+    SUBCASE("option: declares namespace") {
+      CHECK_THROWS_MSG(
+          prop::VariantSpec{}.option("a", "A", prop::SymbolSpec{"namespace"}),
+          tit::Exception,
+          "Variant option cannot declare a namespace");
     }
     SUBCASE("default_value: unknown") {
       CHECK_THROWS_MSG(prop::VariantSpec{}
@@ -762,6 +881,181 @@ TEST_CASE("prop::VariantSpec::validate") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("prop::SymbolSpec") {
+  SUBCASE("success") {
+    const prop::SymbolSpec spec{"materials"};
+    CHECK(spec.type() == prop::SpecType::Symbol);
+    CHECK_RANGE_EQ(spec.namespaces(), {"materials"});
+  }
+  SUBCASE("error") {
+    CHECK_THROWS_MSG(prop::SymbolSpec{"bad namespace"},
+                     tit::Exception,
+                     "valid identifier");
+  }
+}
+
+TEST_CASE("prop::SymbolSpec::validate") {
+  const auto materials_spec = [] {
+    return prop::ArraySpec{}.item(
+        prop::RecordSpec{}.field("id", "ID", prop::SymbolSpec{"materials"}));
+  };
+  SUBCASE("success") {
+    auto tree = prop::Tree{prop::Tree::Array{
+        prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+    }};
+    CHECK_FALSE(prop::validate(materials_spec(), tree).has_issues());
+  }
+  SUBCASE("error") {
+    SUBCASE("invalid symbol") {
+      const prop::SymbolSpec spec{"materials"};
+      auto tree = prop::Tree{"bad symbol"};
+      CHECK(prop::validate(spec, tree).has_issue("valid identifier"));
+      CHECK(tree.is_null());
+    }
+    SUBCASE("duplicate symbol") {
+      auto tree = prop::Tree{prop::Tree::Array{
+          prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+          prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+      }};
+      CHECK(
+          prop::validate(materials_spec(), tree).has_issue("Duplicate symbol"));
+      REQUIRE(tree.is_array());
+      CHECK(tree.get(0).get("id").as_string() == "steel");
+      CHECK(tree.get(1).get("id").is_null());
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("prop::RefSpec") {
+  SUBCASE("success") {
+    const prop::RefSpec spec{"materials"};
+    CHECK(spec.type() == prop::SpecType::Ref);
+    CHECK(spec.target_namespace() == "materials");
+  }
+  SUBCASE("error") {
+    CHECK_THROWS_MSG(prop::RefSpec{"bad namespace"},
+                     tit::Exception,
+                     "valid identifier");
+  }
+}
+
+TEST_CASE("prop::RefSpec::validate") {
+  const auto materials_spec = [] {
+    return prop::ArraySpec{}.item(
+        prop::RecordSpec{}.field("id", "ID", prop::SymbolSpec{"materials"}));
+  };
+  const auto shape_spec = [] {
+    return prop::RecordSpec{}.field("material",
+                                    "Material",
+                                    prop::RefSpec{"materials"});
+  };
+  SUBCASE("success") {
+    SUBCASE("reference") {
+      const auto spec = prop::RecordSpec{}
+                            .field("materials", "Materials", materials_spec())
+                            .field("shape", "Shape", shape_spec());
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"materials",
+           prop::Tree{prop::Tree::Array{
+               prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+           }}},
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"steel"}}}}},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+    SUBCASE("forward reference") {
+      const auto spec = prop::RecordSpec{}
+                            .field("shape", "Shape", shape_spec())
+                            .field("materials", "Materials", materials_spec());
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"steel"}}}}},
+          {"materials",
+           prop::Tree{prop::Tree::Array{
+               prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+           }}},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+    SUBCASE("inactive variant reference") {
+      const auto spec =
+          prop::RecordSpec{}
+              .field("materials", "Materials", materials_spec())
+              .field("choice",
+                     "Choice",
+                     prop::VariantSpec{}
+                         .option("plain", "Plain", prop::RecordSpec{})
+                         .option("material",
+                                 "Material",
+                                 prop::RefSpec{"materials"}));
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"choice",
+           prop::Tree{prop::Tree::Map{
+               {"_active", prop::Tree{"plain"}},
+               {"plain", prop::Tree{prop::Tree::Map{}}},
+               {"material", prop::Tree{"missing"}},
+           }}},
+          {"materials", prop::Tree{prop::Tree::Array{}}},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+  }
+  SUBCASE("error") {
+    SUBCASE("invalid symbol") {
+      const prop::RefSpec spec{"materials"};
+      auto tree = prop::Tree{"bad ref"};
+      CHECK(prop::validate(spec, tree).has_issue("valid identifier"));
+      CHECK(tree.is_null());
+    }
+    SUBCASE("missing symbol") {
+      const auto spec = prop::RecordSpec{}
+                            .field("shape", "Shape", shape_spec())
+                            .field("materials", "Materials", materials_spec());
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"wood"}}}}},
+          {"materials",
+           prop::Tree{prop::Tree::Array{
+               prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+           }}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("not found in namespace"));
+      CHECK(tree.get("shape").get("material").as_string() == "wood");
+    }
+    SUBCASE("missing symbol in empty namespace") {
+      const auto spec = prop::RecordSpec{}
+                            .field("shape", "Shape", shape_spec())
+                            .field("materials", "Materials", materials_spec());
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"steel"}}}}},
+          {"materials", prop::Tree{prop::Tree::Array{}}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("not found in namespace"));
+      CHECK(tree.get("shape").get("material").as_string() == "steel");
+    }
+    SUBCASE("missing symbol in absent namespace") {
+      const auto spec = prop::RecordSpec{}.field(
+          "shape",
+          "Shape",
+          prop::RecordSpec{}.field("material",
+                                   "Material",
+                                   prop::RefSpec{"materials"}));
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"steel"}}}}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("not found in namespace"));
+      CHECK(tree.get("shape").get("material").as_string() == "steel");
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // Note: specification JSON format should be very stable, so I'm hard-coding the
 //       expected output here.
 TEST_CASE("prop::spec_dump_json") {
@@ -874,6 +1168,20 @@ TEST_CASE("prop::spec_dump_json") {
     }
   ],
   "default": "fast"
+})");
+  }
+  SUBCASE("symbol") {
+    const auto spec = prop::SymbolSpec{"materials"};
+    CHECK(prop::spec_dump_json(spec) == R"({
+  "type": "symbol",
+  "namespace": "materials"
+})");
+  }
+  SUBCASE("ref") {
+    const auto spec = prop::RefSpec{"materials"};
+    CHECK(prop::spec_dump_json(spec) == R"({
+  "type": "ref",
+  "namespace": "materials"
 })");
   }
 }

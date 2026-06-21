@@ -52,6 +52,9 @@ public:
   /// Compare paths.
   auto operator<=>(const Path&) const = default;
 
+  /// Compare paths while treating all array indices as wildcards.
+  auto same_pattern_as(const Path& other) const -> bool;
+
 private:
 
   std::vector<Segment> segments_;

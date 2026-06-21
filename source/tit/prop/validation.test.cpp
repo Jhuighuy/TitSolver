@@ -61,5 +61,126 @@ TEST_CASE("prop::ValidationContext::suppress") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("prop::ValidationContext::declare_symbol/declare_ref") {
+  prop::ValidationContext context;
+  SUBCASE("success") {
+    SUBCASE("empty") {
+      context.resolve_references();
+      CHECK_FALSE(context.has_issues());
+    }
+    SUBCASE("reference") {
+      CHECK(context.declare_symbol("materials",
+                                   "steel",
+                                   prop::make_path("materials", 0UZ, "id")));
+      context.declare_ref("materials",
+                          "steel",
+                          prop::make_path("shapes", 0UZ, "material"));
+      context.resolve_references();
+      CHECK_FALSE(context.has_issues());
+    }
+    SUBCASE("forward reference") {
+      context.declare_ref("materials",
+                          "steel",
+                          prop::make_path("shapes", 0UZ, "material"));
+      CHECK(context.declare_symbol("materials",
+                                   "steel",
+                                   prop::make_path("materials", 0UZ, "id")));
+      context.resolve_references();
+      CHECK_FALSE(context.has_issues());
+    }
+    SUBCASE("multiple symbols") {
+      const auto steel_path = prop::make_path("materials", 0UZ, "id");
+      const auto glass_path = prop::make_path("materials", 1UZ, "id");
+      CHECK(context.declare_symbol("materials", "steel", steel_path));
+      CHECK(context.declare_symbol("materials", "glass", glass_path));
+      context.resolve_references();
+      CHECK_FALSE(context.has_issues());
+
+      const auto& namespaces = context.namespaces();
+      REQUIRE(namespaces.contains("materials"));
+      CHECK(namespaces.at("materials").at("steel") == steel_path);
+      CHECK(namespaces.at("materials").at("glass") == glass_path);
+    }
+    SUBCASE("same symbol in different namespaces") {
+      CHECK(context.declare_symbol("materials",
+                                   "steel",
+                                   prop::make_path("materials", 0UZ, "id")));
+      CHECK(context.declare_symbol("shapes",
+                                   "steel",
+                                   prop::make_path("shapes", 0UZ, "id")));
+      context.resolve_references();
+      CHECK_FALSE(context.has_issues());
+    }
+    SUBCASE("same namespace in different locations") {
+      CHECK(context.declare_symbol("materials",
+                                   "steel",
+                                   prop::make_path("materials", 0UZ, "id")));
+      CHECK(context.declare_symbol(
+          "materials",
+          "glass",
+          prop::make_path("other_materials", 0UZ, "id")));
+      context.resolve_references();
+      CHECK_FALSE(context.has_issues());
+    }
+  }
+  SUBCASE("error") {
+    SUBCASE("invalid symbol") {
+      CHECK_THROWS_MSG(
+          context.declare_symbol("bad namespace",
+                                 "steel",
+                                 prop::make_path("materials", 0UZ, "id")),
+          tit::Exception,
+          "valid identifier");
+      CHECK_THROWS_MSG(
+          context.declare_symbol("namespace",
+                                 "bad symbol",
+                                 prop::make_path("materials", 0UZ, "id")),
+          tit::Exception,
+          "valid identifier");
+      CHECK_THROWS_MSG(
+          context.declare_ref("bad namespace",
+                              "steel",
+                              prop::make_path("shapes", 0UZ, "material")),
+          tit::Exception,
+          "valid identifier");
+      CHECK_THROWS_MSG(
+          context.declare_ref("namespace",
+                              "bad symbol",
+                              prop::make_path("shapes", 0UZ, "material")),
+          tit::Exception,
+          "valid identifier");
+    }
+    SUBCASE("duplicate symbol") {
+      CHECK(context.declare_symbol("materials",
+                                   "steel",
+                                   prop::make_path("materials", 0UZ, "id")));
+      CHECK_FALSE(
+          context.declare_symbol("materials",
+                                 "steel",
+                                 prop::make_path("materials", 1UZ, "id")));
+      CHECK(context.has_issue("Duplicate symbol"));
+    }
+    SUBCASE("missing symbol") {
+      CHECK(context.declare_symbol("materials",
+                                   "glass",
+                                   prop::make_path("materials", 0UZ, "id")));
+      context.declare_ref("materials",
+                          "steel",
+                          prop::make_path("shapes", 0UZ, "material"));
+      context.resolve_references();
+      CHECK(context.has_issue("not found in namespace"));
+    }
+    SUBCASE("missing symbol in absent namespace") {
+      context.declare_ref("materials",
+                          "steel",
+                          prop::make_path("shapes", 0UZ, "material"));
+      context.resolve_references();
+      CHECK(context.has_issue("not found in namespace"));
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace
 } // namespace tit

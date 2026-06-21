@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -17,6 +18,7 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/float.hpp"
+#include "tit/core/str.hpp"
 #include "tit/prop/path.hpp"
 #include "tit/prop/tree.hpp"
 #include "tit/prop/validation.hpp"
@@ -35,6 +37,8 @@ enum class SpecType : std::uint8_t {
   Array,
   Record,
   Variant,
+  Symbol,
+  Ref,
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,6 +70,9 @@ public:
 
   /// Return the concrete type of this specification.
   virtual auto type() const noexcept -> SpecType = 0;
+
+  /// List of namespaces declared in this specification.
+  virtual auto namespaces() const -> StrSet;
 
   /// Validate @p tree using @p context and @p path.
   virtual void validate(class Tree& tree,
@@ -301,6 +308,7 @@ public:
   auto item() const -> const Spec&;
 
   auto type() const noexcept -> SpecType override;
+  auto namespaces() const -> StrSet override;
   void validate(Tree& tree,
                 const Path& path,
                 ValidationContext& context) const override;
@@ -308,6 +316,7 @@ public:
 private:
 
   SpecPtr item_spec_;
+  std::optional<std::size_t> size_;
 
 }; // class ArraySpec
 
@@ -326,6 +335,10 @@ public:
 
   /// Construct a record specification.
   RecordSpec() = default;
+
+  /// Check if this is an entity record.
+  /// An entity record is a record that contains a (single) symbol field.
+  auto is_entity_record() const noexcept -> bool;
 
   /// Get the fields.
   auto fields() const noexcept -> const std::vector<Field>&;
@@ -347,6 +360,7 @@ public:
   /// @}
 
   auto type() const noexcept -> SpecType override;
+  auto namespaces() const -> StrSet override;
   void validate(Tree& tree,
                 const Path& path,
                 ValidationContext& context) const override;
@@ -412,6 +426,50 @@ private:
   std::optional<std::string> default_;
 
 }; // class VariantSpec
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Symbol property specification.
+class SymbolSpec final : public Spec {
+public:
+
+  /// Construct a symbol specification.
+  explicit SymbolSpec(std::string ns);
+
+  auto type() const noexcept -> SpecType override;
+  auto namespaces() const -> StrSet override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
+
+private:
+
+  std::string ns_;
+
+}; // class SymbolSpec
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Reference property specification.
+class RefSpec final : public Spec {
+public:
+
+  /// Construct a reference specification.
+  explicit RefSpec(std::string ns);
+
+  /// Get the target namespace.
+  auto target_namespace() const noexcept -> std::string_view;
+
+  auto type() const noexcept -> SpecType override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
+
+private:
+
+  std::string ns_;
+
+}; // class RefSpec
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
