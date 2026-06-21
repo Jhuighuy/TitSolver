@@ -19,7 +19,7 @@ TEST_CASE("prop::BoolSpec") {
       CHECK(prop::BoolSpec{}.type() == prop::SpecType::Bool);
     }
     SUBCASE("default_value") {
-      CHECK_FALSE(prop::BoolSpec{}.default_value().has_value());
+      CHECK(prop::BoolSpec{}.default_value() == false);
       CHECK(prop::BoolSpec{}.default_value(true).default_value() == true);
       CHECK(prop::BoolSpec{}.default_value(false).default_value() == false);
     }
@@ -34,6 +34,12 @@ TEST_CASE("prop::BoolSpec::validate") {
       spec.validate(tree, "flag");
       CHECK(tree.as_bool() == true);
     }
+    SUBCASE("null without explicit default fills in false") {
+      const prop::BoolSpec spec{};
+      auto tree = prop::Tree{};
+      spec.validate(tree, "flag");
+      CHECK(tree.as_bool() == false);
+    }
     SUBCASE("bool accepted") {
       const prop::BoolSpec spec{};
       auto tree = prop::Tree{false};
@@ -41,13 +47,6 @@ TEST_CASE("prop::BoolSpec::validate") {
     }
   }
   SUBCASE("error") {
-    SUBCASE("null without default") {
-      const prop::BoolSpec spec{};
-      auto tree = prop::Tree{};
-      CHECK_THROWS_MSG(spec.validate(tree, "flag"),
-                       tit::Exception,
-                       "required boolean property is missing");
-    }
     SUBCASE("non-bool") {
       const prop::BoolSpec spec{};
       auto tree = prop::Tree{1};
@@ -553,7 +552,7 @@ TEST_CASE("prop::RecordSpec::validate") {
     }
     SUBCASE("missing field") {
       const auto spec =
-          prop::RecordSpec{}.field("field", "Field", prop::BoolSpec{});
+          prop::RecordSpec{}.field("field", "Field", prop::StringSpec{});
       auto tree = prop::Tree{prop::Tree::Map{}};
       CHECK_THROWS_MSG(spec.validate(tree, "rec"),
                        tit::Exception,
@@ -778,7 +777,8 @@ TEST_CASE("prop::spec_dump_json") {
       "id": "flag",
       "name": "Flag",
       "spec": {
-        "type": "bool"
+        "type": "bool",
+        "default": false
       }
     },
     {
@@ -803,7 +803,8 @@ TEST_CASE("prop::spec_dump_json") {
       "id": "fast",
       "name": "Fast",
       "spec": {
-        "type": "bool"
+        "type": "bool",
+        "default": false
       }
     },
     {

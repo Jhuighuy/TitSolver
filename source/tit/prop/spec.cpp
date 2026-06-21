@@ -38,16 +38,13 @@ auto BoolSpec::default_value(bool val) && -> BoolSpec&& {
   return std::move(*this);
 }
 
-auto BoolSpec::default_value() const noexcept -> std::optional<bool> {
+auto BoolSpec::default_value() const noexcept -> bool {
   return default_;
 }
 
 void BoolSpec::validate(Tree& tree, std::string_view path) const {
   if (tree.is_null()) {
-    TIT_ENSURE(default_.has_value(),
-               "'{}': required boolean property is missing.",
-               path);
-    tree.set(default_.value());
+    tree.set(default_);
     return;
   }
 
