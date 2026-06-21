@@ -44,7 +44,7 @@ auto BoolSpec::default_value() const noexcept -> bool {
 
 void BoolSpec::validate(Tree& tree, std::string_view path) const {
   if (tree.is_null()) {
-    tree.set(default_);
+    tree.assign(default_);
     return;
   }
 
@@ -139,7 +139,7 @@ void IntSpec::validate(Tree& tree, std::string_view path) const {
     TIT_ENSURE(default_.has_value(),
                "'{}': required integer property is missing.",
                path);
-    tree.set(default_.value());
+    tree.assign(default_.value());
     return;
   }
 
@@ -249,12 +249,12 @@ void RealSpec::validate(Tree& tree, std::string_view path) const {
     TIT_ENSURE(default_.has_value(),
                "'{}': required real property is missing.",
                path);
-    tree.set(default_.value());
+    tree.assign(default_.value());
     return;
   }
 
   if (tree.is_int()) {
-    tree.set(static_cast<float64_t>(tree.as_int()));
+    tree.assign(static_cast<float64_t>(tree.as_int()));
   } else {
     TIT_ENSURE(tree.is_real(),
                "'{}': expected number, got {}.",
@@ -303,7 +303,7 @@ void StringSpec::validate(Tree& tree, std::string_view path) const {
     TIT_ENSURE(default_.has_value(),
                "'{}': required string property is missing.",
                path);
-    tree.set(default_.value());
+    tree.assign(default_.value());
     return;
   }
 
@@ -366,7 +366,7 @@ void EnumSpec::validate(Tree& tree, std::string_view path) const {
     TIT_ENSURE(default_.has_value(),
                "'{}': required enum property is missing.",
                path);
-    tree.set(default_.value());
+    tree.assign(default_.value());
     return;
   }
 
@@ -405,7 +405,7 @@ auto ArraySpec::item(SpecPtr spec) && -> ArraySpec&& {
 
 void ArraySpec::validate(Tree& tree, std::string_view path) const {
   if (tree.is_null()) {
-    tree.set(Tree::Array{});
+    tree.assign(Tree::Array{});
     return;
   }
 
@@ -455,7 +455,7 @@ auto RecordSpec::field(std::string_view id,
 }
 
 void RecordSpec::validate(Tree& tree, std::string_view path) const {
-  if (tree.is_null()) tree.set(Tree::Map{});
+  if (tree.is_null()) tree.assign(Tree::Map{});
   TIT_ENSURE(tree.is_map(),
              "'{}': expected object (record), got {}.",
              path,
@@ -526,7 +526,7 @@ auto VariantSpec::default_value(std::string val) && -> VariantSpec&& {
 
 void VariantSpec::validate(Tree& tree, std::string_view path) const {
   if (tree.is_null()) {
-    tree.set(Tree::Map{});
+    tree.assign(Tree::Map{});
   } else {
     TIT_ENSURE(tree.is_map(),
                "'{}': expected object (variant), got {}.",
@@ -547,7 +547,7 @@ void VariantSpec::validate(Tree& tree, std::string_view path) const {
   // Get the active option.
   auto& active_node = tree.get("_active");
   if (active_node.is_null() && default_.has_value()) {
-    active_node.set(*default_);
+    active_node.assign(*default_);
   } else {
     TIT_ENSURE(active_node.is_string(),
                "'{}': value of '_active' must be a string, got {}.",

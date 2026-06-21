@@ -13,6 +13,7 @@
     "sqlite3",
     "tbb",
     "tinyxml2",
+    "yaml-cpp",
     "zstd"
   ]
 }

@@ -10,12 +10,15 @@ add_tit_library(
     "spec-json.cpp"
     "spec.cpp"
     "spec.hpp"
+    "tree-file.cpp"
     "tree-json.cpp"
+    "tree-yaml.cpp"
     "tree.cpp"
     "tree.hpp"
   DEPENDS
     tit::core
     nlohmann_json::nlohmann_json
+    yaml-cpp::yaml-cpp
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
