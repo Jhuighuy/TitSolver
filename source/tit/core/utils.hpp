@@ -55,6 +55,14 @@ constexpr auto make_array(std::size_t size) -> T* {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Overloaded function object.
+template<class... Funcs>
+struct Overload final : Funcs... {
+  using Funcs::operator()...;
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Call a function on scope exit.
 template<std::invocable Func>
 class Defer final {

@@ -120,6 +120,20 @@ auto spec_to_json(const Spec& spec) -> JSON {
       break;
     }
 
+    case SpecType::Symbol: {
+      const auto& symbol_spec = spec_cast<SymbolSpec>(spec);
+      json["type"] = "symbol";
+      json["namespace"] = *symbol_spec.namespaces().begin();
+      break;
+    }
+
+    case SpecType::Ref: {
+      const auto& ref_spec = spec_cast<RefSpec>(spec);
+      json["type"] = "ref";
+      json["namespace"] = ref_spec.target_namespace();
+      break;
+    }
+
     default: std::unreachable();
   }
 

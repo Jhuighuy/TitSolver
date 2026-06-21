@@ -44,5 +44,25 @@ TEST_CASE("prop::Path::parent") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("prop::Path::same_pattern_as") {
+  SUBCASE("requires same shape") {
+    const auto path = prop::Path{}.child("materials").child(0).child("id");
+    CHECK_FALSE(path.same_pattern_as(prop::Path{}.child("materials")));
+    CHECK_FALSE(path.same_pattern_as(
+        prop::Path{}.child("materials").child("zero").child("id")));
+    CHECK_FALSE(path.same_pattern_as(
+        prop::Path{}.child("shapes").child(0).child("id")));
+    CHECK_FALSE(path.same_pattern_as(
+        prop::Path{}.child("materials").child(0).child("name")));
+  }
+  SUBCASE("ignores index values") {
+    const auto lhs = prop::Path{}.child("materials").child(0).child("id");
+    const auto rhs = prop::Path{}.child("materials").child(42).child("id");
+    CHECK(lhs.same_pattern_as(rhs));
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 } // namespace
 } // namespace tit

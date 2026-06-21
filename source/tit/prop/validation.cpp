@@ -34,6 +34,8 @@ auto issue_code_to_string(IssueCode code) noexcept -> std::string_view {
     case above_maximum:    return "above_maximum";
     case unknown_field:    return "unknown_field";
     case unknown_option:   return "unknown_option";
+    case duplicate_symbol: return "duplicate_symbol";
+    case unresolved_ref:   return "unresolved_ref";
   }
   std::unreachable();
 }
@@ -42,6 +44,66 @@ auto issue_code_to_string(IssueCode code) noexcept -> std::string_view {
 //
 // ValidationContext
 //
+
+auto ValidationContext::namespaces() const noexcept -> const NamespaceTable& {
+  return namespaces_;
+}
+
+auto ValidationContext::declare_symbol(std::string_view ns,
+                                       std::string_view id,
+                                       Path path) -> bool {
+  TIT_ENSURE(str_is_identifier(id),
+             "Symbol '{}' must be a valid identifier.",
+             id);
+  TIT_ENSURE(str_is_identifier(ns),
+             "Namespace '{}' must be a valid identifier.",
+             ns);
+
+  if (suppressions_.contains(IssueCode::duplicate_symbol)) return true;
+
+  const auto [id_iter, id_inserted] = namespaces_[ns].try_emplace(id, path);
+  if (id_inserted) return true;
+
+  add_issue(path,
+            IssueCode::duplicate_symbol,
+            "Duplicate symbol '{}' in namespace '{}'. "
+            "Previous declaration: {}.",
+            id,
+            ns,
+            id_iter->second);
+  return false;
+}
+
+void ValidationContext::declare_ref(std::string_view ns,
+                                    std::string_view id,
+                                    Path path) {
+  TIT_ENSURE(str_is_identifier(id),
+             "Symbol '{}' must be a valid identifier.",
+             id);
+  TIT_ENSURE(str_is_identifier(ns),
+             "Reference namespace '{}' must be a valid identifier.",
+             ns);
+
+  if (suppressions_.contains(IssueCode::unresolved_ref)) return;
+
+  refs_.emplace_back(std::string{ns}, std::string{id}, std::move(path));
+}
+
+void ValidationContext::resolve_references() {
+  for (const auto& ref : refs_) {
+    if (const auto ns_iter = namespaces_.find(ref.ns);
+        ns_iter != namespaces_.end() && ns_iter->second.contains(ref.id)) {
+      continue;
+    }
+    add_issue(ref.path,
+              IssueCode::unresolved_ref,
+              "Symbol '{}' is not found in namespace '{}'.",
+              ref.id,
+              ref.ns);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto ValidationContext::suppressions() const noexcept -> const IssueCodes& {
   return suppressions_;

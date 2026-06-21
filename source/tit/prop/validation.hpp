@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "tit/core/str.hpp"
 #include "tit/prop/path.hpp"
 
 namespace tit::prop {
@@ -29,6 +30,8 @@ enum class IssueCode : std::uint8_t {
   above_maximum,
   unknown_field,
   unknown_option,
+  duplicate_symbol,
+  unresolved_ref,
 };
 
 /// Convert issue code to a stable machine-readable string.
@@ -47,8 +50,29 @@ struct Issue final {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Property validation context.
+/// Symbol table, grouped by namespace.
+using NamespaceTable = StrMap<StrMap<Path>>;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Property validation context.
 class ValidationContext final {
 public:
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Get namespace table.
+  auto namespaces() const noexcept -> const NamespaceTable&;
+
+  /// Declare a symbol @p id in namespace @p ns at @p path.
+  auto declare_symbol(std::string_view ns, std::string_view id, Path path)
+      -> bool;
+
+  /// Declare a reference @p id in namespace @p ns at @p path.
+  void declare_ref(std::string_view ns, std::string_view id, Path path);
+
+  /// Resolve all pending references.
+  void resolve_references();
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -93,6 +117,14 @@ public:
 
 private:
 
+  struct Ref_ final {
+    std::string ns;
+    std::string id;
+    Path path;
+  };
+
+  NamespaceTable namespaces_;
+  std::vector<Ref_> refs_;
   IssueCodes suppressions_;
   std::vector<Issue> issues_;
 

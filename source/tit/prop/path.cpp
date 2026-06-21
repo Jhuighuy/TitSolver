@@ -3,6 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <algorithm>
 #include <cstddef>
 #include <format>
 #include <ranges>
@@ -12,6 +13,7 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/str.hpp"
+#include "tit/core/utils.hpp"
 #include "tit/prop/path.hpp"
 
 namespace tit::prop {
@@ -59,6 +61,23 @@ auto Path::string() const -> std::string {
                segment);
          }) |
          std::views::join | std::ranges::to<std::string>();
+}
+
+auto Path::same_pattern_as(const Path& other) const -> bool {
+  return std::ranges::equal(
+      segments_,
+      other.segments_,
+      [](const Segment& segment, const Segment& other_segment) {
+        return std::visit(
+            Overload{
+                [](const std::string& lhs, const std::string& rhs) {
+                  return lhs == rhs;
+                },
+                [](std::size_t /*lhs*/, std::size_t) { return true; },
+                [](const auto& /*lhs*/, const auto& /*rhs*/) { return false; }},
+            segment,
+            other_segment);
+      });
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
