@@ -94,7 +94,7 @@ public:
   BoolSpec() = default;
 
   /// Get the default value.
-  auto default_value() const noexcept -> std::optional<bool>;
+  auto default_value() const noexcept -> bool;
 
   /// Set the default value.
   auto default_value(bool val) && -> BoolSpec&&;
@@ -104,7 +104,7 @@ public:
 
 private:
 
-  std::optional<bool> default_;
+  bool default_ = false;
 
 }; // class BoolSpec
 

@@ -38,7 +38,7 @@ auto spec_to_json(const Spec& spec) -> JSON {
     case SpecType::Bool: {
       const auto& bool_spec = spec_cast<BoolSpec>(spec);
       json["type"] = "bool";
-      set_optional(json, "default", bool_spec.default_value());
+      json["default"] = bool_spec.default_value();
       break;
     }
 
