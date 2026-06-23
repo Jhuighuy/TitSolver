@@ -8,11 +8,14 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
 
+import type { PropSpec, PropTreeConstructor } from "~/bindings/properties";
 import type { Storage } from "~/bindings/storage";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface NativeModule {
+  PropTree: PropTreeConstructor;
+  solverSpec(): PropSpec;
   openStorage(path: string): Promise<Storage>;
 }
 
@@ -42,6 +45,13 @@ const native = (() => {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export type * from "~/bindings/storage";
+export type * from "~/bindings/properties";
+
+export const PropTree = native.PropTree;
+
+export function solverSpec() {
+  return native.solverSpec();
+}
 
 export async function openStorage(path: string) {
   return native.openStorage(path);

@@ -23,7 +23,7 @@ namespace tit::prop {
 Tree::Tree(bool val) : data_{val} {}
 Tree::Tree(std::int64_t val) : data_{val} {}
 Tree::Tree(float64_t val) : data_{val} {}
-Tree::Tree(std::string val) : data_{std::move(val)} {}
+Tree::Tree(std::string_view val) : data_{std::string{val}} {}
 Tree::Tree(Array val) : data_{std::move(val)} {}
 Tree::Tree(Map val) : data_{std::move(val)} {}
 
@@ -148,6 +148,10 @@ auto Tree::has(std::string_view key) const -> bool {
   return as_map().contains(key);
 }
 
+void Tree::erase(std::string_view key) {
+  as_map().erase(key);
+}
+
 auto Tree::keys() const -> std::vector<std::string> {
   return as_map() | std::views::keys | std::ranges::to<std::vector>();
 }
@@ -171,27 +175,27 @@ void Tree::merge(Tree other) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void Tree::set(bool val) {
+void Tree::assign(bool val) {
   data_ = val;
 }
 
-void Tree::set(std::int64_t val) {
+void Tree::assign(std::int64_t val) {
   data_ = val;
 }
 
-void Tree::set(float64_t val) {
+void Tree::assign(float64_t val) {
   data_ = val;
 }
 
-void Tree::set(std::string val) {
+void Tree::assign(std::string_view val) {
+  data_ = std::string{val};
+}
+
+void Tree::assign(Array val) {
   data_ = std::move(val);
 }
 
-void Tree::set(Array val) {
-  data_ = std::move(val);
-}
-
-void Tree::set(Map val) {
+void Tree::assign(Map val) {
   data_ = std::move(val);
 }
 

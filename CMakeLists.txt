@@ -26,6 +26,7 @@ find_package(TBB CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
 find_package(unofficial-node-addon-api CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,6 +67,7 @@ add_tit_library(
     tinyxml2::tinyxml2
     unofficial::node-addon-api::node-addon-api
     unofficial::sqlite3::sqlite3
+    yaml-cpp::yaml-cpp
     zstd::libzstd
 )
 

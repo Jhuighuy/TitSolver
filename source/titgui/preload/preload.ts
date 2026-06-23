@@ -12,6 +12,10 @@ import {
   HELP_NAVIGATE_TAB_CHANNEL,
   HELP_SELECT_TAB_CHANNEL,
   HELP_SESSION_CHANGED_CHANNEL,
+  PROPERTIES_GET_DOCUMENT_CHANNEL,
+  PROPERTIES_RELOAD_CHANNEL,
+  PROPERTIES_SAVE_CHANNEL,
+  PROPERTIES_UPDATE_TREE_CHANNEL,
   SESSION_EXPORT_RUN_CHANNEL,
   SESSION_FRAME_COUNT_CHANNEL,
   SESSION_FRAME_GET_CHANNEL,
@@ -27,6 +31,7 @@ import {
   WINDOW_PERSIST_SET_CHANNEL,
 } from "~/shared/channels";
 import type { HelpSession } from "~/shared/help-session";
+import type { PropertyDocument, Tree } from "~/shared/properties";
 import type { SolverEvent } from "~/shared/solver";
 import type { Theme } from "~/shared/theme";
 
@@ -95,6 +100,23 @@ contextBridge.exposeInMainWorld("session", {
     };
     ipcRenderer.on(SESSION_SOLVER_EVENT_CHANNEL, callback);
     return () => ipcRenderer.off(SESSION_SOLVER_EVENT_CHANNEL, callback);
+  },
+});
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+contextBridge.exposeInMainWorld("properties", {
+  async getDocument(): Promise<PropertyDocument> {
+    return ipcRenderer.invoke(PROPERTIES_GET_DOCUMENT_CHANNEL);
+  },
+  async updateTree(tree: Tree, revision: number): Promise<PropertyDocument> {
+    return ipcRenderer.invoke(PROPERTIES_UPDATE_TREE_CHANNEL, tree, revision);
+  },
+  async save(revision: number): Promise<PropertyDocument> {
+    return ipcRenderer.invoke(PROPERTIES_SAVE_CHANNEL, revision);
+  },
+  async reload(): Promise<PropertyDocument> {
+    return ipcRenderer.invoke(PROPERTIES_RELOAD_CHANNEL);
   },
 });
 

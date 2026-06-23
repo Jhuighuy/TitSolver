@@ -5,6 +5,7 @@
 
 #include <napi.h>
 
+#include "titgui/bindings/properties.hpp"
 #include "titgui/bindings/storage.hpp"
 
 namespace {
@@ -13,6 +14,7 @@ namespace {
 
 auto init_module(Napi::Env env, Napi::Object exports) -> Napi::Object {
   using namespace tit::gui;
+  properties::init_submodule(env, exports);
   storage::init_submodule(env, exports);
   return exports;
 }

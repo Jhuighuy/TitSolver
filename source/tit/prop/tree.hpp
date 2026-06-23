@@ -8,6 +8,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -54,9 +55,9 @@ public:
 
   /// Construct a string node.
   /// @{
-  explicit Tree(std::string val);
-  explicit Tree(std::convertible_to<std::string> auto val)
-      : Tree(std::string{val}) {}
+  explicit Tree(std::string_view val);
+  explicit Tree(const std::convertible_to<std::string_view> auto& val)
+      : Tree(std::string_view{val}) {} // NOLINT(*-array-to-pointer-decay)
   /// @}
 
   /// Construct an array node.
@@ -137,6 +138,9 @@ public:
   auto get(std::string_view key) const -> const Tree&;
   /// @}
 
+  /// Erase the child with @p key.
+  void erase(std::string_view key);
+
   /// Return the keys of this map node.
   auto keys() const -> std::vector<std::string>;
 
@@ -149,37 +153,42 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Set a boolean value.
-  void set(bool val);
+  /// Assign a boolean value.
+  void assign(bool val);
 
-  /// Set an integer value.
+  /// Assign an integer value.
   /// @{
-  void set(std::int64_t val);
-  void set(std::integral auto val) {
-    set(static_cast<std::int64_t>(val));
+  void assign(std::int64_t val);
+  void assign(std::integral auto val) {
+    assign(static_cast<std::int64_t>(val));
   }
 
-  /// Set a real value.
+  /// Assign a real value.
   /// @{
-  void set(float64_t val);
-  void set(std::floating_point auto val) {
-    set(static_cast<float64_t>(val));
-  }
-  /// @}
-
-  /// Set a string value.
-  /// @{
-  void set(std::string val);
-  void set(std::convertible_to<std::string> auto val) {
-    set(std::string{val});
+  void assign(float64_t val);
+  void assign(std::floating_point auto val) {
+    assign(static_cast<float64_t>(val));
   }
   /// @}
 
-  /// Set an array.
-  void set(Array val);
+  /// Assign a string value.
+  /// @{
+  void assign(std::string_view val);
+  void assign(const std::convertible_to<std::string_view> auto& val) {
+    assign(std::string_view{val}); // NOLINT(*-array-to-pointer-decay)
+  }
+  /// @}
 
-  /// Set a map.
-  void set(Map val);
+  /// Assign an array.
+  void assign(Array val);
+
+  /// Assign a map.
+  void assign(Map val);
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Check if two trees are equal.
+  auto operator==(const Tree& other) const -> bool = default;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -204,6 +213,18 @@ auto tree_dump_json(const Tree& tree) -> std::string;
 
 /// Deserialize a property tree from a JSON string.
 auto tree_from_json(std::string_view string) -> Tree;
+
+/// Serialize a property tree to a pretty YAML string.
+auto tree_dump_yaml(const Tree& tree) -> std::string;
+
+/// Deserialize a property tree from a YAML string.
+auto tree_from_yaml(std::string_view string) -> Tree;
+
+/// Deserialize a property tree from a file.
+auto tree_from_file(const std::filesystem::path& path) -> Tree;
+
+/// Serialize a property tree to a file.
+void tree_dump_file(const Tree& tree, const std::filesystem::path& path);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

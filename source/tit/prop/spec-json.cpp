@@ -38,7 +38,7 @@ auto spec_to_json(const Spec& spec) -> JSON {
     case SpecType::Bool: {
       const auto& bool_spec = spec_cast<BoolSpec>(spec);
       json["type"] = "bool";
-      set_optional(json, "default", bool_spec.default_value());
+      json["default"] = bool_spec.default_value();
       break;
     }
 
@@ -57,6 +57,9 @@ auto spec_to_json(const Spec& spec) -> JSON {
       set_optional(json, "min", real_spec.min());
       set_optional(json, "max", real_spec.max());
       set_optional(json, "default", real_spec.default_value());
+      if (const auto& unit = real_spec.unit(); unit.has_value()) {
+        json["unit"] = unit->symbol();
+      }
       break;
     }
 
@@ -85,6 +88,7 @@ auto spec_to_json(const Spec& spec) -> JSON {
     case SpecType::Array: {
       const auto& arr_spec = spec_cast<ArraySpec>(spec);
       json["type"] = "array";
+      set_optional(json, "size", arr_spec.size());
       json["item"] = spec_to_json(arr_spec.item());
       break;
     }
@@ -117,6 +121,20 @@ auto spec_to_json(const Spec& spec) -> JSON {
       }
       json["options"] = std::move(options);
       set_optional(json, "default", var.default_value());
+      break;
+    }
+
+    case SpecType::Symbol: {
+      const auto& symbol_spec = spec_cast<SymbolSpec>(spec);
+      json["type"] = "symbol";
+      json["namespace"] = *symbol_spec.namespaces().begin();
+      break;
+    }
+
+    case SpecType::Ref: {
+      const auto& ref_spec = spec_cast<RefSpec>(spec);
+      json["type"] = "ref";
+      json["namespace"] = ref_spec.target_namespace();
       break;
     }
 

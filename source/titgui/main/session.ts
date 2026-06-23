@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import fs from "node:fs";
 import { constants as osConstants } from "node:os";
 import path from "node:path";
 
@@ -11,10 +12,18 @@ import { BrowserWindow } from "electron";
 
 import {
   openStorage as nativeOpenStorage,
+  PropTree as NativePropTree,
+  solverSpec as nativeSolverSpec,
+  type PropIssue,
+  type PropNamespaceTable,
+  type PropSpec,
+  type PropTreeObject,
+  type PropTreeJSON,
   type Storage as NativeStorage,
 } from "~/bindings";
 import type { Installation } from "~/main/installation";
 import { SESSION_SOLVER_EVENT_CHANNEL } from "~/shared/channels";
+import type { PropertyDocument } from "~/shared/properties";
 import type { SolverEvent } from "~/shared/solver";
 import type { Frame } from "~/shared/storage";
 import { assert } from "~/shared/utils";
@@ -101,11 +110,86 @@ class SolverManager {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+class ProjectPropertiesManager {
+  private readonly spec: PropSpec;
+  private tree?: PropTreeObject;
+  private issues: PropIssue[] = [];
+  private namespaceTable: PropNamespaceTable = {};
+  private revision = 0;
+  private dirty = false;
+
+  public constructor(private readonly projectPath: string) {
+    this.spec = nativeSolverSpec();
+  }
+
+  public getDocument(): PropertyDocument {
+    if (this.tree === undefined) return this.reload();
+    return this.makeDocument();
+  }
+
+  public updateTree(tree: PropTreeJSON, revision: number): PropertyDocument {
+    this.ensureRevision(revision);
+    return this.materialize(NativePropTree.fromJSON(tree), true);
+  }
+
+  public save(revision: number): PropertyDocument {
+    this.ensureRevision(revision);
+    assert(this.tree !== undefined);
+    assert(
+      this.issues.length === 0,
+      "Cannot save project properties with issues.",
+    );
+    this.tree.saveToFile(this.projectPath);
+    this.dirty = false;
+    this.revision++;
+    return this.makeDocument();
+  }
+
+  public reload(): PropertyDocument {
+    const tree = fs.existsSync(this.projectPath)
+      ? NativePropTree.fromFile(this.projectPath)
+      : NativePropTree.fromJSON(null);
+    return this.materialize(tree, false);
+  }
+
+  private materialize(tree: PropTreeObject, dirty: boolean): PropertyDocument {
+    const result = this.spec.materialize(tree);
+    this.tree = result.tree;
+    this.issues = result.issues;
+    this.namespaceTable = result.namespaceTable;
+    this.dirty = dirty;
+    this.revision++;
+    return this.makeDocument();
+  }
+
+  private ensureRevision(revision: number) {
+    assert(
+      revision === this.revision,
+      "Project properties were changed by a newer revision.",
+    );
+  }
+
+  private makeDocument(): PropertyDocument {
+    assert(this.tree !== undefined);
+    return {
+      spec: this.spec.toJSON() as PropertyDocument["spec"],
+      tree: this.tree.toJSON() as PropertyDocument["tree"],
+      issues: this.issues,
+      namespaceTable: this.namespaceTable,
+      revision: this.revision,
+      dirty: this.dirty,
+    };
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /**
  * A session manager.
  */
 export class SessionManager {
   private readonly solver: SolverManager;
+  private readonly properties: ProjectPropertiesManager;
   private storage?: NativeStorage;
 
   /**
@@ -116,6 +200,9 @@ export class SessionManager {
     private readonly workDir: string,
   ) {
     this.solver = new SolverManager(install);
+    this.properties = new ProjectPropertiesManager(
+      path.join(this.workDir, "project.yaml"),
+    );
     this.solver.setEventCallback((event) => {
       for (const window of BrowserWindow.getAllWindows()) {
         window.webContents.send(SESSION_SOLVER_EVENT_CHANNEL, event);
@@ -132,6 +219,7 @@ export class SessionManager {
     // Storage path is hardcoded at the moment.
     const storagePath = path.join(this.workDir, "particles.ttdb");
     this.storage = await nativeOpenStorage(storagePath);
+    this.properties.reload();
   }
 
   /**
@@ -205,6 +293,24 @@ export class SessionManager {
    */
   public isSolverRunning() {
     return this.solver.isRunning();
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  public getPropertiesDocument() {
+    return this.properties.getDocument();
+  }
+
+  public updatePropertiesTree(tree: PropTreeJSON, revision: number) {
+    return this.properties.updateTree(tree, revision);
+  }
+
+  public saveProperties(revision: number) {
+    return this.properties.save(revision);
+  }
+
+  public reloadProperties() {
+    return this.properties.reload();
   }
 }
 
