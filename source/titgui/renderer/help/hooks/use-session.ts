@@ -4,11 +4,11 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useMemo, useEffect } from "react";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export function useTabs() {
+export function useSession() {
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => ["session"], []);
 
@@ -26,10 +26,8 @@ export function useTabs() {
   }, [queryClient, queryKey]);
 
   return {
-    ...(session ?? {
-      activeTabID: undefined,
-      tabs: [],
-    }),
+    tabs: session?.tabs ?? [],
+    activeTabID: session?.activeTabID,
     addTab: (url?: string) => {
       void globalThis.help?.addTab(url);
     },
