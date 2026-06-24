@@ -26,7 +26,11 @@ import {
   WINDOW_PERSIST_GET_CHANNEL,
   WINDOW_PERSIST_SET_CHANNEL,
 } from "~/shared/channels";
-import type { HelpSession } from "~/shared/help-session";
+import type {
+  HelpService,
+  HelpSession,
+  HelpSessionListener,
+} from "~/shared/help";
 import type { SolverEvent } from "~/shared/solver";
 import type { Theme } from "~/shared/theme";
 
@@ -100,18 +104,9 @@ contextBridge.exposeInMainWorld("session", {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type HelpSessionListener = (session: HelpSession) => void;
-
 contextBridge.exposeInMainWorld("help", {
   async getSession() {
     return ipcRenderer.invoke(HELP_GET_SESSION_CHANNEL);
-  },
-  onSessionChanged(listener: HelpSessionListener) {
-    const callback = (_event: IpcRendererEvent, session: HelpSession) => {
-      listener(session);
-    };
-    ipcRenderer.on(HELP_SESSION_CHANGED_CHANNEL, callback);
-    return () => ipcRenderer.off(HELP_SESSION_CHANGED_CHANNEL, callback);
   },
   async addTab(url?: string) {
     return ipcRenderer.invoke(HELP_ADD_TAB_CHANNEL, url);
@@ -125,6 +120,15 @@ contextBridge.exposeInMainWorld("help", {
   async navigateTab(id: number, url?: string) {
     return ipcRenderer.invoke(HELP_NAVIGATE_TAB_CHANNEL, id, url);
   },
-});
+  onSessionChanged(listener: HelpSessionListener) {
+    const callback = (_event: IpcRendererEvent, session: HelpSession) => {
+      listener(session);
+    };
+    ipcRenderer.on(HELP_SESSION_CHANGED_CHANNEL, callback);
+    return () => {
+      ipcRenderer.off(HELP_SESSION_CHANGED_CHANNEL, callback);
+    };
+  },
+} satisfies HelpService);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -15,7 +15,7 @@ import {
 } from "electron";
 import { z } from "zod";
 
-import { HelpManager } from "~/main/help";
+import { makeHelpService } from "~/main/help";
 import { Installation } from "~/main/installation";
 import { PersistedState } from "~/main/persisted-state";
 import { SessionManager } from "~/main/session";
@@ -26,6 +26,7 @@ import {
   HELP_GET_SESSION_CHANNEL,
   HELP_NAVIGATE_TAB_CHANNEL,
   HELP_SELECT_TAB_CHANNEL,
+  HELP_SESSION_CHANGED_CHANNEL,
   SESSION_EXPORT_RUN_CHANNEL,
   SESSION_FRAME_COUNT_CHANNEL,
   SESSION_FRAME_GET_CHANNEL,
@@ -38,6 +39,7 @@ import {
   WINDOW_PERSIST_GET_CHANNEL,
   WINDOW_PERSIST_SET_CHANNEL,
 } from "~/shared/channels";
+import type { HelpService } from "~/shared/help";
 import { type Theme, themeSchema } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,7 +49,7 @@ class Application {
   private session?: SessionManager;
   private persist?: PersistedState;
   private windowManager?: WindowManager;
-  private helpManager?: HelpManager;
+  private helpManager?: HelpService;
 
   public run() {
     app.on("ready", () => {
@@ -88,7 +90,7 @@ class Application {
     this.windowManager = new WindowManager(this.persist);
 
     // Setup help.
-    this.helpManager = new HelpManager(
+    this.helpManager = makeHelpService(
       this.install,
       this.windowManager.controllers.help,
     );
@@ -181,40 +183,37 @@ class Application {
     });
 
     ipcMain.removeHandler(HELP_GET_SESSION_CHANNEL);
-    ipcMain.handle(HELP_GET_SESSION_CHANNEL, () => {
-      return this.helpManager?.session;
+    ipcMain.handle(HELP_GET_SESSION_CHANNEL, async () => {
+      return this.helpManager?.getSession();
+    });
+
+    this.helpManager?.onSessionChanged((session) => {
+      this.windowManager?.controllers.help?.window?.webContents.send(
+        HELP_SESSION_CHANGED_CHANNEL,
+        session,
+      );
     });
 
     ipcMain.removeHandler(HELP_ADD_TAB_CHANNEL);
-    ipcMain.handle(HELP_ADD_TAB_CHANNEL, (event, url?: string) => {
-      const window = BrowserWindow.fromWebContents(event.sender);
-      if (
-        window === null ||
-        this.windowManager?.find(window)?.kind !== "help"
-      ) {
-        // Reveal tab from outside help window.
-        this.helpManager?.revealTab(url);
-      } else {
-        // Add tab from inside help window.
-        this.helpManager?.addTab(url);
-      }
+    ipcMain.handle(HELP_ADD_TAB_CHANNEL, async (_event, url?: string) => {
+      return this.helpManager?.addTab(url);
     });
 
     ipcMain.removeHandler(HELP_CLOSE_TAB_CHANNEL);
-    ipcMain.handle(HELP_CLOSE_TAB_CHANNEL, (_event, id: number) => {
-      this.helpManager?.closeTab(id);
+    ipcMain.handle(HELP_CLOSE_TAB_CHANNEL, async (_event, id: number) => {
+      return this.helpManager?.closeTab(id);
     });
 
     ipcMain.removeHandler(HELP_SELECT_TAB_CHANNEL);
-    ipcMain.handle(HELP_SELECT_TAB_CHANNEL, (_event, id: number) => {
-      this.helpManager?.selectTab(id);
+    ipcMain.handle(HELP_SELECT_TAB_CHANNEL, async (_event, id: number) => {
+      return this.helpManager?.selectTab(id);
     });
 
     ipcMain.removeHandler(HELP_NAVIGATE_TAB_CHANNEL);
     ipcMain.handle(
       HELP_NAVIGATE_TAB_CHANNEL,
-      (_event, id: number, url?: string) => {
-        this.helpManager?.navigateTab(id, url);
+      async (_event, id: number, url?: string) => {
+        return this.helpManager?.navigateTab(id, url);
       },
     );
   }
