@@ -75,6 +75,22 @@ add_tit_library(
     zstd::libzstd
 )
 
+# Highway's AVX-512 masks and SVE vector types do not fit the current SIMD
+# wrapper classes.
+set(HWY_DISABLED_TARGETS
+  HWY_AVX3
+  HWY_AVX3_DL
+  HWY_AVX3_SPR
+  HWY_AVX3_ZEN4
+  HWY_AVX10_2
+  HWY_ALL_SVE
+)
+list(JOIN HWY_DISABLED_TARGETS "|" HWY_DISABLED_TARGETS)
+target_compile_definitions(core PUBLIC
+  "HWY_DISABLED_TARGETS=(${HWY_DISABLED_TARGETS})"
+)
+unset(HWY_DISABLED_TARGETS)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(

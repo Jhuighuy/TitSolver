@@ -7,6 +7,8 @@
 #include <cstddef>
 #include <type_traits>
 
+#include <hwy/highway.h>
+
 #include "tit/core/simd.hpp"
 
 namespace tit {
@@ -21,7 +23,8 @@ using DeducedRegArray = std::array<simd::deduce_reg_t<float, Dim>,
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#ifdef __AVX512F__
+#if (HWY_TARGET & (HWY_AVX3 | HWY_AVX3_DL | HWY_AVX3_ZEN4 | HWY_AVX3_SPR |     \
+                   HWY_AVX10_2)) != 0
 
 // Can be fitted into a single 128 bit register.
 static_assert(std::is_same_v<DeducedRegArray<1>, RegArray<4, 1>>);
@@ -46,7 +49,7 @@ static_assert(std::is_same_v<DeducedRegArray<20>, RegArray<16, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<32>, RegArray<16, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<36>, RegArray<16, 3>>);
 
-#elifdef __AVX__
+#elif HWY_TARGET == HWY_AVX2
 
 // Can be fitted into a single 128 bit register.
 static_assert(std::is_same_v<DeducedRegArray<1>, RegArray<4, 1>>);
@@ -66,7 +69,7 @@ static_assert(std::is_same_v<DeducedRegArray<16>, RegArray<8, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<17>, RegArray<8, 3>>);
 static_assert(std::is_same_v<DeducedRegArray<24>, RegArray<8, 3>>);
 
-#elifdef __SSE__
+#elif (HWY_TARGET & (HWY_SSE2 | HWY_SSSE3 | HWY_SSE4)) != 0
 
 // Can be fitted into a single 128 bit register.
 static_assert(std::is_same_v<DeducedRegArray<1>, RegArray<4, 1>>);
@@ -79,7 +82,7 @@ static_assert(std::is_same_v<DeducedRegArray<8>, RegArray<4, 2>>);
 static_assert(std::is_same_v<DeducedRegArray<9>, RegArray<4, 3>>);
 static_assert(std::is_same_v<DeducedRegArray<12>, RegArray<4, 3>>);
 
-#elifdef __ARM_NEON
+#elif (HWY_TARGET & HWY_ALL_NEON) != 0
 
 // Can be fitted into a single 64 bit register.
 static_assert(std::is_same_v<DeducedRegArray<1>, RegArray<2, 1>>);

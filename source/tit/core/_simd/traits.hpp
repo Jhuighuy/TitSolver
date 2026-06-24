@@ -6,17 +6,16 @@
 // IWYU pragma: private, include "tit/core/simd.hpp"
 #pragma once
 
-/// @todo AVX-512 uses special 8/16 bit mask registers, which do not fit into
-///       our approach of dealing with masks. Let's disable AVX-512 for now.
-#ifdef __AVX512F__
-#undef __AVX512F__
-#endif
-
-#include <bit>
 #include <concepts>
 #include <cstddef>
 
+#include <hwy/highway.h>
+
+#include "tit/core/type.hpp"
+
 namespace tit::simd {
+
+namespace hn = hwy::HWY_NAMESPACE;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -45,38 +44,13 @@ concept castable_to_type =
 
 /// Minimal byte width of the SIMD register that is available on the current
 /// hardware.
-///
-/// That is 16 bytes for all supported instruction sets.
 inline constexpr std::size_t min_reg_byte_width_v{
-#ifdef __SSE__
-    16
-#elifdef __ARM_NEON
+#ifdef __ARM_NEON
     8
 #else
-#error Unknown SIMD instruction set!
-#endif
-};
-
-/// Maximal byte width of the SIMD register that is available on the current
-/// hardware.
-///
-/// That is 16 bytes for NEON and SSE instruction set, 32 and 64 bytes for
-/// AVX and AVX-512 respectively.
-inline constexpr std::size_t max_reg_byte_width_v{
-#ifdef __AVX512F__
-    64
-#elifdef __AVX__
-    32
-#elif defined __SSE__ || defined __ARM_NEON
     16
-#else
-#error Unknown SIMD instruction set!
 #endif
 };
-
-// Just in case.
-static_assert(max_reg_byte_width_v >= min_reg_byte_width_v &&
-              std::has_single_bit(max_reg_byte_width_v / min_reg_byte_width_v));
 
 /// Minimal SIMD register size for the specified type.
 template<supported_type Num>
@@ -86,7 +60,7 @@ inline constexpr std::size_t min_reg_size_v =
 /// Maximal SIMD register size for the specified type.
 template<supported_type Num>
 inline constexpr std::size_t max_reg_size_v =
-    max_reg_byte_width_v / sizeof(Num);
+    hn::ScalableTag<normalize_type_t<Num>>{}.MaxLanes();
 
 /// Is SIMD supported for the specified numeric type and size?
 template<class Num, std::size_t Size>
