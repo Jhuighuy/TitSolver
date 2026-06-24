@@ -11,94 +11,133 @@ import {
   BrowserWindow,
   clipboard,
   Menu,
+  type MenuItemConstructorOptions,
   net,
   protocol,
-  type MenuItemConstructorOptions,
   shell,
 } from "electron";
 import z from "zod";
 
 import type { Installation } from "~/main/installation";
 import type { WindowController } from "~/main/window";
-import {
-  HELP_SESSION_CHANGED_CHANNEL,
-  WEBVIEW_OPEN_IN_TAB_CHANNEL,
-} from "~/shared/channels";
-import type { HelpSession, Tab } from "~/shared/help-session";
+import { WEBVIEW_OPEN_IN_TAB_CHANNEL } from "~/shared/channels";
+import type {
+  HelpService,
+  HelpSession,
+  HelpSessionListener,
+  HelpTab,
+} from "~/shared/help";
 import { assert } from "~/shared/utils";
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-const HELP_PROTOCOL = "help";
-const HELP_HOST = "manual";
-const HELP_ORIGIN = `${HELP_PROTOCOL}://${HELP_HOST}`;
-
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: HELP_PROTOCOL,
-    privileges: {
-      corsEnabled: true,
-      secure: true,
-      standard: true,
-      supportFetchAPI: true,
-    },
-  },
-]);
+// oxlint-disable require-await
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * Help manager.
+ * Construct a help service.
  */
-export class HelpManager {
-  private readonly manualPath: string;
-  private readonly homeURL: string;
-  private readonly sessionModel: HelpSessionModel;
+export function makeHelpService(
+  install: Installation,
+  controller: WindowController,
+) {
+  return new HelpServiceImpl(install, controller);
+}
 
-  /**
-   * Construct a help manager.
-   */
+/**
+ * Help service implementation.
+ */
+class HelpServiceImpl implements HelpService {
+  private readonly protocol: HelpProtocol;
+  private readonly sessionModel: HelpSessionModel;
+  private readonly sessionListeners: Set<HelpSessionListener> = new Set();
+
+  /** Construct a help service. */
   public constructor(
     install: Installation,
     public readonly controller: WindowController,
   ) {
-    // Initialize paths.
-    this.manualPath = install.manualPath;
-    this.homeURL = this.pathToURL("index.html");
+    this.protocol = new HelpProtocol(install.manualPath);
 
-    protocol.handle(HELP_PROTOCOL, async (request) => {
-      const filePath = this.urlToFilePath(request.url);
-      return net.fetch(pathToFileURL(filePath).toString());
+    this.sessionModel = new HelpSessionModel(
+      this.controller.persist.get("session", HelpSessionSchema, {
+        activeTabID: undefined,
+        tabs: [],
+      }),
+    );
+    this.onSessionChanged((session) => {
+      this.controller.persist.set("session", session);
     });
 
-    // Restore session from persisted state.
-    const sessionModelSchema = z
-      .object({
-        activeTabID: z.number().optional(),
-        tabs: z.array(z.object({ id: z.number(), path: z.string() })),
-      })
-      .transform(({ activeTabID, tabs }, context) => {
-        try {
-          return new HelpSessionModel(
-            activeTabID,
-            tabs.map(({ id, path }) => ({ id, url: this.pathToURL(path) })),
-          );
-        } catch (error) {
-          context.addIssue({
-            code: "custom",
-            message: String(error),
-            path: [],
-          });
-          return new HelpSessionModel();
-        }
-      });
-    this.sessionModel = this.controller.persist.get(
-      HELP_SESSION_KEY,
-      sessionModelSchema,
-      new HelpSessionModel(),
-    );
+    this.setupWebviewEventListeners();
+  }
 
-    // Setup webview.
+  /** Get the current session. */
+  public async getSession() {
+    return this.sessionModel.session;
+  }
+
+  /** Add a new tab. */
+  public async addTab(url: string = HOME_URL) {
+    // External links are opened externally.
+    if (this.protocol.isExternalUrl(url)) {
+      void shell.openExternal(url);
+      return;
+    }
+
+    this.sessionModel.addTab(url);
+    this.sessionChanged();
+
+    // New tab focues the help window.
+    this.controller.open();
+    this.controller.window?.focus();
+  }
+
+  /**
+   * Close the tab with the given ID.
+   */
+  public async closeTab(id: number) {
+    this.sessionModel.closeTab(id);
+    this.sessionChanged();
+
+    // When the last tab is closed, close the help window.
+    if (this.sessionModel.isEmpty) this.controller.close();
+  }
+
+  /** Select the tab with the given ID. */
+  public async selectTab(id: number) {
+    this.sessionModel.selectTab(id);
+    this.sessionChanged();
+  }
+
+  /** Update the URL of the tab with the given ID. */
+  public async navigateTab(id: number, url: string = HOME_URL) {
+    // External links are opened externally.
+    if (this.protocol.isExternalUrl(url)) {
+      void shell.openExternal(url);
+      return;
+    }
+
+    this.sessionModel.navigateTab(id, url);
+    this.sessionChanged();
+  }
+
+  /** Subscribe to session changes. */
+  public onSessionChanged(listener: HelpSessionListener): () => void {
+    this.sessionListeners.add(listener);
+    return () => {
+      this.sessionListeners.delete(listener);
+    };
+  }
+
+  // Notify the listeners about the session change.
+  private sessionChanged() {
+    for (const listener of this.sessionListeners) {
+      listener(this.sessionModel.session);
+    }
+  }
+
+  // Setup event listeners for webview contents.
+  private setupWebviewEventListeners() {
     app.on("web-contents-created", (_event, contents) => {
       switch (contents.getType()) {
         case "window": {
@@ -122,17 +161,17 @@ export class HelpManager {
         case "webview": {
           // Handle window open requests. External links are opened externally.
           contents.setWindowOpenHandler(({ url }) => {
-            if (this.isManualURL(url)) {
-              contents.send(WEBVIEW_OPEN_IN_TAB_CHANNEL, url);
-            } else {
+            if (this.protocol.isExternalUrl(url)) {
               void shell.openExternal(url);
+            } else {
+              contents.send(WEBVIEW_OPEN_IN_TAB_CHANNEL, url);
             }
             return { action: "deny" };
           });
 
           // Handle navigations. External links are opened externally.
           contents.on("will-navigate", (event, url) => {
-            if (!this.isManualURL(url)) {
+            if (this.protocol.isExternalUrl(url)) {
               event.preventDefault();
               void shell.openExternal(url);
             }
@@ -230,7 +269,7 @@ export class HelpManager {
                   { type: "separator" },
                 );
               }
-            } else if (this.isManualURL(url)) {
+            } else if (this.protocol.isExternalUrl(url)) {
               menuItems.push(
                 {
                   label: "Open Link",
@@ -276,243 +315,110 @@ export class HelpManager {
       }
     });
   }
+}
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /**
-   * Get the current session.
-   */
-  public get session() {
-    return this.sessionModel as Readonly<HelpSession>;
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /**
-   * Add a new tab.
-   */
-  public addTab(url?: string) {
-    // Add tab.
-    assert(this.isManualURL(url));
-    this.sessionModel.addTab(url ?? this.homeURL);
-
-    // Notify the listeners.
-    this.sessionChanged();
-
-    // Focus the window.
-    this.controller.open();
-    this.controller.window?.focus();
-  }
-
-  /**
-   * Reveal the existing tab with the given URL, or add a new tab.
-   */
-  public revealTab(url?: string) {
-    // Reveal tab.
-    assert(this.isManualURL(url));
-    this.sessionModel.revealTab(url ?? this.homeURL);
-
-    // Notify the listeners.
-    this.sessionChanged();
-
-    // Focus the window.
-    this.controller.open();
-    this.controller.window?.focus();
-  }
-
-  /**
-   * Close the tab with the given ID.
-   */
-  public closeTab(id: number) {
-    // Close tab.
-    this.sessionModel.closeTab(id);
-
-    // Notify the listeners.
-    this.sessionChanged();
-
-    // If there are no more tabs, close the window.
-    if (this.sessionModel.tabs.length === 0) this.controller.close();
-  }
-
-  /**
-   * Select the tab with the given ID.
-   */
-  public selectTab(id: number) {
-    // Select tab.
-    this.sessionModel.selectTab(id);
-
-    // Notify the listeners.
-    this.sessionChanged();
-  }
-
-  /**
-   * Update the URL of the tab with the given ID.
-   */
-  public navigateTab(id: number, url?: string) {
-    // Update tab.
-    assert(this.isManualURL(url));
-    this.sessionModel.navigateTab(id, url ?? this.homeURL);
-
-    // Notify the listeners.
-    this.sessionChanged();
-  }
-
-  // Notify the listeners about the session change.
-  private sessionChanged() {
-    // Notify the renderer process.
-    this.controller.window?.webContents.send(HELP_SESSION_CHANGED_CHANNEL, {
-      activeTabID: this.sessionModel.activeTabID,
-      tabs: this.sessionModel.tabs,
-    });
-
-    // Persist the session.
-    this.controller.persist.set(HELP_SESSION_KEY, {
-      activeTabID: this.sessionModel.activeTabID,
-      tabs: this.sessionModel.tabs.map(({ id, url }) => ({
-        id,
-        path: this.urlToPath(url),
-      })),
+/**
+ * Help link protocol implementation.
+ */
+class HelpProtocol {
+  /** Construct a help URL protocol. */
+  public constructor(private readonly rootPath: string) {
+    protocol.handle(HELP_PROTOCOL, async ({ url }) => {
+      try {
+        const filePath = path.resolve(this.rootPath, this.urlToPath(url));
+        return await net.fetch(pathToFileURL(filePath).toString());
+      } catch {
+        const notFoundPath = path.join(this.rootPath, "404.html");
+        return net.fetch(pathToFileURL(notFoundPath).toString());
+      }
     });
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  // Convert a manual-relative path to a help URL.
-  private pathToURL(relativePath: string) {
-    try {
-      assert(relativePath.trim() !== "");
-      assert(!path.isAbsolute(relativePath));
-
-      const resolvedPath = path.resolve(this.manualPath, relativePath);
-      const normalizedPath = path.relative(this.manualPath, resolvedPath);
-      assert(normalizedPath !== "");
-      assert(!normalizedPath.startsWith(".."));
-      assert(!path.isAbsolute(normalizedPath));
-
-      return new URL(normalizedPath, `${HELP_ORIGIN}/`).toString();
-    } catch {
-      throw new Error(`Invalid manual-relative path: '${relativePath}'.`);
-    }
-  }
-
-  // Convert a help URL to a manual-relative path.
-  private urlToPath(url: string) {
-    try {
-      const parsedURL = new URL(url, this.homeURL);
-      assert(parsedURL.protocol === `${HELP_PROTOCOL}:`);
-      assert(parsedURL.hostname === HELP_HOST);
-
-      const relativePath = decodeURIComponent(parsedURL.pathname)
-        .replace(/^\/+/u, "")
-        .trim();
-      assert(relativePath !== "" && relativePath !== ".");
-      assert(!relativePath.startsWith(".."));
-      assert(!path.isAbsolute(relativePath));
-
-      return relativePath;
-    } catch {
-      throw new Error(`Invalid help URL: '${url}'.`);
-    }
-  }
-
-  // Check if the given URL belongs to the manual.
-  private isManualURL(url?: string) {
-    if (url === undefined) return true;
+  /** Check if the given URL does not belong to the manual. */
+  public isExternalUrl(url: string) {
     try {
       this.urlToPath(url);
-      return true;
-    } catch {
       return false;
+    } catch {
+      return true;
     }
   }
 
-  // Convert a help URL to a filesystem path inside the installed manual.
-  private urlToFilePath(url: string) {
-    const relativePath = this.urlToPath(url);
-    const resolvedPath = path.resolve(this.manualPath, relativePath);
-    const normalizedPath = path.relative(this.manualPath, resolvedPath);
-    assert(!normalizedPath.startsWith(".."));
-    assert(!path.isAbsolute(normalizedPath));
-    return resolvedPath;
+  // Convert a help URL to a help-relative path.
+  private urlToPath(url: string) {
+    const { protocol, hostname, pathname } = new URL(url, HOME_URL);
+    assert(protocol === `${HELP_PROTOCOL}:`);
+    assert(hostname === HELP_HOST);
+
+    const relativePath = decodeURIComponent(pathname)
+      .replace(/^\/+/u, "")
+      .trim();
+    assert(relativePath !== "" && relativePath !== ".");
+    assert(!relativePath.startsWith(".."));
+    assert(!path.isAbsolute(relativePath));
+
+    return relativePath;
   }
 }
 
-const HELP_SESSION_KEY = "help.session";
+const HELP_PROTOCOL = "help";
+const HELP_HOST = "manual";
+const HELP_ORIGIN = `${HELP_PROTOCOL}://${HELP_HOST}`;
+const HOME_URL = `${HELP_ORIGIN}/index.html`;
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: HELP_PROTOCOL,
+    privileges: {
+      corsEnabled: true,
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
  * Help session model.
  */
-class HelpSessionModel implements HelpSession {
-  /**
-   * Active tab ID.
-   */
-  public activeTabID: number | undefined;
+class HelpSessionModel {
+  private activeTabID?: number;
+  private tabs: HelpTab[] = [];
 
-  /**
-   * Array of tabs.
-   */
-  public tabs: Tab[];
-
-  /**
-   * Construct help session model.
-   */
-  public constructor(activeTabID?: number, tabs: Tab[] = []) {
-    const tabIDs = new Set<number>();
-    for (const tab of tabs) {
-      assert(!tabIDs.has(tab.id), `Duplicate tab ID: ${tab.id}.`);
-      tabIDs.add(tab.id);
-    }
-
-    if (tabs.length === 0) {
-      assert(
-        activeTabID === undefined,
-        "Active tab ID must be undefined when there are no tabs.",
-      );
-    } else {
-      assert(
-        tabs.some((tab) => tab.id === activeTabID),
-        `Active tab ID ${activeTabID} does not exist in tabs.`,
-      );
-    }
-
-    this.activeTabID = activeTabID;
-    this.tabs = tabs.map((tab) => ({ ...tab }));
+  /** Construct help session model. */
+  public constructor(session: HelpSession) {
+    this.activeTabID = session.activeTabID;
+    this.tabs = session.tabs;
   }
 
-  /**
-   * Find the tab with the given ID.
-   */
+  /** Get the current session. */
+  public get session() {
+    return { activeTabID: this.activeTabID, tabs: this.tabs };
+  }
+
+  /** Check if session is empty. */
+  public get isEmpty() {
+    return this.tabs.length === 0;
+  }
+
+  /** Find the tab with the given ID. */
   public findTab(id: number) {
     const index = this.tabs.findIndex((tab) => tab.id === id);
     return [index === -1 ? undefined : this.tabs[index], index] as const;
   }
 
-  /**
-   * Add a new tab to the session.
-   */
+  /** Add a new tab to the session. */
   public addTab(url: string) {
     const id = this.tabs.reduce((id, tab) => Math.max(id, tab.id), 0) + 1;
     this.tabs.push({ id, url });
     this.activeTabID = id;
   }
 
-  /**
-   * Reveal the existing tab with the given URL, or add a new tab.
-   */
-  public revealTab(url: string) {
-    const tab = this.tabs.find((tab) => tab.url === url);
-    if (tab === undefined) {
-      this.addTab(url);
-    } else {
-      this.selectTab(tab.id);
-    }
-  }
-
-  /**
-   * Close the tab with the given ID.
-   */
+  /** Close the tab with the given ID. */
   public closeTab(id: number) {
     const [tab, index] = this.findTab(id);
     assert(tab !== undefined);
@@ -525,23 +431,24 @@ class HelpSessionModel implements HelpSession {
     }
   }
 
-  /**
-   * Select the tab with the given ID.
-   */
+  /** Select the tab with the given ID. */
   public selectTab(id: number) {
     const [tab] = this.findTab(id);
     assert(tab !== undefined);
     this.activeTabID = id;
   }
 
-  /**
-   * Update the URL of the tab with the given ID.
-   */
+  /** Update the URL of the tab with the given ID. */
   public navigateTab(id: number, url: string) {
     const [tab] = this.findTab(id);
     assert(tab !== undefined);
     tab.url = url;
   }
 }
+
+const HelpSessionSchema = z.object({
+  activeTabID: z.number().optional(),
+  tabs: z.array(z.object({ id: z.number(), url: z.string() })),
+});
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
