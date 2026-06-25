@@ -81,7 +81,7 @@ print-options() {
 	echo "  CXX            = ${BOLD}$CXX${RESET}"
 	echo "  VCPKG_ROOT     = ${BOLD}$VCPKG_ROOT${RESET}"
 
-	if [ ! -z "$TARGETS" ]; then
+	if [ ! -z "${TARGETS[*]}" ]; then
 		echo "  TARGETS        = ${BOLD}${TARGETS[*]}${RESET}"
 	fi
 
