@@ -33,6 +33,10 @@ find_package(unofficial-node-addon-api CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
+# Some packages are marked as "unofficial" by vcpkg, let's rename them.
+add_library(node-addon-api::node-addon-api ALIAS unofficial::node-addon-api::node-addon-api)
+add_library(sqlite3::sqlite3 ALIAS unofficial::sqlite3::sqlite3)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Include CMake modules.
@@ -68,10 +72,10 @@ add_tit_library(
     hwy::hwy
     mimalloc-static
     nlohmann_json::nlohmann_json
+    node-addon-api::node-addon-api
+    sqlite3::sqlite3
     TBB::tbb
     tinyxml2::tinyxml2
-    unofficial::node-addon-api::node-addon-api
-    unofficial::sqlite3::sqlite3
     zstd::libzstd
 )
 

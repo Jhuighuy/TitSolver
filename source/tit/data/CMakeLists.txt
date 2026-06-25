@@ -17,8 +17,8 @@ add_tit_library(
   DEPENDS
     tit::core
     HighFive::HighFive
+    sqlite3::sqlite3
     tinyxml2::tinyxml2
-    unofficial::sqlite3::sqlite3
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

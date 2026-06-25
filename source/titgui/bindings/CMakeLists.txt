@@ -17,7 +17,7 @@ add_tit_library(
   DEPENDS
     tit::core
     tit::data
-    unofficial::node-addon-api::node-addon-api
+    node-addon-api::node-addon-api
 )
 
 target_compile_definitions(titgui_bindings PRIVATE NAPI_CPP_EXCEPTIONS)
