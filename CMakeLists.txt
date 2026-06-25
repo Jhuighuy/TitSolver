@@ -14,6 +14,11 @@ project(tit VERSION "${TIT_VERSION}" LANGUAGES CXX)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Export compile commands for the IDEs and analysis tools.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Find the third-party libraries.
 find_package(Boost CONFIG REQUIRED COMPONENTS stacktrace_addr2line)
 find_package(doctest CONFIG REQUIRED)
