@@ -4,21 +4,16 @@ func_3
 Doing something bad...
 
 
-/home/jhuighuy/TitSolver/source/tit/main/main.cpp:142:30: Terminating due to an unhandled exception.
+/Users/jhuighuy/TitSolver/source/tit/core/main.cpp:300:29: Terminating due to an unhandled exception.
 
   throw std::out_of_range{...};
   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~ basic_string::at: __n (which is 1) >= this->size() (which is 0)
 
 
-Stack trace:
-
-  0 0x102dd3d14 tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::operator()() const [clone .constprop.0]
-  1 0x102dd3ed4 tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::_FUN()
-  2 0x1036cbaec __cxxabiv1::__terminate(void (*)())
-  3 0x1037dfa1c std::unexpected()
-  4 0x1036cbdfc __cxa_throw
-  5 0x1037e05b8 std::__throw_out_of_range_fmt(char const*, ...)
-  6 0x102e2cbb0 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .isra.0]
-  7 0x102dd2d48 tit::(anonymous namespace)::func_1() [clone .lto_priv.0]
-  8 0x102dd2d70 tit::(anonymous namespace)::func_1() [clone .lto_priv.0]
-  9 0x102e2d2a4 main
+Stack trace (most recent call first):
+#0 0x0000000104bf6fe3 in tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::_FUN() + 923 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_std_test
+#1 0x0000000105403a6b in __cxxabiv1::__terminate(void (*)()) at /opt/homebrew/Cellar/gcc/16.1.0/lib/gcc/current/libstdc++.6.dylib
+#2 0x0000000105534d1b in std::terminate() at /opt/homebrew/Cellar/gcc/16.1.0/lib/gcc/current/libstdc++.6.dylib
+#3 0x0000000104bf92c7 in tit::run_main(int, char**, std::move_only_function<void (int, char**)>) + 1027 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_std_test
+#4 0x0000000104bf951f in tit::run_main(int, char**, std::move_only_function<void ()>) + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_std_test
+#5 0x0000000104d02ed3 in _main + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_std_test

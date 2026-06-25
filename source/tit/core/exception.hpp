@@ -7,11 +7,13 @@
 
 #include <concepts>
 #include <exception>
+#include <format> // IWYU pragma: keep
 #include <functional>
 #include <source_location>
 #include <string>
 
-#include "tit/core/stacktrace.hpp"
+#include <cpptrace/basic.hpp>
+
 #include "tit/core/utils.hpp"
 
 namespace tit {
@@ -27,6 +29,8 @@ constexpr auto terminate_on_exception(Func func) noexcept {
     std::terminate();
   }
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Throw an exception of the given type.
 #define TIT_BASE_THROW(ExceptionType, message, ...)                            \
@@ -50,7 +54,7 @@ public:
   explicit Exception(
       std::string message,
       std::source_location location = std::source_location::current(),
-      Stacktrace stacktrace = Stacktrace::current());
+      cpptrace::raw_trace stacktrace = cpptrace::generate_raw_trace());
 
   /// Get the exception message.
   auto what() const noexcept -> const char* override;
@@ -59,13 +63,13 @@ public:
   auto where() const noexcept -> const std::source_location&;
 
   /// Retrieve the exception stack trace.
-  auto when() const noexcept -> const Stacktrace&;
+  auto when() const noexcept -> const cpptrace::raw_trace&;
 
 private:
 
   std::string message_;
   std::source_location location_;
-  Stacktrace stacktrace_;
+  cpptrace::raw_trace stacktrace_;
 
 }; // class Exception
 
@@ -89,14 +93,14 @@ public:
   explicit ErrnoException(
       std::string message,
       std::source_location location = std::source_location::current(),
-      Stacktrace stacktrace = Stacktrace::current());
+      cpptrace::raw_trace stacktrace = cpptrace::generate_raw_trace());
 
   /// Construct an exception with given `errno` value.
   ErrnoException(
       int errno_value,
       std::string message,
       std::source_location location = std::source_location::current(),
-      Stacktrace stacktrace = Stacktrace::current());
+      cpptrace::raw_trace stacktrace = cpptrace::generate_raw_trace());
 
   /// Get the `errno` value.
   auto errno_value() const -> int;

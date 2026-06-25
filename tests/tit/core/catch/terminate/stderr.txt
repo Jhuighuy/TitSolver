@@ -4,13 +4,15 @@ func_3
 Creating a joinable thread...
 
 
-/Users/jhuighuy/TitSolver/source/tit/main/main.cpp:153:28: Terminating due to a call to std::terminate().
+/Users/jhuighuy/TitSolver/source/tit/core/main.cpp:322:27: Terminating due to a call to std::terminate().
 
-Stack trace:
 
-  0 0x10073395c tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::operator()() const [clone .constprop.0]
-  1 0x100733f94 tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::_FUN()
-  2 0x100f4faec __cxxabiv1::__terminate(void (*)())
-  3 0x101063a1c std::unexpected()
-  4 0x100732de0 tit::(anonymous namespace)::func_2()
-  5 0x10078d328 main
+Stack trace (most recent call first):
+#0 0x00000001040f6e6f in tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::_FUN() + 103 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_terminate_test
+#1 0x0000000104827a6b in __cxxabiv1::__terminate(void (*)()) at /opt/homebrew/Cellar/gcc/16.1.0/lib/gcc/current/libstdc++.6.dylib
+#2 0x0000000104958d1b in std::terminate() at /opt/homebrew/Cellar/gcc/16.1.0/lib/gcc/current/libstdc++.6.dylib
+#3 0x00000001040e694b in tit::(anonymous namespace)::func_3() + 191 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_terminate_test
+#4 0x00000001040e69b3 in void std::__polyfunc::_Base_invoker<false, void>::_S_call_storage<main::{lambda()#1}&>(std::__polyfunc::_Storage const&) + 11 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_terminate_test
+#5 0x00000001040f9377 in tit::run_main(int, char**, std::move_only_function<void (int, char**)>) + 755 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_terminate_test
+#6 0x00000001040f96df in tit::run_main(int, char**, std::move_only_function<void ()>) + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_terminate_test
+#7 0x0000000104203033 in _main + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_terminate_test

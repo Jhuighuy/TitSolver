@@ -10,9 +10,10 @@
 #include <string>
 #include <utility>
 
+#include <cpptrace/basic.hpp>
+
 #include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/stacktrace.hpp"
 
 namespace tit {
 
@@ -20,7 +21,7 @@ namespace tit {
 
 Exception::Exception(std::string message,
                      std::source_location location,
-                     Stacktrace stacktrace)
+                     cpptrace::raw_trace stacktrace)
     : message_{std::move(message)}, location_{location},
       stacktrace_{std::move(stacktrace)} {}
 
@@ -32,7 +33,7 @@ auto Exception::where() const noexcept -> const std::source_location& {
   return location_;
 }
 
-auto Exception::when() const noexcept -> const Stacktrace& {
+auto Exception::when() const noexcept -> const cpptrace::raw_trace& {
   return stacktrace_;
 }
 
@@ -49,7 +50,7 @@ auto errno_message(int errno_value) -> std::string {
 
 ErrnoException::ErrnoException(std::string message,
                                std::source_location location,
-                               Stacktrace stacktrace)
+                               cpptrace::raw_trace stacktrace)
     : ErrnoException{errno,
                      std::move(message),
                      location,
@@ -58,7 +59,7 @@ ErrnoException::ErrnoException(std::string message,
 ErrnoException::ErrnoException(int errno_value,
                                std::string message,
                                std::source_location location,
-                               Stacktrace stacktrace)
+                               cpptrace::raw_trace stacktrace)
     : Exception{std::format("{} {}.", message, errno_message(errno_value)),
                 location,
                 std::move(stacktrace)},

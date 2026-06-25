@@ -28,6 +28,8 @@ SED_FILTERS=(
 	"s/\x1B\[(\d+;)*\d+[mGK]//g"
 	# Remove profiling reports.
 	"/libgcov profiling error$/d"
+	# Remove stack trace frames.
+	"/^#\d+\s+(0x[0-9a-fA-F]+|\(inlined\))\s+(in|at)/d"
 )
 
 print-usage() {

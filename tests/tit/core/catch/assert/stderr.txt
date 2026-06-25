@@ -4,19 +4,18 @@ func_3
 Checking how floating point arithmetic works...
 
 
-/Users/jhuighuy/TitSolver/tests/tit/core/catch/check/test.cpp:19:3: Internal consistency check failed!
+/Users/jhuighuy/TitSolver/tests/tit/core/catch/assert/test.cpp:20:3: Internal consistency check failed!
 
   0.1 + 0.2 == 0.3
   ^~~~~~~~~~~~~~~~ Right?!
 
 
-Stack trace:
-
-  0 0x1049f7284 tit::impl::report_assert_failure(std::basic_string_view<char, std::char_traits<char> >, std::basic_string_view<char, std::char_traits<char> >, std::source_location)
-  1 0x1049e6340 tit::(anonymous namespace)::func_2()
-  2 0x1049e6368 tit::(anonymous namespace)::func_1()
-  3 0x1049e6390 void std::move_only_function<void ()>::_S_invoke<main::{lambda()#1}>(std::_Mofunc_base*)
-  4 0x1049e639c void std::move_only_function<void ()>::_S_invoke<main::{lambda()#1}>(std::_Mofunc_base*)
-  5 0x1049f6b58 tit::run_main(int, char**, std::move_only_function<void (int, char**)>)
-  6 0x1049f6dd4 tit::run_main(int, char**, std::move_only_function<void ()>)
-  7 0x104a05c8c main
+Stack trace (most recent call first):
+#0 0x00000001049d669b in tit::assert_::report_failure(std::basic_string_view<char, std::char_traits<char> >, std::basic_string_view<char, std::char_traits<char> >, std::source_location) + 79 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_assert_test
+#1 0x00000001049c6e33 in tit::(anonymous namespace)::func_3() + 167 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_assert_test
+#2 0x00000001049c6ecf in tit::(anonymous namespace)::func_2() + 111 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_assert_test
+#3 0x00000001049c6f6f in tit::(anonymous namespace)::func_1() + 111 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_assert_test
+#4 0x00000001049c6fab in void std::__polyfunc::_Base_invoker<false, void>::_S_call_storage<main::{lambda()#1}&>(std::__polyfunc::_Storage const&) + 11 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_assert_test
+#5 0x00000001049d9177 in tit::run_main(int, char**, std::move_only_function<void (int, char**)>) + 755 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_assert_test
+#6 0x00000001049d94df in tit::run_main(int, char**, std::move_only_function<void ()>) + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_assert_test
+#7 0x0000000104ae2e33 in _main + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_assert_test

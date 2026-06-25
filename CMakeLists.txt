@@ -20,7 +20,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find the third-party libraries.
-find_package(Boost CONFIG REQUIRED COMPONENTS stacktrace_addr2line)
+find_package(cpptrace CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
 find_package(HighFive CONFIG REQUIRED)
@@ -64,7 +64,7 @@ add_tit_library(
   NAME
     all_flags
   DEPENDS
-    Boost::stacktrace_addr2line
+    cpptrace::cpptrace
     doctest::doctest
     gcem
     HighFive::HighFive

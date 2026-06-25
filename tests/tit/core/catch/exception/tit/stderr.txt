@@ -4,20 +4,17 @@ func_3
 Throwing an exception...
 
 
-/home/jhuighuy/TitSolver/tests/tit/core/catch/exception/tit/test.cpp:18:67: Terminating due to an unhandled exception.
+/Users/jhuighuy/TitSolver/tests/tit/core/catch/exception/tit/test.cpp:20:3: Terminating due to an unhandled exception.
 
   throw tit::Exception{...};
   ^~~~~~~~~~~~~~~~~~~~~~~~~~ Test exception, Some arguments: 13, hello.
 
 
-Stack trace:
-
-  0 0x401704 tit::(anonymous namespace)::func_3()
-  1 0x401401 tit::(anonymous namespace)::func_2()
-  2 0x4013d1 tit::(anonymous namespace)::func_1()
-  3 0x4013a6 tit::(anonymous namespace)::run_test(int, char**)
-  4 0x40eacd tit::run_main(int, char**, std::move_only_function<int (int, char**)>)
-  5 0x401373 main
-  6 0x7f0e04be55f5
-  7 0x7f0e04be56a8 __libc_start_main
-  8 0x401275 _start
+Stack trace (most recent call first):
+#0 0x0000000100ddec07 in tit::(anonymous namespace)::func_3() + 323 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_tit_test
+#1 0x0000000100ddee13 in tit::(anonymous namespace)::func_2() + 111 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_tit_test
+#2 0x0000000100ddeeaf in tit::(anonymous namespace)::func_1() + 111 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_tit_test
+#3 0x0000000100ddeeeb in void std::__polyfunc::_Base_invoker<false, void>::_S_call_storage<main::{lambda()#1}&>(std::__polyfunc::_Storage const&) + 11 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_tit_test
+#4 0x0000000100df1277 in tit::run_main(int, char**, std::move_only_function<void (int, char**)>) + 755 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_tit_test
+#5 0x0000000100df15df in tit::run_main(int, char**, std::move_only_function<void ()>) + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_tit_test
+#6 0x0000000100efaff3 in _main + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_tit_test

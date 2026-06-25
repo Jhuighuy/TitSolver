@@ -4,18 +4,14 @@ func_3
 Doing something bad...
 
 
-/Users/jhuighuy/TitSolver/source/tit/main/main.cpp:146:30: Terminating due to an unhandled exception.
+/Users/jhuighuy/TitSolver/source/tit/core/main.cpp:306:29: Terminating due to an unhandled exception.
 
-Stack trace:
 
-  0 0x104f139e0 tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::operator()() const [clone .constprop.0]
-  1 0x104f13f34 tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::_FUN()
-  2 0x105727aec __cxxabiv1::__terminate(void (*)())
-  3 0x10583ba1c std::unexpected()
-  4 0x105727dfc __cxa_throw
-  5 0x104f12d80 tit::(anonymous namespace)::func_2()
-  6 0x104f12da8 tit::(anonymous namespace)::func_1() [clone .lto_priv.0]
-  7 0x104f12dd0 tit::(anonymous namespace)::func_1() [clone .lto_priv.0]
-  8 0x104f6d2c4 main
-
+Stack trace (most recent call first):
+#0 0x0000000102edad47 in tit::(anonymous namespace)::setup_terminate_handler()::{lambda()#1}::_FUN() + 319 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_unknown_test
+#1 0x000000010368ba6b in __cxxabiv1::__terminate(void (*)()) at /opt/homebrew/Cellar/gcc/16.1.0/lib/gcc/current/libstdc++.6.dylib
+#2 0x00000001037bcd1b in std::terminate() at /opt/homebrew/Cellar/gcc/16.1.0/lib/gcc/current/libstdc++.6.dylib
+#3 0x0000000102edd287 in tit::run_main(int, char**, std::move_only_function<void (int, char**)>) + 1027 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_unknown_test
+#4 0x0000000102edd4df in tit::run_main(int, char**, std::move_only_function<void ()>) + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_unknown_test
+#5 0x0000000102fe6e33 in _main + 51 at /Users/jhuighuy/TitSolver/output/cmake_output/Release/tests/tit_core_catch_exception_unknown_test
 terminate called after throwing an instance of 'unsigned int'

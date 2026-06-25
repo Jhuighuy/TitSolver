@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include <cpptrace/basic.hpp>
 #include <execinfo.h>
 #include <unistd.h>
 
@@ -36,7 +37,6 @@
 #include "tit/core/logging.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/profiler.hpp"
-#include "tit/core/stacktrace.hpp"
 #include "tit/core/str.hpp"
 #include "tit/core/sys_info.hpp"
 #include "tit/core/type.hpp"
@@ -55,7 +55,7 @@ void print_crash_report(
     std::string_view cause = "",
     std::string_view cause_description = "",
     std::source_location loc = std::source_location::current(),
-    Stacktrace stacktrace = Stacktrace::current()) {
+    const cpptrace::raw_trace& stacktrace = cpptrace::generate_raw_trace()) {
   std::println(std::cerr);
   std::println(std::cerr);
   std::println(std::cerr,
@@ -79,9 +79,7 @@ void print_crash_report(
 
   std::println(std::cerr);
   std::println(std::cerr);
-  std::println(std::cerr, "Stack trace:");
-  std::println(std::cerr);
-  std::println(std::cerr, "{}", stacktrace);
+  stacktrace.resolve().print(std::cerr);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

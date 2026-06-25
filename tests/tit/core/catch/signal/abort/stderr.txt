@@ -9,10 +9,13 @@ Aborted (SIGABRT).
 
 Stack trace:
 
-0   tit_main_catch_signal_test          0x000000010033f68c _ZZN3tit12_GLOBAL__N_1L21setup_signal_handlersEvENKUliE_clEi.constprop.0 + 300
-1   tit_main_catch_signal_test          0x000000010033f7b0 _ZNSt16basic_format_argISt20basic_format_contextINSt8__format10_Sink_iterIcEEcEE6handle9_S_formatIKN3tit8CStrViewEEEvRSt26basic_format_parse_contextIcERS4_PKv + 0
-2   libsystem_platform.dylib            0x000000018c92c624 _sigtramp + 56
-3   libsystem_pthread.dylib             0x000000018c8f288c pthread_kill + 296
-4   libsystem_c.dylib                   0x000000018c7c3d04 raise + 32
-5   tit_main_catch_signal_test          0x0000000100398cf8 main + 1048
-6   dyld                                0x000000018c552b98 start + 6076
+0   tit_core_catch_signal_abort_test    0x0000000100fe28dc _ZZN3tit12_GLOBAL__N_1L21setup_signal_handlersEvENKUliE_clEi.constprop.0 + 300
+1   tit_core_catch_signal_abort_test    0x0000000100fe29d4 _ZZN3tit12_GLOBAL__N_1L21setup_signal_handlersEvENUliE_4_FUNEi + 12
+2   libsystem_platform.dylib            0x000000018e78b744 _sigtramp + 56
+3   libsystem_pthread.dylib             0x000000018e7818d8 pthread_kill + 296
+4   libsystem_c.dylib                   0x000000018e651014 raise + 32
+5   tit_core_catch_signal_abort_test    0x0000000100fda9b4 _ZNSt10__polyfunc13_Base_invokerILb0EvJEE15_S_call_storageIRZ4mainEUlvE_EEvRKNS_8_StorageE + 12
+6   tit_core_catch_signal_abort_test    0x0000000100fed398 _ZN3tit8run_mainEiPPcSt18move_only_functionIJFviS1_EEE + 756
+7   tit_core_catch_signal_abort_test    0x0000000100fed700 _ZN3tit8run_mainEiPPcSt18move_only_functionIJFvvEEE + 52
+8   tit_core_catch_signal_abort_test    0x00000001010f7054 main + 52
+9   dyld                                0x000000018e3c3e00 start + 6992

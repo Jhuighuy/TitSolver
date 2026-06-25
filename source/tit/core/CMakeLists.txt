@@ -52,7 +52,6 @@ add_tit_library(
     "range.hpp"
     "serialization.hpp"
     "simd.hpp"
-    "stacktrace.hpp"
     "str.cpp"
     "str.hpp"
     "stream.hpp"
@@ -69,6 +68,7 @@ add_tit_library(
     "zstd.hpp"
   DEPENDS
     $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:tit::malloc>
+    cpptrace::cpptrace
     gcem
     hwy::hwy
     nlohmann_json::nlohmann_json
