@@ -5,6 +5,10 @@
 
 name: Analyze
 
+permissions:
+  contents: read
+  security-events: write
+
 on:
   push:
     branches:
@@ -48,6 +52,11 @@ jobs:
       - name: Setup vcpkg
         uses: ./.github/actions/setup_vcpkg
 
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          config-file: .github/codeql/codeql-config.yml
+
       - name: Build and test
         run: |
           ./build/build.sh --config ${{ matrix.configuration }} --test
@@ -77,3 +86,6 @@ jobs:
             --define "sonar.cfamily.experimental.cpp26.enabled=true"
             --define "sonar.cfamily.compile-commands=./output/cmake_output/${{ matrix.configuration }}/compile_commands.json"
             --define "sonar.coverageReportPaths=${{ env.SONAR_REPORT }}"
+
+      - name: Run CodeQL
+        uses: github/codeql-action/analyze@v4
