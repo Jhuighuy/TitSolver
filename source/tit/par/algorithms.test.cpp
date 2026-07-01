@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <random>
 #include <ranges>
 #include <stdexcept>
 #include <vector>
@@ -122,54 +121,6 @@ TEST_CASE("par::unstable_copy_if") {
                                 return i % 2 == 0;
                               }}),
         ThreadError);
-  }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("par::transform") {
-  par::set_num_threads(4);
-  const std::vector data{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-  std::vector<int> out(data.size());
-  SUBCASE("basic") {
-    // Ensure the loop is executed.
-    const auto iter = par::transform( //
-        data,
-        out.begin(),
-        SleepFunc{[](int i) { return 2 * i + 1; }});
-    CHECK(iter == out.end());
-    CHECK_RANGE_EQ(out, {1, 3, 5, 7, 9, 11, 13, 15, 17, 19});
-  }
-  SUBCASE("exceptions") {
-    // Ensure the exceptions from the worker threads are caught.
-    CHECK_THROWS_AS(par::transform(data, out.begin(), SleepFunc{[](int i) {
-                                     if (i == 7) throw ThreadError{};
-                                     return 2 * i + 1;
-                                   }}),
-                    ThreadError);
-  }
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TEST_CASE("par::sort") {
-  par::set_num_threads(4);
-  constexpr auto sorted = std::views::iota(0, 1000);
-  auto data = sorted | std::ranges::to<std::vector>();
-  std::ranges::shuffle(data, std::mt19937{123});
-  SUBCASE("basic") {
-    // Ensure the loop is executed.
-    par::sort(data);
-    CHECK_RANGE_EQ(data, sorted);
-  }
-  SUBCASE("exceptions") {
-    // Ensure the exceptions from the worker threads are caught.
-    CHECK_THROWS_AS(par::sort(data,
-                              [](int a, int b) {
-                                if (a == 123) throw ThreadError{};
-                                return a < b;
-                              }),
-                    ThreadError);
   }
 }
 

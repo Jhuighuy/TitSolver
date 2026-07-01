@@ -40,7 +40,7 @@ public:
     const auto impl = [&points, &tasks](this const auto& self,
                                         const Box& my_box,
                                         std::ranges::view auto my_perm,
-                                        std::size_t axis) -> void {
+                                        std::size_t axis) {
       if (std::ranges::size(my_perm) <= 1) return;
 
       // Split the points along the current axis.

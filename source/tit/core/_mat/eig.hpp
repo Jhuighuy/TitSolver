@@ -87,15 +87,18 @@ constexpr auto jacobi(Mat<Num, Dim> A,
       if (i == p || i == q) continue;
       const auto Api = A[p, i];
       const auto Aqi = A[q, i];
-      A[p, i] = A[i, p] = c * Api - s * Aqi;
-      A[q, i] = A[i, q] = s * Api + c * Aqi;
+      A[p, i] = c * Api - s * Aqi;
+      A[q, i] = s * Api + c * Aqi;
+      A[i, p] = A[p, i];
+      A[i, q] = A[q, i];
     }
     const auto App = A[p, p];
     const auto Apq = A[p, q];
     const auto Aqq = A[q, q];
     A[p, p] = c * (c * App - s * Apq) - s * (c * Apq - s * Aqq);
     A[q, q] = s * (s * App + c * Apq) + c * (s * Apq + c * Aqq);
-    A[p, q] = A[q, p] = {};
+    A[p, q] = {};
+    A[q, p] = {};
 
     // Update the eigenvectors.
     for (std::size_t i = 0; i < Dim; ++i) {

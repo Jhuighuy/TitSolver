@@ -280,14 +280,6 @@ TEST_CASE("Mat::tr") {
         }) == 15.0);
 }
 
-TEST_CASE("Mat::prod_diag") {
-  CHECK(prod_diag(Mat{
-            {1.0, 2.0, 3.0},
-            {4.0, 5.0, 6.0},
-            {7.0, 8.0, 9.0},
-        }) == 45.0);
-}
-
 TEST_CASE("Vec::outer") {
   CHECK(outer(Vec{1.0, 2.0}, Vec{3.0, 4.0}) == Mat{
                                                    {3.0, 4.0},

@@ -193,17 +193,12 @@ private:
 
 }; // class Mat
 
-template<class Row, class... RestRows>
-Mat(Row, RestRows...) -> Mat<vec_num_t<Row>, 1 + sizeof...(RestRows)>;
+template<class... Rows>
+Mat(Rows... rows) -> Mat<vec_num_t<Rows...[0]>, sizeof...(Rows)>;
 
-// NOLINTBEGIN(*-c-arrays)
-
-template<class Num, class... RestNums>
-Mat(const Num (&row)[1 + sizeof...(RestNums)],
-    const RestNums (&... rest_rows)[1 + sizeof...(RestNums)])
-    -> Mat<Num, 1 + sizeof...(RestNums)>;
-
-// NOLINTEND(*-c-arrays)
+template<class... Nums> // NOLINTNEXTLINE(*-c-arrays)
+Mat(const Nums (&... rows)[sizeof...(Nums)])
+    -> Mat<Nums...[0], sizeof...(Nums)>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -237,14 +232,6 @@ template<class Num, std::size_t Dim>
 constexpr auto tr(const Mat<Num, Dim>& A) -> Num {
   auto r = A[0, 0];
   for (std::size_t i = 1; i < Dim; ++i) r += A[i, i];
-  return r;
-}
-
-/// Product of the diagonal elements.
-template<class Num, std::size_t Dim>
-constexpr auto prod_diag(const Mat<Num, Dim>& A) -> Num {
-  auto r = A[0, 0];
-  for (std::size_t i = 1; i < Dim; ++i) r *= A[i, i];
   return r;
 }
 
