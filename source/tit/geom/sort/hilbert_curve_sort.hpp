@@ -166,7 +166,7 @@ public:
     const auto impl = [&points, &tasks](this const auto& self,
                                         const Box& my_box,
                                         std::ranges::view auto my_perm,
-                                        const State& state) -> void {
+                                        const State& state) {
       if (std::ranges::size(my_perm) <= 1) return;
 
       // Split permutation along the current axis.

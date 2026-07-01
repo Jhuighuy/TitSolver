@@ -11,7 +11,6 @@
 #include <concepts>
 #include <cstddef>
 #include <format>
-#include <utility>
 
 #include "tit/core/_vec/vec_mask.hpp"
 #include "tit/core/assert.hpp"
@@ -80,12 +79,10 @@ public:
   }
 
   /// Construct a vector with elements @p qs.
-  /// @todo We should get rid of conversion `Num(std::forward<Args>(qs))`.
-  template<class... Args>
-    requires (Dim > 1) && (sizeof...(Args) == Dim) &&
-             (std::constructible_from<Num, Args &&> && ...)
-  constexpr explicit(false) Vec(Args&&... qs)
-      : col_{Num(std::forward<Args>(qs))...} {}
+  template<std::convertible_to<Num>... Args>
+    requires (Dim > 1) && (sizeof...(Args) == Dim)
+  constexpr explicit(false) Vec(const Args&... qs)
+      : col_{static_cast<Num>(qs)...} {}
 
   /// Vector dimensionality.
   constexpr auto dim() const -> int {

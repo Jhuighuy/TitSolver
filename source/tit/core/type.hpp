@@ -417,14 +417,6 @@ constexpr auto type_name_of(const T& arg) -> std::string {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/// Check if an integer can be safely converted to a different integer type.
-template<std::integral To, std::integral Num>
-constexpr auto is_safe_cast(Num a) noexcept -> bool {
-  return static_cast<Num>(static_cast<To>(a)) == a;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// Safely cast a pointer from one type to another between unrelated types.
 template<class ToPtr, class FromPtr>
   requires std::is_pointer_v<ToPtr> && std::is_pointer_v<FromPtr> && ([] {

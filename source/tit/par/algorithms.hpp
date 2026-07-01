@@ -18,7 +18,6 @@
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_reduce.h>
-#include <oneapi/tbb/parallel_sort.h>
 
 #include "tit/par/atomic.hpp"
 #include "tit/par/control.hpp"
@@ -43,7 +42,7 @@ using blocked_range_t = tbb::blocked_range<std::ranges::iterator_t<Range>>;
 namespace impl {
 
 template<range Range>
-static auto make_blocked(Range&& range) noexcept -> blocked_range_t<Range&&> {
+auto make_blocked(Range&& range) noexcept -> blocked_range_t<Range&&> {
   return {std::ranges::begin(range), std::ranges::end(range)};
 }
 
@@ -176,63 +175,6 @@ struct UnstableCopyIf final {
 
 /// @copydoc CopyIf
 inline constexpr UnstableCopyIf unstable_copy_if{};
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Transformation operations.
-//
-
-/// Parallel transform.
-struct Transform final {
-  template<range Range,
-           std::random_access_iterator OutIter,
-           class Func,
-           class Proj = std::identity>
-    requires std::indirectly_writable<
-        OutIter,
-        std::indirect_result_t<
-            Func&,
-            std::projected<std::ranges::iterator_t<Range>, Proj>>>
-  static auto operator()(Range&& range, OutIter out, Func func, Proj proj = {})
-      -> OutIter {
-    const auto out_end = std::ranges::next(out, std::ranges::size(range));
-    for_each(std::views::zip(std::ranges::subrange{out, out_end},
-                             std::views::as_const(range)),
-             [&func, &proj](auto out_in_elems) {
-               auto&& [out_elem, in_elem] = out_in_elems;
-               out_elem = std::invoke(func, std::invoke(proj, in_elem));
-             });
-    return out_end;
-  }
-};
-
-/// @copydoc Transform
-inline constexpr Transform transform{};
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Sorting operations.
-//
-
-/// Parallel sort.
-struct Sort final {
-  template<range Range, class Compare = std::less<>, class Proj = std::identity>
-    requires std::sortable<std::ranges::iterator_t<Range>, Compare, Proj>
-  static void operator()(Range&& range, Compare compare = {}, Proj proj = {}) {
-    tbb::parallel_sort(
-        std::ranges::begin(range),
-        std::ranges::end(range),
-        [&compare, &proj](std::ranges::range_reference_t<Range> a,
-                          std::ranges::range_reference_t<Range> b) {
-          return std::invoke(compare,
-                             std::invoke(proj, a),
-                             std::invoke(proj, b));
-        });
-  }
-};
-
-/// @copydoc Sort
-inline constexpr Sort sort{};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

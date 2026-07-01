@@ -9,7 +9,6 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
-#include <utility>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/simd.hpp"
@@ -78,11 +77,10 @@ public:
   }
 
   /// Construct a vector mask with elements @p bs.
-  template<class... Args>
-    requires (Dim > 1) && (sizeof...(Args) == Dim) &&
-             (std::constructible_from<bool, Args &&> && ...)
-  constexpr explicit(false) VecMask(Args&&... bs)
-      : col_{Mask{std::forward<Args>(bs)}...} {}
+  template<std::convertible_to<bool>... Args>
+    requires (Dim > 1) && (sizeof...(Args) == Dim)
+  constexpr explicit(false) VecMask(const Args&... bs)
+      : col_{Mask{static_cast<bool>(bs)}...} {}
 
   /// Vector mask element at index.
   /// @{

@@ -13,6 +13,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <sqlite3.h>
 
@@ -106,7 +107,7 @@ auto Database::last_insert_row_id() const -> RowID {
 
 Statement::Statement(Database& db, std::string_view sql) : db_{&db} {
   TIT_ASSERT(!sql.empty(), "SQL statement is null!");
-  TIT_ASSERT(is_safe_cast<int>(sql.size()), "SQL is too big!");
+  TIT_ASSERT(std::in_range<int>(sql.size()), "SQL is too big!");
 
   sqlite3_stmt* stmt = nullptr;
   if (const auto status = sqlite3_prepare_v3(db_->base(),
@@ -181,7 +182,7 @@ void Statement::bind_(std::size_t index, float64_t value) const {
 void Statement::bind_(std::size_t index, std::string_view value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(index < num_params_(), "Param index is out of range!");
-  TIT_ASSERT(is_safe_cast<int>(value.size()),
+  TIT_ASSERT(std::in_range<int>(value.size()),
              "Statement string argument is too large!");
 
   if (const auto status = sqlite3_bind_text(base(),
@@ -200,7 +201,7 @@ void Statement::bind_(std::size_t index, std::string_view value) const {
 void Statement::bind_(std::size_t index, BlobView value) const {
   TIT_ASSERT(state_ == State_::prepared, "Statement is not prepared!");
   TIT_ASSERT(index < num_params_(), "Param index is out of range!");
-  TIT_ASSERT(is_safe_cast<int>(value.size()),
+  TIT_ASSERT(std::in_range<int>(value.size()),
              "Statement blob argument is too large!");
 
   if (const auto status = sqlite3_bind_blob(base(),
@@ -381,7 +382,7 @@ auto BlobReader::base() const noexcept -> sqlite3_blob* {
 }
 
 auto BlobReader::read(std::span<std::byte> data) -> std::size_t {
-  TIT_ASSERT(is_safe_cast<int>(data.size()), "Data size is too large!");
+  TIT_ASSERT(std::in_range<int>(data.size()), "Data size is too large!");
 
   TIT_ASSERT(offset_ <= size_, "Offset is out of range!");
   const auto count = std::min(data.size(), size_ - offset_);

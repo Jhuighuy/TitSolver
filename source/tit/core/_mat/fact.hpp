@@ -55,7 +55,7 @@ public:
 
   /// Determinant of the matrix.
   constexpr auto det() const -> mat_num_t<Mat> {
-    return prod_diag(LU_);
+    return prod(diag(LU_));
   }
 
   /// Solve the matrix equation.
@@ -125,7 +125,7 @@ public:
 
   /// Determinant of the matrix.
   constexpr auto det() const -> mat_num_t<Mat> {
-    return pow2(prod_diag(L_));
+    return pow2(prod(diag(L_)));
   }
 
   /// Solve the matrix equation.
@@ -205,7 +205,7 @@ public:
 
   /// Determinant of the matrix.
   constexpr auto det() const -> mat_num_t<Mat> {
-    return prod_diag(LD_);
+    return prod(diag(LD_));
   }
 
   /// Solve the matrix equation.

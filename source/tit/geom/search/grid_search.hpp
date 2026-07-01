@@ -51,13 +51,13 @@ public:
     grid_ = Grid{box}.set_cell_extents(size_hint);
     first_point_.assign(grid_.flat_num_cells(), sentinel_);
     next_point_.resize(std::ranges::size(points_));
-    par::transform(std::views::enumerate(points_),
-                   next_point_.begin(),
-                   [this](const auto& index_and_point) {
-                     const auto& [index, point] = index_and_point;
-                     const auto cell = grid_.flat_cell_index(point);
-                     return par::exchange(first_point_[cell], index);
-                   });
+    par::for_each(std::views::enumerate(std::views::zip(points_, next_point_)),
+                  [this](auto&& index_and_points) {
+                    auto&& [index, point_and_next_point] = index_and_points;
+                    auto&& [point, next_point] = point_and_next_point;
+                    const auto cell = grid_.flat_cell_index(point);
+                    next_point = par::exchange(first_point_[cell], index);
+                  });
   }
 
   /// Find the points within the radius to the given point.
