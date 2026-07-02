@@ -104,6 +104,18 @@ TEST_CASE("geom::Triangle::clamp") {
   CHECK_APPROX_EQ(tri.clamp(Vec{0.5, 0.5, 0.0}), Vec{0.5, 0.5, 0.0});
   CHECK_APPROX_EQ(tri.clamp(Vec{1.0, 1.0, 1.0}), Vec{1.0, 1.0, 0.0});
   CHECK_APPROX_EQ(tri.clamp(Vec{1.0, 1.0, -1.0}), Vec{1.0, 1.0, 0.0});
+
+  // Degenerate case: point exactly on an edge (zero distance to the
+  // triangle). These exercise the `vc`/`vb`/`va` boundaries (== 0) of
+  // regions 4, 5 and 6 without leaving the edges' valid parameter range.
+  CHECK_APPROX_EQ(tri.clamp(Vec{1.0, 0.0, 0.0}), Vec{1.0, 0.0, 0.0});
+  CHECK_APPROX_EQ(tri.clamp(Vec{0.0, 1.0, 0.0}), Vec{0.0, 1.0, 0.0});
+  CHECK_APPROX_EQ(tri.clamp(Vec{1.0, 1.0, 0.0}), Vec{1.0, 1.0, 0.0});
+
+  // Degenerate case: point collinear with an edge, beyond the far vertex,
+  // with zero perpendicular offset (in the triangle's plane).
+  CHECK_APPROX_EQ(tri.clamp(Vec{5.0, 0.0, 0.0}), Vec{2.0, 0.0, 0.0});
+  CHECK_APPROX_EQ(tri.clamp(Vec{0.0, 5.0, 0.0}), Vec{0.0, 2.0, 0.0});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
