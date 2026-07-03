@@ -25,7 +25,7 @@ export interface Navigation {
 }
 
 export interface SearchResult {
-  activeMatch: number;
+  activeMatchOrdinal: number;
   matches: number;
 }
 
@@ -84,7 +84,6 @@ export function WebView({
 
   const handleNavigation = useEffectEvent(() => {
     if (webview === null) return;
-
     onNavigationChange({
       state: "ready",
       url: webview.getURL(),
@@ -96,9 +95,7 @@ export function WebView({
 
   const handleFoundInPage = useEffectEvent((event: FoundInPageEvent) => {
     const { activeMatchOrdinal, matches, finalUpdate } = event.result;
-    if (finalUpdate) {
-      onSearchResult({ activeMatch: activeMatchOrdinal, matches });
-    }
+    if (finalUpdate) onSearchResult({ activeMatchOrdinal, matches });
   });
 
   const handleIPCMessage = useEffectEvent((event: IpcMessageEvent) => {
@@ -110,24 +107,47 @@ export function WebView({
   useEffect(() => {
     if (webview === null) return;
 
-    webview.addEventListener("did-start-loading", handleStartLoad);
-    webview.addEventListener("dom-ready", handleNavigation);
-    webview.addEventListener("did-navigate", handleNavigation);
-    webview.addEventListener("did-navigate-in-page", handleNavigation);
-    webview.addEventListener("did-stop-loading", handleNavigation);
-    webview.addEventListener("page-title-updated", handleNavigation);
-    webview.addEventListener("found-in-page", handleFoundInPage);
-    webview.addEventListener("ipc-message", handleIPCMessage);
+    const controller = new AbortController();
+
+    /**
+     * @todo Electron typing currently define the last parameter of as boolean,
+     *       but not the `AddEventListenerOptions` type. Therefore, we have to
+     *       make these `as unknown as boolean` casts.
+     */
+    webview.addEventListener("did-start-loading", handleStartLoad, {
+      signal: controller.signal,
+    } as unknown as boolean);
+
+    webview.addEventListener("dom-ready", handleNavigation, {
+      signal: controller.signal,
+    } as unknown as boolean);
+
+    webview.addEventListener("did-navigate", handleNavigation, {
+      signal: controller.signal,
+    } as unknown as boolean);
+
+    webview.addEventListener("did-navigate-in-page", handleNavigation, {
+      signal: controller.signal,
+    } as unknown as boolean);
+
+    webview.addEventListener("did-stop-loading", handleNavigation, {
+      signal: controller.signal,
+    } as unknown as boolean);
+
+    webview.addEventListener("page-title-updated", handleNavigation, {
+      signal: controller.signal,
+    } as unknown as boolean);
+
+    webview.addEventListener("found-in-page", handleFoundInPage, {
+      signal: controller.signal,
+    } as unknown as boolean);
+
+    webview.addEventListener("ipc-message", handleIPCMessage, {
+      signal: controller.signal,
+    } as unknown as boolean);
 
     return () => {
-      webview.removeEventListener("did-start-loading", handleStartLoad);
-      webview.removeEventListener("dom-ready", handleNavigation);
-      webview.removeEventListener("did-navigate", handleNavigation);
-      webview.removeEventListener("did-navigate-in-page", handleNavigation);
-      webview.removeEventListener("did-stop-loading", handleNavigation);
-      webview.removeEventListener("page-title-updated", handleNavigation);
-      webview.removeEventListener("found-in-page", handleFoundInPage);
-      webview.removeEventListener("ipc-message", handleIPCMessage);
+      controller.abort();
     };
   }, [webview]);
 

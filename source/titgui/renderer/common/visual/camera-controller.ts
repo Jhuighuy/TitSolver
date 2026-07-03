@@ -13,7 +13,6 @@ import {
 
 import { clamp } from "~/renderer/common/utils-math";
 import { Camera } from "~/renderer/common/visual/camera";
-import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -33,9 +32,7 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
   public minZoom = 1e-3;
   public maxZoom = 1e6;
 
-  private state: "pan" | "zoom" | "rotate" | null = null;
-  private readonly eventStart = new Vector2();
-  private readonly eventEnd = new Vector2();
+  private readonly controller = new AbortController();
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -47,18 +44,11 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
     this.camera.position.set(0, 0, 5);
     this.add(this.camera);
 
-    canvas.addEventListener("mousedown", this.onMouseDown);
-    canvas.addEventListener("dblclick", this.onDoubleClick);
-    canvas.addEventListener("wheel", this.onMouseWheel, { passive: false });
+    this.setupMouseEventListeners();
   }
 
   public dispose() {
-    this.state = null;
-    this.canvas.removeEventListener("mousedown", this.onMouseDown);
-    this.canvas.removeEventListener("dblclick", this.onDoubleClick);
-    this.canvas.removeEventListener("wheel", this.onMouseWheel);
-    globalThis.removeEventListener("mousemove", this.onMouseMove);
-    globalThis.removeEventListener("mouseup", this.onMouseUp);
+    this.controller.abort();
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -122,90 +112,112 @@ export class CameraController extends Object3D<CameraControllerEventMap> {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  private readonly onMouseDown = (event: MouseEvent) => {
-    event.preventDefault();
-    if (this.state !== null) return;
+  private setupMouseEventListeners() {
+    this.setupClickEventListener();
+    this.setupDoubleClickEventListener();
+    this.setupWheelEventListener();
+  }
 
-    this.eventStart.set(event.clientX, event.clientY);
-    switch (event.button) {
-      case 0:
-        this.state = "pan";
-        break;
-      case 1:
-        this.state = "zoom";
-        break;
-      case 2:
-        this.state = "rotate";
-        break;
-      default:
-        return; // Ignore other buttons.
-    }
+  private setupClickEventListener() {
+    this.canvas.addEventListener(
+      "mousedown",
+      (event) => {
+        if (event.button > 2) return; // Ignore non-primary mouse buttons.
+        event.preventDefault();
 
-    globalThis.addEventListener("mousemove", this.onMouseMove);
-    globalThis.addEventListener("mouseup", this.onMouseUp);
-  };
+        const start = new Vector2(event.clientX, event.clientY);
+        const end = new Vector2();
 
-  private readonly onMouseMove = (event: MouseEvent) => {
-    this.eventEnd.set(event.clientX, event.clientY);
-    const dx = (this.eventEnd.x - this.eventStart.x) / this.canvas.clientWidth;
-    const dy = (this.eventEnd.y - this.eventStart.y) / this.canvas.clientHeight;
-    assert(this.state !== null);
-    switch (this.state) {
-      case "pan":
-        this.panCamera(dx, dy);
-        break;
-      case "zoom":
-        this.zoomCamera(dy);
-        break;
-      case "rotate":
-        this.rotateCamera(dx, dy);
-        break;
-      default:
-        assert(false);
-    }
-    this.eventStart.copy(this.eventEnd);
-    this.dispatchEvent({ type: "changed" });
-  };
+        const moveController = new AbortController();
 
-  private readonly onMouseUp = () => {
-    this.state = null;
-    globalThis.removeEventListener("mousemove", this.onMouseMove);
-    globalThis.removeEventListener("mouseup", this.onMouseUp);
-  };
+        globalThis.addEventListener(
+          "mousemove",
+          (moveEvent) => {
+            end.set(moveEvent.clientX, moveEvent.clientY);
+            const dx = (end.x - start.x) / this.canvas.clientWidth;
+            const dy = (end.y - start.y) / this.canvas.clientHeight;
+            switch (event.button) {
+              case 0:
+                this.panCamera(dx, dy);
+                break;
+              case 1:
+                this.zoomCamera(dy);
+                break;
+              case 2:
+                this.rotateCamera(dx, dy);
+                break;
+            }
+            start.copy(end);
+            this.dispatchEvent({ type: "changed" });
+          },
+          {
+            signal: AbortSignal.any([
+              this.controller.signal,
+              moveController.signal,
+            ]),
+          },
+        );
 
-  private readonly onDoubleClick = () => {
-    this.snapToNearestAxis();
-    this.dispatchEvent({ type: "changed" });
-  };
-
-  private readonly onMouseWheel = (event: WheelEvent) => {
-    event.preventDefault();
-
-    // Normalize wheel delta to CSS pixels for consistent mouse/touchpad behavior.
-    const deltaPixels = (() => {
-      switch (event.deltaMode) {
-        case WheelEvent.DOM_DELTA_PIXEL:
-          return event.deltaY;
-        case WheelEvent.DOM_DELTA_LINE:
-          return event.deltaY * 16;
-        case WheelEvent.DOM_DELTA_PAGE:
-          return event.deltaY * this.canvas.clientHeight;
-        default:
-          return event.deltaY;
-      }
-    })();
-
-    // Exponential scale gives smooth trackpad zoom and stable wheel step zoom.
-    const sensitivity = 0.002 * this.zoomSpeed;
-    const delta = Math.exp(-deltaPixels * sensitivity);
-    this.camera.zoom = clamp(
-      this.camera.zoom * delta,
-      this.minZoom,
-      this.maxZoom,
+        globalThis.addEventListener(
+          "mouseup",
+          () => {
+            moveController.abort();
+          },
+          { signal: this.controller.signal },
+        );
+      },
+      { signal: this.controller.signal },
     );
-    this.camera.updateProjectionMatrix();
-    this.dispatchEvent({ type: "changed" });
-  };
+  }
+
+  private setupDoubleClickEventListener() {
+    this.canvas.addEventListener(
+      "dblclick",
+      () => {
+        this.snapToNearestAxis();
+        this.dispatchEvent({ type: "changed" });
+      },
+      { signal: this.controller.signal },
+    );
+  }
+
+  private setupWheelEventListener() {
+    this.canvas.addEventListener(
+      "wheel",
+      (event) => {
+        event.preventDefault();
+
+        // Normalize wheel delta to CSS pixels for consistent mouse/touchpad
+        // behavior.
+        const deltaPixels = (() => {
+          switch (event.deltaMode) {
+            case WheelEvent.DOM_DELTA_PIXEL:
+              return event.deltaY;
+            case WheelEvent.DOM_DELTA_LINE:
+              return event.deltaY * 16;
+            case WheelEvent.DOM_DELTA_PAGE:
+              return event.deltaY * this.canvas.clientHeight;
+            default:
+              return event.deltaY;
+          }
+        })();
+
+        // Exponential scale gives smooth trackpad zoom and stable wheel step
+        // zoom.
+        const sensitivity = 0.002 * this.zoomSpeed;
+        const delta = Math.exp(-deltaPixels * sensitivity);
+        this.camera.zoom = clamp(
+          this.camera.zoom * delta,
+          this.minZoom,
+          this.maxZoom,
+        );
+
+        this.camera.updateProjectionMatrix();
+        this.dispatchEvent({ type: "changed" });
+      },
+      { signal: this.controller.signal, passive: false },
+    );
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

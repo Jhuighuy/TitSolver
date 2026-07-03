@@ -141,7 +141,7 @@ export function Toolbar({
           <>
             {searchResult && (
               <Text color="subtle" className="hidden sm:block">
-                {`${searchResult.activeMatch}/${searchResult.matches}`}
+                {`${searchResult.activeMatchOrdinal}/${searchResult.matches}`}
               </Text>
             )}
             <IconButton
