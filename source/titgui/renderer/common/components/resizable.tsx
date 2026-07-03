@@ -58,21 +58,27 @@ export function Resizable({
     const prevCursor = document.body.style.cursor;
     document.body.style.cursor = horizontal ? "ew-resize" : "ns-resize";
 
-    function handleMouseMove(moveEvent: MouseEvent) {
-      const delta = horizontal
-        ? moveEvent.clientX - downEvent.clientX
-        : moveEvent.clientY - downEvent.clientY;
-      updateSize(delta);
-    }
+    const controller = new AbortController();
 
-    function handleMouseUp() {
-      document.body.style.cursor = prevCursor;
-      globalThis.removeEventListener("mousemove", handleMouseMove);
-      globalThis.removeEventListener("mouseup", handleMouseUp);
-    }
+    globalThis.addEventListener(
+      "mousemove",
+      (moveEvent) => {
+        const delta = horizontal
+          ? moveEvent.clientX - downEvent.clientX
+          : moveEvent.clientY - downEvent.clientY;
+        updateSize(delta);
+      },
+      { signal: controller.signal },
+    );
 
-    globalThis.addEventListener("mousemove", handleMouseMove);
-    globalThis.addEventListener("mouseup", handleMouseUp);
+    globalThis.addEventListener(
+      "mouseup",
+      () => {
+        document.body.style.cursor = prevCursor;
+        controller.abort();
+      },
+      { signal: controller.signal },
+    );
   }
 
   function handleKeyDown(event: React.KeyboardEvent) {
