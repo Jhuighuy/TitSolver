@@ -7,9 +7,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
 import type { ZodType } from "zod";
 
+import { ipc } from "~/renderer/common/ipc";
 import { logger } from "~/renderer/common/logging";
 import { applyStateUpdate, type SetStateAction } from "~/renderer/common/utils";
-import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -24,7 +24,7 @@ export function useWindowState<T>(
   const { data: value } = useQuery({
     queryKey,
     queryFn: async () => {
-      const rawValue = await globalThis.windowState?.persistGet(key);
+      const rawValue = await ipc.window.persistGet(key);
       if (rawValue === undefined) return fallbackValue;
 
       const { success, data: value, error } = schema.safeParse(rawValue);
@@ -45,8 +45,7 @@ export function useWindowState<T>(
 
   const { mutate } = useMutation({
     mutationFn: async (value: T) => {
-      assert(globalThis.windowState !== undefined);
-      await globalThis.windowState.persistSet(key, schema.parse(value));
+      await ipc.window.persistSet(key, schema.parse(value));
     },
     onMutate: async (next) => {
       await queryClient.cancelQueries({ queryKey });
@@ -75,16 +74,13 @@ export function useWindowIsFullScreen() {
 
   const { data: isFullScreen } = useQuery({
     queryKey,
-    queryFn: async () => {
-      if (globalThis.windowState === undefined) return false;
-      return globalThis.windowState.isFullScreen();
-    },
+    queryFn: async () => ipc.window.isFullScreen(),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,
   });
 
   useEffect(() => {
-    return globalThis.windowState?.onFullScreenChanged((isFullScreen) => {
+    return ipc.window.onFullScreenChanged((isFullScreen) => {
       queryClient.setQueryData(queryKey, isFullScreen);
     });
   }, [queryClient, queryKey]);

@@ -6,6 +6,8 @@
 import { type ComponentProps, useState } from "react";
 
 import { Button } from "~/renderer/common/components/button";
+import { ipc } from "~/renderer/common/ipc";
+import { logger } from "~/renderer/common/logging";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -24,9 +26,14 @@ export function ExportButton({
         assert(!isExporting);
         setIsExporting(true);
 
-        void globalThis.session?.export().finally(() => {
-          setIsExporting(false);
-        });
+        void ipc.session
+          .export()
+          .catch((error: unknown) => {
+            logger.err("Export failed.\n", error);
+          })
+          .finally(() => {
+            setIsExporting(false);
+          });
       }}
       {...props}
     >

@@ -3,12 +3,23 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { contextBridge } from "electron";
-
-import { createPreloadIpcClient } from "~/preload/ipc-client";
+import type { IpcClient } from "~/shared/ipc/contract";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-contextBridge.exposeInMainWorld("titgui", createPreloadIpcClient());
+function connect(): IpcClient {
+  const client = globalThis.titgui;
+  if (client === undefined) {
+    throw new Error(
+      "IPC bridge is unavailable: the preload script did not run.",
+    );
+  }
+  return client;
+}
+
+/**
+ * The IPC client. Fails fast at module load if the preload bridge is missing.
+ */
+export const ipc = connect();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -14,6 +14,7 @@
     "dev": "electron-forge start",
     "format": "oxfmt .",
     "lint": "tsgo --noEmit --pretty false && oxlint . && oxfmt --check .",
+    "test": "vitest run",
     "upgrade": "npx npm-check-updates -u && npm install"
   },
   "dependencies": {
@@ -51,7 +52,8 @@
     "oxlint-tsgolint": "^0.24.0",
     "tailwindcss": "4.3.2",
     "vite": "^8.1.2",
-    "vite-plugin-svgr": "^5.2.0"
+    "vite-plugin-svgr": "^5.2.0",
+    "vitest": "^4.1.9"
   },
   "overrides": {
     "yauzl": "^3.4.0"

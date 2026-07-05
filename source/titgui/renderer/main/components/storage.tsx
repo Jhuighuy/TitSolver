@@ -14,6 +14,8 @@ import {
   useState,
 } from "react";
 
+import { ipc } from "~/renderer/common/ipc";
+import { logger } from "~/renderer/common/logging";
 import { FieldMap } from "~/renderer/common/visual/fields";
 import { assert } from "~/shared/utils";
 
@@ -56,14 +58,18 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
   const requestNumFramesEvent = useEffectEvent(() => {
     const sessionID = ++sessionIDRef.current;
 
-    void globalThis.session?.getFrameCount().then((numFrames) => {
-      if (sessionID !== sessionIDRef.current) return;
+    void ipc.session
+      .frameCount()
+      .then((numFrames) => {
+        if (sessionID !== sessionIDRef.current) return;
 
-      assert(numFrames >= 0);
-      setNumFrames(numFrames);
+        setNumFrames(numFrames);
 
-      if (numFrames > 0) setRequestedFrameIndex(0);
-    });
+        if (numFrames > 0) setRequestedFrameIndex(0);
+      })
+      .catch((error: unknown) => {
+        logger.err("Failed to query the frame count.\n", error);
+      });
   });
 
   useEffect(() => {
@@ -81,24 +87,29 @@ export function StorageProvider({ children }: Readonly<StorageProviderProps>) {
     const sessionID = sessionIDRef.current;
     const requestID = ++requestIDRef.current;
 
-    void globalThis.session?.getFrame(requestedFrameIndex).then((result) => {
-      if (sessionID !== sessionIDRef.current) return;
-      if (requestID !== requestIDRef.current) return;
+    void ipc.session
+      .frame(requestedFrameIndex)
+      .then((result) => {
+        if (sessionID !== sessionIDRef.current) return;
+        if (requestID !== requestIDRef.current) return;
 
-      const fieldMap = new FieldMap(
-        Object.fromEntries(
-          Object.entries(result).map(([fieldName, { data }]) => [
-            fieldName,
-            data,
-          ]),
-        ),
-      );
+        const fieldMap = new FieldMap(
+          Object.fromEntries(
+            Object.entries(result).map(([fieldName, { data }]) => [
+              fieldName,
+              data,
+            ]),
+          ),
+        );
 
-      setFrameData(fieldMap);
-      setFrameIndex(requestedFrameIndex);
+        setFrameData(fieldMap);
+        setFrameIndex(requestedFrameIndex);
 
-      setRequestedFrameIndex(null);
-    });
+        setRequestedFrameIndex(null);
+      })
+      .catch((error: unknown) => {
+        logger.err("Failed to read the frame.\n", error);
+      });
   });
 
   useEffect(() => {

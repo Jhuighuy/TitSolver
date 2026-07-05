@@ -11,8 +11,8 @@ import {
   useState,
 } from "react";
 
-import { WEBVIEW_OPEN_IN_TAB_CHANNEL } from "~/shared/channels";
 import { assert } from "~/shared/utils";
+import { WEBVIEW_OPEN_IN_TAB_CHANNEL } from "~/shared/webview";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

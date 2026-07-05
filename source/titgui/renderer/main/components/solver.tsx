@@ -14,7 +14,7 @@ import {
   useState,
 } from "react";
 
-import { solverEventSchema } from "~/shared/solver";
+import { ipc } from "~/renderer/common/ipc";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,13 +46,12 @@ export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
   const [solverOutput, setSolverOutput] = useState("");
 
   useEffect(() => {
-    void globalThis.session?.isSolverRunning().then((running) => {
+    void ipc.session.isSolverRunning().then((running) => {
       isSolverRunningRef.current = running;
       setIsSolverRunning(running);
     });
 
-    return globalThis.session?.onSolverEvent((responseRaw) => {
-      const response = solverEventSchema.parse(responseRaw);
+    return ipc.session.onSolverEvent((response) => {
       switch (response.kind) {
         case "stdout":
         case "stderr":
@@ -77,12 +76,12 @@ export function SolverProvider({ children }: Readonly<SolverProviderProps>) {
     setIsSolverRunning(true);
 
     setSolverOutput("");
-    void globalThis.session?.runSolver();
+    void ipc.session.runSolver();
   }, []);
 
   const stopSolver = useCallback(() => {
     assert(isSolverRunningRef.current);
-    void globalThis.session?.stopSolver();
+    void ipc.session.stopSolver();
   }, []);
 
   const solver = useMemo<Solver>(

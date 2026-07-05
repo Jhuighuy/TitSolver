@@ -9,38 +9,20 @@ import {
   app,
   BrowserWindow,
   dialog,
-  ipcMain,
+  type IpcMainInvokeEvent,
   nativeTheme,
   type OpenDialogOptions,
 } from "electron";
 import { z } from "zod";
 
-import { makeHelpService } from "~/main/help";
+import { HelpService } from "~/main/help";
 import { Installation } from "~/main/installation";
+import { exposeIpcHandlers } from "~/main/ipc";
 import { PersistedState } from "~/main/persisted-state";
 import { SessionManager } from "~/main/session";
 import { WindowManager } from "~/main/window";
-import {
-  HELP_ADD_TAB_CHANNEL,
-  HELP_CLOSE_TAB_CHANNEL,
-  HELP_GET_SESSION_CHANNEL,
-  HELP_NAVIGATE_TAB_CHANNEL,
-  HELP_SELECT_TAB_CHANNEL,
-  HELP_SESSION_CHANGED_CHANNEL,
-  SESSION_EXPORT_RUN_CHANNEL,
-  SESSION_FRAME_COUNT_CHANNEL,
-  SESSION_FRAME_GET_CHANNEL,
-  SESSION_SOLVER_IS_RUNNING_CHANNEL,
-  SESSION_SOLVER_RUN_CHANNEL,
-  SESSION_SOLVER_STOP_CHANNEL,
-  THEME_GET_CHANNEL,
-  THEME_SET_CHANNEL,
-  WINDOW_IS_FULL_SCREEN_CHANNEL,
-  WINDOW_PERSIST_GET_CHANNEL,
-  WINDOW_PERSIST_SET_CHANNEL,
-} from "~/shared/channels";
-import type { HelpService } from "~/shared/help";
-import { type Theme, themeSchema } from "~/shared/theme";
+import { themeSchema } from "~/shared/theme";
+import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -49,7 +31,7 @@ class Application {
   private session?: SessionManager;
   private persist?: PersistedState;
   private windowManager?: WindowManager;
-  private helpManager?: HelpService;
+  private helpService?: HelpService;
 
   public run() {
     app.on("ready", () => {
@@ -90,7 +72,7 @@ class Application {
     this.windowManager = new WindowManager(this.persist);
 
     // Setup help.
-    this.helpManager = makeHelpService(
+    this.helpService = new HelpService(
       this.install,
       this.windowManager.controllers.help,
     );
@@ -107,115 +89,91 @@ class Application {
     this.persist?.save();
   }
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private requireSession() {
+    assert(this.session !== undefined, "Session is not ready.");
+    return this.session;
+  }
+
+  private requireHelp() {
+    assert(this.helpService !== undefined, "Help service is not ready.");
+    return this.helpService;
+  }
+
+  private findWindowController(event: IpcMainInvokeEvent) {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window === null) return;
+    return this.windowManager?.find(window);
+  }
+
   private registerIpcHandlers() {
-    ipcMain.removeHandler(THEME_GET_CHANNEL);
-    ipcMain.handle(THEME_GET_CHANNEL, () => {
-      return nativeTheme.themeSource;
-    });
-
-    ipcMain.removeHandler(THEME_SET_CHANNEL);
-    ipcMain.handle(THEME_SET_CHANNEL, (_event, theme: Theme) => {
-      nativeTheme.themeSource = theme;
-    });
-
-    ipcMain.removeHandler(WINDOW_PERSIST_GET_CHANNEL);
-    ipcMain.handle(WINDOW_PERSIST_GET_CHANNEL, (event, key: string) => {
-      const window = BrowserWindow.fromWebContents(event.sender);
-      if (window === null) return;
-      return this.windowManager?.find(window)?.persist.get(key, z.unknown());
-    });
-
-    ipcMain.removeHandler(WINDOW_PERSIST_SET_CHANNEL);
-    ipcMain.handle(
-      WINDOW_PERSIST_SET_CHANNEL,
-      (event, key: string, value: unknown) => {
-        const window = BrowserWindow.fromWebContents(event.sender);
-        if (window === null) return;
-        this.windowManager?.find(window)?.persist.set(key, value);
+    exposeIpcHandlers({
+      theme: {
+        get: () => nativeTheme.themeSource,
+        set: (_event, theme) => {
+          nativeTheme.themeSource = theme;
+        },
       },
-    );
 
-    ipcMain.removeHandler(WINDOW_IS_FULL_SCREEN_CHANNEL);
-    ipcMain.handle(WINDOW_IS_FULL_SCREEN_CHANNEL, (event) => {
-      const window = BrowserWindow.fromWebContents(event.sender);
-      return window?.isFullScreen() ?? false;
-    });
-
-    ipcMain.removeHandler(SESSION_FRAME_COUNT_CHANNEL);
-    ipcMain.handle(SESSION_FRAME_COUNT_CHANNEL, async () => {
-      return this.session?.getFrameCount();
-    });
-
-    ipcMain.removeHandler(SESSION_FRAME_GET_CHANNEL);
-    ipcMain.handle(SESSION_FRAME_GET_CHANNEL, async (_event, index: number) => {
-      return this.session?.getFrame(index);
-    });
-
-    ipcMain.removeHandler(SESSION_EXPORT_RUN_CHANNEL);
-    ipcMain.handle(SESSION_EXPORT_RUN_CHANNEL, async (event) => {
-      const options: OpenDialogOptions = {
-        title: "Export Data",
-        buttonLabel: "Export",
-        properties: ["openDirectory", "createDirectory"],
-      };
-      const window = BrowserWindow.fromWebContents(event.sender);
-      const result =
-        window === null
-          ? await dialog.showOpenDialog(options)
-          : await dialog.showOpenDialog(window, options);
-      if (result.canceled) return;
-      await this.session?.export(result.filePaths[0]);
-    });
-
-    ipcMain.removeHandler(SESSION_SOLVER_RUN_CHANNEL);
-    ipcMain.handle(SESSION_SOLVER_RUN_CHANNEL, () => {
-      this.session?.runSolver();
-    });
-
-    ipcMain.removeHandler(SESSION_SOLVER_STOP_CHANNEL);
-    ipcMain.handle(SESSION_SOLVER_STOP_CHANNEL, () => {
-      this.session?.stopSolver();
-    });
-
-    ipcMain.removeHandler(SESSION_SOLVER_IS_RUNNING_CHANNEL);
-    ipcMain.handle(SESSION_SOLVER_IS_RUNNING_CHANNEL, () => {
-      return this.session?.isSolverRunning();
-    });
-
-    ipcMain.removeHandler(HELP_GET_SESSION_CHANNEL);
-    ipcMain.handle(HELP_GET_SESSION_CHANNEL, async () => {
-      return this.helpManager?.getSession();
-    });
-
-    this.helpManager?.onSessionChanged((session) => {
-      this.windowManager?.controllers.help?.window?.webContents.send(
-        HELP_SESSION_CHANGED_CHANNEL,
-        session,
-      );
-    });
-
-    ipcMain.removeHandler(HELP_ADD_TAB_CHANNEL);
-    ipcMain.handle(HELP_ADD_TAB_CHANNEL, async (_event, url?: string) => {
-      return this.helpManager?.addTab(url);
-    });
-
-    ipcMain.removeHandler(HELP_CLOSE_TAB_CHANNEL);
-    ipcMain.handle(HELP_CLOSE_TAB_CHANNEL, async (_event, id: number) => {
-      return this.helpManager?.closeTab(id);
-    });
-
-    ipcMain.removeHandler(HELP_SELECT_TAB_CHANNEL);
-    ipcMain.handle(HELP_SELECT_TAB_CHANNEL, async (_event, id: number) => {
-      return this.helpManager?.selectTab(id);
-    });
-
-    ipcMain.removeHandler(HELP_NAVIGATE_TAB_CHANNEL);
-    ipcMain.handle(
-      HELP_NAVIGATE_TAB_CHANNEL,
-      async (_event, id: number, url?: string) => {
-        return this.helpManager?.navigateTab(id, url);
+      window: {
+        persistGet: (event, key) => {
+          return this.findWindowController(event)?.persist.get(
+            key,
+            z.unknown(),
+          );
+        },
+        persistSet: (event, key, value) => {
+          this.findWindowController(event)?.persist.set(key, value);
+        },
+        isFullScreen: (event) => {
+          const window = BrowserWindow.fromWebContents(event.sender);
+          return window?.isFullScreen() ?? false;
+        },
       },
-    );
+
+      session: {
+        frameCount: async () => this.requireSession().getFrameCount(),
+        frame: async (_event, index) => this.requireSession().getFrame(index),
+        export: async (event) => {
+          const options: OpenDialogOptions = {
+            title: "Export Data",
+            buttonLabel: "Export",
+            properties: ["openDirectory", "createDirectory"],
+          };
+          const window = BrowserWindow.fromWebContents(event.sender);
+          const result =
+            window === null
+              ? await dialog.showOpenDialog(options)
+              : await dialog.showOpenDialog(window, options);
+          if (result.canceled) return;
+          await this.requireSession().export(result.filePaths[0]);
+        },
+        runSolver: () => {
+          this.requireSession().runSolver();
+        },
+        stopSolver: () => {
+          this.requireSession().stopSolver();
+        },
+        isSolverRunning: () => this.requireSession().isSolverRunning(),
+      },
+
+      help: {
+        getSession: () => this.requireHelp().getSession(),
+        addTab: (_event, url) => {
+          this.requireHelp().addTab(url);
+        },
+        closeTab: (_event, id) => {
+          this.requireHelp().closeTab(id);
+        },
+        selectTab: (_event, id) => {
+          this.requireHelp().selectTab(id);
+        },
+        navigateTab: (_event, id, url) => {
+          this.requireHelp().navigateTab(id, url);
+        },
+      },
+    });
   }
 }
 

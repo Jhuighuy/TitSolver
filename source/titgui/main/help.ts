@@ -16,37 +16,25 @@ import {
   protocol,
   shell,
 } from "electron";
-import z from "zod";
 
 import type { Installation } from "~/main/installation";
+import { sendIpcEvent } from "~/main/ipc";
 import type { WindowController } from "~/main/window";
-import { WEBVIEW_OPEN_IN_TAB_CHANNEL } from "~/shared/channels";
-import type {
-  HelpService,
-  HelpSession,
-  HelpSessionListener,
-  HelpTab,
+import {
+  type HelpSession,
+  type HelpSessionListener,
+  helpSessionSchema,
+  type HelpTab,
 } from "~/shared/help";
 import { assert } from "~/shared/utils";
-
-// oxlint-disable require-await
+import { WEBVIEW_OPEN_IN_TAB_CHANNEL } from "~/shared/webview";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * Construct a help service.
+ * Help service.
  */
-export function makeHelpService(
-  install: Installation,
-  controller: WindowController,
-) {
-  return new HelpServiceImpl(install, controller);
-}
-
-/**
- * Help service implementation.
- */
-class HelpServiceImpl implements HelpService {
+export class HelpService {
   private readonly protocol: HelpProtocol;
   private readonly sessionModel: HelpSessionModel;
   private readonly sessionListeners: Set<HelpSessionListener> = new Set();
@@ -59,7 +47,7 @@ class HelpServiceImpl implements HelpService {
     this.protocol = new HelpProtocol(install.manualPath);
 
     this.sessionModel = new HelpSessionModel(
-      this.controller.persist.get("session", HelpSessionSchema, {
+      this.controller.persist.get("session", helpSessionSchema, {
         activeTabID: undefined,
         tabs: [],
       }),
@@ -67,17 +55,23 @@ class HelpServiceImpl implements HelpService {
     this.onSessionChanged((session) => {
       this.controller.persist.set("session", session);
     });
+    this.onSessionChanged((session) => {
+      const window = this.controller.window;
+      if (window !== undefined) {
+        sendIpcEvent(window, "help", "sessionChanged", session);
+      }
+    });
 
     this.setupWebviewEventListeners();
   }
 
   /** Get the current session. */
-  public async getSession() {
+  public getSession() {
     return this.sessionModel.session;
   }
 
   /** Add a new tab. */
-  public async addTab(url: string = HOME_URL) {
+  public addTab(url: string = HOME_URL) {
     // External links are opened externally.
     if (this.protocol.isExternalUrl(url)) {
       void shell.openExternal(url);
@@ -95,7 +89,7 @@ class HelpServiceImpl implements HelpService {
   /**
    * Close the tab with the given ID.
    */
-  public async closeTab(id: number) {
+  public closeTab(id: number) {
     this.sessionModel.closeTab(id);
     this.sessionChanged();
 
@@ -104,13 +98,13 @@ class HelpServiceImpl implements HelpService {
   }
 
   /** Select the tab with the given ID. */
-  public async selectTab(id: number) {
+  public selectTab(id: number) {
     this.sessionModel.selectTab(id);
     this.sessionChanged();
   }
 
   /** Update the URL of the tab with the given ID. */
-  public async navigateTab(id: number, url: string = HOME_URL) {
+  public navigateTab(id: number, url: string = HOME_URL) {
     // External links are opened externally.
     if (this.protocol.isExternalUrl(url)) {
       void shell.openExternal(url);
@@ -445,10 +439,5 @@ class HelpSessionModel {
     tab.url = url;
   }
 }
-
-const HelpSessionSchema = z.object({
-  activeTabID: z.number().optional(),
-  tabs: z.array(z.object({ id: z.number(), url: z.string() })),
-});
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3,12 +3,21 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { contextBridge } from "electron";
-
-import { createPreloadIpcClient } from "~/preload/ipc-client";
+import { defineConfig } from "vitest/config";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-contextBridge.exposeInMainWorld("titgui", createPreloadIpcClient());
+export default defineConfig({
+  resolve: {
+    alias: {
+      "~": __dirname,
+    },
+  },
+  test: {
+    environment: "node",
+    include: ["**/*.test.ts"],
+    exclude: ["**/node_modules/**", ".vite/**", "dist/**", "native/**"],
+  },
+});
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

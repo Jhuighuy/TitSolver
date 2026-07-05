@@ -8,8 +8,8 @@ import path from "node:path";
 import { BrowserWindow, nativeTheme } from "electron";
 import { z } from "zod";
 
+import { sendIpcEvent } from "~/main/ipc";
 import type { PersistedState } from "~/main/persisted-state";
-import { WINDOW_FULL_SCREEN_CHANGED_CHANNEL } from "~/shared/channels";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -106,20 +106,28 @@ export class WindowController {
 
     // Notify of full screen state changes.
     this.window.once("ready-to-show", () => {
-      this.window?.webContents.send(
-        WINDOW_FULL_SCREEN_CHANGED_CHANNEL,
-        this.window.isFullScreen(),
+      const window = this.window;
+      if (window === undefined) return;
+      sendIpcEvent(
+        window,
+        "window",
+        "fullScreenChanged",
+        window.isFullScreen(),
       );
 
-      this.window?.show();
-      if (isMaximized) this.window?.maximize();
-      if (isFullScreen) this.window?.setFullScreen(true);
+      window.show();
+      if (isMaximized) window.maximize();
+      if (isFullScreen) window.setFullScreen(true);
     });
     this.window.on("enter-full-screen", () => {
-      this.window?.webContents.send(WINDOW_FULL_SCREEN_CHANGED_CHANNEL, true);
+      const window = this.window;
+      if (window === undefined) return;
+      sendIpcEvent(window, "window", "fullScreenChanged", true);
     });
     this.window.on("leave-full-screen", () => {
-      this.window?.webContents.send(WINDOW_FULL_SCREEN_CHANGED_CHANNEL, false);
+      const window = this.window;
+      if (window === undefined) return;
+      sendIpcEvent(window, "window", "fullScreenChanged", false);
     });
 
     // Load the content and show the window.

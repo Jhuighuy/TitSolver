@@ -7,14 +7,12 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import path from "node:path";
 
-import { BrowserWindow } from "electron";
-
 import {
   openStorage as nativeOpenStorage,
   type Storage as NativeStorage,
 } from "~/bindings";
 import type { Installation } from "~/main/installation";
-import { SESSION_SOLVER_EVENT_CHANNEL } from "~/shared/channels";
+import { broadcastIpcEvent } from "~/main/ipc";
 import type { SolverEvent } from "~/shared/solver";
 import type { Frame } from "~/shared/storage";
 import { assert } from "~/shared/utils";
@@ -117,9 +115,7 @@ export class SessionManager {
   ) {
     this.solver = new SolverManager(install);
     this.solver.setEventCallback((event) => {
-      for (const window of BrowserWindow.getAllWindows()) {
-        window.webContents.send(SESSION_SOLVER_EVENT_CHANNEL, event);
-      }
+      broadcastIpcEvent("session", "solverEvent", event);
     });
   }
 

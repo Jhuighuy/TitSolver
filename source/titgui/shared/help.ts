@@ -3,58 +3,39 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import { z } from "zod";
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
  * Tab in the help window.
  */
-export interface HelpTab {
+export const helpTabSchema = z.object({
   /** Unique tab ID. */
-  id: number;
+  id: z.number(),
 
   /** URL of the tab. */
-  url: string;
-}
+  url: z.string(),
+});
+
+export type HelpTab = z.infer<typeof helpTabSchema>;
 
 /**
  * Session in the help window.
  */
-export interface HelpSession {
+export const helpSessionSchema = z.object({
   /** ID of the active tab. */
-  activeTabID?: number;
+  activeTabID: z.number().optional(),
 
   /** Tabs in the session. */
-  tabs: HelpTab[];
-}
+  tabs: z.array(helpTabSchema),
+});
+
+export type HelpSession = z.infer<typeof helpSessionSchema>;
 
 /**
  * Session listener function.
  */
 export type HelpSessionListener = (session: HelpSession) => void;
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/**
- * Help service.
- */
-export interface HelpService {
-  /** Get the current session. */
-  getSession(): Promise<HelpSession>;
-
-  /** Add a new tab. */
-  addTab(url?: string): Promise<void>;
-
-  /** Close the tab with the given ID. */
-  closeTab(id: number): Promise<void>;
-
-  /** Select the tab with the given ID. */
-  selectTab(id: number): Promise<void>;
-
-  /** Update the URL of the tab with the given ID. */
-  navigateTab(id: number, url?: string): Promise<void>;
-
-  /** Subscribe to session changes. */
-  onSessionChanged(listener: HelpSessionListener): () => void;
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

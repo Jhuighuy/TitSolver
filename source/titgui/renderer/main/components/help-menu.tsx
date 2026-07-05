@@ -7,6 +7,7 @@ import { IconBook } from "@tabler/icons-react";
 
 import { Flex } from "~/renderer/common/components/layout";
 import { Link } from "~/renderer/common/components/link";
+import { ipc } from "~/renderer/common/ipc";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -20,7 +21,7 @@ export function HelpMenu() {
         rel="noreferrer"
         onClick={(event) => {
           event.preventDefault();
-          void globalThis.help?.addTab();
+          void ipc.help.addTab();
         }}
       >
         <IconBook />
