@@ -27,12 +27,12 @@ const textVariants = cva("[&_svg]:size-[1.5em] [&_svg]:shrink-0", {
       bold: "font-bold",
     },
     color: {
-      strong: "text-(--fg-1)",
-      default: "text-(--fg-2)",
-      muted: "text-(--fg-3)",
-      subtle: "text-(--fg-4)",
-      accent: "text-(--accent-fg-2)",
-      red: "text-red-600 dark:text-red-400",
+      strong: "text-(--neutral-10)",
+      default: "text-(--neutral-8)",
+      muted: "text-(--neutral-7)",
+      subtle: "text-(--neutral-6)",
+      accent: "text-(--accent-7)",
+      danger: "text-(--danger)",
     },
     truncate: {
       true: "truncate",

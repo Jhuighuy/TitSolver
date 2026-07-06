@@ -27,7 +27,6 @@
     "clsx": "^2.1.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-indiana-drag-scroll": "^2.2.1",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.0",
     "zod": "^4.4.3"

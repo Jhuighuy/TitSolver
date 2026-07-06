@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { sendIpcEvent } from "~/main/ipc";
 import type { PersistedState } from "~/main/persisted-state";
+import { windowBackgroundColors } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -230,8 +231,9 @@ const WINDOW_MAXIMIZED_KEY = `${WINDOW}.is-maximized`;
 const WINDOW_FULLSCREEN_KEY = `${WINDOW}.is-full-screen`;
 
 function getWindowBackgroundColor() {
-  // Note: These colors match the CSS variable `var(--bg-1)`.
-  return nativeTheme.shouldUseDarkColors ? "#0f172a" : "#e2e8f0";
+  return nativeTheme.shouldUseDarkColors
+    ? windowBackgroundColors.dark
+    : windowBackgroundColors.light;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

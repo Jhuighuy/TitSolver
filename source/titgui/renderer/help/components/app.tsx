@@ -9,7 +9,6 @@ import { Tabs } from "~/renderer/common/components/tabs";
 import { Window } from "~/renderer/common/components/window";
 import { TabPane } from "~/renderer/help/components/tab-pane";
 import { useSession } from "~/renderer/help/hooks/use-session";
-import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -27,14 +26,12 @@ function Shell() {
     <Tabs
       value={activeTabID ?? null}
       onValueChange={(value) => {
-        assert(typeof value === "number");
         selectTab(value);
       }}
       onAddTab={() => {
         addTab();
       }}
       onCloseTab={(value) => {
-        assert(typeof value === "number");
         closeTab(value);
       }}
     >

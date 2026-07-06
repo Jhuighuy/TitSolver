@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 
 import BlueTitIcon from "~/assets/icon.svg?react";
 import { chrome } from "~/renderer/common/components/classes";
-import { Box, Flex } from "~/renderer/common/components/layout";
 import { Text } from "~/renderer/common/components/text";
 import { cn } from "~/renderer/common/components/utils";
 import { useWindowIsFullScreen } from "~/renderer/common/hooks/use-window";
@@ -22,23 +21,14 @@ export function Window({ children }: Readonly<WindowProps>) {
   const isFullScreen = useWindowIsFullScreen();
 
   return (
-    <Flex
-      direction="column"
-      width="100vw"
-      height="100vh"
-      className="bg-(--bg-1) text-(--fg-1)"
-    >
+    <div className="flex h-screen w-screen flex-col bg-(--neutral-3) text-(--neutral-10)">
       {/* ---- Title bar. -------------------------------------------------- */}
       {isFullScreen || (
-        <Flex
-          align="center"
-          justify="center"
-          gap="1"
-          width="100%"
-          height="30px"
-          minHeight="30px"
-          maxHeight="30px"
-          className={cn("title-bar-drag", chrome())}
+        <div
+          className={cn(
+            "title-bar-drag flex h-[30px] w-full shrink-0 items-center justify-center gap-1",
+            chrome(),
+          )}
         >
           <BlueTitIcon
             width={16}
@@ -49,14 +39,12 @@ export function Window({ children }: Readonly<WindowProps>) {
           <Text size="2" weight="bold">
             {document.title}
           </Text>
-        </Flex>
+        </div>
       )}
 
       {/* ---- Content. ---------------------------------------------------- */}
-      <Box flexGrow="1" minHeight="0">
-        {children}
-      </Box>
-    </Flex>
+      <div className="min-h-0 grow">{children}</div>
+    </div>
   );
 }
 

@@ -21,15 +21,16 @@ function DropdownMenuRoot(
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const dropdownMenuTriggerVariants = cva(
-  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded border font-(--font-sans) transition-colors select-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--accent-fg-3) disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded border font-(--font-sans) transition-colors select-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--accent-6) disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-[1.5em] [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         solid:
-          "border-transparent bg-(--accent-bg-3) text-(--accent-fg-5) hover:bg-(--accent-bg-4) active:bg-(--accent-bg-4)",
-        outline: "border-(--accent-fg-3) text-(--fg-2) hover:bg-(--bg-4)",
+          "border-transparent bg-(--accent-6) text-(--accent-contrast) hover:bg-(--accent-7) active:bg-(--accent-7)",
+        outline:
+          "border-(--accent-6) text-(--neutral-8) hover:bg-(--neutral-2)",
         ghost:
-          "border-transparent text-(--fg-3) hover:bg-(--bg-6) hover:text-(--fg-1)",
+          "border-transparent text-(--neutral-7) hover:bg-(--neutral-10)/10 hover:text-(--neutral-10)",
       },
       size: {
         "1": "h-6 px-2 py-0.5 text-(length:--text-1) leading-(--leading-1)",
@@ -94,7 +95,7 @@ function DropdownMenuContent({
         <BaseMenu.Popup
           {...props}
           className={cn(
-            "z-50 flex min-w-40 flex-col gap-2 rounded border border-(--chrome-1) bg-(--bg-3) p-2 shadow-(--shadow-popup)",
+            "z-50 flex min-w-40 flex-col gap-2 rounded border border-(--neutral-4) bg-(--neutral-1) p-2 shadow-(--shadow-popup)",
             className,
           )}
         >
@@ -116,7 +117,7 @@ function DropdownMenuItem({
     <BaseMenu.Item
       {...props}
       className={cn(
-        "flex cursor-pointer items-center gap-2 px-3 py-1.5 text-(length:--text-1) leading-(--leading-1) text-(--fg-2) transition-colors select-none hover:bg-(--accent-bg-1) hover:text-(--accent-fg-1) data-highlighted:bg-(--accent-bg-1) data-highlighted:text-(--accent-fg-1) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+        "flex cursor-pointer items-center gap-2 px-3 py-1.5 text-(length:--text-1) leading-(--leading-1) text-(--neutral-8) transition-colors select-none hover:bg-(--accent-1) hover:text-(--accent-8) data-highlighted:bg-(--accent-1) data-highlighted:text-(--accent-8) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
         className,
       )}
     >

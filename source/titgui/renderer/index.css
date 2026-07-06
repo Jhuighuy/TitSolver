@@ -14,7 +14,25 @@
 
 @source "./";
 
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *\
+ * Color tokens are organized into two ramps plus a few semantic extras.
+ *
+ * Ramp step roles (both themes):
+ *   1      panel background (cards, popups, inputs, menu contents)
+ *   2      chrome background (title bar, menu bars, tabs)
+ *   3      application background (behind everything; must match
+ *          `windowBackgroundColors` in `shared/theme.ts` — enforced by
+ *          `shared/theme.test.ts`)
+ *   4-5    borders and separators (subtle / strong)
+ *   5-6    faint text: placeholders, disabled, inactive
+ *   7-8    secondary text and icons
+ *   9-10   primary text / strongest ink
+ *
+ * Accent ramp reuses the same scale: 1-2 subtle backgrounds, 6 solid fills
+ * and focus rings, 7 solid hover and accent text, 8+ strong accent text.
+ * Hover overlays are expressed as alpha of the strongest ink, for example
+ * `hover:bg-(--neutral-10)/10`, so they work on any surface.
+\* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 :root {
   /* ---- Fonts. ------------------------------------------------------------ */
@@ -30,33 +48,36 @@
   --tracking-label-1: 0.08em;
   --tracking-label-2: 0.05em;
 
-  /* ---- Backgrounds. ------------------------------------------------------ */
-  --bg-1: var(--color-slate-200);
-  --bg-2: var(--color-slate-200);
-  --bg-3: white;
-  --bg-4: var(--color-slate-100);
-  --bg-5: var(--color-slate-300);
-  --bg-6: color-mix(in srgb, var(--color-slate-400) 60%, transparent);
-  --accent-bg-1: var(--color-indigo-50);
-  --accent-bg-2: var(--color-indigo-100);
-  --accent-bg-3: var(--color-indigo-500);
-  --accent-bg-4: var(--color-indigo-700);
+  /* ---- Neutral ramp. ------------------------------------------------------ */
+  --neutral-1: white;
+  --neutral-2: var(--color-slate-100);
+  --neutral-3: var(--color-slate-200);
+  --neutral-4: var(--color-slate-300);
+  --neutral-5: var(--color-slate-400);
+  --neutral-6: var(--color-slate-500);
+  --neutral-7: var(--color-slate-600);
+  --neutral-8: var(--color-slate-700);
+  --neutral-9: var(--color-slate-800);
+  --neutral-10: var(--color-slate-900);
 
-  /* ---- Foregrounds. ------------------------------------------------------ */
-  --fg-1: var(--color-slate-900);
-  --fg-2: var(--color-slate-700);
-  --fg-3: var(--color-slate-600);
-  --fg-4: var(--color-slate-500);
-  --fg-5: var(--color-slate-400);
-  --accent-fg-1: var(--color-indigo-700);
-  --accent-fg-2: var(--color-indigo-600);
-  --accent-fg-3: var(--color-indigo-500);
-  --accent-fg-4: var(--color-indigo-400);
-  --accent-fg-5: white;
+  /* ---- Accent ramp. ------------------------------------------------------- */
+  --accent-1: var(--color-indigo-50);
+  --accent-2: var(--color-indigo-100);
+  --accent-3: var(--color-indigo-200);
+  --accent-4: var(--color-indigo-300);
+  --accent-5: var(--color-indigo-400);
+  --accent-6: var(--color-indigo-500);
+  --accent-7: var(--color-indigo-600);
+  --accent-8: var(--color-indigo-700);
+  --accent-9: var(--color-indigo-800);
+  --accent-10: var(--color-indigo-900);
+  --accent-contrast: white;
 
-  /* ---- Chrome. ----------------------------------------------------------- */
-  --chrome-1: var(--color-slate-300);
-  --chrome-2: var(--color-slate-400);
+  /* ---- Semantic extras. ---------------------------------------------------- */
+  --danger: var(--color-red-600);
+  --warning: var(--color-orange-600);
+  --selection: #fcc22e;
+  --chrome-highlight: rgba(255, 255, 255, 0.45);
   --shadow-popup:
     0 10px 15px -3px rgb(226 232 240 / 0.6),
     0 4px 6px -4px rgb(226 232 240 / 0.6);
@@ -64,33 +85,36 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* ---- Backgrounds. ---------------------------------------------------- */
-    --bg-1: var(--color-slate-900);
-    --bg-2: var(--color-slate-700);
-    --bg-3: var(--color-slate-800);
-    --bg-4: var(--color-slate-700);
-    --bg-5: var(--color-slate-600);
-    --bg-6: color-mix(in srgb, var(--color-slate-600) 60%, transparent);
-    --accent-bg-1: color-mix(in srgb, var(--color-indigo-950) 40%, transparent);
-    --accent-bg-2: color-mix(in srgb, var(--color-indigo-900) 60%, transparent);
-    --accent-bg-3: var(--color-indigo-400);
-    --accent-bg-4: var(--color-indigo-600);
+    /* ---- Neutral ramp. ---------------------------------------------------- */
+    --neutral-1: var(--color-slate-800);
+    --neutral-2: var(--color-slate-700);
+    --neutral-3: var(--color-slate-900);
+    --neutral-4: var(--color-slate-600);
+    --neutral-5: var(--color-slate-500);
+    --neutral-6: var(--color-slate-400);
+    --neutral-7: var(--color-slate-300);
+    --neutral-8: var(--color-slate-200);
+    --neutral-9: var(--color-slate-100);
+    --neutral-10: var(--color-slate-50);
 
-    /* ---- Foregrounds. ---------------------------------------------------- */
-    --fg-1: var(--color-slate-100);
-    --fg-2: var(--color-slate-300);
-    --fg-3: var(--color-slate-400);
-    --fg-4: var(--color-slate-400);
-    --fg-5: var(--color-slate-500);
-    --accent-fg-1: var(--color-indigo-300);
-    --accent-fg-2: var(--color-indigo-400);
-    --accent-fg-3: var(--color-indigo-400);
-    --accent-fg-4: var(--color-indigo-400);
-    --accent-fg-5: white;
+    /* ---- Accent ramp. ----------------------------------------------------- */
+    --accent-1: color-mix(in srgb, var(--color-indigo-950) 40%, transparent);
+    --accent-2: color-mix(in srgb, var(--color-indigo-900) 60%, transparent);
+    --accent-3: var(--color-indigo-900);
+    --accent-4: var(--color-indigo-800);
+    --accent-5: var(--color-indigo-700);
+    --accent-6: var(--color-indigo-400);
+    --accent-7: var(--color-indigo-500);
+    --accent-8: var(--color-indigo-300);
+    --accent-9: var(--color-indigo-200);
+    --accent-10: var(--color-indigo-100);
+    --accent-contrast: white;
 
-    /* ---- Chrome. --------------------------------------------------------- */
-    --chrome-1: var(--color-slate-600);
-    --chrome-2: var(--color-slate-500);
+    /* ---- Semantic extras. -------------------------------------------------- */
+    --danger: var(--color-red-400);
+    --warning: var(--color-orange-400);
+    --selection: #fcc22e;
+    --chrome-highlight: rgba(255, 255, 255, 0.08);
     --shadow-popup:
       0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
   }
@@ -101,19 +125,19 @@
 body {
   font-family: var(--font-sans);
   font-size: var(--text-1);
-  background: var(--bg-1);
+  background: var(--neutral-3);
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 ::selection {
-  color: var(--accent-fg-5);
-  background: var(--accent-bg-3);
+  color: var(--accent-contrast);
+  background: var(--accent-6);
 }
 
 ::-moz-selection {
-  color: var(--accent-fg-5);
-  background: var(--accent-bg-3);
+  color: var(--accent-contrast);
+  background: var(--accent-6);
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */

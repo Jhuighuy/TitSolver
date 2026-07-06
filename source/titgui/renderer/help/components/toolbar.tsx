@@ -18,7 +18,6 @@ import {
 import { IconButton } from "~/renderer/common/components/button";
 import { chrome, surface } from "~/renderer/common/components/classes";
 import { TextInput } from "~/renderer/common/components/input";
-import { Flex } from "~/renderer/common/components/layout";
 import { Separator } from "~/renderer/common/components/separator";
 import { Spinner } from "~/renderer/common/components/spinner";
 import { Text } from "~/renderer/common/components/text";
@@ -60,15 +59,7 @@ export function Toolbar({
   const { url, state, canGoBack = false, canGoForward = false } = navigation;
 
   return (
-    <Flex
-      align="center"
-      height="9"
-      minHeight="9"
-      maxHeight="9"
-      px="2"
-      gap="3"
-      className={chrome()}
-    >
+    <div className={cn("flex h-9 shrink-0 items-center gap-3 px-2", chrome())}>
       {/* ---- Back / Forward. --------------------------------------------- */}
       <IconButton size="2" disabled={!canGoBack} onClick={onBack}>
         <IconArrowBackUp />
@@ -95,19 +86,17 @@ export function Toolbar({
       <Separator orientation="vertical" />
 
       {/* ---- URL. -------------------------------------------------------- */}
-      <Flex
-        flexGrow="1"
-        align="center"
-        gap="2"
-        px="3"
-        py="1"
-        className={cn(surface(), "rounded-full border [&_svg]:shrink-0")}
+      <div
+        className={cn(
+          "flex min-w-0 grow items-center gap-2 rounded-full border px-3 py-1 [&_svg]:shrink-0",
+          surface(),
+        )}
       >
         {state === "loading" ? <Spinner /> : <IconWorld className="size-3.5" />}
         <Text color="subtle" truncate className="min-w-0 flex-1">
           {url}
         </Text>
-      </Flex>
+      </div>
 
       <Separator orientation="vertical" />
 
@@ -168,7 +157,7 @@ export function Toolbar({
           </IconButton>
         </>
       )}
-    </Flex>
+    </div>
   );
 }
 

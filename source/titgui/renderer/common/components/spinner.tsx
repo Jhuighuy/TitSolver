@@ -11,7 +11,7 @@ import { cn } from "~/renderer/common/components/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const spinnerVariants = cva(
-  "inline-block animate-spin rounded-full border-2 border-current border-t-transparent text-(--fg-5)",
+  "inline-block animate-spin rounded-full border-2 border-current border-t-transparent text-(--neutral-5)",
   {
     variants: {
       size: {

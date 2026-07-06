@@ -61,6 +61,11 @@ export class ParticlesSwitch extends Object3D implements Particles {
     this.current.setSelection(selectionValues);
   }
 
+  public setSelectionColor(rgb: readonly [number, number, number]) {
+    this.spheres.setSelectionColor(rgb);
+    this.glyphs.setSelectionColor(rgb);
+  }
+
   public setColorRange(colorRange: ColorRange) {
     this.current.setColorRange(colorRange);
   }

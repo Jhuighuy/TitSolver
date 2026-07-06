@@ -5,11 +5,19 @@
 
 import type { ReactNode } from "react";
 
-import { Box, Flex } from "~/renderer/common/components/layout";
 import { cn } from "~/renderer/common/components/utils";
 import { VisuallyHidden } from "~/renderer/common/components/visually-hidden";
 import { clamp } from "~/renderer/common/utils-math";
 import { assert } from "~/shared/utils";
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+const directionClasses = {
+  row: "flex-row",
+  "row-reverse": "flex-row-reverse",
+  column: "flex-col",
+  "column-reverse": "flex-col-reverse",
+} as const;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -96,16 +104,15 @@ export function Resizable({
   }
 
   return (
-    <Flex direction={direction}>
-      <Box
-        {...(horizontal
-          ? { width: `${size}px`, height: "100%" }
-          : { height: `${size}px`, width: "100%" })}
+    <div className={cn("flex", directionClasses[direction])}>
+      <div
+        className={horizontal ? "h-full" : "w-full"}
+        style={horizontal ? { width: size } : { height: size }}
       >
         {children}
-      </Box>
-      <Box position="relative">
-        <Box
+      </div>
+      <div className="relative">
+        <div
           tabIndex={0}
           onMouseDown={handleMouseDown}
           onKeyDown={handleKeyDown}
@@ -115,19 +122,17 @@ export function Resizable({
           aria-valuemin={minSize}
           aria-valuemax={maxSize}
           aria-valuenow={size}
-          position="absolute"
-          {...(horizontal
-            ? { left: "-1px", width: "2px", height: "100%" }
-            : { top: "-1px", width: "100%", height: "2px" })}
           className={cn(
-            "focus-visible:outline-2 focus-visible:outline-(--accent-fg-3)",
-            horizontal ? "cursor-ew-resize" : "cursor-ns-resize",
+            "absolute focus-visible:outline-2 focus-visible:outline-(--accent-6)",
+            horizontal
+              ? "-left-px h-full w-0.5 cursor-ew-resize"
+              : "-top-px h-0.5 w-full cursor-ns-resize",
           )}
         >
           <VisuallyHidden>Resize</VisuallyHidden>
-        </Box>
-      </Box>
-    </Flex>
+        </div>
+      </div>
+    </div>
   );
 }
 

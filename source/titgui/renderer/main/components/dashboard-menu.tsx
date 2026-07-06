@@ -6,7 +6,6 @@
 import { IconHandStop, IconRun } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef } from "react";
 
-import { Box } from "~/renderer/common/components/layout";
 import {
   type MenuAction,
   useMenuAction,
@@ -55,13 +54,13 @@ export function DashboardMenu() {
   }, [solverOutput]);
 
   return (
-    <Box className="select-text hover:cursor-text">
+    <div className="select-text hover:cursor-text">
       <Text size="1">
         <pre>{solverOutput}</pre>
       </Text>
 
       <div ref={bottomRef} />
-    </Box>
+    </div>
   );
 }
 

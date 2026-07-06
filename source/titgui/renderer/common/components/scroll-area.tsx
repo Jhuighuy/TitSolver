@@ -27,13 +27,13 @@ export function ScrollArea({
         orientation="vertical"
         className="flex w-2 touch-none p-0.5 select-none"
       >
-        <BaseScrollArea.Thumb className="flex-1 rounded-full bg-(--bg-6) hover:bg-(--bg-5)" />
+        <BaseScrollArea.Thumb className="flex-1 rounded-full bg-(--neutral-10)/10 hover:bg-(--neutral-4)" />
       </BaseScrollArea.Scrollbar>
       <BaseScrollArea.Scrollbar
         orientation="horizontal"
         className="flex h-2 touch-none flex-col p-0.5 select-none"
       >
-        <BaseScrollArea.Thumb className="flex-1 rounded-full bg-(--bg-6) hover:bg-(--bg-5)" />
+        <BaseScrollArea.Thumb className="flex-1 rounded-full bg-(--neutral-10)/10 hover:bg-(--neutral-4)" />
       </BaseScrollArea.Scrollbar>
     </BaseScrollArea.Root>
   );

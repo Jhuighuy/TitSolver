@@ -7,100 +7,88 @@ import { Select as BaseSelect } from "@base-ui/react/select";
 import { IconChevronDown } from "@tabler/icons-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import {
-  Children,
   type ComponentProps,
   createContext,
-  isValidElement,
   type ReactNode,
   useContext,
   useMemo,
-  useState,
 } from "react";
 
 import { cn } from "~/renderer/common/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface SelectContext {
-  currentValue: string | null;
-  registry: ReadonlyMap<string, ReactNode>;
+/**
+ * A selectable option. Options are the single source for both the popup items
+ * and the trigger label.
+ */
+export interface SelectOption<Value extends string = string> {
+  value: Value;
+  label: ReactNode;
+  icon?: ReactNode;
 }
 
-const SelectContext = createContext<SelectContext | null>(null);
+const SelectOptionsContext = createContext<readonly SelectOption[] | null>(
+  null,
+);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface SelectRootProps<Value extends string = string> extends Omit<
   ComponentProps<typeof BaseSelect.Root>,
-  "onValueChange"
+  "items" | "onValueChange"
 > {
   value?: Value;
   defaultValue?: Value;
+  options: readonly SelectOption<Value>[];
   onValueChange?: (value: Value) => void;
 }
 
 function SelectRoot<Value extends string = string>({
   value,
   defaultValue,
+  options,
   onValueChange,
   children,
   ...props
 }: Readonly<SelectRootProps<Value>>) {
-  const [internalValue, setInternalValue] = useState(defaultValue ?? null);
-
-  const currentValue = value ?? internalValue;
-
-  const registry = useMemo<ReadonlyMap<string, ReactNode>>(() => {
-    const map = new Map<string, ReactNode>();
-
-    function collectItems(node: ReactNode) {
-      Children.forEach(node, (child) => {
-        if (!isValidElement(child)) return;
-
-        const props = child.props as Record<string, unknown>;
-        if (child.type === SelectItem) {
-          const val = props.value;
-          if (typeof val === "string" || typeof val === "number") {
-            map.set(String(val), props.children as ReactNode);
-          }
-          return; // Don't recurse into item children.
-        }
-
-        if (props.children !== null) collectItems(props.children as ReactNode);
-      });
-    }
-
-    collectItems(children);
-
-    return map;
-  }, [children]);
-
-  const context = useMemo<SelectContext>(
-    () => ({ currentValue, registry }),
-    [currentValue, registry],
+  // Base UI renders `items` labels inside `Select.Value`; include the icon so
+  // the trigger shows the full option.
+  const items = useMemo(
+    () =>
+      options.map(({ value, label, icon }) => ({
+        value,
+        label: (
+          <span className="flex min-w-0 items-center gap-2 truncate [&_svg]:size-[1.5em] [&_svg]:shrink-0 [&_svg]:text-(--neutral-6)">
+            {icon}
+            {label}
+          </span>
+        ),
+      })),
+    [options],
   );
 
   return (
-    <SelectContext.Provider value={context}>
+    <SelectOptionsContext.Provider value={options}>
       <BaseSelect.Root
         {...props}
+        items={items}
         value={value}
         defaultValue={defaultValue}
         onValueChange={(value) => {
-          setInternalValue(value as Value);
           onValueChange?.(value as Value);
         }}
       >
         {children}
       </BaseSelect.Root>
-    </SelectContext.Provider>
+    </SelectOptionsContext.Provider>
   );
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const selectTriggerVariants = cva(
-  "inline-flex h-6 cursor-pointer items-center gap-2 border border-(--chrome-1) bg-(--bg-3) px-2 text-(length:--text-1) leading-(--leading-1) text-(--fg-2) transition-colors select-none hover:border-(--chrome-2) hover:bg-(--bg-4) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--accent-fg-3) disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+  "inline-flex h-6 cursor-pointer items-center gap-2 border border-(--neutral-4) bg-(--neutral-1) px-2 text-(length:--text-1) leading-(--leading-1) text-(--neutral-8) transition-colors select-none hover:border-(--neutral-5) hover:bg-(--neutral-2) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--accent-6) disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-[1.5em] [&_svg]:shrink-0",
   {
     variants: {
       radius: {
@@ -128,48 +116,18 @@ function SelectTrigger({
   children,
   ...props
 }: Readonly<SelectTriggerProps>) {
-  const context = useContext(SelectContext);
-
-  children ??=
-    context === null
-      ? null
-      : (context.registry.get(context.currentValue ?? "") ?? null);
-
   return (
     <BaseSelect.Trigger
       {...props}
       className={cn(selectTriggerVariants({ radius }), className)}
     >
-      <span className="flex min-w-0 flex-1 items-center gap-2 truncate [&_svg]:text-(--fg-4)">
-        {children}
+      <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+        {children ?? <BaseSelect.Value />}
       </span>
       <BaseSelect.Icon>
-        <IconChevronDown className="text-(--fg-4) opacity-60" />
+        <IconChevronDown className="text-(--neutral-6) opacity-60" />
       </BaseSelect.Icon>
     </BaseSelect.Trigger>
-  );
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-interface SelectValueProps extends ComponentProps<typeof BaseSelect.Value> {
-  placeholder?: string;
-}
-
-function SelectValue({
-  className,
-  children,
-  placeholder,
-  ...props
-}: Readonly<SelectValueProps>) {
-  return (
-    <BaseSelect.Value
-      {...props}
-      placeholder={placeholder}
-      className={cn("flex-1 truncate", className)}
-    >
-      {children}
-    </BaseSelect.Value>
   );
 }
 
@@ -180,6 +138,15 @@ function SelectContent({
   children,
   ...props
 }: Readonly<ComponentProps<typeof BaseSelect.Popup>>) {
+  const options = useContext(SelectOptionsContext);
+
+  children ??= options?.map(({ value, label, icon }) => (
+    <SelectItem key={value} value={value}>
+      {icon}
+      {label}
+    </SelectItem>
+  ));
+
   return (
     <BaseSelect.Portal>
       <BaseSelect.Positioner sideOffset={4}>
@@ -187,7 +154,7 @@ function SelectContent({
         <BaseSelect.Popup
           {...props}
           className={cn(
-            "z-50 max-h-60 min-w-32 overflow-auto rounded border border-(--chrome-1) bg-(--bg-3) py-1 shadow-(--shadow-popup)",
+            "z-50 max-h-60 min-w-32 overflow-auto rounded border border-(--neutral-4) bg-(--neutral-1) py-1 shadow-(--shadow-popup)",
             className,
           )}
         >
@@ -210,7 +177,7 @@ function SelectItem({
     <BaseSelect.Item
       {...props}
       className={cn(
-        "flex cursor-pointer items-center gap-2 px-3 py-1 text-(length:--text-1) leading-(--leading-1) text-(--fg-2) transition-colors select-none data-highlighted:bg-(--accent-bg-1) data-highlighted:text-(--accent-fg-1) data-selected:font-medium data-selected:text-(--accent-fg-1) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+        "flex cursor-pointer items-center gap-2 px-3 py-1 text-(length:--text-1) leading-(--leading-1) text-(--neutral-8) transition-colors select-none data-highlighted:bg-(--accent-1) data-highlighted:text-(--accent-8) data-selected:font-medium data-selected:text-(--accent-8) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
         className,
       )}
     >
@@ -224,7 +191,6 @@ function SelectItem({
 export const Select = Object.assign(SelectRoot, {
   Root: SelectRoot,
   Trigger: SelectTrigger,
-  Value: SelectValue,
   Content: SelectContent,
   Item: SelectItem,
 });

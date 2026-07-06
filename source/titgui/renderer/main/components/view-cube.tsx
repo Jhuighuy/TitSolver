@@ -6,12 +6,12 @@
 import { type ComponentProps, Fragment } from "react";
 import { Euler, Quaternion, Vector3 } from "three";
 
-import { Box, Flex } from "~/renderer/common/components/layout";
 import { Strong, Text } from "~/renderer/common/components/text";
+import { cn } from "~/renderer/common/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type ViewCubeProps = ComponentProps<typeof Box> & {
+type ViewCubeProps = ComponentProps<"div"> & {
   length?: string;
   diameter?: string;
   rotation: Euler;
@@ -23,11 +23,12 @@ export function ViewCube({
   diameter = "20%",
   rotation,
   setRotation,
+  className,
   ...props
 }: Readonly<ViewCubeProps>) {
   const quat = new Quaternion().setFromEuler(rotation).invert();
   return (
-    <Box {...props} position="relative">
+    <div {...props} className={cn("relative", className)}>
       {Object.entries(axisCns).map(([axis, [colorCn, altColorCn]], i) => {
         const e = new Vector3().setComponent(i, 1).applyQuaternion(quat);
         e.y *= -1;
@@ -39,37 +40,33 @@ export function ViewCube({
 
           return (
             <Fragment key={signedAxis}>
-              <Flex
-                align="center"
-                justify="center"
-                position="absolute"
-                left={`calc(50% + ${sign * e.x} * ${length})`}
-                top={`calc(50% + ${sign * e.y} * ${length})`}
-                size={diameter}
+              <div
                 onClick={() => setRotation?.(axisRotations[signedAxis])}
-                className={sign > 0 ? colorCn : altColorCn}
+                className={cn(
+                  "absolute flex items-center justify-center rounded-full",
+                  sign > 0 ? colorCn : altColorCn,
+                )}
                 style={{
-                  borderRadius: "100%",
+                  left: `calc(50% + ${sign * e.x} * ${length})`,
+                  top: `calc(50% + ${sign * e.y} * ${length})`,
+                  width: diameter,
+                  height: diameter,
                   zIndex: 10 + Math.round(sign * e.z * 2),
                   transform: "translate(-50%, -50%)",
                 }}
               >
                 {sign > 0 && (
-                  <Text className="text-(--fg-2)">
+                  <Text className="text-(--neutral-8)">
                     <Strong>{axis.toUpperCase()}</Strong>
                   </Text>
                 )}
-              </Flex>
+              </div>
 
               {scale > Number.EPSILON && (
-                <Box
-                  position="absolute"
-                  left="50%"
-                  top="50%"
-                  width={`calc(${length} * ${scale} - ${diameter} / 2)`}
-                  height="2px"
-                  className={colorCn}
+                <div
+                  className={cn("absolute top-1/2 left-1/2 h-0.5", colorCn)}
                   style={{
+                    width: `calc(${length} * ${scale} - ${diameter} / 2)`,
                     zIndex: 10 + Math.round(sign * e.z),
                     transform: [
                       "translate(-50%, -50%)",
@@ -83,7 +80,7 @@ export function ViewCube({
           );
         });
       })}
-    </Box>
+    </div>
   );
 }
 
@@ -100,6 +97,8 @@ const axisRotations: Record<string, Euler> = {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Axis colors deliberately stay raw (red/green/blue = X/Y/Z is a CAE
+// convention) and are not part of the theme ramps.
 const axisCns: Record<"x" | "y" | "z", [string, string]> = {
   x: [
     "bg-red-500/75 hover:bg-red-500",

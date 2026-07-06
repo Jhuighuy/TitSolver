@@ -5,7 +5,6 @@
 
 import { useRef, useState } from "react";
 
-import { Box, Flex } from "~/renderer/common/components/layout";
 import { Toolbar } from "~/renderer/help/components/toolbar";
 import {
   type Navigation,
@@ -86,7 +85,7 @@ export function TabPane({
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" size="100%">
+    <div className="flex size-full flex-col">
       {/* ---- Toolbar. ---------------------------------------------------- */}
       <Toolbar
         navigation={navigation}
@@ -102,7 +101,7 @@ export function TabPane({
       />
 
       {/* ---- Web View. -------------------------------------------------- */}
-      <Box flexGrow="1">
+      <div className="grow">
         <WebView
           ref={webViewRef}
           url={url}
@@ -110,8 +109,8 @@ export function TabPane({
           onOpenInNewTab={onOpenInNewTab}
           onSearchResult={setSearchResult}
         />
-      </Box>
-    </Flex>
+      </div>
+    </div>
   );
 }
 

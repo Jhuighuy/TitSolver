@@ -13,17 +13,23 @@ import {
   IconRefresh,
   IconRepeat,
 } from "@tabler/icons-react";
-import { useEffect, useEffectEvent, useState } from "react";
-import ScrollContainer from "react-indiana-drag-scroll";
+import {
+  type KeyboardEvent,
+  type PointerEvent,
+  useEffect,
+  useEffectEvent,
+  useState,
+} from "react";
 
 import { IconButton } from "~/renderer/common/components/button";
-import { chrome, hoverSurface } from "~/renderer/common/components/classes";
-import { Box, Flex } from "~/renderer/common/components/layout";
+import { chrome } from "~/renderer/common/components/classes";
 import { Separator } from "~/renderer/common/components/separator";
-import { Text } from "~/renderer/common/components/text";
 import { Tooltip } from "~/renderer/common/components/tooltip";
+import { cn } from "~/renderer/common/components/utils";
+import { useElementSize } from "~/renderer/common/hooks/use-element-size";
+import { clamp } from "~/renderer/common/utils-math";
 import { useStorage } from "~/renderer/main/components/storage";
-import { assert, iota } from "~/shared/utils";
+import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -54,11 +60,6 @@ export function Timeline() {
     );
   }
 
-  function clickOnFrame(frameIndex: number) {
-    setIsPlaying(false);
-    requestFrame(frameIndex);
-  }
-
   const playNextFrameEvent = useEffectEvent(() => {
     if (frameIndex === null) return;
     if (!isRepeating && frameIndex === numFrames - 1) {
@@ -80,22 +81,14 @@ export function Timeline() {
 
   // ---- Layout. --------------------------------------------------------------
 
-  const alignedNumFrames =
-    10 ** Math.ceil(Math.log10(Math.max(numFrames, 1))) + 1;
+  const disabled = numFrames === 0 || frameIndex === null;
 
   return (
-    <Flex
-      align="center"
-      height="9"
-      minHeight="9"
-      maxHeight="9"
-      px="2"
-      py="1"
-      gap="1"
-      className={chrome()}
+    <div
+      className={cn("flex h-9 shrink-0 items-center gap-1 px-2 py-1", chrome())}
     >
       {/* ---- Playback controls. ------------------------------------------ */}
-      <Flex align="center" gap="4" mx="2">
+      <div className="mx-2 flex items-center gap-4">
         <Tooltip content="Toggle repeat">
           <IconButton
             size="2"
@@ -115,7 +108,7 @@ export function Timeline() {
           <IconButton
             size="2"
             radius="full"
-            disabled={numFrames === 0 || frameIndex === null}
+            disabled={disabled}
             onClick={() => {
               requestFrame(0);
             }}
@@ -130,7 +123,7 @@ export function Timeline() {
           <IconButton
             size="2"
             radius="full"
-            disabled={numFrames === 0 || frameIndex === null}
+            disabled={disabled}
             onClick={setPrevFrame}
           >
             <IconPlayerSkipBack />
@@ -143,7 +136,7 @@ export function Timeline() {
           <IconButton
             size="2"
             radius="full"
-            disabled={numFrames === 0 || frameIndex === null}
+            disabled={disabled}
             onClick={() => {
               setIsPlaying((x) => !x);
             }}
@@ -158,7 +151,7 @@ export function Timeline() {
           <IconButton
             size="2"
             radius="full"
-            disabled={numFrames === 0 || frameIndex === null}
+            disabled={disabled}
             onClick={setNextFrame}
           >
             <IconPlayerSkipForward />
@@ -171,7 +164,7 @@ export function Timeline() {
           <IconButton
             size="2"
             radius="full"
-            disabled={numFrames === 0 || frameIndex === null}
+            disabled={disabled}
             onClick={() => {
               requestFrame(numFrames - 1);
             }}
@@ -179,118 +172,217 @@ export function Timeline() {
             <IconPlayerTrackNext />
           </IconButton>
         </Tooltip>
-      </Flex>
+      </div>
 
       <Separator orientation="vertical" size="2" />
 
-      <Flex align="center" gap="2" mx="2">
+      <div className="mx-2 flex items-center gap-2">
         <Tooltip content="Refresh">
           <IconButton size="2" radius="full" onClick={refresh}>
             <IconRefresh />
           </IconButton>
         </Tooltip>
-      </Flex>
+      </div>
 
       <Separator orientation="vertical" size="2" />
 
-      {/* ---- Time steps. ------------------------------------------------- */}
-      <Box flexGrow="1" size="100%">
-        <ScrollContainer vertical={false} className="h-full w-full">
-          <Box position="relative" height="100%">
-            {iota(alignedNumFrames).map((tickIndex) => {
-              const inRange = tickIndex < numFrames;
-              const isLarge = tickIndex % 10 === 0;
-              const sizeMultiplier = isLarge ? 2 : 1;
-
-              return (
-                <Box
-                  key={tickIndex}
-                  position="absolute"
-                  left={`calc(10px * ${tickIndex})`}
-                  top="0"
-                  width="10px"
-                  height="100%"
-                  {...(inRange && {
-                    onClick: () => {
-                      clickOnFrame(tickIndex);
-                    },
-                    className: `rounded ${hoverSurface()}`,
-                  })}
-                >
-                  {/* ---- Horizontal bar. --------------------------------- */}
-                  <Box
-                    position="absolute"
-                    left={0 < tickIndex ? "0" : "50%"}
-                    top="10%"
-                    width={
-                      tickIndex === 0 || tickIndex === alignedNumFrames - 1
-                        ? "50%"
-                        : "100%"
-                    }
-                    height="2px"
-                    className={inRange ? "bg-(--fg-3)" : "bg-(--fg-5)"}
-                  />
-
-                  {/* ---- Vertical bar. ----------------------------------- */}
-                  <Box
-                    position="absolute"
-                    top="10%"
-                    left="50%"
-                    width={`calc(${sizeMultiplier} * 1px)`}
-                    height={`calc(${sizeMultiplier} * 20%)`}
-                    className={inRange ? "bg-(--fg-3)" : "bg-(--fg-5)"}
-                    style={{
-                      transform: "translateX(-50%)",
-                    }}
-                  />
-
-                  {/* ---- Time step index. -------------------------------- */}
-                  {isLarge && (
-                    <Box
-                      position="absolute"
-                      left="50%"
-                      top="40%"
-                      style={{ zIndex: 10, transform: "translateX(-50%)" }}
-                    >
-                      <Text
-                        mono
-                        className={inRange ? "text-(--fg-3)" : "text-(--fg-5)"}
-                      >
-                        {tickIndex}
-                      </Text>
-                    </Box>
-                  )}
-
-                  {/* ---- Pointer. ---------------------------------------- */}
-                  {tickIndex === frameIndex && (
-                    <Box
-                      position="absolute"
-                      size="10px"
-                      className="bg-(--accent-bg-3)"
-                      style={{
-                        borderTopLeftRadius: "0.25rem",
-                        borderTopRightRadius: "0.25rem",
-                      }}
-                    >
-                      <Box
-                        position="absolute"
-                        left="50%"
-                        size={`calc(100% / ${Math.SQRT2})`}
-                        className="bg-(--accent-bg-3)"
-                        style={{
-                          transform: "translate(-50%, 100%) rotate(45deg)",
-                        }}
-                      />
-                    </Box>
-                  )}
-                </Box>
-              );
-            })}
-          </Box>
-        </ScrollContainer>
-      </Box>
-    </Flex>
+      {/* ---- Frame scale. ------------------------------------------------- */}
+      <FrameScale
+        numFrames={numFrames}
+        frameIndex={frameIndex}
+        onScrub={(nextFrameIndex) => {
+          setIsPlaying(false);
+          if (nextFrameIndex !== frameIndex) requestFrame(nextFrameIndex);
+        }}
+      />
+    </div>
   );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface FrameScaleProps {
+  numFrames: number;
+  frameIndex: number | null;
+  onScrub: (frameIndex: number) => void;
+}
+
+// Horizontal padding reserved so edge ticks and the playhead stay visible.
+const SCALE_PADDING = 8;
+
+function FrameScale({
+  numFrames,
+  frameIndex,
+  onScrub,
+}: Readonly<FrameScaleProps>) {
+  const { ref, width, height } = useElementSize<HTMLDivElement>();
+
+  const disabled = numFrames === 0 || frameIndex === null;
+  const lastFrame = Math.max(numFrames - 1, 1);
+  const usableWidth = Math.max(width - 2 * SCALE_PADDING, 1);
+
+  // ---- Interaction. ----------------------------------------------------------
+
+  function frameFromPointer(event: PointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const t = clamp(
+      (event.clientX - rect.left - SCALE_PADDING) / usableWidth,
+      0,
+      1,
+    );
+    return Math.round(t * (numFrames - 1));
+  }
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (disabled || event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    onScrub(frameFromPointer(event));
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (disabled) return;
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    onScrub(frameFromPointer(event));
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (disabled) return;
+    assert(frameIndex !== null);
+    switch (event.key) {
+      case "ArrowLeft":
+        event.preventDefault();
+        onScrub(Math.max(0, frameIndex - 1));
+        break;
+      case "ArrowRight":
+        event.preventDefault();
+        onScrub(Math.min(numFrames - 1, frameIndex + 1));
+        break;
+      case "Home":
+        event.preventDefault();
+        onScrub(0);
+        break;
+      case "End":
+        event.preventDefault();
+        onScrub(numFrames - 1);
+        break;
+    }
+  }
+
+  // ---- Scale geometry. --------------------------------------------------------
+
+  const frameX = (index: number) =>
+    SCALE_PADDING + (numFrames > 1 ? (index / lastFrame) * usableWidth : 0);
+
+  const pxPerFrame = numFrames > 1 ? usableWidth / lastFrame : usableWidth;
+  const labelStep = niceStep(48 / pxPerFrame);
+  const minorStep = niceStep(6 / pxPerFrame);
+
+  const minorTicks: number[] = [];
+  const labeledTicks: number[] = [];
+  for (let index = 0; index < numFrames; index += minorStep) {
+    if (index % labelStep === 0) labeledTicks.push(index);
+    else minorTicks.push(index);
+  }
+
+  return (
+    <div
+      ref={ref}
+      role="slider"
+      tabIndex={0}
+      aria-label="Timeline"
+      aria-valuemin={0}
+      aria-valuemax={Math.max(numFrames - 1, 0)}
+      aria-valuenow={frameIndex ?? 0}
+      aria-disabled={disabled}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onKeyDown={handleKeyDown}
+      className="relative h-full grow cursor-pointer rounded select-none focus-visible:outline-2 focus-visible:outline-(--accent-6)"
+    >
+      <svg
+        width="100%"
+        height="100%"
+        className="pointer-events-none absolute inset-0"
+      >
+        {/* ---- Baseline. --------------------------------------------------- */}
+        <line
+          x1={SCALE_PADDING}
+          y1={6}
+          x2={width - SCALE_PADDING}
+          y2={6}
+          stroke="var(--neutral-5)"
+          strokeWidth={2}
+        />
+
+        {/* ---- Ticks. ------------------------------------------------------ */}
+        {minorTicks.map((index) => (
+          <line
+            key={index}
+            x1={frameX(index)}
+            y1={6}
+            x2={frameX(index)}
+            y2={11}
+            stroke="var(--neutral-5)"
+            strokeWidth={1}
+          />
+        ))}
+        {labeledTicks.map((index) => (
+          <g key={index}>
+            <line
+              x1={frameX(index)}
+              y1={6}
+              x2={frameX(index)}
+              y2={14}
+              stroke="var(--neutral-6)"
+              strokeWidth={1}
+            />
+            <text
+              x={frameX(index)}
+              y={25}
+              textAnchor="middle"
+              fill="var(--neutral-7)"
+              fontSize="var(--text-1)"
+              fontFamily="var(--font-mono)"
+            >
+              {index}
+            </text>
+          </g>
+        ))}
+
+        {/* ---- Playhead. --------------------------------------------------- */}
+        {frameIndex !== null && numFrames > 0 && (
+          <g fill="var(--accent-6)" stroke="var(--accent-6)">
+            <polygon
+              points={[
+                `${frameX(frameIndex) - 4},0`,
+                `${frameX(frameIndex) + 4},0`,
+                `${frameX(frameIndex)},6`,
+              ].join(" ")}
+            />
+            <line
+              x1={frameX(frameIndex)}
+              y1={0}
+              x2={frameX(frameIndex)}
+              y2={Math.max(height - 10, 14)}
+              strokeWidth={2}
+            />
+          </g>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+// Smallest 1/2/5x10^n step that is at least `minStep` frames.
+function niceStep(minStep: number): number {
+  let magnitude = 10 ** Math.floor(Math.log10(Math.max(minStep, 1)));
+  for (;;) {
+    for (const multiplier of [1, 2, 5]) {
+      const step = multiplier * magnitude;
+      if (step >= minStep) return step;
+    }
+    magnitude *= 10;
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

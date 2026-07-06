@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Euler, Vector3 } from "three";
 
 import { chrome } from "~/renderer/common/components/classes";
-import { Box, Flex } from "~/renderer/common/components/layout";
+import { cn } from "~/renderer/common/components/utils";
 import { useSignalValue } from "~/renderer/common/hooks/use-signal";
 import { derived, scoped, signal } from "~/renderer/common/signals";
 import {
@@ -113,7 +113,7 @@ export function Viewport() {
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" size="100%" className={chrome()}>
+    <div className={cn("flex size-full flex-col", chrome())}>
       {/* ---- Controls. --------------------------------------------------- */}
       <ViewControls
         // Tool.
@@ -212,41 +212,30 @@ export function Viewport() {
       >
         <canvas ref={canvasRef} style={{ position: "absolute" }} />
 
-        <Box
-          position="absolute"
-          right="12"
-          top="12"
-          style={{ transform: "translate(50%, -50%)" }}
-        >
+        <div className="absolute top-12 right-12 translate-x-1/2 -translate-y-1/2">
           <ViewCube
-            size="24"
+            className="size-24"
             rotation={cameraRotation}
             setRotation={(value) => {
               model.cameraRotation.set(value);
             }}
           />
-        </Box>
+        </div>
 
         {legendEnabled && (
-          <Box
-            position="absolute"
-            left="12"
-            top="50%"
-            style={{ transform: "translate(-50%, -50%)" }}
-          >
+          <div className="absolute top-1/2 left-12 -translate-x-1/2 -translate-y-1/2">
             <ViewColorLegend
               name={colorMapName}
               title={colorTitle}
               min={colorRange.min}
               max={colorRange.max}
               ticks={legendTickCount}
-              width="5"
-              height="125"
+              className="h-125 w-5"
             />
-          </Box>
+          </div>
         )}
       </ViewSelection>
-    </Flex>
+    </div>
   );
 }
 

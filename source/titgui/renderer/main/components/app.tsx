@@ -12,7 +12,6 @@ import {
   IconTerminal,
 } from "@tabler/icons-react";
 
-import { Box, Flex } from "~/renderer/common/components/layout";
 import { Menu } from "~/renderer/common/components/menu";
 import { Window } from "~/renderer/common/components/window";
 import { DashboardMenu } from "~/renderer/main/components/dashboard-menu";
@@ -42,34 +41,66 @@ export function App() {
 
 function Page() {
   return (
-    <Flex size="100%" minHeight="0">
-      <Menu.Root side="left">
-        <Menu.Item group={0} name="Storage" icon={<IconDatabase />} />
-        <Menu.Item group={0} name="Dashboard" icon={<IconDashboard />}>
-          <DashboardMenu />
-        </Menu.Item>
-        <Menu.Item group={1} name="Help" icon={<IconHelp />}>
-          <HelpMenu />
-        </Menu.Item>
-        <Menu.Item group={1} name="Settings" icon={<IconSettings />}>
-          <SettingsMenu />
-        </Menu.Item>
-      </Menu.Root>
+    <div className="flex size-full min-h-0">
+      <Menu.Root
+        side="left"
+        items={[
+          {
+            id: "storage",
+            group: 0,
+            name: "Storage",
+            icon: <IconDatabase />,
+          },
+          {
+            id: "dashboard",
+            group: 0,
+            name: "Dashboard",
+            icon: <IconDashboard />,
+            content: <DashboardMenu />,
+          },
+          {
+            id: "help",
+            group: 1,
+            name: "Help",
+            icon: <IconHelp />,
+            content: <HelpMenu />,
+          },
+          {
+            id: "settings",
+            group: 1,
+            name: "Settings",
+            icon: <IconSettings />,
+            content: <SettingsMenu />,
+          },
+        ]}
+      />
 
-      <Flex direction="column" size="100%">
-        <Box flexGrow="1" minHeight="0">
+      <div className="flex size-full flex-col">
+        <div className="min-h-0 grow">
           <Viewport />
-        </Box>
+        </div>
         <Timeline />
 
-        <Menu.Root side="bottom">
-          <Menu.Item group={0} name="Logs" icon={<IconLogs />}>
-            <LogsMenu />
-          </Menu.Item>
-          <Menu.Item group={0} name="Terminal" icon={<IconTerminal />} />
-        </Menu.Root>
-      </Flex>
-    </Flex>
+        <Menu.Root
+          side="bottom"
+          items={[
+            {
+              id: "logs",
+              group: 0,
+              name: "Logs",
+              icon: <IconLogs />,
+              content: <LogsMenu />,
+            },
+            {
+              id: "terminal",
+              group: 0,
+              name: "Terminal",
+              icon: <IconTerminal />,
+            },
+          ]}
+        />
+      </div>
+    </div>
   );
 }
 

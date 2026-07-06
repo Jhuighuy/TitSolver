@@ -15,6 +15,34 @@ export function toCSSColor(num: number): string {
   return `#${num.toString(16).padStart(6, "0")}`;
 }
 
+/**
+ * Resolve any CSS color (including `oklch(...)` and `color-mix(...)`) to
+ * normalized RGB components by rasterizing it onto a 1x1 canvas.
+ */
+export function cssColorToRgb(color: string): [number, number, number] {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  assert(context !== null, "2D canvas is not available.");
+
+  context.fillStyle = color;
+  context.fillRect(0, 0, 1, 1);
+  const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+  return [r / 255, g / 255, b / 255];
+}
+
+/**
+ * Resolve a CSS custom property to normalized RGB components.
+ */
+export function cssVariableToRgb(name: string): [number, number, number] {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(
+    name,
+  );
+  assert(value.trim() !== "", `CSS variable '${name}' is not defined.`);
+  return cssColorToRgb(value);
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**

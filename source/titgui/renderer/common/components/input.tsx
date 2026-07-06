@@ -21,12 +21,12 @@ import { assert } from "~/shared/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const inputRootVariants = cva(
-  "inline-flex items-center overflow-hidden border bg-(--bg-3) transition-colors",
+  "inline-flex items-center overflow-hidden border bg-(--neutral-1) transition-colors",
   {
     variants: {
       invalid: {
-        false: "border-(--chrome-1) hover:border-(--chrome-2)",
-        true: "border-red-400 dark:border-red-600",
+        false: "border-(--neutral-4) hover:border-(--neutral-5)",
+        true: "border-(--danger)",
       },
       size: {
         "1": "h-6 text-(length:--text-1) leading-(--leading-1)",
@@ -50,11 +50,11 @@ const inputRootVariants = cva(
 );
 
 const inputElementClasses = cn(
-  "h-full min-w-0 flex-1 bg-transparent px-2 text-(--fg-2) outline-none placeholder:text-(--fg-5) disabled:cursor-not-allowed",
+  "h-full min-w-0 flex-1 bg-transparent px-2 text-(--neutral-8) outline-none placeholder:text-(--neutral-5) disabled:cursor-not-allowed",
 );
 
 const inputSlotClasses = cn(
-  "flex shrink-0 items-center pl-2 text-(--fg-4) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+  "flex shrink-0 items-center pl-2 text-(--neutral-6) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
 );
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,7 +126,7 @@ export function TextInput({
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const stepperButtonClasses = cn(
-  "flex min-h-0 w-5 flex-1 cursor-pointer items-center justify-center text-(--fg-4) transition-colors select-none hover:bg-(--bg-4) hover:text-(--fg-1) disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+  "flex min-h-0 w-5 flex-1 cursor-pointer items-center justify-center text-(--neutral-6) transition-colors select-none hover:bg-(--neutral-2) hover:text-(--neutral-10) disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-[1.5em] [&_svg]:shrink-0",
 );
 
 interface NumberInputProps extends VariantProps<typeof inputRootVariants> {
@@ -218,7 +218,7 @@ export function NumberInput({
           className={cn(inputElementClasses, "font-(--font-mono)")}
         />
 
-        <div className="flex h-full shrink-0 flex-col border-l border-(--chrome-1) group-data-invalid:border-red-400 group-data-invalid:dark:border-red-600">
+        <div className="flex h-full shrink-0 flex-col border-l border-(--neutral-4) group-data-invalid:border-(--danger)">
           <BaseNumberField.Increment className={stepperButtonClasses}>
             <IconChevronUp />
           </BaseNumberField.Increment>

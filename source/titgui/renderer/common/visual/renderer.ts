@@ -5,6 +5,7 @@
 
 import { Scene, WebGLRenderer } from "three";
 
+import { cssVariableToRgb } from "~/renderer/common/utils";
 import type { BackgroundColor } from "~/renderer/common/visual/background-color";
 import type { Projection } from "~/renderer/common/visual/camera";
 import { CameraController } from "~/renderer/common/visual/camera-controller";
@@ -57,16 +58,35 @@ export class Renderer {
 
     this.particles = new ParticlesSwitch();
     this.scene.add(this.particles);
+
+    // Selection highlight color comes from the design tokens. Re-read it when
+    // the color scheme flips, in case the token ever differs per theme.
+    this.particles.setSelectionColor(cssVariableToRgb("--selection"));
+    this.colorSchemeQuery.addEventListener("change", this.onColorSchemeChange);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public dispose() {
+    this.colorSchemeQuery.removeEventListener(
+      "change",
+      this.onColorSchemeChange,
+    );
     this.particles.dispose();
     this.cameraController.dispose();
     this.renderer.setAnimationLoop(null);
     this.renderer.dispose();
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private readonly colorSchemeQuery = globalThis.matchMedia(
+    "(prefers-color-scheme: dark)",
+  );
+
+  private readonly onColorSchemeChange = () => {
+    this.particles.setSelectionColor(cssVariableToRgb("--selection"));
+  };
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

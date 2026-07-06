@@ -13,7 +13,6 @@ import { Box2, Vector2 } from "three";
 
 import { Card } from "~/renderer/common/components/card";
 import { surface } from "~/renderer/common/components/classes";
-import { Box, Flex } from "~/renderer/common/components/layout";
 import { Strong, Text } from "~/renderer/common/components/text";
 import { cn } from "~/renderer/common/components/utils";
 import { Polygon2 } from "~/renderer/common/visual/polygon2";
@@ -86,46 +85,39 @@ export function ViewSelection({
   })();
 
   return (
-    <Box
-      flexGrow="1"
-      mx="1"
-      mb="1"
-      position="relative"
-      overflow="hidden"
+    <div
       tabIndex={-1}
       onPointerDownCapture={(event) => {
         event.currentTarget.focus();
       }}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
-      className={cn(surface(), "focus:outline-none")}
+      className={cn(
+        "relative mx-1 mb-1 grow overflow-hidden focus:outline-none",
+        surface(),
+      )}
     >
       {children}
       {(selectionCount > 0 || toolMode !== "normal") && (
-        <Box
-          position="absolute"
-          right="3"
-          bottom="3"
-          style={{ pointerEvents: "none" }}
-        >
+        <div className="pointer-events-none absolute right-3 bottom-3">
           <SelectionHint
             toolMode={toolMode}
             selectionCount={selectionCount}
             selectionAction={action}
           />
-        </Box>
+        </div>
       )}
       {toolMode !== "normal" && (
-        <Box position="absolute" inset="0" style={{ cursor }}>
+        <div className="absolute inset-0" style={{ cursor }}>
           <SelectionOverlay
             toolMode={toolMode}
             onSelectionShape={(shape) => {
               onSelectionCommand({ action, shape });
             }}
           />
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
 
@@ -214,15 +206,15 @@ function SelectionOverlay({
   // ---- Layout. --------------------------------------------------------------
 
   const svgProps = {
-    fill: "rgba(59, 130, 246, 0.15)",
-    stroke: "rgb(59, 130, 246)",
+    fill: "color-mix(in srgb, var(--accent-6) 15%, transparent)",
+    stroke: "var(--accent-6)",
     strokeWidth: "1.5",
     strokeDasharray: "6 4",
   };
 
   return (
-    <Box
-      size="100%"
+    <div
+      className="size-full"
       tabIndex={-1}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -254,7 +246,7 @@ function SelectionOverlay({
           />
         )}
       </svg>
-    </Box>
+    </div>
   );
 }
 
@@ -297,7 +289,7 @@ function SelectionHint({
 
   return (
     <Card className="shadow-md">
-      <Flex direction="column" gap="1">
+      <div className="flex flex-col gap-1">
         {toolLabel !== undefined && (
           <Text>
             {toolLabel}
@@ -321,7 +313,7 @@ function SelectionHint({
             Press <Strong>Esc</Strong> to clear selection.
           </Text>
         )}
-      </Flex>
+      </div>
     </Card>
   );
 }

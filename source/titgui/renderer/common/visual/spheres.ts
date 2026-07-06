@@ -88,6 +88,10 @@ export class Spheres
     );
   }
 
+  public setSelectionColor(rgb: readonly [number, number, number]) {
+    this.material.uniforms.selectedColor.value = [...rgb];
+  }
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public setShadingMode(mode: ShadingMode) {
