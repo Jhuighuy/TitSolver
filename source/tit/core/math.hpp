@@ -5,16 +5,13 @@
 
 #pragma once
 
-#include <array>
 #include <bit>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <initializer_list>
 #include <limits>
 #include <numbers>
-#include <ranges>
 #include <type_traits>
 
 #ifdef __clang__
@@ -99,21 +96,6 @@ constexpr auto pow(Float a, std::floating_point auto power) noexcept -> Float {
 #endif
   return std::pow(a, power);
 }
-
-/// Evaluate polynomial @f$ \sum c_k x^k @f$ value.
-/// @{
-template<class Num,
-         std::ranges::bidirectional_range Coeffs = std::initializer_list<Num>>
-constexpr auto horner(Num x, Coeffs&& ci) {
-  Num r{0};
-  for (const auto c : ci | std::views::reverse) r = r * x + c;
-  return r;
-}
-template<std::floating_point auto... Ck, class Num>
-constexpr auto horner(Num x) {
-  return horner(x, std::array{Num{Ck}...});
-}
-/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
