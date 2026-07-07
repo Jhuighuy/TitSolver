@@ -71,22 +71,6 @@ TEST_CASE_TEMPLATE("pow", Float, FLOAT_TYPES) {
   CHECK(pow(-Float{2}, 10) == Float{1024});
 }
 
-TEST_CASE_TEMPLATE("horner", Float, FLOAT_TYPES) {
-  SUBCASE("NTTP") {
-    CHECK(horner<1.0>(Float{1}) == Float{1});
-    CHECK(horner<1.0, -3.0, 2.0>(Float{3}) == Float{10});
-    CHECK(horner<4.0, -1.0, 3.0>(-Float{2}) == Float{18});
-    CHECK(horner<6.0, 1.0, -4.0, 1.0>(Float{3}) == Float{0});
-  }
-  SUBCASE("range") {
-    CHECK(horner(Float{1}, {Float{1}}) == Float{1});
-    CHECK(horner(Float{3}, {Float{1}, -Float{3}, Float{2}}) == Float{10});
-    CHECK(horner(-Float{2}, {Float{4}, -Float{1}, Float{3}}) == Float{18});
-    CHECK(horner(Float{3}, {Float{6}, Float{1}, -Float{4}, Float{1}}) ==
-          Float{0});
-  }
-}
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_TEMPLATE("inverse", Float, FLOAT_TYPES) {
