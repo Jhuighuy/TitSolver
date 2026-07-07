@@ -1,0 +1,44 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part of BlueTit Solver, under the MIT License.
+# See /LICENSE.md for license information. SPDX-License-Identifier: MIT
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[tool.pyright]
+include = ["source/tit/sph/kernel_gen.py"]
+exclude = [
+  "**/.*",
+  "**/__pycache__",
+  "**/node_modules",
+  "output",
+]
+typeCheckingMode = "standard"
+reportMissingTypeStubs = "none"
+reportUnknownMemberType = "none"
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+ignore = [
+  "D100", # Missing module docstring.
+  "D101", # Missing class docstring.
+  "D102", # Missing method docstring.
+  "D103", # Missing function docstring.
+  "D104", # Missing package docstring.
+  "D105", # Missing magic method docstring.
+  "D107", # Missing __init__ docstring.
+]
+
+[tool.mypy]
+files = ["source/tit/sph/kernel_gen.py"]
+disable_error_code = [
+  "import-untyped",
+]
+
+[tool.pylint.messages_control]
+disable = [
+  "missing-class-docstring",
+  "missing-function-docstring",
+  "missing-module-docstring",
+]
