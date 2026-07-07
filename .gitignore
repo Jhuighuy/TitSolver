@@ -23,6 +23,7 @@
 # Project and editor configuration files.
 !/.vscode/settings.json
 !/sonar-project.properties
+!/pyproject.toml
 !/vcpkg.json
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,6 +78,7 @@ node_modules/
 # Scripts.
 !*.sh
 !*.sh.in
+!*.py
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
