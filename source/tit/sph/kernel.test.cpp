@@ -487,8 +487,56 @@ TEST_CASE_TEMPLATE("sph::Kernel::antigrad_flux", Kernel, KERNEL_TYPES) {
           }
         }
       }
-      /// @todo Since we are doing only numerical integration, we need to
-      ///       cannot properly test singularities yet.
+      SUBCASE("on triangle vertices") {
+        for (const auto h : {1.0, 0.1, 0.01}) {
+          CAPTURE(h);
+          CHECK_APPROX_EQ(w.antigrad_flux(tri, tri.a(), h), 1.0 / 12.0);
+          CHECK_APPROX_EQ(w.antigrad_flux(tri, tri.b(), h), 1.0 / 12.0);
+          CHECK_APPROX_EQ(w.antigrad_flux(tri, tri.c(), h), 1.0 / 12.0);
+        }
+      }
+      SUBCASE("on triangle edges") {
+        for (const auto o : {0.9, 0.5, 0.1, 0.0, -0.1, -0.5, -0.9}) {
+          CAPTURE(o);
+          const auto t = 0.5 * (o + 1.0);
+          for (const auto h : {1.0, 0.1, 0.01}) {
+            CAPTURE(h);
+            CHECK_APPROX_EQ(
+                abs(w.antigrad_flux(tri, tri.a() + t * tri.ba(), h)),
+                0.25);
+            CHECK_APPROX_EQ(
+                abs(w.antigrad_flux(tri, tri.a() + t * tri.ca(), h)),
+                0.25);
+            CHECK_APPROX_EQ(
+                abs(w.antigrad_flux(tri, tri.b() + t * tri.cb(), h)),
+                0.25);
+          }
+        }
+      }
+      SUBCASE("inside triangle") {
+        for (const auto o : {0.9, 0.5, 0.1, 0.0, -0.1, -0.5, -0.9}) {
+          CAPTURE(o);
+          const auto t = 0.5 * (o + 1.0);
+          for (const auto h : {1.0, 0.1, 0.01}) {
+            CAPTURE(h);
+            CHECK_APPROX_EQ(
+                abs(w.antigrad_flux(tri,
+                                    tri.a() + t * (tri.center() - tri.a()),
+                                    h)),
+                0.5);
+            CHECK_APPROX_EQ(
+                abs(w.antigrad_flux(tri,
+                                    tri.b() + t * (tri.center() - tri.b()),
+                                    h)),
+                0.5);
+            CHECK_APPROX_EQ(
+                abs(w.antigrad_flux(tri,
+                                    tri.c() + t * (tri.center() - tri.c()),
+                                    h)),
+                0.5);
+          }
+        }
+      }
     }
   }
 }

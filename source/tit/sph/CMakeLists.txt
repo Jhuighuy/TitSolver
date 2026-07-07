@@ -11,6 +11,7 @@ add_tit_library(
     "field.hpp"
     "fluid_equations.hpp"
     "kernel.hpp"
+    "kernel.inl.hpp"
     "particle_array.hpp"
     "particle_mesh.hpp"
     "time_integrator.hpp"
