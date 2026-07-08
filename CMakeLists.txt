@@ -19,6 +19,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Some of the third-party libraries are not configured for the modern CMake.
+# We have to drop the minimum required version to make them work.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
+
 # Find the third-party libraries.
 find_package(assimp CONFIG REQUIRED)
 find_package(cpptrace CONFIG REQUIRED)
@@ -28,11 +32,16 @@ find_package(HighFive CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(SymEngine CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
 find_package(unofficial-node-addon-api CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
+
+# SymEngine target does not properly link to its own dependencies.
+target_link_libraries(symengine INTERFACE ${SYMENGINE_LIBRARIES})
+add_library(symengine::symengine ALIAS symengine)
 
 # Some packages are marked as "unofficial" by vcpkg, let's rename them.
 add_library(node-addon-api::node-addon-api ALIAS unofficial::node-addon-api::node-addon-api)
@@ -75,6 +84,7 @@ add_tit_library(
     nlohmann_json::nlohmann_json
     node-addon-api::node-addon-api
     sqlite3::sqlite3
+    symengine::symengine
     TBB::tbb
     tinyxml2::tinyxml2
     zstd::libzstd

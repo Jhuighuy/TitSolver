@@ -32,7 +32,6 @@
   },
   "cmake.configureOnOpen": false,
   "tailwindCSS.classFunctions": ["cn", "clsx", "cva"],
-  "python-envs.defaultEnvManager": "ms-python.python:system",
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
@@ -44,9 +43,7 @@
   "files.exclude": {
     "**/.astro": true,
     "**/.cache": true,
-    "**/.mypy_cache": true,
     "**/.vite": true,
-    "**/__pycache__": true,
     "**/compile_flags.txt": true,
     "**/dist": true,
     "**/native": true,
@@ -57,9 +54,7 @@
   "files.watcherExclude": {
     "**/.astro/**": true,
     "**/.cache/**": true,
-    "**/.mypy_cache/**": true,
     "**/.vite/**": true,
-    "**/__pycache__/**": true,
     "**/compile_flags.txt": true,
     "**/dist/**": true,
     "**/native/**": true,
