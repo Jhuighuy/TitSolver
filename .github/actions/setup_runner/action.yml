@@ -39,10 +39,14 @@ runs:
         #
 
         PACKAGES=(
+          autoconf
+          autoconf-archive
+          automake
           cmake
           codespell
           gcc@$GCC_VERSION
           gcovr
+          libtool
           llvm@$LLVM_VERSION
           node
         )

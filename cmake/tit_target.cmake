@@ -17,6 +17,7 @@ function(configure_tit_target TARGET VISIBILITY)
   # Setup include directories.
   target_include_directories(
     ${TARGET} ${VISIBILITY}
+    "${CMAKE_BINARY_DIR}/source"
     "${CMAKE_SOURCE_DIR}/source"
   )
 
@@ -158,6 +159,38 @@ function(add_tit_executable)
   if(TARGET_DESTINATION)
     install_tit_target(RUNTIME ${TARGET} "${TARGET_DESTINATION}")
   endif()
+endfunction()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
+# Add a code generation target.
+#
+function(add_tit_codegen)
+  # Parse and check arguments.
+  cmake_parse_arguments(TARGET
+    ""
+    "NAME"
+    "GENERATOR;OUTPUT"
+    ${ARGN}
+  )
+  set(TARGET "${TARGET_NAME}")
+
+  # Run the code generator.
+  cmake_path(
+    RELATIVE_PATH CMAKE_CURRENT_BINARY_DIR
+    BASE_DIRECTORY "${CMAKE_BINARY_DIR}"
+    OUTPUT_VARIABLE RELATIVE_BINARY_DIR
+  )
+  add_custom_command(
+    COMMENT "Generating ${TARGET_OUTPUT}"
+    COMMAND "$<TARGET_FILE:${TARGET_GENERATOR}>" "${TARGET_OUTPUT}"
+    OUTPUT "${TARGET_OUTPUT}"
+    DEPENDS "${TARGET_GENERATOR}"
+  )
+
+  # Add a custom target for the code generation.
+  add_custom_target("${TARGET}" DEPENDS "${TARGET_OUTPUT}")
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
