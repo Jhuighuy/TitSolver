@@ -3,6 +3,27 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+add_tit_executable(
+  NAME
+    sph_kernel_generator
+  SOURCES
+    "kernel.gen.cpp"
+  DEPENDS
+    tit::core
+    symengine::symengine
+)
+
+add_tit_codegen(
+  NAME
+    sph_kernel_codegen
+  GENERATOR
+    sph_kernel_generator
+  OUTPUT
+    "kernel.inl.hpp"
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 add_tit_library(
   NAME
     sph

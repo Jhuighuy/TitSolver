@@ -187,12 +187,11 @@ function(enable_clang_tidy TARGET)
     # Locate the source file.
     if(NOT EXISTS "${SOURCE}")
       if(EXISTS "${TARGET_SOURCE_DIR}/${SOURCE}")
+        # File exists in the source tree.
         set(SOURCE "${TARGET_SOURCE_DIR}/${SOURCE}")
-      elseif(EXISTS "${TARGET_BINARY_DIR}/${SOURCE}")
-        set(SOURCE "${TARGET_BINARY_DIR}/${SOURCE}")
       else()
-        message(WARNING "Source file '${SOURCE}' cannot be found.")
-        continue()
+        # Assume the file is in the build tree. It may not exist yet.
+        set(SOURCE "${TARGET_BINARY_DIR}/${SOURCE}")
       endif()
     endif()
 
@@ -234,7 +233,7 @@ function(enable_clang_tidy TARGET)
   endforeach()
 
   # Create a custom target that should "build" once all checks succeed.
-  add_custom_target("${TARGET}_tidy" ALL DEPENDS ${ALL_STAMPS})
+  add_custom_target("${TARGET}_tidy" ALL DEPENDS "${TARGET}" ${ALL_STAMPS})
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -265,7 +264,7 @@ function(write_compile_flags TARGET)
   set(FLAGS_SYMLINK "${TARGET_SOURCE_DIR}/compile_flags.txt")
   add_custom_command(
     COMMENT "Writing compile flags for target ${TARGET}"
-    OUTPUT "${FLAGS_FILE}"
+    OUTPUT "${FLAGS_FILE}" "${FLAGS_SYMLINK}"
     COMMAND
       "${CMAKE_COMMAND}" -E echo ${TARGET_COMPILE_OPTIONS} |
       "${XARGS_EXE}" -n 1 > "${FLAGS_FILE}"
@@ -276,7 +275,10 @@ function(write_compile_flags TARGET)
   )
 
   # Create a custom target that should "build" once the file is written.
-  add_custom_target("${TARGET}_compile_flags" ALL DEPENDS "${FLAGS_FILE}")
+  add_custom_target("${TARGET}_compile_flags"
+    ALL
+    DEPENDS "${TARGET}" "${FLAGS_FILE}" "${FLAGS_SYMLINK}"
+  )
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
