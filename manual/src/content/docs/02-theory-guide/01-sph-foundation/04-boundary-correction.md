@@ -16,7 +16,8 @@ The fraction of the kernel support that lies inside the domain at a point
 $\vec{r}_a$ is defined by the continuous integral
 
 $$
-\gamma(\vec{r}_a) =
+\gamma_a =
+  \gamma(\vec{r}_a) =
   \int_{\Omega} W(\vec{r}_a - \vec{r}', h) d\vec{r}'.
 $$
 
@@ -24,12 +25,75 @@ For an interior particle whose kernel neighborhood lies entirely within the
 domain, $\gamma = 1$. Near a boundary the support is truncated and
 $\gamma < 1$.
 
-Computing $\gamma_a$ accurately is difficult. Analytical strategies that
-integrate the kernel over the polygonal domain exist, but they are either
-computationally expensive or lack robustness for general mesh configurations.
+In BlueTit Solver the value of $\gamma_a$ is obtained via direct evaluation
+using the kernel antigradient, described below.
 
-In BlueTit Solver the value of $\gamma_a$ is obtained via the evolution equation
-described below.
+The antigradient $\vec{A}(\vec{r}, h)$ is a compact-support vector radial
+function that shares the same support as the kernel $W(\vec{r}, h)$ and
+satisfies
+
+$$
+\nabla \cdot \vec{A}(\vec{r}, h) = W(\vec{r}, h) - \delta(\vec{r}).
+$$
+
+It is defined as
+
+$$
+\vec{A}(\vec{r}, h) = -
+  \frac{\omega_{d}}{h^{d}} m_d\left( \frac{|\vec{r}|}{h} \right),
+$$
+
+$\omega_{d}$ is a normalization constant,
+
+$$
+m_d(q) = \int_q^R \xi^{d-1} w(\xi) \, d\xi
+$$
+
+is the tail moment of the unit kernel $w(\xi)$.
+
+The antigradient is related to the kernel by the divergence theorem: applying
+$\nabla \cdot \vec{A} = W - \delta$ and integrating over the domain gives
+
+$$
+\gamma_a =
+  \mathrm{I}_{\vec{r}_a \in \Omega} -
+  \oint_{\partial\Omega}
+    \vec{A}(\vec{r}_a - \vec{r}', h) \cdot \vec{n} d\Gamma' =
+  \mathrm{I}_{\vec{r}_a \in \Omega} -
+  \sum_{s \in \mathcal{S}} \gamma_{as},
+$$
+
+where the per-face contribution is the surface integral restricted to face
+$s$:
+
+$$
+\gamma_{as} =
+  \gamma_{s}(\vec{r}_a) =
+  \vec{n}_s \cdot
+  \int_{\partial\Omega_s} \vec{A}(\vec{r}_a - \vec{r}', h) d\Gamma'.
+$$
+
+This identity allows $\gamma$ to be evaluated from boundary surface integrals
+alone, avoiding the costly volumetric integral over $\Omega$.
+
+Directly evaluating $\gamma_a$ is problematic when $\vec{r}$ lies
+on the surface $\partial\Omega_s$, where the antigradient is singular. This is
+resolved using a Taylor expansion that shifts $\vec{r}_{a}$ away from the
+boundary by a small amount $\vec{\Delta}_a$:
+
+$$
+\tilde{\gamma}_a =
+  \mathrm{I}_{\vec{r}_a \in \Omega} -
+  \sum_{s \in \mathcal{S}} \gamma_{s}(\vec{r}_a + \vec{\Delta}_a),
+$$
+
+where
+
+$$
+\vec{\Delta}_a =
+  (2 \mathrm{I}_{\vec{r}_a \in \Omega} - 1) h^2
+  \frac{\nabla\gamma_a}{|\nabla\gamma_a|}.
+$$
 
 <!----------------------------------------------------------------------------->
 
@@ -39,7 +103,7 @@ The gradient of $\gamma$ follows from the surface integral representation.
 Applying the divergence theorem with the inner normal gives
 
 $$
-\nabla\gamma(\vec{r}_a) =
+\nabla\gamma_a =
   \int_{\partial\Omega} W(\vec{r}_a - \vec{r}', h) \vec{n}(\vec{r}') d\Gamma' =
   \sum_{s \in \mathcal{S}} \nabla\gamma_{as},
 $$
@@ -53,104 +117,13 @@ $$
 $$
 
 For a straight segment (2D) or planar triangle (3D), the kernel integration
-over the face can be carried out analytically. Ferrand et al. [1] provide
-closed-form formulas for the C2 kernel in 2D; Mayrhofer et al. [2] give the
-3D extension.
+over the face can be carried out analytically. In 2D, closed-form primitives
+for each kernel type are available. In 3D, high-order numerical quadrature is
+used.
 
-BlueTit Solver evaluates $\nabla\gamma_{as}$ analytically for all available
-kernels, which is both fast and exact for the polygonal boundary representation.
-
-<!----------------------------------------------------------------------------->
-
-## Evolution equation
-
-Ferrand et al. [1] observed that $\gamma$ satisfies a simple advection
-equation. Differentiating the definition of $\gamma$ with respect to time
-gives
-
-$$
-\frac{d\gamma_a}{dt} =
-  \sum_{s \in \mathcal{S}} \vec{v}_{as} \cdot \nabla\gamma_{as},
-$$
-
-where $\vec{v}_{as}$ is the velocity of particle $a$ relative to the face $s$.
-This ODE can be integrated alongside the fluid equations to evolve $\gamma$ as
-particles move, avoiding a fresh direct evaluation of the costly domain integral
-at every step.
-
-A CFL-like condition is required when the ODE is integrated in time:
-
-$$
-\Delta t \leq
-  C_\gamma \,
-  \min_{a \in \mathcal{P}, s \in \mathcal{S}}
-  \frac{1}{\left| \vec{v}_{as} \cdot \nabla\gamma_{as} \right|},
-  \qquad
-  C_\gamma \approx 5 \times 10^{-3}.
-$$
-
-<!----------------------------------------------------------------------------->
-
-## Computing support fraction
-
-The evolution equation can be used to obtain $\gamma_a$ before the simulation
-starts. Deep inside the domain the kernel is fully supported, so $\gamma = 1$
-is known exactly. The idea is to start at a point where $\gamma$ is known and
-integrate along a straight line toward the boundary, using the path integral
-$\gamma_a = 1 + \int \nabla\gamma \cdot d\vec{r}$.
-
-The procedure for each particle $a$ is:
-
-1. **Evaluate $\nabla\gamma_a$** using the analytical per-face formulas.
-
-2. **Far from the boundary:** if $|\nabla\gamma_a| = 0$ then the kernel is fully
-   supported and $\gamma_a = 1$.
-
-3. **Near the boundary:** if $|\nabla\gamma_a| > 0$, define a starting point
-   that lies at least a kernel diameter inside the domain, in the direction
-   of $\nabla\gamma_a$:
-
-   $$
-   \vec{r}_a^* =
-     \vec{r}_a + 2 R h \,
-     \frac{\nabla\gamma_a}{|\nabla\gamma_a|},
-   $$
-
-   where $R$ is the kernel support radius. At $\vec{r}_a^*$ the kernel
-   neighborhood is fully inside the domain, so $\gamma(\vec{r}_a^*) = 1$.
-
-4. **Integrate** $\gamma$ along the straight line from $\vec{r}_a^*$ back to
-   $\vec{r}_a$. Along the path $d\gamma = \nabla\gamma \cdot d\vec{r}$, so
-
-   $$
-   \gamma_a =
-     1 +
-     \int_{\vec{r}_a^*}^{\vec{r}_a}
-       \nabla\gamma(\vec{r}) \cdot d\vec{r}.
-   $$
-
-   Discretizing with the trapezoidal rule:
-
-   $$
-   \gamma^{(n+1)} = \gamma^{(n)} +
-     \frac{1}{2}
-     \Bigl[
-       \nabla\gamma
-         \bigl( \vec{r}^{(n+1)} \bigr) +
-       \nabla\gamma
-         \bigl( \vec{r}^{(n)} \bigr)
-     \Bigr] \cdot
-     \Bigl[
-       \vec{r}^{(n+1)} - \vec{r}^{(n)}
-     \Bigr],
-   $$
-
-   starting from $\vec{r}^{(0)} = \vec{r}_a^*$, $\gamma^{(0)} = 1$ and
-   stopping when $\vec{r}$ reaches $\vec{r}_a$.
-
-This scheme requires only the analytically computed $\nabla\gamma$ and never
-evaluates the domain integral directly. It was first proposed by Ferrand et
-al. [1] and is the method used in BlueTit Solver.
+BlueTit Solver evaluates $\gamma_{as}$ and $\nabla\gamma_{as}$ analytically for
+all available kernels, which is both fast and accurate for the polygonal boundary
+representation.
 
 <!----------------------------------------------------------------------------->
 
