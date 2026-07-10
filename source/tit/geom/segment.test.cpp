@@ -66,6 +66,32 @@ TEST_CASE("geom::Segment::length") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("geom::Segment::winding_number") {
+  constexpr Vec a{1.0, 0.0};
+  constexpr Vec b{1.0, 1.0};
+  const Vec point{0.5, 0.5};
+  SUBCASE("normal") {
+    const geom::Segment segment{a, b};
+    CHECK_APPROX_EQ(segment.winding_number(point), 0.25);
+  }
+  SUBCASE("flipped") {
+    const geom::Segment segment{b, a};
+    CHECK_APPROX_EQ(segment.winding_number(point), -0.25);
+  }
+  SUBCASE("translated") {
+    constexpr Vec offset{3.0, 4.0};
+    const geom::Segment segment{a + offset, b + offset};
+    CHECK_APPROX_EQ(segment.winding_number(point + offset), 0.25);
+  }
+  SUBCASE("scaled") {
+    constexpr auto scale = 2.0;
+    const geom::Segment segment{scale * a, scale * b};
+    CHECK_APPROX_EQ(segment.winding_number(scale * point), 0.25);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("geom::Segment::clamp") {
   SUBCASE("normal") {
     const geom::Segment seg{
