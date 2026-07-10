@@ -13,7 +13,6 @@
     "nlohmann-json",
     "node-addon-api",
     "sqlite3",
-    { "name": "symengine", "default-features": false },
     "tbb",
     "tinyxml2",
     "zstd"

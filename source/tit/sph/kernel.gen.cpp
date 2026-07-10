@@ -4,294 +4,64 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <format>
 #include <fstream>
 #include <initializer_list>
 #include <iostream>
-#include <map>
+#include <optional>
 #include <ostream>
 #include <print>
 #include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcpp"
-#endif
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-literal-operator"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#endif
-#include <symengine/add.h>
-#include <symengine/basic-inl.h>
-#include <symengine/basic.h>
-#include <symengine/dict.h>
-#include <symengine/eval_double.h>
-#include <symengine/integer.h>
-#include <symengine/mul.h>
-#include <symengine/pow.h>
-#include <symengine/rational.h>
-#include <symengine/subs.h>
-#include <symengine/symbol.h>
-#include <symengine/symengine_casts.h>
-#include <symengine/symengine_rcp.h>
-#include <symengine/visitor.h>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
+#include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/str.hpp"
+#include "tit/sym/expression.hpp"
+#include "tit/sym/optimize.hpp"
+#include "tit/sym/polynomial.hpp"
+#include "tit/sym/rational.hpp"
+#include "tit/sym/rewrite.hpp"
 
 namespace tit::sph {
 namespace {
 
-namespace se = SymEngine;
+using sym::Expr;
+using sym::OptimizedExpr;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // Symbolic math
 //
 
-/// Symbolic expression.
-class Expr final {
-public:
-
-  /// Construct from a raw SymEngine expression.
-  explicit(false) Expr(se::RCP<const se::Basic> basic)
-      : base_{std::move(basic)} {}
-
-  /// Construct an integer literal.
-  explicit(false) Expr(int value) : base_{se::integer(value)} {}
-
-  /// Underlying SymEngine expression.
-  auto base() const -> const se::RCP<const se::Basic>& {
-    return base_;
-  }
-
-  /// Expanded copy of this expression.
-  auto expand() const -> Expr {
-    return se::expand(base_);
-  }
-
-  /// Is this expression the integer zero?
-  auto is_zero() const -> bool {
-    return se::eq(*base_, *se::integer(0));
-  }
-
-  /// Numeric value of this expression.
-  auto as_double() const -> double {
-    return se::eval_double(*base_);
-  }
-
-  /// Does this expression contain the given symbol?
-  auto uses(const Expr& sym) const -> bool {
-    if (se::eq(*base_, *sym.base_)) return true;
-    return std::ranges::any_of(base_->get_args(), [&sym](const Expr& expr) {
-      return expr.uses(sym);
-    });
-  }
-
-  /// Substitute `value` for `var` in this expression.
-  auto subs(const Expr& var, const Expr& value) const -> Expr {
-    return se::subs(base_, {{var.base_, value.base_}});
-  }
-
-  /// Arithmetic operators.
-  /// @{
-  friend auto operator-(const Expr& a) -> Expr {
-    return se::neg(a.base_);
-  }
-  friend auto operator+(const Expr& a, const Expr& b) -> Expr {
-    return se::add(a.base_, b.base_);
-  }
-  friend auto operator-(const Expr& a, const Expr& b) -> Expr {
-    return se::sub(a.base_, b.base_);
-  }
-  friend auto operator*(const Expr& a, const Expr& b) -> Expr {
-    return se::mul(a.base_, b.base_);
-  }
-  friend auto operator/(const Expr& a, const Expr& b) -> Expr {
-    return se::div(a.base_, b.base_);
-  }
-  friend auto operator+=(Expr& a, const Expr& b) -> Expr& {
-    a = a + b;
-    return a;
-  }
-  /// @}
-
-private:
-
-  se::RCP<const se::Basic> base_;
-
-}; // class Expr
-
-/// Raise `base` to a power.
-auto pow(const Expr& base, const Expr& exp) -> Expr {
-  return se::pow(base.base(), exp.base());
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Univariate view of an expanded expression.
-class Poly final {
-public:
-
-  /// Expand `e` and extract its coefficients in `var`.
-  Poly(const Expr& e, const Expr& var) {
-    const auto expanded = e.expand();
-    for (int p = 0; p <= max_degree_; ++p) {
-      Expr c{se::coeff(*expanded.base(), *var.base(), *se::integer(p))};
-      if (!c.is_zero()) {
-        coeffs_.emplace(p, std::move(c));
-        degree_ = p;
-      }
-    }
-  }
-
-  /// Degree of the polynomial.
-  auto degree() const -> int {
-    return degree_;
-  }
-
-  /// Coefficient of `var^power`, or zero if absent.
-  auto operator[](int power) const -> Expr {
-    const auto iter = coeffs_.find(power);
-    return iter != coeffs_.end() ? iter->second : Expr{0};
-  }
-
-  /// Non-zero `(power, coefficient)` terms, in ascending order of power.
-  auto terms() const -> const std::map<int, Expr>& {
-    return coeffs_;
-  }
-
-private:
-
-  // Maximum polynomial degree we ever encounter.
-  static constexpr int max_degree_ = 32;
-
-  std::map<int, Expr> coeffs_;
-  int degree_ = 0;
-
-}; // class Poly
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Optimizations
-//
-
-/// An expression with common subexpressions factored into named bindings.
-class OptExpr final {
-public:
-
-  /// Eliminate common subexpressions in `e`.
-  explicit OptExpr(const Expr& e) : result_{run_cse(e, reps_)} {}
-
-  /// Common-subexpression bindings, in evaluation order.
-  auto reps() const -> const std::vector<std::pair<Expr, Expr>>& {
-    return reps_;
-  }
-
-  /// Final result expression.
-  auto result() const -> const Expr& {
-    return result_;
-  }
-
-  /// Does the optimized expression reference the given symbol?
-  auto uses(const Expr& sym) const -> bool {
-    if (result_.uses(sym)) return true;
-    return std::ranges::any_of(reps_, [&sym](const auto& rep) {
-      return rep.second.uses(sym);
-    });
-  }
-
-private:
-
-  // Perform common-subexpression elimination, filling `reps` and returning the
-  // reduced result.
-  static auto run_cse(const Expr& e, std::vector<std::pair<Expr, Expr>>& reps)
-      -> Expr {
-    se::vec_pair se_reps;
-    se::vec_basic out;
-    se::cse(se_reps, out, {e.base()});
-    for (const auto& [sym, val] : se_reps) reps.emplace_back(sym, val);
-    return Expr{out[0]};
-  }
-
-  std::vector<std::pair<Expr, Expr>> reps_;
-  Expr result_;
-
-}; // class OptExpr
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Rewrite the expression in multivariate Horner form.
-auto horner(const Expr& e, std::span<const Expr> vars)
-    -> Expr { // NOLINT(*-no-recursion)
-  if (vars.empty()) return e;
-  const auto& var = vars.front();
-  const auto remaining_vars = vars.subspan(1);
-  const Poly poly{e, var};
-  const auto deg = poly.degree();
-  auto result = horner(poly[deg], remaining_vars);
-  for (int p = deg - 1; p >= 0; --p) {
-    result = horner(poly[p], remaining_vars) + var * result;
-  }
-  return result;
-}
-
-/// Rewrite the expression in multivariate Horner form.
-auto horner(const Expr& e, std::initializer_list<Expr> vars) -> Expr {
-  return horner(e, std::span{vars});
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // Rewrite `sym^n` in `expr` as powers of `squared` (`sym^2`) times an optional
 // leftover `sym`, so the generated code can reuse a precomputed square.
-auto power_reduce(const se::RCP<const se::Basic>& expr,
-                  const se::RCP<const se::Basic>& sym,
-                  const se::RCP<const se::Basic>& squared)
-    -> se::RCP<const se::Basic> {
-  if (se::is_a<se::Pow>(*expr)) {
-    const auto& p = se::down_cast<const se::Pow&>(*expr);
-    if (se::eq(*p.get_base(), *sym) && se::is_a<se::Integer>(*p.get_exp())) {
-      const auto n = se::down_cast<const se::Integer&>(*p.get_exp()).as_int();
-      if (n >= 2) {
-        auto reduced = se::pow(squared, se::integer(n / 2));
-        if (n % 2 != 0) reduced = se::mul(reduced, sym);
-        return reduced;
-      }
-    }
-  }
-  se::vec_basic new_args;
-  bool changed = false;
-  for (const auto& arg : expr->get_args()) {
-    auto new_arg = power_reduce(arg, sym, squared);
-    changed = changed || new_arg != arg;
-    new_args.emplace_back(std::move(new_arg));
-  }
-  if (!changed) return expr;
-  if (se::is_a<se::Add>(*expr)) return se::add(new_args);
-  if (se::is_a<se::Mul>(*expr)) return se::mul(new_args);
-  if (se::is_a<se::Pow>(*expr)) return se::pow(new_args[0], new_args[1]);
-  return expr;
-}
-
-/// Rewrite `sym^n` as powers of `squared`, wrapped for `Expr`.
-auto power_reduce(const Expr& e, const Expr& sym, const Expr& squared) -> Expr {
-  return Expr{power_reduce(e.base(), sym.base(), squared.base())};
+auto power_reduce(const Expr& expression,
+                  const Expr& symbol,
+                  const Expr& squared) -> Expr {
+  return sym::rewrite_bottom_up(
+      expression,
+      [&symbol, &squared](const Expr& current) -> sym::RewriteResult {
+        if (current.kind() != sym::ExprKind::pow || current[0] != symbol ||
+            !current[1].is_integer()) {
+          return std::nullopt;
+        }
+        const auto exponent = current[1].as_integer();
+        if (exponent < 2) return std::nullopt;
+        auto result = sym::pow(squared, exponent / 2);
+        if (exponent % 2 != 0) result *= symbol;
+        return result;
+      });
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -299,15 +69,50 @@ auto power_reduce(const Expr& e, const Expr& sym, const Expr& squared) -> Expr {
 // Kernel math
 //
 
-const Expr q{se::symbol("q")};         ///< Normalized radius.
-const Expr z{se::symbol("z")};         ///< Along-edge coordinate.
-const Expr eta{se::symbol("eta")};     ///< Wall distance.
-const Expr rho{se::symbol("rho")};     ///< Radius, `rho^2 = z^2 + eta^2`.
-const Expr delta{se::symbol("delta")}; ///< Edge offset.
-const Expr beta{se::symbol("beta")};   ///< `beta^2 = eta^2 + delta^2`.
-const Expr A{se::symbol("A")};         ///< `atan2` primitive.
-const Expr B{se::symbol("B")};         ///< `atan2` primitive (line).
-const Expr L{se::symbol("L")};         ///< `asinh` primitive.
+const sym::Context expr_context;
+const Expr q = expr_context.symbol("q");         ///< Normalized radius.
+const Expr z = expr_context.symbol("z");         ///< Along-edge coordinate.
+const Expr eta = expr_context.symbol("eta");     ///< Wall distance.
+const Expr rho = expr_context.symbol("rho");     ///< `rho^2 = z^2 + eta^2`.
+const Expr delta = expr_context.symbol("delta"); ///< Edge offset.
+const Expr beta = expr_context.symbol("beta");   ///< `eta^2 + delta^2`.
+const Expr A = expr_context.symbol("A");         ///< `atan2` primitive.
+const Expr B = expr_context.symbol("B");         ///< `atan2` primitive (line).
+const Expr L = expr_context.symbol("L");         ///< `asinh` primitive.
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Render symbolic expression as C++ code.
+auto to_cxx(const Expr& expression) -> std::string;
+
+/// Generated-code cost, ordered by run-time work and then source complexity.
+auto optimized_cost(const OptimizedExpr& expression)
+    -> std::tuple<std::size_t, std::size_t, std::size_t> {
+  std::size_t emitted_size = to_cxx(expression.result()).size();
+  for (const auto& binding : expression.bindings()) {
+    emitted_size += to_cxx(binding.symbol).size();
+    emitted_size += to_cxx(binding.value).size();
+  }
+  return {expression.cost().operations,
+          emitted_size,
+          expression.bindings().size()};
+}
+
+/// Optimize the best of several algebraically equivalent expressions.
+auto optimize_best(const std::vector<Expr>& candidates) -> OptimizedExpr {
+  TIT_ALWAYS_ASSERT(!candidates.empty(), "No optimization candidates.");
+  auto best = sym::optimize(candidates.front());
+  for (const auto& candidate : std::span{candidates}.subspan(1)) {
+    auto optimized = sym::optimize(candidate);
+    if (optimized_cost(optimized) < optimized_cost(best)) {
+      best = std::move(optimized);
+    }
+  }
+  return sym::spill(best, [](const Expr& expression, sym::ExpressionCost cost) {
+    return expression.kind() != sym::ExprKind::pow && cost.operations >= 8 &&
+           to_cxx(expression).size() >= 80;
+  });
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -345,6 +150,10 @@ public:
   Segment(Expr cutoff, Expr weight)
       : cutoff_{std::move(cutoff)}, weight_{std::move(weight)} {}
 
+  /// Construct a support piece with an integer cutoff.
+  Segment(sym::Rational::value_type cutoff, Expr weight)
+      : Segment{expr_context.integer(cutoff), std::move(weight)} {}
+
   /// Support cutoff of this piece.
   auto cutoff() const -> Expr {
     return cutoff_;
@@ -357,62 +166,82 @@ public:
 
   /// Radial derivative `w'(q)`.
   auto deriv() const -> Expr {
-    const Poly poly{weight_, q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) {
+    const auto polynomial = sym::as_polynomial(weight_, q);
+    auto result = expr_context.integer(0);
+    for (const auto& [p, c] :
+         std::views::enumerate(polynomial.coefficients())) {
       if (p >= 1) result += c * p * pow(q, p - 1);
     }
-    return horner(result.subs(q, q + cutoff_), {q}).subs(q, q - cutoff_);
+    result = sym::substitute(result, q, q + cutoff_);
+    result = sym::horner(result, {q});
+    return sym::substitute(result, q, q - cutoff_);
   }
 
   /// Tail moment of order `dim`:
   /// integral of `q^(dim-1) w(q)` from `q` to cutoff.
   auto tail_moment(int dim) const -> Expr {
-    const Poly poly{weight_, q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) result += c * pow(q, p) / (dim + p);
-    result = horner(result, {q});
-    return pow(cutoff_, dim) * result.subs(q, cutoff_) - pow(q, dim) * result;
+    const auto polynomial = sym::as_polynomial(weight_, q);
+    auto result = expr_context.integer(0);
+    for (const auto& [p, c] :
+         std::views::enumerate(polynomial.coefficients())) {
+      if (!c.is_zero()) result += c * pow(q, p) / (dim + p);
+    }
+    result = sym::horner(result, {q});
+    return pow(cutoff_, dim) * sym::substitute(result, q, cutoff_) -
+           pow(q, dim) * result;
   }
 
   /// Kernel-flux primitive over a clipped 2D segment.
-  auto flux_primitive() const -> OptExpr {
-    const Poly poly{weight_, q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) result += c * j_expr(p);
+  auto flux_primitive() const -> OptimizedExpr {
+    const auto polynomial = sym::as_polynomial(weight_, q);
+    auto result = expr_context.integer(0);
+    for (const auto& [p, c] :
+         std::views::enumerate(polynomial.coefficients())) {
+      if (!c.is_zero()) result += c * j_expr(static_cast<int>(p));
+    }
     return optimize_radial_(result);
   }
 
   /// Antigradient-flux primitive over a clipped 2D segment.
-  auto antigrad_flux_primitive() const -> OptExpr {
-    const Poly poly{tail_moment(2), q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) {
+  auto antigrad_flux_primitive() const -> OptimizedExpr {
+    const auto moment = tail_moment(2);
+    const auto polynomial = sym::as_polynomial(moment, q);
+    auto result = expr_context.integer(0);
+    for (const auto& [p, c] :
+         std::views::enumerate(polynomial.coefficients())) {
+      if (c.is_zero()) continue;
       if (p == 0) result += c * A;
       else if (p == 1) result += c * eta * L;
-      else result += c * eta * j_expr(p - 2);
+      else result += c * eta * j_expr(static_cast<int>(p - 2));
     }
     return optimize_radial_(result);
   }
 
   /// Kernel-flux line primitive over a triangle edge.
-  auto flux_line_primitive() const -> OptExpr {
-    const Poly poly{flux_moment_(rho), rho};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) result += c * k_line_expr(p);
+  auto flux_line_primitive() const -> OptimizedExpr {
+    const auto polynomial = sym::as_polynomial(flux_moment_(rho), rho);
+    auto result = expr_context.integer(0);
+    for (const auto& [p, c] :
+         std::views::enumerate(polynomial.coefficients())) {
+      if (!c.is_zero()) result += c * k_line_expr(static_cast<int>(p));
+    }
     return optimize_line_(result);
   }
 
   /// Antigradient-flux line primitive over a triangle edge.
-  auto antigrad_flux_line_primitive() const -> OptExpr {
-    const Poly poly{tail_moment(3), q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) {
+  auto antigrad_flux_line_primitive() const -> OptimizedExpr {
+    const auto moment = tail_moment(3);
+    const auto polynomial = sym::as_polynomial(moment, q);
+    auto result = expr_context.integer(0);
+    for (const auto& [p, c] :
+         std::views::enumerate(polynomial.coefficients())) {
+      if (c.is_zero()) continue;
       if (p == 0) {
         result += c * (k_line_expr(0) - B);
       } else {
         result += c *
-                  (eta * k_line_expr(p - 1) - pow(eta, p) * k_line_expr(0)) /
+                  (eta * k_line_expr(static_cast<int>(p - 1)) -
+                   pow(eta, p) * k_line_expr(0)) /
                   (p - 1);
       }
     }
@@ -420,15 +249,18 @@ public:
   }
 
   /// Kernel-flux sector primitive (angular part) over a triangle.
-  auto flux_sector() const -> OptExpr {
+  auto flux_sector() const -> OptimizedExpr {
     return optimize_sector_(flux_moment_(cutoff_));
   }
 
   /// Antigradient-flux sector primitive (angular part) over a triangle.
-  auto antigrad_flux_sector() const -> OptExpr {
-    const Poly poly{tail_moment(3), q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) {
+  auto antigrad_flux_sector() const -> OptimizedExpr {
+    const auto moment = tail_moment(3);
+    const auto polynomial = sym::as_polynomial(moment, q);
+    auto result = expr_context.integer(0);
+    for (const auto& [p, c] :
+         std::views::enumerate(polynomial.coefficients())) {
+      if (c.is_zero()) continue;
       if (p == 0) {
         result += c * (1 - eta / cutoff_);
       } else {
@@ -442,10 +274,12 @@ private:
 
   // Moment of `w(q)` with `upper^(p+2)` bounds (2D flux, `rho`-parameterized).
   auto flux_moment_(const Expr& upper) const -> Expr {
-    const Poly poly{weight_, q};
-    Expr result = 0;
-    for (const auto& [p, c] : poly.terms()) {
-      const int e = p + 2;
+    const auto polynomial = sym::as_polynomial(weight_, q);
+    auto result = expr_context.integer(0);
+    for (const auto& [p, c] :
+         std::views::enumerate(polynomial.coefficients())) {
+      if (c.is_zero()) continue;
+      const auto e = p + 2;
       result += c * (pow(upper, e) - pow(eta, e)) / e;
     }
     return result;
@@ -453,24 +287,40 @@ private:
 
   // Optimize a radial primitive: reduce `rho`, Horner in `z` and `eta`, then
   // do common-subexpression elimination.
-  static auto optimize_radial_(const Expr& e) -> OptExpr {
+  static auto optimize_radial_(const Expr& e) -> OptimizedExpr {
     const auto rho_reduced = power_reduce(e, rho, pow(z, 2) + pow(eta, 2));
-    return OptExpr{horner(rho_reduced, {z, eta})};
+    return optimize_best({
+        e,
+        rho_reduced,
+        sym::horner(rho_reduced, {z, eta}),
+        sym::horner(rho_reduced, {eta, z}),
+    });
   }
 
   // Optimize an edge primitive: reduce `rho` and `beta`, Horner, then
   // do common-subexpression elimination.
-  static auto optimize_line_(const Expr& e) -> OptExpr {
+  static auto optimize_line_(const Expr& e) -> OptimizedExpr {
     const auto rho_reduced =
         power_reduce(e, rho, pow(z, 2) + pow(eta, 2) + pow(delta, 2));
     const auto beta_reduced =
         power_reduce(rho_reduced, beta, pow(eta, 2) + pow(delta, 2));
-    return OptExpr{horner(beta_reduced, {z, delta, eta})};
+    std::vector<Expr> candidates{beta_reduced};
+    for (const auto& order : std::array{
+             std::array{z, delta, eta},
+             std::array{z, eta, delta},
+             std::array{delta, z, eta},
+             std::array{delta, eta, z},
+             std::array{eta, z, delta},
+             std::array{eta, delta, z},
+         }) {
+      candidates.emplace_back(sym::horner(beta_reduced, order));
+    }
+    return optimize_best(candidates);
   }
 
   // Optimize a sector primitive: Horner in `eta`, then CSE.
-  static auto optimize_sector_(const Expr& e) -> OptExpr {
-    return OptExpr{horner(e, {eta})};
+  static auto optimize_sector_(const Expr& e) -> OptimizedExpr {
+    return optimize_best({e, sym::horner(e, {eta})});
   }
 
   Expr cutoff_;
@@ -503,7 +353,7 @@ public:
     return std::ranges::max(segments_,
                             {},
                             [](const Segment& segment) {
-                              return segment.cutoff().as_double();
+                              return segment.cutoff().as_rational();
                             })
         .cutoff();
   }
@@ -522,14 +372,17 @@ auto kernels() -> std::vector<Kernel> {
   return {
       {"CubicSplineKernel",
        {
-           {2, Expr{1} / 4 * pow(2 - q, 3)},
+           {2, expr_context.rational(1, 4) * pow(2 - q, 3)},
            {1, -pow(1 - q, 3)},
        }},
       {"QuarticSplineKernel",
        {
-           {Expr{5} / 2, pow(Expr{5} / 2 - q, 4)},
-           {Expr{3} / 2, -5 * pow(Expr{3} / 2 - q, 4)},
-           {Expr{1} / 2, 10 * pow(Expr{1} / 2 - q, 4)},
+           {expr_context.rational(5, 2),
+            pow(expr_context.rational(5, 2) - q, 4)},
+           {expr_context.rational(3, 2),
+            -5 * pow(expr_context.rational(3, 2) - q, 4)},
+           {expr_context.rational(1, 2),
+            10 * pow(expr_context.rational(1, 2) - q, 4)},
        }},
       {"QuinticSplineKernel",
        {
@@ -543,12 +396,15 @@ auto kernels() -> std::vector<Kernel> {
        }},
       {"SixthOrderWendlandKernel",
        {
-           {2, (1 + 3 * q + Expr{35} / 12 * pow(q, 2)) * pow(1 - q / 2, 6)},
+           {2,
+            (1 + 3 * q + expr_context.rational(35, 12) * pow(q, 2)) *
+                pow(1 - q / 2, 6)},
        }},
       {"EighthOrderWendlandKernel",
        {
            {2,
-            (1 + 4 * q + Expr{25} / 4 * pow(q, 2) + 4 * pow(q, 3)) *
+            (1 + 4 * q + expr_context.rational(25, 4) * pow(q, 2) +
+             4 * pow(q, 3)) *
                 pow(1 - q / 2, 8)},
        }},
   };
@@ -560,70 +416,58 @@ auto kernels() -> std::vector<Kernel> {
 //
 
 /// Render symbolic expression as C++ code.
-auto to_cxx(const se::RCP<const se::Basic>& expr)
-    -> std::string { // NOLINT(*-no-recursion)
-  if (se::is_a<se::Integer>(*expr)) {
-    const auto n = se::down_cast<const se::Integer&>(*expr).as_int();
-    return std::format("Num{{{}}}", n);
-  }
-  if (se::is_a<se::Rational>(*expr)) {
-    const auto& r = se::down_cast<const se::Rational&>(*expr);
-    auto num = r.get_num()->as_int();
-    auto den = r.get_den()->as_int();
-    if (den < 0) {
-      num = -num;
-      den = -den;
+auto to_cxx(const Expr& expression) -> std::string { // NOLINT(*-no-recursion)
+  if (expression.is_rational()) {
+    const auto value = expression.as_rational();
+    if (value.is_integer()) {
+      return std::format("Num{{{}}}", value.numerator());
     }
-    return std::format("Num{{{}.0 / {}.0}}", num, den);
+    return std::format("Num{{{}.0 / {}.0}}",
+                       value.numerator(),
+                       value.denominator());
   }
-  if (se::is_a<se::Symbol>(*expr)) {
-    return se::down_cast<const se::Symbol&>(*expr).get_name();
-  }
-  if (se::is_a<se::Add>(*expr)) {
-    const auto args = expr->get_args();
-    if (args.empty()) return "Num{0.0}";
+  if (expression.is_symbol()) return std::string{expression.symbol_name()};
+  if (expression.kind() == sym::ExprKind::add) {
     std::vector<std::string> parts;
-    parts.reserve(args.size());
-    for (const auto& arg : args) parts.emplace_back(to_cxx(arg));
+    parts.reserve(expression.arity());
+    for (std::size_t i = 0; i < expression.arity(); ++i) {
+      parts.emplace_back(to_cxx(expression[i]));
+    }
     return std::format("({})", str_join(parts, " + "));
   }
-  if (se::is_a<se::Mul>(*expr)) {
-    se::RCP<const se::Basic> coeff = se::integer(1);
+  if (expression.kind() == sym::ExprKind::mul) {
+    sym::Rational coefficient{1};
     std::vector<std::string> parts;
-    for (const auto& arg : expr->get_args()) {
-      if (se::is_a<se::Integer>(*arg) || se::is_a<se::Rational>(*arg)) {
-        coeff = se::mul(coeff, arg);
-      } else {
-        parts.emplace_back(to_cxx(arg));
-      }
+    for (std::size_t i = 0; i < expression.arity(); ++i) {
+      const auto arg = expression[i];
+      if (arg.is_rational()) coefficient *= arg.as_rational();
+      else parts.emplace_back(to_cxx(arg));
     }
-    if (se::eq(*coeff, *se::integer(-1))) {
+    if (coefficient == sym::Rational{-1}) {
       if (parts.empty()) return "Num{-1.0}";
       parts.front() = "-" + parts.front();
-    } else if (!se::eq(*coeff, *se::integer(1))) {
-      parts.insert(parts.begin(), to_cxx(coeff));
+    } else if (coefficient != sym::Rational{1}) {
+      parts.insert(parts.begin(), to_cxx(expr_context.rational(coefficient)));
     }
     if (parts.empty()) return "Num{1.0}";
     return str_join(parts, " * ");
   }
-  if (se::is_a<se::Pow>(*expr)) {
-    const auto& p = se::down_cast<const se::Pow&>(*expr);
-    const auto& base = p.get_base();
-    const auto& exp = p.get_exp();
-    if (se::is_a<se::Integer>(*exp)) {
-      const auto n = se::down_cast<const se::Integer&>(*exp).as_int();
+  if (expression.kind() == sym::ExprKind::pow) {
+    const auto base = expression[0];
+    const auto exponent = expression[1];
+    if (exponent.is_integer()) {
+      const auto n = exponent.as_integer();
       if (n == -1) return std::format("inverse({})", to_cxx(base));
-      if (n < -1) return std::format("inverse(pow({}, {}))", to_cxx(base), -n);
+      if (n < -1) {
+        const auto positive = static_cast<std::uint64_t>(-(n + 1)) + 1;
+        return std::format("inverse(pow({}, {}))", to_cxx(base), positive);
+      }
       return std::format("pow({}, {})", to_cxx(base), n);
     }
-    return std::format("pow({}, {})", to_cxx(base), to_cxx(exp));
+    return std::format("pow({}, {})", to_cxx(base), to_cxx(exponent));
   }
   TIT_THROW("Cannot translate expression to C++.");
-}
-
-/// Render symbolic expression as C++ code.
-auto to_cxx(const Expr& e) -> std::string {
-  return to_cxx(e.base());
+  std::unreachable();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -658,7 +502,7 @@ auto helper_ref(const Kernel& kernel,
 void emit_helper(std::ostream& os,
                  const std::string& name,
                  std::initializer_list<Expr> params,
-                 const OptExpr& opt) {
+                 const OptimizedExpr& opt) {
   std::println(os, "template<class Num>");
   const auto head = std::format("constexpr auto {}(", name);
   const std::string cont(head.size(), ' ');
@@ -669,8 +513,11 @@ void emit_helper(std::ostream& os,
     std::print(os, "Num {}", to_cxx(param));
   }
   std::println(os, ") noexcept -> Num {{");
-  for (const auto& [sym, val] : opt.reps()) {
-    std::println(os, "  const auto {} = {};", to_cxx(sym), to_cxx(val));
+  for (const auto& binding : opt.bindings()) {
+    std::println(os,
+                 "  const auto {} = {};",
+                 to_cxx(binding.symbol),
+                 to_cxx(binding.value));
   }
   std::println(os, "  return {};", to_cxx(opt.result()));
   std::println(os, "}}");
