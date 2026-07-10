@@ -398,6 +398,20 @@ constexpr auto vec_cast(const Vec<From, Dim>& a) -> Vec<To, Dim> {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Element-wise absolute value.
+template<class Num, std::size_t Dim>
+constexpr auto abs(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
+  Vec<Num, Dim> r;
+  TIT_IF_SIMD_AVALIABLE(Num) {
+    for (std::size_t i = 0; i < Vec<Num, Dim>::RegCount; ++i) {
+      r.reg(i) = simd::abs(a.reg(i));
+    }
+    return r;
+  }
+  for (std::size_t i = 0; i < Dim; ++i) r[i] = abs(a[i]);
+  return r;
+}
+
 /// Element-wise minimum of two vectors.
 template<class Num, std::size_t Dim>
 constexpr auto minimum(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
@@ -685,6 +699,15 @@ constexpr auto cross(const Vec<Num, 3>& a, const Vec<Num, 3>& b)
   };
 }
 /// @}
+
+/// Determinant of a square matrix.
+template<class Num, std::size_t Dim, std::size_t... RestDims>
+  requires (2 <= Dim && Dim <= 3) && ((RestDims == Dim) && ...) &&
+           (sizeof...(RestDims) == Dim - 1)
+constexpr auto det(const Vec<Num, Dim>& a0, const Vec<Num, RestDims>&... as)
+    -> Num {
+  return dot(a0, cross(as...));
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

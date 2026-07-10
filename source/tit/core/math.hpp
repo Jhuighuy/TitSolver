@@ -8,9 +8,11 @@
 #include <bit>
 #include <cmath>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <numbers>
 #include <ranges>
 #include <type_traits>
 
@@ -49,6 +51,7 @@ TIT_MAKE_CONSTEXPR_MATH_FUNC_(log)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(round)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(sin)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(sqrt)
+TIT_MAKE_CONSTEXPR_MATH_FUNC_(tgamma)
 #undef TIT_MAKE_CONSTEXPR_MATH_FUNC_
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,6 +164,17 @@ constexpr auto bitwise_equal(Num a, Num b) noexcept -> bool {
                                   std::uint64_t>;
   return std::bit_cast<Bits>(a) == std::bit_cast<Bits>(b);
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Miscellaneous.
+//
+
+/// Surface area of the unit sphere in d-dimensional space.
+template<std::size_t Dim, std::constructible_from<double> Num = double>
+  requires (Dim >= 1)
+inline constexpr auto unit_sphere_area_v = static_cast<Num>(
+    2.0 * sqrt(pow(std::numbers::pi, Dim)) / tgamma(Dim / 2.0));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

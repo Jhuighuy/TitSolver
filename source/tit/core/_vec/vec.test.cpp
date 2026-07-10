@@ -212,6 +212,10 @@ TEST_CASE_TEMPLATE("Vec::vec_cast<class To>", Num, NUM_TYPES) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE_TEMPLATE("Vec::abs", Num, NUM_TYPES) {
+  CHECK(abs(Vec{-Num{3}, +Num{4}}) == Vec{+Num{3}, +Num{4}});
+}
+
 TEST_CASE_TEMPLATE("Vec::minimum", Num, NUM_TYPES) {
   CHECK(minimum(Vec{-Num{3}, +Num{4}}, Vec{+Num{3}, +Num{2}}) ==
         Vec{-Num{3}, +Num{2}});
@@ -380,6 +384,21 @@ TEST_CASE_TEMPLATE("Vec::cross", Num, NUM_TYPES) {
                 Vec{Num{0}, Num{1}, Num{0}}) == Vec{Num{0}, Num{0}, Num{1}});
     CHECK(cross(Vec{Num{1}, Num{2}, Num{3}}, //
                 Vec{Num{4}, Num{5}, Num{6}}) == Vec{-Num{3}, Num{6}, -Num{3}});
+  }
+}
+
+TEST_CASE_TEMPLATE("Vec::det", Num, NUM_TYPES) {
+  SUBCASE("2D") {
+    CHECK(det(Vec{Num{1}, Num{2}}, Vec{Num{3}, Num{4}}) == -Num{2});
+    CHECK(det(Vec{Num{1}, Num{2}}, Vec{Num{3}, Num{6}}) == Num{0});
+  }
+  SUBCASE("3D") {
+    CHECK(det(Vec{Num{1}, Num{1}, Num{0}},
+              Vec{Num{1}, Num{2}, Num{3}},
+              Vec{Num{4}, Num{5}, Num{6}}) == Num{3});
+    CHECK(det(Vec{Num{1}, Num{1}, Num{0}},
+              Vec{Num{1}, Num{2}, Num{3}},
+              Vec{Num{3}, Num{6}, Num{9}}) == Num{0});
   }
 }
 

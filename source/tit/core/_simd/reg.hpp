@@ -193,6 +193,14 @@ inline auto reg_cast(const Reg<From, Size>& a) noexcept -> Reg<To, Size> {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// SIMD element-wise absolute value.
+template<class Num, std::size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto abs(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
+  return hn::Abs(a.base);
+}
+
 /// SIMD element-wise minimum algorithm.
 template<class Num, std::size_t Size>
   requires supported<Num, Size>
