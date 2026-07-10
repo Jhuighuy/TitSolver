@@ -30,6 +30,9 @@ add_tit_library(
     "surface.hpp"
     "tessellation.hpp"
     "triangle.hpp"
+    "winding.hpp"
+    "winding/exact_winding.hpp"
+    "winding/fast_winding.hpp"
   DEPENDS
     assimp::assimp
     tit::core
@@ -59,6 +62,7 @@ add_tit_executable(
     "surface.test.cpp"
     "tessellation.test.cpp"
     "triangle.test.cpp"
+    "winding.test.cpp"
   DEPENDS
     tit::geom
     tit::testing

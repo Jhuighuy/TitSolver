@@ -72,6 +72,13 @@ public:
     return norm(wnormal());
   }
 
+  /// Generalized winding number contribution around the given point.
+  constexpr auto winding_number(const Vec& point) const noexcept -> Num {
+    const auto ap = a() - point;
+    const auto bp = b() - point;
+    return atan2(det(ap, bp), dot(ap, bp)) / unit_sphere_area_v<2, Num>;
+  }
+
   /// Find the point inside of the segment that is closest to @p point.
   constexpr auto clamp(const Vec& point) const noexcept -> Vec {
     const auto len_sqr = norm2(ba());

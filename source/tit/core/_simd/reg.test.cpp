@@ -64,6 +64,13 @@ TEST_CASE("simd::Reg::reg_cast") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("simd::Reg::abs") {
+  const auto r = simd::abs(FloatReg{FloatArray{-5.0F, 6.0F, 7.0F, 8.0F}});
+  FloatArray out{};
+  r.store(out);
+  CHECK(out == FloatArray{5.0F, 6.0F, 7.0F, 8.0F});
+}
+
 TEST_CASE("simd::Reg::min") {
   const auto r = simd::min(FloatReg{FloatArray{5.0F, 6.0F, 7.0F, 8.0F}},
                            FloatReg{FloatArray{1.0F, 7.0F, 4.0F, 9.0F}});
