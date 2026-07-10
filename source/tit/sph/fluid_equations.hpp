@@ -32,7 +32,8 @@ namespace tit::sph {
 template<class Num,
          equation_of_state<Num> EquationOfState,
          kernel Kernel,
-         class Domain>
+         class Domain,
+         class Containment>
 class FluidEquations final {
 public:
 
@@ -50,19 +51,22 @@ public:
 
   /// Construct the fluid equations.
   ///
-  /// @param rho_0  Reference density.
-  /// @param g      Gravitational acceleration.
-  /// @param mu     Viscosity coefficient.
-  /// @param domain Boundary domain.
-  /// @param eos    Equation of state.
-  /// @param kernel Kernel.
-  constexpr explicit FluidEquations(Num g,
-                                    Num mu,
-                                    const Domain& domain,
-                                    EquationOfState eos,
-                                    Kernel kernel) noexcept
-      : g_{g}, mu_{mu}, domain_{std::move(domain)}, eos_{std::move(eos)},
-        kernel_{std::move(kernel)} {}
+  /// @param rho_0       Reference density.
+  /// @param g           Gravitational acceleration.
+  /// @param mu          Viscosity coefficient.
+  /// @param domain      Boundary domain.
+  /// @param containment Domain containment function.
+  /// @param eos         Equation of state.
+  /// @param kernel      Kernel.
+  explicit FluidEquations(Num g,
+                          Num mu,
+                          const Domain& domain,
+                          const Containment& containment,
+                          EquationOfState eos,
+                          Kernel kernel)
+      : g_{g}, mu_{mu},                             //
+        domain_{domain}, containment_{containment}, //
+        eos_{std::move(eos)}, kernel_{std::move(kernel)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   //
@@ -70,89 +74,18 @@ public:
   //
 
   /// Initialize equation-owned particle fields.
-  template<particle_array<required_fields> ParticleArray>
-  void initialize(ParticleArray& particles) const {
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void initialize(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::initialize()");
     using PV = ParticleView<ParticleArray>;
 
-    initialize_gamma(particles);
+    // Compute gamma.
+    index(mesh, particles);
+    compute_gamma(mesh, particles);
 
     // Fixed particles have mass fractions.
     par::for_each(particles.fixed(), [](PV a) { m[a] *= gamma[a]; });
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /// Initialize the boundary renormalization field.
-  template<particle_array<required_fields> ParticleArray>
-  void initialize_gamma(ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::initialize_gamma()");
-    using PV = ParticleView<ParticleArray>;
-    using Vec = particle_vec_t<ParticleArray>;
-
-    // Compute gamma at the initial time using Ferrand's algorithm
-    // (Ferrand et al., 2012).
-    //
-    // For each particle, first compute ∇γ. From this, two cases arise:
-    //
-    // - ∇γ is zero, the particle is far from the boundary.
-    //   In this case, we can simply set γ = 1.
-    //
-    // - ∇γ is non-zero, the particle is near the boundary, and γ < 1.
-    //   Define:
-    //
-    //     n := ∇γ / |∇γ|, ẟ := -2 R n, where R is the kernel radius.
-    //
-    //   One can virtually translate particle by -ẟ, where it is safe to assume
-    //   γ(r - ẟ) = 1. γ(r) can be computed by integrating ODEs with respect to
-    //   virtual time τ at τ=1:
-    //
-    //     dx/dτ = ẟ,       x(τ=0) = r - ẟ,
-    //     dγ/dτ = ẟ⋅∇γ(x), γ(τ=0) = 1.
-    //
-    par::for_each(particles.all(), [this](PV a) {
-      const auto grad_gamma_at = [this, a](const Vec& x) {
-        Vec grad{};
-        for (const auto& s_face : domain_.faces()) {
-          grad += kernel_.flux(s_face, x, h[a]);
-        }
-        return grad;
-      };
-
-      grad_gamma[a] = grad_gamma_at(r[a]);
-      gamma[a] = Num{1};
-
-      const auto grad_gamma_0_norm = norm(grad_gamma[a]);
-      if (is_tiny(grad_gamma_0_norm)) return;
-
-      const auto n = grad_gamma[a] / grad_gamma_0_norm;
-      const auto delta = -Num{2} * kernel_.radius(h[a]) * n;
-      const auto max_abs_dgamma_dtau = abs(dot(grad_gamma[a], delta));
-
-      auto x = r[a] - delta;
-      auto grad_gamma_x = grad_gamma_at(x);
-      for (Num tau{}; tau < Num{1};) {
-        const auto remaining = Num{1} - tau;
-        const auto abs_dgamma_dtau = abs(dot(grad_gamma_x, delta));
-        const auto denom = std::max(abs_dgamma_dtau, max_abs_dgamma_dtau);
-        auto dtau =
-            is_tiny(denom) ? remaining : std::min(remaining, C_gamma_ / denom);
-        if (tau + dtau <= tau) dtau = remaining;
-
-        const auto dx = dtau * delta;
-        const auto next_x = x + dx;
-        const auto next_grad_gamma_x = grad_gamma_at(next_x);
-
-        gamma[a] += dot(grad_gamma_x + next_grad_gamma_x, dx) / 2;
-
-        x = next_x;
-        grad_gamma_x = next_grad_gamma_x;
-
-        tau += dtau;
-      }
-
-      gamma[a] = std::clamp(gamma[a], Num{0}, Num{1});
-    });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -167,6 +100,7 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::prepare()");
 
     index(mesh, particles);
+    compute_gamma(mesh, particles);
     setup_boundary(mesh, particles);
   }
 
@@ -231,18 +165,45 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Compute the maximum allowed time step.
+  /// Compute gamma and its gradient.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  auto compute_time_step(ParticleMesh& mesh, ParticleArray& particles) const
-      -> Num {
+  void compute_gamma(ParticleMesh& mesh, ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::compute_gamma_gradient()");
+    using PV = ParticleView<ParticleArray>;
+
+    par::for_each(particles.all(), [&mesh, this](PV a) {
+      // Compute gamma gradient.
+      grad_gamma[a] = {};
+      for (const auto& [s_face, _] : mesh[domain_, a]) {
+        grad_gamma[a] += kernel_.flux(s_face, a);
+      }
+
+      // Compute gamma based on the containment function and fluxes.
+      gamma[a] = containment_.contains(r[a]) ? Num{1} : Num{0};
+      if (const auto norm_grad_gamma_a = norm(grad_gamma[a]);
+          !is_tiny(norm_grad_gamma_a)) {
+        const auto n_a = grad_gamma[a] / norm_grad_gamma_a;
+        const auto r_a = r[a] + (Num{2} * gamma[a] - Num{1}) * n_a * pow2(h[a]);
+        for (const auto& [s_face, _] : mesh[domain_, a]) {
+          gamma[a] -= kernel_.antigrad_flux(s_face, r_a, h[a]);
+        }
+      }
+    });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Compute the maximum allowed time step.
+  template<particle_array<required_fields> ParticleArray>
+  auto compute_time_step(ParticleArray& particles) const -> Num {
     TIT_PROFILE_SECTION("FluidEquations::compute_time_step()");
     using PV = ParticleView<ParticleArray>;
 
     return par::fold(
         particles.fluid(),
         std::numeric_limits<Num>::max(),
-        [&mesh, this](Num dt, PV a) {
+        [this](Num dt, PV a) {
           // Acoustic time step.
           const auto dt_acoustic =
               CFL_ * h[a] /
@@ -255,16 +216,7 @@ public:
           const auto dt_force =
               C_force_ * sqrt(h[a] / std::max(norm(dv_dt[a]), g_));
 
-          // Gamma time step.
-          auto dt_gamma = std::numeric_limits<Num>::max();
-          for (const auto& [s_face, s] : mesh[domain_, a]) {
-            const auto grad_gamma_as = kernel_.flux(s_face, a);
-            dt_gamma = std::min(
-                dt_gamma,
-                C_gamma_ / abs(dot(grad_gamma_as, v[a, s]) + tiny_v<Num>));
-          }
-
-          return std::min({dt, dt_acoustic, dt_visc, dt_force, dt_gamma});
+          return std::min({dt, dt_acoustic, dt_visc, dt_force});
         },
         [](Num dt_a, Num dt_b) { return std::min(dt_a, dt_b); });
   }
@@ -273,24 +225,6 @@ public:
   //
   // Integration steps.
   //
-
-  /// Compute gradient of gamma.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  void compute_gamma_gradient(ParticleMesh& mesh,
-                              ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::compute_gamma_gradient()");
-    using PV = ParticleView<ParticleArray>;
-
-    par::for_each(particles.fluid(), [&mesh, this](PV a) {
-      grad_gamma[a] = {};
-      for (const auto& [s_face, _] : mesh[domain_, a]) {
-        grad_gamma[a] += kernel_.flux(s_face, a);
-      }
-    });
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute continuity equation right-hand side.
   template<particle_mesh ParticleMesh,
@@ -405,7 +339,6 @@ public:
       L[a] = {};
       grad_v[a] = {};
       grad_rho[a] = {};
-      grad_gamma[a] = {};
       for (const auto& [s_face, s] : mesh[domain_, a]) {
         const auto grad_gamma_as = kernel_.flux(s_face, a);
 
@@ -413,7 +346,6 @@ public:
         L[a] -= outer(r[s, a], grad_gamma_as) / gamma[a];
         grad_v[a] -= outer(v[s, a], grad_gamma_as) / gamma[a];
         grad_rho[a] -= rho[s, a] * grad_gamma_as / gamma[a];
-        grad_gamma[a] += grad_gamma_as;
       }
     });
     par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
@@ -535,7 +467,6 @@ public:
       // the velocity field even for slow laminar flows.
       if (approx_equal_to(gamma[a], Num{1})) v[a] += grad_v[a] * dr[a];
       rho[a] += dot(grad_rho[a], dr[a]);
-      gamma[a] += dot(grad_gamma[a], dr[a]);
     });
   }
 
@@ -587,7 +518,6 @@ private:
   static constexpr Num CFL_{0.4};
   static constexpr Num C_force_{0.25};
   static constexpr Num C_visc_{0.125};
-  static constexpr Num C_gamma_{0.004};
   static constexpr Num C_shift_{0.2};
   static constexpr Num phi_max_{1};
   static constexpr Num phi_min_{std::numeric_limits<Num>::min()};
@@ -596,6 +526,7 @@ private:
   Num g_;
   Num mu_;
   [[no_unique_address]] Domain domain_;
+  [[no_unique_address]] Containment containment_;
   [[no_unique_address]] EquationOfState eos_;
   [[no_unique_address]] Kernel kernel_;
 
