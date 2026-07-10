@@ -90,6 +90,33 @@ TEST_CASE("geom::Triangle::area") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("geom::Triangle::winding_number") {
+  constexpr Vec a{1.0, 0.0, 0.0};
+  constexpr Vec b{0.0, 1.0, 0.0};
+  constexpr Vec c{0.0, 0.0, 1.0};
+  constexpr Vec point{0.0, 0.0, 0.0};
+  SUBCASE("normal") {
+    const geom::Triangle triangle{a, b, c};
+    CHECK_APPROX_EQ(triangle.winding_number(point), 0.125);
+  }
+  SUBCASE("flipped") {
+    const geom::Triangle triangle{c, b, a};
+    CHECK_APPROX_EQ(triangle.winding_number(point), -0.125);
+  }
+  SUBCASE("translated") {
+    constexpr Vec offset{3.0, 4.0, 5.0};
+    const geom::Triangle triangle{a + offset, b + offset, c + offset};
+    CHECK_APPROX_EQ(triangle.winding_number(point + offset), 0.125);
+  }
+  SUBCASE("scaled") {
+    constexpr auto scale = 2.0;
+    const geom::Triangle triangle{scale * a, scale * b, scale * c};
+    CHECK_APPROX_EQ(triangle.winding_number(scale * point), 0.125);
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("geom::Triangle::clamp") {
   SUBCASE("normal") {
     const geom::Triangle tri{

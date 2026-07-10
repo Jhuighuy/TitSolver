@@ -89,6 +89,19 @@ public:
     return norm(wnormal());
   }
 
+  /// Generalized winding number contribution around the given point.
+  constexpr auto winding_number(const Vec& point) const noexcept -> Num {
+    const auto ap = a() - point;
+    const auto bp = b() - point;
+    const auto cp = c() - point;
+    const auto ap_norm = norm(ap);
+    const auto bp_norm = norm(bp);
+    const auto cp_norm = norm(cp);
+    const auto den = ap_norm * bp_norm * cp_norm + dot(ap, bp) * cp_norm +
+                     dot(bp, cp) * ap_norm + dot(cp, ap) * bp_norm;
+    return atan2(det(ap, bp, cp), den) / Num{0.5 * unit_sphere_area_v<3>};
+  }
+
   /// Find the point inside of the triangle that is closest to @p point.
   constexpr auto clamp(const Vec& point) const noexcept -> Vec {
     if (is_tiny(area())) {

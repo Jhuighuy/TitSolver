@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <limits>
+#include <numbers>
 
 #include "tit/core/math.hpp"
 #include "tit/testing/test.hpp"
@@ -97,6 +98,15 @@ TEST_CASE_TEMPLATE("divide_up", UInt, UINT_TYPES) {
 TEST_CASE_TEMPLATE("avg", Float, FLOAT_TYPES) {
   CHECK(avg(Float{1}, Float{2}) == static_cast<Float>(1.5));
   CHECK(avg(Float{1}, Float{2}, Float{3}) == static_cast<Float>(2.0));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE_TEMPLATE("unit_sphere_area_v", Float, FLOAT_TYPES) {
+  using std::numbers::pi;
+  CHECK_APPROX_EQ(unit_sphere_area_v<1, Float>, Float{2.0});
+  CHECK_APPROX_EQ(unit_sphere_area_v<2, Float>, Float{2.0 * pi});
+  CHECK_APPROX_EQ(unit_sphere_area_v<3, Float>, Float{4.0 * pi});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

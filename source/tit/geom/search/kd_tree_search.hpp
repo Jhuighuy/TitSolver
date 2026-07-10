@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <iterator>
+#include <limits>
 #include <numeric>
 #include <ranges>
 #include <span>
@@ -37,23 +38,6 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Move-construct from another index.
-  constexpr KDTreeIndex(KDTreeIndex&&) noexcept = default;
-
-  /// Move-assign from another index.
-  constexpr auto operator=(KDTreeIndex&&) noexcept -> KDTreeIndex& = default;
-
-  /// Destroy the index.
-  constexpr ~KDTreeIndex() noexcept = default;
-
-  /// This class is not copy-constructible.
-  constexpr KDTreeIndex(const KDTreeIndex&) = delete;
-
-  /// This class is not copy-assignable.
-  constexpr auto operator=(const KDTreeIndex&) -> KDTreeIndex& = delete;
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
   /// Index the points for search using a K-dimensional tree.
   explicit KDTreeIndex(Points points) : points_{std::move(points)} {
     if (std::ranges::empty(points_)) return;
@@ -72,40 +56,41 @@ public:
         this const auto& self,
         std::span<std::size_t> my_perm) {
       // Allocate the node.
-      auto* const node = &nodes[par::fetch_and_add(node_counter, 1)];
+      const auto node_index = par::fetch_and_add(node_counter, 1);
+      auto& node = nodes[node_index];
 
       // Quick exit if a single point is left.
       if (my_perm.size() == 1) {
-        node->index = my_perm.front();
-        return node;
+        node.index = my_perm.front();
+        return node_index;
       }
 
       // Split the points into the roughly equal halves.
       const auto box = compute_bbox(my_points, my_perm);
-      node->axis = max_value_index(box.extents());
+      node.axis = max_value_index(box.extents());
       const auto median_index = my_perm.size() / 2;
       const auto [left_perm, right_perm] =
-          coord_median_split(my_points, my_perm, median_index, node->axis);
-      node->index = my_perm[median_index];
+          coord_median_split(my_points, my_perm, median_index, node.axis);
+      node.index = my_perm[median_index];
 
       // Recursively partition the halves.
       constexpr std::size_t min_par_size = 50;
       using enum par::RunMode;
       tasks.run(
-          [node, left_perm, self] {
+          [&node, left_perm, self] {
             if (left_perm.empty()) return;
-            node->left = self(left_perm);
+            node.left = self(left_perm);
           },
           std::ranges::size(left_perm) >= min_par_size ? parallel : sequential);
       tasks.run(
-          [node, right_perm, self] {
+          [&node, right_perm, self] {
             // Median point is already accounted for, so we need to skip it.
             if (right_perm.size() == 1) return;
-            node->right = self(std::span{right_perm}.subspan(1));
+            node.right = self(std::span{right_perm}.subspan(1));
           },
           std::ranges::size(right_perm) >= min_par_size ? parallel :
                                                           sequential);
-      return node;
+      return node_index;
     }(perm);
     tasks.wait();
   }
@@ -115,15 +100,14 @@ public:
   /// Find the points within the given sphere.
   template<std::output_iterator<std::size_t> OutIter>
   auto search(const BSphere<Vec>& search_sphere, OutIter out) const -> OutIter {
-    const auto* const root_node = &nodes_.front();
-    [&search_sphere, &points = points_, &out](this const auto& self,
-                                              const KDTreeNode_* node) {
-      if (node == nullptr) return;
-      const auto& [index, axis, left, right] = *node;
+    [&search_sphere, &out, this](this const auto& self,
+                                 std::size_t node_index) {
+      if (node_index == npos_) return;
+      const auto& [index, axis, left, right] = nodes_[node_index];
       TIT_ASSERT(axis < point_range_dim_v<Points>, "Axis is out of range!");
 
       // Check if the point is within the search radius.
-      const auto& point = points[index];
+      const auto& point = points_[index];
       if (search_sphere.contains(point)) *out++ = index;
 
       // Recursively search the subtrees.
@@ -135,7 +119,7 @@ public:
         self(right);
         if (pow2(delta) < pow2(search_sphere.radius())) self(left);
       }
-    }(root_node);
+    }(0);
     return out;
   }
 
@@ -143,11 +127,13 @@ public:
 
 private:
 
+  static constexpr auto npos_ = std::numeric_limits<std::size_t>::max();
+
   struct KDTreeNode_ final {
     std::size_t index = 0;
     std::size_t axis = 0;
-    const KDTreeNode_* left = nullptr;
-    const KDTreeNode_* right = nullptr;
+    std::size_t left = npos_;
+    std::size_t right = npos_;
   };
 
   Points points_;
