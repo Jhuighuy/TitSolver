@@ -16,6 +16,8 @@
 #include "tit/geom/search.hpp"
 #include "tit/geom/surface.hpp"
 #include "tit/geom/tessellation.hpp"
+#include "tit/geom/winding.hpp"
+#include "tit/geom/winding/fast_winding.hpp"
 #include "tit/par/control.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
@@ -61,12 +63,26 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   domain.append_face({3, 0});
   domain = geom::tessellate(domain, dr);
 
+  // Another domain for containment tests.
+  geom::Surface<Vec<Real, 2>> domain2;
+  domain2.append_vert({0.0, 0.0});
+  domain2.append_vert({POOL_WIDTH, 0.0});
+  domain2.append_vert({POOL_WIDTH, POOL_HEIGHT});
+  domain2.append_vert({0.0, POOL_HEIGHT});
+  domain2.append_face({0, 1});
+  domain2.append_face({1, 2});
+  domain2.append_face({2, 3});
+  domain2.append_face({3, 0});
+  const geom::MakeFastWinding<Real> make_winding;
+  const auto containment = make_winding(domain2);
+
   const FluidEquations equations{
       // Constants.
       g,
       mu,
       // Wall boundary.
       domain,
+      containment,
       // Weakly compressible equation of state.
       TaitEquationOfState{cs_0, rho_0},
       // C4 Wendland's spline kernel.
@@ -103,9 +119,6 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
     rho[a] = rho_0;
   }
 
-  // Initialize the particles.
-  equations.initialize(particles);
-
   // Density hydrostatic initialization.
   for (const auto a : particles.all()) {
     if (a.has_type(ParticleType::fixed)) {
@@ -139,6 +152,9 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       // Use pixelated K-means as the interface partitioning method.
       geom::PixelatedPartition{2 * h_0, geom::KMeansClustering{}},
   };
+
+  // Initialize the particles.
+  equations.initialize(mesh, particles);
 
   // Create a data storage to store the particles. We'll store only one last
   // run result, all the previous runs will be discarded.
