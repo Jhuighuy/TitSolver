@@ -3,6 +3,31 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+add_tit_library(
+  NAME
+    titwcsph_case
+  SOURCES
+    "case.cpp"
+    "case.hpp"
+  DEPENDS
+    tit::core
+    tit::prop
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    titwcsph_case_tests
+  SOURCES
+    "case.test.cpp"
+  DEPENDS
+    tit::testing
+    tit::titwcsph_case
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 add_tit_executable(
   NAME
     titwcsph
@@ -12,6 +37,7 @@ add_tit_executable(
     tit::core
     tit::data
     tit::sph
+    tit::titwcsph_case
   DESTINATION
     "bin"
 )

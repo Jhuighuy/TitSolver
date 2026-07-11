@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import {
+  IconAdjustments,
   IconDashboard,
   IconDatabase,
   IconFileText,
@@ -21,8 +22,9 @@ import { HelpMenu } from "~/renderer/main/components/help-menu";
 import { LogsMenu } from "~/renderer/main/components/logs-menu";
 import { OutputMenu } from "~/renderer/main/components/output-menu";
 import { SettingsMenu } from "~/renderer/main/components/settings-menu";
-import { Timeline } from "~/renderer/main/components/timeline";
-import { Viewport } from "~/renderer/main/components/viewport";
+import { SetupMenu } from "~/renderer/main/components/setup-menu";
+import { Workspace } from "~/renderer/main/components/workspace";
+import { initCaseState } from "~/renderer/main/state/case";
 import { initSolverState, runSolver } from "~/renderer/main/state/solver";
 import { initStorageState } from "~/renderer/main/state/storage";
 
@@ -30,6 +32,7 @@ import { initStorageState } from "~/renderer/main/state/storage";
 
 export function App() {
   useEffect(() => {
+    initCaseState();
     initSolverState();
     initStorageState();
 
@@ -53,6 +56,13 @@ function Page() {
       <Menu.Root
         side="left"
         items={[
+          {
+            id: "setup",
+            group: 0,
+            name: "Setup",
+            icon: <IconAdjustments />,
+            content: <SetupMenu />,
+          },
           {
             id: "storage",
             group: 0,
@@ -86,12 +96,9 @@ function Page() {
       <div className="flex size-full flex-col">
         <div className="min-h-0 grow">
           <ErrorGuard>
-            <Viewport />
+            <Workspace />
           </ErrorGuard>
         </div>
-        <ErrorGuard>
-          <Timeline />
-        </ErrorGuard>
 
         <Menu.Root
           side="bottom"

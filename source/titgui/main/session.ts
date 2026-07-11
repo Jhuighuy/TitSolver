@@ -17,17 +17,10 @@ import type { Installation } from "~/main/installation";
 import { broadcastIpcEvent } from "~/main/ipc";
 import { log } from "~/main/log";
 import { AsyncLruCache } from "~/main/lru-cache";
+import { CASE_FILE_NAME } from "~/shared/case";
 import type { SolverEvent } from "~/shared/solver";
 import type { Frame } from "~/shared/storage";
 import { ensure } from "~/shared/utils";
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-export interface SessionOptions {
-  workDir: string;
-  storagePath: string;
-  solverPath: string;
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -47,9 +40,9 @@ class SolverManager {
   /**
    * Run the solver.
    */
-  public run(workDir: string) {
+  public run(workDir: string, args: string[] = []) {
     if (this.child !== undefined) return;
-    const child = spawn(this.install.solverPath, [], { cwd: workDir });
+    const child = spawn(this.install.solverPath, args, { cwd: workDir });
 
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (data: string) => {
@@ -149,7 +142,8 @@ class SolverManager {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * A session manager.
+ * A session manager, scoped to a case directory: the storage lives next to
+ * the case file, and the solver runs from the case directory.
  */
 export class SessionManager {
   private readonly solver: SolverManager;
@@ -196,7 +190,6 @@ export class SessionManager {
 
   // Try to open the storage.
   private async openStorage() {
-    // Storage path is hardcoded at the moment.
     const storagePath = path.join(this.workDir, "particles.ttdb");
     try {
       this.storage = await nativeOpenStorage(storagePath);
@@ -330,10 +323,10 @@ export class SessionManager {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
-   * Run the solver.
+   * Run the solver on the case file in the work directory.
    */
   public runSolver() {
-    this.solver.run(this.workDir);
+    this.solver.run(this.workDir, [path.join(this.workDir, CASE_FILE_NAME)]);
   }
 
   /**

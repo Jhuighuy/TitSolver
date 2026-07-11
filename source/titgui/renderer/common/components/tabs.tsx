@@ -5,7 +5,13 @@
 
 import { Tabs as BaseTabs } from "@base-ui/react/tabs";
 import { IconPlus, IconX } from "@tabler/icons-react";
-import { createContext, useContext, useMemo, type ComponentProps } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
 
 import { IconButton } from "~/renderer/common/components/button";
 import { chrome, hoverSurface } from "~/renderer/common/components/classes";
@@ -114,10 +120,14 @@ interface TabsTabProps<Value extends TabValue> extends Omit<
   "value"
 > {
   value: Value;
+
+  /** Optional icon shown before the tab title. */
+  icon?: ReactNode;
 }
 
 function TabsTab<Value extends TabValue>({
   value,
+  icon,
   children,
   onMouseDown,
   className,
@@ -128,6 +138,10 @@ function TabsTab<Value extends TabValue>({
   return (
     <BaseTabs.Tab
       value={value}
+      // Not a native <button>: the close control nested inside is one, and
+      // buttons cannot contain buttons.
+      render={<div />}
+      nativeButton={false}
       {...props}
       onMouseDown={(event) => {
         onMouseDown?.(event);
@@ -141,7 +155,12 @@ function TabsTab<Value extends TabValue>({
         className,
       )}
     >
-      <Text color="muted" truncate>
+      {icon !== undefined && (
+        <span className="inline-flex shrink-0 items-center text-(--neutral-7) [&_svg]:size-4">
+          {icon}
+        </span>
+      )}
+      <Text color="muted" truncate className="flex-1">
         {children}
       </Text>
       {context?.onCloseTab !== undefined && (

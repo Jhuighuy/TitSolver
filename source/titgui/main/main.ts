@@ -12,25 +12,36 @@ import {
   type IpcMainInvokeEvent,
   nativeTheme,
   type OpenDialogOptions,
+  type SaveDialogOptions,
 } from "electron";
 import { z } from "zod";
 
+import {
+  caseSpec,
+  loadCaseTree,
+  materializeCase,
+  saveCaseTree,
+} from "~/bindings";
+import { CaseManager } from "~/main/case";
 import { HelpService } from "~/main/help";
 import { Installation } from "~/main/installation";
-import { exposeIpcHandlers } from "~/main/ipc";
+import { broadcastIpcEvent, exposeIpcHandlers } from "~/main/ipc";
 import { log } from "~/main/log";
 import { PersistedState } from "~/main/persisted-state";
 import { SessionManager } from "~/main/session";
 import { WindowManager } from "~/main/window";
+import type { CaseState } from "~/shared/case";
 import { themeSchema } from "~/shared/theme";
-import { assert } from "~/shared/utils";
+import { assert, ensure } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class Application {
   private install?: Installation;
   private session?: SessionManager;
+  private sessionDir?: string;
   private persist?: PersistedState;
+  private caseManager?: CaseManager;
   private windowManager?: WindowManager;
   private helpService?: HelpService;
 
@@ -63,16 +74,28 @@ class Application {
     // Find the installation root.
     this.install = Installation.resolve();
 
-    // Work directory is hardcoded at the moment.
-    const workDir = path.resolve(this.install.rootPath, "../..");
-
-    // Start the session.
-    this.session = new SessionManager(this.install, workDir);
-    await this.session.start();
-
-    // Load persisted state.
+    // Load persisted state. The repository-root location is legacy; state
+    // found there is migrated to the user data directory on the next save.
     this.persist = PersistedState.load(
-      path.join(workDir, "persisted-state.json"),
+      path.join(app.getPath("userData"), "persisted-state.json"),
+      path.resolve(this.install.rootPath, "../..", "persisted-state.json"),
+    );
+
+    // Setup the case manager. The session is case-scoped: it is created
+    // when a case opens and torn down when it closes.
+    this.caseManager = new CaseManager(
+      { caseSpec, loadCaseTree, saveCaseTree, materializeCase },
+      this.persist.withPrefix("case"),
+      {
+        caseChanged: (state) => {
+          this.updateWindowTitle(state);
+          this.resetSession(state);
+          broadcastIpcEvent("case", "caseChanged", state);
+        },
+        treeChanged: (document) => {
+          broadcastIpcEvent("case", "treeChanged", document);
+        },
+      },
     );
 
     // Initialize theme.
@@ -92,6 +115,12 @@ class Application {
     );
 
     this.registerIpcHandlers();
+
+    // Development helper: open a case at startup.
+    const devCaseDir = process.env["TITGUI_CASE"];
+    if (devCaseDir !== undefined && devCaseDir !== "") {
+      await this.caseManager.openCase(path.resolve(devCaseDir));
+    }
   }
 
   private onWindowAllClosed() {
@@ -106,8 +135,70 @@ class Application {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   private requireSession() {
-    assert(this.session !== undefined, "Session is not ready.");
+    ensure(this.session !== undefined, "No case is open.");
     return this.session;
+  }
+
+  // Tear down the session and start a new one for the given case. Called
+  // on every case state change; only a directory change causes a reset.
+  private resetSession(state: CaseState) {
+    if (this.session !== undefined && this.sessionDir === state?.dir) return;
+    assert(this.install !== undefined, "Installation is not ready.");
+
+    this.session?.stop();
+    this.session = undefined;
+    this.sessionDir = undefined;
+
+    if (state !== null) {
+      this.session = new SessionManager(this.install, state.dir);
+      this.sessionDir = state.dir;
+      this.session.start().catch((error: unknown) => {
+        log.error("Failed to start the session:", error);
+      });
+    }
+
+    // The renderer re-reads the frame count and refreshes the viewport.
+    broadcastIpcEvent("session", "storageChanged", null);
+  }
+
+  private requireCase() {
+    assert(this.caseManager !== undefined, "Case manager is not ready.");
+    return this.caseManager;
+  }
+
+  private updateWindowTitle(state: CaseState) {
+    this.windowManager?.controllers.main.setTitle(
+      state === null ? "BlueTit" : `${state.name} — BlueTit`,
+    );
+  }
+
+  // Ask the user for a case directory. `create` shows a save-style dialog
+  // for a new directory; otherwise an existing directory is picked.
+  private async pickCaseDir(event: IpcMainInvokeEvent, create: boolean) {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (create) {
+      const options = {
+        title: "New Case",
+        buttonLabel: "Create",
+        nameFieldLabel: "Case Name",
+        properties: ["createDirectory", "showOverwriteConfirmation"],
+      } satisfies SaveDialogOptions;
+      const result =
+        window === null
+          ? await dialog.showSaveDialog(options)
+          : await dialog.showSaveDialog(window, options);
+      return result.canceled ? undefined : result.filePath;
+    }
+    const options = {
+      title: "Open Case",
+      buttonLabel: "Open",
+      properties: ["openDirectory"],
+    } satisfies OpenDialogOptions;
+    const result =
+      window === null
+        ? await dialog.showOpenDialog(options)
+        : await dialog.showOpenDialog(window, options);
+    return result.canceled ? undefined : result.filePaths[0];
   }
 
   private requireHelp() {
@@ -146,8 +237,33 @@ class Application {
         },
       },
 
+      case: {
+        state: () => this.requireCase().state(),
+        recents: () => this.requireCase().recents(),
+        newCase: async (event) => {
+          const dir = await this.pickCaseDir(event, true);
+          if (dir === undefined) return null;
+          return this.requireCase().newCase(dir);
+        },
+        openCase: async (event) => {
+          const dir = await this.pickCaseDir(event, false);
+          if (dir === undefined) return null;
+          return this.requireCase().openCase(dir);
+        },
+        openRecent: async (_event, dir) => this.requireCase().openCase(dir),
+        save: async () => this.requireCase().save(),
+        close: () => {
+          this.requireCase().close();
+        },
+        getSpec: async () => this.requireCase().getSpec(),
+        document: async () => this.requireCase().document(),
+        updateTree: async (_event, tree, revision) =>
+          this.requireCase().updateTree(tree, revision),
+      },
+
       session: {
-        frameCount: async () => this.requireSession().getFrameCount(),
+        // No open case means no session — and simply zero frames.
+        frameCount: async () => this.session?.getFrameCount() ?? 0,
         frame: async (_event, index) => this.requireSession().getFrame(index),
         export: async (event) => {
           const options: OpenDialogOptions = {
@@ -163,13 +279,21 @@ class Application {
           if (result.canceled) return;
           await this.requireSession().export(result.filePaths[0]);
         },
-        runSolver: () => {
+        runSolver: async () => {
+          // Running requires a clean materialization; the solver would
+          // reject an invalid case file anyway, but failing here is clearer.
+          const document = await this.requireCase().document();
+          ensure(document !== null, "No case is open.");
+          ensure(
+            document.materialized.issues.length === 0,
+            "The case has validation issues; fix them before running.",
+          );
           this.requireSession().runSolver();
         },
         stopSolver: () => {
           this.requireSession().stopSolver();
         },
-        isSolverRunning: () => this.requireSession().isSolverRunning(),
+        isSolverRunning: () => this.session?.isSolverRunning() ?? false,
       },
 
       help: {

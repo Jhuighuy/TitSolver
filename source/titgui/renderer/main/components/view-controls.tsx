@@ -61,27 +61,8 @@ import type { ShadingMode } from "~/renderer/common/visual/particles";
 import type { RenderMode } from "~/renderer/common/visual/particles-switch";
 import { ExportButton } from "~/renderer/main/components/export";
 import {
-  backgroundColorNameAtom,
-  cameraPositionAtom,
-  cameraRotationAtom,
-  colorFieldAtom,
-  colorFieldModifierAtom,
-  colorMapNameAtom,
-  colorRangeAtom,
-  colorRangeModeAtom,
-  fieldAtom,
-  fieldNameAtom,
   frameDataAtom,
-  glyphScaleAtom,
-  glyphScaleModeAtom,
-  legendEnabledAtom,
-  legendTickCountAtom,
-  pointSizeAtom,
-  projectionAtom,
-  renderModeAtom,
-  shadingModeAtom,
-  toolModeAtom,
-  userColorFieldNameAtom,
+  useViewportState,
 } from "~/renderer/main/state/viewport";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -152,7 +133,8 @@ function LabeledSelect<Value extends string>({
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 function ToolControls() {
-  const [toolMode, setToolMode] = useAtom(toolModeAtom);
+  const viewport = useViewportState();
+  const [toolMode, setToolMode] = useAtom(viewport.toolModeAtom);
 
   const toolModes = [
     { mode: "normal", label: "Navigate", icon: <IconPointer /> },
@@ -216,12 +198,17 @@ const backgroundColorOptions: readonly SelectOption<BackgroundColorName>[] =
   }));
 
 function CameraControls() {
-  const [projection, setProjection] = useAtom(projectionAtom);
+  const viewport = useViewportState();
+  const [projection, setProjection] = useAtom(viewport.projectionAtom);
   const [backgroundColorName, setBackgroundColorName] = useAtom(
-    backgroundColorNameAtom,
+    viewport.backgroundColorNameAtom,
   );
-  const [cameraPosition, setCameraPosition] = useAtom(cameraPositionAtom);
-  const [cameraRotation, setCameraRotation] = useAtom(cameraRotationAtom);
+  const [cameraPosition, setCameraPosition] = useAtom(
+    viewport.cameraPositionAtom,
+  );
+  const [cameraRotation, setCameraRotation] = useAtom(
+    viewport.cameraRotationAtom,
+  );
 
   return (
     <DropdownMenu.Root>
@@ -343,21 +330,26 @@ function componentOptions(field: Field): readonly SelectOption[] {
 }
 
 function DisplayControls() {
+  const viewport = useViewportState();
   const frameData = useAtomValue(frameDataAtom);
-  const field = useAtomValue(fieldAtom);
-  const setFieldName = useSetAtom(fieldNameAtom);
-  const [renderMode, setRenderMode] = useAtom(renderModeAtom);
-  const [pointSize, setPointSize] = useAtom(pointSizeAtom);
-  const [glyphScale, setGlyphScale] = useAtom(glyphScaleAtom);
-  const [glyphScaleMode, setGlyphScaleMode] = useAtom(glyphScaleModeAtom);
-  const colorField = useAtomValue(colorFieldAtom);
-  const setUserColorFieldName = useSetAtom(userColorFieldNameAtom);
-  const [colorFieldModifier, setColorFieldModifier] = useAtom(
-    colorFieldModifierAtom,
+  const field = useAtomValue(viewport.fieldAtom);
+  const setFieldName = useSetAtom(viewport.fieldNameAtom);
+  const [renderMode, setRenderMode] = useAtom(viewport.renderModeAtom);
+  const [pointSize, setPointSize] = useAtom(viewport.pointSizeAtom);
+  const [glyphScale, setGlyphScale] = useAtom(viewport.glyphScaleAtom);
+  const [glyphScaleMode, setGlyphScaleMode] = useAtom(
+    viewport.glyphScaleModeAtom,
   );
-  const [colorMapName, setColorMapName] = useAtom(colorMapNameAtom);
-  const [colorRangeMode, setColorRangeMode] = useAtom(colorRangeModeAtom);
-  const [colorRange, setColorRange] = useAtom(colorRangeAtom);
+  const colorField = useAtomValue(viewport.colorFieldAtom);
+  const setUserColorFieldName = useSetAtom(viewport.userColorFieldNameAtom);
+  const [colorFieldModifier, setColorFieldModifier] = useAtom(
+    viewport.colorFieldModifierAtom,
+  );
+  const [colorMapName, setColorMapName] = useAtom(viewport.colorMapNameAtom);
+  const [colorRangeMode, setColorRangeMode] = useAtom(
+    viewport.colorRangeModeAtom,
+  );
+  const [colorRange, setColorRange] = useAtom(viewport.colorRangeAtom);
 
   return (
     <DropdownMenu.Root>
@@ -513,9 +505,12 @@ const shadingModeOptions: readonly SelectOption<ShadingMode>[] = [
 ];
 
 function RenderControls() {
-  const [shadingMode, setShadingMode] = useAtom(shadingModeAtom);
-  const [legendEnabled, setLegendEnabled] = useAtom(legendEnabledAtom);
-  const [legendTickCount, setLegendTickCount] = useAtom(legendTickCountAtom);
+  const viewport = useViewportState();
+  const [shadingMode, setShadingMode] = useAtom(viewport.shadingModeAtom);
+  const [legendEnabled, setLegendEnabled] = useAtom(viewport.legendEnabledAtom);
+  const [legendTickCount, setLegendTickCount] = useAtom(
+    viewport.legendTickCountAtom,
+  );
 
   return (
     <DropdownMenu.Root>

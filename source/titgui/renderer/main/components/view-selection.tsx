@@ -22,10 +22,8 @@ import type {
   SelectionShape,
 } from "~/renderer/common/visual/selection";
 import {
-  selectionCommandAtom,
-  selectionCountAtom,
   type ToolMode,
-  toolModeAtom,
+  useViewportState,
 } from "~/renderer/main/state/viewport";
 import { assert } from "~/shared/utils";
 
@@ -40,9 +38,10 @@ interface ViewSelectionProps {
 }
 
 export function ViewSelection({ children }: Readonly<ViewSelectionProps>) {
-  const [toolMode, setToolMode] = useAtom(toolModeAtom);
-  const selectionCount = useAtomValue(selectionCountAtom);
-  const emitSelectionCommand = useSetAtom(selectionCommandAtom);
+  const viewport = useViewportState();
+  const [toolMode, setToolMode] = useAtom(viewport.toolModeAtom);
+  const selectionCount = useAtomValue(viewport.selectionCountAtom);
+  const emitSelectionCommand = useSetAtom(viewport.selectionCommandAtom);
 
   // ---- Action. --------------------------------------------------------------
 

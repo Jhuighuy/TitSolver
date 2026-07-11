@@ -13,24 +13,19 @@ import { ViewColorLegend } from "~/renderer/main/components/view-color-legend";
 import { ViewControls } from "~/renderer/main/components/view-controls";
 import { ViewCube } from "~/renderer/main/components/view-cube";
 import { ViewSelection } from "~/renderer/main/components/view-selection";
-import {
-  bindViewportRenderer,
-  cameraRotationAtom,
-  colorMapNameAtom,
-  colorRangeAtom,
-  colorTitleAtom,
-  legendEnabledAtom,
-  legendTickCountAtom,
-} from "~/renderer/main/state/viewport";
+import { useViewportState } from "~/renderer/main/state/viewport";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function Viewport() {
+  const viewport = useViewportState();
+
   // ---- Renderer. ------------------------------------------------------------
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const { bindRenderer } = viewport;
   useEffect(() => {
     // Get canvas.
     const canvas = canvasRef.current;
@@ -38,15 +33,20 @@ export function Viewport() {
 
     // Create renderer and bind it to the viewport state.
     const renderer = new Renderer(canvas);
-    const unbindRenderer = bindViewportRenderer(renderer);
+    const unbindRenderer = bindRenderer(renderer);
 
-    // Keep renderer size synchronized with container size.
+    // Keep renderer size synchronized with container size. A hidden
+    // viewport (e.g. an inactive, kept-mounted tab) measures 0×0 — skip
+    // those updates and resync once it becomes visible again.
     const container = canvas.parentElement;
     assert(container !== null);
-    renderer.resize(container.clientWidth, container.clientHeight);
-    const resizeObserver = new ResizeObserver(() => {
-      renderer.resize(container.clientWidth, container.clientHeight);
-    });
+    const resize = () => {
+      const { clientWidth, clientHeight } = container;
+      if (clientWidth === 0 || clientHeight === 0) return;
+      renderer.resize(clientWidth, clientHeight);
+    };
+    resize();
+    const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container, { box: "content-box" });
 
     return () => {
@@ -55,16 +55,18 @@ export function Viewport() {
       resizeObserver.disconnect();
       renderer.dispose();
     };
-  }, []);
+  }, [bindRenderer]);
 
   // ---- State. ---------------------------------------------------------------
 
-  const [cameraRotation, setCameraRotation] = useAtom(cameraRotationAtom);
-  const legendEnabled = useAtomValue(legendEnabledAtom);
-  const colorMapName = useAtomValue(colorMapNameAtom);
-  const colorTitle = useAtomValue(colorTitleAtom);
-  const colorRange = useAtomValue(colorRangeAtom);
-  const legendTickCount = useAtomValue(legendTickCountAtom);
+  const [cameraRotation, setCameraRotation] = useAtom(
+    viewport.cameraRotationAtom,
+  );
+  const legendEnabled = useAtomValue(viewport.legendEnabledAtom);
+  const colorMapName = useAtomValue(viewport.colorMapNameAtom);
+  const colorTitle = useAtomValue(viewport.colorTitleAtom);
+  const colorRange = useAtomValue(viewport.colorRangeAtom);
+  const legendTickCount = useAtomValue(viewport.legendTickCountAtom);
 
   // ---- Layout. --------------------------------------------------------------
 

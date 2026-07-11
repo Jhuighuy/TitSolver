@@ -8,9 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import { FieldMap } from "~/renderer/common/visual/fields";
 import {
-  colorFieldAtom,
-  fieldAtom,
-  fieldNameAtom,
+  createViewportState,
   frameDataAtom,
 } from "~/renderer/main/state/viewport";
 
@@ -28,30 +26,44 @@ function makeFrameData() {
 describe("field selection", () => {
   it("resolves the selected field when present", () => {
     const store = createStore();
+    const viewport = createViewportState();
     store.set(frameDataAtom, makeFrameData());
-    store.set(fieldNameAtom, "v");
+    store.set(viewport.fieldNameAtom, "v");
 
-    expect(store.get(fieldAtom).name).toBe("v");
+    expect(store.get(viewport.fieldAtom).name).toBe("v");
   });
 
   it("falls back to density when the selection is missing", () => {
     const store = createStore();
+    const viewport = createViewportState();
     store.set(frameDataAtom, makeFrameData());
-    store.set(fieldNameAtom, "v");
+    store.set(viewport.fieldNameAtom, "v");
     store.set(frameDataAtom, new FieldMap({}));
 
-    expect(store.get(fieldAtom).name).toBe("rho");
-    expect(store.get(colorFieldAtom).name).toBe("rho");
+    expect(store.get(viewport.fieldAtom).name).toBe("rho");
+    expect(store.get(viewport.colorFieldAtom).name).toBe("rho");
   });
 
   it("returns to the selection once the field is available again", () => {
     const store = createStore();
-    store.set(fieldNameAtom, "v");
+    const viewport = createViewportState();
+    store.set(viewport.fieldNameAtom, "v");
     store.set(frameDataAtom, new FieldMap({}));
-    expect(store.get(fieldAtom).name).toBe("rho");
+    expect(store.get(viewport.fieldAtom).name).toBe("rho");
 
     store.set(frameDataAtom, makeFrameData());
-    expect(store.get(fieldAtom).name).toBe("v");
+    expect(store.get(viewport.fieldAtom).name).toBe("v");
+  });
+
+  it("keeps independent selections across viewport instances", () => {
+    const store = createStore();
+    const first = createViewportState();
+    const second = createViewportState();
+    store.set(frameDataAtom, makeFrameData());
+    store.set(first.fieldNameAtom, "v");
+
+    expect(store.get(first.fieldAtom).name).toBe("v");
+    expect(store.get(second.fieldAtom).name).toBe("rho");
   });
 });
 

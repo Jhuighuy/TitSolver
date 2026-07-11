@@ -26,6 +26,9 @@ export class WindowController {
   /** Window instance. */
   public window?: BrowserWindow;
 
+  // Title managed from the main process; page titles are ignored.
+  private title = DEFAULT_WINDOW_TITLE;
+
   /**
    * Construct a window controller.
    */
@@ -105,6 +108,12 @@ export class WindowController {
       this.window = undefined;
     });
 
+    // The main process is the source of truth for the window title.
+    this.window.setTitle(this.title);
+    this.window.on("page-title-updated", (event) => {
+      event.preventDefault();
+    });
+
     // Notify of full screen state changes.
     this.window.once("ready-to-show", () => {
       const window = this.window;
@@ -171,6 +180,14 @@ export class WindowController {
   public updateBackgroundColor() {
     this.window?.setBackgroundColor(getWindowBackgroundColor());
   }
+
+  /**
+   * Set the window title.
+   */
+  public setTitle(title: string) {
+    this.title = title;
+    this.window?.setTitle(title);
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -221,6 +238,8 @@ export class WindowManager {
 
 const WINDOW_MIN_WIDTH = 1280;
 const WINDOW_MIN_HEIGHT = 800;
+
+const DEFAULT_WINDOW_TITLE = "BlueTit";
 
 const WINDOW = "window";
 const WINDOW_X_KEY = `${WINDOW}.x`;

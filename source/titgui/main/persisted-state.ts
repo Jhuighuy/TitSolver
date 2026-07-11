@@ -25,47 +25,55 @@ export class PersistedState {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
-   * Load persisted state from the given path.
+   * Load persisted state from the given path. When the file does not exist
+   * and a legacy path is given, the legacy file is read instead — state is
+   * migrated on the next save, which always writes to `path`.
    */
-  public static load(path: string) {
-    return new PersistedState(
-      path,
-      undefined,
-      (() => {
-        let content: string;
-        try {
-          content = fs.readFileSync(path, "utf8");
-        } catch {
-          return {}; // File does not exist, do not issue warning.
-        }
+  public static load(path: string, legacyPath?: string) {
+    let data = PersistedState.read(path);
+    if (data === undefined && legacyPath !== undefined) {
+      data = PersistedState.read(legacyPath);
+      if (data !== undefined) {
+        log.info(`Migrating persisted state from '${legacyPath}'.`);
+      }
+    }
+    return new PersistedState(path, undefined, data ?? {});
+  }
 
-        let json: unknown;
-        try {
-          json = JSON.parse(content);
-        } catch (error) {
-          log.warn(
-            `Failed to parse persisted state from '${path}', using empty state:`,
-            error,
-          );
-          return {};
-        }
+  // Read and parse a persisted state file; `undefined` if it does not exist.
+  private static read(path: string) {
+    let content: string;
+    try {
+      content = fs.readFileSync(path, "utf8");
+    } catch {
+      return; // File does not exist, do not issue warning.
+    }
 
-        const {
-          success,
-          data: state,
-          error,
-        } = persistedStateSchema.safeParse(json);
-        if (!success) {
-          log.warn(
-            `Invalid persisted state format in '${path}', using empty state:`,
-            error.message,
-          );
-          return {};
-        }
+    let json: unknown;
+    try {
+      json = JSON.parse(content);
+    } catch (error) {
+      log.warn(
+        `Failed to parse persisted state from '${path}', using empty state:`,
+        error,
+      );
+      return {};
+    }
 
-        return state;
-      })(),
-    );
+    const {
+      success,
+      data: state,
+      error,
+    } = persistedStateSchema.safeParse(json);
+    if (!success) {
+      log.warn(
+        `Invalid persisted state format in '${path}', using empty state:`,
+        error.message,
+      );
+      return {};
+    }
+
+    return state;
   }
 
   /**

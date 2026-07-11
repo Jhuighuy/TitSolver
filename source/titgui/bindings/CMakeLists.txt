@@ -11,12 +11,17 @@ add_tit_library(
     MODULE
   SOURCES
     "addon.cpp"
+    "case.cpp"
+    "case.hpp"
     "storage.cpp"
     "storage.hpp"
     "utils.hpp"
   DEPENDS
     tit::core
     tit::data
+    tit::prop
+    tit::titwcsph_case
+    nlohmann_json::nlohmann_json
     node-addon-api::node-addon-api
 )
 

@@ -5,6 +5,13 @@
 
 import { z } from "zod";
 
+import {
+  caseDocumentSchema,
+  caseStateSchema,
+  recentCaseSchema,
+  specJsonSchema,
+  treeJsonSchema,
+} from "~/shared/case";
 import { helpSessionSchema } from "~/shared/help";
 import { event, type IpcClientOf, method, service } from "~/shared/ipc/core";
 import { solverEventSchema } from "~/shared/solver";
@@ -39,6 +46,33 @@ export const ipcContract = {
     },
     events: {
       fullScreenChanged: event(z.boolean()),
+    },
+  }),
+
+  case: service({
+    methods: {
+      state: method({ result: caseStateSchema }),
+      recents: method({ result: z.array(recentCaseSchema) }),
+      // `newCase` and `openCase` show a directory dialog in the main
+      // process; both resolve to `null` when the dialog is cancelled.
+      newCase: method({ result: caseStateSchema }),
+      openCase: method({ result: caseStateSchema }),
+      openRecent: method({ args: [z.string()], result: caseStateSchema }),
+      save: method({ result: z.void() }),
+      close: method({ result: z.void() }),
+      getSpec: method({ result: specJsonSchema }),
+      document: method({ result: caseDocumentSchema.nullable() }),
+      // Edits carry the document revision they were based on; a stale
+      // revision is rejected (`false`) and must be retried on top of the
+      // latest document.
+      updateTree: method({
+        args: [treeJsonSchema, z.int().nonnegative()],
+        result: z.boolean(),
+      }),
+    },
+    events: {
+      caseChanged: event(caseStateSchema),
+      treeChanged: event(caseDocumentSchema),
     },
   }),
 
