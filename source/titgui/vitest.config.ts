@@ -16,7 +16,24 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
-    exclude: ["**/node_modules/**", ".vite/**", "dist/**", "native/**"],
+    exclude: [
+      "**/node_modules/**",
+      ".vite/**",
+      "dist/**",
+      "e2e/**",
+      "native/**",
+    ],
+    coverage: {
+      provider: "v8",
+      reporter: ["text-summary", "lcov"],
+      include: [
+        "bindings/**/*.ts",
+        "main/**",
+        "preload/**",
+        "renderer/**",
+        "shared/**",
+      ],
+    },
   },
 });
 

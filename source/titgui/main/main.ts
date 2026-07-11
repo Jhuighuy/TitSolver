@@ -74,11 +74,18 @@ class Application {
     // Find the installation root.
     this.install = Installation.resolve();
 
+    // Test isolation: point all persisted app state at a scratch directory.
+    const userDataDir = process.env["TITGUI_USER_DATA"];
+    const isolated = userDataDir !== undefined && userDataDir !== "";
+    if (isolated) app.setPath("userData", path.resolve(userDataDir));
+
     // Load persisted state. The repository-root location is legacy; state
     // found there is migrated to the user data directory on the next save.
     this.persist = PersistedState.load(
       path.join(app.getPath("userData"), "persisted-state.json"),
-      path.resolve(this.install.rootPath, "../..", "persisted-state.json"),
+      isolated
+        ? undefined
+        : path.resolve(this.install.rootPath, "../..", "persisted-state.json"),
     );
 
     // Setup the case manager. The session is case-scoped: it is created

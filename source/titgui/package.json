@@ -13,9 +13,11 @@
     "build": "electron-forge package",
     "dev": "electron-forge start",
     "format": "oxfmt .",
-    "lint": "tsgo --noEmit --pretty false && oxlint . && oxfmt --check .",
+    "lint": "tsc --noEmit --pretty false && oxlint . && oxfmt --check .",
     "test": "vitest run",
-    "upgrade": "npx npm-check-updates -u && npm install"
+    "upgrade": "npx npm-check-updates -u && npm install",
+    "coverage": "vitest run --coverage",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -41,6 +43,7 @@
     "@electron-forge/cli": "^7.11.2",
     "@electron-forge/plugin-vite": "^7.11.2",
     "@electron-forge/shared-types": "^7.11.2",
+    "@playwright/test": "^1.61.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/vite": "4.3.2",
     "@types/node": "^26.1.0",
@@ -48,8 +51,8 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260701.1",
     "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.5.2",
     "babel-plugin-react-compiler": "1.0.0",
     "electron": "43.0.0",
@@ -57,6 +60,7 @@
     "oxlint": "^1.72.0",
     "oxlint-tsgolint": "^0.24.0",
     "tailwindcss": "4.3.2",
+    "typescript": "^7.0.2",
     "vite": "^8.1.2",
     "vite-plugin-svgr": "^5.2.0",
     "vitest": "^4.1.9"

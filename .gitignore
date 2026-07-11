@@ -63,9 +63,12 @@
 # Ignore in-tree artifacts.
 .astro/
 .vite/
+coverage/
 dist/
 native/
 node_modules/
+playwright-report/
+test-results/
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
