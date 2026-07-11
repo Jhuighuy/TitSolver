@@ -3,6 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -18,33 +19,31 @@ import { cn } from "~/renderer/common/components/utils";
 import { Polygon2 } from "~/renderer/common/visual/polygon2";
 import type {
   SelectionAction,
-  SelectionCommand,
   SelectionShape,
 } from "~/renderer/common/visual/selection";
+import {
+  selectionCommandAtom,
+  selectionCountAtom,
+  type ToolMode,
+  toolModeAtom,
+} from "~/renderer/main/state/viewport";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type ToolMode = "normal" | "rect" | "lasso";
 type SelectionModeAction = Exclude<SelectionAction, "clear">;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface ViewSelectionProps {
-  toolMode: ToolMode;
-  setToolMode: (value: ToolMode) => void;
-  selectionCount: number;
-  onSelectionCommand: (value: SelectionCommand | null) => void;
   children: ReactNode;
 }
 
-export function ViewSelection({
-  toolMode,
-  setToolMode,
-  selectionCount,
-  onSelectionCommand,
-  children,
-}: Readonly<ViewSelectionProps>) {
+export function ViewSelection({ children }: Readonly<ViewSelectionProps>) {
+  const [toolMode, setToolMode] = useAtom(toolModeAtom);
+  const selectionCount = useAtomValue(selectionCountAtom);
+  const emitSelectionCommand = useSetAtom(selectionCommandAtom);
+
   // ---- Action. --------------------------------------------------------------
 
   const [action, setAction] = useState<SelectionModeAction>("replace");
@@ -59,7 +58,7 @@ export function ViewSelection({
     if (event.key === "Escape") {
       setToolMode("normal");
       setAction("replace");
-      onSelectionCommand({ action: "clear" });
+      emitSelectionCommand({ action: "clear" });
     } else {
       setActionFromEvent(event);
     }
@@ -112,7 +111,7 @@ export function ViewSelection({
           <SelectionOverlay
             toolMode={toolMode}
             onSelectionShape={(shape) => {
-              onSelectionCommand({ action, shape });
+              emitSelectionCommand({ action, shape });
             }}
           />
         </div>

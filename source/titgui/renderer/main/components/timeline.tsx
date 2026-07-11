@@ -13,13 +13,8 @@ import {
   IconRefresh,
   IconRepeat,
 } from "@tabler/icons-react";
-import {
-  type KeyboardEvent,
-  type PointerEvent,
-  useEffect,
-  useEffectEvent,
-  useState,
-} from "react";
+import { useAtom, useAtomValue } from "jotai";
+import type { KeyboardEvent, PointerEvent } from "react";
 
 import { IconButton } from "~/renderer/common/components/button";
 import { chrome } from "~/renderer/common/components/classes";
@@ -28,7 +23,18 @@ import { Tooltip } from "~/renderer/common/components/tooltip";
 import { cn } from "~/renderer/common/components/utils";
 import { useElementSize } from "~/renderer/common/hooks/use-element-size";
 import { clamp } from "~/renderer/common/utils-math";
-import { useStorage } from "~/renderer/main/components/storage";
+import {
+  isPlayingAtom,
+  isRepeatingAtom,
+  stopPlayback,
+  togglePlayback,
+} from "~/renderer/main/state/playback";
+import {
+  frameIndexAtom,
+  numFramesAtom,
+  refreshStorage,
+  requestFrame,
+} from "~/renderer/main/state/storage";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,14 +42,15 @@ import { assert } from "~/shared/utils";
 export function Timeline() {
   // --- Playback handling. ----------------------------------------------------
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isRepeating, setIsRepeating] = useState(false);
-  const { numFrames, frameIndex, requestFrame, refresh } = useStorage();
+  const isPlaying = useAtomValue(isPlayingAtom);
+  const [isRepeating, setIsRepeating] = useAtom(isRepeatingAtom);
+  const numFrames = useAtomValue(numFramesAtom);
+  const frameIndex = useAtomValue(frameIndexAtom);
 
   function setNextFrame() {
     assert(frameIndex !== null);
-    setIsPlaying(false);
-    requestFrame(
+    stopPlayback();
+    void requestFrame(
       isRepeating
         ? (frameIndex + 1) % numFrames
         : Math.min(numFrames - 1, frameIndex + 1),
@@ -52,32 +59,13 @@ export function Timeline() {
 
   function setPrevFrame() {
     assert(frameIndex !== null);
-    setIsPlaying(false);
-    requestFrame(
+    stopPlayback();
+    void requestFrame(
       isRepeating
         ? (frameIndex + numFrames - 1) % numFrames
         : Math.max(0, frameIndex - 1),
     );
   }
-
-  const playNextFrameEvent = useEffectEvent(() => {
-    if (frameIndex === null) return;
-    if (!isRepeating && frameIndex === numFrames - 1) {
-      setIsPlaying(false);
-      return;
-    }
-    const nextFrameIndex = (frameIndex + 1) % numFrames;
-    requestFrame(nextFrameIndex);
-  });
-
-  useEffect(() => {
-    if (isPlaying) {
-      const timeout = setInterval(playNextFrameEvent, 1000 / 60);
-      return () => {
-        clearInterval(timeout);
-      };
-    }
-  }, [isPlaying]);
 
   // ---- Layout. --------------------------------------------------------------
 
@@ -110,7 +98,7 @@ export function Timeline() {
             radius="full"
             disabled={disabled}
             onClick={() => {
-              requestFrame(0);
+              void requestFrame(0);
             }}
           >
             <IconPlayerTrackPrev />
@@ -137,9 +125,7 @@ export function Timeline() {
             size="2"
             radius="full"
             disabled={disabled}
-            onClick={() => {
-              setIsPlaying((x) => !x);
-            }}
+            onClick={togglePlayback}
           >
             {isPlaying ? <IconPlayerPause /> : <IconPlayerPlay />}
           </IconButton>
@@ -166,7 +152,7 @@ export function Timeline() {
             radius="full"
             disabled={disabled}
             onClick={() => {
-              requestFrame(numFrames - 1);
+              void requestFrame(numFrames - 1);
             }}
           >
             <IconPlayerTrackNext />
@@ -178,7 +164,7 @@ export function Timeline() {
 
       <div className="mx-2 flex items-center gap-2">
         <Tooltip content="Refresh">
-          <IconButton size="2" radius="full" onClick={refresh}>
+          <IconButton size="2" radius="full" onClick={refreshStorage}>
             <IconRefresh />
           </IconButton>
         </Tooltip>
@@ -191,8 +177,8 @@ export function Timeline() {
         numFrames={numFrames}
         frameIndex={frameIndex}
         onScrub={(nextFrameIndex) => {
-          setIsPlaying(false);
-          if (nextFrameIndex !== frameIndex) requestFrame(nextFrameIndex);
+          stopPlayback();
+          if (nextFrameIndex !== frameIndex) void requestFrame(nextFrameIndex);
         }}
       />
     </div>

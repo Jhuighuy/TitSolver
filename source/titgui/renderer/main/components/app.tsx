@@ -11,6 +11,7 @@ import {
   IconSettings,
   IconTerminal,
 } from "@tabler/icons-react";
+import { useEffect } from "react";
 
 import { Menu } from "~/renderer/common/components/menu";
 import { Window } from "~/renderer/common/components/window";
@@ -18,22 +19,23 @@ import { DashboardMenu } from "~/renderer/main/components/dashboard-menu";
 import { HelpMenu } from "~/renderer/main/components/help-menu";
 import { LogsMenu } from "~/renderer/main/components/logs-menu";
 import { SettingsMenu } from "~/renderer/main/components/settings-menu";
-import { SolverProvider } from "~/renderer/main/components/solver";
-import { StorageProvider } from "~/renderer/main/components/storage";
 import { Timeline } from "~/renderer/main/components/timeline";
 import { Viewport } from "~/renderer/main/components/viewport";
+import { initSolverState } from "~/renderer/main/state/solver";
+import { initStorageState } from "~/renderer/main/state/storage";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function App() {
+  useEffect(() => {
+    initSolverState();
+    initStorageState();
+  }, []);
+
   return (
-    <SolverProvider>
-      <StorageProvider>
-        <Window>
-          <Page />
-        </Window>
-      </StorageProvider>
-    </SolverProvider>
+    <Window>
+      <Page />
+    </Window>
   );
 }
 

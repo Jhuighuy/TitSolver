@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { IconHandStop, IconRun } from "@tabler/icons-react";
+import { useAtomValue } from "jotai";
 import { useEffect, useMemo, useRef } from "react";
 
 import {
@@ -11,14 +12,20 @@ import {
   useMenuAction,
 } from "~/renderer/common/components/menu";
 import { Text } from "~/renderer/common/components/text";
-import { useSolver } from "~/renderer/main/components/solver";
+import {
+  isSolverRunningAtom,
+  runSolver,
+  solverOutputAtom,
+  stopSolver,
+} from "~/renderer/main/state/solver";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function DashboardMenu() {
   // ---- Solver. --------------------------------------------------------------
 
-  const { isSolverRunning, solverOutput, runSolver, stopSolver } = useSolver();
+  const isSolverRunning = useAtomValue(isSolverRunningAtom);
+  const solverOutput = useAtomValue(solverOutputAtom);
 
   const runAction = useMemo<MenuAction>(
     () => ({
@@ -27,7 +34,7 @@ export function DashboardMenu() {
       disabled: isSolverRunning,
       onClick: runSolver,
     }),
-    [isSolverRunning, runSolver],
+    [isSolverRunning],
   );
 
   useMenuAction(runAction);
@@ -39,7 +46,7 @@ export function DashboardMenu() {
       disabled: !isSolverRunning,
       onClick: stopSolver,
     }),
-    [isSolverRunning, stopSolver],
+    [isSolverRunning],
   );
 
   useMenuAction(stopAction);

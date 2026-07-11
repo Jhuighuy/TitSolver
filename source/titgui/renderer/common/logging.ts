@@ -3,7 +3,7 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { signal } from "~/renderer/common/signals";
+import { atom, getDefaultStore } from "jotai";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -19,10 +19,10 @@ export interface Message {
 
 class Logger {
   private counter = 0;
-  public readonly messages = signal<Message[]>([]);
+  public readonly messagesAtom = atom<Message[]>([]);
 
   public clear() {
-    this.messages.set([]);
+    getDefaultStore().set(this.messagesAtom, []);
   }
 
   public log(...data: unknown[]) {
@@ -43,8 +43,10 @@ class Logger {
       type,
       text: data.join(" "),
     };
-    this.messages.set(
-      [...this.messages.get(), message].slice(-NUM_MESSAGES_TO_KEEP),
+    const store = getDefaultStore();
+    store.set(
+      this.messagesAtom,
+      [...store.get(this.messagesAtom), message].slice(-NUM_MESSAGES_TO_KEEP),
     );
   }
 }

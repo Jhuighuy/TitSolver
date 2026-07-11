@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <generator>
 #include <optional>
@@ -322,6 +323,12 @@ public:
 
   /// Path to the database file.
   auto path() const -> std::filesystem::path;
+
+  /// Version of the storage contents, as seen by this connection. The version
+  /// changes whenever the storage is modified by _other_ connections,
+  /// including connections in other processes, which makes it suitable for
+  /// cheap change polling.
+  auto data_version() const -> std::uint64_t;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

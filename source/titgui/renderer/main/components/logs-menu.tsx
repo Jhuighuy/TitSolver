@@ -12,6 +12,7 @@ import {
   IconDownload,
   IconInfoSquare,
 } from "@tabler/icons-react";
+import { useAtomValue } from "jotai";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { IconButton } from "~/renderer/common/components/button";
@@ -20,7 +21,6 @@ import {
   useMenuAction,
 } from "~/renderer/common/components/menu";
 import { Text } from "~/renderer/common/components/text";
-import { useSignalValue } from "~/renderer/common/hooks/use-signal";
 import { logger, type Message } from "~/renderer/common/logging";
 import { downloadText } from "~/renderer/common/utils";
 import { assert } from "~/shared/utils";
@@ -28,7 +28,7 @@ import { assert } from "~/shared/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function LogsMenu() {
-  const messages = useSignalValue(logger.messages);
+  const messages = useAtomValue(logger.messagesAtom);
 
   // ---- Actions. -------------------------------------------------------------
 

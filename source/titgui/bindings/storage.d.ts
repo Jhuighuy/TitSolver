@@ -6,6 +6,7 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export interface Storage {
+  dataVersion(): Promise<number>;
   seriesCount(): Promise<number>;
   series(index: number): Promise<Series>;
   lastSeries(): Promise<Series>;
@@ -16,8 +17,12 @@ export interface Storage {
 export interface Series {
   frameCount(): Promise<number>;
   frame(index: number): Promise<Frame>;
+  readFrame(index: number): Promise<FrameData>;
   export(dirPath: string): Promise<void>;
 }
+
+/** All arrays of a frame, read in a single native call. */
+export type FrameData = Record<string, { type: Type; data: NumericArray }>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

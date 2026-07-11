@@ -56,6 +56,7 @@ public:
   static auto New(Napi::Env env, std::shared_ptr<StorageHolder> holder)
       -> Napi::Object;
 
+  auto dataVersion(const Napi::CallbackInfo& info) -> Napi::Value;
   auto seriesCount(const Napi::CallbackInfo& info) -> Napi::Value;
   auto series(const Napi::CallbackInfo& info) -> Napi::Value;
   auto lastSeries(const Napi::CallbackInfo& info) -> Napi::Value;
@@ -87,6 +88,7 @@ public:
 
   auto frameCount(const Napi::CallbackInfo& info) -> Napi::Value;
   auto frame(const Napi::CallbackInfo& info) -> Napi::Value;
+  auto readFrame(const Napi::CallbackInfo& info) -> Napi::Value;
   auto exportTo(const Napi::CallbackInfo& info) -> Napi::Value;
 
 private:

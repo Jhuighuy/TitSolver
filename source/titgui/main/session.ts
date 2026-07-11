@@ -13,6 +13,7 @@ import {
 } from "~/bindings";
 import type { Installation } from "~/main/installation";
 import { broadcastIpcEvent } from "~/main/ipc";
+import { AsyncLruCache } from "~/main/lru-cache";
 import type { SolverEvent } from "~/shared/solver";
 import type { Frame } from "~/shared/storage";
 import { assert } from "~/shared/utils";
@@ -105,6 +106,13 @@ class SolverManager {
 export class SessionManager {
   private readonly solver: SolverManager;
   private storage?: NativeStorage;
+  private storagePollTimer?: NodeJS.Timeout;
+  private storageDataVersion?: number;
+  private isPollingStorage = false;
+  private readonly frameCache = new AsyncLruCache<number, Frame>(
+    FRAME_CACHE_CAPACITY,
+  );
+  private frameCount?: number;
 
   /**
    * Create a session manager.
@@ -128,14 +136,51 @@ export class SessionManager {
     // Storage path is hardcoded at the moment.
     const storagePath = path.join(this.workDir, "particles.ttdb");
     this.storage = await nativeOpenStorage(storagePath);
+
+    // Watch for changes made by other processes (e.g. a running solver).
+    // SQLite has no cross-process change notifications; polling the
+    // `data_version` pragma is the cheapest reliable signal.
+    this.storageDataVersion = undefined;
+    this.storagePollTimer = setInterval(() => {
+      void this.pollStorageChanges();
+    }, STORAGE_POLL_INTERVAL_MS);
   }
 
   /**
    * Stop the session.
    */
   public stop() {
+    if (this.storagePollTimer !== undefined) {
+      clearInterval(this.storagePollTimer);
+      this.storagePollTimer = undefined;
+    }
+    this.frameCache.clear();
+    this.frameCount = undefined;
     this.solver.stop();
     this.storage = undefined;
+  }
+
+  // Broadcast a storage change event when the data version moves.
+  private async pollStorageChanges() {
+    if (this.isPollingStorage || this.storage === undefined) return;
+    this.isPollingStorage = true;
+    try {
+      const dataVersion = await this.storage.dataVersion();
+      if (
+        this.storageDataVersion !== undefined &&
+        dataVersion !== this.storageDataVersion
+      ) {
+        // Cached frames may be stale now.
+        this.frameCache.clear();
+        this.frameCount = undefined;
+        broadcastIpcEvent("session", "storageChanged", null);
+      }
+      this.storageDataVersion = dataVersion;
+    } catch {
+      // The storage may be temporarily locked; retry on the next tick.
+    } finally {
+      this.isPollingStorage = false;
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -151,25 +196,41 @@ export class SessionManager {
    */
   public async getFrameCount() {
     const series = await this.getSeries();
-    return series.frameCount();
+    const frameCount = await series.frameCount();
+    this.frameCount = frameCount;
+    return frameCount;
   }
 
   /**
-   * Get a frame by index.
+   * Get a frame by index. Frames are cached and neighboring frames are
+   * prefetched, so scrubbing and playback are usually served from memory.
    */
   public async getFrame(index: number): Promise<Frame> {
-    const series = await this.getSeries();
-    const frame = await series.frame(index);
-    const names = await frame.fields();
-    return Object.fromEntries(
-      await Promise.all(
-        names.map(async (name) => {
-          const field = await frame.field(name);
-          const [type, data] = await Promise.all([field.type(), field.data()]);
-          return [name, { type, data }] as const;
-        }),
-      ),
+    const frame = await this.frameCache.get(index, async () =>
+      this.readFrame(index),
     );
+    this.prefetchNeighbors(index);
+    return frame;
+  }
+
+  // Read a frame from the storage in a single native call.
+  private async readFrame(index: number): Promise<Frame> {
+    const series = await this.getSeries();
+    return series.readFrame(index);
+  }
+
+  // Opportunistically load the frames around the given one into the cache.
+  private prefetchNeighbors(index: number) {
+    if (this.frameCount === undefined) return;
+    for (const neighbor of [index + 1, index - 1]) {
+      if (neighbor < 0 || neighbor >= this.frameCount) continue;
+      if (this.frameCache.has(neighbor)) continue;
+      this.frameCache
+        .get(neighbor, async () => this.readFrame(neighbor))
+        .catch(() => {
+          // Prefetching is opportunistic; failures resurface on demand.
+        });
+    }
   }
 
   /**
@@ -203,5 +264,10 @@ export class SessionManager {
     return this.solver.isRunning();
   }
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+const STORAGE_POLL_INTERVAL_MS = 1000;
+const FRAME_CACHE_CAPACITY = 16;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

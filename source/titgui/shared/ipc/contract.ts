@@ -53,6 +53,7 @@ export const ipcContract = {
     },
     events: {
       solverEvent: event(solverEventSchema),
+      storageChanged: event(z.null()),
     },
   }),
 
