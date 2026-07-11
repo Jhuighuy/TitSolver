@@ -77,6 +77,10 @@
   --danger: var(--color-red-600);
   --warning: var(--color-orange-600);
   --selection: #fcc22e;
+  /* Chart series color; indigo-500 passes the mark lightness/contrast checks
+     on both light and dark chart surfaces, so it does not follow the accent
+     ramp across themes. */
+  --chart-1: var(--color-indigo-500);
   --chrome-highlight: rgba(255, 255, 255, 0.45);
   --shadow-popup:
     0 10px 15px -3px rgb(226 232 240 / 0.6),
@@ -114,6 +118,7 @@
     --danger: var(--color-red-400);
     --warning: var(--color-orange-400);
     --selection: #fcc22e;
+    --chart-1: var(--color-indigo-500);
     --chrome-highlight: rgba(255, 255, 255, 0.08);
     --shadow-popup:
       0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);

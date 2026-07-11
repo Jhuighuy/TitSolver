@@ -6,10 +6,10 @@
 import {
   IconDashboard,
   IconDatabase,
+  IconFileText,
   IconHelp,
   IconLogs,
   IconSettings,
-  IconTerminal,
 } from "@tabler/icons-react";
 import { useEffect } from "react";
 
@@ -18,10 +18,11 @@ import { Window } from "~/renderer/common/components/window";
 import { DashboardMenu } from "~/renderer/main/components/dashboard-menu";
 import { HelpMenu } from "~/renderer/main/components/help-menu";
 import { LogsMenu } from "~/renderer/main/components/logs-menu";
+import { OutputMenu } from "~/renderer/main/components/output-menu";
 import { SettingsMenu } from "~/renderer/main/components/settings-menu";
 import { Timeline } from "~/renderer/main/components/timeline";
 import { Viewport } from "~/renderer/main/components/viewport";
-import { initSolverState } from "~/renderer/main/state/solver";
+import { initSolverState, runSolver } from "~/renderer/main/state/solver";
 import { initStorageState } from "~/renderer/main/state/storage";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,6 +31,10 @@ export function App() {
   useEffect(() => {
     initSolverState();
     initStorageState();
+
+    // Development helper: run the solver right away.
+    const env = import.meta.env as Record<string, string | undefined>;
+    if (import.meta.env.DEV && env.VITE_AUTO_RUN === "1") runSolver();
   }, []);
 
   return (
@@ -94,10 +99,11 @@ function Page() {
               content: <LogsMenu />,
             },
             {
-              id: "terminal",
+              id: "output",
               group: 0,
-              name: "Terminal",
-              icon: <IconTerminal />,
+              name: "Output",
+              icon: <IconFileText />,
+              content: <OutputMenu />,
             },
           ]}
         />
