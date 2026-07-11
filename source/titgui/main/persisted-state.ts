@@ -5,9 +5,9 @@
 
 import fs from "node:fs";
 
-import { dialog } from "electron";
 import { z } from "zod";
 
+import { log } from "~/main/log";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,12 +43,10 @@ export class PersistedState {
         try {
           json = JSON.parse(content);
         } catch (error) {
-          dialog.showMessageBoxSync({
-            type: "warning",
-            title: `Failed to parse persisted state.`,
-            message: `Failed to parse persisted state from '${path}'. Using empty state.`,
-            detail: String(error),
-          });
+          log.warn(
+            `Failed to parse persisted state from '${path}', using empty state:`,
+            error,
+          );
           return {};
         }
 
@@ -58,12 +56,10 @@ export class PersistedState {
           error,
         } = persistedStateSchema.safeParse(json);
         if (!success) {
-          dialog.showMessageBoxSync({
-            type: "warning",
-            title: `Invalid persisted state format.`,
-            message: `Invalid persisted state format in '${path}'. Using empty state.`,
-            detail: error.message,
-          });
+          log.warn(
+            `Invalid persisted state format in '${path}', using empty state:`,
+            error.message,
+          );
           return {};
         }
 
@@ -84,12 +80,7 @@ export class PersistedState {
         "utf8",
       );
     } catch (error) {
-      dialog.showMessageBoxSync({
-        type: "error",
-        title: "Failed to save persisted state.",
-        message: `Failed to save persisted state to '${this.path}'.`,
-        detail: String(error),
-      });
+      log.error(`Failed to save persisted state to '${this.path}':`, error);
     }
   }
 
@@ -123,12 +114,10 @@ export class PersistedState {
     // If it is invalid, issue a warning and return the fallback.
     const { success, data: value, error } = schema.safeParse(persistedValue);
     if (!success) {
-      dialog.showMessageBoxSync({
-        type: "warning",
-        title: "Ignoring invalid persisted value.",
-        message: `Ignoring invalid persisted value for '${key}'. Using fallback.`,
-        detail: error.message,
-      });
+      log.warn(
+        `Ignoring invalid persisted value for '${key}', using fallback:`,
+        error.message,
+      );
       return fallbackValue;
     }
 

@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import BlueTitIcon from "~/assets/icon.svg?react";
 import { chrome } from "~/renderer/common/components/classes";
 import { Text } from "~/renderer/common/components/text";
+import { AppToasts } from "~/renderer/common/components/toast";
 import { cn } from "~/renderer/common/components/utils";
 import { useWindowIsFullScreen } from "~/renderer/common/hooks/use-window";
 
@@ -44,6 +45,8 @@ export function Window({ children }: Readonly<WindowProps>) {
 
       {/* ---- Content. ---------------------------------------------------- */}
       <div className="min-h-0 grow">{children}</div>
+
+      <AppToasts />
     </div>
   );
 }

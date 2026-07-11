@@ -20,6 +20,7 @@ import { z } from "zod";
 
 import { IconButton } from "~/renderer/common/components/button";
 import { chrome, surface } from "~/renderer/common/components/classes";
+import { ErrorGuard } from "~/renderer/common/components/error-guard";
 import { Resizable } from "~/renderer/common/components/resizable";
 import { ScrollArea } from "~/renderer/common/components/scroll-area";
 import { Separator } from "~/renderer/common/components/separator";
@@ -316,11 +317,13 @@ function MenuPane({ name, onClose, children }: Readonly<MenuPaneProps>) {
 
       {/* ---- Contents. --------------------------------------------------- */}
       <div className={cn("mx-1 mb-1 grow overflow-auto", surface())}>
-        <ScrollArea>
-          <MenuActionsContext.Provider value={menuActions}>
-            {children}
-          </MenuActionsContext.Provider>
-        </ScrollArea>
+        <ErrorGuard>
+          <ScrollArea>
+            <MenuActionsContext.Provider value={menuActions}>
+              {children}
+            </MenuActionsContext.Provider>
+          </ScrollArea>
+        </ErrorGuard>
       </div>
     </div>
   );

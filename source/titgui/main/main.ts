@@ -18,6 +18,7 @@ import { z } from "zod";
 import { HelpService } from "~/main/help";
 import { Installation } from "~/main/installation";
 import { exposeIpcHandlers } from "~/main/ipc";
+import { log } from "~/main/log";
 import { PersistedState } from "~/main/persisted-state";
 import { SessionManager } from "~/main/session";
 import { WindowManager } from "~/main/window";
@@ -46,6 +47,19 @@ class Application {
   }
 
   private async onReady() {
+    try {
+      await this.initialize();
+    } catch (error) {
+      log.error("Failed to start the application:", error);
+      dialog.showErrorBox(
+        "BlueTit failed to start.",
+        error instanceof Error ? error.message : String(error),
+      );
+      app.exit(1);
+    }
+  }
+
+  private async initialize() {
     // Find the installation root.
     this.install = Installation.resolve();
 

@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 
+import { ErrorGuard } from "~/renderer/common/components/error-guard";
 import { Tabs } from "~/renderer/common/components/tabs";
 import { Window } from "~/renderer/common/components/window";
 import { TabPane } from "~/renderer/help/components/tab-pane";
@@ -45,18 +46,20 @@ function Shell() {
 
       {tabs.map((tab) => (
         <Tabs.Panel key={tab.id} value={tab.id} keepMounted>
-          <TabPane
-            url={tab.url}
-            onNavigate={(url) => {
-              navigateTab(tab.id, url);
-            }}
-            onTitleChange={(title) => {
-              setTitleByID(tab.id, title);
-            }}
-            onOpenInNewTab={(url) => {
-              addTab(url);
-            }}
-          />
+          <ErrorGuard>
+            <TabPane
+              url={tab.url}
+              onNavigate={(url) => {
+                navigateTab(tab.id, url);
+              }}
+              onTitleChange={(title) => {
+                setTitleByID(tab.id, title);
+              }}
+              onOpenInNewTab={(url) => {
+                addTab(url);
+              }}
+            />
+          </ErrorGuard>
         </Tabs.Panel>
       ))}
     </Tabs>

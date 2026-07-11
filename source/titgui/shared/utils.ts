@@ -6,13 +6,23 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * Assert that the condition is true.
+ * Assert that the condition is true. Reserved for programmer invariants: a
+ * failed assertion is a bug, never an expected runtime state.
  */
 export function assert(
   condition: unknown,
   message?: string,
 ): asserts condition {
   if (!condition) throw new Error(message ?? "Assertion failed.");
+}
+
+/**
+ * Ensure that a runtime condition holds. Unlike `assert`, this guards
+ * conditions caused by external data, files, or processes — failures are
+ * expected states that callers must be prepared to handle.
+ */
+export function ensure(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

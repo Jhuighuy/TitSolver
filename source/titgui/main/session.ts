@@ -15,10 +15,11 @@ import {
 } from "~/bindings";
 import type { Installation } from "~/main/installation";
 import { broadcastIpcEvent } from "~/main/ipc";
+import { log } from "~/main/log";
 import { AsyncLruCache } from "~/main/lru-cache";
 import type { SolverEvent } from "~/shared/solver";
 import type { Frame } from "~/shared/storage";
-import { assert } from "~/shared/utils";
+import { ensure } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -47,7 +48,7 @@ class SolverManager {
    * Run the solver.
    */
   public run(workDir: string) {
-    assert(this.child === undefined);
+    if (this.child !== undefined) return;
     const child = spawn(this.install.solverPath, [], { cwd: workDir });
 
     child.stdout.setEncoding("utf8");
@@ -156,6 +157,7 @@ export class SessionManager {
   private storagePollTimer?: NodeJS.Timeout;
   private storageDataVersion?: number;
   private isPollingStorage = false;
+  private storageOpenFailureLogged = false;
   private readonly frameCache = new AsyncLruCache<number, Frame>(
     FRAME_CACHE_CAPACITY,
   );
@@ -177,20 +179,38 @@ export class SessionManager {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
-   * Start the session.
+   * Start the session. A missing storage is not fatal: the session keeps
+   * retrying, and picks the storage up once it appears (e.g. after the
+   * first solver run creates it).
    */
   public async start() {
-    // Storage path is hardcoded at the moment.
-    const storagePath = path.join(this.workDir, "particles.ttdb");
-    this.storage = await nativeOpenStorage(storagePath);
+    await this.openStorage();
 
     // Watch for changes made by other processes (e.g. a running solver).
     // SQLite has no cross-process change notifications; polling the
     // `data_version` pragma is the cheapest reliable signal.
-    this.storageDataVersion = undefined;
     this.storagePollTimer = setInterval(() => {
       void this.pollStorageChanges();
     }, STORAGE_POLL_INTERVAL_MS);
+  }
+
+  // Try to open the storage.
+  private async openStorage() {
+    // Storage path is hardcoded at the moment.
+    const storagePath = path.join(this.workDir, "particles.ttdb");
+    try {
+      this.storage = await nativeOpenStorage(storagePath);
+      this.storageDataVersion = undefined;
+      this.storageOpenFailureLogged = false;
+    } catch (error) {
+      if (!this.storageOpenFailureLogged) {
+        this.storageOpenFailureLogged = true;
+        log.warn(
+          `Unable to open storage at '${storagePath}', will retry:`,
+          error,
+        );
+      }
+    }
   }
 
   /**
@@ -207,11 +227,23 @@ export class SessionManager {
     this.storage = undefined;
   }
 
-  // Broadcast a storage change event when the data version moves.
+  // Broadcast a storage change event when the data version moves. If the
+  // storage could not be opened yet, retry that instead.
   private async pollStorageChanges() {
-    if (this.isPollingStorage || this.storage === undefined) return;
+    if (this.isPollingStorage) return;
     this.isPollingStorage = true;
     try {
+      if (this.storage === undefined) {
+        await this.openStorage();
+        if (this.storage !== undefined) {
+          // The storage appeared after startup.
+          this.frameCache.clear();
+          this.frameCount = undefined;
+          broadcastIpcEvent("session", "storageChanged", null);
+        }
+        return;
+      }
+
       const dataVersion = await this.storage.dataVersion();
       if (
         this.storageDataVersion !== undefined &&
@@ -234,14 +266,21 @@ export class SessionManager {
 
   // Get the last series.
   private async getSeries() {
-    assert(this.storage !== undefined);
+    ensure(this.storage !== undefined, "Storage is not open.");
     return this.storage.lastSeries();
   }
 
   /**
-   * Get the number of frames.
+   * Get the number of frames. A missing or empty storage has zero frames.
    */
   public async getFrameCount() {
+    if (
+      this.storage === undefined ||
+      (await this.storage.seriesCount()) === 0
+    ) {
+      this.frameCount = 0;
+      return 0;
+    }
     const series = await this.getSeries();
     const frameCount = await series.frameCount();
     this.frameCount = frameCount;

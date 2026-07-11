@@ -17,6 +17,7 @@ import {
   shell,
 } from "electron";
 
+import { HELP_PROTOCOL, HOME_URL, resolveHelpPath } from "~/main/help-path";
 import type { Installation } from "~/main/installation";
 import { sendIpcEvent } from "~/main/ipc";
 import type { WindowController } from "~/main/window";
@@ -321,7 +322,7 @@ class HelpProtocol {
   public constructor(private readonly rootPath: string) {
     protocol.handle(HELP_PROTOCOL, async ({ url }) => {
       try {
-        const filePath = path.resolve(this.rootPath, this.urlToPath(url));
+        const filePath = resolveHelpPath(this.rootPath, url);
         return await net.fetch(pathToFileURL(filePath).toString());
       } catch {
         const notFoundPath = path.join(this.rootPath, "404.html");
@@ -333,34 +334,13 @@ class HelpProtocol {
   /** Check if the given URL does not belong to the manual. */
   public isExternalUrl(url: string) {
     try {
-      this.urlToPath(url);
+      resolveHelpPath(this.rootPath, url);
       return false;
     } catch {
       return true;
     }
   }
-
-  // Convert a help URL to a help-relative path.
-  private urlToPath(url: string) {
-    const { protocol, hostname, pathname } = new URL(url, HOME_URL);
-    assert(protocol === `${HELP_PROTOCOL}:`);
-    assert(hostname === HELP_HOST);
-
-    const relativePath = decodeURIComponent(pathname)
-      .replace(/^\/+/u, "")
-      .trim();
-    assert(relativePath !== "" && relativePath !== ".");
-    assert(!relativePath.startsWith(".."));
-    assert(!path.isAbsolute(relativePath));
-
-    return relativePath;
-  }
 }
-
-const HELP_PROTOCOL = "help";
-const HELP_HOST = "manual";
-const HELP_ORIGIN = `${HELP_PROTOCOL}://${HELP_HOST}`;
-const HOME_URL = `${HELP_ORIGIN}/index.html`;
 
 protocol.registerSchemesAsPrivileged([
   {

@@ -13,6 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { useEffect } from "react";
 
+import { ErrorGuard } from "~/renderer/common/components/error-guard";
 import { Menu } from "~/renderer/common/components/menu";
 import { Window } from "~/renderer/common/components/window";
 import { DashboardMenu } from "~/renderer/main/components/dashboard-menu";
@@ -84,9 +85,13 @@ function Page() {
 
       <div className="flex size-full flex-col">
         <div className="min-h-0 grow">
-          <Viewport />
+          <ErrorGuard>
+            <Viewport />
+          </ErrorGuard>
         </div>
-        <Timeline />
+        <ErrorGuard>
+          <Timeline />
+        </ErrorGuard>
 
         <Menu.Root
           side="bottom"
