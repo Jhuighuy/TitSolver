@@ -11,6 +11,7 @@
 #include <concepts>
 #include <cstddef>
 #include <format>
+#include <type_traits>
 
 #include "tit/core/_vec/vec_mask.hpp"
 #include "tit/core/assert.hpp"
@@ -664,9 +665,11 @@ constexpr auto normalize(const Vec<Num, Dim>& a) -> Vec<Num, Dim> {
 
 /// Is a vector approximately equal to another vector?
 template<class Num, std::size_t Dim>
-constexpr auto approx_equal_to(const Vec<Num, Dim>& a, const Vec<Num, Dim>& b)
-    -> bool {
-  return norm2(a - b) <= pow2(tiny_v<Num>);
+constexpr auto approx_equal_to(
+    const Vec<Num, Dim>& a,
+    const Vec<Num, Dim>& b,
+    const std::type_identity_t<Num>& eps = tiny_v<Num>) -> bool {
+  return is_tiny(norm2(a - b), pow2(eps));
 }
 
 /// Vector cross product.
