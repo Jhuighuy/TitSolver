@@ -145,14 +145,19 @@ inline constexpr auto tiny_v<Float> =
 
 /// Check if number is tiny.
 template<class Num>
-constexpr auto is_tiny(Num a) noexcept -> bool {
-  return abs(a) <= tiny_v<Num>;
+constexpr auto is_tiny(Num a,
+                       std::type_identity_t<Num> eps = tiny_v<Num>) noexcept
+    -> bool {
+  return abs(a) <= eps;
 }
 
 /// Check if two numbers are approximately equal.
 template<class Num>
-constexpr auto approx_equal_to(Num a, Num b) -> bool {
-  return is_tiny(a - b);
+constexpr auto approx_equal_to(Num a,
+                               Num b,
+                               std::type_identity_t<Num> eps = tiny_v<Num>)
+    -> bool {
+  return is_tiny(a - b, eps);
 }
 
 /// Check if two numbers are bitwise equal.

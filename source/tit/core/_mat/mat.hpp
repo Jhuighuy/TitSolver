@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <format>
 #include <initializer_list>
+#include <type_traits>
 
 #include "tit/core/assert.hpp"
 #include "tit/core/math.hpp"
@@ -254,10 +255,12 @@ constexpr auto outer_sqr(const Vec<Num, Dim>& a) -> Mat<Num, Dim> {
 
 // Matrix approximate equality operator.
 template<class Num, std::size_t Dim>
-constexpr auto approx_equal_to(const Mat<Num, Dim>& A,
-                               const Mat<Num, Dim>& B) noexcept -> bool {
+constexpr auto approx_equal_to(
+    const Mat<Num, Dim>& A,
+    const Mat<Num, Dim>& B,
+    const std::type_identity_t<Num>& eps = tiny_v<Num>) noexcept -> bool {
   for (std::size_t i = 0; i < Dim; ++i) {
-    if (!approx_equal_to(A[i], B[i])) return false;
+    if (!approx_equal_to(A[i], B[i], eps)) return false;
   }
   return true;
 }
