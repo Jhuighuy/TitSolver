@@ -89,6 +89,7 @@ public:
   auto frameCount(const Napi::CallbackInfo& info) -> Napi::Value;
   auto frame(const Napi::CallbackInfo& info) -> Napi::Value;
   auto readFrame(const Napi::CallbackInfo& info) -> Napi::Value;
+  auto frameTimes(const Napi::CallbackInfo& info) -> Napi::Value;
   auto exportTo(const Napi::CallbackInfo& info) -> Napi::Value;
 
 private:

@@ -22,6 +22,7 @@ import {
   materializeCase,
   saveCaseTree,
 } from "~/bindings";
+import { updateApplicationMenu } from "~/main/app-menu";
 import { CaseManager } from "~/main/case";
 import { HelpService } from "~/main/help";
 import { Installation } from "~/main/installation";
@@ -52,6 +53,9 @@ class Application {
     app.on("window-all-closed", () => {
       this.onWindowAllClosed();
     });
+    app.on("activate", () => {
+      this.onActivate();
+    });
     app.on("will-quit", () => {
       this.onWillQuit();
     });
@@ -79,10 +83,9 @@ class Application {
     const isolated = userDataDir !== undefined && userDataDir !== "";
     if (isolated) app.setPath("userData", path.resolve(userDataDir));
 
-    // Load persisted state. The repository-root location is legacy; state
-    // found there is migrated to the user data directory on the next save.
-    this.persist = PersistedState.load(
-      path.join(app.getPath("userData"), "persisted-state.json"),
+    // Open persisted state. The repository-root location is legacy; state
+    // found there is imported once.
+    this.persist = PersistedState.open(
       isolated
         ? undefined
         : path.resolve(this.install.rootPath, "../..", "persisted-state.json"),
@@ -96,6 +99,7 @@ class Application {
       {
         caseChanged: (state) => {
           this.updateWindowTitle(state);
+          this.updateAppMenu(state);
           this.resetSession(state);
           broadcastIpcEvent("case", "caseChanged", state);
         },
@@ -112,8 +116,9 @@ class Application {
       this.windowManager?.updateBackgroundColors();
     });
 
-    // Setup windows.
+    // Setup windows and the application menu.
     this.windowManager = new WindowManager(this.persist);
+    this.updateAppMenu(this.caseManager.state());
 
     // Setup help.
     this.helpService = new HelpService(
@@ -131,12 +136,17 @@ class Application {
   }
 
   private onWindowAllClosed() {
-    app.quit();
+    // On macOS the application conventionally stays alive without windows
+    // and is reopened from the dock.
+    if (process.platform !== "darwin") app.quit();
+  }
+
+  private onActivate() {
+    this.windowManager?.controllers.main.open();
   }
 
   private onWillQuit() {
     this.session?.stop();
-    this.persist?.save();
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,10 +189,42 @@ class Application {
     );
   }
 
+  // Refresh the application menu (recents, item enablement).
+  private updateAppMenu(state: CaseState) {
+    updateApplicationMenu(
+      {
+        newCase: () => {
+          runFromMenu(async () => {
+            const dir = await this.pickCaseDir(null, true);
+            if (dir !== undefined) await this.requireCase().newCase(dir);
+          });
+        },
+        openCase: () => {
+          runFromMenu(async () => {
+            const dir = await this.pickCaseDir(null, false);
+            if (dir !== undefined) await this.requireCase().openCase(dir);
+          });
+        },
+        openRecentCase: (dir) => {
+          runFromMenu(async () => this.requireCase().openCase(dir));
+        },
+        saveCase: () => {
+          runFromMenu(async () => this.requireCase().save());
+        },
+        closeCase: () => {
+          this.requireCase().close();
+        },
+        openHelp: () => {
+          this.windowManager?.controllers.help.open();
+        },
+      },
+      { caseState: state, recents: this.caseManager?.recents() ?? [] },
+    );
+  }
+
   // Ask the user for a case directory. `create` shows a save-style dialog
   // for a new directory; otherwise an existing directory is picked.
-  private async pickCaseDir(event: IpcMainInvokeEvent, create: boolean) {
-    const window = BrowserWindow.fromWebContents(event.sender);
+  private async pickCaseDir(window: BrowserWindow | null, create: boolean) {
     if (create) {
       const options = {
         title: "New Case",
@@ -248,12 +290,18 @@ class Application {
         state: () => this.requireCase().state(),
         recents: () => this.requireCase().recents(),
         newCase: async (event) => {
-          const dir = await this.pickCaseDir(event, true);
+          const dir = await this.pickCaseDir(
+            BrowserWindow.fromWebContents(event.sender),
+            true,
+          );
           if (dir === undefined) return null;
           return this.requireCase().newCase(dir);
         },
         openCase: async (event) => {
-          const dir = await this.pickCaseDir(event, false);
+          const dir = await this.pickCaseDir(
+            BrowserWindow.fromWebContents(event.sender),
+            false,
+          );
           if (dir === undefined) return null;
           return this.requireCase().openCase(dir);
         },
@@ -271,6 +319,7 @@ class Application {
       session: {
         // No open case means no session — and simply zero frames.
         frameCount: async () => this.session?.getFrameCount() ?? 0,
+        frameTimes: async () => this.session?.getFrameTimes() ?? [],
         frame: async (_event, index) => this.requireSession().getFrame(index),
         export: async (event) => {
           const options: OpenDialogOptions = {
@@ -320,6 +369,18 @@ class Application {
       },
     });
   }
+}
+
+// Run a menu-triggered action: unlike IPC calls, there is no renderer
+// promise to reject into, so failures surface as a dialog.
+function runFromMenu(action: () => Promise<unknown>) {
+  action().catch((error: unknown) => {
+    log.error("Menu action failed:", error);
+    dialog.showErrorBox(
+      "Action failed.",
+      error instanceof Error ? error.message : String(error),
+    );
+  });
 }
 
 new Application().run();

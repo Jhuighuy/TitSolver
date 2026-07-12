@@ -5,7 +5,7 @@
 
 import path from "node:path";
 
-import { BrowserWindow, nativeTheme } from "electron";
+import { BrowserWindow, nativeTheme, screen } from "electron";
 import { z } from "zod";
 
 import { sendIpcEvent } from "~/main/ipc";
@@ -48,8 +48,8 @@ export class WindowController {
     if (this.window !== undefined) return;
 
     // Read persisted window state.
-    const x = this.persist.get(WINDOW_X_KEY, z.int());
-    const y = this.persist.get(WINDOW_Y_KEY, z.int());
+    let x = this.persist.get(WINDOW_X_KEY, z.int());
+    let y = this.persist.get(WINDOW_Y_KEY, z.int());
     const width = this.persist.get(
       WINDOW_WIDTH_KEY,
       z.int().min(WINDOW_MIN_WIDTH),
@@ -60,6 +60,25 @@ export class WindowController {
       z.int().min(WINDOW_MIN_HEIGHT),
       WINDOW_MIN_HEIGHT,
     );
+
+    // Drop a persisted position that is no longer visible on any display
+    // (e.g. after a monitor change); the window is centered instead.
+    if (x !== undefined && y !== undefined) {
+      const windowX = x;
+      const windowY = y;
+      const visible = screen.getAllDisplays().some(({ workArea }) => {
+        return (
+          windowX < workArea.x + workArea.width &&
+          windowX + width > workArea.x &&
+          windowY < workArea.y + workArea.height &&
+          windowY + height > workArea.y
+        );
+      });
+      if (!visible) {
+        x = undefined;
+        y = undefined;
+      }
+    }
     const isMaximized = this.persist.get(
       WINDOW_MAXIMIZED_KEY,
       z.boolean(),

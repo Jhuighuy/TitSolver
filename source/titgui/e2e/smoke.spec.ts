@@ -64,6 +64,17 @@ test.afterAll(async () => {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+test("installs the application menu", async () => {
+  const fileMenu = await app.evaluate(({ Menu }) => {
+    const items = Menu.getApplicationMenu()?.items ?? [];
+    return items
+      .find((item) => item.label === "File")
+      ?.submenu?.items.map((item) => item.label);
+  });
+  expect(fileMenu).toContain("New Case…");
+  expect(fileMenu).toContain("Save Case");
+});
+
 test("launches into the welcome tab", async () => {
   await expect(window.getByRole("tab", { name: "Welcome" })).toBeVisible();
   await expect(window.getByText("BlueTit Solver").last()).toBeVisible();

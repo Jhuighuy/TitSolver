@@ -16,8 +16,18 @@ import { assert } from "~/shared/utils";
 /** Number of frames in the open series (`0` while unknown or empty). */
 export const numFramesAtom = atom(0);
 
+/** Physical times of the frames (empty while unknown). */
+export const frameTimesAtom = atom<number[]>([]);
+
 /** Index of the displayed frame, or `null` if none is loaded yet. */
 export const frameIndexAtom = atom<number | null>(null);
+
+/** Physical time of the displayed frame, or `null` when unknown. */
+export const frameTimeAtom = atom((get) => {
+  const frameIndex = get(frameIndexAtom);
+  if (frameIndex === null) return null;
+  return get(frameTimesAtom)[frameIndex] ?? null;
+});
 
 // Concurrency guards: responses are dropped unless they belong to the latest
 // refresh (session) and the latest frame request.
@@ -42,6 +52,7 @@ export function refreshStorage() {
 
       store.set(numFramesAtom, numFrames);
       if (numFrames === 0) {
+        store.set(frameTimesAtom, []);
         store.set(frameIndexAtom, null);
         store.set(frameDataAtom, new FieldMap({}));
         return;
@@ -54,9 +65,24 @@ export function refreshStorage() {
       );
       store.set(frameIndexAtom, frameIndex);
       void requestFrame(frameIndex);
+      refreshFrameTimes(session);
     })
     .catch((error: unknown) => {
       logger.err("Failed to query the frame count.\n", error);
+    });
+}
+
+// Load the physical frame times (one native call; a double per frame).
+function refreshFrameTimes(session: number) {
+  const store = getDefaultStore();
+  void ipc.session
+    .frameTimes()
+    .then((frameTimes) => {
+      if (session !== sessionID) return;
+      store.set(frameTimesAtom, frameTimes);
+    })
+    .catch((error: unknown) => {
+      logger.err("Failed to query the frame times.\n", error);
     });
 }
 

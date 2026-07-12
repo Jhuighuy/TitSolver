@@ -19,6 +19,7 @@ import type { KeyboardEvent, PointerEvent } from "react";
 import { IconButton } from "~/renderer/common/components/button";
 import { chrome } from "~/renderer/common/components/classes";
 import { Separator } from "~/renderer/common/components/separator";
+import { Mono } from "~/renderer/common/components/text";
 import { Tooltip } from "~/renderer/common/components/tooltip";
 import { cn } from "~/renderer/common/components/utils";
 import { useElementSize } from "~/renderer/common/hooks/use-element-size";
@@ -31,6 +32,7 @@ import {
 } from "~/renderer/main/state/playback";
 import {
   frameIndexAtom,
+  frameTimeAtom,
   numFramesAtom,
   refreshStorage,
   requestFrame,
@@ -46,6 +48,7 @@ export function Timeline() {
   const [isRepeating, setIsRepeating] = useAtom(isRepeatingAtom);
   const numFrames = useAtomValue(numFramesAtom);
   const frameIndex = useAtomValue(frameIndexAtom);
+  const frameTime = useAtomValue(frameTimeAtom);
 
   function setNextFrame() {
     assert(frameIndex !== null);
@@ -172,6 +175,22 @@ export function Timeline() {
 
       <Separator orientation="vertical" size="2" />
 
+      {/* ---- Physical time of the displayed frame. ------------------------ */}
+      {frameTime !== null && (
+        <>
+          <Tooltip content="Physical time of the displayed frame">
+            <Mono
+              color="muted"
+              className="mx-2 w-24 shrink-0 text-right whitespace-nowrap"
+            >
+              t = {formatFrameTime(frameTime)}
+            </Mono>
+          </Tooltip>
+
+          <Separator orientation="vertical" size="2" />
+        </>
+      )}
+
       {/* ---- Frame scale. ------------------------------------------------- */}
       <FrameScale
         numFrames={numFrames}
@@ -183,6 +202,14 @@ export function Timeline() {
       />
     </div>
   );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Fixed-width time formatting, so the readout does not jitter during
+// playback.
+function formatFrameTime(time: number) {
+  return time.toFixed(4);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

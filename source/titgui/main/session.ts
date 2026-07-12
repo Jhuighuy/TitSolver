@@ -281,6 +281,21 @@ export class SessionManager {
   }
 
   /**
+   * Get the physical times of all frames, in a single native call. A
+   * missing or empty storage has no frames.
+   */
+  public async getFrameTimes() {
+    if (
+      this.storage === undefined ||
+      (await this.storage.seriesCount()) === 0
+    ) {
+      return [];
+    }
+    const series = await this.getSeries();
+    return Array.from(await series.frameTimes());
+  }
+
+  /**
    * Get a frame by index. Frames are cached and neighboring frames are
    * prefetched, so scrubbing and playback are usually served from memory.
    */

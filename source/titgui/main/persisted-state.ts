@@ -5,43 +5,50 @@
 
 import fs from "node:fs";
 
+import Store from "electron-store";
 import { z } from "zod";
 
 import { log } from "~/main/log";
-import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * Storage for persisted state shared by windows.
+ * Persisted application state shared by windows.
+ *
+ * Backed by `electron-store`: every `set` is written to disk atomically
+ * right away, so a crash never loses state. Values are validated with zod
+ * schemas on read; invalid or missing values fall back.
  */
 export class PersistedState {
   private constructor(
-    private readonly path: string | undefined,
-    private readonly prefix: string | undefined,
-    private readonly data: z.infer<typeof persistedStateSchema>,
+    private readonly store: Store,
+    private readonly prefix?: string,
   ) {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
-   * Load persisted state from the given path. When the file does not exist
-   * and a legacy path is given, the legacy file is read instead — state is
-   * migrated on the next save, which always writes to `path`.
+   * Open the persisted state store (`persisted-state.json` in the user data
+   * directory). When the store is empty and a legacy file is given, its
+   * contents are imported once.
    */
-  public static load(path: string, legacyPath?: string) {
-    let data = PersistedState.read(path);
-    if (data === undefined && legacyPath !== undefined) {
-      data = PersistedState.read(legacyPath);
-      if (data !== undefined) {
-        log.info(`Migrating persisted state from '${legacyPath}'.`);
-      }
+  public static open(legacyPath?: string) {
+    const store = new Store({
+      name: "persisted-state",
+      // Keys are flat strings (e.g. "main.window.x"), not object paths.
+      accessPropertiesByDotNotation: false,
+      clearInvalidConfig: true,
+    });
+
+    if (store.size === 0 && legacyPath !== undefined) {
+      PersistedState.import(store, legacyPath);
     }
-    return new PersistedState(path, undefined, data ?? {});
+
+    return new PersistedState(store);
   }
 
-  // Read and parse a persisted state file; `undefined` if it does not exist.
-  private static read(path: string) {
+  // Import state from a legacy persisted state file, ignoring bad content.
+  private static import(store: Store, path: string) {
     let content: string;
     try {
       content = fs.readFileSync(path, "utf8");
@@ -53,52 +60,31 @@ export class PersistedState {
     try {
       json = JSON.parse(content);
     } catch (error) {
-      log.warn(
-        `Failed to parse persisted state from '${path}', using empty state:`,
-        error,
-      );
-      return {};
+      log.warn(`Failed to parse legacy persisted state at '${path}':`, error);
+      return;
     }
 
-    const {
-      success,
-      data: state,
-      error,
-    } = persistedStateSchema.safeParse(json);
+    const { success, data } = z.record(z.string(), z.unknown()).safeParse(json);
     if (!success) {
-      log.warn(
-        `Invalid persisted state format in '${path}', using empty state:`,
-        error.message,
-      );
-      return {};
+      log.warn(`Invalid legacy persisted state format at '${path}'.`);
+      return;
     }
 
-    return state;
-  }
-
-  /**
-   * Save the persisted state to disk.
-   */
-  public save() {
-    assert(this.path !== undefined);
-    try {
-      fs.writeFileSync(
-        this.path,
-        JSON.stringify(this.data, undefined, 2),
-        "utf8",
-      );
-    } catch (error) {
-      log.error(`Failed to save persisted state to '${this.path}':`, error);
-    }
+    log.info(`Migrating persisted state from '${path}'.`);
+    store.set(data);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
-   * Get the prefixed persisted state.
+   * Get the prefixed persisted state. Prefixed views read and write the
+   * same store, so writes are persisted no matter which view makes them.
    */
   public withPrefix(prefix: string) {
-    return new PersistedState(undefined, prefix, this.data);
+    return new PersistedState(
+      this.store,
+      this.prefix === undefined ? prefix : `${this.prefix}.${prefix}`,
+    );
   }
 
   /**
@@ -115,7 +101,7 @@ export class PersistedState {
 
     // Query the value.
     // If it does not exist, silently return the fallback.
-    const persistedValue = this.data[key];
+    const persistedValue = this.store.get(key);
     if (persistedValue === undefined) return fallbackValue;
 
     // Parse the value.
@@ -134,16 +120,17 @@ export class PersistedState {
   }
 
   /**
-   * Set a value in persisted state.
+   * Set a value in persisted state. The store is written to disk
+   * immediately and atomically.
    */
   public set(key: string, value: unknown) {
     if (this.prefix !== undefined) key = `${this.prefix}.${key}`;
-    this.data[key] = value;
+    if (value === undefined) {
+      this.store.delete(key);
+    } else {
+      this.store.set(key, value);
+    }
   }
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-const persistedStateSchema = z.record(z.string(), z.unknown());
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

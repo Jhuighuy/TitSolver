@@ -245,6 +245,7 @@ void SeriesWrap::init(Napi::Env env) {
           InstanceMethod("frameCount", &SeriesWrap::frameCount),
           InstanceMethod("frame", &SeriesWrap::frame),
           InstanceMethod("readFrame", &SeriesWrap::readFrame),
+          InstanceMethod("frameTimes", &SeriesWrap::frameTimes),
           InstanceMethod("export", &SeriesWrap::exportTo),
       });
   constructor() = Persistent(ctor);
@@ -291,6 +292,31 @@ auto SeriesWrap::frame(const Napi::CallbackInfo& info) -> Napi::Value {
       },
       [state = holder_](Napi::Env env, data::FrameID frame_id) {
         return FrameWrap::New(env, state, frame_id);
+      });
+}
+
+auto SeriesWrap::frameTimes(const Napi::CallbackInfo& info) -> Napi::Value {
+  TIT_ENSURE(info.Length() == 0, "Unexpected arguments.");
+
+  return enqueue(
+      info.Env(),
+      [holder = holder_, series_id = series_id_] {
+        // Read the times of all frames in a single storage round trip.
+        return holder->access([series_id](const data::Storage& storage) {
+          std::vector<float64_t> times;
+          for (const auto frame_id : storage.series_frame_ids(series_id)) {
+            times.push_back(storage.frame_time(frame_id));
+          }
+          return times;
+        });
+      },
+      [](Napi::Env env, const std::vector<float64_t>& times) {
+        // Note: the copy below (and in `make_typed_array`) is mandatory —
+        // Electron's V8 memory cage forbids externally-allocated array
+        // buffers, so wrapping the vector's own memory is not an option.
+        auto array = Napi::Float64Array::New(env, times.size());
+        std::ranges::copy(times, array.Data());
+        return array;
       });
 }
 

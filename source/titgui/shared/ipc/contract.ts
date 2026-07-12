@@ -79,6 +79,7 @@ export const ipcContract = {
   session: service({
     methods: {
       frameCount: method({ result: z.int().nonnegative() }),
+      frameTimes: method({ result: z.array(z.number()) }),
       frame: method({ args: [z.int().nonnegative()], result: frameSchema }),
       export: method({ result: z.void() }),
       runSolver: method({ result: z.void() }),

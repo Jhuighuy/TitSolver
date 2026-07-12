@@ -53,6 +53,11 @@ export function useWindowState<T>(
       queryClient.setQueryData(queryKey, next);
       return { previous };
     },
+    onError: (error, _next, context) => {
+      // Roll the optimistic update back and surface the failure.
+      queryClient.setQueryData(queryKey, context?.previous);
+      logger.err(`Failed to persist '${key}'.\n`, error);
+    },
   });
 
   const setValue = useCallback(
