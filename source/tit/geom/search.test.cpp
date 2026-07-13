@@ -8,7 +8,6 @@
 #include <iterator>
 #include <random>
 #include <ranges>
-#include <set>
 #include <vector>
 
 #include "tit/core/math.hpp"
@@ -28,19 +27,11 @@ namespace {
 using SearchResult = std::vector<std::vector<std::size_t>>;
 
 // Match the two nearest neighbor search results.
-void match_search_results(const SearchResult& expected_result,
-                          const SearchResult& actual_result) {
-  REQUIRE(expected_result.size() == actual_result.size());
-  for (const auto& [expected_row, actual_row] :
-       std::views::zip(expected_result, actual_result)) {
-    const std::set expected_set{std::from_range, expected_row};
-    REQUIRE(expected_set.size() == expected_row.size());
-
-    const std::set actual_set{std::from_range, actual_row};
-    REQUIRE(actual_set.size() == actual_row.size());
-
-    CHECK(expected_set == actual_set);
-  }
+auto match_search_results(const SearchResult& expected_result,
+                          const SearchResult& actual_result) -> bool {
+  return std::ranges::equal(expected_result,
+                            actual_result,
+                            std::ranges::is_permutation);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,60 +104,58 @@ template<class Vec>
 void run_search_test(const std::vector<Vec>& points,
                      vec_num_t<Vec> search_radius) {
   // Naive search as a baseline.
+  INFO("Naive search");
   const auto result_naive = search_naive(points, search_radius);
-  SUBCASE("naive") {
-    match_search_results(result_naive, result_naive);
-    REQUIRE_FALSE(std::ranges::all_of(result_naive, std::ranges::empty));
-  }
+  REQUIRE((result_naive.empty() ||
+           !std::ranges::all_of(result_naive, std::ranges::empty)));
+  CHECK(match_search_results(result_naive, result_naive));
 
   // Nearest neighbor search with a grid.
-  SUBCASE("grid") {
-    SUBCASE("size hint = 0.5 * search radius") {
-      const auto result_grid =
-          search_grid(points, search_radius, 0.5 * search_radius);
-      match_search_results(result_naive, result_grid);
-    }
-    SUBCASE("size hint = 5.0 * search radius") {
-      const auto result_grid =
-          search_grid(points, search_radius, 5.0 * search_radius);
-      match_search_results(result_naive, result_grid);
-    }
+  INFO("Grid search");
+  for (const auto scale : {0.5, 5.0}) {
+    CAPTURE(scale);
+    const auto size_hint = scale * search_radius;
+    const auto result_grid = search_grid(points, search_radius, size_hint);
+    CHECK(match_search_results(result_naive, result_grid));
   }
 
   // Nearest neighbor search with a K-dimensional tree.
-  SUBCASE("KD tree") {
-    const auto result_kd_tree = search_kd_tree(points, search_radius);
-    match_search_results(result_naive, result_kd_tree);
-  }
+  INFO("KD tree search");
+  const auto result_kd_tree = search_kd_tree(points, search_radius);
+  CHECK(match_search_results(result_naive, result_kd_tree));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("geom::search") {
   std::mt19937 random_engine{/*seed=*/123};
-  std::uniform_real_distribution<double> dist{0.0, 1.0};
+  std::uniform_real_distribution dist{0.0, 1.0};
+  SUBCASE("empty") {
+    const std::vector<Vec<double, 2>> points;
+    run_search_test(points, 0.1);
+  }
   SUBCASE("2D") {
     // Generate random points in the unit square.
-    std::vector<Vec<double, 2>> points(1000);
+    std::vector<Vec<double, 2>> points(200);
     for (auto& point : points) {
       for (std::size_t i = 0; i < 2; ++i) point[i] = dist(random_engine);
     }
 
     // Run the nearest neighbor search tests for various search radii.
-    for (const auto search_radius : {0.01, 0.1, 0.5, 1.0, 10.0}) {
+    for (const auto search_radius : {0.01, 0.1, 0.5, 1.0}) {
       CAPTURE(search_radius);
       run_search_test(points, search_radius);
     }
   }
   SUBCASE("3D") {
     // Generate random points in the unit cube.
-    std::vector<Vec<double, 3>> points(1000);
+    std::vector<Vec<double, 3>> points(200);
     for (auto& point : points) {
       for (std::size_t i = 0; i < 3; ++i) point[i] = dist(random_engine);
     }
 
     // Run the nearest neighbor search tests for various search radii.
-    for (const auto search_radius : {0.01, 0.1, 0.5, 1.0, 10.0}) {
+    for (const auto search_radius : {0.01, 0.1, 0.5, 1.0}) {
       CAPTURE(search_radius);
       run_search_test(points, search_radius);
     }

@@ -352,6 +352,9 @@ coverage() {
 	# Prepare arguments for gcovr.
 	local GCOVR_ARGS=("gcovr")
 
+	# Ignore suspicious hits that may be caused by instrumentation bugs.
+	GCOVR_ARGS+=("--gcov-ignore-parse-errors=suspicious_hits.warn")
+
 	# Use the gcov executable matching the current C compiler.
 	GCOVR_ARGS+=("--gcov-executable" "${CC/gcc/gcov}")
 
