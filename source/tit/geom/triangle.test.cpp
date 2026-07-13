@@ -205,6 +205,8 @@ TEST_CASE("geom::Triangle::intersects") {
   };
   CHECK(tri.intersects(geom::BSphere{Vec{0.0, 0.0, 0.0}, 0.5}));
   CHECK(tri.intersects(geom::BSphere{Vec{0.5, 0.5, 0.2}, 0.3}));
+  CHECK(tri.intersects(geom::BSphere{Vec{0.5, 0.5, 0.3}, 0.3}));
+  CHECK_FALSE(tri.intersects(geom::BSphere{Vec{1.5, 1.5, 0.0}, 0.1}));
   CHECK_FALSE(tri.intersects(geom::BSphere{Vec{10.0, 10.0, 10.0}, 0.5}));
   CHECK_FALSE(tri.intersects(geom::BSphere{Vec{0.5, 0.5, 5.0}, 0.5}));
 }

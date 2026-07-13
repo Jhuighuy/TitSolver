@@ -73,6 +73,45 @@ TEST_CASE("geom::BBox::contains") {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+TEST_CASE("geom::BBox::intersects") {
+  const geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
+  SUBCASE("contained") {
+    const geom::BBox other{Vec{0.5, 0.5}, Vec{1.5, 1.5}};
+    CHECK(box.intersects(other));
+    CHECK(other.intersects(box));
+  }
+  SUBCASE("overlapping") {
+    const geom::BBox other{Vec{1.5, 1.5}, Vec{3.0, 3.0}};
+    CHECK(box.intersects(other));
+    CHECK(other.intersects(box));
+  }
+  SUBCASE("containing") {
+    const geom::BBox other{Vec{-2.0, -2.0}, Vec{3.0, 3.0}};
+    CHECK(box.intersects(other));
+    CHECK(other.intersects(box));
+  }
+  SUBCASE("touching") {
+    const geom::BBox other1{Vec{2.0, 0.5}, Vec{3.0, 1.5}};
+    CHECK(box.intersects(other1));
+    CHECK(other1.intersects(box));
+
+    const geom::BBox other2{Vec{2.0, 2.0}, Vec{3.0, 3.0}};
+    CHECK(box.intersects(other2));
+    CHECK(other2.intersects(box));
+  }
+  SUBCASE("disjoint") {
+    const geom::BBox other1{Vec{-2.0, -2.0}, Vec{-1.0, -1.0}};
+    CHECK_FALSE(box.intersects(other1));
+    CHECK_FALSE(other1.intersects(box));
+
+    const geom::BBox other2{Vec{3.0, 3.0}, Vec{4.0, 4.0}};
+    CHECK_FALSE(box.intersects(other2));
+    CHECK_FALSE(other2.intersects(box));
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TEST_CASE("geom::BBox::grow") {
   geom::BBox box{Vec{0.0, 0.0}, Vec{2.0, 2.0}};
   box.grow(0.5);

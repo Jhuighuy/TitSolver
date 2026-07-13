@@ -109,6 +109,8 @@ TEST_CASE("geom::Segment::intersects") {
   };
   CHECK(face.intersects(geom::BSphere{Vec{1.0, 0.0}, 0.5}));
   CHECK(face.intersects(geom::BSphere{Vec{0.0, 0.0}, 0.5}));
+  CHECK(face.intersects(geom::BSphere{Vec{1.0, 0.5}, 0.5}));
+  CHECK_FALSE(face.intersects(geom::BSphere{Vec{2.5, 0.5}, 0.5}));
   CHECK_FALSE(face.intersects(geom::BSphere{Vec{5.0, 5.0}, 0.5}));
 }
 

@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <array>
+
 #include "tit/core/vec.hpp"
 #include "tit/geom/surface.hpp"
 #include "tit/testing/test.hpp"
@@ -59,15 +61,21 @@ TEST_CASE("geom::Surface::faces") {
 
   REQUIRE(surf.num_verts() == 3);
 
-  surf.append_face({0, 1});
-  surf.append_face({1, 2});
-  surf.append_face({2, 0});
+  constexpr std::array f1{0UZ, 1UZ};
+  constexpr std::array f2{1UZ, 2UZ};
+  constexpr std::array f3{2UZ, 0UZ};
+
+  surf.append_face(f1);
+  surf.append_face(f2);
+  surf.append_face(f3);
 
   REQUIRE(surf.num_faces() == 3);
 
-  CHECK_RANGE_EQ(surf.face_verts(0), {0, 1});
-  CHECK_RANGE_EQ(surf.face_verts(1), {1, 2});
-  CHECK_RANGE_EQ(surf.face_verts(2), {2, 0});
+  CHECK(surf.face_verts(0) == f1);
+  CHECK(surf.face_verts(1) == f2);
+  CHECK(surf.face_verts(2) == f3);
+
+  CHECK_RANGE_EQ(surf.face_verts(), {f1, f2, f3});
 
   CHECK(surf.face(0).a() == v1);
   CHECK(surf.face(0).b() == v2);

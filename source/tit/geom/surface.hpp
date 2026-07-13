@@ -73,6 +73,11 @@ public:
     return faces_[face_index];
   }
 
+  /// Get all face vertices.
+  constexpr auto face_verts() const noexcept -> std::span<const FaceVerts> {
+    return faces_;
+  }
+
   /// Get the face at index.
   constexpr auto face(std::size_t face_index) const noexcept -> Face {
     const auto& [... vert_indices] = face_verts(face_index);

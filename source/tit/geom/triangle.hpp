@@ -111,21 +111,20 @@ public:
       return Segment{a(), c()}.clamp(point);
     }
 
-    const auto pa = point - a();
-    const auto pb = point - b();
-    const auto pc = point - c();
-
     // Region 1: Closest to vertex A.
+    const auto pa = point - a();
     const auto d1 = dot(ba(), pa);
     const auto d2 = dot(ca(), pa);
     if (d1 <= Num{0} && d2 <= Num{0}) return a();
 
     // Region 2: Closest to vertex B.
+    const auto pb = point - b();
     const auto d3 = dot(ba(), pb);
     const auto d4 = dot(ca(), pb);
     if (d3 >= Num{0} && d4 <= d3) return b();
 
     // Region 3: Closest to vertex C.
+    const auto pc = point - c();
     const auto d5 = dot(ba(), pc);
     const auto d6 = dot(ca(), pc);
     if (d6 >= Num{0} && d5 <= d6) return c();
@@ -159,7 +158,8 @@ public:
 
   /// Determine if the triangle intersects the sphere.
   constexpr auto intersects(const BSphere<Vec>& sphere) const noexcept -> bool {
-    return sphere.contains(clamp(sphere.center()));
+    return sphere.box().intersects(box()) &&
+           sphere.contains(clamp(sphere.center()));
   }
 
 private:

@@ -91,7 +91,8 @@ public:
 
   /// Determine if the segment intersects the sphere.
   constexpr auto intersects(const BSphere<Vec>& sphere) const noexcept -> bool {
-    return sphere.contains(clamp(sphere.center()));
+    return sphere.box().intersects(box()) &&
+           sphere.contains(clamp(sphere.center()));
   }
 
 private:
