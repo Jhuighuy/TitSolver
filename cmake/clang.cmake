@@ -265,7 +265,7 @@ function(write_compile_flags TARGET)
   set(FLAGS_SYMLINK "${TARGET_SOURCE_DIR}/compile_flags.txt")
   add_custom_command(
     COMMENT "Writing compile flags for target ${TARGET}"
-    OUTPUT "${FLAGS_FILE}"
+    OUTPUT "${FLAGS_FILE}" "${FLAGS_SYMLINK}"
     COMMAND
       "${CMAKE_COMMAND}" -E echo ${TARGET_COMPILE_OPTIONS} |
       "${XARGS_EXE}" -n 1 > "${FLAGS_FILE}"
@@ -276,7 +276,10 @@ function(write_compile_flags TARGET)
   )
 
   # Create a custom target that should "build" once the file is written.
-  add_custom_target("${TARGET}_compile_flags" ALL DEPENDS "${FLAGS_FILE}")
+  add_custom_target("${TARGET}_compile_flags"
+    ALL
+    DEPENDS "${FLAGS_FILE}" "${FLAGS_SYMLINK}"
+  )
 endfunction()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

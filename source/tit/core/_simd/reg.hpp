@@ -6,6 +6,7 @@
 // IWYU pragma: private, include "tit/core/simd.hpp"
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <span>
 
@@ -186,7 +187,8 @@ template<class To, class From, std::size_t Size>
   requires castable_to<From, To, Size>
 [[gnu::always_inline]]
 inline auto reg_cast(const Reg<From, Size>& a) noexcept -> Reg<To, Size> {
-  return hn::ConvertTo(typename Reg<To, Size>::Tag{}, a.base);
+  if constexpr (std::same_as<From, To>) return a;
+  else return hn::ConvertTo(typename Reg<To, Size>::Tag{}, a.base);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

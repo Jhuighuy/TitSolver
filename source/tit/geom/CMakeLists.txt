@@ -26,10 +26,12 @@ add_tit_library(
     "sort.hpp"
     "sort/hilbert_curve_sort.hpp"
     "sort/morton_curve_sort.hpp"
+    "surface-io.cpp"
     "surface.hpp"
     "tessellation.hpp"
     "triangle.hpp"
   DEPENDS
+    assimp::assimp
     tit::core
     tit::par
 )
