@@ -367,8 +367,8 @@ TEST_CASE_TEMPLATE("Vec::normalize", Num, NUM_TYPES) {
 }
 
 TEST_CASE_TEMPLATE("Vec::approx_equal_to", Num, NUM_TYPES) {
-  CHECK_APPROX_EQ(Vec{Num{1}, Num{2}}, Vec{Num{1}, Num{2}});
-  CHECK_APPROX_NE(Vec{Num{1}, Num{2}}, Vec{Num{1}, Num{3}});
+  CHECK(approx_equal_to(Vec{Num{1}, Num{2}}, Vec{Num{1}, Num{2}}));
+  CHECK_FALSE(approx_equal_to(Vec{Num{1}, Num{2}}, Vec{Num{1}, Num{3}}));
 }
 
 TEST_CASE_TEMPLATE("Vec::cross", Num, NUM_TYPES) {

@@ -20,6 +20,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Find the third-party libraries.
+find_package(assimp CONFIG REQUIRED)
 find_package(cpptrace CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)
 find_package(gcem CONFIG REQUIRED)
@@ -64,6 +65,7 @@ add_tit_library(
   NAME
     all_flags
   DEPENDS
+    assimp::assimp
     cpptrace::cpptrace
     doctest::doctest
     gcem

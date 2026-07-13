@@ -9,10 +9,13 @@
 #include <cstddef>
 #include <ranges>
 #include <span>
+#include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/float.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/segment.hpp"
 #include "tit/geom/triangle.hpp"
@@ -106,6 +109,53 @@ private:
   std::vector<FaceVerts> faces_;
 
 }; // class Surface
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Cast the underlying vector type of the surface.
+template<class ToVec, class Vec>
+  requires (vec_dim_v<ToVec> == vec_dim_v<Vec>)
+constexpr auto surface_cast(const Surface<Vec>& surf) -> Surface<ToVec> {
+  Surface<ToVec> result;
+  for (const auto& vert : surf.verts()) {
+    result.append_vert(vec_cast<vec_num_t<ToVec>>(vert));
+  }
+  for (std::size_t face_index = 0; face_index < surf.num_faces();
+       ++face_index) {
+    result.append_face(surf.face_verts(face_index));
+  }
+  return result;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Surface type used for IO.
+template<std::size_t Dim>
+using IOSurface = Surface<Vec<float32_t, Dim>>;
+
+/// Read a surface from a string (backed by Assimp).
+/// @{
+template<std::size_t Dim>
+auto surface_from_string(std::string_view str) -> IOSurface<Dim>;
+template<class Vec>
+auto surface_from_string(std::string_view str) -> Surface<Vec> {
+  return surface_cast<Vec>(surface_from_string<vec_dim_v<Vec>>(str));
+}
+///@}
+
+/// Write a surface to a string (backed by Assimp).
+/// @{
+template<std::size_t Dim>
+auto surface_dump_string(const IOSurface<Dim>& surf, const std::string& format)
+    -> std::string;
+template<class Vec>
+auto surface_dump_string(const Surface<Vec>& surf, const std::string& format)
+    -> std::string {
+  return surface_dump_string(
+      surface_cast<tit::Vec<float32_t, vec_dim_v<Vec>>>(surf),
+      format);
+}
+/// @}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -41,14 +41,8 @@ namespace tit::testing {
 /// Test that the operands are approximately equal.
 #define CHECK_APPROX_EQ(...) CHECK(approx_equal_to(__VA_ARGS__))
 
-/// Test that the operands are not approximately equal.
-#define CHECK_APPROX_NE(...) CHECK(!approx_equal_to(__VA_ARGS__))
-
 /// Require the operands to be approximately equal.
 #define REQUIRE_APPROX_EQ(...) REQUIRE(approx_equal_to(__VA_ARGS__))
-
-/// Require the operands not to be approximately equal.
-#define REQUIRE_APPROX_NE(...) REQUIRE(!approx_equal_to(__VA_ARGS__))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -77,14 +71,28 @@ constexpr auto equal(Range1&& a, Range2&& b) -> bool {
 /// Test that the range operands are equal.
 #define CHECK_RANGE_EQ(...) CHECK(tit::testing::equal(__VA_ARGS__))
 
-/// Test that the range operands are not equal.
-#define CHECK_RANGE_NE(...) CHECK_FALSE(tit::testing::equal(__VA_ARGS__))
-
 /// Require the range operands to be equal.
 #define REQUIRE_RANGE_EQ(...) REQUIRE(tit::testing::equal(__VA_ARGS__))
 
-/// Require the range operands not to be equal.
-#define REQUIRE_RANGE_NE(...) REQUIRE_FALSE(tit::testing::equal(__VA_ARGS__))
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Check that two ranges are approximately equal.
+template<std::ranges::input_range Range1,
+         std::ranges::input_range Range2 =
+             std::initializer_list<std::ranges::range_value_t<Range1>>>
+constexpr auto approx_equal(Range1&& a, Range2&& b) -> bool {
+  return std::ranges::equal(a, b, [](const auto& ax, const auto& bx) {
+    return approx_equal_to(ax, bx);
+  });
+}
+
+/// Test that two ranges are approximately equal.
+#define CHECK_RANGE_APPROX_EQ(...)                                             \
+  CHECK(tit::testing::approx_equal(__VA_ARGS__))
+
+/// Require that two ranges are approximately equal.
+#define REQUIRE_RANGE_APPROX_EQ(...)                                           \
+  REQUIRE(tit::testing::approx_equal(__VA_ARGS__))
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

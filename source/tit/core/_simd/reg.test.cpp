@@ -46,11 +46,20 @@ TEST_CASE("simd::Reg") {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("simd::Reg::reg_cast") {
-  const FloatArray in{1.0F, -2.0F, 3.5F, -4.9F};
-  const auto r = simd::reg_cast<int>(FloatReg{in});
-  std::array<int, 4> out{};
-  r.store(out);
-  CHECK(out == std::array{1, -2, 3, -4});
+  SUBCASE("same type") {
+    const FloatArray in{1.0F, -2.0F, 3.5F, -4.9F};
+    const auto r = simd::reg_cast<float>(FloatReg{in});
+    FloatArray out{};
+    r.store(out);
+    CHECK(out == in);
+  }
+  SUBCASE("different type") {
+    const FloatArray in{1.0F, -2.0F, 3.5F, -4.9F};
+    const auto r = simd::reg_cast<int>(FloatReg{in});
+    std::array<int, 4> out{};
+    r.store(out);
+    CHECK(out == std::array{1, -2, 3, -4});
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
