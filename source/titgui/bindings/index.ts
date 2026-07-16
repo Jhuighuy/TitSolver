@@ -9,7 +9,14 @@ import path from "node:path";
 import process from "node:process";
 
 import type { Storage } from "~/bindings/storage";
-import type { MaterializedCase, SpecJson, TreeJson } from "~/shared/case";
+import {
+  type MaterializedCase,
+  materializedCaseSchema,
+  type SpecJson,
+  specJsonSchema,
+  type TreeJson,
+  treeJsonSchema,
+} from "~/shared/case";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -58,14 +65,12 @@ export async function openStorage(path: string) {
 
 /** The WCSPH case specification. */
 export async function caseSpec(): Promise<SpecJson> {
-  const parsed: unknown = JSON.parse(await native.caseSpec());
-  return parsed as SpecJson;
+  return specJsonSchema.parse(JSON.parse(await native.caseSpec()));
 }
 
 /** Load a case tree from a `.yaml`/`.yml`/`.json` file. */
 export async function loadCaseTree(path: string): Promise<TreeJson> {
-  const parsed: unknown = JSON.parse(await native.loadCaseTree(path));
-  return parsed as TreeJson;
+  return treeJsonSchema.parse(JSON.parse(await native.loadCaseTree(path)));
 }
 
 /** Save a case tree to a `.yaml`/`.yml`/`.json` file. */
@@ -80,10 +85,9 @@ export async function saveCaseTree(
 export async function materializeCase(
   tree: TreeJson,
 ): Promise<MaterializedCase> {
-  const parsed: unknown = JSON.parse(
-    await native.materializeCase(JSON.stringify(tree)),
+  return materializedCaseSchema.parse(
+    JSON.parse(await native.materializeCase(JSON.stringify(tree))),
   );
-  return parsed as MaterializedCase;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

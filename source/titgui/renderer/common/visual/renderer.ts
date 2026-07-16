@@ -31,6 +31,22 @@ import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/**
+ * Check whether a WebGL 2 context can be created. Cheap probe used to skip
+ * renderer construction on machines without GPU support (e.g. headless CI),
+ * where Three.js would log errors and throw.
+ */
+export function isWebGLAvailable() {
+  try {
+    const canvas = document.createElement("canvas");
+    return canvas.getContext("webgl2") !== null;
+  } catch {
+    return false;
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 export class Renderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly renderer: WebGLRenderer;

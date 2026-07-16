@@ -24,6 +24,7 @@ import { Tooltip } from "~/renderer/common/components/tooltip";
 import { cn } from "~/renderer/common/components/utils";
 import { useElementSize } from "~/renderer/common/hooks/use-element-size";
 import { clamp } from "~/renderer/common/utils-math";
+import { computeFrameTicks } from "~/renderer/main/components/timeline-scale";
 import {
   isPlayingAtom,
   isRepeatingAtom,
@@ -287,15 +288,7 @@ function FrameScale({
     SCALE_PADDING + (numFrames > 1 ? (index / lastFrame) * usableWidth : 0);
 
   const pxPerFrame = numFrames > 1 ? usableWidth / lastFrame : usableWidth;
-  const labelStep = niceStep(48 / pxPerFrame);
-  const minorStep = niceStep(6 / pxPerFrame);
-
-  const minorTicks: number[] = [];
-  const labeledTicks: number[] = [];
-  for (let index = 0; index < numFrames; index += minorStep) {
-    if (index % labelStep === 0) labeledTicks.push(index);
-    else minorTicks.push(index);
-  }
+  const { minorTicks, labeledTicks } = computeFrameTicks(numFrames, pxPerFrame);
 
   return (
     <div
@@ -384,18 +377,6 @@ function FrameScale({
       </svg>
     </div>
   );
-}
-
-// Smallest 1/2/5x10^n step that is at least `minStep` frames.
-function niceStep(minStep: number): number {
-  let magnitude = 10 ** Math.floor(Math.log10(Math.max(minStep, 1)));
-  for (;;) {
-    for (const multiplier of [1, 2, 5]) {
-      const step = multiplier * magnitude;
-      if (step >= minStep) return step;
-    }
-    magnitude *= 10;
-  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -39,7 +39,9 @@ test.beforeAll(async () => {
   );
 
   app = await electron.launch({
-    args: ["."],
+    // Software WebGL keeps the 3D view working on GPU-less CI runners; the
+    // app also degrades gracefully when even that is unavailable.
+    args: [".", "--enable-unsafe-swiftshader"],
     env: {
       ...process.env,
       // Resolve the installation like a packaged app would, but against the
@@ -52,6 +54,9 @@ test.beforeAll(async () => {
 
   window = await app.firstWindow();
   window.on("console", (message) => {
+    // WebGL-context complaints depend on the machine's GL stack, which is
+    // not what this suite tests — the app degrades gracefully without it.
+    if (/webgl/iu.test(message.text())) return;
     if (message.type() === "error") consoleErrors.push(message.text());
   });
   await window.waitForLoadState("domcontentloaded");
@@ -95,14 +100,16 @@ test("switches to the viewport tab with controls and timeline", async () => {
 test("edits the case through the setup pane", async () => {
   await window.getByRole("button", { name: "Setup" }).click();
 
-  // The materialized document is shown: the authored title, then the
-  // defaulted numeric fields (End Time, Gravity, …) in spec order.
-  const fields = window.getByRole("textbox");
-  await expect(fields.nth(0)).toHaveValue("Smoke Case");
-  await expect(fields.nth(1)).toHaveValue("10");
+  // The materialized document is shown: the authored title plus defaults.
+  await expect(window.getByRole("textbox", { name: "Title" })).toHaveValue(
+    "Smoke Case",
+  );
+  await expect(window.getByRole("textbox", { name: "End Time" })).toHaveValue(
+    "10",
+  );
 
   // Commit an edit and expect the explicit-value reset control to appear.
-  const gravity = fields.nth(2);
+  const gravity = window.getByRole("textbox", { name: "Gravity" });
   await expect(gravity).toHaveValue("9.81");
   await gravity.fill("9.9");
   await gravity.blur();

@@ -4,11 +4,13 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 import { useAtom, useAtomValue } from "jotai";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { chrome } from "~/renderer/common/components/classes";
+import { Text } from "~/renderer/common/components/text";
 import { cn } from "~/renderer/common/components/utils";
-import { Renderer } from "~/renderer/common/visual/renderer";
+import { logger } from "~/renderer/common/logging";
+import { isWebGLAvailable, Renderer } from "~/renderer/common/visual/renderer";
 import { ViewColorLegend } from "~/renderer/main/components/view-color-legend";
 import { ViewControls } from "~/renderer/main/components/view-controls";
 import { ViewCube } from "~/renderer/main/components/view-cube";
@@ -24,6 +26,7 @@ export function Viewport() {
   // ---- Renderer. ------------------------------------------------------------
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [webGLFailed, setWebGLFailed] = useState(false);
 
   const { bindRenderer } = viewport;
   useEffect(() => {
@@ -31,8 +34,20 @@ export function Viewport() {
     const canvas = canvasRef.current;
     if (canvas === null) return;
 
-    // Create renderer and bind it to the viewport state.
-    const renderer = new Renderer(canvas);
+    // Degrade gracefully on machines without WebGL (e.g. headless CI):
+    // the controls and timeline stay usable, only the 3D view is replaced
+    // by a note. Probing first avoids constructing the Three renderer,
+    // which logs errors before throwing; construction may still fail on
+    // exotic GL stacks, so it is guarded as well.
+    let renderer: Renderer;
+    try {
+      if (!isWebGLAvailable()) throw new Error("WebGL 2 is not supported.");
+      renderer = new Renderer(canvas);
+    } catch (error) {
+      logger.warn("WebGL is unavailable; the 3D view is disabled.\n", error);
+      setWebGLFailed(true);
+      return;
+    }
     const unbindRenderer = bindRenderer(renderer);
 
     // Keep renderer size synchronized with container size. A hidden
@@ -78,6 +93,14 @@ export function Viewport() {
       {/* ---- Viewport. ----------------------------------------------------*/}
       <ViewSelection>
         <canvas ref={canvasRef} style={{ position: "absolute" }} />
+
+        {webGLFailed && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Text color="subtle">
+              The 3D view is unavailable: WebGL could not be initialized.
+            </Text>
+          </div>
+        )}
 
         <div className="absolute top-12 right-12 translate-x-1/2 -translate-y-1/2">
           <ViewCube

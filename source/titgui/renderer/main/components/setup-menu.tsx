@@ -154,7 +154,7 @@ function SpecFieldEditor({
                   label,
                 }))}
               >
-                <Select.Trigger className="w-full" />
+                <Select.Trigger aria-label="Type" className="w-full" />
                 <Select.Content />
               </Select.Root>
             </FieldScaffold>
@@ -193,7 +193,7 @@ function SpecFieldEditor({
     case "real":
       return (
         <FieldScaffold label={name} path={path} document={document}>
-          <NumberEditor spec={spec} value={value} path={path} />
+          <NumberEditor label={name} spec={spec} value={value} path={path} />
         </FieldScaffold>
       );
 
@@ -201,6 +201,7 @@ function SpecFieldEditor({
       return (
         <FieldScaffold label={name} path={path} document={document}>
           <DraftTextInput
+            label={name}
             value={typeof value === "string" ? value : ""}
             onCommit={(text) => {
               setCaseValue(path, text);
@@ -222,7 +223,7 @@ function SpecFieldEditor({
               label,
             }))}
           >
-            <Select.Trigger className="w-full" />
+            <Select.Trigger aria-label={name} className="w-full" />
             <Select.Content />
           </Select.Root>
         </FieldScaffold>
@@ -317,12 +318,18 @@ function BoolEditor({ checked, onCheckedChange }: Readonly<BoolEditorProps>) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface NumberEditorProps {
+  label: string;
   spec: Extract<SpecJson, { type: "int" | "real" }>;
   value: unknown;
   path: string[];
 }
 
-function NumberEditor({ spec, value, path }: Readonly<NumberEditorProps>) {
+function NumberEditor({
+  label,
+  spec,
+  value,
+  path,
+}: Readonly<NumberEditorProps>) {
   const min = spec.min ?? Number.NEGATIVE_INFINITY;
   const max = spec.max ?? Number.POSITIVE_INFINITY;
 
@@ -338,7 +345,9 @@ function NumberEditor({ spec, value, path }: Readonly<NumberEditorProps>) {
   return (
     <div className="flex items-center gap-2">
       <NumberInput
+        aria-label={label}
         className="min-w-0 flex-1"
+        format={{ maximumFractionDigits: 12 }}
         type={spec.type}
         min={spec.min}
         max={spec.max}
@@ -360,13 +369,18 @@ function NumberEditor({ spec, value, path }: Readonly<NumberEditorProps>) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface DraftTextInputProps {
+  label: string;
   value: string;
   onCommit: (value: string) => void;
 }
 
 // Text input with a local draft, committed on blur or Enter — mid-typing
 // values are never clobbered by a renormalization round trip.
-function DraftTextInput({ value, onCommit }: Readonly<DraftTextInputProps>) {
+function DraftTextInput({
+  label,
+  value,
+  onCommit,
+}: Readonly<DraftTextInputProps>) {
   const [draft, setDraft] = useState<string | null>(null);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -376,6 +390,7 @@ function DraftTextInput({ value, onCommit }: Readonly<DraftTextInputProps>) {
 
   return (
     <TextInput
+      aria-label={label}
       value={draft ?? value}
       onValueChange={setDraft}
       onBlur={() => {

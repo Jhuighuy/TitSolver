@@ -58,6 +58,7 @@
 !.oxfmtrc.json
 !.oxlintrc.json
 !package.json
+!package-lock.json
 !tsconfig.json
 
 # Ignore in-tree artifacts.

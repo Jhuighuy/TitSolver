@@ -7,7 +7,7 @@ import type { IpcClient } from "~/shared/ipc/contract";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-function connect(): IpcClient {
+function requireBridge(): IpcClient {
   const client = globalThis.titgui;
   if (client === undefined) {
     throw new Error(
@@ -18,8 +18,14 @@ function connect(): IpcClient {
 }
 
 /**
- * The IPC client. Fails fast at module load if the preload bridge is missing.
+ * The IPC client. The bridge is resolved lazily per access, so importing
+ * this module never throws: the app fails fast on the first call if the
+ * preload script did not run, and tests install a fake bridge
+ * (`installFakeIpc`) without import-order gymnastics.
  */
-export const ipc = connect();
+export const ipc: IpcClient = new Proxy({} as IpcClient, {
+  get: (_target, serviceName) =>
+    requireBridge()[serviceName as keyof IpcClient],
+});
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

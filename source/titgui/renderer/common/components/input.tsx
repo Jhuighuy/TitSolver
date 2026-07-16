@@ -84,6 +84,7 @@ export function TextInput({
   onKeyDown,
   className,
   children,
+  "aria-label": ariaLabel,
   ...props
 }: Readonly<TextInputProps>) {
   return (
@@ -97,6 +98,7 @@ export function TextInput({
     >
       {Boolean(slot) && <div className={inputSlotClasses}>{slot}</div>}
       <BaseInput
+        aria-label={ariaLabel}
         disabled={disabled}
         value={value}
         onPointerDownCapture={(event) => {
@@ -141,6 +143,8 @@ interface NumberInputProps extends VariantProps<typeof inputRootVariants> {
   value: number | null;
   onValueChange: (value: number | null) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
+  format?: Intl.NumberFormatOptions;
+  "aria-label"?: string;
 }
 
 export function NumberInput({
@@ -157,6 +161,8 @@ export function NumberInput({
   value,
   onValueChange,
   onBlur,
+  format,
+  "aria-label": ariaLabel,
 }: Readonly<NumberInputProps>) {
   assert(
     value === null ||
@@ -180,6 +186,7 @@ export function NumberInput({
       disabled={disabled}
       value={value}
       locale="en-US"
+      format={format}
       min={min}
       max={max}
       step={step}
@@ -203,6 +210,7 @@ export function NumberInput({
         {Boolean(slot) && <div className={inputSlotClasses}>{slot}</div>}
 
         <BaseNumberField.Input
+          aria-label={ariaLabel}
           placeholder={placeholder}
           inputMode={type === "int" ? "numeric" : "decimal"}
           onPointerDownCapture={(event) => {
