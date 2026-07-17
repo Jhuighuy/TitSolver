@@ -83,6 +83,7 @@ export function Timeline() {
       <div className="mx-2 flex items-center gap-4">
         <Tooltip content="Toggle repeat">
           <IconButton
+            aria-label="Toggle repeat"
             size="2"
             radius="full"
             active={isRepeating || undefined}
@@ -98,6 +99,7 @@ export function Timeline() {
 
         <Tooltip content="Go to start">
           <IconButton
+            aria-label="Go to start"
             size="2"
             radius="full"
             disabled={disabled}
@@ -113,6 +115,7 @@ export function Timeline() {
 
         <Tooltip content="Go to previous step">
           <IconButton
+            aria-label="Go to previous step"
             size="2"
             radius="full"
             disabled={disabled}
@@ -126,6 +129,7 @@ export function Timeline() {
 
         <Tooltip content={isPlaying ? "Pause" : "Play"}>
           <IconButton
+            aria-label={isPlaying ? "Pause" : "Play"}
             size="2"
             radius="full"
             disabled={disabled}
@@ -139,6 +143,7 @@ export function Timeline() {
 
         <Tooltip content="Go to next step">
           <IconButton
+            aria-label="Go to next step"
             size="2"
             radius="full"
             disabled={disabled}
@@ -152,6 +157,7 @@ export function Timeline() {
 
         <Tooltip content="Go to end">
           <IconButton
+            aria-label="Go to end"
             size="2"
             radius="full"
             disabled={disabled}
@@ -168,7 +174,12 @@ export function Timeline() {
 
       <div className="mx-2 flex items-center gap-2">
         <Tooltip content="Refresh">
-          <IconButton size="2" radius="full" onClick={refreshStorage}>
+          <IconButton
+            aria-label="Refresh"
+            size="2"
+            radius="full"
+            onClick={refreshStorage}
+          >
             <IconRefresh />
           </IconButton>
         </Tooltip>

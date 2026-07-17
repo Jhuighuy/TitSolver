@@ -123,7 +123,7 @@ function LabeledSelect<Value extends string>({
         onValueChange={onValueChange}
         options={options}
       >
-        <Select.Trigger />
+        <Select.Trigger aria-label={label} />
         <Select.Content />
       </Select.Root>
     </>

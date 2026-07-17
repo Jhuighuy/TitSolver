@@ -244,6 +244,12 @@ export interface MenuActions {
 
 const MenuActionsContext = createContext<MenuActions | null>(null);
 
+/**
+ * Provider of the menu-pane action registry, for rendering pane content
+ * outside a real menu (component tests).
+ */
+export const MenuActionsProvider = MenuActionsContext.Provider;
+
 function useMenuActions(): MenuActions {
   const context = useContext(MenuActionsContext);
   assert(context !== null, "Menu actions are not available.");
