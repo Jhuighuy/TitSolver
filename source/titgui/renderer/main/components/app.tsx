@@ -12,6 +12,7 @@ import {
   IconLogs,
   IconSettings,
 } from "@tabler/icons-react";
+import { useAtomValue } from "jotai";
 import { useEffect } from "react";
 
 import { ErrorGuard } from "~/renderer/common/components/error-guard";
@@ -24,7 +25,7 @@ import { OutputMenu } from "~/renderer/main/components/output-menu";
 import { SettingsMenu } from "~/renderer/main/components/settings-menu";
 import { SetupMenu } from "~/renderer/main/components/setup-menu";
 import { Workspace } from "~/renderer/main/components/workspace";
-import { initCaseState } from "~/renderer/main/state/case";
+import { caseStateAtom, initCaseState } from "~/renderer/main/state/case";
 import { initSolverState, runSolver } from "~/renderer/main/state/solver";
 import { initStorageState } from "~/renderer/main/state/storage";
 
@@ -41,8 +42,15 @@ export function App() {
     if (import.meta.env.DEV && env.VITE_AUTO_RUN === "1") runSolver();
   }, []);
 
+  // The title bar follows the open case, with an edited marker.
+  const caseState = useAtomValue(caseStateAtom);
+  const title =
+    caseState === null
+      ? "BlueTit Solver"
+      : `${caseState.name}${caseState.dirty ? " — Edited" : ""}`;
+
   return (
-    <Window>
+    <Window title={title}>
       <Page />
     </Window>
   );

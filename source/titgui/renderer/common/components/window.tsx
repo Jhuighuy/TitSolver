@@ -15,10 +15,13 @@ import { useWindowIsFullScreen } from "~/renderer/common/hooks/use-window";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface WindowProps {
+  /** Title shown in the custom title bar; the page title by default. */
+  title?: string;
+
   children: ReactNode;
 }
 
-export function Window({ children }: Readonly<WindowProps>) {
+export function Window({ title, children }: Readonly<WindowProps>) {
   const isFullScreen = useWindowIsFullScreen();
 
   return (
@@ -38,7 +41,7 @@ export function Window({ children }: Readonly<WindowProps>) {
             role="img"
           />
           <Text size="2" weight="bold">
-            {document.title}
+            {title ?? document.title}
           </Text>
         </div>
       )}

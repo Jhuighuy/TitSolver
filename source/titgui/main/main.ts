@@ -11,10 +11,7 @@ import {
   dialog,
   type IpcMainInvokeEvent,
   nativeTheme,
-  type OpenDialogOptions,
-  type SaveDialogOptions,
 } from "electron";
-import { z } from "zod";
 
 import {
   caseSpec,
@@ -24,6 +21,12 @@ import {
 } from "~/bindings";
 import { updateApplicationMenu } from "~/main/app-menu";
 import { CaseManager } from "~/main/case";
+import { CaseFlows } from "~/main/case-flows";
+import { createCaseHandlers } from "~/main/handlers/case";
+import { createHelpHandlers } from "~/main/handlers/help";
+import { createSessionHandlers } from "~/main/handlers/session";
+import { createThemeHandlers } from "~/main/handlers/theme";
+import { createWindowHandlers } from "~/main/handlers/window";
 import { HelpService } from "~/main/help";
 import { Installation } from "~/main/installation";
 import { broadcastIpcEvent, exposeIpcHandlers } from "~/main/ipc";
@@ -33,7 +36,7 @@ import { SessionManager } from "~/main/session";
 import { WindowManager } from "~/main/window";
 import type { CaseState } from "~/shared/case";
 import { themeSchema } from "~/shared/theme";
-import { assert, ensure } from "~/shared/utils";
+import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -43,8 +46,10 @@ class Application {
   private sessionDir?: string;
   private persist?: PersistedState;
   private caseManager?: CaseManager;
+  private caseFlows?: CaseFlows;
   private windowManager?: WindowManager;
   private helpService?: HelpService;
+  private quitConfirmed = false;
 
   public run() {
     app.on("ready", () => {
@@ -56,10 +61,15 @@ class Application {
     app.on("activate", () => {
       this.onActivate();
     });
+    app.on("before-quit", (event) => {
+      this.onBeforeQuit(event);
+    });
     app.on("will-quit", () => {
       this.onWillQuit();
     });
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   private async onReady() {
     try {
@@ -98,16 +108,14 @@ class Application {
       this.persist.withPrefix("case"),
       {
         caseChanged: (state) => {
-          this.updateWindowTitle(state);
-          this.updateAppMenu(state);
-          this.resetSession(state);
-          broadcastIpcEvent("case", "caseChanged", state);
+          this.onCaseChanged(state);
         },
         treeChanged: (document) => {
           broadcastIpcEvent("case", "treeChanged", document);
         },
       },
     );
+    this.caseFlows = new CaseFlows(this.caseManager);
 
     // Initialize theme.
     nativeTheme.themeSource = this.persist.get("theme", themeSchema, "system");
@@ -135,6 +143,8 @@ class Application {
     }
   }
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   private onWindowAllClosed() {
     // On macOS the application conventionally stays alive without windows
     // and is reopened from the dock.
@@ -145,15 +155,39 @@ class Application {
     this.windowManager?.controllers.main.open();
   }
 
+  // Guard unsaved changes on quit: hold the quit, ask, then re-quit.
+  private onBeforeQuit(event: Electron.Event) {
+    if (this.quitConfirmed || this.caseFlows === undefined) return;
+    const state = this.caseManager?.state() ?? null;
+    if (state === null || !state.dirty) return;
+
+    event.preventDefault();
+    void this.caseFlows
+      .confirmDiscard(this.windowManager?.controllers.main.window ?? null)
+      .then((proceed) => {
+        if (!proceed) return;
+        this.quitConfirmed = true;
+        app.quit();
+      });
+  }
+
   private onWillQuit() {
     this.session?.stop();
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  private requireSession() {
-    ensure(this.session !== undefined, "No case is open.");
-    return this.session;
+  // React to case state changes: window chrome, menu, session scope.
+  private onCaseChanged(state: CaseState) {
+    const mainWindow = this.windowManager?.controllers.main;
+    mainWindow?.setTitle(
+      state === null ? "BlueTit" : `${state.name} — BlueTit`,
+    );
+    mainWindow?.setDocument(state?.dir ?? null, state?.dirty ?? false);
+
+    this.updateAppMenu(state);
+    this.resetSession(state);
+    broadcastIpcEvent("case", "caseChanged", state);
   }
 
   // Tear down the session and start a new one for the given case. Called
@@ -178,76 +212,16 @@ class Application {
     broadcastIpcEvent("session", "storageChanged", null);
   }
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   private requireCase() {
     assert(this.caseManager !== undefined, "Case manager is not ready.");
     return this.caseManager;
   }
 
-  private updateWindowTitle(state: CaseState) {
-    this.windowManager?.controllers.main.setTitle(
-      state === null ? "BlueTit" : `${state.name} — BlueTit`,
-    );
-  }
-
-  // Refresh the application menu (recents, item enablement).
-  private updateAppMenu(state: CaseState) {
-    updateApplicationMenu(
-      {
-        newCase: () => {
-          runFromMenu(async () => {
-            const dir = await this.pickCaseDir(null, true);
-            if (dir !== undefined) await this.requireCase().newCase(dir);
-          });
-        },
-        openCase: () => {
-          runFromMenu(async () => {
-            const dir = await this.pickCaseDir(null, false);
-            if (dir !== undefined) await this.requireCase().openCase(dir);
-          });
-        },
-        openRecentCase: (dir) => {
-          runFromMenu(async () => this.requireCase().openCase(dir));
-        },
-        saveCase: () => {
-          runFromMenu(async () => this.requireCase().save());
-        },
-        closeCase: () => {
-          this.requireCase().close();
-        },
-        openHelp: () => {
-          this.windowManager?.controllers.help.open();
-        },
-      },
-      { caseState: state, recents: this.caseManager?.recents() ?? [] },
-    );
-  }
-
-  // Ask the user for a case directory. `create` shows a save-style dialog
-  // for a new directory; otherwise an existing directory is picked.
-  private async pickCaseDir(window: BrowserWindow | null, create: boolean) {
-    if (create) {
-      const options = {
-        title: "New Case",
-        buttonLabel: "Create",
-        nameFieldLabel: "Case Name",
-        properties: ["createDirectory", "showOverwriteConfirmation"],
-      } satisfies SaveDialogOptions;
-      const result =
-        window === null
-          ? await dialog.showSaveDialog(options)
-          : await dialog.showSaveDialog(window, options);
-      return result.canceled ? undefined : result.filePath;
-    }
-    const options = {
-      title: "Open Case",
-      buttonLabel: "Open",
-      properties: ["openDirectory"],
-    } satisfies OpenDialogOptions;
-    const result =
-      window === null
-        ? await dialog.showOpenDialog(options)
-        : await dialog.showOpenDialog(window, options);
-    return result.canceled ? undefined : result.filePaths[0];
+  private requireFlows() {
+    assert(this.caseFlows !== undefined, "Case flows are not ready.");
+    return this.caseFlows;
   }
 
   private requireHelp() {
@@ -263,111 +237,51 @@ class Application {
 
   private registerIpcHandlers() {
     exposeIpcHandlers({
-      theme: {
-        get: () => nativeTheme.themeSource,
-        set: (_event, theme) => {
-          nativeTheme.themeSource = theme;
-        },
-      },
-
-      window: {
-        persistGet: (event, key) => {
-          return this.findWindowController(event)?.persist.get(
-            key,
-            z.unknown(),
-          );
-        },
-        persistSet: (event, key, value) => {
-          this.findWindowController(event)?.persist.set(key, value);
-        },
-        isFullScreen: (event) => {
-          const window = BrowserWindow.fromWebContents(event.sender);
-          return window?.isFullScreen() ?? false;
-        },
-      },
-
-      case: {
-        state: () => this.requireCase().state(),
-        recents: () => this.requireCase().recents(),
-        newCase: async (event) => {
-          const dir = await this.pickCaseDir(
-            BrowserWindow.fromWebContents(event.sender),
-            true,
-          );
-          if (dir === undefined) return null;
-          return this.requireCase().newCase(dir);
-        },
-        openCase: async (event) => {
-          const dir = await this.pickCaseDir(
-            BrowserWindow.fromWebContents(event.sender),
-            false,
-          );
-          if (dir === undefined) return null;
-          return this.requireCase().openCase(dir);
-        },
-        openRecent: async (_event, dir) => this.requireCase().openCase(dir),
-        save: async () => this.requireCase().save(),
-        close: () => {
-          this.requireCase().close();
-        },
-        getSpec: async () => this.requireCase().getSpec(),
-        document: async () => this.requireCase().document(),
-        updateTree: async (_event, tree, revision) =>
-          this.requireCase().updateTree(tree, revision),
-      },
-
-      session: {
-        // No open case means no session — and simply zero frames.
-        frameCount: async () => this.session?.getFrameCount() ?? 0,
-        frameTimes: async () => this.session?.getFrameTimes() ?? [],
-        frame: async (_event, index) => this.requireSession().getFrame(index),
-        export: async (event) => {
-          const options: OpenDialogOptions = {
-            title: "Export Data",
-            buttonLabel: "Export",
-            properties: ["openDirectory", "createDirectory"],
-          };
-          const window = BrowserWindow.fromWebContents(event.sender);
-          const result =
-            window === null
-              ? await dialog.showOpenDialog(options)
-              : await dialog.showOpenDialog(window, options);
-          if (result.canceled) return;
-          await this.requireSession().export(result.filePaths[0]);
-        },
-        runSolver: async () => {
-          // Running requires a clean materialization; the solver would
-          // reject an invalid case file anyway, but failing here is clearer.
-          const document = await this.requireCase().document();
-          ensure(document !== null, "No case is open.");
-          ensure(
-            document.materialized.issues.length === 0,
-            "The case has validation issues; fix them before running.",
-          );
-          this.requireSession().runSolver();
-        },
-        stopSolver: () => {
-          this.requireSession().stopSolver();
-        },
-        isSolverRunning: () => this.session?.isSolverRunning() ?? false,
-      },
-
-      help: {
-        getSession: () => this.requireHelp().getSession(),
-        addTab: (_event, url) => {
-          this.requireHelp().addTab(url);
-        },
-        closeTab: (_event, id) => {
-          this.requireHelp().closeTab(id);
-        },
-        selectTab: (_event, id) => {
-          this.requireHelp().selectTab(id);
-        },
-        navigateTab: (_event, id, url) => {
-          this.requireHelp().navigateTab(id, url);
-        },
-      },
+      theme: createThemeHandlers(),
+      window: createWindowHandlers((event) => this.findWindowController(event)),
+      case: createCaseHandlers(
+        () => this.requireCase(),
+        () => this.requireFlows(),
+      ),
+      session: createSessionHandlers(
+        () => this.session,
+        () => this.requireCase(),
+      ),
+      help: createHelpHandlers(() => this.requireHelp()),
     });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  // Refresh the application menu (recents, item enablement).
+  private updateAppMenu(state: CaseState) {
+    const mainWindow = () =>
+      this.windowManager?.controllers.main.window ?? null;
+    updateApplicationMenu(
+      {
+        newCase: () => {
+          runFromMenu(async () => this.requireFlows().newCase(mainWindow()));
+        },
+        openCase: () => {
+          runFromMenu(async () => this.requireFlows().openCase(mainWindow()));
+        },
+        openRecentCase: (dir) => {
+          runFromMenu(async () =>
+            this.requireFlows().openRecent(mainWindow(), dir),
+          );
+        },
+        saveCase: () => {
+          runFromMenu(async () => this.requireCase().save());
+        },
+        closeCase: () => {
+          runFromMenu(async () => this.requireFlows().close(mainWindow()));
+        },
+        openHelp: () => {
+          this.windowManager?.controllers.help.open();
+        },
+      },
+      { caseState: state, recents: this.caseManager?.recents() ?? [] },
+    );
   }
 }
 

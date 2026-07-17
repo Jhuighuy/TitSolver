@@ -29,6 +29,10 @@ export class WindowController {
   // Title managed from the main process; page titles are ignored.
   private title = DEFAULT_WINDOW_TITLE;
 
+  // The represented document (macOS: proxy icon and the edited dot).
+  private documentPath: string | null = null;
+  private documentEdited = false;
+
   /**
    * Construct a window controller.
    */
@@ -129,6 +133,8 @@ export class WindowController {
 
     // The main process is the source of truth for the window title.
     this.window.setTitle(this.title);
+    this.window.setRepresentedFilename(this.documentPath ?? "");
+    this.window.setDocumentEdited(this.documentEdited);
     this.window.on("page-title-updated", (event) => {
       event.preventDefault();
     });
@@ -206,6 +212,17 @@ export class WindowController {
   public setTitle(title: string) {
     this.title = title;
     this.window?.setTitle(title);
+  }
+
+  /**
+   * Reflect the open document in the window chrome — on macOS the proxy
+   * icon and the edited dot; a no-op elsewhere.
+   */
+  public setDocument(path: string | null, edited: boolean) {
+    this.documentPath = path;
+    this.documentEdited = edited;
+    this.window?.setRepresentedFilename(path ?? "");
+    this.window?.setDocumentEdited(edited);
   }
 }
 

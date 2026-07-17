@@ -113,8 +113,55 @@ test("edits the case through the setup pane", async () => {
   await expect(gravity).toHaveValue("9.81");
   await gravity.fill("9.9");
   await gravity.blur();
+  const reset = window.getByRole("button", {
+    name: "Reset Gravity to default",
+  });
+  await expect(reset).toBeVisible();
+
+  // Reset back to the default; the case ends this test clean.
+  await reset.click();
+  await expect(reset).not.toBeVisible();
+  await expect(gravity).toHaveValue("9.81");
+});
+
+test("guards a dirty case behind the unsaved-changes prompt", async () => {
+  // Dirty the case again.
+  const gravity = window.getByRole("textbox", { name: "Gravity" });
+  await gravity.fill("9.9");
+  await gravity.blur();
   await expect(
     window.getByRole("button", { name: "Reset Gravity to default" }),
+  ).toBeVisible();
+
+  // Native dialogs cannot be driven by Playwright; stub the answer.
+  const answerPrompt = async (response: number) =>
+    app.evaluate(({ dialog }, answer) => {
+      Object.assign(dialog, {
+        // oxlint-disable-next-line require-await -- a synchronous stub.
+        showMessageBox: async () => ({
+          response: answer,
+          checkboxChecked: false,
+        }),
+      });
+    }, response);
+  const clickCloseCase = async () =>
+    app.evaluate(({ Menu }) => {
+      Menu.getApplicationMenu()
+        ?.items.find((item) => item.label === "File")
+        ?.submenu?.items.find((item) => item.label === "Close Case")
+        ?.click();
+    });
+
+  // Cancel keeps the case open.
+  await answerPrompt(2);
+  await clickCloseCase();
+  await expect(window.getByRole("textbox", { name: "Title" })).toBeVisible();
+
+  // "Don't Save" closes it.
+  await answerPrompt(1);
+  await clickCloseCase();
+  await expect(
+    window.getByText("Open a case to edit its setup."),
   ).toBeVisible();
 });
 
