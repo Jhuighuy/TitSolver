@@ -61,25 +61,35 @@ export function Toolbar({
   return (
     <div className={cn("flex h-9 shrink-0 items-center gap-3 px-2", chrome())}>
       {/* ---- Back / Forward. --------------------------------------------- */}
-      <IconButton size="2" disabled={!canGoBack} onClick={onBack}>
+      <IconButton
+        size="2"
+        disabled={!canGoBack}
+        onClick={onBack}
+        aria-label="Go back"
+      >
         <IconArrowBackUp />
       </IconButton>
 
-      <IconButton size="2" disabled={!canGoForward} onClick={onForward}>
+      <IconButton
+        size="2"
+        disabled={!canGoForward}
+        onClick={onForward}
+        aria-label="Go forward"
+      >
         <IconArrowForwardUp />
       </IconButton>
 
       <Separator orientation="vertical" />
 
       {/* ---- Reload. ----------------------------------------------------- */}
-      <IconButton size="2" onClick={onReload}>
+      <IconButton size="2" onClick={onReload} aria-label="Reload">
         <IconReload />
       </IconButton>
 
       <Separator orientation="vertical" />
 
       {/* ---- Home. ------------------------------------------------------- */}
-      <IconButton size="2" onClick={onHome}>
+      <IconButton size="2" onClick={onHome} aria-label="Home">
         <IconHome />
       </IconButton>
 
@@ -148,11 +158,15 @@ export function Toolbar({
 
       {searchQuery.trim() !== "" && (
         <>
-          <IconButton size="2" onClick={onSearchPrevious}>
+          <IconButton
+            size="2"
+            onClick={onSearchPrevious}
+            aria-label="Previous match"
+          >
             <IconChevronUp />
           </IconButton>
 
-          <IconButton size="2" onClick={onSearchNext}>
+          <IconButton size="2" onClick={onSearchNext} aria-label="Next match">
             <IconChevronDown />
           </IconButton>
         </>

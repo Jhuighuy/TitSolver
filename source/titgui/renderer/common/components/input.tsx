@@ -107,14 +107,18 @@ export function TextInput({
         onClickCapture={(event) => {
           event.stopPropagation();
         }}
-        onKeyDownCapture={(event) => {
-          event.stopPropagation();
-        }}
         onChange={(event) => {
           onValueChange(event.target.value, event);
         }}
         onBlur={onBlur}
-        onKeyDown={onKeyDown}
+        // Handle the key locally, then stop it from reaching surrounding
+        // shortcut handlers. (Not a capture listener: React delegates events
+        // at the root, so stopping propagation in the capture phase would
+        // swallow this element's own bubble-phase `onKeyDown` as well.)
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          event.stopPropagation();
+        }}
         placeholder={placeholder}
         className={inputElementClasses}
       />
@@ -219,7 +223,9 @@ export function NumberInput({
           onClickCapture={(event) => {
             event.stopPropagation();
           }}
-          onKeyDownCapture={(event) => {
+          // Bubble phase, for the same reason as in `TextInput`; Base UI
+          // merges its own handler onto this one, so stepping keys still work.
+          onKeyDown={(event) => {
             event.stopPropagation();
           }}
           onBlur={onBlur}

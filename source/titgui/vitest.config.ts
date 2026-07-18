@@ -10,6 +10,11 @@ import { defineConfig } from "vitest/config";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export default defineConfig({
+  // Build-time constants injected by Electron Forge's vite plugin.
+  define: {
+    RENDERER_VITE_DEV_SERVER_URL: "undefined",
+    RENDERER_VITE_NAME: '"renderer"',
+  },
   resolve: {
     alias: [
       // The svgr plugin does not run under vitest; stub `*.svg?react`.

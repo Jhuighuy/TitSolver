@@ -267,21 +267,6 @@ export class HelpService {
             } else if (this.protocol.isExternalUrl(url)) {
               menuItems.push(
                 {
-                  label: "Open Link",
-                  click: () => {
-                    void contents.loadURL(url);
-                  },
-                },
-                {
-                  label: "Open Link in New Tab",
-                  click: () => {
-                    contents.send(WEBVIEW_OPEN_IN_TAB_CHANNEL, url);
-                  },
-                },
-              );
-            } else {
-              menuItems.push(
-                {
                   label: "Open Link Externally",
                   click: () => {
                     void shell.openExternal(url);
@@ -292,6 +277,21 @@ export class HelpService {
                   click: () => {
                     clipboard.clear();
                     clipboard.writeText(url);
+                  },
+                },
+              );
+            } else {
+              menuItems.push(
+                {
+                  label: "Open Link",
+                  click: () => {
+                    void contents.loadURL(url);
+                  },
+                },
+                {
+                  label: "Open Link in New Tab",
+                  click: () => {
+                    contents.send(WEBVIEW_OPEN_IN_TAB_CHANNEL, url);
                   },
                 },
               );

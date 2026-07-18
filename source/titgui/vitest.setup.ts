@@ -37,6 +37,7 @@ if (typeof window !== "undefined") {
   };
 
   /* oxlint-disable unbound-method -- prototype shims, no `this` involved. */
+  Element.prototype.getAnimations ??= () => [];
   Element.prototype.scrollIntoView ??= () => {};
   Element.prototype.hasPointerCapture ??= () => false;
   Element.prototype.setPointerCapture ??= () => {};
