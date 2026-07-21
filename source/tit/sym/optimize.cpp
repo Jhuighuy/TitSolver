@@ -3,8 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/sym/optimize.hpp"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -21,6 +19,7 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/sym/expression.hpp"
+#include "tit/sym/optimize.hpp"
 #include "tit/sym/rational.hpp"
 #include "tit/sym/rewrite.hpp"
 

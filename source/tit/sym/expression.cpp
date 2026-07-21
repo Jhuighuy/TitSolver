@@ -3,8 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/sym/expression.hpp"
-
 #include <compare>
 #include <cstddef>
 #include <cstdint>
@@ -20,6 +18,7 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
+#include "tit/sym/expression.hpp"
 #include "tit/sym/rational.hpp"
 
 namespace tit::sym {

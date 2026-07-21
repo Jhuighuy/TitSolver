@@ -3,8 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/sym/rewrite.hpp"
-
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -14,6 +12,7 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/sym/expression.hpp"
+#include "tit/sym/rewrite.hpp"
 
 namespace tit::sym {
 

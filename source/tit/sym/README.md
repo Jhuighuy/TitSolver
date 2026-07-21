@@ -1,7 +1,7 @@
 # `tit::sym`
 
-This library provides the small symbolic algebra system used by BlueTit's code
-generators. It supports exact rational arithmetic, canonical arithmetic
-expressions, polynomial transformations, and code-generation optimizations.
+This library provides the small symbolic algebra system used by code generators.
+Supports exact rational arithmetic, canonical arithmetic expressions,
+polynomial transformations, and code-generation optimizations.
 
-It is intentionally not a general-purpose computer algebra system.
+Everything in this library should be placed into `tit::sym` namespace.

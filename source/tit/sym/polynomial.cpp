@@ -3,8 +3,6 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "tit/sym/polynomial.hpp"
-
 #include <algorithm>
 #include <cstddef>
 #include <initializer_list>
@@ -16,6 +14,7 @@
 #include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/sym/expression.hpp"
+#include "tit/sym/polynomial.hpp"
 #include "tit/sym/rewrite.hpp"
 
 namespace tit::sym {
