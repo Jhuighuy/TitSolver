@@ -18,11 +18,11 @@ export function Switch({
     <BaseSwitch.Root
       {...props}
       className={cn(
-        "relative inline-flex h-4 w-7 cursor-pointer items-center rounded-full border border-(--chrome-1) bg-(--bg-6) transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--accent-fg-3) disabled:cursor-not-allowed disabled:opacity-40 data-checked:border-(--accent-fg-3) data-checked:bg-(--accent-bg-3)",
+        "relative inline-flex h-4 w-7 cursor-pointer items-center rounded-full border border-(--neutral-4) bg-(--neutral-10)/10 transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--accent-6) disabled:cursor-not-allowed disabled:opacity-40 data-checked:border-(--accent-6) data-checked:bg-(--accent-6)",
         className,
       )}
     >
-      <BaseSwitch.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-(--bg-1) shadow-sm transition-transform data-checked:translate-x-3" />
+      <BaseSwitch.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-(--neutral-3) shadow-sm transition-transform data-checked:translate-x-3" />
     </BaseSwitch.Root>
   );
 }

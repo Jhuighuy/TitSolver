@@ -21,12 +21,12 @@ import { assert } from "~/shared/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const inputRootVariants = cva(
-  "inline-flex items-center overflow-hidden border bg-(--bg-3) transition-colors",
+  "inline-flex items-center overflow-hidden border bg-(--neutral-1) transition-colors",
   {
     variants: {
       invalid: {
-        false: "border-(--chrome-1) hover:border-(--chrome-2)",
-        true: "border-red-400 dark:border-red-600",
+        false: "border-(--neutral-4) hover:border-(--neutral-5)",
+        true: "border-(--danger)",
       },
       size: {
         "1": "h-6 text-(length:--text-1) leading-(--leading-1)",
@@ -50,11 +50,11 @@ const inputRootVariants = cva(
 );
 
 const inputElementClasses = cn(
-  "h-full min-w-0 flex-1 bg-transparent px-2 text-(--fg-2) outline-none placeholder:text-(--fg-5) disabled:cursor-not-allowed",
+  "h-full min-w-0 flex-1 bg-transparent px-2 text-(--neutral-8) outline-none placeholder:text-(--neutral-5) disabled:cursor-not-allowed",
 );
 
 const inputSlotClasses = cn(
-  "flex shrink-0 items-center pl-2 text-(--fg-4) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+  "flex shrink-0 items-center pl-2 text-(--neutral-6) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
 );
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,6 +84,7 @@ export function TextInput({
   onKeyDown,
   className,
   children,
+  "aria-label": ariaLabel,
   ...props
 }: Readonly<TextInputProps>) {
   return (
@@ -97,6 +98,7 @@ export function TextInput({
     >
       {Boolean(slot) && <div className={inputSlotClasses}>{slot}</div>}
       <BaseInput
+        aria-label={ariaLabel}
         disabled={disabled}
         value={value}
         onPointerDownCapture={(event) => {
@@ -105,14 +107,18 @@ export function TextInput({
         onClickCapture={(event) => {
           event.stopPropagation();
         }}
-        onKeyDownCapture={(event) => {
-          event.stopPropagation();
-        }}
         onChange={(event) => {
           onValueChange(event.target.value, event);
         }}
         onBlur={onBlur}
-        onKeyDown={onKeyDown}
+        // Handle the key locally, then stop it from reaching surrounding
+        // shortcut handlers. (Not a capture listener: React delegates events
+        // at the root, so stopping propagation in the capture phase would
+        // swallow this element's own bubble-phase `onKeyDown` as well.)
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          event.stopPropagation();
+        }}
         placeholder={placeholder}
         className={inputElementClasses}
       />
@@ -126,7 +132,7 @@ export function TextInput({
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const stepperButtonClasses = cn(
-  "flex min-h-0 w-5 flex-1 cursor-pointer items-center justify-center text-(--fg-4) transition-colors select-none hover:bg-(--bg-4) hover:text-(--fg-1) disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+  "flex min-h-0 w-5 flex-1 cursor-pointer items-center justify-center text-(--neutral-6) transition-colors select-none hover:bg-(--neutral-2) hover:text-(--neutral-10) disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-[1.5em] [&_svg]:shrink-0",
 );
 
 interface NumberInputProps extends VariantProps<typeof inputRootVariants> {
@@ -141,6 +147,8 @@ interface NumberInputProps extends VariantProps<typeof inputRootVariants> {
   value: number | null;
   onValueChange: (value: number | null) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
+  format?: Intl.NumberFormatOptions;
+  "aria-label"?: string;
 }
 
 export function NumberInput({
@@ -157,6 +165,8 @@ export function NumberInput({
   value,
   onValueChange,
   onBlur,
+  format,
+  "aria-label": ariaLabel,
 }: Readonly<NumberInputProps>) {
   assert(
     value === null ||
@@ -180,6 +190,7 @@ export function NumberInput({
       disabled={disabled}
       value={value}
       locale="en-US"
+      format={format}
       min={min}
       max={max}
       step={step}
@@ -203,6 +214,7 @@ export function NumberInput({
         {Boolean(slot) && <div className={inputSlotClasses}>{slot}</div>}
 
         <BaseNumberField.Input
+          aria-label={ariaLabel}
           placeholder={placeholder}
           inputMode={type === "int" ? "numeric" : "decimal"}
           onPointerDownCapture={(event) => {
@@ -211,14 +223,16 @@ export function NumberInput({
           onClickCapture={(event) => {
             event.stopPropagation();
           }}
-          onKeyDownCapture={(event) => {
+          // Bubble phase, for the same reason as in `TextInput`; Base UI
+          // merges its own handler onto this one, so stepping keys still work.
+          onKeyDown={(event) => {
             event.stopPropagation();
           }}
           onBlur={onBlur}
           className={cn(inputElementClasses, "font-(--font-mono)")}
         />
 
-        <div className="flex h-full shrink-0 flex-col border-l border-(--chrome-1) group-data-invalid:border-red-400 group-data-invalid:dark:border-red-600">
+        <div className="flex h-full shrink-0 flex-col border-l border-(--neutral-4) group-data-invalid:border-(--danger)">
           <BaseNumberField.Increment className={stepperButtonClasses}>
             <IconChevronUp />
           </BaseNumberField.Increment>

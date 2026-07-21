@@ -3,18 +3,22 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { useSyncExternalStore } from "react";
+import { nativeTheme } from "electron";
 
-import type { SignalSource } from "~/renderer/common/signals";
+import type { IpcMainHandlers } from "~/main/ipc";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export function useSignalValue<T>(signal: SignalSource<T>) {
-  return useSyncExternalStore(
-    (slot) => signal.subscribe(slot),
-    () => signal.get(),
-    () => signal.get(),
-  );
+/**
+ * Handlers of the `theme` IPC service.
+ */
+export function createThemeHandlers(): IpcMainHandlers["theme"] {
+  return {
+    get: () => nativeTheme.themeSource,
+    set: (_event, theme) => {
+      nativeTheme.themeSource = theme;
+    },
+  };
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -6,9 +6,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 
+import { ipc } from "~/renderer/common/ipc";
 import { applyStateUpdate, type SetStateAction } from "~/renderer/common/utils";
 import type { Theme } from "~/shared/theme";
-import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -18,15 +18,14 @@ export function useThemeState() {
 
   const { data: theme } = useQuery({
     queryKey,
-    queryFn: async () => globalThis.theme?.get(),
+    queryFn: async () => ipc.theme.get(),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,
   });
 
   const { mutate } = useMutation({
     mutationFn: async (nextTheme: Theme) => {
-      assert(globalThis.theme !== undefined);
-      await globalThis.theme.set(nextTheme);
+      await ipc.theme.set(nextTheme);
     },
     onMutate: async (nextTheme) => {
       await queryClient.cancelQueries({ queryKey });

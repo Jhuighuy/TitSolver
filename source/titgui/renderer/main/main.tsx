@@ -8,10 +8,14 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import "~/renderer/index.css";
+import { installGlobalErrorLogging } from "~/renderer/common/logging";
 import { App } from "~/renderer/main/components/app";
 import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Route uncaught errors to the logger (and toasts).
+installGlobalErrorLogging();
 
 // Create the query client.
 const queryClient = new QueryClient();

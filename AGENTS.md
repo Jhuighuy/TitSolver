@@ -118,7 +118,7 @@ TIT_ENSURE(expr, "message");
 ### GUI
 
 - Stack: Electron Forge, Vite, React 19, TypeScript, Three.js.
-- Styling/tooling present: tsgo, Oxlint, Oxfmt, Tailwind CSS v4, Base UI, Zod, React Query.
+- Styling/tooling present: TypeScript 7 (tsc), Oxlint, Oxfmt, Tailwind CSS v4, Base UI, Zod, React Query.
 - Common npm scripts:
 
 ```bash

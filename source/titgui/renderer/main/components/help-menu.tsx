@@ -5,14 +5,14 @@
 
 import { IconBook } from "@tabler/icons-react";
 
-import { Flex } from "~/renderer/common/components/layout";
 import { Link } from "~/renderer/common/components/link";
+import { ipc } from "~/renderer/common/ipc";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function HelpMenu() {
   return (
-    <Flex direction="column" gap="1" px="3" py="2">
+    <div className="flex flex-col gap-1 px-3 py-2">
       <Link
         weight="bold"
         href="#"
@@ -20,13 +20,13 @@ export function HelpMenu() {
         rel="noreferrer"
         onClick={(event) => {
           event.preventDefault();
-          void globalThis.help?.addTab();
+          void ipc.help.addTab();
         }}
       >
         <IconBook />
         User Manual
       </Link>
-    </Flex>
+    </div>
   );
 }
 

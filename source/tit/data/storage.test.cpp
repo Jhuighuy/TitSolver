@@ -43,6 +43,19 @@ TEST_CASE("data::Storage") {
       const data::Storage storage{file_name};
       CHECK(storage.path().filename() == file_name);
     }
+    SUBCASE("data version") {
+      // Should exist due to the previous test.
+      REQUIRE(std::filesystem::exists(file_name));
+      data::Storage storage{file_name};
+      data::Storage other_storage{file_name};
+      const auto version = storage.data_version();
+      // Writes through the same connection do not change the version...
+      storage.create_series_id("same-connection");
+      CHECK(storage.data_version() == version);
+      // ...but writes through another connection do.
+      other_storage.create_series_id("other-connection");
+      CHECK(storage.data_version() != version);
+    }
     SUBCASE("open readonly") {
       // Should exist due to the previous test.
       REQUIRE(std::filesystem::exists(file_name));

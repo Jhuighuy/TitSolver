@@ -22,6 +22,7 @@ export interface Particles extends Object3D {
     positionValues: Float32Array,
   ): void;
   setSelection(selectionValues: Float32Array): void;
+  setSelectionColor(rgb: readonly [number, number, number]): void;
   setShadingMode(mode: ShadingMode): void;
   setColorRange(colorRange: ColorRange): void;
   setColorMap(colorMap: ColorMap): void;

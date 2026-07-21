@@ -5,6 +5,7 @@
 
 import { Scene, WebGLRenderer } from "three";
 
+import { cssVariableToRgb } from "~/renderer/common/utils";
 import type { BackgroundColor } from "~/renderer/common/visual/background-color";
 import type { Projection } from "~/renderer/common/visual/camera";
 import { CameraController } from "~/renderer/common/visual/camera-controller";
@@ -27,6 +28,22 @@ import {
 } from "~/renderer/common/visual/particles-switch";
 import type { SelectionCommand } from "~/renderer/common/visual/selection";
 import { assert } from "~/shared/utils";
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * Check whether a WebGL 2 context can be created. Cheap probe used to skip
+ * renderer construction on machines without GPU support (e.g. headless CI),
+ * where Three.js would log errors and throw.
+ */
+export function isWebGLAvailable() {
+  try {
+    const canvas = document.createElement("canvas");
+    return canvas.getContext("webgl2") !== null;
+  } catch {
+    return false;
+  }
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -57,16 +74,35 @@ export class Renderer {
 
     this.particles = new ParticlesSwitch();
     this.scene.add(this.particles);
+
+    // Selection highlight color comes from the design tokens. Re-read it when
+    // the color scheme flips, in case the token ever differs per theme.
+    this.particles.setSelectionColor(cssVariableToRgb("--selection"));
+    this.colorSchemeQuery.addEventListener("change", this.onColorSchemeChange);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   public dispose() {
+    this.colorSchemeQuery.removeEventListener(
+      "change",
+      this.onColorSchemeChange,
+    );
     this.particles.dispose();
     this.cameraController.dispose();
     this.renderer.setAnimationLoop(null);
     this.renderer.dispose();
   }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private readonly colorSchemeQuery = globalThis.matchMedia(
+    "(prefers-color-scheme: dark)",
+  );
+
+  private readonly onColorSchemeChange = () => {
+    this.particles.setSelectionColor(cssVariableToRgb("--selection"));
+  };
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

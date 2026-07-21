@@ -7,25 +7,20 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import path from "node:path";
 
-import { BrowserWindow } from "electron";
+import pidusage from "pidusage";
 
 import {
   openStorage as nativeOpenStorage,
   type Storage as NativeStorage,
 } from "~/bindings";
 import type { Installation } from "~/main/installation";
-import { SESSION_SOLVER_EVENT_CHANNEL } from "~/shared/channels";
+import { broadcastIpcEvent } from "~/main/ipc";
+import { log } from "~/main/log";
+import { AsyncLruCache } from "~/main/lru-cache";
+import { CASE_FILE_NAME } from "~/shared/case";
 import type { SolverEvent } from "~/shared/solver";
 import type { Frame } from "~/shared/storage";
-import { assert } from "~/shared/utils";
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-export interface SessionOptions {
-  workDir: string;
-  storagePath: string;
-  solverPath: string;
-}
+import { ensure } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -35,6 +30,7 @@ export interface SessionOptions {
 class SolverManager {
   private child?: ChildProcessWithoutNullStreams;
   private listener?: (event: SolverEvent) => void;
+  private telemetryTimer?: NodeJS.Timeout;
 
   /**
    * Create a solver manager.
@@ -44,9 +40,9 @@ class SolverManager {
   /**
    * Run the solver.
    */
-  public run(workDir: string) {
-    assert(this.child === undefined);
-    const child = spawn(this.install.solverPath, [], { cwd: workDir });
+  public run(workDir: string, args: string[] = []) {
+    if (this.child !== undefined) return;
+    const child = spawn(this.install.solverPath, args, { cwd: workDir });
 
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (data: string) => {
@@ -60,6 +56,7 @@ class SolverManager {
 
     child.on("exit", (code, signal) => {
       this.child = undefined;
+      this.stopTelemetry();
       this.listener?.({
         kind: "exit",
         code: code ?? 0,
@@ -69,11 +66,54 @@ class SolverManager {
 
     child.on("error", (error) => {
       this.child = undefined;
+      this.stopTelemetry();
       this.listener?.({ kind: "stderr", data: String(error) });
       this.listener?.({ kind: "exit", code: 1, signal: 0 });
     });
 
     this.child = child;
+    this.startTelemetry();
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  // Start sampling the resource usage of the solver process.
+  private startTelemetry() {
+    this.stopTelemetry();
+
+    const childPID = this.child?.pid;
+    if (childPID === undefined) return;
+
+    const sample = async () => {
+      if (this.child?.pid !== childPID) return;
+      try {
+        const usage = await pidusage(childPID);
+        if (this.child?.pid !== childPID) return;
+
+        this.listener?.({
+          kind: "sample",
+          timestamp: Date.now(),
+          cpuPercent: usage.cpu,
+          memoryBytes: usage.memory,
+        });
+      } catch {
+        // Ignore telemetry errors caused by process shutdown races.
+      }
+    };
+
+    void sample();
+    this.telemetryTimer = setInterval(() => {
+      void sample();
+    }, TELEMETRY_INTERVAL_MS);
+  }
+
+  // Stop sampling and drop the sampler's internal process cache.
+  private stopTelemetry() {
+    if (this.telemetryTimer !== undefined) {
+      clearInterval(this.telemetryTimer);
+      this.telemetryTimer = undefined;
+    }
+    pidusage.clear();
   }
 
   /**
@@ -102,11 +142,20 @@ class SolverManager {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * A session manager.
+ * A session manager, scoped to a case directory: the storage lives next to
+ * the case file, and the solver runs from the case directory.
  */
 export class SessionManager {
   private readonly solver: SolverManager;
   private storage?: NativeStorage;
+  private storagePollTimer?: NodeJS.Timeout;
+  private storageDataVersion?: number;
+  private isPollingStorage = false;
+  private storageOpenFailureLogged = false;
+  private readonly frameCache = new AsyncLruCache<number, Frame>(
+    FRAME_CACHE_CAPACITY,
+  );
+  private frameCount?: number;
 
   /**
    * Create a session manager.
@@ -117,63 +166,165 @@ export class SessionManager {
   ) {
     this.solver = new SolverManager(install);
     this.solver.setEventCallback((event) => {
-      for (const window of BrowserWindow.getAllWindows()) {
-        window.webContents.send(SESSION_SOLVER_EVENT_CHANNEL, event);
-      }
+      broadcastIpcEvent("session", "solverEvent", event);
     });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
-   * Start the session.
+   * Start the session. A missing storage is not fatal: the session keeps
+   * retrying, and picks the storage up once it appears (e.g. after the
+   * first solver run creates it).
    */
   public async start() {
-    // Storage path is hardcoded at the moment.
+    await this.openStorage();
+
+    // Watch for changes made by other processes (e.g. a running solver).
+    // SQLite has no cross-process change notifications; polling the
+    // `data_version` pragma is the cheapest reliable signal.
+    this.storagePollTimer = setInterval(() => {
+      void this.pollStorageChanges();
+    }, STORAGE_POLL_INTERVAL_MS);
+  }
+
+  // Try to open the storage.
+  private async openStorage() {
     const storagePath = path.join(this.workDir, "particles.ttdb");
-    this.storage = await nativeOpenStorage(storagePath);
+    try {
+      this.storage = await nativeOpenStorage(storagePath);
+      this.storageDataVersion = undefined;
+      this.storageOpenFailureLogged = false;
+    } catch (error) {
+      if (!this.storageOpenFailureLogged) {
+        this.storageOpenFailureLogged = true;
+        log.warn(
+          `Unable to open storage at '${storagePath}', will retry:`,
+          error,
+        );
+      }
+    }
   }
 
   /**
    * Stop the session.
    */
   public stop() {
+    if (this.storagePollTimer !== undefined) {
+      clearInterval(this.storagePollTimer);
+      this.storagePollTimer = undefined;
+    }
+    this.frameCache.clear();
+    this.frameCount = undefined;
     this.solver.stop();
     this.storage = undefined;
+  }
+
+  // Broadcast a storage change event when the data version moves. If the
+  // storage could not be opened yet, retry that instead.
+  private async pollStorageChanges() {
+    if (this.isPollingStorage) return;
+    this.isPollingStorage = true;
+    try {
+      if (this.storage === undefined) {
+        await this.openStorage();
+        if (this.storage !== undefined) {
+          // The storage appeared after startup.
+          this.frameCache.clear();
+          this.frameCount = undefined;
+          broadcastIpcEvent("session", "storageChanged", null);
+        }
+        return;
+      }
+
+      const dataVersion = await this.storage.dataVersion();
+      if (
+        this.storageDataVersion !== undefined &&
+        dataVersion !== this.storageDataVersion
+      ) {
+        // Cached frames may be stale now.
+        this.frameCache.clear();
+        this.frameCount = undefined;
+        broadcastIpcEvent("session", "storageChanged", null);
+      }
+      this.storageDataVersion = dataVersion;
+    } catch {
+      // The storage may be temporarily locked; retry on the next tick.
+    } finally {
+      this.isPollingStorage = false;
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   // Get the last series.
   private async getSeries() {
-    assert(this.storage !== undefined);
+    ensure(this.storage !== undefined, "Storage is not open.");
     return this.storage.lastSeries();
   }
 
   /**
-   * Get the number of frames.
+   * Get the number of frames. A missing or empty storage has zero frames.
    */
   public async getFrameCount() {
+    if (
+      this.storage === undefined ||
+      (await this.storage.seriesCount()) === 0
+    ) {
+      this.frameCount = 0;
+      return 0;
+    }
     const series = await this.getSeries();
-    return series.frameCount();
+    const frameCount = await series.frameCount();
+    this.frameCount = frameCount;
+    return frameCount;
   }
 
   /**
-   * Get a frame by index.
+   * Get the physical times of all frames, in a single native call. A
+   * missing or empty storage has no frames.
+   */
+  public async getFrameTimes() {
+    if (
+      this.storage === undefined ||
+      (await this.storage.seriesCount()) === 0
+    ) {
+      return [];
+    }
+    const series = await this.getSeries();
+    return Array.from(await series.frameTimes());
+  }
+
+  /**
+   * Get a frame by index. Frames are cached and neighboring frames are
+   * prefetched, so scrubbing and playback are usually served from memory.
    */
   public async getFrame(index: number): Promise<Frame> {
-    const series = await this.getSeries();
-    const frame = await series.frame(index);
-    const names = await frame.fields();
-    return Object.fromEntries(
-      await Promise.all(
-        names.map(async (name) => {
-          const field = await frame.field(name);
-          const [type, data] = await Promise.all([field.type(), field.data()]);
-          return [name, { type, data }] as const;
-        }),
-      ),
+    const frame = await this.frameCache.get(index, async () =>
+      this.readFrame(index),
     );
+    this.prefetchNeighbors(index);
+    return frame;
+  }
+
+  // Read a frame from the storage in a single native call.
+  private async readFrame(index: number): Promise<Frame> {
+    const series = await this.getSeries();
+    return series.readFrame(index);
+  }
+
+  // Opportunistically load the frames around the given one into the cache.
+  private prefetchNeighbors(index: number) {
+    if (this.frameCount === undefined) return;
+    for (const neighbor of [index + 1, index - 1]) {
+      if (neighbor < 0 || neighbor >= this.frameCount) continue;
+      if (this.frameCache.has(neighbor)) continue;
+      this.frameCache
+        .get(neighbor, async () => this.readFrame(neighbor))
+        .catch(() => {
+          // Prefetching is opportunistic; failures resurface on demand.
+        });
+    }
   }
 
   /**
@@ -187,10 +338,10 @@ export class SessionManager {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
-   * Run the solver.
+   * Run the solver on the case file in the work directory.
    */
   public runSolver() {
-    this.solver.run(this.workDir);
+    this.solver.run(this.workDir, [path.join(this.workDir, CASE_FILE_NAME)]);
   }
 
   /**
@@ -207,5 +358,11 @@ export class SessionManager {
     return this.solver.isRunning();
   }
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+const STORAGE_POLL_INTERVAL_MS = 1000;
+const TELEMETRY_INTERVAL_MS = 1000;
+const FRAME_CACHE_CAPACITY = 16;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

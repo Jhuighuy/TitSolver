@@ -6,6 +6,8 @@
 #include "tit/core/exception.hpp"
 #include "tit/prop/spec.hpp"
 #include "tit/prop/tree.hpp"
+#include "tit/prop/unit.hpp"
+#include "tit/prop/validation.hpp"
 #include "tit/testing/test.hpp"
 
 namespace tit {
@@ -19,7 +21,7 @@ TEST_CASE("prop::BoolSpec") {
       CHECK(prop::BoolSpec{}.type() == prop::SpecType::Bool);
     }
     SUBCASE("default_value") {
-      CHECK_FALSE(prop::BoolSpec{}.default_value().has_value());
+      CHECK(prop::BoolSpec{}.default_value() == false);
       CHECK(prop::BoolSpec{}.default_value(true).default_value() == true);
       CHECK(prop::BoolSpec{}.default_value(false).default_value() == false);
     }
@@ -31,29 +33,27 @@ TEST_CASE("prop::BoolSpec::validate") {
     SUBCASE("null with default fills in") {
       const auto spec = prop::BoolSpec{}.default_value(true);
       auto tree = prop::Tree{};
-      spec.validate(tree, "flag");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.as_bool() == true);
+    }
+    SUBCASE("null without explicit default fills in false") {
+      const prop::BoolSpec spec{};
+      auto tree = prop::Tree{};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK(tree.as_bool() == false);
     }
     SUBCASE("bool accepted") {
       const prop::BoolSpec spec{};
       auto tree = prop::Tree{false};
-      spec.validate(tree, "flag");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
     }
   }
   SUBCASE("error") {
-    SUBCASE("null without default") {
-      const prop::BoolSpec spec{};
-      auto tree = prop::Tree{};
-      CHECK_THROWS_MSG(spec.validate(tree, "flag"),
-                       tit::Exception,
-                       "required boolean property is missing");
-    }
     SUBCASE("non-bool") {
       const prop::BoolSpec spec{};
       auto tree = prop::Tree{1};
-      CHECK_THROWS_MSG(spec.validate(tree, "flag"),
-                       tit::Exception,
-                       "expected boolean");
+      CHECK(prop::validate(spec, tree).has_issue("Expected boolean"));
+      CHECK(tree.as_bool() == false);
     }
   }
 }
@@ -120,43 +120,39 @@ TEST_CASE("prop::IntSpec::validate") {
     SUBCASE("null with default fills in") {
       const auto spec = prop::IntSpec{}.default_value(42);
       auto tree = prop::Tree{};
-      spec.validate(tree, "count");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.as_int() == 42);
     }
     SUBCASE("int in range accepted") {
       const auto spec = prop::IntSpec{}.range(1, 10);
       auto tree = prop::Tree{5};
-      spec.validate(tree, "count");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
     }
   }
   SUBCASE("error") {
     SUBCASE("null without default") {
       const prop::IntSpec spec{};
       auto tree = prop::Tree{};
-      CHECK_THROWS_MSG(spec.validate(tree, "count"),
-                       tit::Exception,
-                       "required integer property is missing");
+      CHECK(prop::validate(spec, tree).has_issue("property is missing"));
+      CHECK(tree.is_null());
     }
     SUBCASE("below min") {
       const auto spec = prop::IntSpec{}.min(5);
       auto tree = prop::Tree{1};
-      CHECK_THROWS_MSG(spec.validate(tree, "count"),
-                       tit::Exception,
-                       "below minimum");
+      CHECK(prop::validate(spec, tree).has_issue("below minimum"));
+      CHECK(tree.as_int() == 5);
     }
     SUBCASE("above max") {
       const auto spec = prop::IntSpec{}.max(5);
       auto tree = prop::Tree{10};
-      CHECK_THROWS_MSG(spec.validate(tree, "count"),
-                       tit::Exception,
-                       "above maximum");
+      CHECK(prop::validate(spec, tree).has_issue("above maximum"));
+      CHECK(tree.as_int() == 5);
     }
     SUBCASE("non-int") {
       const prop::IntSpec spec{};
       auto tree = prop::Tree{true};
-      CHECK_THROWS_MSG(spec.validate(tree, "count"),
-                       tit::Exception,
-                       "expected integer");
+      CHECK(prop::validate(spec, tree).has_issue("Expected integer"));
+      CHECK(tree.is_null());
     }
   }
 }
@@ -191,6 +187,12 @@ TEST_CASE("prop::RealSpec") {
       const auto spec = prop::RealSpec{}.default_value(3.14);
       CHECK(spec.default_value() == 3.14);
     }
+    SUBCASE("unit") {
+      const auto spec = prop::RealSpec{}.unit(prop::Unit{"kg/m^3"});
+      const auto& unit = spec.unit();
+      REQUIRE(unit.has_value());
+      CHECK(unit->symbol() == "kg/m^3"); // NOLINT(*-unchecked-optional-access)
+    }
   }
   SUBCASE("error") {
     SUBCASE("min > max") {
@@ -221,50 +223,73 @@ TEST_CASE("prop::RealSpec::validate") {
     SUBCASE("null with default fills in") {
       const auto spec = prop::RealSpec{}.default_value(1.5);
       auto tree = prop::Tree{};
-      spec.validate(tree, "x");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.as_real() == 1.5);
     }
     SUBCASE("real accepted") {
       const prop::RealSpec spec{};
       auto tree = prop::Tree{2.0};
-      spec.validate(tree, "x");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
     }
     SUBCASE("int promoted to real") {
       const prop::RealSpec spec{};
       auto tree = prop::Tree{3};
-      spec.validate(tree, "x");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.is_real());
       CHECK(tree.as_real() == 3.0);
+    }
+    SUBCASE("string with implied unit accepted") {
+      const auto spec = prop::RealSpec{}.unit(prop::Unit{"kg/m^3"});
+      auto tree = prop::Tree{"7850.0"};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK(tree.is_real());
+      CHECK(tree.as_real() == 7850.0);
+    }
+    SUBCASE("string with matching explicit unit accepted") {
+      const auto spec = prop::RealSpec{}.unit(prop::Unit{"kg/m^3"});
+      auto tree = prop::Tree{"7850.0 kg/m^3"};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK(tree.is_real());
+      CHECK(tree.as_real() == 7850.0);
     }
   }
   SUBCASE("error") {
     SUBCASE("null without default") {
       const prop::RealSpec spec{};
       auto tree = prop::Tree{};
-      CHECK_THROWS_MSG(spec.validate(tree, "x"),
-                       tit::Exception,
-                       "required real property is missing");
+      CHECK(prop::validate(spec, tree).has_issue("property is missing"));
+      CHECK(tree.is_null());
     }
     SUBCASE("below min") {
       const auto spec = prop::RealSpec{}.min(1.0);
       auto tree = prop::Tree{0.5};
-      CHECK_THROWS_MSG(spec.validate(tree, "x"),
-                       tit::Exception,
-                       "below minimum");
+      CHECK(prop::validate(spec, tree).has_issue("below minimum"));
+      CHECK(tree.as_real() == 1.0);
     }
     SUBCASE("above max") {
       const auto spec = prop::RealSpec{}.max(1.0);
       auto tree = prop::Tree{2.0};
-      CHECK_THROWS_MSG(spec.validate(tree, "x"),
-                       tit::Exception,
-                       "above maximum");
+      CHECK(prop::validate(spec, tree).has_issue("above maximum"));
+      CHECK(tree.as_real() == 1.0);
     }
     SUBCASE("non-number") {
       const prop::RealSpec spec{};
       auto tree = prop::Tree{"not a number"};
-      CHECK_THROWS_MSG(spec.validate(tree, "x"),
-                       tit::Exception,
-                       "expected number");
+      CHECK(prop::validate(spec, tree).has_issue("Expected real"));
+      CHECK(tree.is_null());
+    }
+    SUBCASE("wrong explicit unit") {
+      const auto spec = prop::RealSpec{}.unit(prop::Unit{"kg/m^3"});
+      auto tree = prop::Tree{"7.85 g/cm^3"};
+      CHECK(prop::validate(spec, tree)
+                .has_issue("unit conversion is not implemented yet"));
+      CHECK(tree.is_null());
+    }
+    SUBCASE("explicit unit for unitless spec") {
+      const prop::RealSpec spec{};
+      auto tree = prop::Tree{"1.0 m"};
+      CHECK(prop::validate(spec, tree).has_issue("Expected real"));
+      CHECK(tree.is_null());
     }
   }
 }
@@ -291,29 +316,27 @@ TEST_CASE("prop::StringSpec::validate") {
     SUBCASE("null with default fills in") {
       const auto spec = prop::StringSpec{}.default_value("world");
       auto tree = prop::Tree{};
-      spec.validate(tree, "s");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.as_string() == "world");
     }
     SUBCASE("string accepted") {
       const prop::StringSpec spec{};
       auto tree = prop::Tree{"value"};
-      spec.validate(tree, "s");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
     }
   }
   SUBCASE("error") {
     SUBCASE("null without default") {
       const prop::StringSpec spec{};
       auto tree = prop::Tree{};
-      CHECK_THROWS_MSG(spec.validate(tree, "s"),
-                       tit::Exception,
-                       "required string property is missing");
+      CHECK(prop::validate(spec, tree).has_issue("string property is missing"));
+      CHECK(tree.is_null());
     }
     SUBCASE("non-scalar") {
       const prop::StringSpec spec{};
       auto tree = prop::Tree{prop::Tree::Array{}};
-      CHECK_THROWS_MSG(spec.validate(tree, "s"),
-                       tit::Exception,
-                       "expected string scalar");
+      CHECK(prop::validate(spec, tree).has_issue("Expected string"));
+      CHECK(tree.is_null());
     }
   }
 }
@@ -378,7 +401,7 @@ TEST_CASE("prop::EnumSpec::validate") {
                             .option("y", "Y")
                             .default_value("y");
       auto tree = prop::Tree{};
-      spec.validate(tree, "mode");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.as_string() == "y");
     }
     SUBCASE("valid string accepted") {
@@ -386,28 +409,27 @@ TEST_CASE("prop::EnumSpec::validate") {
                             .option("a", "A")
                             .option("b", "B");
       auto tree = prop::Tree{"a"};
-      spec.validate(tree, "mode");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
     }
   }
   SUBCASE("error") {
     SUBCASE("null without default") {
       const auto spec = prop::EnumSpec{}.option("a", "A");
       auto tree = prop::Tree{};
-      CHECK_THROWS_MSG(spec.validate(tree, "mode"), tit::Exception, "required");
+      CHECK(prop::validate(spec, tree).has_issue("enum property is missing"));
+      CHECK(tree.is_null());
     }
     SUBCASE("unknown string") {
       const auto spec = prop::EnumSpec{}.option("a", "A");
       auto tree = prop::Tree{"z"};
-      CHECK_THROWS_MSG(spec.validate(tree, "mode"),
-                       tit::Exception,
-                       "not a valid enum value");
+      CHECK(prop::validate(spec, tree).has_issue("not a valid enum value"));
+      CHECK(tree.is_null());
     }
     SUBCASE("non-scalar") {
       const auto spec = prop::EnumSpec{}.option("a", "A");
       auto tree = prop::Tree{prop::Tree::Map{}};
-      CHECK_THROWS_MSG(spec.validate(tree, "mode"),
-                       tit::Exception,
-                       "expected string scalar");
+      CHECK(prop::validate(spec, tree).has_issue("Expected string"));
+      CHECK(tree.is_null());
     }
   }
 }
@@ -419,9 +441,52 @@ TEST_CASE("prop::ArraySpec") {
     SUBCASE("type") {
       CHECK(prop::ArraySpec{}.type() == prop::SpecType::Array);
     }
+    SUBCASE("size: absent") {
+      CHECK_FALSE(prop::ArraySpec{}.size().has_value());
+    }
+    SUBCASE("size: set") {
+      const auto spec = prop::ArraySpec{}.size(3);
+      CHECK(spec.size() == 3);
+    }
     SUBCASE("item: set and retrieved") {
       const auto spec = prop::ArraySpec{}.item(prop::IntSpec{});
       CHECK(spec.item().type() == prop::SpecType::Int);
+    }
+    SUBCASE("item: entity record") {
+      const auto spec = prop::ArraySpec{}.item(
+          prop::RecordSpec{}.field("id", "ID", prop::SymbolSpec{"namespace"}));
+      CHECK_RANGE_EQ(spec.item().namespaces(), {"namespace"});
+    }
+  }
+  SUBCASE("error") {
+    SUBCASE("only arrays of entity records are allowed") {
+      CHECK_THROWS_MSG(
+          prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+              "a",
+              "A",
+              prop::ArraySpec{}.item(
+                  prop::RecordSpec{}.field("id",
+                                           "ID",
+                                           prop::SymbolSpec{"namespace"})))),
+          Exception,
+          "Array item that declares a namespace must be an entity record.");
+      CHECK_THROWS_MSG(
+          prop::ArraySpec{}.item(
+              prop::RecordSpec{}
+                  .field("a",
+                         "A",
+                         prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                             "id",
+                             "ID",
+                             prop::SymbolSpec{"namespace_a"})))
+                  .field("b",
+                         "B",
+                         prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                             "id",
+                             "ID",
+                             prop::SymbolSpec{"namespace_b"})))),
+          Exception,
+          "Array item that declares a namespace must be an entity record.");
     }
   }
 }
@@ -431,7 +496,7 @@ TEST_CASE("prop::ArraySpec::validate") {
     SUBCASE("null creates empty array") {
       const auto spec = prop::ArraySpec{}.item(prop::IntSpec{});
       auto tree = prop::Tree{};
-      spec.validate(tree, "arr");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.is_array());
       CHECK(tree.size() == 0);
     }
@@ -441,18 +506,40 @@ TEST_CASE("prop::ArraySpec::validate") {
           prop::Tree{3},
           prop::Tree{7},
       }};
-      spec.validate(tree, "arr");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+    SUBCASE("exact size accepted") {
+      const auto spec = prop::ArraySpec{}.size(2).item(prop::IntSpec{});
+      auto tree = prop::Tree{prop::Tree::Array{
+          prop::Tree{3},
+          prop::Tree{7},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+    SUBCASE("null with exact size creates default-sized array") {
+      const auto spec =
+          prop::ArraySpec{}.size(2).item(prop::RealSpec{}.default_value(0.0));
+      auto tree = prop::Tree{};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK_RANGE_EQ(tree.as_array(), {prop::Tree{0.0}, prop::Tree{0.0}});
     }
   }
   SUBCASE("error") {
+    SUBCASE("exact size mismatch") {
+      const auto spec = prop::ArraySpec{}.size(2).item(prop::IntSpec{});
+      auto tree = prop::Tree{prop::Tree::Array{
+          prop::Tree{3},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("Expected array of size"));
+      CHECK_RANGE_EQ(tree.as_array(), {prop::Tree{3}, prop::Tree{}});
+    }
     SUBCASE("item out of range") {
       const auto spec = prop::ArraySpec{}.item(prop::IntSpec{}.range(0, 9));
       auto tree = prop::Tree{prop::Tree::Array{
           prop::Tree{99},
       }};
-      CHECK_THROWS_MSG(spec.validate(tree, "arr"),
-                       tit::Exception,
-                       "above maximum");
+      CHECK(prop::validate(spec, tree).has_issue("above maximum"));
+      CHECK_RANGE_EQ(tree.as_array(), {prop::Tree{9}});
     }
     SUBCASE("items of invalid type") {
       const auto spec = prop::ArraySpec{}.item(prop::IntSpec{}.range(0, 9));
@@ -460,16 +547,14 @@ TEST_CASE("prop::ArraySpec::validate") {
           prop::Tree{7},
           prop::Tree{"not-an-int"},
       }};
-      CHECK_THROWS_MSG(spec.validate(tree, "arr"),
-                       tit::Exception,
-                       "expected integer");
+      CHECK(prop::validate(spec, tree).has_issue("Expected integer"));
+      CHECK_RANGE_EQ(tree.as_array(), {prop::Tree{7}, prop::Tree{}});
     }
     SUBCASE("non-array") {
       const auto spec = prop::ArraySpec{}.item(prop::IntSpec{});
       auto tree = prop::Tree{"not-an-array"};
-      CHECK_THROWS_MSG(spec.validate(tree, "arr"),
-                       tit::Exception,
-                       "expected array");
+      CHECK(prop::validate(spec, tree).has_issue("Expected array"));
+      CHECK(tree.as_array().empty());
     }
   }
 }
@@ -496,6 +581,23 @@ TEST_CASE("prop::RecordSpec") {
       CHECK(spec.field("beta")->name == "Beta");
       CHECK(spec.field("gamma") == nullptr);
     }
+    SUBCASE("field: entity record arrays") {
+      const auto spec =
+          prop::RecordSpec{}
+              .field("bucket1",
+                     "Bucket1",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id1",
+                         "ID1",
+                         prop::SymbolSpec{"namespace1"})))
+              .field("bucket2",
+                     "Bucket2",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id2",
+                         "ID2",
+                         prop::SymbolSpec{"namespace2"})));
+      CHECK_RANGE_EQ(spec.namespaces(), {"namespace1", "namespace2"});
+    }
   }
   SUBCASE("error") {
     SUBCASE("field: invalid id") {
@@ -511,6 +613,65 @@ TEST_CASE("prop::RecordSpec") {
                        tit::Exception,
                        "duplicate");
     }
+    SUBCASE("field: entity record") {
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}.field(
+              "field",
+              "Field",
+              prop::RecordSpec{}.field("id1",
+                                       "ID1",
+                                       prop::SymbolSpec{"namespace"})),
+          tit::Exception,
+          "Entity record cannot be nested in another record.");
+    }
+    SUBCASE("field: multiple symbol fields") {
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}
+              .field("id1", "ID1", prop::SymbolSpec{"namespace1"})
+              .field("id2", "ID2", prop::SymbolSpec{"namespace2"}),
+          tit::Exception,
+          "Symbol field cannot be placed in a record that declares namespaces");
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}
+              .field("netsted",
+                     "Nested",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id1",
+                         "ID1",
+                         prop::SymbolSpec{"namespace1"})))
+              .field("id2", "ID2", prop::SymbolSpec{"namespace2"}),
+          tit::Exception,
+          "Symbol field cannot be placed in a record that declares namespaces");
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}
+              .field("id1", "ID1", prop::SymbolSpec{"namespace1"})
+              .field("netsted",
+                     "Nested",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id2",
+                         "ID2",
+                         prop::SymbolSpec{"namespace2"}))),
+          tit::Exception,
+          "Field declaring namespace cannot be placed into entity record");
+    }
+    SUBCASE("field: duplicate namespace") {
+      CHECK_THROWS_MSG(
+          prop::RecordSpec{}
+              .field("bucket1",
+                     "Bucket1",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id1",
+                         "ID1",
+                         prop::SymbolSpec{"namespace"})))
+              .field("bucket2",
+                     "Bucket2",
+                     prop::ArraySpec{}.item(prop::RecordSpec{}.field(
+                         "id2",
+                         "ID2",
+                         prop::SymbolSpec{"namespace"}))),
+          tit::Exception,
+          "already declares namespace");
+    }
   }
 }
 
@@ -522,7 +683,7 @@ TEST_CASE("prop::RecordSpec::validate") {
                                    "Flag",
                                    prop::BoolSpec{}.default_value(false));
       auto tree = prop::Tree{};
-      spec.validate(tree, "rec");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.is_map());
       CHECK(tree.get("flag").as_bool() == false);
     }
@@ -534,7 +695,7 @@ TEST_CASE("prop::RecordSpec::validate") {
       auto tree = prop::Tree{prop::Tree::Map{
           {"num", prop::Tree{7}},
       }};
-      CHECK_NOTHROW(spec.validate(tree, "rec"));
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
     }
   }
   SUBCASE("error") {
@@ -545,25 +706,28 @@ TEST_CASE("prop::RecordSpec::validate") {
                                    prop::BoolSpec{}.default_value(false));
       auto tree = prop::Tree{prop::Tree::Map{
           {"known", prop::Tree{false}},
+          {"bad-key", prop::Tree{2}},
           {"unknown", prop::Tree{1}},
       }};
-      CHECK_THROWS_MSG(spec.validate(tree, "rec"),
-                       tit::Exception,
-                       "unknown field");
+      CHECK(prop::validate(spec, tree).has_issue("Unknown field"));
+      REQUIRE(tree.is_map());
+      CHECK(tree.get("known").as_bool() == false);
+      CHECK_FALSE(tree.has("bad-key"));
+      CHECK_FALSE(tree.has("unknown"));
     }
     SUBCASE("missing field") {
       const auto spec =
-          prop::RecordSpec{}.field("field", "Field", prop::BoolSpec{});
+          prop::RecordSpec{}.field("field", "Field", prop::StringSpec{});
       auto tree = prop::Tree{prop::Tree::Map{}};
-      CHECK_THROWS_MSG(spec.validate(tree, "rec"),
-                       tit::Exception,
-                       "is missing");
+      CHECK(prop::validate(spec, tree).has_issue("is missing"));
+      REQUIRE(tree.has("field"));
+      CHECK(tree.get("field").is_null());
     }
     SUBCASE("non-map") {
       auto tree = prop::Tree{true};
-      CHECK_THROWS_MSG(prop::RecordSpec{}.validate(tree, "rec"),
-                       tit::Exception,
-                       "expected object");
+      CHECK(prop::validate(prop::RecordSpec{}, tree)
+                .has_issue("Expected object"));
+      CHECK(tree.as_map().empty());
     }
   }
 }
@@ -620,6 +784,12 @@ TEST_CASE("prop::VariantSpec") {
                        tit::Exception,
                        "duplicate");
     }
+    SUBCASE("option: declares namespace") {
+      CHECK_THROWS_MSG(
+          prop::VariantSpec{}.option("a", "A", prop::SymbolSpec{"namespace"}),
+          tit::Exception,
+          "Variant option cannot declare a namespace");
+    }
     SUBCASE("default_value: unknown") {
       CHECK_THROWS_MSG(prop::VariantSpec{}
                            .option("a", "A", prop::BoolSpec{})
@@ -640,7 +810,7 @@ TEST_CASE("prop::VariantSpec::validate") {
           {"_active", prop::Tree{"fast"}},
           {"fast", prop::Tree{true}},
       }};
-      spec.validate(tree, "mode");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
     }
     SUBCASE("null with default fills in") {
       const auto spec =
@@ -649,10 +819,37 @@ TEST_CASE("prop::VariantSpec::validate") {
               .option("off", "Off", prop::BoolSpec{}.default_value(false))
               .default_value("on");
       auto tree = prop::Tree{};
-      spec.validate(tree, "switch");
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
       CHECK(tree.is_map());
       CHECK(tree.get("on").as_bool() == true);
       CHECK(tree.get("_active").as_string() == "on");
+    }
+    SUBCASE("single present option infers active option") {
+      const auto spec = prop::VariantSpec{}
+                            .option("fast", "Fast", prop::BoolSpec{})
+                            .option("slow", "Slow", prop::IntSpec{});
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"slow", prop::Tree{42}},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK(tree.get("_active").as_string() == "slow");
+      CHECK(tree.get("slow").as_int() == 42);
+    }
+    SUBCASE("inactive option materializes missing fields without issues") {
+      const auto spec =
+          prop::VariantSpec{}
+              .option("plain", "Plain", prop::RecordSpec{})
+              .option(
+                  "advanced",
+                  "Advanced",
+                  prop::RecordSpec{}.field("level", "Level", prop::IntSpec{}));
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"_active", prop::Tree{"plain"}},
+          {"plain", prop::Tree{prop::Tree::Map{}}},
+          {"advanced", prop::Tree{prop::Tree::Map{}}},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+      CHECK(tree.get("advanced").get("level").is_null());
     }
   }
   SUBCASE("error") {
@@ -662,43 +859,261 @@ TEST_CASE("prop::VariantSpec::validate") {
                             .option("b", "B", prop::IntSpec{});
       auto tree = prop::Tree{prop::Tree::Map{
           {"_active", prop::Tree{"c"}},
+          {"bad-key", prop::Tree{false}},
           {"c", prop::Tree{true}},
       }};
-      CHECK_THROWS_MSG(spec.validate(tree, "mode"),
-                       tit::Exception,
-                       "unknown option 'c'");
+      CHECK(prop::validate(spec, tree).has_issue("Unknown option 'c'"));
+      REQUIRE(tree.is_map());
+      CHECK(tree.get("_active").is_null());
+      CHECK_FALSE(tree.has("bad-key"));
+      CHECK_FALSE(tree.has("c"));
     }
     SUBCASE("null without default") {
       const auto spec = prop::VariantSpec{}
                             .option("a", "A", prop::BoolSpec{})
                             .option("b", "B", prop::IntSpec{});
       auto tree = prop::Tree{};
-      CHECK_THROWS_MSG(spec.validate(tree, "mode"),
-                       tit::Exception,
-                       "_active' must be a string");
+      CHECK(prop::validate(spec, tree).has_issue("has no active option"));
+      REQUIRE(tree.is_map());
+      CHECK(tree.get("_active").is_null());
     }
     SUBCASE("missing _active value") {
       const auto spec = prop::VariantSpec{}.option("a", "A", prop::BoolSpec{});
       auto tree = prop::Tree{prop::Tree::Map{}};
-      CHECK_THROWS_MSG(spec.validate(tree, "mode"),
-                       tit::Exception,
-                       "_active' must be a string");
+      CHECK(prop::validate(spec, tree).has_issue("has no active option"));
+      REQUIRE(tree.is_map());
+      CHECK(tree.get("_active").is_null());
+    }
+    SUBCASE("multiple options cannot infer active option") {
+      const auto spec = prop::VariantSpec{}
+                            .option("a", "A", prop::BoolSpec{})
+                            .option("b", "B", prop::IntSpec{});
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"a", prop::Tree{true}},
+          {"b", prop::Tree{42}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("multiple options"));
+      REQUIRE(tree.is_map());
+      CHECK(tree.get("_active").is_null());
+      CHECK(tree.get("a").as_bool() == true);
+      CHECK(tree.get("b").as_int() == 42);
+    }
+    SUBCASE("bad _active type") {
+      const auto spec = prop::VariantSpec{}.option("a", "A", prop::BoolSpec{});
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"_active", prop::Tree{42}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("'_active' must be a string"));
+      REQUIRE(tree.is_map());
+      CHECK(tree.get("_active").is_null());
     }
     SUBCASE("invalid _active value") {
       const auto spec = prop::VariantSpec{}.option("a", "A", prop::BoolSpec{});
       auto tree = prop::Tree{prop::Tree::Map{
           {"_active", prop::Tree{"z"}},
       }};
-      CHECK_THROWS_MSG(spec.validate(tree, "mode"),
-                       tit::Exception,
-                       "not valid");
+      CHECK(prop::validate(spec, tree).has_issue("not valid"));
+      REQUIRE(tree.is_map());
+      CHECK(tree.get("_active").is_null());
     }
     SUBCASE("non-map") {
       const auto spec = prop::VariantSpec{}.option("a", "A", prop::BoolSpec{});
       auto tree = prop::Tree{true};
-      CHECK_THROWS_MSG(spec.validate(tree, "mode"),
-                       tit::Exception,
-                       "expected object");
+      CHECK(prop::validate(spec, tree).has_issue("Expected object"));
+      REQUIRE(tree.is_map());
+      CHECK(tree.get("_active").is_null());
+    }
+    SUBCASE("inactive option still reports type issues") {
+      const auto spec =
+          prop::VariantSpec{}
+              .option("plain", "Plain", prop::RecordSpec{})
+              .option(
+                  "advanced",
+                  "Advanced",
+                  prop::RecordSpec{}.field("level", "Level", prop::IntSpec{}));
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"_active", prop::Tree{"plain"}},
+          {"plain", prop::Tree{prop::Tree::Map{}}},
+          {"advanced",
+           prop::Tree{prop::Tree::Map{{"level", prop::Tree{"bad"}}}}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("Expected integer"));
+      CHECK(tree.get("advanced").get("level").is_null());
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("prop::SymbolSpec") {
+  SUBCASE("success") {
+    const prop::SymbolSpec spec{"materials"};
+    CHECK(spec.type() == prop::SpecType::Symbol);
+    CHECK_RANGE_EQ(spec.namespaces(), {"materials"});
+  }
+  SUBCASE("error") {
+    CHECK_THROWS_MSG(prop::SymbolSpec{"bad namespace"},
+                     tit::Exception,
+                     "valid identifier");
+  }
+}
+
+TEST_CASE("prop::SymbolSpec::validate") {
+  const auto materials_spec = [] {
+    return prop::ArraySpec{}.item(
+        prop::RecordSpec{}.field("id", "ID", prop::SymbolSpec{"materials"}));
+  };
+  SUBCASE("success") {
+    auto tree = prop::Tree{prop::Tree::Array{
+        prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+    }};
+    CHECK_FALSE(prop::validate(materials_spec(), tree).has_issues());
+  }
+  SUBCASE("error") {
+    SUBCASE("invalid symbol") {
+      const prop::SymbolSpec spec{"materials"};
+      auto tree = prop::Tree{"bad symbol"};
+      CHECK(prop::validate(spec, tree).has_issue("valid identifier"));
+      CHECK(tree.is_null());
+    }
+    SUBCASE("duplicate symbol") {
+      auto tree = prop::Tree{prop::Tree::Array{
+          prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+          prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+      }};
+      CHECK(
+          prop::validate(materials_spec(), tree).has_issue("Duplicate symbol"));
+      REQUIRE(tree.is_array());
+      CHECK(tree.get(0).get("id").as_string() == "steel");
+      CHECK(tree.get(1).get("id").is_null());
+    }
+  }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TEST_CASE("prop::RefSpec") {
+  SUBCASE("success") {
+    const prop::RefSpec spec{"materials"};
+    CHECK(spec.type() == prop::SpecType::Ref);
+    CHECK(spec.target_namespace() == "materials");
+  }
+  SUBCASE("error") {
+    CHECK_THROWS_MSG(prop::RefSpec{"bad namespace"},
+                     tit::Exception,
+                     "valid identifier");
+  }
+}
+
+TEST_CASE("prop::RefSpec::validate") {
+  const auto materials_spec = [] {
+    return prop::ArraySpec{}.item(
+        prop::RecordSpec{}.field("id", "ID", prop::SymbolSpec{"materials"}));
+  };
+  const auto shape_spec = [] {
+    return prop::RecordSpec{}.field("material",
+                                    "Material",
+                                    prop::RefSpec{"materials"});
+  };
+  SUBCASE("success") {
+    SUBCASE("reference") {
+      const auto spec = prop::RecordSpec{}
+                            .field("materials", "Materials", materials_spec())
+                            .field("shape", "Shape", shape_spec());
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"materials",
+           prop::Tree{prop::Tree::Array{
+               prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+           }}},
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"steel"}}}}},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+    SUBCASE("forward reference") {
+      const auto spec = prop::RecordSpec{}
+                            .field("shape", "Shape", shape_spec())
+                            .field("materials", "Materials", materials_spec());
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"steel"}}}}},
+          {"materials",
+           prop::Tree{prop::Tree::Array{
+               prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+           }}},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+    SUBCASE("inactive variant reference") {
+      const auto spec =
+          prop::RecordSpec{}
+              .field("materials", "Materials", materials_spec())
+              .field("choice",
+                     "Choice",
+                     prop::VariantSpec{}
+                         .option("plain", "Plain", prop::RecordSpec{})
+                         .option("material",
+                                 "Material",
+                                 prop::RefSpec{"materials"}));
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"choice",
+           prop::Tree{prop::Tree::Map{
+               {"_active", prop::Tree{"plain"}},
+               {"plain", prop::Tree{prop::Tree::Map{}}},
+               {"material", prop::Tree{"missing"}},
+           }}},
+          {"materials", prop::Tree{prop::Tree::Array{}}},
+      }};
+      CHECK_FALSE(prop::validate(spec, tree).has_issues());
+    }
+  }
+  SUBCASE("error") {
+    SUBCASE("invalid symbol") {
+      const prop::RefSpec spec{"materials"};
+      auto tree = prop::Tree{"bad ref"};
+      CHECK(prop::validate(spec, tree).has_issue("valid identifier"));
+      CHECK(tree.is_null());
+    }
+    SUBCASE("missing symbol") {
+      const auto spec = prop::RecordSpec{}
+                            .field("shape", "Shape", shape_spec())
+                            .field("materials", "Materials", materials_spec());
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"wood"}}}}},
+          {"materials",
+           prop::Tree{prop::Tree::Array{
+               prop::Tree{prop::Tree::Map{{"id", prop::Tree{"steel"}}}},
+           }}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("not found in namespace"));
+      CHECK(tree.get("shape").get("material").as_string() == "wood");
+    }
+    SUBCASE("missing symbol in empty namespace") {
+      const auto spec = prop::RecordSpec{}
+                            .field("shape", "Shape", shape_spec())
+                            .field("materials", "Materials", materials_spec());
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"steel"}}}}},
+          {"materials", prop::Tree{prop::Tree::Array{}}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("not found in namespace"));
+      CHECK(tree.get("shape").get("material").as_string() == "steel");
+    }
+    SUBCASE("missing symbol in absent namespace") {
+      const auto spec = prop::RecordSpec{}.field(
+          "shape",
+          "Shape",
+          prop::RecordSpec{}.field("material",
+                                   "Material",
+                                   prop::RefSpec{"materials"}));
+      auto tree = prop::Tree{prop::Tree::Map{
+          {"shape",
+           prop::Tree{prop::Tree::Map{{"material", prop::Tree{"steel"}}}}},
+      }};
+      CHECK(prop::validate(spec, tree).has_issue("not found in namespace"));
+      CHECK(tree.get("shape").get("material").as_string() == "steel");
     }
   }
 }
@@ -725,12 +1140,14 @@ TEST_CASE("prop::spec_dump_json") {
 })");
   }
   SUBCASE("real") {
-    const auto spec = prop::RealSpec{}.range(1.0, 10.0).default_value(5.0);
+    const auto spec = prop::RealSpec{}.range(1.0, 10.0).default_value(5.0).unit(
+        prop::Unit{"m/s"});
     CHECK(prop::spec_dump_json(spec) == R"({
   "type": "real",
   "min": 1.0,
   "max": 10.0,
-  "default": 5.0
+  "default": 5.0,
+  "unit": "m/s"
 })");
   }
   SUBCASE("string") {
@@ -759,9 +1176,10 @@ TEST_CASE("prop::spec_dump_json") {
 })");
   }
   SUBCASE("array") {
-    const auto spec = prop::ArraySpec{}.item(prop::IntSpec{});
+    const auto spec = prop::ArraySpec{}.size(3).item(prop::IntSpec{});
     CHECK(prop::spec_dump_json(spec) == R"({
   "type": "array",
+  "size": 3,
   "item": {
     "type": "int"
   }
@@ -778,7 +1196,8 @@ TEST_CASE("prop::spec_dump_json") {
       "id": "flag",
       "name": "Flag",
       "spec": {
-        "type": "bool"
+        "type": "bool",
+        "default": false
       }
     },
     {
@@ -803,7 +1222,8 @@ TEST_CASE("prop::spec_dump_json") {
       "id": "fast",
       "name": "Fast",
       "spec": {
-        "type": "bool"
+        "type": "bool",
+        "default": false
       }
     },
     {
@@ -815,6 +1235,20 @@ TEST_CASE("prop::spec_dump_json") {
     }
   ],
   "default": "fast"
+})");
+  }
+  SUBCASE("symbol") {
+    const auto spec = prop::SymbolSpec{"materials"};
+    CHECK(prop::spec_dump_json(spec) == R"({
+  "type": "symbol",
+  "namespace": "materials"
+})");
+  }
+  SUBCASE("ref") {
+    const auto spec = prop::RefSpec{"materials"};
+    CHECK(prop::spec_dump_json(spec) == R"({
+  "type": "ref",
+  "namespace": "materials"
 })");
   }
 }

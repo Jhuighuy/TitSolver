@@ -20,35 +20,53 @@ import { z } from "zod";
 
 import { IconButton } from "~/renderer/common/components/button";
 import { chrome, surface } from "~/renderer/common/components/classes";
-import { Box, Flex } from "~/renderer/common/components/layout";
+import { ErrorGuard } from "~/renderer/common/components/error-guard";
 import { Resizable } from "~/renderer/common/components/resizable";
 import { ScrollArea } from "~/renderer/common/components/scroll-area";
 import { Separator } from "~/renderer/common/components/separator";
 import { Text } from "~/renderer/common/components/text";
 import { Tooltip } from "~/renderer/common/components/tooltip";
+import { cn } from "~/renderer/common/components/utils";
 import { useWindowState } from "~/renderer/common/hooks/use-window";
-import { assert, iota, items } from "~/shared/utils";
+import { assert, iota } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/**
+ * A single menu entry. The `id` is a stable identifier used to persist the
+ * active item across sessions — never derive it from the item position.
+ */
+export interface MenuItem {
+  id: string;
+  name: string;
+  icon: ReactElement;
+  group?: number;
+  content?: ReactNode;
+}
+
+interface MenuRootProps {
+  side: "left" | "right" | "top" | "bottom";
+  items: readonly MenuItem[];
+}
+
 const menuTriggerVariants = cva(
-  "cursor-pointer transition-colors select-none",
+  "flex cursor-pointer items-center justify-center transition-colors select-none",
   {
     variants: {
       orientation: {
-        vertical: "border-l-[3px] [&_svg]:size-8",
-        horizontal: "border-b-2 [&_svg]:size-4",
+        vertical: "size-14 border-l-[3px] [&_svg]:size-8",
+        horizontal: "h-8 gap-1 border-b-2 [&_svg]:size-4",
       },
       state: {
-        active: "text-(--fg-1)",
-        inactive: "text-(--fg-4) hover:text-(--fg-1)",
+        active: "text-(--neutral-10)",
+        inactive: "text-(--neutral-6) hover:text-(--neutral-10)",
       },
     },
     compoundVariants: [
       {
         orientation: "vertical",
         state: "active",
-        className: "border-l-(--accent-fg-3)",
+        className: "border-l-(--accent-6)",
       },
       {
         orientation: "vertical",
@@ -58,7 +76,7 @@ const menuTriggerVariants = cva(
       {
         orientation: "horizontal",
         state: "active",
-        className: "border-b-(--accent-fg-3)",
+        className: "border-b-(--accent-6)",
       },
       {
         orientation: "horizontal",
@@ -73,12 +91,7 @@ const menuTriggerVariants = cva(
   },
 );
 
-interface MenuRootProps {
-  side: "left" | "right" | "top" | "bottom";
-  children: ReactElement<MenuItemProps> | ReactElement<MenuItemProps>[];
-}
-
-function MenuRoot({ side, children }: Readonly<MenuRootProps>) {
+function MenuRoot({ side, items }: Readonly<MenuRootProps>) {
   // ---- State. --------------------------------------------------------------
 
   const [size, setSize] = useWindowState(
@@ -87,19 +100,26 @@ function MenuRoot({ side, children }: Readonly<MenuRootProps>) {
     320,
   );
 
-  const [activeItem, setActiveItem] = useWindowState(
+  const [activeItemID, setActiveItemID] = useWindowState(
     `menu.${side}.active-item`,
-    z.int().min(-1).max(items(children).length - 1), // oxfmt-ignore
-    -1,
+    z.string().nullable(),
+    null,
   );
 
-  function setActiveItemOrToggle(index: number) {
-    setActiveItem((prev) => (index === prev ? -1 : index));
+  function toggleItem(id: string) {
+    setActiveItemID((prev) => (id === prev ? null : id));
   }
+
+  function closeItem() {
+    setActiveItemID(null);
+  }
+
+  const activeItem = items.find((item) => item.id === activeItemID);
 
   // ---- Layout. --------------------------------------------------------------
 
   const vertical = side === "left" || side === "right";
+  const orientation = vertical ? "vertical" : "horizontal";
   const oppositeSide = (() => {
     switch (side) {
       case "left":
@@ -113,100 +133,79 @@ function MenuRoot({ side, children }: Readonly<MenuRootProps>) {
     }
   })();
 
-  const direction = (() => {
+  const directionClass = (() => {
     switch (side) {
       case "left":
-        return "row";
+        return "flex-row";
       case "right":
-        return "row-reverse";
+        return "flex-row-reverse";
       case "top":
-        return "column";
+        return "flex-col";
       case "bottom":
-        return "column-reverse";
+        return "flex-col-reverse";
     }
   })();
 
-  const childrenArray = items(children);
-  const maxGroup = childrenArray.reduce(
-    (max, c) => Math.max(max, c.props.group),
-    0,
-  );
+  const maxGroup = items.reduce((max, item) => {
+    return Math.max(max, item.group ?? 0);
+  }, 0);
 
   return (
-    <Flex direction={direction}>
+    <div className={cn("flex", directionClass)}>
       {/* ---- Menu bar. --------------------------------------------------- */}
-      <Flex
-        align="center"
-        justify="between"
-        {...(vertical
-          ? { direction: "column", height: "100%" }
-          : { direction: "row", width: "100%", px: "4" })}
-        className={chrome()}
+      <div
+        className={cn(
+          "flex items-center justify-between",
+          vertical ? "h-full flex-col" : "w-full flex-row px-4",
+          chrome(),
+        )}
       >
         {iota(maxGroup + 1).map((group) => (
-          <Flex
+          <div
             key={group}
-            align="center"
-            {...(vertical
-              ? { direction: "column" }
-              : { direction: "row", gap: "4" })}
-          >
-            {childrenArray.map(
-              (item, index) =>
-                item.props.group === group &&
-                (vertical ? (
-                  <Tooltip
-                    key={[group, item.props.name].join("-")}
-                    content={item.props.name}
-                    side={oppositeSide}
-                  >
-                    <Flex
-                      align="center"
-                      justify="center"
-                      size="14"
-                      onClick={() => {
-                        setActiveItemOrToggle(index);
-                      }}
-                      aria-label={item.props.name}
-                      className={menuTriggerVariants({
-                        orientation: "vertical",
-                        state: index === activeItem ? "active" : "inactive",
-                      })}
-                    >
-                      {item.props.icon}
-                    </Flex>
-                  </Tooltip>
-                ) : (
-                  <Fragment key={item.props.name}>
-                    {index > 0 && <Separator orientation="vertical" />}
-                    <Flex
-                      align="center"
-                      justify="center"
-                      gap="1"
-                      height="8"
-                      onClick={() => {
-                        setActiveItemOrToggle(index);
-                      }}
-                      aria-label={item.props.name}
-                      className={menuTriggerVariants({
-                        orientation: "horizontal",
-                        state: index === activeItem ? "active" : "inactive",
-                      })}
-                    >
-                      {item.props.icon}
-                      <span className="text-(length:--text-1) leading-(--leading-1)">
-                        {item.props.name}
-                      </span>
-                    </Flex>
-                  </Fragment>
-                )),
+            className={cn(
+              "flex items-center",
+              vertical ? "flex-col" : "flex-row gap-4",
             )}
-          </Flex>
+          >
+            {items.map(
+              (item, index) =>
+                (item.group ?? 0) === group && (
+                  <Fragment key={item.id}>
+                    {vertical || index === 0 || (
+                      <Separator orientation="vertical" />
+                    )}
+                    <Tooltip content={item.name} side={oppositeSide}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toggleItem(item.id);
+                        }}
+                        aria-label={item.name}
+                        aria-pressed={item.id === activeItemID}
+                        className={menuTriggerVariants({
+                          orientation,
+                          state:
+                            item.id === activeItemID ? "active" : "inactive",
+                        })}
+                      >
+                        {item.icon}
+                        {vertical || (
+                          <span className="text-(length:--text-1) leading-(--leading-1)">
+                            {item.name}
+                          </span>
+                        )}
+                      </button>
+                    </Tooltip>
+                  </Fragment>
+                ),
+            )}
+          </div>
         ))}
-      </Flex>
+      </div>
 
-      {/* ---- Menu item. -------------------------------------------------- */}
-      <Activity mode={activeItem === -1 ? "hidden" : "visible"}>
+      {/* ---- Menu pane. -------------------------------------------------- */}
+      <Activity mode={activeItem === undefined ? "hidden" : "visible"}>
         <Resizable
           side={side}
           size={size}
@@ -214,17 +213,19 @@ function MenuRoot({ side, children }: Readonly<MenuRootProps>) {
           minSize={160}
           maxSize={640}
         >
-          {childrenArray.map((item, index) => (
+          {items.map((item) => (
             <Activity
-              key={item.props.name}
-              mode={index === activeItem ? "visible" : "hidden"}
+              key={item.id}
+              mode={item.id === activeItemID ? "visible" : "hidden"}
             >
-              {item}
+              <MenuPane name={item.name} onClose={closeItem}>
+                {item.content}
+              </MenuPane>
             </Activity>
           ))}
         </Resizable>
       </Activity>
-    </Flex>
+    </div>
   );
 }
 
@@ -243,6 +244,12 @@ export interface MenuActions {
 
 const MenuActionsContext = createContext<MenuActions | null>(null);
 
+/**
+ * Provider of the menu-pane action registry, for rendering pane content
+ * outside a real menu (component tests).
+ */
+export const MenuActionsProvider = MenuActionsContext.Provider;
+
 function useMenuActions(): MenuActions {
   const context = useContext(MenuActionsContext);
   assert(context !== null, "Menu actions are not available.");
@@ -256,14 +263,13 @@ export function useMenuAction(action: MenuAction) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface MenuItemProps {
-  group: number;
+interface MenuPaneProps {
   name: string;
-  icon: ReactElement;
+  onClose: () => void;
   children?: ReactNode;
 }
 
-function MenuItem({ name, children }: Readonly<MenuItemProps>) {
+function MenuPane({ name, onClose, children }: Readonly<MenuPaneProps>) {
   // ---- Actions. -------------------------------------------------------------
 
   const [actions, setActions] = useState<MenuAction[]>([]);
@@ -287,21 +293,14 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
   // ---- Layout. --------------------------------------------------------------
 
   return (
-    <Flex direction="column" height="100%" className={chrome()}>
+    <div className={cn("flex h-full flex-col", chrome())}>
       {/* ---- Header. ----------------------------------------------------- */}
-      <Flex
-        align="center"
-        gap="2"
-        px="1"
-        height="8"
-        minHeight="8"
-        maxHeight="8"
-      >
-        <Box flexGrow="1">
+      <div className="flex h-8 shrink-0 items-center gap-2 px-1">
+        <div className="grow">
           <Text variant="label" size="2" color="muted" truncate>
             {name}
           </Text>
-        </Box>
+        </div>
 
         {actions.map((action) => (
           <Tooltip key={action.name} content={action.name}>
@@ -316,24 +315,23 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
         ))}
 
         <Tooltip content="Close">
-          <IconButton
-            onClick={undefined /** @todo Implement me. */}
-            aria-label="Close"
-          >
+          <IconButton onClick={onClose} aria-label="Close">
             <IconX />
           </IconButton>
         </Tooltip>
-      </Flex>
+      </div>
 
       {/* ---- Contents. --------------------------------------------------- */}
-      <Box flexGrow="1" mx="1" mb="1" overflow="auto" className={surface()}>
-        <ScrollArea>
-          <MenuActionsContext.Provider value={menuActions}>
-            {children}
-          </MenuActionsContext.Provider>
-        </ScrollArea>
-      </Box>
-    </Flex>
+      <div className={cn("mx-1 mb-1 grow overflow-auto", surface())}>
+        <ErrorGuard>
+          <ScrollArea>
+            <MenuActionsContext.Provider value={menuActions}>
+              {children}
+            </MenuActionsContext.Provider>
+          </ScrollArea>
+        </ErrorGuard>
+      </div>
+    </div>
   );
 }
 
@@ -341,7 +339,6 @@ function MenuItem({ name, children }: Readonly<MenuItemProps>) {
 
 export const Menu = Object.assign(MenuRoot, {
   Root: MenuRoot,
-  Item: MenuItem,
 });
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

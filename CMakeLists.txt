@@ -37,6 +37,7 @@ find_package(TBB CONFIG REQUIRED)
 find_package(tinyxml2 CONFIG REQUIRED)
 find_package(unofficial-node-addon-api CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
 # SymEngine target does not properly link to its own dependencies.
@@ -87,6 +88,7 @@ add_tit_library(
     symengine::symengine
     TBB::tbb
     tinyxml2::tinyxml2
+    yaml-cpp::yaml-cpp
     zstd::libzstd
 )
 

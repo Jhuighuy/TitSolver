@@ -48,6 +48,100 @@ auto openStorage(const Napi::CallbackInfo& info) -> Napi::Value {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+namespace {
+
+// JS doesn't support 64-bit integers, so convert them to 64-bit floats
+// in-place and patch the type accordingly.
+auto patch_array(data::Type type, std::vector<std::byte> data)
+    -> std::pair<data::Type, std::vector<std::byte>> {
+  if (type.kind().id() == data::Kind::ID::int64 ||
+      type.kind().id() == data::Kind::ID::uint64) {
+    auto* const out = safe_bit_ptr_cast<float64_t*>(data.data());
+    if (type.kind().id() == data::Kind::ID::int64) {
+      const std::span<const std::int64_t> in{
+          safe_bit_ptr_cast<const std::int64_t*>(data.data()),
+          data.size() / sizeof(std::int64_t),
+      };
+      std::ranges::transform(in, out, [](std::int64_t value) {
+        return static_cast<float64_t>(value);
+      });
+    } else {
+      const std::span<const std::uint64_t> in{
+          safe_bit_ptr_cast<const std::uint64_t*>(data.data()),
+          data.size() / sizeof(std::uint64_t),
+      };
+      std::ranges::transform(in, out, [](std::uint64_t value) {
+        return static_cast<float64_t>(value);
+      });
+    }
+
+    type = data::Type{
+        data::kind_of<float64_t>,
+        type.rank(),
+        static_cast<std::uint8_t>(type.dim()),
+    };
+  }
+  return {type, std::move(data)};
+}
+
+// Create a JS type descriptor. 64-bit integer kinds are reported as 64-bit
+// floats, consistently with `patch_array`.
+auto make_type_object(Napi::Env env, const data::Type& type) -> Napi::Object {
+  auto kind = type.kind();
+  if (kind.id() == data::Kind::ID::int64 ||
+      kind.id() == data::Kind::ID::uint64) {
+    kind = data::kind_of<float64_t>;
+  }
+
+  auto object = Napi::Object::New(env);
+  object.Set("kind", kind.name());
+  object.Set("rank", std::to_underlying(type.rank()));
+  object.Set("dim", static_cast<double>(type.dim()));
+
+  return object;
+}
+
+// Create a typed array holding a copy of the given data.
+auto make_typed_array(Napi::Env env,
+                      const data::Type& type,
+                      const std::vector<std::byte>& data) -> Napi::Value {
+  auto buffer = Napi::ArrayBuffer::New(env, data.size());
+  std::memcpy(buffer.Data(), data.data(), data.size());
+
+  const auto length = data.size() / type.kind().width();
+  using enum data::Kind::ID;
+  switch (type.kind().id()) {
+    case int8:
+      return Napi::Int8Array::New(env, length, buffer, 0).As<Napi::Value>();
+    case uint8:
+      return Napi::Uint8Array::New(env, length, buffer, 0).As<Napi::Value>();
+    case int16:
+      return Napi::Int16Array::New(env, length, buffer, 0).As<Napi::Value>();
+    case uint16:
+      return Napi::Uint16Array::New(env, length, buffer, 0).As<Napi::Value>();
+    case int32:
+      return Napi::Int32Array::New(env, length, buffer, 0).As<Napi::Value>();
+    case uint32:
+      return Napi::Uint32Array::New(env, length, buffer, 0).As<Napi::Value>();
+    case float32:
+      return Napi::Float32Array::New(env, length, buffer, 0).As<Napi::Value>();
+    case float64:
+      return Napi::Float64Array::New(env, length, buffer, 0).As<Napi::Value>();
+    default: TIT_THROW("Unsupported field kind.");
+  }
+}
+
+// A single named array within a frame.
+struct NamedArray {
+  std::string name;
+  data::Type type;
+  std::vector<std::byte> data;
+};
+
+} // namespace
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 auto StorageWrap::constructor() -> Napi::FunctionReference& {
   static Napi::FunctionReference constructor_;
   return constructor_;
@@ -58,6 +152,7 @@ void StorageWrap::init(Napi::Env env) {
       env,
       "Storage",
       {
+          InstanceMethod("dataVersion", &StorageWrap::dataVersion),
           InstanceMethod("seriesCount", &StorageWrap::seriesCount),
           InstanceMethod("series", &StorageWrap::series),
           InstanceMethod("lastSeries", &StorageWrap::lastSeries),
@@ -72,6 +167,20 @@ auto StorageWrap::New(Napi::Env /*env*/, std::shared_ptr<StorageHolder> holder)
   auto* const self = Napi::ObjectWrap<StorageWrap>::Unwrap(object);
   self->holder_ = std::move(holder);
   return object;
+}
+
+auto StorageWrap::dataVersion(const Napi::CallbackInfo& info) -> Napi::Value {
+  TIT_ENSURE(info.Length() == 0, "Unexpected arguments.");
+
+  return enqueue(
+      info.Env(),
+      [holder = holder_] {
+        return holder->access(
+            [](const data::Storage& storage) { return storage.data_version(); });
+      },
+      [](Napi::Env env, std::uint64_t data_version) {
+        return Napi::Number::New(env, static_cast<double>(data_version));
+      });
 }
 
 auto StorageWrap::seriesCount(const Napi::CallbackInfo& info) -> Napi::Value {
@@ -135,6 +244,8 @@ void SeriesWrap::init(Napi::Env env) {
       {
           InstanceMethod("frameCount", &SeriesWrap::frameCount),
           InstanceMethod("frame", &SeriesWrap::frame),
+          InstanceMethod("readFrame", &SeriesWrap::readFrame),
+          InstanceMethod("frameTimes", &SeriesWrap::frameTimes),
           InstanceMethod("export", &SeriesWrap::exportTo),
       });
   constructor() = Persistent(ctor);
@@ -181,6 +292,68 @@ auto SeriesWrap::frame(const Napi::CallbackInfo& info) -> Napi::Value {
       },
       [state = holder_](Napi::Env env, data::FrameID frame_id) {
         return FrameWrap::New(env, state, frame_id);
+      });
+}
+
+auto SeriesWrap::frameTimes(const Napi::CallbackInfo& info) -> Napi::Value {
+  TIT_ENSURE(info.Length() == 0, "Unexpected arguments.");
+
+  return enqueue(
+      info.Env(),
+      [holder = holder_, series_id = series_id_] {
+        // Read the times of all frames in a single storage round trip.
+        return holder->access([series_id](const data::Storage& storage) {
+          std::vector<float64_t> times;
+          for (const auto frame_id : storage.series_frame_ids(series_id)) {
+            times.push_back(storage.frame_time(frame_id));
+          }
+          return times;
+        });
+      },
+      [](Napi::Env env, const std::vector<float64_t>& times) {
+        // Note: the copy below (and in `make_typed_array`) is mandatory —
+        // Electron's V8 memory cage forbids externally-allocated array
+        // buffers, so wrapping the vector's own memory is not an option.
+        auto array = Napi::Float64Array::New(env, times.size());
+        std::ranges::copy(times, array.Data());
+        return array;
+      });
+}
+
+auto SeriesWrap::readFrame(const Napi::CallbackInfo& info) -> Napi::Value {
+  TIT_ENSURE(info.Length() >= 1, "Missing argument.");
+  TIT_ENSURE(info[0].IsNumber(), "Argument must be a number.");
+  const auto index =
+      static_cast<std::size_t>(info[0].As<Napi::Number>().Int64Value());
+
+  return enqueue(
+      info.Env(),
+      [holder = holder_, series_id = series_id_, index] {
+        // Read all frame arrays in a single storage round trip.
+        return holder->access([series_id,
+                               index](const data::Storage& storage) {
+          const auto frame_id = storage.series_frame_id(series_id, index);
+          std::vector<NamedArray> arrays;
+          for (const auto array : storage.frame_arrays(frame_id)) {
+            auto [type, data] = patch_array(array.type(), array.read());
+            arrays.push_back({
+                .name = array.name(),
+                .type = type,
+                .data = std::move(data),
+            });
+          }
+          return arrays;
+        });
+      },
+      [](Napi::Env env, const std::vector<NamedArray>& arrays) {
+        auto result = Napi::Object::New(env);
+        for (const auto& array : arrays) {
+          auto field = Napi::Object::New(env);
+          field.Set("type", make_type_object(env, array.type));
+          field.Set("data", make_typed_array(env, array.type, array.data));
+          result.Set(array.name, field);
+        }
+        return result;
       });
 }
 
@@ -330,19 +503,7 @@ auto FieldWrap::type(const Napi::CallbackInfo& info) -> Napi::Value {
         });
       },
       [](Napi::Env env, const data::Type& type) {
-        // Patch the kind to be consistent with the convention below.
-        auto kind = type.kind();
-        if (kind.id() == data::Kind::ID::int64 ||
-            kind.id() == data::Kind::ID::uint64) {
-          kind = data::kind_of<float64_t>;
-        }
-
-        auto object = Napi::Object::New(env);
-        object.Set("kind", kind.name());
-        object.Set("rank", std::to_underlying(type.rank()));
-        object.Set("dim", static_cast<double>(type.dim()));
-
-        return object;
+        return make_type_object(env, type);
       });
 }
 
@@ -358,80 +519,11 @@ auto FieldWrap::data(const Napi::CallbackInfo& info) -> Napi::Value {
               return std::make_pair(storage.array_type(array_id),
                                     storage.array_read(array_id));
             });
-
-        // JS doesn't support 64-bit integers, so we have to make a conversion.
-        if (type.kind().id() == data::Kind::ID::int64 ||
-            type.kind().id() == data::Kind::ID::uint64) {
-          // Convert to floats in-place.
-          auto* const out = safe_bit_ptr_cast<float64_t*>(data.data());
-          if (type.kind().id() == data::Kind::ID::int64) {
-            const std::span<const std::int64_t> in{
-                safe_bit_ptr_cast<const std::int64_t*>(data.data()),
-                data.size() / sizeof(std::int64_t),
-            };
-            std::ranges::transform(in, out, [](std::int64_t value) {
-              return static_cast<float64_t>(value);
-            });
-          } else if (type.kind().id() == data::Kind::ID::uint64) {
-            const std::span<const std::uint64_t> in{
-                safe_bit_ptr_cast<const std::uint64_t*>(data.data()),
-                data.size() / sizeof(std::uint64_t),
-            };
-            std::ranges::transform(in, out, [](std::uint64_t value) {
-              return static_cast<float64_t>(value);
-            });
-          } else {
-            std::unreachable();
-          }
-
-          // Patch the type.
-          type = data::Type{
-              data::kind_of<float64_t>,
-              type.rank(),
-              static_cast<std::uint8_t>(type.dim()),
-          };
-        }
-
-        return std::make_pair(type, std::move(data));
+        return patch_array(type, std::move(data));
       },
       [](Napi::Env env,
-         std::pair<data::Type, std::vector<std::byte>> type_data) {
-        auto [type, data] = std::move(type_data);
-
-        // Create a buffer and copy the data into it.
-        auto buffer = Napi::ArrayBuffer::New(env, data.size());
-        std::memcpy(buffer.Data(), data.data(), data.size());
-
-        // Create the typed array.
-        const auto length = data.size() / type.kind().width();
-        using enum data::Kind::ID;
-        switch (type.kind().id()) {
-          case int8:
-            return Napi::Int8Array::New(env, length, buffer, 0)
-                .As<Napi::Value>();
-          case uint8:
-            return Napi::Uint8Array::New(env, length, buffer, 0)
-                .As<Napi::Value>();
-          case int16:
-            return Napi::Int16Array::New(env, length, buffer, 0)
-                .As<Napi::Value>();
-          case uint16:
-            return Napi::Uint16Array::New(env, length, buffer, 0)
-                .As<Napi::Value>();
-          case int32:
-            return Napi::Int32Array::New(env, length, buffer, 0)
-                .As<Napi::Value>();
-          case uint32:
-            return Napi::Uint32Array::New(env, length, buffer, 0)
-                .As<Napi::Value>();
-          case float32:
-            return Napi::Float32Array::New(env, length, buffer, 0)
-                .As<Napi::Value>();
-          case float64:
-            return Napi::Float64Array::New(env, length, buffer, 0)
-                .As<Napi::Value>();
-          default: TIT_THROW("Unsupported field kind.");
-        }
+         const std::pair<data::Type, std::vector<std::byte>>& type_data) {
+        return make_typed_array(env, type_data.first, type_data.second);
       });
 }
 

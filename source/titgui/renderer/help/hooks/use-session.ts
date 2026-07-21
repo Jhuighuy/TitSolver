@@ -6,6 +6,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useEffect } from "react";
 
+import { ipc } from "~/renderer/common/ipc";
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function useSession() {
@@ -14,13 +16,13 @@ export function useSession() {
 
   const { data: session } = useQuery({
     queryKey,
-    queryFn: async () => globalThis.help?.getSession(),
+    queryFn: async () => ipc.help.getSession(),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,
   });
 
   useEffect(() => {
-    return globalThis.help?.onSessionChanged((session) => {
+    return ipc.help.onSessionChanged((session) => {
       queryClient.setQueryData(queryKey, session);
     });
   }, [queryClient, queryKey]);
@@ -29,16 +31,16 @@ export function useSession() {
     tabs: session?.tabs ?? [],
     activeTabID: session?.activeTabID,
     addTab: (url?: string) => {
-      void globalThis.help?.addTab(url);
+      void ipc.help.addTab(url);
     },
     closeTab: (id: number) => {
-      void globalThis.help?.closeTab(id);
+      void ipc.help.closeTab(id);
     },
     selectTab: (id: number) => {
-      void globalThis.help?.selectTab(id);
+      void ipc.help.selectTab(id);
     },
     navigateTab: (id: number, url?: string) => {
-      void globalThis.help?.navigateTab(id, url);
+      void ipc.help.navigateTab(id, url);
     },
   };
 }

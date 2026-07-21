@@ -9,47 +9,47 @@ import {
   app,
   BrowserWindow,
   dialog,
-  ipcMain,
+  type IpcMainInvokeEvent,
   nativeTheme,
-  type OpenDialogOptions,
 } from "electron";
-import { z } from "zod";
 
-import { makeHelpService } from "~/main/help";
+import {
+  caseSpec,
+  loadCaseTree,
+  materializeCase,
+  saveCaseTree,
+} from "~/bindings";
+import { updateApplicationMenu } from "~/main/app-menu";
+import { CaseManager } from "~/main/case";
+import { CaseFlows } from "~/main/case-flows";
+import { createCaseHandlers } from "~/main/handlers/case";
+import { createHelpHandlers } from "~/main/handlers/help";
+import { createSessionHandlers } from "~/main/handlers/session";
+import { createThemeHandlers } from "~/main/handlers/theme";
+import { createWindowHandlers } from "~/main/handlers/window";
+import { HelpService } from "~/main/help";
 import { Installation } from "~/main/installation";
+import { broadcastIpcEvent, exposeIpcHandlers } from "~/main/ipc";
+import { log } from "~/main/log";
 import { PersistedState } from "~/main/persisted-state";
 import { SessionManager } from "~/main/session";
 import { WindowManager } from "~/main/window";
-import {
-  HELP_ADD_TAB_CHANNEL,
-  HELP_CLOSE_TAB_CHANNEL,
-  HELP_GET_SESSION_CHANNEL,
-  HELP_NAVIGATE_TAB_CHANNEL,
-  HELP_SELECT_TAB_CHANNEL,
-  HELP_SESSION_CHANGED_CHANNEL,
-  SESSION_EXPORT_RUN_CHANNEL,
-  SESSION_FRAME_COUNT_CHANNEL,
-  SESSION_FRAME_GET_CHANNEL,
-  SESSION_SOLVER_IS_RUNNING_CHANNEL,
-  SESSION_SOLVER_RUN_CHANNEL,
-  SESSION_SOLVER_STOP_CHANNEL,
-  THEME_GET_CHANNEL,
-  THEME_SET_CHANNEL,
-  WINDOW_IS_FULL_SCREEN_CHANNEL,
-  WINDOW_PERSIST_GET_CHANNEL,
-  WINDOW_PERSIST_SET_CHANNEL,
-} from "~/shared/channels";
-import type { HelpService } from "~/shared/help";
-import { type Theme, themeSchema } from "~/shared/theme";
+import type { CaseState } from "~/shared/case";
+import { themeSchema } from "~/shared/theme";
+import { assert } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class Application {
   private install?: Installation;
   private session?: SessionManager;
+  private sessionDir?: string;
   private persist?: PersistedState;
+  private caseManager?: CaseManager;
+  private caseFlows?: CaseFlows;
   private windowManager?: WindowManager;
-  private helpManager?: HelpService;
+  private helpService?: HelpService;
+  private quitConfirmed = false;
 
   public run() {
     app.on("ready", () => {
@@ -58,26 +58,64 @@ class Application {
     app.on("window-all-closed", () => {
       this.onWindowAllClosed();
     });
+    app.on("activate", () => {
+      this.onActivate();
+    });
+    app.on("before-quit", (event) => {
+      this.onBeforeQuit(event);
+    });
     app.on("will-quit", () => {
       this.onWillQuit();
     });
   }
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   private async onReady() {
+    try {
+      await this.initialize();
+    } catch (error) {
+      log.error("Failed to start the application:", error);
+      dialog.showErrorBox(
+        "BlueTit failed to start.",
+        error instanceof Error ? error.message : String(error),
+      );
+      app.exit(1);
+    }
+  }
+
+  private async initialize() {
     // Find the installation root.
     this.install = Installation.resolve();
 
-    // Work directory is hardcoded at the moment.
-    const workDir = path.resolve(this.install.rootPath, "../..");
+    // Test isolation: point all persisted app state at a scratch directory.
+    const userDataDir = process.env["TITGUI_USER_DATA"];
+    const isolated = userDataDir !== undefined && userDataDir !== "";
+    if (isolated) app.setPath("userData", path.resolve(userDataDir));
 
-    // Start the session.
-    this.session = new SessionManager(this.install, workDir);
-    await this.session.start();
-
-    // Load persisted state.
-    this.persist = PersistedState.load(
-      path.join(workDir, "persisted-state.json"),
+    // Open persisted state. The repository-root location is legacy; state
+    // found there is imported once.
+    this.persist = PersistedState.open(
+      isolated
+        ? undefined
+        : path.resolve(this.install.rootPath, "../..", "persisted-state.json"),
     );
+
+    // Setup the case manager. The session is case-scoped: it is created
+    // when a case opens and torn down when it closes.
+    this.caseManager = new CaseManager(
+      { caseSpec, loadCaseTree, saveCaseTree, materializeCase },
+      this.persist.withPrefix("case"),
+      {
+        caseChanged: (state) => {
+          this.onCaseChanged(state);
+        },
+        treeChanged: (document) => {
+          broadcastIpcEvent("case", "treeChanged", document);
+        },
+      },
+    );
+    this.caseFlows = new CaseFlows(this.caseManager);
 
     // Initialize theme.
     nativeTheme.themeSource = this.persist.get("theme", themeSchema, "system");
@@ -86,137 +124,177 @@ class Application {
       this.windowManager?.updateBackgroundColors();
     });
 
-    // Setup windows.
+    // Setup windows and the application menu.
     this.windowManager = new WindowManager(this.persist);
+    this.updateAppMenu(this.caseManager.state());
 
     // Setup help.
-    this.helpManager = makeHelpService(
+    this.helpService = new HelpService(
       this.install,
       this.windowManager.controllers.help,
     );
 
     this.registerIpcHandlers();
+
+    // Development helper: open a case at startup.
+    const devCaseDir = process.env["TITGUI_CASE"];
+    if (devCaseDir !== undefined && devCaseDir !== "") {
+      await this.caseManager.openCase(path.resolve(devCaseDir));
+    }
   }
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   private onWindowAllClosed() {
-    app.quit();
+    // On macOS the application conventionally stays alive without windows
+    // and is reopened from the dock.
+    if (process.platform !== "darwin") app.quit();
+  }
+
+  private onActivate() {
+    this.windowManager?.controllers.main.open();
+  }
+
+  // Guard unsaved changes on quit: hold the quit, ask, then re-quit.
+  private onBeforeQuit(event: Electron.Event) {
+    if (this.quitConfirmed || this.caseFlows === undefined) return;
+    const state = this.caseManager?.state() ?? null;
+    if (state === null || !state.dirty) return;
+
+    event.preventDefault();
+    void this.caseFlows
+      .confirmDiscard(this.windowManager?.controllers.main.window ?? null)
+      .then((proceed) => {
+        if (!proceed) return;
+        this.quitConfirmed = true;
+        app.quit();
+      });
   }
 
   private onWillQuit() {
     this.session?.stop();
-    this.persist?.save();
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  // React to case state changes: window chrome, menu, session scope.
+  private onCaseChanged(state: CaseState) {
+    const mainWindow = this.windowManager?.controllers.main;
+    mainWindow?.setTitle(
+      state === null ? "BlueTit" : `${state.name} — BlueTit`,
+    );
+    mainWindow?.setDocument(state?.dir ?? null, state?.dirty ?? false);
+
+    this.updateAppMenu(state);
+    this.resetSession(state);
+    broadcastIpcEvent("case", "caseChanged", state);
+  }
+
+  // Tear down the session and start a new one for the given case. Called
+  // on every case state change; only a directory change causes a reset.
+  private resetSession(state: CaseState) {
+    if (this.session !== undefined && this.sessionDir === state?.dir) return;
+    assert(this.install !== undefined, "Installation is not ready.");
+
+    this.session?.stop();
+    this.session = undefined;
+    this.sessionDir = undefined;
+
+    if (state !== null) {
+      this.session = new SessionManager(this.install, state.dir);
+      this.sessionDir = state.dir;
+      this.session.start().catch((error: unknown) => {
+        log.error("Failed to start the session:", error);
+      });
+    }
+
+    // The renderer re-reads the frame count and refreshes the viewport.
+    broadcastIpcEvent("session", "storageChanged", null);
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  private requireCase() {
+    assert(this.caseManager !== undefined, "Case manager is not ready.");
+    return this.caseManager;
+  }
+
+  private requireFlows() {
+    assert(this.caseFlows !== undefined, "Case flows are not ready.");
+    return this.caseFlows;
+  }
+
+  private requireHelp() {
+    assert(this.helpService !== undefined, "Help service is not ready.");
+    return this.helpService;
+  }
+
+  private findWindowController(event: IpcMainInvokeEvent) {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window === null) return;
+    return this.windowManager?.find(window);
   }
 
   private registerIpcHandlers() {
-    ipcMain.removeHandler(THEME_GET_CHANNEL);
-    ipcMain.handle(THEME_GET_CHANNEL, () => {
-      return nativeTheme.themeSource;
+    exposeIpcHandlers({
+      theme: createThemeHandlers(),
+      window: createWindowHandlers((event) => this.findWindowController(event)),
+      case: createCaseHandlers(
+        () => this.requireCase(),
+        () => this.requireFlows(),
+      ),
+      session: createSessionHandlers(
+        () => this.session,
+        () => this.requireCase(),
+      ),
+      help: createHelpHandlers(() => this.requireHelp()),
     });
+  }
 
-    ipcMain.removeHandler(THEME_SET_CHANNEL);
-    ipcMain.handle(THEME_SET_CHANNEL, (_event, theme: Theme) => {
-      nativeTheme.themeSource = theme;
-    });
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    ipcMain.removeHandler(WINDOW_PERSIST_GET_CHANNEL);
-    ipcMain.handle(WINDOW_PERSIST_GET_CHANNEL, (event, key: string) => {
-      const window = BrowserWindow.fromWebContents(event.sender);
-      if (window === null) return;
-      return this.windowManager?.find(window)?.persist.get(key, z.unknown());
-    });
-
-    ipcMain.removeHandler(WINDOW_PERSIST_SET_CHANNEL);
-    ipcMain.handle(
-      WINDOW_PERSIST_SET_CHANNEL,
-      (event, key: string, value: unknown) => {
-        const window = BrowserWindow.fromWebContents(event.sender);
-        if (window === null) return;
-        this.windowManager?.find(window)?.persist.set(key, value);
+  // Refresh the application menu (recents, item enablement).
+  private updateAppMenu(state: CaseState) {
+    const mainWindow = () =>
+      this.windowManager?.controllers.main.window ?? null;
+    updateApplicationMenu(
+      {
+        newCase: () => {
+          runFromMenu(async () => this.requireFlows().newCase(mainWindow()));
+        },
+        openCase: () => {
+          runFromMenu(async () => this.requireFlows().openCase(mainWindow()));
+        },
+        openRecentCase: (dir) => {
+          runFromMenu(async () =>
+            this.requireFlows().openRecent(mainWindow(), dir),
+          );
+        },
+        saveCase: () => {
+          runFromMenu(async () => this.requireCase().save());
+        },
+        closeCase: () => {
+          runFromMenu(async () => this.requireFlows().close(mainWindow()));
+        },
+        openHelp: () => {
+          this.windowManager?.controllers.help.open();
+        },
       },
-    );
-
-    ipcMain.removeHandler(WINDOW_IS_FULL_SCREEN_CHANNEL);
-    ipcMain.handle(WINDOW_IS_FULL_SCREEN_CHANNEL, (event) => {
-      const window = BrowserWindow.fromWebContents(event.sender);
-      return window?.isFullScreen() ?? false;
-    });
-
-    ipcMain.removeHandler(SESSION_FRAME_COUNT_CHANNEL);
-    ipcMain.handle(SESSION_FRAME_COUNT_CHANNEL, async () => {
-      return this.session?.getFrameCount();
-    });
-
-    ipcMain.removeHandler(SESSION_FRAME_GET_CHANNEL);
-    ipcMain.handle(SESSION_FRAME_GET_CHANNEL, async (_event, index: number) => {
-      return this.session?.getFrame(index);
-    });
-
-    ipcMain.removeHandler(SESSION_EXPORT_RUN_CHANNEL);
-    ipcMain.handle(SESSION_EXPORT_RUN_CHANNEL, async (event) => {
-      const options: OpenDialogOptions = {
-        title: "Export Data",
-        buttonLabel: "Export",
-        properties: ["openDirectory", "createDirectory"],
-      };
-      const window = BrowserWindow.fromWebContents(event.sender);
-      const result =
-        window === null
-          ? await dialog.showOpenDialog(options)
-          : await dialog.showOpenDialog(window, options);
-      if (result.canceled) return;
-      await this.session?.export(result.filePaths[0]);
-    });
-
-    ipcMain.removeHandler(SESSION_SOLVER_RUN_CHANNEL);
-    ipcMain.handle(SESSION_SOLVER_RUN_CHANNEL, () => {
-      this.session?.runSolver();
-    });
-
-    ipcMain.removeHandler(SESSION_SOLVER_STOP_CHANNEL);
-    ipcMain.handle(SESSION_SOLVER_STOP_CHANNEL, () => {
-      this.session?.stopSolver();
-    });
-
-    ipcMain.removeHandler(SESSION_SOLVER_IS_RUNNING_CHANNEL);
-    ipcMain.handle(SESSION_SOLVER_IS_RUNNING_CHANNEL, () => {
-      return this.session?.isSolverRunning();
-    });
-
-    ipcMain.removeHandler(HELP_GET_SESSION_CHANNEL);
-    ipcMain.handle(HELP_GET_SESSION_CHANNEL, async () => {
-      return this.helpManager?.getSession();
-    });
-
-    this.helpManager?.onSessionChanged((session) => {
-      this.windowManager?.controllers.help?.window?.webContents.send(
-        HELP_SESSION_CHANGED_CHANNEL,
-        session,
-      );
-    });
-
-    ipcMain.removeHandler(HELP_ADD_TAB_CHANNEL);
-    ipcMain.handle(HELP_ADD_TAB_CHANNEL, async (_event, url?: string) => {
-      return this.helpManager?.addTab(url);
-    });
-
-    ipcMain.removeHandler(HELP_CLOSE_TAB_CHANNEL);
-    ipcMain.handle(HELP_CLOSE_TAB_CHANNEL, async (_event, id: number) => {
-      return this.helpManager?.closeTab(id);
-    });
-
-    ipcMain.removeHandler(HELP_SELECT_TAB_CHANNEL);
-    ipcMain.handle(HELP_SELECT_TAB_CHANNEL, async (_event, id: number) => {
-      return this.helpManager?.selectTab(id);
-    });
-
-    ipcMain.removeHandler(HELP_NAVIGATE_TAB_CHANNEL);
-    ipcMain.handle(
-      HELP_NAVIGATE_TAB_CHANNEL,
-      async (_event, id: number, url?: string) => {
-        return this.helpManager?.navigateTab(id, url);
-      },
+      { caseState: state, recents: this.caseManager?.recents() ?? [] },
     );
   }
+}
+
+// Run a menu-triggered action: unlike IPC calls, there is no renderer
+// promise to reject into, so failures surface as a dialog.
+function runFromMenu(action: () => Promise<unknown>) {
+  action().catch((error: unknown) => {
+    log.error("Menu action failed:", error);
+    dialog.showErrorBox(
+      "Action failed.",
+      error instanceof Error ? error.message : String(error),
+    );
+  });
 }
 
 new Application().run();

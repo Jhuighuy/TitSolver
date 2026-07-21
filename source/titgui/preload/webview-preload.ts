@@ -5,7 +5,7 @@
 
 import { ipcRenderer } from "electron";
 
-import { WEBVIEW_OPEN_IN_TAB_CHANNEL } from "~/shared/channels";
+import { WEBVIEW_OPEN_IN_TAB_CHANNEL } from "~/shared/webview";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -27,7 +27,7 @@ export function Tooltip({
         </BaseTooltip.Trigger>
         <BaseTooltip.Portal>
           <BaseTooltip.Positioner side={side} sideOffset={6} align="center">
-            <BaseTooltip.Popup className="z-50 max-w-xs rounded border border-(--chrome-1) bg-(--bg-3) px-2 py-1 text-(length:--text-1) leading-(--leading-1) text-(--fg-1) shadow-md">
+            <BaseTooltip.Popup className="z-50 max-w-xs rounded border border-(--neutral-4) bg-(--neutral-1) px-2 py-1 text-(length:--text-1) leading-(--leading-1) text-(--neutral-10) shadow-md">
               {content}
             </BaseTooltip.Popup>
           </BaseTooltip.Positioner>

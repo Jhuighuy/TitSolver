@@ -68,6 +68,14 @@ auto Storage::path() const -> std::filesystem::path {
   return db_.path();
 }
 
+auto Storage::data_version() const -> std::uint64_t {
+  sqlite::Statement statement{db_, R"SQL(
+    PRAGMA data_version
+  )SQL"};
+  TIT_ENSURE(statement.step(), "Unable to get the data version!");
+  return statement.column<std::uint64_t>();
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 auto Storage::max_series() const -> std::size_t {

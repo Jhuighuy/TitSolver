@@ -6,7 +6,6 @@
 import {
   IconArrowsHorizontal,
   IconRefresh as IconAutoRange,
-  IconBackground,
   IconCheck,
   IconChartDots as IconComponent,
   IconDroplet,
@@ -16,7 +15,6 @@ import {
   IconMathMax,
   IconMathMin,
   IconMatrix,
-  IconPalette,
   IconPerspective,
   IconPerspectiveOff,
   IconPointer,
@@ -28,6 +26,7 @@ import {
   IconBaselineDensitySmall as IconTicks,
   IconArrowsRandom as IconVector,
 } from "@tabler/icons-react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import type { ComponentProps } from "react";
 import { Euler, MathUtils, Vector3 } from "three";
 
@@ -35,12 +34,12 @@ import { surface } from "~/renderer/common/components/classes";
 import { ColorBox } from "~/renderer/common/components/color-box";
 import { DropdownMenu } from "~/renderer/common/components/dropdown-menu";
 import { NumberInput } from "~/renderer/common/components/input";
-import { Box, Flex } from "~/renderer/common/components/layout";
 import { Section } from "~/renderer/common/components/section";
-import { Select } from "~/renderer/common/components/select";
+import { Select, type SelectOption } from "~/renderer/common/components/select";
 import { Separator } from "~/renderer/common/components/separator";
 import { Switch } from "~/renderer/common/components/switch";
 import { Mono, Text } from "~/renderer/common/components/text";
+import { cn } from "~/renderer/common/components/utils";
 import { toCSSColor } from "~/renderer/common/utils";
 import {
   type BackgroundColorName,
@@ -49,137 +48,45 @@ import {
 import type { Projection } from "~/renderer/common/visual/camera";
 import {
   type ColorMapName,
-  type ColorRange,
   type ColorRangeMode,
   colorMaps,
 } from "~/renderer/common/visual/color-map";
 import type {
   Field,
   FieldMap,
-  FieldModifier,
   FieldRank,
 } from "~/renderer/common/visual/fields";
 import type { GlyphScaleMode } from "~/renderer/common/visual/glyphs";
 import type { ShadingMode } from "~/renderer/common/visual/particles";
 import type { RenderMode } from "~/renderer/common/visual/particles-switch";
 import { ExportButton } from "~/renderer/main/components/export";
-import type { ToolMode } from "~/renderer/main/components/view-selection";
+import {
+  frameDataAtom,
+  useViewportState,
+} from "~/renderer/main/state/viewport";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type ViewControlsProps = ToolControlsProps &
-  CameraControlsProps &
-  DisplayControlsProps &
-  RenderControlsProps;
-
-export function ViewControls({
-  // Tool.
-  toolMode,
-  setToolMode,
-  // Camera.
-  projection,
-  setProjection,
-  backgroundColorName,
-  setBackgroundColorName,
-  cameraPosition,
-  setCameraPosition,
-  cameraRotation,
-  setCameraRotation,
-  // Display.
-  frameData,
-  field,
-  setFieldByName,
-  renderMode,
-  setRenderMode,
-  pointSize,
-  setPointSize,
-  glyphScale,
-  setGlyphScale,
-  glyphScaleMode,
-  setGlyphScaleMode,
-  colorField,
-  setColorFieldByName,
-  colorFieldModifier,
-  setColorFieldModifier,
-  colorMapName,
-  setColorMapName,
-  colorRange,
-  setColorRange,
-  colorRangeMode,
-  setColorRangeMode,
-  // Render.
-  shadingMode,
-  setShadingMode,
-  legendEnabled,
-  setLegendEnabled,
-  legendTickCount,
-  setLegendTickCount,
-}: Readonly<ViewControlsProps>) {
+export function ViewControls() {
   return (
-    <Flex
-      align="center"
-      gap="1"
-      height="8"
-      minHeight="8"
-      maxHeight="8"
-      px="2"
-      py="1"
-    >
+    <div className="flex h-8 shrink-0 items-center gap-1 px-2 py-1">
       {/* ---- Tool. ------------------------------------------------------- */}
-      <ToolControls toolMode={toolMode} setToolMode={setToolMode} />
+      <ToolControls />
 
       <Separator orientation="vertical" />
 
       {/* ---- Camera. ----------------------------------------------------- */}
-      <CameraControls
-        projection={projection}
-        setProjection={setProjection}
-        backgroundColorName={backgroundColorName}
-        setBackgroundColorName={setBackgroundColorName}
-        cameraPosition={cameraPosition}
-        setCameraPosition={setCameraPosition}
-        cameraRotation={cameraRotation}
-        setCameraRotation={setCameraRotation}
-      />
+      <CameraControls />
 
       <Separator orientation="vertical" />
 
       {/* ---- Display. ---------------------------------------------------- */}
-      <DisplayControls
-        frameData={frameData}
-        field={field}
-        setFieldByName={setFieldByName}
-        renderMode={renderMode}
-        setRenderMode={setRenderMode}
-        pointSize={pointSize}
-        setPointSize={setPointSize}
-        glyphScale={glyphScale}
-        setGlyphScale={setGlyphScale}
-        glyphScaleMode={glyphScaleMode}
-        setGlyphScaleMode={setGlyphScaleMode}
-        colorRangeMode={colorRangeMode}
-        setColorRangeMode={setColorRangeMode}
-        colorRange={colorRange}
-        setColorRange={setColorRange}
-        colorMapName={colorMapName}
-        setColorMapName={setColorMapName}
-        colorField={colorField}
-        {...(renderMode === "glyphs" && { setColorFieldByName })}
-        colorFieldModifier={colorFieldModifier}
-        setColorFieldModifier={setColorFieldModifier}
-      />
+      <DisplayControls />
 
       <Separator orientation="vertical" />
 
       {/* ---- Render. ----------------------------------------------------- */}
-      <RenderControls
-        shadingMode={shadingMode}
-        setShadingMode={setShadingMode}
-        legendEnabled={legendEnabled}
-        setLegendEnabled={setLegendEnabled}
-        legendTickCount={legendTickCount}
-        setLegendTickCount={setLegendTickCount}
-      />
+      <RenderControls />
 
       <Separator orientation="vertical" />
 
@@ -188,18 +95,47 @@ export function ViewControls({
         <IconFileExport />
         Export…
       </ExportButton>
-    </Flex>
+    </div>
   );
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface ToolControlsProps {
-  toolMode: ToolMode;
-  setToolMode: (value: ToolMode) => void;
+// The recurring "label above a select" block.
+interface LabeledSelectProps<Value extends string> {
+  label: string;
+  value: Value;
+  onValueChange: (value: Value) => void;
+  options: readonly SelectOption<Value>[];
 }
 
-function ToolControls({ toolMode, setToolMode }: Readonly<ToolControlsProps>) {
+function LabeledSelect<Value extends string>({
+  label,
+  value,
+  onValueChange,
+  options,
+}: Readonly<LabeledSelectProps<Value>>) {
+  return (
+    <>
+      <Text color="subtle">{label}</Text>
+      <Select.Root
+        value={value}
+        onValueChange={onValueChange}
+        options={options}
+      >
+        <Select.Trigger aria-label={label} />
+        <Select.Content />
+      </Select.Root>
+    </>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+function ToolControls() {
+  const viewport = useViewportState();
+  const [toolMode, setToolMode] = useAtom(viewport.toolModeAtom);
+
   const toolModes = [
     { mode: "normal", label: "Navigate", icon: <IconPointer /> },
     { mode: "rect", label: "Box Select", icon: <IconRectangle /> },
@@ -224,10 +160,10 @@ function ToolControls({ toolMode, setToolMode }: Readonly<ToolControlsProps>) {
               setToolMode(mode);
             }}
           >
-            <Flex align="center" gap="2">
+            <div className="flex items-center gap-2">
               {icon}
               {label}
-            </Flex>
+            </div>
             {toolMode === mode && <IconCheck className="ml-auto" />}
           </DropdownMenu.Item>
         ))}
@@ -238,27 +174,42 @@ function ToolControls({ toolMode, setToolMode }: Readonly<ToolControlsProps>) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface CameraControlsProps {
-  projection: Projection;
-  setProjection: (value: Projection) => void;
-  backgroundColorName: BackgroundColorName;
-  setBackgroundColorName: (value: BackgroundColorName) => void;
-  cameraPosition: Vector3;
-  setCameraPosition: (value: Vector3) => void;
-  cameraRotation: Euler;
-  setCameraRotation: (value: Euler) => void;
-}
+const projectionOptions: readonly SelectOption<Projection>[] = [
+  { value: "perspective", label: "Perspective", icon: <IconPerspective /> },
+  {
+    value: "orthographic",
+    label: "Orthographic",
+    icon: <IconPerspectiveOff />,
+  },
+];
 
-function CameraControls({
-  projection,
-  setProjection,
-  backgroundColorName,
-  setBackgroundColorName,
-  cameraPosition,
-  setCameraPosition,
-  cameraRotation,
-  setCameraRotation,
-}: Readonly<CameraControlsProps>) {
+const backgroundColorOptions: readonly SelectOption<BackgroundColorName>[] =
+  Object.entries(backgroundColors).map(([name, { label, color }]) => ({
+    value: name as BackgroundColorName,
+    label,
+    icon: (
+      <span
+        className={cn("size-4 rounded-xs", color === null && surface())}
+        style={
+          color === null ? undefined : { backgroundColor: toCSSColor(color) }
+        }
+      />
+    ),
+  }));
+
+function CameraControls() {
+  const viewport = useViewportState();
+  const [projection, setProjection] = useAtom(viewport.projectionAtom);
+  const [backgroundColorName, setBackgroundColorName] = useAtom(
+    viewport.backgroundColorNameAtom,
+  );
+  const [cameraPosition, setCameraPosition] = useAtom(
+    viewport.cameraPositionAtom,
+  );
+  const [cameraRotation, setCameraRotation] = useAtom(
+    viewport.cameraRotationAtom,
+  );
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
@@ -266,52 +217,19 @@ function CameraControls({
         View
       </DropdownMenu.Trigger>
       <DropdownMenu.Content className="w-90">
-        {/* ---- Projection. ----------------------------------------------- */}
-        <Text color="subtle">Projection</Text>
-        <Select.Root value={projection} onValueChange={setProjection}>
-          <Select.Trigger />
-          <Select.Content>
-            <Select.Item value="perspective">
-              <IconPerspective />
-              Perspective
-            </Select.Item>
-            <Select.Item value="orthographic">
-              <IconPerspectiveOff />
-              Orthographic
-            </Select.Item>
-          </Select.Content>
-        </Select.Root>
+        <LabeledSelect
+          label="Projection"
+          value={projection}
+          onValueChange={setProjection}
+          options={projectionOptions}
+        />
 
-        {/* ---- Background. ----------------------------------------------- */}
-        <Text color="subtle">Background Color</Text>
-        <Select.Root
+        <LabeledSelect
+          label="Background Color"
           value={backgroundColorName}
           onValueChange={setBackgroundColorName}
-        >
-          <Select.Trigger>
-            <IconBackground />
-            {backgroundColors[backgroundColorName].label}
-          </Select.Trigger>
-          <Select.Content>
-            {Object.entries(backgroundColors).map(
-              ([name, { label, color }]) => (
-                <Select.Item key={label} value={name}>
-                  <Box
-                    size="4"
-                    {...(color === null
-                      ? {
-                          className: surface(),
-                        }
-                      : {
-                          style: { backgroundColor: toCSSColor(color) },
-                        })}
-                  />
-                  {label}
-                </Select.Item>
-              ),
-            )}
-          </Select.Content>
-        </Select.Root>
+          options={backgroundColorOptions}
+        />
 
         <Section label="Advanced Camera" defaultOpen={false}>
           {/* ---- Position. ----------------------------------------------- */}
@@ -353,53 +271,86 @@ function CameraControls({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface DisplayControlsProps {
-  frameData: FieldMap;
-  field: Field;
-  setFieldByName: (value: string) => void;
-  renderMode: RenderMode;
-  setRenderMode: (value: RenderMode) => void;
-  pointSize: number;
-  setPointSize: (value: number) => void;
-  glyphScale: number;
-  setGlyphScale: (value: number) => void;
-  glyphScaleMode: GlyphScaleMode;
-  setGlyphScaleMode: (value: GlyphScaleMode) => void;
-  colorField: Field;
-  setColorFieldByName?: (value: string) => void;
-  colorFieldModifier: FieldModifier;
-  setColorFieldModifier: (value: FieldModifier) => void;
-  colorMapName: ColorMapName;
-  setColorMapName: (value: ColorMapName) => void;
-  colorRangeMode: ColorRangeMode;
-  setColorRangeMode: (value: ColorRangeMode) => void;
-  colorRange: ColorRange;
-  setColorRange: (value: ColorRange) => void;
+const renderModeOptions: readonly SelectOption<RenderMode>[] = [
+  { value: "points", label: "Points", icon: <IconScalar /> },
+  { value: "glyphs", label: "Glyphs", icon: <IconVector /> },
+];
+
+const glyphScaleModeOptions: readonly SelectOption<GlyphScaleMode>[] = [
+  { value: "magnitude", label: "Magnitude", icon: <IconRulerMeasure /> },
+  { value: "uniform", label: "Uniform", icon: <IconArrowsHorizontal /> },
+];
+
+const colorRangeModeOptions: readonly SelectOption<ColorRangeMode>[] = [
+  { value: "auto", label: "Auto", icon: <IconAutoRange /> },
+  { value: "manual", label: "Manual", icon: <IconArrowsHorizontal /> },
+];
+
+const colorMapOptions: readonly SelectOption<ColorMapName>[] = Object.entries(
+  colorMaps,
+).map(([name, { label }]) => ({
+  value: name as ColorMapName,
+  label,
+  icon: <ColorBox name={name as ColorMapName} className="h-4 w-16" />,
+}));
+
+// Options for selecting a field from the frame data.
+function fieldOptions(frameData: FieldMap): readonly SelectOption[] {
+  return Array.from(frameData.entries()).map(([name, entry]) => ({
+    value: name,
+    label: <Mono>{name}</Mono>,
+    icon: <FieldIcon rank={entry.rank} />,
+  }));
 }
 
-function DisplayControls({
-  frameData,
-  field,
-  setFieldByName,
-  renderMode,
-  setRenderMode,
-  pointSize,
-  setPointSize,
-  glyphScale,
-  setGlyphScale,
-  glyphScaleMode,
-  setGlyphScaleMode,
-  colorField,
-  setColorFieldByName,
-  colorFieldModifier,
-  setColorFieldModifier,
-  colorMapName,
-  setColorMapName,
-  colorRangeMode,
-  setColorRangeMode,
-  colorRange,
-  setColorRange,
-}: Readonly<DisplayControlsProps>) {
+// Options for selecting a color metric appropriate for the field rank.
+function colorMetricOptions(
+  rank: FieldRank,
+): readonly SelectOption<"magnitude" | "determinant" | "component">[] {
+  return [
+    rank === 1
+      ? { value: "magnitude", label: "Magnitude", icon: <IconRulerMeasure /> }
+      : { value: "determinant", label: "Determinant", icon: <IconMatrix /> },
+    { value: "component", label: "Component", icon: <IconComponent /> },
+  ];
+}
+
+// Options for selecting a component of the field.
+function componentOptions(field: Field): readonly SelectOption[] {
+  const axes = ["x", "y", "z"].slice(0, field.dim);
+  const names =
+    field.rank === 1
+      ? axes
+      : axes.flatMap((row) => axes.map((col) => `${row}${col}`));
+  return names.map((name, index) => ({
+    value: index.toString(),
+    label: <Mono>{name}</Mono>,
+    icon: <IconComponent />,
+  }));
+}
+
+function DisplayControls() {
+  const viewport = useViewportState();
+  const frameData = useAtomValue(frameDataAtom);
+  const field = useAtomValue(viewport.fieldAtom);
+  const setFieldName = useSetAtom(viewport.fieldNameAtom);
+  const [renderMode, setRenderMode] = useAtom(viewport.renderModeAtom);
+  const [pointSize, setPointSize] = useAtom(viewport.pointSizeAtom);
+  const [glyphScale, setGlyphScale] = useAtom(viewport.glyphScaleAtom);
+  const [glyphScaleMode, setGlyphScaleMode] = useAtom(
+    viewport.glyphScaleModeAtom,
+  );
+  const colorField = useAtomValue(viewport.colorFieldAtom);
+  const setUserColorFieldName = useSetAtom(viewport.userColorFieldNameAtom);
+  const [colorFieldModifier, setColorFieldModifier] = useAtom(
+    viewport.colorFieldModifierAtom,
+  );
+  const [colorMapName, setColorMapName] = useAtom(viewport.colorMapNameAtom);
+  const [colorRangeMode, setColorRangeMode] = useAtom(
+    viewport.colorRangeModeAtom,
+  );
+  const [colorRange, setColorRange] = useAtom(viewport.colorRangeAtom);
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
@@ -408,38 +359,20 @@ function DisplayControls({
       </DropdownMenu.Trigger>
       <DropdownMenu.Content className="w-90">
         <Section label="Display Mapping">
-          {/* ---- Field. -------------------------------------------------- */}
-          <Text color="subtle">Field</Text>
-          <Select.Root value={field.name} onValueChange={setFieldByName}>
-            <Select.Trigger />
-            <Select.Content>
-              {Array.from(frameData.entries()).map(([name, entry]) => (
-                <Select.Item key={name} value={name}>
-                  <FieldIcon rank={entry.rank} />
-                  <Mono>{name}</Mono>
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select.Root>
+          <LabeledSelect
+            label="Field"
+            value={field.name}
+            onValueChange={setFieldName}
+            options={fieldOptions(frameData)}
+          />
 
           {field.rank === 1 && (
-            <>
-              {/* ---- Representation. ------------------------------------- */}
-              <Text color="subtle">Representation</Text>
-              <Select.Root value={renderMode} onValueChange={setRenderMode}>
-                <Select.Trigger />
-                <Select.Content>
-                  <Select.Item value="points">
-                    <IconScalar />
-                    Points
-                  </Select.Item>
-                  <Select.Item value="glyphs">
-                    <IconVector />
-                    Glyphs
-                  </Select.Item>
-                </Select.Content>
-              </Select.Root>
-            </>
+            <LabeledSelect
+              label="Representation"
+              value={renderMode}
+              onValueChange={setRenderMode}
+              options={renderModeOptions}
+            />
           )}
 
           {renderMode === "points" && (
@@ -460,24 +393,12 @@ function DisplayControls({
 
           {renderMode === "glyphs" && (
             <>
-              {/* ---- Glyph scale mode. ----------------------------------- */}
-              <Text color="subtle">Glyph Scale Mode</Text>
-              <Select.Root
+              <LabeledSelect
+                label="Glyph Scale Mode"
                 value={glyphScaleMode}
                 onValueChange={setGlyphScaleMode}
-              >
-                <Select.Trigger />
-                <Select.Content>
-                  <Select.Item value="magnitude">
-                    <IconRulerMeasure />
-                    Magnitude
-                  </Select.Item>
-                  <Select.Item value="uniform">
-                    <IconArrowsHorizontal />
-                    Uniform
-                  </Select.Item>
-                </Select.Content>
-              </Select.Root>
+                options={glyphScaleModeOptions}
+              />
 
               {/* ---- Glyph scale. ---------------------------------------- */}
               <Text color="subtle">Glyph Scale</Text>
@@ -495,45 +416,24 @@ function DisplayControls({
         </Section>
 
         <Section label="Coloring">
-          {setColorFieldByName !== undefined && (
-            <>
-              {/* ---- Color by. ------------------------------------------- */}
-              <Text color="subtle">Color By</Text>
-              <Select.Root
-                value={colorField.name}
-                onValueChange={setColorFieldByName}
-              >
-                <Select.Trigger />
-                <Select.Content>
-                  {Array.from(frameData.entries()).map(([name, entry]) => (
-                    <Select.Item key={name} value={name}>
-                      <FieldIcon rank={entry.rank} />
-                      <Mono>{name}</Mono>
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </>
+          {renderMode === "glyphs" && (
+            <LabeledSelect
+              label="Color By"
+              value={colorField.name}
+              onValueChange={setUserColorFieldName}
+              options={fieldOptions(frameData)}
+            />
           )}
 
-          {/* ---- Color range. -------------------------------------------- */}
-          <Text color="subtle">Color Range</Text>
-          <Select.Root value={colorRangeMode} onValueChange={setColorRangeMode}>
-            <Select.Trigger />
-            <Select.Content>
-              <Select.Item value="auto">
-                <IconAutoRange />
-                Auto
-              </Select.Item>
-              <Select.Item value="manual">
-                <IconArrowsHorizontal />
-                Manual
-              </Select.Item>
-            </Select.Content>
-          </Select.Root>
+          <LabeledSelect
+            label="Color Range"
+            value={colorRangeMode}
+            onValueChange={setColorRangeMode}
+            options={colorRangeModeOptions}
+          />
 
           {colorRangeMode === "manual" && (
-            <Flex align="center" gap="1">
+            <div className="flex items-center gap-1">
               {/* ---- Min / Max. ------------------------------------------ */}
               <NumberInput
                 slot={<IconMathMin />}
@@ -554,31 +454,20 @@ function DisplayControls({
                   setColorRange({ ...colorRange, max: value });
                 }}
               />
-            </Flex>
+            </div>
           )}
 
-          {/* ---- Color map. ---------------------------------------------- */}
-          <Text color="subtle">Color Map</Text>
-          <Select.Root value={colorMapName} onValueChange={setColorMapName}>
-            <Select.Trigger>
-              <IconPalette />
-              {colorMaps[colorMapName].label}
-            </Select.Trigger>
-            <Select.Content>
-              {Object.entries(colorMaps).map(([name, { label }]) => (
-                <Select.Item key={label} value={name}>
-                  <ColorBox name={name as ColorMapName} className="h-4 w-16" />
-                  {label}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select.Root>
+          <LabeledSelect
+            label="Color Map"
+            value={colorMapName}
+            onValueChange={setColorMapName}
+            options={colorMapOptions}
+          />
 
-          {colorField.rank === 1 && (
+          {colorField.rank > 0 && (
             <>
-              {/* ---- Color metric. --------------------------------------- */}
-              <Text color="subtle">Color Metric</Text>
-              <Select.Root
+              <LabeledSelect
+                label="Color Metric"
                 value={
                   typeof colorFieldModifier === "number"
                     ? "component"
@@ -587,103 +476,18 @@ function DisplayControls({
                 onValueChange={(value) => {
                   setColorFieldModifier(value === "component" ? 0 : value);
                 }}
-              >
-                <Select.Trigger />
-                <Select.Content>
-                  <Select.Item value="magnitude">
-                    <IconRulerMeasure />
-                    Magnitude
-                  </Select.Item>
-                  <Select.Item value="component">
-                    <IconComponent />
-                    Component
-                  </Select.Item>
-                </Select.Content>
-              </Select.Root>
+                options={colorMetricOptions(colorField.rank)}
+              />
 
-              {/* ---- Component. ------------------------------------------ */}
               {typeof colorFieldModifier === "number" && (
-                <>
-                  <Text color="subtle">Component</Text>
-                  <Select.Root
-                    value={colorFieldModifier.toString()}
-                    onValueChange={(value) => {
-                      setColorFieldModifier(Math.trunc(Number(value)));
-                    }}
-                  >
-                    <Select.Trigger />
-                    <Select.Content>
-                      {["x", "y", "z"]
-                        .slice(0, colorField.dim)
-                        .map((axis, i) => (
-                          <Select.Item key={axis} value={i.toString()}>
-                            <IconComponent />
-                            <Mono>{axis}</Mono>
-                          </Select.Item>
-                        ))}
-                    </Select.Content>
-                  </Select.Root>
-                </>
-              )}
-            </>
-          )}
-
-          {colorField.rank === 2 && (
-            <>
-              {/* ---- Color metric. --------------------------------------- */}
-              <Text color="subtle">Color Metric</Text>
-              <Select.Root
-                value={
-                  typeof colorFieldModifier === "number"
-                    ? "component"
-                    : colorFieldModifier
-                }
-                onValueChange={(value) => {
-                  setColorFieldModifier(value === "component" ? 0 : value);
-                }}
-              >
-                <Select.Trigger />
-                <Select.Content>
-                  <Select.Item value="determinant">
-                    <IconMatrix />
-                    Determinant
-                  </Select.Item>
-                  <Select.Item value="component">
-                    <IconComponent />
-                    Component
-                  </Select.Item>
-                </Select.Content>
-              </Select.Root>
-
-              {/* ---- Component. ------------------------------------------ */}
-              {typeof colorFieldModifier === "number" && (
-                <>
-                  <Text color="subtle">Component</Text>
-                  <Select.Root
-                    value={colorFieldModifier.toString()}
-                    onValueChange={(value) => {
-                      setColorFieldModifier(Math.trunc(Number(value)));
-                    }}
-                  >
-                    <Select.Trigger />
-                    <Select.Content>
-                      {(() => {
-                        const axes = ["x", "y", "z"].slice(0, colorField.dim);
-                        return axes.flatMap((row, i) =>
-                          axes.map((col, j) => (
-                            <Select.Item
-                              key={`${row}${col}`}
-                              value={(i * axes.length + j).toString()}
-                            >
-                              <IconComponent />
-                              <Mono>{`${row}${col}`}</Mono>
-                            </Select.Item>
-                          )),
-                        );
-                      })()}
-                    </Select.Content>
-                  </Select.Root>
-                </>
+                <LabeledSelect
+                  label="Component"
+                  value={colorFieldModifier.toString()}
+                  onValueChange={(value) => {
+                    setColorFieldModifier(Math.trunc(Number(value)));
+                  }}
+                  options={componentOptions(colorField)}
+                />
               )}
             </>
           )}
@@ -695,23 +499,19 @@ function DisplayControls({
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface RenderControlsProps {
-  shadingMode: ShadingMode;
-  setShadingMode: (value: ShadingMode) => void;
-  legendEnabled: boolean;
-  setLegendEnabled: (value: boolean) => void;
-  legendTickCount: number;
-  setLegendTickCount: (value: number) => void;
-}
+const shadingModeOptions: readonly SelectOption<ShadingMode>[] = [
+  { value: "flat", label: "Flat", icon: <IconSunOff /> },
+  { value: "shaded", label: "Shaded", icon: <IconSun /> },
+];
 
-function RenderControls({
-  shadingMode,
-  setShadingMode,
-  legendEnabled,
-  setLegendEnabled,
-  legendTickCount,
-  setLegendTickCount,
-}: Readonly<RenderControlsProps>) {
+function RenderControls() {
+  const viewport = useViewportState();
+  const [shadingMode, setShadingMode] = useAtom(viewport.shadingModeAtom);
+  const [legendEnabled, setLegendEnabled] = useAtom(viewport.legendEnabledAtom);
+  const [legendTickCount, setLegendTickCount] = useAtom(
+    viewport.legendTickCountAtom,
+  );
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
@@ -720,32 +520,23 @@ function RenderControls({
       </DropdownMenu.Trigger>
       <DropdownMenu.Content className="w-90">
         <Section label="Shading">
-          {/* ---- Shading mode. ------------------------------------------- */}
-          <Text color="subtle">Shading Mode</Text>
-          <Select.Root value={shadingMode} onValueChange={setShadingMode}>
-            <Select.Trigger />
-            <Select.Content>
-              <Select.Item value="flat">
-                <IconSunOff />
-                Flat
-              </Select.Item>
-              <Select.Item value="shaded">
-                <IconSun />
-                Shaded
-              </Select.Item>
-            </Select.Content>
-          </Select.Root>
+          <LabeledSelect
+            label="Shading Mode"
+            value={shadingMode}
+            onValueChange={setShadingMode}
+            options={shadingModeOptions}
+          />
         </Section>
 
         <Section label="Legend">
           {/* ---- Show legend. -------------------------------------------- */}
-          <Flex align="center" justify="between">
+          <div className="flex items-center justify-between">
             <Text color="subtle">Show Legend</Text>
             <Switch
               checked={legendEnabled}
               onCheckedChange={setLegendEnabled}
             />
-          </Flex>
+          </div>
 
           {legendEnabled && (
             <>

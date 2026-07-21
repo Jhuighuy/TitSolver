@@ -40,5 +40,18 @@
     "typescript/prefer-readonly-parameter-types": "off",
     "typescript/strict-boolean-expressions": ["error", { "allowAny": true }],
     "typescript/promise-function-async": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "__mocks__/**"],
+      "rules": {
+        "typescript/consistent-type-imports": "off",
+        "typescript/require-await": "off",
+        "typescript/unbound-method": "off",
+        "unicorn/consistent-function-scoping": "off",
+        "unicorn/no-useless-undefined": "off",
+        "unicorn/prefer-event-target": "off"
+      }
+    }
+  ]
 }

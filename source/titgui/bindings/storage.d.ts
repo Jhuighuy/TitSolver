@@ -3,9 +3,15 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+// The value shapes (kinds, types, arrays) live in the shared zod schemas —
+// a single source of truth for the C++ ↔ TS contract. This file declares
+// only the native object surfaces.
+import type { NumericArray, Type } from "~/shared/storage";
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export interface Storage {
+  dataVersion(): Promise<number>;
   seriesCount(): Promise<number>;
   series(index: number): Promise<Series>;
   lastSeries(): Promise<Series>;
@@ -16,8 +22,13 @@ export interface Storage {
 export interface Series {
   frameCount(): Promise<number>;
   frame(index: number): Promise<Frame>;
+  readFrame(index: number): Promise<FrameData>;
+  frameTimes(): Promise<Float64Array>;
   export(dirPath: string): Promise<void>;
 }
+
+/** All arrays of a frame, read in a single native call. */
+export type FrameData = Record<string, { type: Type; data: NumericArray }>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -33,35 +44,5 @@ export interface Field {
   type(): Promise<Type>;
   data(): Promise<NumericArray>;
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-export type Kind =
-  | "int8_t"
-  | "uint8_t"
-  | "int16_t"
-  | "uint16_t"
-  | "int32_t"
-  | "uint32_t"
-  | "float32_t"
-  | "float64_t";
-
-export interface Type {
-  kind: Kind;
-  rank: number;
-  dim: number;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-export type NumericArray =
-  | Int8Array
-  | Uint8Array
-  | Int16Array
-  | Uint16Array
-  | Int32Array
-  | Uint32Array
-  | Float32Array
-  | Float64Array;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

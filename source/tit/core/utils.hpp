@@ -7,7 +7,10 @@
 
 #include <concepts>
 #include <cstddef>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <utility>
 
 namespace tit {
 
@@ -49,6 +52,55 @@ template<std::default_initializable T>
 constexpr auto make_array(std::size_t size) -> T* {
   return std::make_unique<T[]>(size).release(); // NOLINT(*-c-arrays)
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Overloaded function object.
+template<class... Funcs>
+struct Overload final : Funcs... {
+  using Funcs::operator()...;
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Call a function on scope exit.
+template<std::invocable Func>
+class Defer final {
+public:
+
+  /// Construct a scope-exit callback.
+  constexpr explicit Defer(Func func) noexcept : func_{std::move(func)} {}
+
+  /// Move-construct a scope-exit callback.
+  constexpr Defer(Defer&& other) noexcept : func_{std::move(other.func_)} {}
+
+  /// Scope-exit callback is not copy-constructible.
+  constexpr Defer(const Defer&) = delete;
+
+  /// Move-assign a scope-exit callback.
+  constexpr auto operator=(Defer&& other) noexcept -> Defer& {
+    func_ = std::move(other.func_);
+    return *this;
+  }
+
+  /// Scope-exit callback is not copy-assignable.
+  constexpr auto operator=(const Defer&) -> Defer& = delete;
+
+  /// Run the stored callback, unless it was canceled.
+  constexpr ~Defer() {
+    if (func_.has_value()) std::invoke(func_.value());
+  }
+
+  /// Cancel the stored callback.
+  constexpr void cancel() noexcept {
+    func_.reset();
+  }
+
+private:
+
+  std::optional<Func> func_;
+
+}; // class Defer
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

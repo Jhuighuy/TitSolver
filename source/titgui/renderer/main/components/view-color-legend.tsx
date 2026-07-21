@@ -6,8 +6,8 @@
 import type { ComponentProps } from "react";
 
 import { ColorBox } from "~/renderer/common/components/color-box";
-import { Box } from "~/renderer/common/components/layout";
 import { Text } from "~/renderer/common/components/text";
+import { cn } from "~/renderer/common/components/utils";
 import { assert, iota } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -24,6 +24,7 @@ export function ViewColorLegend({
   max,
   ticks = 10,
   title,
+  className,
   ...props
 }: Readonly<Omit<ViewColorLegendProps, "orientation">>) {
   assert(min <= max);
@@ -33,21 +34,21 @@ export function ViewColorLegend({
     <ColorBox
       {...props}
       orientation="vertical"
-      position="relative"
-      className="border-2 text-(--fg-2)"
+      className={cn("relative border-2 text-(--neutral-8)", className)}
     >
       {/* ---- Title. ------------------------------------------------------ */}
       {title !== undefined && (
-        <Box
-          position="absolute"
-          left="-150%"
-          top="50%"
-          style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
+        <div
+          className="absolute top-1/2"
+          style={{
+            left: "-150%",
+            transform: "translate(-50%, -50%) rotate(-90deg)",
+          }}
         >
           <Text size="3" mono>
             {title}
           </Text>
-        </Box>
+        </div>
       )}
 
       {/* ---- Ticks. ------------------------------------------------------ */}
@@ -56,28 +57,24 @@ export function ViewColorLegend({
         const offset = `calc(${1 - t} * (100% + 2px) - 1px)`;
 
         return (
-          <Box
+          <div
             key={index}
-            position="absolute"
-            left="100%"
-            top={offset}
-            width="100%"
-            height="2px"
+            className="absolute left-full h-0.5 w-full"
             style={{
+              top: offset,
               background: "currentColor",
               transform: "translate(-50%, -50%)",
             }}
           >
-            <Box
-              position="absolute"
-              left="150%"
-              style={{ transform: "translateY(-50%)" }}
+            <div
+              className="absolute"
+              style={{ left: "150%", transform: "translateY(-50%)" }}
             >
               <Text size="2" mono>
                 {(min + (max - min) * t).toFixed(2)}
               </Text>
-            </Box>
-          </Box>
+            </div>
+          </div>
         );
       })}
     </ColorBox>

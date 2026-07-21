@@ -36,6 +36,7 @@ function(check_spelling)
     OUTPUT "${STAMP}"
     COMMAND
       "${CODESPELL_EXE}"
+        --skip="**/package-lock.json"
         --ignore-words="${CMAKE_SOURCE_DIR}/cmake/codespell.txt"
         --check-filenames
         ${GIT_INDEXED_FILES}

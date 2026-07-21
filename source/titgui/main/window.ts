@@ -5,11 +5,12 @@
 
 import path from "node:path";
 
-import { BrowserWindow, nativeTheme } from "electron";
+import { BrowserWindow, nativeTheme, screen } from "electron";
 import { z } from "zod";
 
+import { sendIpcEvent } from "~/main/ipc";
 import type { PersistedState } from "~/main/persisted-state";
-import { WINDOW_FULL_SCREEN_CHANGED_CHANNEL } from "~/shared/channels";
+import { windowBackgroundColors } from "~/shared/theme";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -24,6 +25,13 @@ export type WindowKind = "main" | "help";
 export class WindowController {
   /** Window instance. */
   public window?: BrowserWindow;
+
+  // Title managed from the main process; page titles are ignored.
+  private title = DEFAULT_WINDOW_TITLE;
+
+  // The represented document (macOS: proxy icon and the edited dot).
+  private documentPath: string | null = null;
+  private documentEdited = false;
 
   /**
    * Construct a window controller.
@@ -44,8 +52,8 @@ export class WindowController {
     if (this.window !== undefined) return;
 
     // Read persisted window state.
-    const x = this.persist.get(WINDOW_X_KEY, z.int());
-    const y = this.persist.get(WINDOW_Y_KEY, z.int());
+    let x = this.persist.get(WINDOW_X_KEY, z.int());
+    let y = this.persist.get(WINDOW_Y_KEY, z.int());
     const width = this.persist.get(
       WINDOW_WIDTH_KEY,
       z.int().min(WINDOW_MIN_WIDTH),
@@ -56,6 +64,25 @@ export class WindowController {
       z.int().min(WINDOW_MIN_HEIGHT),
       WINDOW_MIN_HEIGHT,
     );
+
+    // Drop a persisted position that is no longer visible on any display
+    // (e.g. after a monitor change); the window is centered instead.
+    if (x !== undefined && y !== undefined) {
+      const windowX = x;
+      const windowY = y;
+      const visible = screen.getAllDisplays().some(({ workArea }) => {
+        return (
+          windowX < workArea.x + workArea.width &&
+          windowX + width > workArea.x &&
+          windowY < workArea.y + workArea.height &&
+          windowY + height > workArea.y
+        );
+      });
+      if (!visible) {
+        x = undefined;
+        y = undefined;
+      }
+    }
     const isMaximized = this.persist.get(
       WINDOW_MAXIMIZED_KEY,
       z.boolean(),
@@ -104,22 +131,38 @@ export class WindowController {
       this.window = undefined;
     });
 
+    // The main process is the source of truth for the window title.
+    this.window.setTitle(this.title);
+    this.window.setRepresentedFilename(this.documentPath ?? "");
+    this.window.setDocumentEdited(this.documentEdited);
+    this.window.on("page-title-updated", (event) => {
+      event.preventDefault();
+    });
+
     // Notify of full screen state changes.
     this.window.once("ready-to-show", () => {
-      this.window?.webContents.send(
-        WINDOW_FULL_SCREEN_CHANGED_CHANNEL,
-        this.window.isFullScreen(),
+      const window = this.window;
+      if (window === undefined) return;
+      sendIpcEvent(
+        window,
+        "window",
+        "fullScreenChanged",
+        window.isFullScreen(),
       );
 
-      this.window?.show();
-      if (isMaximized) this.window?.maximize();
-      if (isFullScreen) this.window?.setFullScreen(true);
+      window.show();
+      if (isMaximized) window.maximize();
+      if (isFullScreen) window.setFullScreen(true);
     });
     this.window.on("enter-full-screen", () => {
-      this.window?.webContents.send(WINDOW_FULL_SCREEN_CHANGED_CHANNEL, true);
+      const window = this.window;
+      if (window === undefined) return;
+      sendIpcEvent(window, "window", "fullScreenChanged", true);
     });
     this.window.on("leave-full-screen", () => {
-      this.window?.webContents.send(WINDOW_FULL_SCREEN_CHANGED_CHANNEL, false);
+      const window = this.window;
+      if (window === undefined) return;
+      sendIpcEvent(window, "window", "fullScreenChanged", false);
     });
 
     // Load the content and show the window.
@@ -161,6 +204,25 @@ export class WindowController {
    */
   public updateBackgroundColor() {
     this.window?.setBackgroundColor(getWindowBackgroundColor());
+  }
+
+  /**
+   * Set the window title.
+   */
+  public setTitle(title: string) {
+    this.title = title;
+    this.window?.setTitle(title);
+  }
+
+  /**
+   * Reflect the open document in the window chrome — on macOS the proxy
+   * icon and the edited dot; a no-op elsewhere.
+   */
+  public setDocument(path: string | null, edited: boolean) {
+    this.documentPath = path;
+    this.documentEdited = edited;
+    this.window?.setRepresentedFilename(path ?? "");
+    this.window?.setDocumentEdited(edited);
   }
 }
 
@@ -213,6 +275,8 @@ export class WindowManager {
 const WINDOW_MIN_WIDTH = 1280;
 const WINDOW_MIN_HEIGHT = 800;
 
+const DEFAULT_WINDOW_TITLE = "BlueTit";
+
 const WINDOW = "window";
 const WINDOW_X_KEY = `${WINDOW}.x`;
 const WINDOW_Y_KEY = `${WINDOW}.y`;
@@ -222,8 +286,9 @@ const WINDOW_MAXIMIZED_KEY = `${WINDOW}.is-maximized`;
 const WINDOW_FULLSCREEN_KEY = `${WINDOW}.is-full-screen`;
 
 function getWindowBackgroundColor() {
-  // Note: These colors match the CSS variable `var(--bg-1)`.
-  return nativeTheme.shouldUseDarkColors ? "#0f172a" : "#e2e8f0";
+  return nativeTheme.shouldUseDarkColors
+    ? windowBackgroundColors.dark
+    : windowBackgroundColors.light;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

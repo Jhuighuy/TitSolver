@@ -6,6 +6,7 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -17,6 +18,11 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/float.hpp"
+#include "tit/core/str.hpp"
+#include "tit/prop/path.hpp"
+#include "tit/prop/tree.hpp"
+#include "tit/prop/unit.hpp"
+#include "tit/prop/validation.hpp"
 
 namespace tit::prop {
 
@@ -32,6 +38,8 @@ enum class SpecType : std::uint8_t {
   Array,
   Record,
   Variant,
+  Symbol,
+  Ref,
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,9 +72,13 @@ public:
   /// Return the concrete type of this specification.
   virtual auto type() const noexcept -> SpecType = 0;
 
-  /// Validate @p data, filling in any missing defaults.
-  /// @p path is the dotted field path used in error messages (empty at root).
-  virtual void validate(class Tree& tree, std::string_view path) const = 0;
+  /// List of namespaces declared in this specification.
+  virtual auto namespaces() const -> StrSet;
+
+  /// Validate @p tree using @p context and @p path.
+  virtual void validate(class Tree& tree,
+                        const Path& path,
+                        ValidationContext& context) const = 0;
 
   /// 'Box' the specification into a heap-allocated pointer.
   template<class Self>
@@ -74,7 +86,18 @@ public:
     return std::make_unique<std::decay_t<Self>>(std::forward<Self>(self));
   }
 
+  /// Return default value as a tree, or null when absent.
+  template<class Self>
+  auto default_value_tree(this const Self& self) -> Tree {
+    const auto& val = self.default_value();
+    return val.has_value() ? Tree{val.value()} : Tree{};
+  }
+
 }; // class Spec
+
+/// Validate @p tree against @p spec, filling in any missing defaults.
+[[nodiscard]]
+auto validate(const Spec& spec, Tree& tree) -> ValidationContext;
 
 /// Cast a specification to a concrete type.
 template<std::derived_from<Spec> T>
@@ -94,17 +117,19 @@ public:
   BoolSpec() = default;
 
   /// Get the default value.
-  auto default_value() const noexcept -> std::optional<bool>;
+  auto default_value() const noexcept -> bool;
 
   /// Set the default value.
   auto default_value(bool val) && -> BoolSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
-  std::optional<bool> default_;
+  bool default_ = false;
 
 }; // class BoolSpec
 
@@ -139,7 +164,9 @@ public:
   auto default_value() const noexcept -> std::optional<std::int64_t>;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -179,14 +206,23 @@ public:
   /// Set the default value.
   auto default_value(float64_t val) && -> RealSpec&&;
 
+  /// Get the unit.
+  auto unit() const noexcept -> const std::optional<Unit>&;
+
+  /// Set the unit.
+  auto unit(Unit val) && -> RealSpec&&;
+
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
   std::optional<float64_t> default_;
   std::optional<float64_t> min_;
   std::optional<float64_t> max_;
+  std::optional<Unit> unit_;
 
 }; // class RealSpec
 
@@ -206,7 +242,9 @@ public:
   auto default_value(std::string val) && -> StringSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -245,7 +283,9 @@ public:
   auto default_value(std::string val) && -> EnumSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -275,12 +315,22 @@ public:
   /// Get the element specification.
   auto item() const -> const Spec&;
 
+  /// Get the exact size requirement.
+  auto size() const noexcept -> std::optional<std::size_t>;
+
+  /// Set the exact size requirement.
+  auto size(std::size_t val) && -> ArraySpec&&;
+
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  auto namespaces() const -> StrSet override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
   SpecPtr item_spec_;
+  std::optional<std::size_t> size_;
 
 }; // class ArraySpec
 
@@ -299,6 +349,10 @@ public:
 
   /// Construct a record specification.
   RecordSpec() = default;
+
+  /// Check if this is an entity record.
+  /// An entity record is a record that contains a (single) symbol field.
+  auto is_entity_record() const noexcept -> bool;
 
   /// Get the fields.
   auto fields() const noexcept -> const std::vector<Field>&;
@@ -320,7 +374,10 @@ public:
   /// @}
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  auto namespaces() const -> StrSet override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -373,7 +430,9 @@ public:
   auto default_value(std::string val) && -> VariantSpec&&;
 
   auto type() const noexcept -> SpecType override;
-  void validate(Tree& tree, std::string_view path) const override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
 
 private:
 
@@ -381,6 +440,50 @@ private:
   std::optional<std::string> default_;
 
 }; // class VariantSpec
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Symbol property specification.
+class SymbolSpec final : public Spec {
+public:
+
+  /// Construct a symbol specification.
+  explicit SymbolSpec(std::string ns);
+
+  auto type() const noexcept -> SpecType override;
+  auto namespaces() const -> StrSet override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
+
+private:
+
+  std::string ns_;
+
+}; // class SymbolSpec
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Reference property specification.
+class RefSpec final : public Spec {
+public:
+
+  /// Construct a reference specification.
+  explicit RefSpec(std::string ns);
+
+  /// Get the target namespace.
+  auto target_namespace() const noexcept -> std::string_view;
+
+  auto type() const noexcept -> SpecType override;
+  void validate(Tree& tree,
+                const Path& path,
+                ValidationContext& context) const override;
+
+private:
+
+  std::string ns_;
+
+}; // class RefSpec
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

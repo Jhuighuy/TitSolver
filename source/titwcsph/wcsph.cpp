@@ -4,7 +4,9 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <cstddef>
+#include <cstdint>
 
+#include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/logging.hpp"
 #include "tit/core/main.hpp"
@@ -19,6 +21,9 @@
 #include "tit/geom/winding.hpp"
 #include "tit/geom/winding/fast_winding.hpp"
 #include "tit/par/control.hpp"
+#include "tit/prop/spec.hpp"
+#include "tit/prop/tree.hpp"
+#include "tit/prop/validation.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
@@ -26,14 +31,43 @@
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 #include "tit/sph/time_integrator.hpp"
+#include "titwcsph/case.hpp"
 
 namespace tit::sph::wcsph {
 namespace {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Parameters consumed from the case file. This is the honest subset: the
+// rest of the setup below stays hardcoded until it is dismantled.
+struct CaseParams {
+  float64_t end_time = 10.0;
+  std::int64_t output_interval = 100;
+};
+
+// Load and validate the case file, extracting the consumed parameters.
+auto load_case(const char* case_path) -> CaseParams {
+  auto tree = prop::tree_from_file(case_path);
+  const auto spec = tit::wcsph::make_case_spec();
+  const auto context = prop::validate(*spec, tree);
+  for (const auto& issue : context.issues()) {
+    log("case error: {}: {}", issue.path, issue.message);
+  }
+  TIT_ENSURE(!context.has_issues(), "Case file '{}' is invalid.", case_path);
+  return {
+      .end_time = tree.get("simulation").get("end_time").as_real(),
+      .output_interval = tree.get("output").get("interval").as_int(),
+  };
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 template<class Real>
-auto sph_main(int /*argc*/, char** /*argv*/) -> int {
+auto sph_main(int argc, char** argv) -> int {
+  // Consume the case file when given; no argument keeps the historical
+  // hardcoded setup.
+  const auto params = argc > 1 ? load_case(argv[1]) : CaseParams{};
+
   constexpr Real H = 0.6;   // Water column height.
   constexpr Real L = 2 * H; // Water column length.
 
@@ -181,9 +215,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       dt = time_integrator.step(mesh, particles);
     }
 
-    const auto end_time = 10.0;
-    const auto end = scaled_time >= end_time;
-    if ((step % 100 == 0) || end) {
+    const auto end = scaled_time >= params.end_time;
+    if ((step % static_cast<std::size_t>(params.output_interval) == 0) || end) {
       const StopwatchCycle cycle{print_time};
       particles.write(scaled_time, series);
     }

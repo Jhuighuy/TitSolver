@@ -83,7 +83,7 @@ function TreeTableNode({
               onClick={() => {
                 setOpen((prev) => !prev);
               }}
-              className="flex shrink-0 cursor-pointer items-center justify-center text-(--fg-5) transition-colors select-none hover:text-(--fg-3)"
+              className="flex shrink-0 cursor-pointer items-center justify-center text-(--neutral-5) transition-colors select-none hover:text-(--neutral-7)"
               style={{ width: INDENT }}
             >
               <IconChevronRight
@@ -99,7 +99,7 @@ function TreeTableNode({
           )}
           <span className="flex items-center gap-1.5 pr-2">
             {Boolean(icon) && (
-              <span className="shrink-0 text-(--fg-5) [&_svg]:size-[1.5em]">
+              <span className="shrink-0 text-(--neutral-5) [&_svg]:size-[1.5em]">
                 {icon}
               </span>
             )}
@@ -119,7 +119,7 @@ function TreeTableNode({
           <div className="col-span-full grid grid-cols-subgrid overflow-hidden">
             <div className="relative col-span-full grid grid-cols-subgrid">
               <div
-                className="pointer-events-none absolute inset-y-0 w-px bg-(--bg-6)"
+                className="pointer-events-none absolute inset-y-0 w-px bg-(--neutral-10)/20"
                 style={{ left: chevronLeft + Math.round(INDENT / 2) }}
               />
               {children}

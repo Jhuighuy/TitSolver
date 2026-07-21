@@ -5,7 +5,6 @@
 
 import { type ComponentProps, useMemo } from "react";
 
-import { Box } from "~/renderer/common/components/layout";
 import {
   type ColorMapName,
   colorMaps,
@@ -13,7 +12,7 @@ import {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-interface ColorBoxProps extends Omit<ComponentProps<typeof Box>, "as"> {
+interface ColorBoxProps extends ComponentProps<"div"> {
   name: ColorMapName;
   orientation?: "horizontal" | "vertical";
 }
@@ -45,7 +44,7 @@ export function ColorBox({
     [gradientStops, orientation],
   );
 
-  return <Box {...props} style={{ ...style, background: gradient }} />;
+  return <div {...props} style={{ ...style, background: gradient }} />;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3,65 +3,128 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-import { IconHandStop, IconRun } from "@tabler/icons-react";
-import { useEffect, useMemo, useRef } from "react";
+import {
+  IconCancel,
+  IconCpu,
+  IconCpu2,
+  IconRun,
+  IconStopwatch,
+} from "@tabler/icons-react";
+import { useAtomValue } from "jotai";
+import { useMemo, type ReactNode } from "react";
 
-import { Box } from "~/renderer/common/components/layout";
+import { TimeSeriesChart } from "~/renderer/common/components/chart";
 import {
   type MenuAction,
   useMenuAction,
 } from "~/renderer/common/components/menu";
-import { Text } from "~/renderer/common/components/text";
-import { useSolver } from "~/renderer/main/components/solver";
+import { StatTile } from "~/renderer/common/components/stat-tile";
+import { formatDuration, formatMemorySize } from "~/renderer/common/utils";
+import {
+  isSolverRunningAtom,
+  runSolver,
+  solverElapsedMsAtom,
+  solverSamplesAtom,
+  stopSolver,
+} from "~/renderer/main/state/solver";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function DashboardMenu() {
-  // ---- Solver. --------------------------------------------------------------
+  const isSolverRunning = useAtomValue(isSolverRunningAtom);
+  const elapsedMs = useAtomValue(solverElapsedMsAtom);
+  const samples = useAtomValue(solverSamplesAtom);
 
-  const { isSolverRunning, solverOutput, runSolver, stopSolver } = useSolver();
+  // ---- Actions. -------------------------------------------------------------
 
   const runAction = useMemo<MenuAction>(
-    () => ({
-      name: "Run Solver",
-      icon: <IconRun />,
-      disabled: isSolverRunning,
-      onClick: runSolver,
-    }),
-    [isSolverRunning, runSolver],
+    () =>
+      isSolverRunning
+        ? { name: "Stop Solver", icon: <IconCancel />, onClick: stopSolver }
+        : { name: "Run Solver", icon: <IconRun />, onClick: runSolver },
+    [isSolverRunning],
   );
 
   useMenuAction(runAction);
 
-  const stopAction = useMemo<MenuAction>(
-    () => ({
-      name: "Stop Solver",
-      icon: <IconHandStop />,
-      disabled: !isSolverRunning,
-      onClick: stopSolver,
-    }),
-    [isSolverRunning, stopSolver],
-  );
-
-  useMenuAction(stopAction);
-
   // ---- Layout. --------------------------------------------------------------
 
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const cpuData = useMemo(
+    () =>
+      samples.map(({ timestamp, cpuPercent }) => ({
+        timestamp,
+        value: cpuPercent,
+      })),
+    [samples],
+  );
 
-  useEffect(() => {
-    if (!solverOutput) return;
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [solverOutput]);
+  const memoryData = useMemo(
+    () =>
+      samples.map(({ timestamp, memoryBytes }) => ({
+        timestamp,
+        value: memoryBytes,
+      })),
+    [samples],
+  );
+
+  const lastSample = samples.at(-1);
 
   return (
-    <Box className="select-text hover:cursor-text">
-      <Text size="1">
-        <pre>{solverOutput}</pre>
-      </Text>
+    <div className="flex flex-col gap-3 p-2">
+      <StatTile
+        icon={<IconStopwatch />}
+        label="Elapsed"
+        value={formatDuration(elapsedMs)}
+      />
 
-      <div ref={bottomRef} />
-    </Box>
+      <MonitorSection
+        icon={<IconCpu />}
+        label="CPU"
+        value={lastSample && `${lastSample.cpuPercent.toFixed(1)}%`}
+      >
+        <TimeSeriesChart
+          data={cpuData}
+          name="CPU"
+          formatValue={(value) => `${Math.round(value)}%`}
+        />
+      </MonitorSection>
+
+      <MonitorSection
+        icon={<IconCpu2 />}
+        label="Memory"
+        value={lastSample && formatMemorySize(lastSample.memoryBytes)}
+      >
+        <TimeSeriesChart
+          data={memoryData}
+          name="Memory"
+          formatValue={formatMemorySize}
+        />
+      </MonitorSection>
+    </div>
+  );
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+interface MonitorSectionProps {
+  icon: ReactNode;
+  label: string;
+  value?: ReactNode;
+  children: ReactNode;
+}
+
+// A monitor: a stat header with the current value, and a chart below.
+function MonitorSection({
+  icon,
+  label,
+  value,
+  children,
+}: Readonly<MonitorSectionProps>) {
+  return (
+    <section className="flex flex-col gap-1">
+      <StatTile icon={icon} label={label} value={value} />
+      {children}
+    </section>
   );
 }
 

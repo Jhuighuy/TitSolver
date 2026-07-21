@@ -58,14 +58,18 @@
 !.oxfmtrc.json
 !.oxlintrc.json
 !package.json
+!package-lock.json
 !tsconfig.json
 
 # Ignore in-tree artifacts.
 .astro/
 .vite/
+coverage/
 dist/
 native/
 node_modules/
+playwright-report/
+test-results/
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

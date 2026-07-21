@@ -12,16 +12,15 @@ import {
   IconDownload,
   IconInfoSquare,
 } from "@tabler/icons-react";
+import { useAtomValue } from "jotai";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { IconButton } from "~/renderer/common/components/button";
-import { Box, Flex } from "~/renderer/common/components/layout";
 import {
   type MenuAction,
   useMenuAction,
 } from "~/renderer/common/components/menu";
 import { Text } from "~/renderer/common/components/text";
-import { useSignalValue } from "~/renderer/common/hooks/use-signal";
 import { logger, type Message } from "~/renderer/common/logging";
 import { downloadText } from "~/renderer/common/utils";
 import { assert } from "~/shared/utils";
@@ -29,11 +28,11 @@ import { assert } from "~/shared/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export function LogsMenu() {
-  const messages = useSignalValue(logger.messages);
+  const messages = useAtomValue(logger.messagesAtom);
 
   // ---- Actions. -------------------------------------------------------------
 
-  const stopAction = useMemo<MenuAction>(
+  const saveAction = useMemo<MenuAction>(
     () => ({
       name: "Save Logs",
       icon: <IconDownload />,
@@ -50,9 +49,9 @@ export function LogsMenu() {
     [messages],
   );
 
-  useMenuAction(stopAction);
+  useMenuAction(saveAction);
 
-  const runAction = useMemo<MenuAction>(
+  const clearAction = useMemo<MenuAction>(
     () => ({
       name: "Clear Logs",
       icon: <IconClearAll />,
@@ -64,7 +63,7 @@ export function LogsMenu() {
     [messages],
   );
 
-  useMenuAction(runAction);
+  useMenuAction(clearAction);
 
   // ---- Layout. --------------------------------------------------------------
 
@@ -76,14 +75,14 @@ export function LogsMenu() {
   }, [messages]);
 
   return (
-    <Box size="100%" className="select-text">
+    <div className="size-full select-text">
       {messages.map(({ id, type, text }) => (
-        <Box key={id} p="1" className="even:bg-(--bg-6)">
+        <div key={id} className="p-1 even:bg-(--neutral-10)/5">
           <LogMessage type={type} text={text} />
-        </Box>
+        </div>
       ))}
       <div ref={bottomRef} />
-    </Box>
+    </div>
   );
 }
 
@@ -97,11 +96,11 @@ function LogMessage({ type, text }: Readonly<LogMessageProps>) {
   const colorClass = useMemo(() => {
     switch (type) {
       case "log":
-        return "text-(--fg-4)";
+        return "text-(--neutral-6)";
       case "warning":
-        return "text-orange-600 dark:text-orange-400";
+        return "text-(--warning)";
       case "error":
-        return "text-red-600 dark:text-red-400";
+        return "text-(--danger)";
     }
     assert(false);
   }, [type]);
@@ -125,7 +124,7 @@ function LogMessage({ type, text }: Readonly<LogMessageProps>) {
 
   return (
     <Text className={colorClass}>
-      <Flex align="center" gap="1" height="3">
+      <div className="flex h-3 items-center gap-1">
         {icon}
         {title}
         {isMultiline && (
@@ -138,7 +137,7 @@ function LogMessage({ type, text }: Readonly<LogMessageProps>) {
             {isExpanded ? <IconChevronDown /> : <IconChevronLeft />}
           </IconButton>
         )}
-      </Flex>
+      </div>
       {isExpanded && <pre>{text}</pre>}
     </Text>
   );

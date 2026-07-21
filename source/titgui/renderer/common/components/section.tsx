@@ -6,7 +6,6 @@
 import { IconChevronRight } from "@tabler/icons-react";
 import { type ReactNode, useState } from "react";
 
-import { Flex } from "~/renderer/common/components/layout";
 import { Text } from "~/renderer/common/components/text";
 import { cn } from "~/renderer/common/components/utils";
 
@@ -16,18 +15,14 @@ const sizeConfig = {
   "1": {
     chevronClassName: "size-3",
     labelSize: "1",
-    gap: "1",
-    childGap: "1",
-    indent: "3",
-    borderOffset: "1",
+    rootClassName: "gap-1",
+    childClassName: "gap-1 pl-3 ml-1",
   },
   "2": {
     chevronClassName: "size-4",
     labelSize: "3",
-    gap: "2",
-    childGap: "2",
-    indent: "3",
-    borderOffset: "2",
+    rootClassName: "gap-2",
+    childClassName: "gap-2 pl-3 ml-2",
   },
 } as const;
 
@@ -47,18 +42,18 @@ export function Section({
   defaultOpen = true,
 }: Readonly<SectionProps>) {
   const [open, setOpen] = useState(defaultOpen);
-  const { chevronClassName, labelSize, gap, childGap, indent, borderOffset } =
+  const { chevronClassName, labelSize, rootClassName, childClassName } =
     sizeConfig[size];
 
   return (
-    <Flex direction="column" gap={gap}>
+    <div className={cn("flex flex-col", rootClassName)}>
       {/* ---- Trigger. ------------------------------------------------------ */}
       <button
         type="button"
         onClick={() => {
           setOpen((prev) => !prev);
         }}
-        className="group flex w-full cursor-pointer items-center gap-1.5 text-left text-(--fg-5) transition-colors select-none hover:text-(--fg-3)"
+        className="group flex w-full cursor-pointer items-center gap-1.5 text-left text-(--neutral-5) transition-colors select-none hover:text-(--neutral-7)"
       >
         <IconChevronRight
           className={cn(
@@ -67,7 +62,7 @@ export function Section({
             open ? "rotate-90" : "rotate-0",
           )}
         />
-        <Text size={labelSize} className="group-hover:text-(--fg-2)">
+        <Text size={labelSize} className="group-hover:text-(--neutral-8)">
           {label}
         </Text>
       </button>
@@ -77,17 +72,16 @@ export function Section({
         className="grid transition-[grid-template-rows] duration-200 ease-in-out"
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
-        <Flex
-          direction="column"
-          gap={childGap}
-          pl={indent}
-          ml={borderOffset}
-          className="flex flex-col overflow-hidden border-l border-(--chrome-1)"
+        <div
+          className={cn(
+            "flex flex-col overflow-hidden border-l border-(--neutral-4)",
+            childClassName,
+          )}
         >
           {children}
-        </Flex>
+        </div>
       </div>
-    </Flex>
+    </div>
   );
 }
 

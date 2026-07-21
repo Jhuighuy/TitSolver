@@ -11,7 +11,7 @@ import { cn } from "~/renderer/common/components/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-const separatorVariants = cva("shrink-0 bg-(--fg-5)", {
+const separatorVariants = cva("shrink-0 bg-(--neutral-5)", {
   variants: {
     orientation: {
       horizontal: "h-px",

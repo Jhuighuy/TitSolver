@@ -11,7 +11,7 @@ import { cn } from "~/renderer/common/components/utils";
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const linkVariants = cva(
-  "inline-flex cursor-pointer items-center gap-1 text-(--accent-fg-2) transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--accent-fg-3) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
+  "inline-flex cursor-pointer items-center gap-1 text-(--accent-7) transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--accent-6) [&_svg]:size-[1.5em] [&_svg]:shrink-0",
   {
     variants: {
       weight: {

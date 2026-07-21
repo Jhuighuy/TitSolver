@@ -24,13 +24,14 @@ export function SettingsMenu() {
               onValueChange={(value: Theme) => {
                 setTheme(value);
               }}
+              options={[
+                { value: "light", label: "Light" },
+                { value: "dark", label: "Dark" },
+                { value: "system", label: "System" },
+              ]}
             >
               <Select.Trigger />
-              <Select.Content>
-                <Select.Item value="light">Light</Select.Item>
-                <Select.Item value="dark">Dark</Select.Item>
-                <Select.Item value="system">System</Select.Item>
-              </Select.Content>
+              <Select.Content />
             </Select.Root>
           }
         />

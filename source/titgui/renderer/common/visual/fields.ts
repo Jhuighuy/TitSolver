@@ -9,7 +9,7 @@ import {
   matrixDeterminant,
   vectorMagnitude,
 } from "~/renderer/common/utils-math";
-import { assert, iota } from "~/shared/utils";
+import { assert, ensure, iota } from "~/shared/utils";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -35,7 +35,10 @@ export class Field {
     this.data = data;
     this.rank = rank;
     this.dim = dim;
-    assert(this.data.length % this.dim ** this.rank === 0);
+    ensure(
+      this.data.length % this.dim ** this.rank === 0,
+      `Field '${name}' size does not match its type.`,
+    );
   }
 
   public get length(): number {
@@ -92,19 +95,22 @@ export class FieldMap extends Map<string, Field> {
     }
 
     // Get density field. It must be present.
-    assert("rho" in rawFields);
+    ensure("rho" in rawFields, "Frame is missing the density field 'rho'.");
     const rho = rawFields.rho;
 
     // Get position field. It must be present.
-    assert("r" in rawFields);
+    ensure("r" in rawFields, "Frame is missing the position field 'r'.");
     const r = rawFields.r;
 
     // Dimensionality is inferred from density and position fields.
     this.count = rho.length;
     const dim = r.length / this.count;
-    assert(dim === 2 || dim === 3);
+    ensure(dim === 2 || dim === 3, "Frame has invalid dimensionality.");
     this.dim = dim;
-    assert(r.length === this.count * this.dim);
+    ensure(
+      r.length === this.count * this.dim,
+      "Position field size does not match the particle count.",
+    );
 
     // Assign fields.
     for (const [name, data] of Object.entries(rawFields)) {
@@ -117,7 +123,7 @@ export class FieldMap extends Map<string, Field> {
           case this.count * this.dim ** 2:
             return 2;
         }
-        assert(false);
+        ensure(false, `Field '${name}' has an unsupported size.`);
       })();
       this.set(name, new Field(name, data, rank, this.dim));
     }
