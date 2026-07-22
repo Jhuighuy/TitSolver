@@ -10,6 +10,7 @@
 
 #include "tit/core/profiler.hpp"
 #include "tit/dist/communicator.hpp"
+#include "tit/sph/distributed_particles.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 
@@ -18,7 +19,7 @@ namespace tit::sph {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Distributed simulation phase orchestrator.
-template<class Equations, class Integrator>
+template<class Equations, class Integrator, class Topology>
 class Simulation final {
 public:
 
@@ -33,14 +34,17 @@ public:
   /// Construct a simulation from numerical policies and a communicator.
   explicit Simulation(Equations equations,
                       Integrator integrator,
-                      dist::Communicator communicator)
+                      dist::Communicator communicator,
+                      Topology topology = {})
       : equations_{std::move(equations)}, integrator_{std::move(integrator)},
-        communicator_{std::move(communicator)} {}
+        communicator_{std::move(communicator)}, topology_{std::move(topology)} {
+  }
 
   /// Initialize equation-owned fields.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void initialize(ParticleMesh& mesh, ParticleArray& particles) const {
+    static_cast<void>(topology_.exchange_halos(particles));
     equations_.initialize(mesh, particles);
   }
 
@@ -55,8 +59,7 @@ public:
     const auto initial_state = integrator_.capture(particles);
     Num dt{};
     for (std::size_t stage = 0; stage < integrator_.num_stages(); ++stage) {
-      // State halo exchange will precede this local preparation phase once a
-      // distributed particle topology is attached to the simulation.
+      static_cast<void>(topology_.exchange_halos(particles));
       equations_.prepare(mesh, particles);
 
       if (stage == 0) {
@@ -70,19 +73,30 @@ public:
     }
 
     // Refresh accepted state before post-integration corrections.
+    static_cast<void>(topology_.exchange_halos(particles));
     equations_.prepare(mesh, particles);
     equations_.compute_shift_fields(mesh, particles);
 
-    // Exchange `N` before local surface classification when halos are active.
+    // Exchange `N` before local surface classification.
+    if (topology_.exchange_halos(particles)) {
+      equations_.prepare(mesh, particles);
+    }
     equations_.classify_free_surface(mesh, particles);
 
     // Exchange `phi` before reading neighboring surface classifications.
+    if (topology_.exchange_halos(particles)) {
+      equations_.prepare(mesh, particles);
+    }
     equations_.classify_near_surface(mesh, particles);
     equations_.apply_particle_shifts(particles);
 
     // Exchange shifted position, velocity, and density before correction.
+    if (topology_.exchange_halos(particles)) {
+      equations_.prepare(mesh, particles);
+    }
     equations_.prepare_density_correction(particles);
     equations_.apply_density_correction(mesh, particles);
+    topology_.migrate(particles);
     return dt;
   }
 
@@ -96,12 +110,17 @@ private:
   [[no_unique_address]] Equations equations_;
   [[no_unique_address]] Integrator integrator_;
   dist::Communicator communicator_;
+  [[no_unique_address]] Topology topology_;
 
 }; // class Simulation
 
+template<class Equations, class Integrator, class Topology>
+Simulation(Equations, Integrator, dist::Communicator, Topology)
+    -> Simulation<Equations, Integrator, Topology>;
+
 template<class Equations, class Integrator>
 Simulation(Equations, Integrator, dist::Communicator)
-    -> Simulation<Equations, Integrator>;
+    -> Simulation<Equations, Integrator, LocalParticleTopology>;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

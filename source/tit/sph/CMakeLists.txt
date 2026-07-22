@@ -29,6 +29,7 @@ add_tit_library(
     sph
   SOURCES
     "equation_of_state.hpp"
+    "distributed_particles.hpp"
     "field.hpp"
     "fluid_equations.hpp"
     "kernel.hpp"
