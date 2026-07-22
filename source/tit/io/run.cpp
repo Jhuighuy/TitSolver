@@ -27,10 +27,12 @@
 #include <nlohmann/json.hpp> // NOLINT(misc-include-cleaner)
 #include <nlohmann/json_fwd.hpp>
 
+#include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/type.hpp"
 #include "tit/io/run.hpp"
+#include "tit/io/run_backend.hpp"
 #include "tit/io/type.hpp"
 
 namespace tit::io {
@@ -222,11 +224,10 @@ namespace impl {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-class RunWriterState final :
-    public std::enable_shared_from_this<RunWriterState> {
+class RunPublisherState final {
 public:
 
-  RunWriterState(std::filesystem::path path, RunMetadata metadata)
+  RunPublisherState(std::filesystem::path path, RunMetadata metadata)
       : path_{std::move(path)}, metadata_{std::move(metadata)} {
     TIT_ENSURE(metadata_.dimension() > 0 && metadata_.dimension() <= 3,
                "Run dimension must be between one and three.");
@@ -257,12 +258,9 @@ public:
     write_json_atomic(path_ / "index.json", index_);
   }
 
-  auto begin(std::uint64_t step, double time)
-      -> std::shared_ptr<FrameWriterState>;
+  auto begin(std::uint64_t step, double time) -> FramePublication;
 
-  void publish(const std::filesystem::path& partial,
-               const std::filesystem::path& final,
-               FrameDescriptor descriptor,
+  void publish(const FramePublication& publication,
                const std::vector<FieldDescriptor>& fields) {
     TIT_ENSURE(frame_active_, "No frame is active.");
     TIT_ENSURE(!fields.empty(), "Cannot publish an empty frame.");
@@ -286,16 +284,21 @@ public:
     }
 
     std::error_code error;
-    std::filesystem::rename(partial, final, error);
+    std::filesystem::rename(publication.partial_path(),
+                            publication.final_path(),
+                            error);
     TIT_ENSURE(!error,
                "Unable to publish frame '{}': {}.",
-               final.string(),
+               publication.final_path().string(),
                error.message());
 
+    const auto& descriptor = publication.descriptor();
     index_["frames"].push_back({
         {"step", descriptor.step()},
         {"time", descriptor.time()},
-        {"file", std::filesystem::relative(final, path_).generic_string()},
+        {"file",
+         std::filesystem::relative(publication.final_path(), path_)
+             .generic_string()},
     });
     write_json_atomic(path_ / "index.json", index_);
     last_frame_ = descriptor;
@@ -320,13 +323,13 @@ private:
   std::optional<FrameDescriptor> last_frame_;
   bool frame_active_ = false;
 
-}; // class RunWriterState
+}; // class RunPublisherState
 
 class FrameWriterState final {
   class PartialFrameGuard final {
   public:
 
-    PartialFrameGuard(std::shared_ptr<RunWriterState> run,
+    PartialFrameGuard(std::shared_ptr<RunPublisherState> run,
                       std::filesystem::path partial)
         : run_{std::move(run)}, partial_{std::move(partial)} {}
 
@@ -348,7 +351,7 @@ class FrameWriterState final {
 
   private:
 
-    std::shared_ptr<RunWriterState> run_;
+    std::shared_ptr<RunPublisherState> run_;
     std::filesystem::path partial_;
     bool active_ = true;
 
@@ -356,17 +359,16 @@ class FrameWriterState final {
 
 public:
 
-  FrameWriterState(std::shared_ptr<RunWriterState> run,
-                   FrameDescriptor descriptor,
-                   std::filesystem::path partial,
-                   std::filesystem::path final)
-      : run_{std::move(run)}, guard_{run_, partial}, descriptor_{descriptor},
-        partial_{std::move(partial)}, final_{std::move(final)},
-        file_{std::make_unique<HighFive::File>(partial_.string(),
-                                               HighFive::File::Overwrite)} {
+  FrameWriterState(std::shared_ptr<RunPublisherState> run,
+                   FramePublication publication)
+      : run_{std::move(run)}, guard_{run_, publication.partial_path()},
+        publication_{std::move(publication)},
+        file_{std::make_unique<HighFive::File>(
+            publication_.partial_path().string(),
+            HighFive::File::Overwrite)} {
     file_->createAttribute("format_version", run_format_version);
-    file_->createAttribute("step", descriptor_.step());
-    file_->createAttribute("time", descriptor_.time());
+    file_->createAttribute("step", publication_.descriptor().step());
+    file_->createAttribute("time", publication_.descriptor().time());
     fields_ = file_->createGroup("fields");
   }
 
@@ -404,18 +406,16 @@ public:
     file_->flush();
     fields_ = {};
     file_.reset();
-    run_->publish(partial_, final_, descriptor_, field_descriptors_);
+    run_->publish(publication_, field_descriptors_);
     guard_.release();
     committed_ = true;
   }
 
 private:
 
-  std::shared_ptr<RunWriterState> run_;
+  std::shared_ptr<RunPublisherState> run_;
   PartialFrameGuard guard_;
-  FrameDescriptor descriptor_;
-  std::filesystem::path partial_;
-  std::filesystem::path final_;
+  FramePublication publication_;
   std::unique_ptr<HighFive::File> file_;
   HighFive::Group fields_;
   std::vector<FieldDescriptor> field_descriptors_;
@@ -424,8 +424,8 @@ private:
 
 }; // class FrameWriterState
 
-auto RunWriterState::begin(std::uint64_t step, double time)
-    -> std::shared_ptr<FrameWriterState> {
+auto RunPublisherState::begin(std::uint64_t step, double time)
+    -> FramePublication {
   TIT_ENSURE(!frame_active_, "Another frame is already active.");
   TIT_ENSURE(std::isfinite(time), "Frame time must be finite.");
   if (last_frame_.has_value()) {
@@ -441,10 +441,39 @@ auto RunWriterState::begin(std::uint64_t step, double time)
              "Frame '{}' already exists.",
              final.string());
   frame_active_ = true;
-  return std::make_shared<FrameWriterState>(shared_from_this(),
-                                            FrameDescriptor{step, time},
-                                            partial_path(final),
-                                            final);
+  return FramePublication{FrameDescriptor{step, time},
+                          partial_path(final),
+                          final};
+}
+
+auto make_run_publisher(std::filesystem::path path, RunMetadata metadata)
+    -> std::shared_ptr<RunPublisherState> {
+  return std::make_shared<RunPublisherState>(std::move(path),
+                                             std::move(metadata));
+}
+
+auto begin_frame_publication(const std::shared_ptr<RunPublisherState>& state,
+                             std::uint64_t step,
+                             double time) -> FramePublication {
+  TIT_ENSURE(state != nullptr, "Run publisher is null.");
+  return state->begin(step, time);
+}
+
+void publish_frame(const std::shared_ptr<RunPublisherState>& state,
+                   const FramePublication& publication,
+                   const std::vector<FieldDescriptor>& fields) {
+  TIT_ENSURE(state != nullptr, "Run publisher is null.");
+  state->publish(publication, fields);
+}
+
+void abandon_frame(const std::shared_ptr<RunPublisherState>& state) noexcept {
+  if (state != nullptr) state->abandon();
+}
+
+auto publisher_path(const std::shared_ptr<RunPublisherState>& state) noexcept
+    -> const std::filesystem::path& {
+  TIT_ASSERT(state != nullptr, "Run publisher is null.");
+  return state->path();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -523,15 +552,16 @@ void FrameWriter::commit() {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 RunWriter::RunWriter(std::filesystem::path path, RunMetadata metadata)
-    : state_{std::make_shared<impl::RunWriterState>(std::move(path),
-                                                    std::move(metadata))} {}
+    : state_{impl::make_run_publisher(std::move(path), std::move(metadata))} {}
 
 auto RunWriter::begin_frame(std::uint64_t step, double time) -> FrameWriter {
-  return FrameWriter{state_->begin(step, time)};
+  return FrameWriter{std::make_shared<impl::FrameWriterState>(
+      state_,
+      impl::begin_frame_publication(state_, step, time))};
 }
 
 auto RunWriter::path() const -> const std::filesystem::path& {
-  return state_->path();
+  return impl::publisher_path(state_);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

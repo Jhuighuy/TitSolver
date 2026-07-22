@@ -9,6 +9,7 @@ add_tit_library(
   SOURCES
     "run.cpp"
     "run.hpp"
+    "run_backend.hpp"
     "type.hpp"
   DEPENDS
     tit::core

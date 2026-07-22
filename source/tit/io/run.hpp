@@ -129,7 +129,7 @@ private:
 
 namespace impl {
 
-class RunWriterState;
+class RunPublisherState;
 class FrameWriterState;
 class RunReaderState;
 
@@ -209,7 +209,7 @@ public:
 
 private:
 
-  std::shared_ptr<impl::RunWriterState> state_;
+  std::shared_ptr<impl::RunPublisherState> state_;
 
 }; // class RunWriter
 
