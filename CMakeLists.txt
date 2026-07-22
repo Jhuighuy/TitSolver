@@ -39,6 +39,20 @@ find_package(unofficial-node-addon-api CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
+# MPI installations include a launcher and a matching component/plugin tree;
+# they are an external runtime rather than a few libraries that can be copied
+# into TIT_ROOT. Preserve the configured MPI library directories in installed
+# command-line tools so that the library and its components come from the same
+# installation.
+set(TIT_MPI_RUNTIME_DIRS)
+foreach(MPI_LIBRARY IN LISTS MPI_CXX_LIBRARIES)
+  if(IS_ABSOLUTE "${MPI_LIBRARY}")
+    cmake_path(GET MPI_LIBRARY PARENT_PATH MPI_LIBRARY_DIR)
+    list(APPEND TIT_MPI_RUNTIME_DIRS "${MPI_LIBRARY_DIR}")
+  endif()
+endforeach()
+list(REMOVE_DUPLICATES TIT_MPI_RUNTIME_DIRS)
+
 # SymEngine target does not properly link to its own dependencies.
 target_link_libraries(symengine INTERFACE ${SYMENGINE_LIBRARIES})
 add_library(symengine::symengine ALIAS symengine)

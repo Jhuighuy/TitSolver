@@ -50,9 +50,11 @@ function(install_tit_target TYPE TARGET DESTINATION)
   else()
     set(ORIGIN "$ORIGIN")
   endif()
+  set(INSTALL_RPATHS "${ORIGIN}/../lib")
+  list(APPEND INSTALL_RPATHS ${TIT_MPI_RUNTIME_DIRS})
   set_target_properties(${TARGET}
     PROPERTIES
-      INSTALL_RPATH "${ORIGIN}/../lib"
+      INSTALL_RPATH "${INSTALL_RPATHS}"
   )
 endfunction()
 
