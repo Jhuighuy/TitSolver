@@ -13,7 +13,6 @@
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/geom/face_search.hpp"
-#include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
 #include "tit/geom/surface.hpp"
 #include "tit/geom/tessellation.hpp"
@@ -150,10 +149,6 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       geom::GridSearch{h_0},
       // Search for the boundary faces using the grid search.
       geom::GridFaceSearch{h_0},
-      // Use RIB as the primary partitioning method.
-      geom::RecursiveInertialBisection{},
-      // Use pixelated K-means as the interface partitioning method.
-      geom::PixelatedPartition{2 * h_0, geom::KMeansClustering{}},
   };
 
   // Initialize the particles.

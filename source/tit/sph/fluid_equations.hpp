@@ -172,7 +172,7 @@ public:
     TIT_PROFILE_SECTION("FluidEquations::compute_gamma_gradient()");
     using PV = ParticleView<ParticleArray>;
 
-    par::for_each(particles.all(), [&mesh, this](PV a) {
+    par::for_each(particles.active(), [&mesh, this](PV a) {
       // Compute gamma gradient.
       grad_gamma[a] = {};
       for (const auto& [s_face, _] : mesh[domain_, a]) {
@@ -238,24 +238,25 @@ public:
       cs[a] = eos_.sound_speed_from_density(rho[a]);
     });
 
-    // Compute density time derivative.
+    // Compute density time derivative for owned targets. Neighbor state may
+    // come from owned, fixed, or read-only ghost particles.
     par::for_each(particles.fluid(), [&mesh, this](PV a) {
       drho_dt[a] = {};
       for (const auto& [s_face, s] : mesh[domain_, a]) {
         const auto grad_gamma_as = kernel_.flux(s_face, a);
         drho_dt[a] -= rho[s] * dot(v[a, s], grad_gamma_as) / gamma[a];
       }
-    });
-    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
-      const auto [a, b] = ab;
-      const auto grad_W_ab = kernel_.grad(a, b);
 
-      // Ferrari artificial density diffusion term (Ferrari et al., 2009).
-      const auto cs_ab = std::max(cs[a], cs[b]);
-      const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a, b]);
+      for (const PV b : mesh[a]) {
+        const auto grad_W_ab = kernel_.grad(a, b);
 
-      drho_dt[a] += m[b] / gamma[a] * dot(v[a, b] + Psi_ab / rho[b], grad_W_ab);
-      drho_dt[b] -= m[a] / gamma[b] * dot(v[b, a] + Psi_ab / rho[a], grad_W_ab);
+        // Ferrari artificial density diffusion term (Ferrari et al., 2009).
+        const auto cs_ab = std::max(cs[a], cs[b]);
+        const auto Psi_ab = cs_ab * rho[a, b] * r[a, b] / norm(r[a, b]);
+
+        drho_dt[a] +=
+            m[b] / gamma[a] * dot(v[a, b] + Psi_ab / rho[b], grad_W_ab);
+      }
     });
   }
 
@@ -272,7 +273,7 @@ public:
     par::for_each(particles.all(),
                   [this](PV a) { p[a] = eos_.pressure_from_density(rho[a]); });
 
-    // Compute velocity time derivative.
+    // Compute velocity time derivative for owned targets.
     par::for_each(particles.fluid(), [&mesh, this](PV a) {
       dv_dt[a] = unit<1>(r[a], -g_);
       for (const auto& [s_face, s] : mesh[domain_, a]) {
@@ -289,18 +290,17 @@ public:
         dv_dt[a] +=
             (P_as * grad_gamma_as - Pi_as * norm(grad_gamma_as)) / gamma[a];
       }
-    });
-    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
-      const auto [a, b] = ab;
-      const auto grad_W_ab = kernel_.grad(a, b);
 
-      const auto P_ab = p[a] / pow2(rho[a]) + p[b] / pow2(rho[b]);
+      for (const PV b : mesh[a]) {
+        const auto grad_W_ab = kernel_.grad(a, b);
 
-      const auto Pi_ab =
-          2 * mu_ * dot(v[a, b], r[a, b]) / (rho[a] * rho[b] * norm2(r[a, b]));
+        const auto P_ab = p[a] / pow2(rho[a]) + p[b] / pow2(rho[b]);
 
-      dv_dt[a] += m[b] / gamma[a] * (Pi_ab - P_ab) * grad_W_ab;
-      dv_dt[b] -= m[a] / gamma[b] * (Pi_ab - P_ab) * grad_W_ab;
+        const auto Pi_ab = 2 * mu_ * dot(v[a, b], r[a, b]) /
+                           (rho[a] * rho[b] * norm2(r[a, b]));
+
+        dv_dt[a] += m[b] / gamma[a] * (Pi_ab - P_ab) * grad_W_ab;
+      }
     });
   }
 
@@ -333,8 +333,9 @@ public:
     using PV = ParticleView<ParticleArray>;
 
     // Compute normal vector, normalization matrix, and gradients for each
-    // advected field.
-    par::for_each(particles.all(), [&mesh, this](PV a) {
+    // owned target. Ghost values needed by later phases are exchanged by the
+    // distributed orchestrator.
+    par::for_each(particles.fluid(), [&mesh, this](PV a) {
       N[a] = {};
       L[a] = {};
       grad_v[a] = {};
@@ -347,23 +348,17 @@ public:
         grad_v[a] -= outer(v[s, a], grad_gamma_as) / gamma[a];
         grad_rho[a] -= rho[s, a] * grad_gamma_as / gamma[a];
       }
-    });
-    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
-      const auto [a, b] = ab;
-      const auto V_a = m[a] / rho[a];
-      const auto V_b = m[b] / rho[b];
-      const auto grad_W_ab = kernel_.grad(a, b);
 
-      N[a] += V_b / gamma[a] * grad_W_ab;
-      N[b] -= V_a / gamma[b] * grad_W_ab;
-      L[a] += V_b / gamma[a] * outer(r[b, a], grad_W_ab);
-      L[b] -= V_a / gamma[b] * outer(r[a, b], grad_W_ab);
-      grad_v[a] += V_b / gamma[a] * outer(v[b, a], grad_W_ab);
-      grad_v[b] -= V_a / gamma[b] * outer(v[a, b], grad_W_ab);
-      grad_rho[a] += V_b / gamma[a] * rho[b, a] * grad_W_ab;
-      grad_rho[b] -= V_a / gamma[b] * rho[a, b] * grad_W_ab;
-    });
-    par::for_each(particles.all(), [](PV a) {
+      for (const PV b : mesh[a]) {
+        const auto V_b = m[b] / rho[b];
+        const auto grad_W_ab = kernel_.grad(a, b);
+
+        N[a] += V_b / gamma[a] * grad_W_ab;
+        L[a] += V_b / gamma[a] * outer(r[b, a], grad_W_ab);
+        grad_v[a] += V_b / gamma[a] * outer(v[b, a], grad_W_ab);
+        grad_rho[a] += V_b / gamma[a] * rho[b, a] * grad_W_ab;
+      }
+
       dr[a] = N[a];
       if (const auto fact = lu(transpose(L[a]))) {
         L[a] = fact->inverse();
@@ -387,31 +382,24 @@ public:
     par::for_each(particles.fixed(), [](PV a) { phi[a] = phi_max_; });
     par::for_each(particles.fluid(), [](PV a) { phi[a] = phi_min_; });
 
-    // Classify the particles into free surface and non-free surface.
-    //
-    // Here we are reading and writing the same field `phi` in the parallel
-    // loop. There is no race condition because we read the neighbor to compare
-    // it with `phi_min`, and non-free-surface particles are updated in the
-    // loop.
-    par::block_for_each(mesh.block_pairs(particles), [this](auto ab) {
-      const auto [a, b] = ab;
+    // Classify each owned particle into free surface and non-free surface
+    // without writing its neighbors.
+    par::for_each(particles.fluid(), [&mesh, this](PV a) {
+      for (const PV b : mesh[a]) {
+        // Skip particles that are too far away.
+        const auto r2_ab = norm2(r[a, b]);
+        const auto dist_threshold = avg(kernel_.radius(a), kernel_.radius(b));
+        if (r2_ab > pow2(dist_threshold)) continue;
 
-      // Skip the particles that are too far away.
-      const auto r2_ab = norm2(r[a, b]);
-      const auto dist_threshold = avg(kernel_.radius(a), kernel_.radius(b));
-      if (r2_ab > pow2(dist_threshold)) return;
-
-      // Perform "visibility" test. The actual test is just an optimized
-      // version of `acos(n_{a,b} / sqrt(r_ab)) <= fov`.
-      constexpr auto cos_fov = static_cast<Num>(cos(std::numbers::pi / 4));
-      const auto fov_threshold = pow2(cos_fov) * r2_ab;
-      if (bitwise_equal(phi[a], phi_min_)) {
+        // Perform "visibility" test. The actual test is an optimized version
+        // of `acos(n_{a,b} / sqrt(r_ab)) <= fov`.
+        constexpr auto cos_fov = static_cast<Num>(cos(std::numbers::pi / 4));
+        const auto fov_threshold = pow2(cos_fov) * r2_ab;
         const auto n_a = dot(N[a], r[a, b]);
-        if (n_a > 0 && pow2(n_a) >= fov_threshold) phi[a] = phi_max_;
-      }
-      if (bitwise_equal(phi[b], phi_min_)) {
-        const auto n_b = dot(N[b], r[a, b]);
-        if (n_b < 0 && pow2(n_b) >= fov_threshold) phi[b] = phi_max_;
+        if (n_a > 0 && pow2(n_a) >= fov_threshold) {
+          phi[a] = phi_max_;
+          break;
+        }
       }
     });
 
@@ -426,17 +414,8 @@ public:
     });
 
     // Classify the non-free surface particles into near and far categories.
-    //
-    // Here we are reading and writing the same field `phi` in the parallel
-    // loop. There is no race condition because we update the field only when
-    // the particle has `phi_min`, and read the field only to compare it with
-    // `phi_min`.
-    //
-    // A distinct non-zero bit pattern of `phi_min` is essential for
-    // correctness. We may read a garbage value while memory is being updated by
-    // some other thread, and the chances of a false positive comparison with
-    // distinct bits are very small, at least orders of magnitude smaller than
-    // if we used zero.
+    // Distributed execution exchanges `phi` and `N` before this read-only
+    // neighbor phase.
     par::for_each(particles.fluid(), [&mesh, this](PV a) {
       if (!bitwise_equal(phi[a], phi_max_)) return;
 

@@ -317,6 +317,13 @@ public:
                [&self](std::size_t index) { return self[index]; });
   }
 
+  /// Particles evaluated locally as numerical targets.
+  constexpr auto active(this auto& self) noexcept {
+    return std::views::iota(std::size_t{0}, self.fixed_end_) |
+           std::views::transform(
+               [&self](std::size_t index) { return self[index]; });
+  }
+
   /// Owned fluid particles.
   constexpr auto fluid(this auto& self) noexcept {
     return self.owned();

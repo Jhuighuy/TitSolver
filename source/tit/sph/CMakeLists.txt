@@ -52,6 +52,7 @@ add_tit_executable(
     "fluid_equations.test.cpp"
     "kernel.test.cpp"
     "particle_array.test.cpp"
+    "particle_mesh.test.cpp"
   DEPENDS
     tit::sph
     tit::testing

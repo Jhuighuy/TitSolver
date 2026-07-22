@@ -10,10 +10,8 @@
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/face_search.hpp"
-#include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
 #include "tit/geom/surface.hpp"
-#include "tit/par/control.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
@@ -86,10 +84,6 @@ TEST_CASE_FIXTURE(EquationFixture, "sph::FluidEquations compute_time_step") {
 }
 
 TEST_CASE("sph::FluidEquations pair momentum is conservative") {
-  // ParticleMesh currently requires at least as many interface particles as
-  // TBB workers during its thread-oriented graph partitioning.
-  par::set_num_threads(2);
-
   const geom::Surface<TestVec> domain{};
   const LinearTaitEquationOfState<double> eos{20.0, 1000.0};
   const FluidEquations equations{0.0,
@@ -116,10 +110,7 @@ TEST_CASE("sph::FluidEquations pair momentum is conservative") {
   v[b] = {-0.5, -1.0};
   rho[b] = 1000.0;
 
-  ParticleMesh mesh{geom::GridSearch{1.0},
-                    geom::GridFaceSearch{1.0},
-                    geom::RecursiveCoordBisection{},
-                    geom::RecursiveCoordBisection{}};
+  ParticleMesh mesh{geom::GridSearch{1.0}, geom::GridFaceSearch{1.0}};
   equations.prepare(mesh, particles);
   equations.compute_momentum(mesh, particles);
 
