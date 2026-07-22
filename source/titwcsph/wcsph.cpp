@@ -5,6 +5,7 @@
 
 #include <cstddef>
 
+#include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/logging.hpp"
 #include "tit/core/main.hpp"
@@ -12,6 +13,7 @@
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
+#include "tit/dist/communicator.hpp"
 #include "tit/dist/environment.hpp"
 #include "tit/geom/face_search.hpp"
 #include "tit/geom/search.hpp"
@@ -26,6 +28,7 @@
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
+#include "tit/sph/simulation.hpp"
 #include "tit/sph/time_integrator.hpp"
 
 namespace tit::sph::wcsph {
@@ -34,7 +37,11 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Real>
-auto sph_main(int /*argc*/, char** /*argv*/) -> int {
+auto sph_main(const dist::Communicator& communicator) -> int {
+  TIT_ENSURE(communicator.size() == 1,
+             "Distributed particle initialization and output are not yet "
+             "available.");
+
   constexpr Real H = 0.6;   // Water column height.
   constexpr Real L = 2 * H; // Water column length.
 
@@ -77,21 +84,22 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   const geom::MakeFastWinding<Real> make_winding;
   const auto containment = make_winding(domain2);
 
-  const FluidEquations equations{
-      // Constants.
-      g,
-      mu,
-      // Wall boundary.
-      domain,
-      containment,
-      // Weakly compressible equation of state.
-      TaitEquationOfState{cs_0, rho_0},
-      // C4 Wendland's spline kernel.
-      SixthOrderWendlandKernel{},
+  const Simulation simulation{
+      FluidEquations{
+          // Constants.
+          g,
+          mu,
+          // Wall boundary.
+          domain,
+          containment,
+          // Weakly compressible equation of state.
+          TaitEquationOfState{cs_0, rho_0},
+          // C4 Wendland's spline kernel.
+          SixthOrderWendlandKernel{},
+      },
+      SSPRKIntegrator{SSPRKOrder::three},
+      communicator,
   };
-
-  // Setup the time integrator.
-  const SSPRKIntegrator time_integrator{equations, SSPRKOrder::three};
 
   // Setup the particles array:
   ParticleArray particles{
@@ -100,7 +108,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       // Store kernel width uniformly and all other integrator fields per
       // particle.
       ParticleLayout{TypeSet{h},
-                     decltype(time_integrator)::required_fields - TypeSet{h}},
+                     decltype(simulation)::required_fields - TypeSet{h}},
   };
 
   // Generate individual particles.
@@ -153,7 +161,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   };
 
   // Initialize the particles.
-  equations.initialize(mesh, particles);
+  simulation.initialize(mesh, particles);
 
   // Create a data storage to store the particles. We'll store only one last
   // run result, all the previous runs will be discarded.
@@ -177,7 +185,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
     Real dt{};
     {
       const StopwatchCycle cycle{exec_time};
-      dt = time_integrator.step(mesh, particles);
+      dt = simulation.step(mesh, particles);
     }
 
     const auto end_time = 10.0;
@@ -201,6 +209,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
 TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
   const dist::Environment environment{argc, argv};
+  const auto communicator = dist::Communicator::world();
   par::init();
-  sph::wcsph::sph_main<tit::float64_t>(argc, argv);
+  sph::wcsph::sph_main<tit::float64_t>(communicator);
 });

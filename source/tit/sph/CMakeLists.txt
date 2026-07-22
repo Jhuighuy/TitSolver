@@ -35,10 +35,12 @@ add_tit_library(
     "kernel.inl.hpp"
     "particle_array.hpp"
     "particle_mesh.hpp"
+    "simulation.hpp"
     "time_integrator.hpp"
   DEPENDS
     tit::core
     tit::data
+    tit::dist
     tit::geom
     tit::par
 )
@@ -53,6 +55,18 @@ add_tit_executable(
     "kernel.test.cpp"
     "particle_array.test.cpp"
     "particle_mesh.test.cpp"
+  DEPENDS
+    tit::sph
+    tit::testing
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    sph_mpi_tests
+  SOURCES
+    "simulation.mpi.test.cpp"
   DEPENDS
     tit::sph
     tit::testing
