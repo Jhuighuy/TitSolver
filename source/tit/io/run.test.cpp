@@ -23,6 +23,7 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
   {
     auto frame = writer.begin_frame(0, 0.0);
     frame.write("id", std::vector<std::uint64_t>{11, 12});
+    frame.write("kind", std::vector<std::uint8_t>{0, 0});
     frame.write("r", std::vector{Vec{1.0, 2.0}, Vec{3.0, 4.0}});
     frame.write("rho", std::vector{1000.0, 1001.0});
     frame.commit();
@@ -47,6 +48,7 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
   {
     auto next = writer.begin_frame(10, 0.5);
     next.write("id", std::vector<std::uint64_t>{11, 12});
+    next.write("kind", std::vector<std::uint8_t>{0, 0});
     next.write("r", std::vector{Vec{1.5, 2.0}, Vec{3.5, 4.0}});
     next.write("rho", std::vector{1000.5, 1001.5});
     next.commit();

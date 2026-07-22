@@ -13,6 +13,8 @@
 
 namespace tit::dist {
 
+class MPICommunicatorAccess;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// MPI communicator with an implementation-hidden native handle.
@@ -48,6 +50,8 @@ public:
       const -> std::vector<std::vector<std::byte>>;
 
 private:
+
+  friend class MPICommunicatorAccess;
 
   class State_;
 

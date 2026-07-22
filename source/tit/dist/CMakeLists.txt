@@ -11,6 +11,7 @@ add_tit_library(
     "communicator.hpp"
     "environment.cpp"
     "environment.hpp"
+    "mpi.hpp"
   DEPENDS
     tit::core
     MPI::MPI_CXX

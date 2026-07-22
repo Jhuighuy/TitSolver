@@ -369,6 +369,7 @@ public:
     file_->createAttribute("format_version", run_format_version);
     file_->createAttribute("step", publication_.descriptor().step());
     file_->createAttribute("time", publication_.descriptor().time());
+    particles_ = file_->createGroup("particles");
     fields_ = file_->createGroup("fields");
   }
 
@@ -396,7 +397,8 @@ public:
       particle_count_ = size;
     }
 
-    write_dataset(fields_, name, type, data, size);
+    auto& group = name == "id" || name == "kind" ? particles_ : fields_;
+    write_dataset(group, name, type, data, size);
     field_descriptors_.emplace_back(std::string{name}, type, size);
   }
 
@@ -405,6 +407,7 @@ public:
     TIT_ENSURE(file_ != nullptr, "Frame file is already closed.");
     file_->flush();
     fields_ = {};
+    particles_ = {};
     file_.reset();
     run_->publish(publication_, field_descriptors_);
     guard_.release();
@@ -417,6 +420,7 @@ private:
   PartialFrameGuard guard_;
   FramePublication publication_;
   std::unique_ptr<HighFive::File> file_;
+  HighFive::Group particles_;
   HighFive::Group fields_;
   std::vector<FieldDescriptor> field_descriptors_;
   std::optional<std::size_t> particle_count_;
@@ -575,21 +579,26 @@ auto FrameReader::descriptor() const noexcept -> const FrameDescriptor& {
 
 auto FrameReader::fields() const -> std::vector<FieldDescriptor> {
   const HighFive::File file{path_.string(), HighFive::File::ReadOnly};
-  const auto group = file.getGroup("fields");
-  auto names = group.listObjectNames();
-  std::ranges::sort(names);
   std::vector<FieldDescriptor> fields;
-  fields.reserve(names.size());
-  for (auto& name : names) {
-    const auto dataset = group.getDataSet(name);
-    fields.push_back(read_descriptor(dataset, std::move(name)));
+  for (const std::string_view group_name : {"particles", "fields"}) {
+    if (!file.exist(std::string{group_name})) continue;
+    const auto group = file.getGroup(std::string{group_name});
+    auto names = group.listObjectNames();
+    for (auto& name : names) {
+      const auto dataset = group.getDataSet(name);
+      fields.push_back(read_descriptor(dataset, std::move(name)));
+    }
   }
+  std::ranges::sort(fields, {}, &FieldDescriptor::name);
   return fields;
 }
 
 auto FrameReader::read_field(std::string_view name) const -> FieldData {
   const HighFive::File file{path_.string(), HighFive::File::ReadOnly};
-  const auto group = file.getGroup("fields");
+  const std::string group_name =
+      name == "id" || name == "kind" ? "particles" : "fields";
+  TIT_ENSURE(file.exist(group_name), "Unknown frame field '{}'.", name);
+  const auto group = file.getGroup(group_name);
   TIT_ENSURE(group.exist(std::string{name}), "Unknown frame field '{}'.", name);
   const auto dataset = group.getDataSet(std::string{name});
   auto descriptor = read_descriptor(dataset, std::string{name});

@@ -19,6 +19,7 @@
 #include "tit/core/exception.hpp"
 #include "tit/dist/communicator.hpp"
 #include "tit/dist/environment.hpp"
+#include "tit/dist/mpi.hpp"
 
 // OpenMPI's predefined handle macros intentionally cast through void pointers.
 // NOLINTBEGIN(bugprone-casting-through-void)
@@ -67,6 +68,11 @@ private:
   MPI_Comm communicator_;
 
 }; // class Communicator::State_
+
+auto MPICommunicatorAccess::get(const Communicator& communicator) -> MPI_Comm {
+  TIT_ASSERT(communicator.state_ != nullptr, "Communicator is null.");
+  return communicator.state_->get();
+}
 
 Communicator::Communicator(std::shared_ptr<State_> state) noexcept
     : state_{std::move(state)} {}

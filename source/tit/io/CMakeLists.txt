@@ -30,3 +30,28 @@ add_tit_executable(
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_library(
+  NAME
+    io_mpi
+  SOURCES
+    "parallel_run.cpp"
+    "parallel_run.hpp"
+  DEPENDS
+    tit::dist
+    tit::io
+    HDF5::HDF5
+    MPI::MPI_CXX
+)
+
+add_tit_executable(
+  NAME
+    io_mpi_tests
+  SOURCES
+    "parallel_run.test.cpp"
+  DEPENDS
+    tit::io_mpi
+    tit::testing
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
