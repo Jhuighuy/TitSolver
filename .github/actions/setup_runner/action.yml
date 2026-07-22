@@ -49,6 +49,7 @@ runs:
           libtool
           llvm@$LLVM_VERSION
           node
+          open-mpi
         )
         if [[ "$OSTYPE" == "darwin"* ]]; then
           PACKAGES+=(

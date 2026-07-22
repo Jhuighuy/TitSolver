@@ -9,6 +9,28 @@ intra-rank engine, MPI adds inter-node scaling. One MPI rank per NUMA domain
 (or per node), TBB threads inside — this is the standard and most efficient
 configuration for particle codes.
 
+> **Implementation status.** Phases 0–2 are implemented:
+>
+> - `ParticleArray` has owned/ghost segments, stable global identifiers
+>   (`gid`), boundary vertex identifiers (`vid`), bulk append/erase/reorder,
+>   and generic field pack/unpack (phase 0);
+> - `tit/mpi` and the `MPI_RANKS` test-driver support exist, MPI is a
+>   mandatory dependency, and the mpi unit tests run at 1/2/4 processes
+>   (phase 1);
+> - `tit/dist` implements the gather-based Hilbert decomposition, halo
+>   exchange, ownership migration, and the gathered frame writer, the
+>   solver phases are separated by the ghost refreshes from §2.3, and
+>   `titwcsph` runs distributed end-to-end (phase 2, in its simple
+>   "rebuild every step" form — the migration cadence of phase 3 is next).
+>
+> An important empirical finding from the migration work: the solver output
+> was never deterministic under multi-threading (TBB reduction order and the
+> deliberately racy free-surface classification), so the dam-break `.ttdb`
+> checksum test can only be meaningful with `TIT_NUM_THREADS=1`, and the
+> repository checksum was already stale. Bitwise acceptance is therefore
+> defined single-threaded; multi-threaded and multi-rank runs are validated
+> through physical observables, exactly as §3 anticipated.
+
 ## 1. Where we are today
 
 ### 1.1 Parallelism
