@@ -7,6 +7,7 @@
 #include <limits>
 
 #include "tit/core/math.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/face_search.hpp"
 #include "tit/geom/partition.hpp"
@@ -35,20 +36,23 @@ struct AllSpace final {
 };
 
 struct EquationFixture {
+  using Equations = FluidEquations<double,
+                                   LinearTaitEquationOfState<double>,
+                                   SixthOrderWendlandKernel,
+                                   geom::Surface<TestVec>,
+                                   AllSpace>;
+
   geom::Surface<TestVec> domain{};
   LinearTaitEquationOfState<double> eos{20.0, 1000.0};
-  FluidEquations<double,
-                 LinearTaitEquationOfState<double>,
-                 SixthOrderWendlandKernel,
-                 geom::Surface<TestVec>,
-                 AllSpace>
-      equations{9.81, 0.001, domain, AllSpace{}, eos, {}};
+  Equations equations{9.81, 0.001, domain, AllSpace{}, eos, {}};
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE_FIXTURE(EquationFixture, "sph::FluidEquations compute_time_step") {
-  ParticleArray particles{Space<double, 2>{}, equations};
+  ParticleArray particles{
+      Space<double, 2>{},
+      ParticleLayout{TypeSet{h}, Equations::required_fields - TypeSet{h}}};
   h[particles] = 0.5;
 
   auto a = particles.append(ParticleType::fluid);
@@ -67,7 +71,7 @@ TEST_CASE_FIXTURE(EquationFixture, "sph::FluidEquations compute_time_step") {
   v[e] = {std::numeric_limits<double>::max(), 0.0};
   dv_dt[e] = {std::numeric_limits<double>::max(), 0.0};
 
-  const auto expected_for = [this, &particles](auto particle) {
+  const auto expected_for = [this](auto particle) {
     const auto dt_acoustic =
         0.4 * h[particle] /
         (eos.sound_speed_from_density(rho[particle]) + norm(v[particle]));
@@ -86,7 +90,7 @@ TEST_CASE("sph::FluidEquations pair momentum is conservative") {
   // TBB workers during its thread-oriented graph partitioning.
   par::set_num_threads(2);
 
-  geom::Surface<TestVec> domain{};
+  const geom::Surface<TestVec> domain{};
   const LinearTaitEquationOfState<double> eos{20.0, 1000.0};
   const FluidEquations equations{0.0,
                                  0.001,
@@ -94,7 +98,10 @@ TEST_CASE("sph::FluidEquations pair momentum is conservative") {
                                  AllSpace{},
                                  eos,
                                  SixthOrderWendlandKernel{}};
-  ParticleArray particles{Space<double, 2>{}, equations};
+  using Equations = decltype(equations);
+  ParticleArray particles{
+      Space<double, 2>{},
+      ParticleLayout{TypeSet{h}, Equations::required_fields - TypeSet{h}}};
   h[particles] = 1.0;
 
   auto a = particles.append(ParticleType::fluid);

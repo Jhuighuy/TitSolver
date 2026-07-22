@@ -9,6 +9,7 @@
 #include "tit/core/logging.hpp"
 #include "tit/core/main.hpp"
 #include "tit/core/time.hpp"
+#include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
 #include "tit/geom/face_search.hpp"
@@ -96,8 +97,10 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   ParticleArray particles{
       // 2D space.
       Space<Real, 2>{},
-      // Set of fields is inferred from the time integrator.
-      time_integrator,
+      // Store kernel width uniformly and all other integrator fields per
+      // particle.
+      ParticleLayout{TypeSet{h},
+                     decltype(time_integrator)::required_fields - TypeSet{h}},
   };
 
   // Generate individual particles.

@@ -60,12 +60,12 @@ public:
   /// @param kernel      Kernel.
   explicit FluidEquations(Num g,
                           Num mu,
-                          const Domain& domain,
-                          const Containment& containment,
+                          Domain domain,
+                          Containment containment,
                           EquationOfState eos,
                           Kernel kernel)
-      : g_{g}, mu_{mu},                             //
-        domain_{domain}, containment_{containment}, //
+      : g_{g}, mu_{mu},                                                   //
+        domain_{std::move(domain)}, containment_{std::move(containment)}, //
         eos_{std::move(eos)}, kernel_{std::move(kernel)} {}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
