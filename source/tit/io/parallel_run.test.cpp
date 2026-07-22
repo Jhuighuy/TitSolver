@@ -124,6 +124,21 @@ TEST_CASE("io::ParallelRunWriter writes collective rank-major hyperslabs") {
   }
 }
 
+TEST_CASE("io::ParallelRunWriter rejects divergent field contracts") {
+  const auto communicator = dist::Communicator::world();
+  REQUIRE(communicator.size() == 2);
+  {
+    ParallelRunWriter writer{"mismatch.tit-run",
+                             RunMetadata{"parallel-mismatch-test", 2},
+                             communicator};
+    auto frame = writer.begin_frame(0, 0.0);
+    const std::vector<std::uint64_t> values{
+        static_cast<std::uint64_t>(communicator.rank())};
+    CHECK_THROWS(frame.write(communicator.rank() == 0 ? "id" : "kind", values));
+  }
+  communicator.barrier();
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace

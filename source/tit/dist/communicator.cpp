@@ -122,6 +122,26 @@ auto Communicator::all_reduce_min(double value) const -> double {
   return all_reduce(state_->get(), value, MPI_DOUBLE, MPI_MIN);
 }
 
+auto Communicator::all_reduce_min(std::uint64_t value) const -> std::uint64_t {
+  TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  return all_reduce(state_->get(), value, MPI_UINT64_T, MPI_MIN);
+}
+
+auto Communicator::all_reduce_max(float value) const -> float {
+  TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  return all_reduce(state_->get(), value, MPI_FLOAT, MPI_MAX);
+}
+
+auto Communicator::all_reduce_max(double value) const -> double {
+  TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  return all_reduce(state_->get(), value, MPI_DOUBLE, MPI_MAX);
+}
+
+auto Communicator::all_reduce_max(std::uint64_t value) const -> std::uint64_t {
+  TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  return all_reduce(state_->get(), value, MPI_UINT64_T, MPI_MAX);
+}
+
 auto Communicator::all_reduce_sum(std::uint64_t value) const -> std::uint64_t {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
   return all_reduce(state_->get(), value, MPI_UINT64_T, MPI_SUM);

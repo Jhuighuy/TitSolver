@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -173,6 +174,36 @@ auto field_dimensions(std::uint64_t size, Type type) -> std::vector<hsize_t> {
   return dimensions;
 }
 
+constexpr auto hash_combine(std::uint64_t hash, std::uint64_t value) noexcept
+    -> std::uint64_t {
+  constexpr std::uint64_t prime = 1099511628211;
+  for (std::size_t byte = 0; byte < sizeof(value); ++byte) {
+    hash ^= (value >> (byte * 8)) & 0xFF;
+    hash *= prime;
+  }
+  return hash;
+}
+
+constexpr auto hash_combine(std::uint64_t hash, std::string_view value) noexcept
+    -> std::uint64_t {
+  constexpr std::uint64_t prime = 1099511628211;
+  for (const auto character : value) {
+    hash ^= static_cast<unsigned char>(character);
+    hash *= prime;
+  }
+  return hash;
+}
+
+void validate_collective_contract(const dist::Communicator& communicator,
+                                  std::uint64_t contract,
+                                  std::string_view operation) {
+  const auto minimum = communicator.all_reduce_min(contract);
+  const auto maximum = communicator.all_reduce_max(contract);
+  TIT_ENSURE(minimum == maximum,
+             "Ranks disagree on collective {} contract.",
+             operation);
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace
@@ -288,6 +319,15 @@ public:
              Type type,
              std::span<const std::byte> local_data,
              std::size_t local_size) {
+    constexpr std::uint64_t hash_offset = 14695981039346656037ULL;
+    auto contract = hash_combine(hash_offset, std::uint64_t{1});
+    contract = hash_combine(contract, field_descriptors_.size());
+    contract = hash_combine(contract, name);
+    contract = hash_combine(contract, type.id());
+    validate_collective_contract(run_->communicator(),
+                                 contract,
+                                 "particle-field write");
+
     TIT_ENSURE(!committed_, "Frame is already committed.");
     TIT_ENSURE(file_.get() >= 0, "Parallel frame file is closed.");
     TIT_ENSURE(!name.empty() && !name.contains('/'),
@@ -387,6 +427,13 @@ public:
   }
 
   void commit() {
+    constexpr std::uint64_t hash_offset = 14695981039346656037ULL;
+    auto contract = hash_combine(hash_offset, std::uint64_t{2});
+    contract = hash_combine(contract, field_descriptors_.size());
+    validate_collective_contract(run_->communicator(),
+                                 contract,
+                                 "particle-file commit");
+
     TIT_ENSURE(!committed_, "Frame is already committed.");
     TIT_ENSURE(!field_descriptors_.empty(), "Cannot publish an empty frame.");
     close_();
@@ -425,6 +472,13 @@ public:
                                 FrameDescriptor descriptor,
                                 dist::Communicator communicator)
       : descriptor_{descriptor}, communicator_{std::move(communicator)} {
+    constexpr std::uint64_t hash_offset = 14695981039346656037ULL;
+    auto contract = hash_combine(hash_offset, path.generic_string());
+    contract = hash_combine(contract, descriptor_.step());
+    contract = hash_combine(contract,
+                            std::bit_cast<std::uint64_t>(descriptor_.time()));
+    validate_collective_contract(communicator_, contract, "checkpoint open");
+
     const HDF5PropertyList access{
         checked_hdf5_id(H5Pcreate(H5P_FILE_ACCESS),
                         "H5Pcreate(H5P_FILE_ACCESS)")};
@@ -488,6 +542,15 @@ public:
   }
 
   auto read(std::string_view name, Type expected_type) const -> FieldData {
+    constexpr std::uint64_t hash_offset = 14695981039346656037ULL;
+    auto contract = hash_combine(hash_offset, read_count_);
+    contract = hash_combine(contract, name);
+    contract = hash_combine(contract, expected_type.id());
+    validate_collective_contract(communicator_,
+                                 contract,
+                                 "checkpoint-field read");
+    ++read_count_;
+
     TIT_ENSURE(!name.empty() && !name.contains('/'),
                "Invalid checkpoint field name '{}'.",
                name);
@@ -567,6 +630,7 @@ private:
   std::uint64_t global_size_ = 0;
   std::uint64_t local_size_ = 0;
   std::uint64_t local_offset_ = 0;
+  mutable std::uint64_t read_count_ = 0;
 
 }; // class ParallelCheckpointReaderState
 
@@ -574,6 +638,12 @@ auto ParallelRunWriterState::begin(PublicationKind kind,
                                    std::uint64_t step,
                                    double time)
     -> std::shared_ptr<ParallelParticleFileWriterState> {
+  constexpr std::uint64_t hash_offset = 14695981039346656037ULL;
+  auto contract = hash_combine(hash_offset, std::to_underlying(kind));
+  contract = hash_combine(contract, step);
+  contract = hash_combine(contract, std::bit_cast<std::uint64_t>(time));
+  validate_collective_contract(communicator_, contract, "run publication");
+
   TIT_ENSURE(std::isfinite(time), "Publication time must be finite.");
   const auto is_frame = kind == PublicationKind::frame;
   const std::string_view directory = is_frame ? "frames" : "checkpoints";

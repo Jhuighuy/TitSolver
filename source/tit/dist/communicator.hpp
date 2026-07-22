@@ -41,6 +41,14 @@ public:
   /// @{
   auto all_reduce_min(float value) const -> float;
   auto all_reduce_min(double value) const -> double;
+  auto all_reduce_min(std::uint64_t value) const -> std::uint64_t;
+  /// @}
+
+  /// Compute a communicator-wide maximum.
+  /// @{
+  auto all_reduce_max(float value) const -> float;
+  auto all_reduce_max(double value) const -> double;
+  auto all_reduce_max(std::uint64_t value) const -> std::uint64_t;
   /// @}
 
   /// Compute a communicator-wide unsigned sum.
