@@ -16,7 +16,6 @@
     "sqlite3",
     { "name": "symengine", "default-features": false },
     "tbb",
-    "tinyxml2",
     "zstd"
   ]
 }

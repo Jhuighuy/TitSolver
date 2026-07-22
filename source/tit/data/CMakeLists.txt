@@ -7,8 +7,8 @@ add_tit_library(
   NAME
     data
   SOURCES
-    "hdf5.cpp"
-    "hdf5.hpp"
+    "legacy_ttdb.cpp"
+    "legacy_ttdb.hpp"
     "sqlite.cpp"
     "sqlite.hpp"
     "storage.cpp"
@@ -17,9 +17,7 @@ add_tit_library(
   DEPENDS
     tit::core
     tit::io
-    HighFive::HighFive
     sqlite3::sqlite3
-    tinyxml2::tinyxml2
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,6 +28,7 @@ add_tit_executable(
   SOURCES
     "sqlite.test.cpp"
     "storage.test.cpp"
+    "legacy_ttdb.test.cpp"
     "type.test.cpp"
   DEPENDS
     tit::data

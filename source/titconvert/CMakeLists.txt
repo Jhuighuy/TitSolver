@@ -3,9 +3,16 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("tit")
-add_subdirectory("titgui")
-add_subdirectory("titconvert")
-add_subdirectory("titwcsph")
+add_tit_executable(
+  NAME
+    titconvert
+  SOURCES
+    "convert.cpp"
+  DEPENDS
+    tit::core
+    tit::data
+  DESTINATION
+    "bin"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

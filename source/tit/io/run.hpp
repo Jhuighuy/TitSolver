@@ -177,6 +177,9 @@ public:
     write_(name, type_of<StorageValue>, std::as_bytes(span), span.size());
   }
 
+  /// Write a dynamically typed field without exposing the HDF5 backend.
+  void write(const FieldData& field);
+
   /// Atomically publish the completed frame and update the run index.
   void commit();
 
@@ -223,6 +226,9 @@ public:
                                       std::ranges::size(values)};
     write_(name, type_of<StorageValue>, std::as_bytes(span), span.size());
   }
+
+  /// Write a dynamically typed persistent field.
+  void write(const FieldData& field);
 
   /// Atomically publish the completed checkpoint.
   void commit();

@@ -843,6 +843,11 @@ void FrameWriter::write_(std::string_view name,
   state_->write(name, type, data, size);
 }
 
+void FrameWriter::write(const FieldData& field) {
+  const auto& descriptor = field.descriptor();
+  write_(descriptor.name(), descriptor.type(), field.data(), descriptor.size());
+}
+
 void FrameWriter::commit() {
   TIT_ENSURE(state_ != nullptr, "Frame writer is null.");
   state_->commit();
@@ -862,6 +867,11 @@ void CheckpointWriter::write_(std::string_view name,
                               std::size_t size) {
   TIT_ENSURE(state_ != nullptr, "Checkpoint writer is null.");
   state_->write(name, type, data, size);
+}
+
+void CheckpointWriter::write(const FieldData& field) {
+  const auto& descriptor = field.descriptor();
+  write_(descriptor.name(), descriptor.type(), field.data(), descriptor.size());
 }
 
 void CheckpointWriter::commit() {

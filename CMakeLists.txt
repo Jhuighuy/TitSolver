@@ -35,7 +35,6 @@ find_package(MPI REQUIRED COMPONENTS CXX)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SymEngine CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
-find_package(tinyxml2 CONFIG REQUIRED)
 find_package(unofficial-node-addon-api CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
@@ -88,7 +87,6 @@ add_tit_library(
     sqlite3::sqlite3
     symengine::symengine
     TBB::tbb
-    tinyxml2::tinyxml2
     zstd::libzstd
 )
 
