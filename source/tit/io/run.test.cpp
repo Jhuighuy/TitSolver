@@ -106,6 +106,47 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
   CHECK(read_text(path / "run.xdmf").contains("step-10"));
 }
 
+TEST_CASE("io::RunWriter abandons unpublished partial frames") {
+  const std::filesystem::path path{"abandoned.tit-run"};
+  RunWriter writer{path, RunMetadata{"abandoned", 2}};
+
+  {
+    auto frame = writer.begin_frame(0, 0.0);
+    frame.write("id", std::vector<std::uint64_t>{11});
+    frame.write("kind", std::vector<std::uint8_t>{0});
+    frame.write("r", std::vector{Vec{1.0, 2.0}});
+    frame.commit();
+  }
+
+  RunReader reader{path};
+  {
+    auto frame = writer.begin_frame(1, 0.1);
+    frame.write("id", std::vector<std::uint64_t>{11});
+    frame.write("kind", std::vector<std::uint8_t>{0});
+    frame.write("r", std::vector{Vec{1.1, 2.0}});
+    CHECK(std::filesystem::is_regular_file(path /
+                                           "frames/frame-00000001.h5.partial"));
+    reader.refresh();
+    CHECK(reader.num_frames() == 1);
+  }
+
+  CHECK_FALSE(
+      std::filesystem::exists(path / "frames/frame-00000001.h5.partial"));
+  CHECK_FALSE(std::filesystem::exists(path / "frames/frame-00000001.h5"));
+  reader.refresh();
+  CHECK(reader.num_frames() == 1);
+
+  {
+    auto frame = writer.begin_frame(1, 0.1);
+    frame.write("id", std::vector<std::uint64_t>{11});
+    frame.write("kind", std::vector<std::uint8_t>{0});
+    frame.write("r", std::vector{Vec{1.1, 2.0}});
+    frame.commit();
+  }
+  reader.refresh();
+  CHECK(reader.num_frames() == 2);
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace

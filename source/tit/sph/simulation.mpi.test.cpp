@@ -168,6 +168,22 @@ TEST_CASE("sph::SlabParticleTopology exchanges halos and migrates state") {
   CHECK(global_owned == size);
 }
 
+TEST_CASE("sph::SlabParticleTopology assigns shared faces consistently") {
+  const auto communicator = dist::Communicator::world();
+  REQUIRE(communicator.size() >= 2);
+  const auto size = communicator.size();
+  const SlabParticleTopology topology{communicator, 0.0, 1.0, 0.01};
+
+  CHECK(topology.owner(Vec{-0.1, 0.0}) == 0);
+  CHECK(topology.owner(Vec{0.0, 0.0}) == 0);
+  for (std::size_t rank = 1; rank < size; ++rank) {
+    const auto face = static_cast<double>(rank) / static_cast<double>(size);
+    CHECK(topology.owner(Vec{face, 0.0}) == rank);
+  }
+  CHECK(topology.owner(Vec{1.0, 0.0}) == size - 1);
+  CHECK(topology.owner(Vec{1.1, 0.0}) == size - 1);
+}
+
 TEST_CASE("sph::SlabParticleTopology supports empty ranks") {
   const auto communicator = dist::Communicator::world();
   REQUIRE(communicator.size() >= 2);
