@@ -35,7 +35,7 @@ endfunction()
 function(add_tit_test)
   cmake_parse_arguments(TEST
     ""
-    "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR"
+    "NAME;EXIT_CODE;STDIN;MATCH_STDOUT;MATCH_STDERR;MPI_RANKS"
     "EXE;TARGET;COMMAND;ENVIRONMENT;INPUT_FILES;MATCH_FILES;FILTERS;FLAGS"
     ${ARGN}
   )
@@ -88,6 +88,24 @@ function(add_tit_test)
     set(TEST_COMMAND ${TEST_TARGET})
   endif()
 
+  # Should the command run under MPI?
+  if(TEST_MPI_RANKS)
+    if(NOT TEST_MPI_RANKS MATCHES "^[1-9][0-9]*$")
+      message(FATAL_ERROR "'MPI_RANKS' must be a positive integer.")
+    endif()
+    if(NOT MPIEXEC_EXECUTABLE)
+      message(FATAL_ERROR "'MPI_RANKS' requires an MPI launcher.")
+    endif()
+    set(TEST_COMMAND
+      "${MPIEXEC_EXECUTABLE}"
+      "${MPIEXEC_NUMPROC_FLAG}"
+      "${TEST_MPI_RANKS}"
+      ${MPIEXEC_PREFLAGS}
+      ${TEST_COMMAND}
+      ${MPIEXEC_POSTFLAGS}
+    )
+  endif()
+
   # Setup the list of arguments for the test driver.
   set(TEST_DRIVER_ARGS "--name=${TEST_NAME}")
   if(TEST_EXIT_CODE)
@@ -135,6 +153,11 @@ function(add_tit_test)
   set_tests_properties("${TEST_NAME}"
     PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}"
   )
+  if(TEST_MPI_RANKS)
+    set_tests_properties("${TEST_NAME}"
+      PROPERTIES PROCESSORS "${TEST_MPI_RANKS}"
+    )
+  endif()
 
   # Setup test flags.
   foreach(FLAG ${TEST_FLAGS})
