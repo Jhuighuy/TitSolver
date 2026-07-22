@@ -16,6 +16,7 @@ add_tit_library(
     "type.hpp"
   DEPENDS
     tit::core
+    tit::io
     HighFive::HighFive
     sqlite3::sqlite3
     tinyxml2::tinyxml2
