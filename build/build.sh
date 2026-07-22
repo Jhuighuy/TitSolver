@@ -405,8 +405,10 @@ main() {
 		print-separator
 		build
 		print-separator
-		install
-		print-separator
+		if [ "${#TARGETS[@]}" -eq 0 ]; then
+			install
+			print-separator
+		fi
 	}
 	print-separator "="
 
