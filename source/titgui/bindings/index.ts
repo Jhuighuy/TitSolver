@@ -8,12 +8,12 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
 
-import type { Storage } from "~/bindings/storage";
+import type { Run } from "~/bindings/run";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 interface NativeModule {
-  openStorage(path: string): Promise<Storage>;
+  openRun(path: string): Promise<Run>;
 }
 
 const native = (() => {
@@ -41,10 +41,10 @@ const native = (() => {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export type * from "~/bindings/storage";
+export type * from "~/bindings/run";
 
-export async function openStorage(path: string) {
-  return native.openStorage(path);
+export async function openRun(path: string) {
+  return native.openRun(path);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

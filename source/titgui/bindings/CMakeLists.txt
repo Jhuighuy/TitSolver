@@ -11,12 +11,12 @@ add_tit_library(
     MODULE
   SOURCES
     "addon.cpp"
-    "storage.cpp"
-    "storage.hpp"
+    "run.cpp"
+    "run.hpp"
     "utils.hpp"
   DEPENDS
     tit::core
-    tit::data
+    tit::io
     node-addon-api::node-addon-api
 )
 

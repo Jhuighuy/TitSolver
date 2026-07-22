@@ -5,7 +5,7 @@
 
 #include <napi.h>
 
-#include "titgui/bindings/storage.hpp"
+#include "titgui/bindings/run.hpp"
 
 namespace {
 
@@ -13,7 +13,7 @@ namespace {
 
 auto init_module(Napi::Env env, Napi::Object exports) -> Napi::Object {
   using namespace tit::gui;
-  storage::init_submodule(env, exports);
+  run::init_submodule(env, exports);
   return exports;
 }
 

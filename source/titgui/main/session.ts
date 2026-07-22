@@ -9,10 +9,7 @@ import path from "node:path";
 
 import { BrowserWindow } from "electron";
 
-import {
-  openStorage as nativeOpenStorage,
-  type Storage as NativeStorage,
-} from "~/bindings";
+import { openRun as nativeOpenRun, type Run as NativeRun } from "~/bindings";
 import type { Installation } from "~/main/installation";
 import { SESSION_SOLVER_EVENT_CHANNEL } from "~/shared/channels";
 import type { SolverEvent } from "~/shared/solver";
@@ -106,7 +103,8 @@ class SolverManager {
  */
 export class SessionManager {
   private readonly solver: SolverManager;
-  private storage?: NativeStorage;
+  private run?: NativeRun;
+  private readonly runPath: string;
 
   /**
    * Create a session manager.
@@ -115,6 +113,7 @@ export class SessionManager {
     install: Installation,
     private readonly workDir: string,
   ) {
+    this.runPath = path.join(workDir, "particles.tit-run");
     this.solver = new SolverManager(install);
     this.solver.setEventCallback((event) => {
       for (const window of BrowserWindow.getAllWindows()) {
@@ -129,9 +128,9 @@ export class SessionManager {
    * Start the session.
    */
   public async start() {
-    // Storage path is hardcoded at the moment.
-    const storagePath = path.join(this.workDir, "particles.ttdb");
-    this.storage = await nativeOpenStorage(storagePath);
+    // Opening a path-backed handle is valid before the solver publishes the
+    // first frame; frameCount() returns zero until the run index is available.
+    this.run = await nativeOpenRun(this.runPath);
   }
 
   /**
@@ -139,49 +138,49 @@ export class SessionManager {
    */
   public stop() {
     this.solver.stop();
-    this.storage = undefined;
+    this.run = undefined;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  // Get the last series.
-  private async getSeries() {
-    assert(this.storage !== undefined);
-    return this.storage.lastSeries();
-  }
-
-  /**
-   * Get the number of frames.
-   */
+  /** Get the number of committed frames. */
   public async getFrameCount() {
-    const series = await this.getSeries();
-    return series.frameCount();
+    assert(this.run !== undefined);
+    return this.run.frameCount();
   }
 
   /**
    * Get a frame by index.
    */
   public async getFrame(index: number): Promise<Frame> {
-    const series = await this.getSeries();
-    const frame = await series.frame(index);
+    assert(this.run !== undefined);
+    const frame = await this.run.frame(index);
     const names = await frame.fields();
-    return Object.fromEntries(
-      await Promise.all(
-        names.map(async (name) => {
-          const field = await frame.field(name);
-          const [type, data] = await Promise.all([field.type(), field.data()]);
-          return [name, { type, data }] as const;
-        }),
-      ),
+    const result: Frame = {};
+    await Promise.all(
+      names.map(async (name) => {
+        const field = await frame.field(name);
+        const [type, data] = await Promise.all([field.type(), field.data()]);
+
+        // Stable IDs remain lossless BigUint64Array values in the native API.
+        // The current WebGL field map is numeric-only, so identity fields are
+        // not forwarded into its scalar/vector visualization path.
+        const kind = type.kind;
+        if (kind === "int64_t" || kind === "uint64_t") return;
+        if (data instanceof BigInt64Array || data instanceof BigUint64Array) {
+          return;
+        }
+        result[name] = { type: { ...type, kind }, data };
+      }),
     );
+    return result;
   }
 
-  /**
-   * Export the storage to a directory.
-   */
+  /** Export a consistent snapshot of the committed run. */
   public async export(dirPath: string) {
-    const series = await this.getSeries();
-    await series.export(dirPath);
+    assert(this.run !== undefined);
+    const destination = path.join(dirPath, path.basename(this.runPath));
+    await this.run.export(destination);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -5,25 +5,29 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-export interface Storage {
-  seriesCount(): Promise<number>;
-  series(index: number): Promise<Series>;
-  lastSeries(): Promise<Series>;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-export interface Series {
+export interface Run {
+  metadata(): Promise<RunMetadata>;
   frameCount(): Promise<number>;
   frame(index: number): Promise<Frame>;
-  export(dirPath: string): Promise<void>;
+  export(destination: string): Promise<void>;
+}
+
+export interface RunMetadata {
+  name: string;
+  dimension: number;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export interface Frame {
+  descriptor(): Promise<FrameDescriptor>;
   fields(): Promise<string[]>;
   field(name: string): Promise<Field>;
+}
+
+export interface FrameDescriptor {
+  step: bigint;
+  time: number;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,6 +47,8 @@ export type Kind =
   | "uint16_t"
   | "int32_t"
   | "uint32_t"
+  | "int64_t"
+  | "uint64_t"
   | "float32_t"
   | "float64_t";
 
@@ -61,6 +67,8 @@ export type NumericArray =
   | Uint16Array
   | Int32Array
   | Uint32Array
+  | BigInt64Array
+  | BigUint64Array
   | Float32Array
   | Float64Array;
 
