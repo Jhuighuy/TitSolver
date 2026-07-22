@@ -57,11 +57,29 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
   REQUIRE(reader.num_frames() == 2);
   CHECK(reader.frame(1).descriptor() == FrameDescriptor{10, 0.5});
 
+  {
+    auto checkpoint = writer.begin_checkpoint(10, 0.5);
+    checkpoint.write("id", std::vector<std::uint64_t>{11, 12});
+    checkpoint.write("kind", std::vector<std::uint8_t>{0, 0});
+    checkpoint.write("r", std::vector{Vec{1.5, 2.0}, Vec{3.5, 4.0}});
+    checkpoint.write("v", std::vector{Vec{0.1, 0.2}, Vec{0.3, 0.4}});
+    checkpoint.write("rho", std::vector{1000.5, 1001.5});
+    checkpoint.write("m", std::vector{1.0, 1.0});
+    checkpoint.commit();
+  }
+  reader.refresh();
+  REQUIRE(reader.num_checkpoints() == 1);
+  CHECK(reader.checkpoint(0).descriptor() == FrameDescriptor{10, 0.5});
+  CHECK(reader.checkpoint(0).read<Vec<double, 2>>("v") ==
+        std::vector{Vec{0.1, 0.2}, Vec{0.3, 0.4}});
+
   reader.copy_to("exported.tit-run");
   const RunReader exported{"exported.tit-run"};
   REQUIRE(exported.num_frames() == 2);
+  REQUIRE(exported.num_checkpoints() == 1);
   CHECK(exported.metadata() == reader.metadata());
   CHECK(exported.frame(1).read<double>("rho") == std::vector{1000.5, 1001.5});
+  CHECK(exported.checkpoint(0).read<double>("m") == std::vector{1.0, 1.0});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

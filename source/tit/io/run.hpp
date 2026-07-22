@@ -130,7 +130,7 @@ private:
 namespace impl {
 
 class RunPublisherState;
-class FrameWriterState;
+class ParticleFileWriterState;
 class RunReaderState;
 
 template<class Val, bool = std::is_enum_v<Val>>
@@ -182,15 +182,63 @@ private:
 
   friend class RunWriter;
 
-  explicit FrameWriter(std::shared_ptr<impl::FrameWriterState> state) noexcept;
+  explicit FrameWriter(
+      std::shared_ptr<impl::ParticleFileWriterState> state) noexcept;
   void write_(std::string_view name,
               Type type,
               std::span<const std::byte> data,
               std::size_t size);
 
-  std::shared_ptr<impl::FrameWriterState> state_;
+  std::shared_ptr<impl::ParticleFileWriterState> state_;
 
 }; // class FrameWriter
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Builder for one unpublished lossless restart checkpoint.
+class CheckpointWriter final {
+public:
+
+  CheckpointWriter(const CheckpointWriter&) = delete;
+  auto operator=(const CheckpointWriter&) -> CheckpointWriter& = delete;
+  CheckpointWriter(CheckpointWriter&&) noexcept = default;
+  auto operator=(CheckpointWriter&&) noexcept -> CheckpointWriter& = default;
+  ~CheckpointWriter();
+
+  /// Write a contiguous typed persistent field to the checkpoint.
+  template<std::ranges::contiguous_range Range>
+    requires std::ranges::sized_range<Range> &&
+             (known_type_of<std::ranges::range_value_t<Range>> ||
+              std::is_enum_v<std::ranges::range_value_t<Range>>)
+  void write(std::string_view name, const Range& values) {
+    using Value = std::ranges::range_value_t<Range>;
+    using StorageValue = impl::storage_value_t<Value>;
+    static_assert(known_type_of<StorageValue>);
+    static_assert(std::is_trivially_copyable_v<Value>);
+    static_assert(sizeof(Value) == type_of<StorageValue>.width());
+
+    const std::span<const Value> span{std::ranges::data(values),
+                                      std::ranges::size(values)};
+    write_(name, type_of<StorageValue>, std::as_bytes(span), span.size());
+  }
+
+  /// Atomically publish the completed checkpoint.
+  void commit();
+
+private:
+
+  friend class RunWriter;
+
+  explicit CheckpointWriter(
+      std::shared_ptr<impl::ParticleFileWriterState> state) noexcept;
+  void write_(std::string_view name,
+              Type type,
+              std::span<const std::byte> data,
+              std::size_t size);
+
+  std::shared_ptr<impl::ParticleFileWriterState> state_;
+
+}; // class CheckpointWriter
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -203,6 +251,9 @@ public:
 
   /// Begin an unpublished frame. Only one frame may be active at a time.
   auto begin_frame(std::uint64_t step, double time) -> FrameWriter;
+
+  /// Begin an unpublished lossless restart checkpoint.
+  auto begin_checkpoint(std::uint64_t step, double time) -> CheckpointWriter;
 
   /// Run directory path.
   auto path() const -> const std::filesystem::path&;
@@ -259,6 +310,50 @@ private:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Reader for one immutable committed restart checkpoint.
+class CheckpointReader final {
+public:
+
+  /// Checkpoint metadata from the committed index.
+  auto descriptor() const noexcept -> const FrameDescriptor&;
+
+  /// Enumerate persistent checkpoint fields.
+  auto fields() const -> std::vector<FieldDescriptor>;
+
+  /// Read a field as a descriptor and contiguous bytes.
+  auto read_field(std::string_view name) const -> FieldData;
+
+  /// Read and validate a persistent field as a concrete C++ value type.
+  template<known_type_of Val>
+  auto read(std::string_view name) const -> std::vector<Val> {
+    static_assert(std::is_trivially_copyable_v<Val>);
+    static_assert(sizeof(Val) == type_of<Val>.width());
+    auto field = read_field(name);
+    TIT_ENSURE(field.descriptor().type() == type_of<Val>,
+               "Field '{}' has type '{}', not '{}'.",
+               name,
+               field.descriptor().type().name(),
+               type_of<Val>.name());
+    std::vector<Val> values(field.descriptor().size());
+    if (!field.data().empty()) {
+      std::memcpy(values.data(), field.data().data(), field.data().size());
+    }
+    return values;
+  }
+
+private:
+
+  friend class RunReader;
+
+  CheckpointReader(std::filesystem::path path, FrameDescriptor descriptor);
+
+  std::filesystem::path path_;
+  FrameDescriptor descriptor_;
+
+}; // class CheckpointReader
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// Reader for committed frames in a `.tit-run` directory.
 class RunReader final {
 public:
@@ -277,6 +372,12 @@ public:
 
   /// Open a committed frame by logical index.
   auto frame(std::size_t index) const -> FrameReader;
+
+  /// Number of committed checkpoints currently visible.
+  auto num_checkpoints() const -> std::size_t;
+
+  /// Open a committed checkpoint by logical index.
+  auto checkpoint(std::size_t index) const -> CheckpointReader;
 
   /// Atomically copy the currently visible committed run to a new path.
   void copy_to(const std::filesystem::path& destination) const;

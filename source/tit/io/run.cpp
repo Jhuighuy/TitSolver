@@ -172,6 +172,40 @@ void read_dataset(const HighFive::DataSet& dataset,
   }
 }
 
+auto read_fields(const std::filesystem::path& path)
+    -> std::vector<FieldDescriptor> {
+  const HighFive::File file{path.string(), HighFive::File::ReadOnly};
+  std::vector<FieldDescriptor> fields;
+  for (const std::string_view group_name : {"particles", "fields"}) {
+    if (!file.exist(std::string{group_name})) continue;
+    const auto group = file.getGroup(std::string{group_name});
+    auto names = group.listObjectNames();
+    for (auto& name : names) {
+      const auto dataset = group.getDataSet(name);
+      fields.push_back(read_descriptor(dataset, std::move(name)));
+    }
+  }
+  std::ranges::sort(fields, {}, &FieldDescriptor::name);
+  return fields;
+}
+
+auto read_particle_field(const std::filesystem::path& path,
+                         std::string_view name) -> FieldData {
+  const HighFive::File file{path.string(), HighFive::File::ReadOnly};
+  const std::string group_name =
+      name == "id" || name == "kind" ? "particles" : "fields";
+  TIT_ENSURE(file.exist(group_name), "Unknown particle field '{}'.", name);
+  const auto group = file.getGroup(group_name);
+  TIT_ENSURE(group.exist(std::string{name}),
+             "Unknown particle field '{}'.",
+             name);
+  const auto dataset = group.getDataSet(std::string{name});
+  auto descriptor = read_descriptor(dataset, std::string{name});
+  std::vector<std::byte> data(descriptor.size() * descriptor.type().width());
+  read_dataset(dataset, descriptor.type(), data);
+  return FieldData{std::move(descriptor), std::move(data)};
+}
+
 auto schema_json(const std::vector<FieldDescriptor>& fields) -> JSON {
   auto schema = JSON::array();
   for (const auto& field : fields) {
@@ -248,6 +282,7 @@ public:
         {"name", metadata_.name()},
         {"dimension", metadata_.dimension()},
         {"fields", JSON::array()},
+        {"checkpoint_fields", JSON::array()},
     };
     index_ = {
         {"version", run_format_version},
@@ -258,12 +293,13 @@ public:
     write_json_atomic(path_ / "index.json", index_);
   }
 
-  auto begin(std::uint64_t step, double time) -> FramePublication;
+  auto begin(PublicationKind kind, std::uint64_t step, double time)
+      -> RunPublication;
 
-  void publish(const FramePublication& publication,
+  void publish(const RunPublication& publication,
                const std::vector<FieldDescriptor>& fields) {
-    TIT_ENSURE(frame_active_, "No frame is active.");
-    TIT_ENSURE(!fields.empty(), "Cannot publish an empty frame.");
+    TIT_ENSURE(publication_active_, "No run publication is active.");
+    TIT_ENSURE(!fields.empty(), "Cannot publish an empty particle file.");
     const auto find_field = [&](std::string_view name) {
       return std::ranges::find(fields, name, &FieldDescriptor::name);
     };
@@ -272,7 +308,7 @@ public:
     const auto position = find_field("r");
     TIT_ENSURE(id != fields.end() && kind != fields.end() &&
                    position != fields.end(),
-               "A particle frame must contain 'id', 'kind', and 'r' fields.");
+               "A particle file must contain 'id', 'kind', and 'r' fields.");
     TIT_ENSURE(id->type() == type_of<std::uint64_t>,
                "Particle field 'id' must have type uint64_t.");
     TIT_ENSURE(kind->type() == type_of<std::uint8_t>,
@@ -286,13 +322,19 @@ public:
                "dimension {}.",
                metadata_.dimension());
 
-    if (schema_.empty()) {
-      schema_ = fields;
-      manifest_["fields"] = schema_json(schema_);
+    auto& schema = publication.kind() == PublicationKind::frame ?
+                       frame_schema_ :
+                       checkpoint_schema_;
+    const std::string_view schema_name =
+        publication.kind() == PublicationKind::frame ? "fields" :
+                                                       "checkpoint_fields";
+    if (schema.empty()) {
+      schema = fields;
+      manifest_[schema_name] = schema_json(schema);
       write_json_atomic(path_ / "manifest.json", manifest_);
     } else {
-      TIT_ENSURE(same_schema(schema_, fields),
-                 "Frame field schema differs from the run schema.");
+      TIT_ENSURE(same_schema(schema, fields),
+                 "Particle file schema differs from the run schema.");
     }
 
     std::error_code error;
@@ -305,7 +347,9 @@ public:
                error.message());
 
     const auto& descriptor = publication.descriptor();
-    index_["frames"].push_back({
+    const std::string_view index_name =
+        publication.kind() == PublicationKind::frame ? "frames" : "checkpoints";
+    index_[index_name].push_back({
         {"step", descriptor.step()},
         {"time", descriptor.time()},
         {"file",
@@ -313,12 +357,15 @@ public:
              .generic_string()},
     });
     write_json_atomic(path_ / "index.json", index_);
-    last_frame_ = descriptor;
-    frame_active_ = false;
+    auto& last = publication.kind() == PublicationKind::frame ?
+                     last_frame_ :
+                     last_checkpoint_;
+    last = descriptor;
+    publication_active_ = false;
   }
 
   void abandon() noexcept {
-    frame_active_ = false;
+    publication_active_ = false;
   }
 
   auto path() const noexcept -> const std::filesystem::path& {
@@ -331,13 +378,15 @@ private:
   RunMetadata metadata_;
   JSON manifest_;
   JSON index_;
-  std::vector<FieldDescriptor> schema_;
+  std::vector<FieldDescriptor> frame_schema_;
+  std::vector<FieldDescriptor> checkpoint_schema_;
   std::optional<FrameDescriptor> last_frame_;
-  bool frame_active_ = false;
+  std::optional<FrameDescriptor> last_checkpoint_;
+  bool publication_active_ = false;
 
 }; // class RunPublisherState
 
-class FrameWriterState final {
+class ParticleFileWriterState final {
   class PartialFrameGuard final {
   public:
 
@@ -371,14 +420,16 @@ class FrameWriterState final {
 
 public:
 
-  FrameWriterState(std::shared_ptr<RunPublisherState> run,
-                   FramePublication publication)
+  ParticleFileWriterState(std::shared_ptr<RunPublisherState> run,
+                          RunPublication publication)
       : run_{std::move(run)}, guard_{run_, publication.partial_path()},
         publication_{std::move(publication)},
         file_{std::make_unique<HighFive::File>(
             publication_.partial_path().string(),
             HighFive::File::Overwrite)} {
     file_->createAttribute("format_version", run_format_version);
+    file_->createAttribute("publication_kind",
+                           std::to_underlying(publication_.kind()));
     file_->createAttribute("step", publication_.descriptor().step());
     file_->createAttribute("time", publication_.descriptor().time());
     particles_ = file_->createGroup("particles");
@@ -389,7 +440,7 @@ public:
              Type type,
              std::span<const std::byte> data,
              std::size_t size) {
-    TIT_ENSURE(!committed_, "Frame is already committed.");
+    TIT_ENSURE(!committed_, "Particle file is already committed.");
     TIT_ENSURE(!name.empty() && !name.contains('/'),
                "Invalid field name '{}'.",
                name);
@@ -415,8 +466,8 @@ public:
   }
 
   void commit() {
-    TIT_ENSURE(!committed_, "Frame is already committed.");
-    TIT_ENSURE(file_ != nullptr, "Frame file is already closed.");
+    TIT_ENSURE(!committed_, "Particle file is already committed.");
+    TIT_ENSURE(file_ != nullptr, "Particle file is already closed.");
     file_->flush();
     fields_ = {};
     particles_ = {};
@@ -430,7 +481,7 @@ private:
 
   std::shared_ptr<RunPublisherState> run_;
   PartialFrameGuard guard_;
-  FramePublication publication_;
+  RunPublication publication_;
   std::unique_ptr<HighFive::File> file_;
   HighFive::Group particles_;
   HighFive::Group fields_;
@@ -438,28 +489,36 @@ private:
   std::optional<std::size_t> particle_count_;
   bool committed_ = false;
 
-}; // class FrameWriterState
+}; // class ParticleFileWriterState
 
-auto RunPublisherState::begin(std::uint64_t step, double time)
-    -> FramePublication {
-  TIT_ENSURE(!frame_active_, "Another frame is already active.");
-  TIT_ENSURE(std::isfinite(time), "Frame time must be finite.");
-  if (last_frame_.has_value()) {
-    TIT_ENSURE(step > last_frame_->step(),
-               "Frame step must increase monotonically.");
-    TIT_ENSURE(time > last_frame_->time(),
-               "Frame time must increase monotonically.");
+auto RunPublisherState::begin(PublicationKind kind,
+                              std::uint64_t step,
+                              double time) -> RunPublication {
+  TIT_ENSURE(!publication_active_,
+             "Another run publication is already active.");
+  TIT_ENSURE(std::isfinite(time), "Publication time must be finite.");
+  const auto& last =
+      kind == PublicationKind::frame ? last_frame_ : last_checkpoint_;
+  if (last.has_value()) {
+    TIT_ENSURE(step > last->step(),
+               "Publication step must increase monotonically.");
+    TIT_ENSURE(time > last->time(),
+               "Publication time must increase monotonically.");
   }
 
-  const auto filename = std::format("frame-{:08}.h5", step);
-  const auto final = path_ / "frames" / filename;
+  const auto is_frame = kind == PublicationKind::frame;
+  const std::string_view stem = is_frame ? "frame" : "checkpoint";
+  const std::string_view directory = is_frame ? "frames" : "checkpoints";
+  const auto filename = std::format("{}-{:08}.h5", stem, step);
+  const auto final = path_ / directory / filename;
   TIT_ENSURE(!std::filesystem::exists(final),
-             "Frame '{}' already exists.",
+             "Run publication '{}' already exists.",
              final.string());
-  frame_active_ = true;
-  return FramePublication{FrameDescriptor{step, time},
-                          partial_path(final),
-                          final};
+  publication_active_ = true;
+  return RunPublication{kind,
+                        FrameDescriptor{step, time},
+                        partial_path(final),
+                        final};
 }
 
 auto make_run_publisher(std::filesystem::path path, RunMetadata metadata)
@@ -468,21 +527,23 @@ auto make_run_publisher(std::filesystem::path path, RunMetadata metadata)
                                              std::move(metadata));
 }
 
-auto begin_frame_publication(const std::shared_ptr<RunPublisherState>& state,
-                             std::uint64_t step,
-                             double time) -> FramePublication {
+auto begin_publication(const std::shared_ptr<RunPublisherState>& state,
+                       PublicationKind kind,
+                       std::uint64_t step,
+                       double time) -> RunPublication {
   TIT_ENSURE(state != nullptr, "Run publisher is null.");
-  return state->begin(step, time);
+  return state->begin(kind, step, time);
 }
 
-void publish_frame(const std::shared_ptr<RunPublisherState>& state,
-                   const FramePublication& publication,
-                   const std::vector<FieldDescriptor>& fields) {
+void publish(const std::shared_ptr<RunPublisherState>& state,
+             const RunPublication& publication,
+             const std::vector<FieldDescriptor>& fields) {
   TIT_ENSURE(state != nullptr, "Run publisher is null.");
   state->publish(publication, fields);
 }
 
-void abandon_frame(const std::shared_ptr<RunPublisherState>& state) noexcept {
+void abandon_publication(
+    const std::shared_ptr<RunPublisherState>& state) noexcept {
   if (state != nullptr) state->abandon();
 }
 
@@ -506,20 +567,26 @@ public:
     const auto index = read_json(path_ / "index.json");
     TIT_ENSURE(index.at("version") == run_format_version,
                "Unsupported run-index version.");
-    std::vector<std::pair<FrameDescriptor, std::filesystem::path>> frames;
-    for (const auto& item : index.at("frames")) {
-      const std::filesystem::path relative = item.at("file").get<std::string>();
-      TIT_ENSURE(!relative.is_absolute() &&
-                     std::ranges::none_of(relative,
-                                          [](const auto& component) {
-                                            return component == "..";
-                                          }),
-                 "Invalid frame path in run index.");
-      frames.emplace_back(FrameDescriptor{item.at("step").get<std::uint64_t>(),
-                                          item.at("time").get<double>()},
-                          path_ / relative);
-    }
-    frames_ = std::move(frames);
+    const auto read_entries = [&](std::string_view name) {
+      std::vector<std::pair<FrameDescriptor, std::filesystem::path>> entries;
+      for (const auto& item : index.at(name)) {
+        const std::filesystem::path relative =
+            item.at("file").get<std::string>();
+        TIT_ENSURE(!relative.is_absolute() &&
+                       std::ranges::none_of(relative,
+                                            [](const auto& component) {
+                                              return component == "..";
+                                            }),
+                   "Invalid particle-file path in run index.");
+        entries.emplace_back(
+            FrameDescriptor{item.at("step").get<std::uint64_t>(),
+                            item.at("time").get<double>()},
+            path_ / relative);
+      }
+      return entries;
+    };
+    frames_ = read_entries("frames");
+    checkpoints_ = read_entries("checkpoints");
   }
 
   auto metadata() const -> const RunMetadata& {
@@ -531,6 +598,11 @@ public:
     return frames_;
   }
 
+  auto checkpoints() const noexcept
+      -> const std::vector<std::pair<FrameDescriptor, std::filesystem::path>>& {
+    return checkpoints_;
+  }
+
   auto path() const noexcept -> const std::filesystem::path& {
     return path_;
   }
@@ -540,6 +612,7 @@ private:
   std::filesystem::path path_;
   RunMetadata metadata_;
   std::vector<std::pair<FrameDescriptor, std::filesystem::path>> frames_;
+  std::vector<std::pair<FrameDescriptor, std::filesystem::path>> checkpoints_;
 
 }; // class RunReaderState
 
@@ -547,7 +620,8 @@ private:
 
 } // namespace impl
 
-FrameWriter::FrameWriter(std::shared_ptr<impl::FrameWriterState> state) noexcept
+FrameWriter::FrameWriter(
+    std::shared_ptr<impl::ParticleFileWriterState> state) noexcept
     : state_{std::move(state)} {}
 
 FrameWriter::~FrameWriter() = default;
@@ -567,13 +641,47 @@ void FrameWriter::commit() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+CheckpointWriter::CheckpointWriter(
+    std::shared_ptr<impl::ParticleFileWriterState> state) noexcept
+    : state_{std::move(state)} {}
+
+CheckpointWriter::~CheckpointWriter() = default;
+
+void CheckpointWriter::write_(std::string_view name,
+                              Type type,
+                              std::span<const std::byte> data,
+                              std::size_t size) {
+  TIT_ENSURE(state_ != nullptr, "Checkpoint writer is null.");
+  state_->write(name, type, data, size);
+}
+
+void CheckpointWriter::commit() {
+  TIT_ENSURE(state_ != nullptr, "Checkpoint writer is null.");
+  state_->commit();
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 RunWriter::RunWriter(std::filesystem::path path, RunMetadata metadata)
     : state_{impl::make_run_publisher(std::move(path), std::move(metadata))} {}
 
 auto RunWriter::begin_frame(std::uint64_t step, double time) -> FrameWriter {
-  return FrameWriter{std::make_shared<impl::FrameWriterState>(
+  return FrameWriter{std::make_shared<impl::ParticleFileWriterState>(
       state_,
-      impl::begin_frame_publication(state_, step, time))};
+      impl::begin_publication(state_,
+                              impl::PublicationKind::frame,
+                              step,
+                              time))};
+}
+
+auto RunWriter::begin_checkpoint(std::uint64_t step, double time)
+    -> CheckpointWriter {
+  return CheckpointWriter{std::make_shared<impl::ParticleFileWriterState>(
+      state_,
+      impl::begin_publication(state_,
+                              impl::PublicationKind::checkpoint,
+                              step,
+                              time))};
 }
 
 auto RunWriter::path() const -> const std::filesystem::path& {
@@ -590,33 +698,29 @@ auto FrameReader::descriptor() const noexcept -> const FrameDescriptor& {
 }
 
 auto FrameReader::fields() const -> std::vector<FieldDescriptor> {
-  const HighFive::File file{path_.string(), HighFive::File::ReadOnly};
-  std::vector<FieldDescriptor> fields;
-  for (const std::string_view group_name : {"particles", "fields"}) {
-    if (!file.exist(std::string{group_name})) continue;
-    const auto group = file.getGroup(std::string{group_name});
-    auto names = group.listObjectNames();
-    for (auto& name : names) {
-      const auto dataset = group.getDataSet(name);
-      fields.push_back(read_descriptor(dataset, std::move(name)));
-    }
-  }
-  std::ranges::sort(fields, {}, &FieldDescriptor::name);
-  return fields;
+  return read_fields(path_);
 }
 
 auto FrameReader::read_field(std::string_view name) const -> FieldData {
-  const HighFive::File file{path_.string(), HighFive::File::ReadOnly};
-  const std::string group_name =
-      name == "id" || name == "kind" ? "particles" : "fields";
-  TIT_ENSURE(file.exist(group_name), "Unknown frame field '{}'.", name);
-  const auto group = file.getGroup(group_name);
-  TIT_ENSURE(group.exist(std::string{name}), "Unknown frame field '{}'.", name);
-  const auto dataset = group.getDataSet(std::string{name});
-  auto descriptor = read_descriptor(dataset, std::string{name});
-  std::vector<std::byte> data(descriptor.size() * descriptor.type().width());
-  read_dataset(dataset, descriptor.type(), data);
-  return FieldData{std::move(descriptor), std::move(data)};
+  return read_particle_field(path_, name);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CheckpointReader::CheckpointReader(std::filesystem::path path,
+                                   FrameDescriptor descriptor)
+    : path_{std::move(path)}, descriptor_{descriptor} {}
+
+auto CheckpointReader::descriptor() const noexcept -> const FrameDescriptor& {
+  return descriptor_;
+}
+
+auto CheckpointReader::fields() const -> std::vector<FieldDescriptor> {
+  return read_fields(path_);
+}
+
+auto CheckpointReader::read_field(std::string_view name) const -> FieldData {
+  return read_particle_field(path_, name);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -646,6 +750,22 @@ auto RunReader::frame(std::size_t index) const -> FrameReader {
              "Committed frame '{}' is missing.",
              path.string());
   return FrameReader{path, descriptor};
+}
+
+auto RunReader::num_checkpoints() const -> std::size_t {
+  return state_->checkpoints().size();
+}
+
+auto RunReader::checkpoint(std::size_t index) const -> CheckpointReader {
+  const auto& checkpoints = state_->checkpoints();
+  TIT_ENSURE(index < checkpoints.size(),
+             "Checkpoint index '{}' is out of bounds.",
+             index);
+  const auto& [descriptor, path] = checkpoints[index];
+  TIT_ENSURE(std::filesystem::is_regular_file(path),
+             "Committed checkpoint '{}' is missing.",
+             path.string());
+  return CheckpointReader{path, descriptor};
 }
 
 void RunReader::copy_to(const std::filesystem::path& destination) const {
@@ -679,6 +799,19 @@ void RunReader::copy_to(const std::filesystem::path& destination) const {
     const auto relative = std::filesystem::path{"frames"} / source.filename();
     std::filesystem::copy_file(source, partial / relative);
     index["frames"].push_back({
+        {"step", descriptor.step()},
+        {"time", descriptor.time()},
+        {"file", relative.generic_string()},
+    });
+  }
+  for (const auto& [descriptor, source] : state_->checkpoints()) {
+    TIT_ENSURE(std::filesystem::is_regular_file(source),
+               "Committed checkpoint '{}' is missing.",
+               source.string());
+    const auto relative =
+        std::filesystem::path{"checkpoints"} / source.filename();
+    std::filesystem::copy_file(source, partial / relative);
+    index["checkpoints"].push_back({
         {"step", descriptor.step()},
         {"time", descriptor.time()},
         {"file", relative.generic_string()},

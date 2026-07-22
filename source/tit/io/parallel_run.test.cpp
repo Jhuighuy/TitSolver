@@ -66,6 +66,30 @@ TEST_CASE("io::ParallelRunWriter writes collective rank-major hyperslabs") {
     frame.commit();
   }
 
+  {
+    const auto ids = communicator.rank() == 0 ?
+                         std::vector<std::uint64_t>{1, 2} :
+                         std::vector<std::uint64_t>{3};
+    const auto positions = communicator.rank() == 0 ?
+                               std::vector{Vec{1.5, 0.0}, Vec{2.5, 0.0}} :
+                               std::vector{Vec{3.5, 0.0}};
+    const auto velocities = communicator.rank() == 0 ?
+                                std::vector{Vec{0.1, 0.0}, Vec{0.2, 0.0}} :
+                                std::vector{Vec{0.3, 0.0}};
+    const auto density = communicator.rank() == 0 ?
+                             std::vector{1001.5, 1002.5} :
+                             std::vector{1003.5};
+    const std::vector<std::uint8_t> kinds(ids.size(), 0);
+
+    auto checkpoint = writer.begin_checkpoint(10, 1.0);
+    checkpoint.write("id", ids);
+    checkpoint.write("kind", kinds);
+    checkpoint.write("r", positions);
+    checkpoint.write("v", velocities);
+    checkpoint.write("rho", density);
+    checkpoint.commit();
+  }
+
   if (communicator.rank() == 0) {
     const RunReader reader{"parallel.tit-run"};
     REQUIRE(reader.num_frames() == 2);
@@ -76,6 +100,11 @@ TEST_CASE("io::ParallelRunWriter writes collective rank-major hyperslabs") {
     CHECK(reader.frame(1).read<std::uint64_t>("id") ==
           std::vector<std::uint64_t>{4, 5});
     CHECK(reader.frame(1).read<double>("rho") == std::vector{1004.0, 1005.0});
+    REQUIRE(reader.num_checkpoints() == 1);
+    CHECK(reader.checkpoint(0).read<std::uint64_t>("id") ==
+          std::vector<std::uint64_t>{1, 2, 3});
+    CHECK(reader.checkpoint(0).read<Vec<double, 2>>("v") ==
+          std::vector{Vec{0.1, 0.0}, Vec{0.2, 0.0}, Vec{0.3, 0.0}});
   }
   communicator.barrier();
 }

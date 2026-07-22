@@ -184,8 +184,8 @@ public:
     communicator_.barrier();
   }
 
-  auto begin(std::uint64_t step, double time)
-      -> std::shared_ptr<ParallelFrameWriterState>;
+  auto begin(PublicationKind kind, std::uint64_t step, double time)
+      -> std::shared_ptr<ParallelParticleFileWriterState>;
 
   auto communicator() const noexcept -> const dist::Communicator& {
     return communicator_;
@@ -207,11 +207,11 @@ private:
 
 }; // class ParallelRunWriterState
 
-class ParallelFrameWriterState final {
+class ParallelParticleFileWriterState final {
 public:
 
-  ParallelFrameWriterState(std::shared_ptr<ParallelRunWriterState> run,
-                           FramePublication publication)
+  ParallelParticleFileWriterState(std::shared_ptr<ParallelRunWriterState> run,
+                                  RunPublication publication)
       : run_{std::move(run)}, publication_{std::move(publication)} {
     const HDF5PropertyList access{
         checked_hdf5_id(H5Pcreate(H5P_FILE_ACCESS),
@@ -232,6 +232,10 @@ public:
                     "format_version",
                     H5T_NATIVE_UINT32,
                     run_format_version);
+    write_attribute(file_.get(),
+                    "publication_kind",
+                    H5T_NATIVE_UINT8,
+                    std::to_underlying(publication_.kind()));
     write_attribute(file_.get(),
                     "step",
                     H5T_NATIVE_UINT64,
@@ -254,17 +258,18 @@ public:
                                         "H5Gcreate2(fields)")};
   }
 
-  ParallelFrameWriterState(const ParallelFrameWriterState&) = delete;
-  ParallelFrameWriterState(ParallelFrameWriterState&&) = delete;
-  auto operator=(const ParallelFrameWriterState&)
-      -> ParallelFrameWriterState& = delete;
-  auto operator=(ParallelFrameWriterState&&)
-      -> ParallelFrameWriterState& = delete;
+  ParallelParticleFileWriterState(const ParallelParticleFileWriterState&) =
+      delete;
+  ParallelParticleFileWriterState(ParallelParticleFileWriterState&&) = delete;
+  auto operator=(const ParallelParticleFileWriterState&)
+      -> ParallelParticleFileWriterState& = delete;
+  auto operator=(ParallelParticleFileWriterState&&)
+      -> ParallelParticleFileWriterState& = delete;
 
-  ~ParallelFrameWriterState() {
+  ~ParallelParticleFileWriterState() {
     close_();
     if (!committed_ && run_->communicator().rank() == 0) {
-      abandon_frame(run_->publisher());
+      abandon_publication(run_->publisher());
     }
   }
 
@@ -376,7 +381,7 @@ public:
     close_();
     run_->communicator().barrier();
     if (run_->communicator().rank() == 0) {
-      publish_frame(run_->publisher(), publication_, field_descriptors_);
+      publish(run_->publisher(), publication_, field_descriptors_);
     }
     run_->communicator().barrier();
     committed_ = true;
@@ -391,7 +396,7 @@ private:
   }
 
   std::shared_ptr<ParallelRunWriterState> run_;
-  FramePublication publication_;
+  RunPublication publication_;
   HDF5File file_;
   HDF5Group particles_;
   HDF5Group fields_;
@@ -400,20 +405,28 @@ private:
   std::optional<std::uint64_t> global_particle_count_;
   bool committed_ = false;
 
-}; // class ParallelFrameWriterState
+}; // class ParallelParticleFileWriterState
 
-auto ParallelRunWriterState::begin(std::uint64_t step, double time)
-    -> std::shared_ptr<ParallelFrameWriterState> {
-  TIT_ENSURE(std::isfinite(time), "Frame time must be finite.");
-  const auto final = path_ / "frames" / std::format("frame-{:08}.h5", step);
-  auto publication =
-      FramePublication{FrameDescriptor{step, time}, partial_path(final), final};
+auto ParallelRunWriterState::begin(PublicationKind kind,
+                                   std::uint64_t step,
+                                   double time)
+    -> std::shared_ptr<ParallelParticleFileWriterState> {
+  TIT_ENSURE(std::isfinite(time), "Publication time must be finite.");
+  const auto is_frame = kind == PublicationKind::frame;
+  const std::string_view directory = is_frame ? "frames" : "checkpoints";
+  const std::string_view stem = is_frame ? "frame" : "checkpoint";
+  const auto final = path_ / directory / std::format("{}-{:08}.h5", stem, step);
+  auto publication = RunPublication{kind,
+                                    FrameDescriptor{step, time},
+                                    partial_path(final),
+                                    final};
   if (communicator_.rank() == 0) {
-    publication = begin_frame_publication(publisher_, step, time);
+    publication = begin_publication(publisher_, kind, step, time);
   }
   communicator_.barrier();
-  return std::make_shared<ParallelFrameWriterState>(shared_from_this(),
-                                                    std::move(publication));
+  return std::make_shared<ParallelParticleFileWriterState>(
+      shared_from_this(),
+      std::move(publication));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -421,7 +434,7 @@ auto ParallelRunWriterState::begin(std::uint64_t step, double time)
 } // namespace impl
 
 ParallelFrameWriter::ParallelFrameWriter(
-    std::shared_ptr<impl::ParallelFrameWriterState> state) noexcept
+    std::shared_ptr<impl::ParallelParticleFileWriterState> state) noexcept
     : state_{std::move(state)} {}
 
 ParallelFrameWriter::~ParallelFrameWriter() = default;
@@ -441,6 +454,27 @@ void ParallelFrameWriter::commit() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+ParallelCheckpointWriter::ParallelCheckpointWriter(
+    std::shared_ptr<impl::ParallelParticleFileWriterState> state) noexcept
+    : state_{std::move(state)} {}
+
+ParallelCheckpointWriter::~ParallelCheckpointWriter() = default;
+
+void ParallelCheckpointWriter::write_(std::string_view name,
+                                      Type type,
+                                      std::span<const std::byte> local_data,
+                                      std::size_t local_size) {
+  TIT_ENSURE(state_ != nullptr, "Parallel checkpoint writer is null.");
+  state_->write(name, type, local_data, local_size);
+}
+
+void ParallelCheckpointWriter::commit() {
+  TIT_ENSURE(state_ != nullptr, "Parallel checkpoint writer is null.");
+  state_->commit();
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ParallelRunWriter::ParallelRunWriter(std::filesystem::path path,
                                      RunMetadata metadata,
                                      dist::Communicator communicator)
@@ -451,7 +485,14 @@ ParallelRunWriter::ParallelRunWriter(std::filesystem::path path,
 
 auto ParallelRunWriter::begin_frame(std::uint64_t step, double time)
     -> ParallelFrameWriter {
-  return ParallelFrameWriter{state_->begin(step, time)};
+  return ParallelFrameWriter{
+      state_->begin(impl::PublicationKind::frame, step, time)};
+}
+
+auto ParallelRunWriter::begin_checkpoint(std::uint64_t step, double time)
+    -> ParallelCheckpointWriter {
+  return ParallelCheckpointWriter{
+      state_->begin(impl::PublicationKind::checkpoint, step, time)};
 }
 
 auto ParallelRunWriter::path() const -> const std::filesystem::path& {
