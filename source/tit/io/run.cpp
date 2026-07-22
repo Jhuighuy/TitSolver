@@ -641,8 +641,9 @@ public:
                            std::to_underlying(publication_.kind()));
     file_->createAttribute("step", publication_.descriptor().step());
     file_->createAttribute("time", publication_.descriptor().time());
-    particles_ = file_->createGroup("particles");
-    fields_ = file_->createGroup("fields");
+    particles_ =
+        std::make_unique<HighFive::Group>(file_->createGroup("particles"));
+    fields_ = std::make_unique<HighFive::Group>(file_->createGroup("fields"));
   }
 
   void write(std::string_view name,
@@ -669,8 +670,9 @@ public:
       particle_count_ = size;
     }
 
-    auto& group = name == "id" || name == "kind" ? particles_ : fields_;
-    write_dataset(group, name, type, data, size);
+    const auto& group = name == "id" || name == "kind" ? particles_ : fields_;
+    TIT_ENSURE(group != nullptr, "Particle file is already closed.");
+    write_dataset(*group, name, type, data, size);
     field_descriptors_.emplace_back(std::string{name}, type, size);
   }
 
@@ -678,8 +680,8 @@ public:
     TIT_ENSURE(!committed_, "Particle file is already committed.");
     TIT_ENSURE(file_ != nullptr, "Particle file is already closed.");
     file_->flush();
-    fields_ = {};
-    particles_ = {};
+    fields_.reset();
+    particles_.reset();
     file_.reset();
     run_->publish(publication_, field_descriptors_);
     guard_.release();
@@ -692,8 +694,8 @@ private:
   PartialFrameGuard guard_;
   RunPublication publication_;
   std::unique_ptr<HighFive::File> file_;
-  HighFive::Group particles_;
-  HighFive::Group fields_;
+  std::unique_ptr<HighFive::Group> particles_;
+  std::unique_ptr<HighFive::Group> fields_;
   std::vector<FieldDescriptor> field_descriptors_;
   std::optional<std::size_t> particle_count_;
   bool committed_ = false;
