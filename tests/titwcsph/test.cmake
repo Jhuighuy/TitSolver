@@ -26,6 +26,18 @@ add_tit_test(
   FLAGS RUN_SERIAL
 )
 
+# A root-only publication error must abort peers waiting in MPI, not hang.
+add_tit_test(
+  NAME "distributed_fatal_error"
+  COMMAND
+    "${SHELL_EXE}"
+    "${CMAKE_CURRENT_LIST_DIR}/fatal_error.sh"
+    "${MPIEXEC_EXECUTABLE}"
+    "${MPIEXEC_NUMPROC_FLAG}"
+    "$<TARGET_FILE:titwcsph>"
+  FLAGS RUN_SERIAL
+)
+
 # This long-running system test currently checks successful completion. Binary
 # HDF5 files are intentionally not compared byte-for-byte; run-format and
 # numerical semantics are covered independently.

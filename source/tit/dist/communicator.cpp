@@ -7,6 +7,7 @@
 #include <climits>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <span>
@@ -102,6 +103,13 @@ auto Communicator::size() const -> std::size_t {
 void Communicator::barrier() const {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
   check_mpi(MPI_Barrier(state_->get()), "MPI_Barrier");
+}
+
+[[noreturn]] void Communicator::abort(int error_code) const noexcept {
+  if (state_ != nullptr) {
+    static_cast<void>(MPI_Abort(state_->get(), error_code));
+  }
+  std::abort();
 }
 
 auto Communicator::all_reduce_min(float value) const -> float {

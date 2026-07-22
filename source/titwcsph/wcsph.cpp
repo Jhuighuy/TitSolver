@@ -7,6 +7,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <limits>
 #include <optional>
@@ -399,8 +401,18 @@ auto sph_main(const dist::Communicator& communicator,
 TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
   const dist::Environment environment{argc, argv};
   const auto communicator = dist::Communicator::world();
-  const auto options = sph::wcsph::parse_options(
-      std::span<char*>{argv, static_cast<std::size_t>(argc)});
-  par::init();
-  sph::wcsph::sph_main<tit::float64_t>(communicator, options);
+  try {
+    const auto options = sph::wcsph::parse_options(
+        std::span<char*>{argv, static_cast<std::size_t>(argc)});
+    par::init();
+    sph::wcsph::sph_main<tit::float64_t>(communicator, options);
+  } catch (const std::exception& exception) {
+    err("Fatal distributed error on rank {}: {}",
+        communicator.rank(),
+        exception.what());
+    communicator.abort(EXIT_FAILURE);
+  } catch (...) {
+    err("Unknown fatal distributed error on rank {}.", communicator.rank());
+    communicator.abort(EXIT_FAILURE);
+  }
 });

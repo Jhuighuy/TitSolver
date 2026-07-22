@@ -33,6 +33,10 @@ public:
   /// Wait until all ranks reach the barrier.
   void barrier() const;
 
+  /// Terminate every process in this communicator after an unrecoverable
+  /// distributed failure.
+  [[noreturn]] void abort(int error_code) const noexcept;
+
   /// Compute a communicator-wide minimum.
   /// @{
   auto all_reduce_min(float value) const -> float;
