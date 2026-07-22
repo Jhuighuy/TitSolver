@@ -12,6 +12,7 @@ SOURCE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 OUTPUT_DIR="$SOURCE_DIR/output"
 BINARY_DIR="$OUTPUT_DIR/cmake_output"
 INSTALL_DIR="$OUTPUT_DIR/TIT_ROOT"
+VCPKG_INSTALLED_DIR="$OUTPUT_DIR/vcpkg_installed"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -80,6 +81,7 @@ print-options() {
 	echo "  CC             = ${BOLD}$CC${RESET}"
 	echo "  CXX            = ${BOLD}$CXX${RESET}"
 	echo "  VCPKG_ROOT     = ${BOLD}$VCPKG_ROOT${RESET}"
+	echo "  VCPKG_INSTALL  = ${BOLD}$VCPKG_INSTALLED_DIR${RESET}"
 
 	if [ ! -z "${TARGETS[*]}" ]; then
 		echo "  TARGETS        = ${BOLD}${TARGETS[*]}${RESET}"
@@ -193,6 +195,60 @@ parse-args() {
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+openmpi-prefix-is-valid() {
+	local FOUND_LIBRARY=false
+	while IFS= read -r -d '' LIBRARY; do
+		FOUND_LIBRARY=true
+		if ! strings "$LIBRARY" | grep -F "$VCPKG_INSTALLED_DIR/" >/dev/null ||
+			strings "$LIBRARY" | grep -F "/vcpkg_installed" |
+				grep -Fv "$VCPKG_INSTALLED_DIR/" >/dev/null; then
+			return 1
+		fi
+	done < <(
+		find "$VCPKG_INSTALLED_DIR" -type f \
+			\( -name "libopen-pal*.dylib" -o -name "libopen-pal.so*" \) \
+			-print0
+	)
+	[ "$FOUND_LIBRARY" = true ]
+}
+
+ensure-openmpi() {
+	# OpenMPI embeds its installation prefix in its runtime component search
+	# paths. A vcpkg binary restored into a different install root can therefore
+	# mix libraries and plugins from two builds and crash before MPI_Init returns.
+	case "$OSTYPE" in
+	msys* | cygwin* | win32*) return ;;
+	esac
+
+	local VCPKG_EXE="$VCPKG_ROOT/vcpkg"
+	local INSTALL_ARGS=(
+		--classic
+		--no-print-usage
+		--x-install-root="$VCPKG_INSTALLED_DIR"
+	)
+	"$VCPKG_EXE" install "${INSTALL_ARGS[@]}" openmpi || exit $?
+	if openmpi-prefix-is-valid; then return; fi
+
+	echo "${BLUE}Replacing OpenMPI cached for another install prefix...${RESET}"
+	"$VCPKG_EXE" remove \
+		--classic \
+		--recurse \
+		--x-install-root="$VCPKG_INSTALLED_DIR" \
+		openmpi || exit $?
+	"$VCPKG_EXE" install \
+		"${INSTALL_ARGS[@]}" \
+		--binarysource=clear \
+		--binarysource=default,write \
+		openmpi || exit $?
+
+	if ! openmpi-prefix-is-valid; then
+		echo "${RED}OpenMPI contains an invalid installation prefix.${RESET}"
+		exit 1
+	fi
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 configure() {
 	echo "${BLUE}${BOLD}Configuring...${RESET}"
 
@@ -229,8 +285,13 @@ configure() {
 		echo "${RED}Please ensure vcpkg is installed correctly and the toolchain file exists.${RESET}"
 		exit 1
 	fi
+	ensure-openmpi
 	CMAKE_ARGS+=("-D" "CMAKE_TOOLCHAIN_FILE=$VCPKG_TOOLCHAIN_FILE")
+	CMAKE_ARGS+=("-D" "VCPKG_INSTALLED_DIR=$VCPKG_INSTALLED_DIR")
 	CMAKE_ARGS+=("-D" "VCPKG_INSTALL_OPTIONS=--no-print-usage")
+	# FindMPI caches the absolute launcher and library paths. Rediscover them in
+	# case this build directory predates the shared vcpkg installation root.
+	CMAKE_ARGS+=("-U" "MPI*")
 
 	# Toggle static analysis.
 	CMAKE_ARGS+=("-D" "SKIP_ANALYSIS=$([ "$FORCE" = true ] && echo "YES" || echo "NO")")

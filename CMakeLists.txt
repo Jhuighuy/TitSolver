@@ -111,7 +111,7 @@ write_compile_flags(all_flags)
 
 # Install licenses for vcpkg packages.
 cmake_path(SET VCPKG_SHARE_DIR
-  "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share"
+  "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share"
 )
 if(EXISTS "${VCPKG_SHARE_DIR}")
   file(GLOB PACKAGE_DIRS LIST_DIRECTORIES true "${VCPKG_SHARE_DIR}/*")

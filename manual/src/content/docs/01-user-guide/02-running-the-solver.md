@@ -15,6 +15,11 @@ built against:
 mpiexec -n 4 titwcsph --output dam-break.tit-run
 ```
 
+The launcher and `libmpi` must come from the same installation. In particular,
+do not use a Homebrew or system `mpiexec` to start a binary built against the
+vcpkg OpenMPI installation. When building from this repository, CMake and the
+test driver select the matching launcher under `output/vcpkg_installed`.
+
 For a one-rank run, use `-n 1`; this also works with MPI implementations that
 do not support singleton initialization without their launcher. Set
 `TIT_NUM_THREADS` to limit TBB workers in each rank. For example, two MPI ranks
