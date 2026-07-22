@@ -3,29 +3,6 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_library(
-  NAME
-    io
-  SOURCES
-    "run.cpp"
-    "run.hpp"
-    "type.hpp"
-  DEPENDS
-    tit::core
-    HighFive::HighFive
-    nlohmann_json::nlohmann_json
-)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-add_tit_executable(
-  NAME
-    io_tests
-  SOURCES
-    "run.test.cpp"
-  DEPENDS
-    tit::io
-    tit::testing
-)
+add_tit_test(TARGET tit::io_tests)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
