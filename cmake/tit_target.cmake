@@ -53,7 +53,6 @@ function(install_tit_target TYPE TARGET DESTINATION)
   set_target_properties(${TARGET}
     PROPERTIES
       INSTALL_RPATH "${ORIGIN}/../lib"
-      BUILD_WITH_INSTALL_RPATH TRUE
   )
 endfunction()
 
