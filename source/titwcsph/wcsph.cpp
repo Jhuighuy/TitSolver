@@ -58,6 +58,7 @@ struct SolverOptions final {
   std::size_t snapshot_interval = 100;
   std::size_t checkpoint_interval = 1000;
   std::size_t particles_per_height = 80;
+  std::size_t rebalance_interval = 100;
 };
 
 auto parse_options(std::span<char*> arguments) -> SolverOptions {
@@ -92,6 +93,8 @@ auto parse_options(std::span<char*> arguments) -> SolverOptions {
       options.checkpoint_interval = parse_size(option, value());
     } else if (option == "--particles-per-height") {
       options.particles_per_height = parse_size(option, value());
+    } else if (option == "--rebalance-every") {
+      options.rebalance_interval = parse_size(option, value());
     } else {
       TIT_THROW("Unknown solver option '{}'.", option);
     }
@@ -255,7 +258,7 @@ auto sph_main(const dist::Communicator& communicator,
                                       Real{0},
                                       POOL_WIDTH,
                                       kernel.radius(h_0)};
-  const Simulation simulation{
+  Simulation simulation{
       FluidEquations{
           // Constants.
           g,
@@ -323,6 +326,8 @@ auto sph_main(const dist::Communicator& communicator,
     }
   }
 
+  simulation.rebalance(particles);
+
   // Replicate immutable fixed boundary particles on every rank.
   const auto first_fixed_id = static_cast<std::uint64_t>(water_m) * water_n;
   for (std::size_t i = 0; i < domain.num_verts(); ++i) {
@@ -371,6 +376,9 @@ auto sph_main(const dist::Communicator& communicator,
     }
     time += dt;
     ++executed_steps;
+    if (step % options.rebalance_interval == 0) {
+      simulation.rebalance(particles);
+    }
 
     constexpr auto end_time = Real{10.0};
     const auto next_scaled_time = time * sqrt(g / H);

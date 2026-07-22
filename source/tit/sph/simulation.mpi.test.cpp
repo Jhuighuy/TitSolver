@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -193,6 +194,38 @@ TEST_CASE("sph::SlabParticleTopology supports empty ranks") {
   topology.exchange_halos(particles);
   CHECK(particles.num_ghosts() == 0);
   CHECK(communicator.all_reduce_sum(particles.num_owned()) == 1);
+}
+
+TEST_CASE("sph::SlabParticleTopology rebalances a concentrated distribution") {
+  const auto communicator = dist::Communicator::world();
+  REQUIRE(communicator.size() >= 2);
+  SlabParticleTopology topology{communicator, 0.0, 1.0, 0.05};
+  ParticleArray particles{Space<double, 2>{},
+                          ParticleLayout{TypeSet{h}, TypeSet{r, v, rho}}};
+  h[particles] = 0.1;
+  constexpr std::size_t particles_per_rank = 8;
+  const auto global_size = particles_per_rank * communicator.size();
+  if (communicator.rank() == 0) {
+    for (std::size_t index = 0; index < global_size; ++index) {
+      const auto particle =
+          particles.append(ParticleType::fluid,
+                           ParticleID{static_cast<std::uint64_t>(index)});
+      r[particle] = {(static_cast<double>(index) + 0.5) /
+                         static_cast<double>(global_size),
+                     0.0};
+      v[particle] = {static_cast<double>(index), 0.0};
+      rho[particle] = 1000.0 + static_cast<double>(index);
+    }
+  }
+
+  topology.rebalance(particles);
+  CHECK(particles.num_owned() == particles_per_rank);
+  CHECK(communicator.all_reduce_sum(particles.num_owned()) == global_size);
+  for (const auto particle : particles.owned()) {
+    CHECK(topology.owner(r[particle]) == communicator.rank());
+    CHECK(rho[particle] ==
+          1000.0 + static_cast<double>(std::to_underlying(particle.id())));
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

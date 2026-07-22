@@ -54,6 +54,10 @@ public:
   /// Compute a communicator-wide unsigned sum.
   auto all_reduce_sum(std::uint64_t value) const -> std::uint64_t;
 
+  /// Compute communicator-wide sums for an unsigned array.
+  auto all_reduce_sum(std::span<const std::uint64_t> values) const
+      -> std::vector<std::uint64_t>;
+
   /// Compute an exclusive prefix sum, returning zero on rank zero.
   auto exclusive_scan_sum(std::uint64_t value) const -> std::uint64_t;
 

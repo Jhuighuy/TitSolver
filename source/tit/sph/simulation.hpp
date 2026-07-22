@@ -11,6 +11,7 @@
 #include "tit/core/profiler.hpp"
 #include "tit/dist/communicator.hpp"
 #include "tit/sph/distributed_particles.hpp"
+#include "tit/sph/field.hpp"
 #include "tit/sph/particle_array.hpp"
 #include "tit/sph/particle_mesh.hpp"
 
@@ -46,6 +47,12 @@ public:
   void initialize(ParticleMesh& mesh, ParticleArray& particles) const {
     static_cast<void>(topology_.exchange_halos(particles));
     equations_.initialize(mesh, particles);
+  }
+
+  /// Repartition accepted owned state using the topology's load policy.
+  template<particle_array<r> ParticleArray>
+  void rebalance(ParticleArray& particles) {
+    topology_.rebalance(particles);
   }
 
   /// Advance one globally synchronized explicit step.

@@ -35,6 +35,9 @@ TEST_CASE("dist::Communicator collectives") {
   CHECK(communicator.all_reduce_sum(value) == expected_sum);
   CHECK(communicator.all_reduce_min(value) == 1);
   CHECK(communicator.all_reduce_max(value) == size_value);
+  CHECK(communicator.all_reduce_sum(
+            std::vector<std::uint64_t>{value, 2 * value}) ==
+        std::vector<std::uint64_t>{expected_sum, 2 * expected_sum});
 
   const auto expected_prefix = rank_value * (rank_value + 1) / 2;
   CHECK(communicator.exclusive_scan_sum(value) == expected_prefix);

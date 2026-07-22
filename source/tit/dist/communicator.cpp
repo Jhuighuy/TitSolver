@@ -147,6 +147,22 @@ auto Communicator::all_reduce_sum(std::uint64_t value) const -> std::uint64_t {
   return all_reduce(state_->get(), value, MPI_UINT64_T, MPI_SUM);
 }
 
+auto Communicator::all_reduce_sum(std::span<const std::uint64_t> values) const
+    -> std::vector<std::uint64_t> {
+  TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  TIT_ENSURE(values.size() <= INT_MAX,
+             "Collective reduction array is too large.");
+  std::vector<std::uint64_t> result(values.size());
+  check_mpi(MPI_Allreduce(values.data(),
+                          result.data(),
+                          static_cast<int>(values.size()),
+                          MPI_UINT64_T,
+                          MPI_SUM,
+                          state_->get()),
+            "MPI_Allreduce");
+  return result;
+}
+
 auto Communicator::exclusive_scan_sum(std::uint64_t value) const
     -> std::uint64_t {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
