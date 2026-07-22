@@ -17,7 +17,7 @@ import svgr from "vite-plugin-svgr";
 export default defineConfig({
   root: __dirname,
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         "renderer/main/index": path.resolve(
           __dirname,
