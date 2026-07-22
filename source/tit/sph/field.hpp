@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -216,6 +217,26 @@ TIT_DEFINE_VECTOR_FIELD(dr);
 
 /// Scratch field for free surface correction.
 TIT_DEFINE_SCALAR_FIELD(rho_raw);
+
+/// Particle global identifier.
+///
+/// Unlike the physical fields, the global identifier is a solver-internal
+/// field: it provides stable particle identity that survives reordering and,
+/// in distributed runs, ownership migration between processes.
+class gid_t final : public BaseField {
+public:
+
+  /** Field name. */
+  static constexpr std::string_view field_name = "gid";
+
+  /** Field type. */
+  template<class Real, size_t Dim>
+  using field_value_type = std::uint64_t;
+
+}; // class gid_t
+
+/// @copydoc gid_t
+inline constexpr gid_t gid;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 #include <cstddef>
@@ -18,6 +19,7 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/float.hpp"
+#include "tit/core/serialization.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
@@ -86,6 +88,16 @@ public:
   /// Check if the particle is fixed.
   constexpr auto is_fixed() const noexcept -> bool {
     return has_type(ParticleType::fixed);
+  }
+
+  /// Check if the particle is a ghost (mirror of a remotely-owned particle).
+  constexpr auto is_ghost() const noexcept -> bool {
+    return array().is_ghost(index());
+  }
+
+  /// Check if the particle is owned by the current process.
+  constexpr auto is_owned() const noexcept -> bool {
+    return !is_ghost();
   }
 
   /// Particle field value.
@@ -162,20 +174,31 @@ public:
                                    Equations /*equations*/) noexcept {}
 
   /// Write a particle array into a series.
+  ///
+  /// Only the owned particles are written: ghost particles are transient
+  /// mirrors of particles owned (and written) by other processes. The global
+  /// identifier field is solver-internal and is not part of the frame.
   void write(field_value_t<h_t, Space> time,
              data::SeriesView<data::Storage> series) const {
     auto frame = series.create_frame(static_cast<float64_t>(time));
     ParticleArray::varying_fields.for_each([&frame, this](auto field) {
-      const auto array = frame.create_array(field.field_name);
-      array.write(field[*this]);
+      if constexpr (!std::same_as<decltype(field), gid_t>) {
+        const auto array = frame.create_array(field.field_name);
+        array.write(field[*this].first(num_owned()));
+      }
     });
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Number of particles.
+  /// Number of particles, including the ghost particles.
   constexpr auto size() const noexcept -> std::size_t {
     return std::get<0>(varying_data_).size();
+  }
+
+  /// Number of the owned (non-ghost) particles.
+  constexpr auto num_owned() const noexcept -> std::size_t {
+    return ranges_[num_types_];
   }
 
   /// Reserve amount of particles.
@@ -184,45 +207,67 @@ public:
     ((cols.reserve(capacity)), ...);
   }
 
-  /// Appends a new particle of the specified type @p type.
+  /// Appends a new owned particle of the specified type @p type.
   constexpr auto append(ParticleType type) -> ParticleView<ParticleArray> {
-    TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
-    const auto type_index = std::to_underlying(type);
-    // Get the index of the next particle of the specified type and increment
-    // the range of particles for the next types.
-    const std::size_t index = particle_ranges_[type_index + 1];
-    for (auto& p : particle_ranges_ | std::views::drop(type_index + 1)) p += 1;
-    // Insert the new particle.
+    return append_n(type, 1).front();
+  }
+
+  /// Appends @p count new owned particles of the specified type @p type.
+  ///
+  /// Returns the views of the appended particles.
+  constexpr auto append_n(ParticleType type, std::size_t count) {
+    const auto index = insert_(seg_index_(type, /*ghost=*/false), count);
+    return views_(index, count);
+  }
+
+  /// Appends @p count new ghost particles of the specified type @p type.
+  ///
+  /// Ghost particles mirror particles owned by other processes. They carry
+  /// no identity of their own: the global identifiers are to be filled by
+  /// the communication layer from the owning process.
+  constexpr auto append_ghosts_n(ParticleType type, std::size_t count) {
+    const auto index = insert_(seg_index_(type, /*ghost=*/true), count);
+    return views_(index, count);
+  }
+
+  /// Remove all the ghost particles.
+  constexpr void clear_ghosts() {
     auto& [... cols] = varying_data_;
-    ((cols.emplace(cols.begin() + index)), ...);
-    return (*this)[index];
+    ((cols.resize(num_owned())), ...);
+    std::ranges::fill(ranges_ | std::views::drop(num_types_ + 1), num_owned());
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// All particles.
+  /// All particles, including the ghost particles.
   constexpr auto all(this auto& self) noexcept {
-    return std::views::iota(std::size_t{0}, self.size()) |
-           std::views::transform(
-               [&self](std::size_t index) { return self[index]; });
+    return self.views_(0, self.size());
   }
 
-  /// Particles of the specified type.
+  /// All owned (non-ghost) particles.
+  constexpr auto owned(this auto& self) noexcept {
+    return self.views_(0, self.num_owned());
+  }
+
+  /// All ghost particles.
+  constexpr auto ghost(this auto& self) noexcept {
+    return self.views_(self.num_owned(), self.size() - self.num_owned());
+  }
+
+  /// Owned particles of the specified type.
   constexpr auto typed(this auto& self, ParticleType type) noexcept {
     TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
-    const auto type_index = std::to_underlying(type);
-    return std::views::iota(self.particle_ranges_[type_index],
-                            self.particle_ranges_[type_index + 1]) |
-           std::views::transform(
-               [&self](std::size_t index) { return self[index]; });
+    const auto seg = seg_index_(type, /*ghost=*/false);
+    return self.views_(self.ranges_[seg],
+                       self.ranges_[seg + 1] - self.ranges_[seg]);
   }
 
-  /// Fluid particles.
+  /// Owned fluid particles.
   constexpr auto fluid(this auto& self) noexcept {
     return self.typed(ParticleType::fluid);
   }
 
-  /// Fixed particles.
+  /// Owned fixed particles.
   constexpr auto fixed(this auto& self) noexcept {
     return self.typed(ParticleType::fixed);
   }
@@ -230,12 +275,23 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Check if the particle has the specified type.
+  ///
+  /// Both owned and ghost particles carry a type: a ghost mirror of a remote
+  /// fluid particle is a fluid particle.
   constexpr auto has_type(std::size_t index, ParticleType type) const noexcept
       -> bool {
     TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
-    const auto type_index = std::to_underlying(type);
-    return particle_ranges_[type_index] <= index &&
-           index < particle_ranges_[type_index + 1];
+    const auto in_seg = [index, this](std::size_t seg) {
+      return ranges_[seg] <= index && index < ranges_[seg + 1];
+    };
+    return in_seg(seg_index_(type, /*ghost=*/false)) ||
+           in_seg(seg_index_(type, /*ghost=*/true));
+  }
+
+  /// Check if the particle is a ghost.
+  constexpr auto is_ghost(std::size_t index) const noexcept -> bool {
+    TIT_ASSERT(index < size(), "Particle index is out of range.");
+    return index >= num_owned();
   }
 
   /// Particle at index.
@@ -277,10 +333,102 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /// Number of bytes used to pack the given fields of a single particle.
+  template<field_set Fields>
+  static consteval auto pack_width(Fields packed_fields) -> std::size_t {
+    static_assert(Fields{} <= varying_fields);
+    std::size_t width = 0;
+    packed_fields.for_each([&width](auto field) {
+      width += sizeof(field_value_t<decltype(field), Space>);
+    });
+    return width;
+  }
+
+  /// Pack the given fields of the given particles into a byte buffer.
+  ///
+  /// Fields of each particle are laid out contiguously, in the order they
+  /// appear in @p fields; particles follow the order of @p indices.
+  template<field_set Fields>
+  constexpr void pack(std::span<const std::size_t> indices,
+                      Fields packed_fields,
+                      std::span<std::byte> out) const {
+    TIT_ASSERT(out.size() >= indices.size() * pack_width(Fields{}),
+               "Packing buffer is too small.");
+    auto out_iter = out.begin();
+    for (const auto index : indices) {
+      TIT_ASSERT(index < size(), "Particle index is out of range.");
+      packed_fields.for_each([index, &out_iter, this](auto field) {
+        const auto bytes = to_byte_array((*this)[index, field]);
+        out_iter = std::ranges::copy(bytes, out_iter).out;
+      });
+    }
+  }
+
+  /// Unpack the given fields of @p count particles starting at @p first
+  /// from a byte buffer produced by @c pack.
+  template<field_set Fields>
+  constexpr void unpack(std::size_t first,
+                        std::size_t count,
+                        Fields packed_fields,
+                        std::span<const std::byte> in) {
+    TIT_ASSERT(first + count <= size(), "Particle range is out of bounds.");
+    TIT_ASSERT(in.size() >= count * pack_width(Fields{}),
+               "Unpacking buffer is too small.");
+    for (const auto index : std::views::iota(first, first + count)) {
+      packed_fields.for_each([index, &in, this](auto field) {
+        using Val = field_value_t<decltype(field), Space>;
+        (*this)[index, field] = from_bytes<Val>(in.first(sizeof(Val)));
+        in = in.subspan(sizeof(Val));
+      });
+    }
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 private:
 
-  std::array<std::size_t, std::to_underlying(ParticleType::count) + 1>
-      particle_ranges_{0};
+  // Storage segment index for the given particle type and ghost status.
+  // Particles are stored contiguously in the following segment order:
+  //   [ owned fluid | owned fixed | ghost fluid | ghost fixed ]
+  static constexpr auto num_types_ = std::to_underlying(ParticleType::count);
+  static constexpr auto seg_index_(ParticleType type, bool ghost) noexcept
+      -> std::size_t {
+    TIT_ASSERT(type < ParticleType::count, "Invalid particle type.");
+    return (ghost ? num_types_ : 0) + std::to_underlying(type);
+  }
+
+  // Insert `count` value-initialized particles at the end of the segment
+  // `seg` and return the index of the first inserted particle.
+  constexpr auto insert_(std::size_t seg, std::size_t count) -> std::size_t {
+    const auto index = ranges_[seg + 1];
+    auto& [... cols] = varying_data_;
+    ((cols.insert(cols.begin() + static_cast<std::ptrdiff_t>(index),
+                  count,
+                  {})),
+     ...);
+    for (auto& range : ranges_ | std::views::drop(seg + 1)) range += count;
+    if constexpr (varying_fields.contains(gid_t{})) {
+      // Ghost identities are filled by the communication layer.
+      if (seg < num_types_) {
+        for (auto& g : (*this)[gid_t{}].subspan(index, count)) g = next_gid_++;
+      }
+    }
+    return index;
+  }
+
+  // Views of `count` particles starting at `index`.
+  constexpr auto views_(this auto& self,
+                        std::size_t index,
+                        std::size_t count) noexcept {
+    TIT_ASSERT(index + count <= self.size(), "Particle range is out of range.");
+    return std::views::iota(index, index + count) |
+           std::views::transform([&self](std::size_t i) { return self[i]; });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  std::array<std::size_t, 2 * num_types_ + 1> ranges_{};
+  std::uint64_t next_gid_ = 0;
 
   [[no_unique_address]] decltype([]<class... Fields>(TypeSet<Fields...> /*f*/) {
     return std::tuple<field_value_t<Fields, Space>...>{};
@@ -296,7 +444,8 @@ template<class Space, class Equations>
 ParticleArray(Space, Equations) -> ParticleArray<
     Space,
     decltype(Equations::required_fields - Equations::modified_fields),
-    decltype(Equations::required_fields & Equations::modified_fields)>;
+    decltype((Equations::required_fields & Equations::modified_fields) |
+             TypeSet{gid})>;
 
 /// Particle array type.
 ///
