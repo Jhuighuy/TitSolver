@@ -5,6 +5,9 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <string>
 #include <vector>
 
 #include "tit/core/vec.hpp"
@@ -13,6 +16,14 @@
 
 namespace tit::io {
 namespace {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+auto read_text(const std::filesystem::path& path) -> std::string {
+  std::ifstream stream{path};
+  return {std::istreambuf_iterator<char>{stream},
+          std::istreambuf_iterator<char>{}};
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -31,6 +42,7 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
 
   CHECK(std::filesystem::is_regular_file(path / "manifest.json"));
   CHECK(std::filesystem::is_regular_file(path / "index.json"));
+  CHECK(std::filesystem::is_regular_file(path / "run.xdmf"));
   CHECK(std::filesystem::is_regular_file(path / "frames/frame-00000000.h5"));
   CHECK_FALSE(
       std::filesystem::exists(path / "frames/frame-00000000.h5.partial"));
@@ -44,6 +56,12 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
   CHECK(frame.read<Vec<double, 2>>("r") ==
         std::vector{Vec{1.0, 2.0}, Vec{3.0, 4.0}});
   CHECK(frame.read<double>("rho") == std::vector{1000.0, 1001.0});
+  const auto xdmf = read_text(path / "run.xdmf");
+  CHECK(xdmf.contains("<Time Value=\"0\"/>"));
+  CHECK(xdmf.contains("Dimensions=\"2 2\" NumberType=\"Float\" "
+                      "Precision=\"8\" Format=\"HDF\">frames/"
+                      "frame-00000000.h5:/fields/r"));
+  CHECK(xdmf.contains("Name=\"id\" AttributeType=\"Scalar\""));
 
   {
     auto next = writer.begin_frame(10, 0.5);
@@ -56,6 +74,7 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
   reader.refresh();
   REQUIRE(reader.num_frames() == 2);
   CHECK(reader.frame(1).descriptor() == FrameDescriptor{10, 0.5});
+  CHECK(read_text(path / "run.xdmf").contains("<Time Value=\"0.5\"/>"));
 
   {
     auto checkpoint = writer.begin_checkpoint(10, 0.5);
@@ -78,8 +97,13 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
   REQUIRE(exported.num_frames() == 2);
   REQUIRE(exported.num_checkpoints() == 1);
   CHECK(exported.metadata() == reader.metadata());
+  CHECK(std::filesystem::is_regular_file("exported.tit-run/run.xdmf"));
   CHECK(exported.frame(1).read<double>("rho") == std::vector{1000.5, 1001.5});
   CHECK(exported.checkpoint(0).read<double>("m") == std::vector{1.0, 1.0});
+
+  std::filesystem::remove(path / "run.xdmf");
+  reader.regenerate_xdmf();
+  CHECK(read_text(path / "run.xdmf").contains("step-10"));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

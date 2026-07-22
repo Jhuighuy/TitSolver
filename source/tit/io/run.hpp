@@ -385,6 +385,9 @@ public:
   /// Atomically copy the currently visible committed run to a new path.
   void copy_to(const std::filesystem::path& destination) const;
 
+  /// Regenerate the ParaView-compatible XDMF view from committed run data.
+  void regenerate_xdmf() const;
+
   /// Run directory path.
   auto path() const -> const std::filesystem::path&;
 

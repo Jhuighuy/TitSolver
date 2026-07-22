@@ -65,6 +65,24 @@ void write_json_atomic(const std::filesystem::path& path, const JSON& json) {
              error.message());
 }
 
+void write_text_atomic(const std::filesystem::path& path,
+                       std::string_view text) {
+  const auto partial = partial_path(path);
+  std::ofstream stream{partial, std::ios::out | std::ios::trunc};
+  TIT_ENSURE(stream.is_open(), "Unable to open '{}'.", partial.string());
+  stream << text;
+  stream.flush();
+  TIT_ENSURE(stream.good(), "Unable to write '{}'.", partial.string());
+  stream.close();
+
+  std::error_code error;
+  std::filesystem::rename(partial, path, error);
+  TIT_ENSURE(!error,
+             "Unable to publish '{}': {}.",
+             path.string(),
+             error.message());
+}
+
 auto read_json(const std::filesystem::path& path) -> JSON {
   std::ifstream stream{path};
   TIT_ENSURE(stream.is_open(), "Unable to open '{}'.", path.string());
@@ -189,6 +207,20 @@ auto read_fields(const std::filesystem::path& path)
   return fields;
 }
 
+auto read_particle_count(const std::filesystem::path& path) -> std::size_t {
+  const auto fields = read_fields(path);
+  TIT_ENSURE(!fields.empty(),
+             "Particle file '{}' has no fields.",
+             path.string());
+  const auto size = fields.front().size();
+  TIT_ENSURE(std::ranges::all_of(
+                 fields,
+                 [=](const auto& field) { return field.size() == size; }),
+             "Particle file '{}' has inconsistent field sizes.",
+             path.string());
+  return size;
+}
+
 auto read_particle_field(const std::filesystem::path& path,
                          std::string_view name) -> FieldData {
   const HighFive::File file{path.string(), HighFive::File::ReadOnly};
@@ -204,6 +236,178 @@ auto read_particle_field(const std::filesystem::path& path,
   std::vector<std::byte> data(descriptor.size() * descriptor.type().width());
   read_dataset(dataset, descriptor.type(), data);
   return FieldData{std::move(descriptor), std::move(data)};
+}
+
+auto xml_escape(std::string_view text) -> std::string {
+  std::string escaped;
+  escaped.reserve(text.size());
+  for (const auto character : text) {
+    switch (character) {
+      case '&':  escaped += "&amp;"; break;
+      case '<':  escaped += "&lt;"; break;
+      case '>':  escaped += "&gt;"; break;
+      case '"':  escaped += "&quot;"; break;
+      case '\'': escaped += "&apos;"; break;
+      default:   escaped += character; break;
+    }
+  }
+  return escaped;
+}
+
+auto xdmf_number_type(Kind kind) -> std::string_view {
+  using enum Kind::ID;
+  switch (kind.id()) {
+    case int8:    [[fallthrough]];
+    case int16:   [[fallthrough]];
+    case int32:   [[fallthrough]];
+    case int64:   return "Int";
+    case uint8:   [[fallthrough]];
+    case uint16:  [[fallthrough]];
+    case uint32:  [[fallthrough]];
+    case uint64:  return "UInt";
+    case float32: [[fallthrough]];
+    case float64: return "Float";
+    default:      std::unreachable();
+  }
+}
+
+auto xdmf_attribute_type(Rank rank) -> std::string_view {
+  using enum Rank;
+  switch (rank) {
+    case scalar: return "Scalar";
+    case vector: return "Vector";
+    case matrix: return "Tensor";
+    default:     std::unreachable();
+  }
+}
+
+auto xdmf_geometry_type(std::size_t dimension) -> std::string_view {
+  switch (dimension) {
+    case 1:  return "X";
+    case 2:  return "XY";
+    case 3:  return "XYZ";
+    default: std::unreachable();
+  }
+}
+
+auto xdmf_dimensions(const FieldDescriptor& field) -> std::string {
+  switch (field.type().rank()) {
+    case Rank::scalar: return std::format("{}", field.size());
+    case Rank::vector:
+      return std::format("{} {}", field.size(), field.type().dim());
+    case Rank::matrix:
+      return std::format("{} {} {}",
+                         field.size(),
+                         field.type().dim(),
+                         field.type().dim());
+    default: std::unreachable();
+  }
+}
+
+auto xdmf_dataset_path(std::string_view name) -> std::string {
+  const std::string_view group =
+      name == "id" || name == "kind" ? "particles" : "fields";
+  return std::format("/{}/{}", group, name);
+}
+
+auto xdmf_data_item(const std::filesystem::path& relative,
+                    const FieldDescriptor& field) -> std::string {
+  return std::format(
+      "<DataItem Dimensions=\"{}\" NumberType=\"{}\" Precision=\"{}\" "
+      "Format=\"HDF\">{}:{}</DataItem>",
+      xdmf_dimensions(field),
+      xdmf_number_type(field.type().kind()),
+      field.type().kind().width(),
+      xml_escape(relative.generic_string()),
+      xml_escape(xdmf_dataset_path(field.name())));
+}
+
+auto xdmf_fields(const std::filesystem::path& path,
+                 const JSON& manifest,
+                 const JSON& item) -> std::vector<FieldDescriptor> {
+  if (!item.contains("size")) return read_fields(path);
+  const auto size = item.at("size").get<std::uint64_t>();
+  TIT_ENSURE(size <= std::numeric_limits<std::size_t>::max(),
+             "Frame is too large for this platform.");
+  std::vector<FieldDescriptor> fields;
+  for (const auto& field : manifest.at("fields")) {
+    fields.emplace_back(field.at("name").get<std::string>(),
+                        Type{field.at("type").get<std::uint32_t>()},
+                        static_cast<std::size_t>(size));
+  }
+  return fields;
+}
+
+void write_xdmf_view(const std::filesystem::path& path,
+                     const RunMetadata& metadata,
+                     const JSON& manifest,
+                     const JSON& index) {
+  TIT_ENSURE(index.at("version") == run_format_version,
+             "Unsupported run-index version.");
+
+  std::string xdmf = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                     "<Xdmf Version=\"3.0\">\n"
+                     "  <Domain>\n";
+  xdmf += std::format("    <Grid Name=\"{}\" GridType=\"Collection\" "
+                      "CollectionType=\"Temporal\">\n",
+                      xml_escape(metadata.name()));
+
+  for (const auto& item : index.at("frames")) {
+    const std::filesystem::path relative = item.at("file").get<std::string>();
+    TIT_ENSURE(!relative.is_absolute() &&
+                   std::ranges::none_of(
+                       relative,
+                       [](const auto& component) { return component == ".."; }),
+               "Invalid frame path in run index.");
+    const auto fields = xdmf_fields(path / relative, manifest, item);
+    const auto position = std::ranges::find_if(fields, [](const auto& field) {
+      return field.name() == "r";
+    });
+    TIT_ENSURE(position != fields.end(),
+               "Committed frame '{}' has no position field.",
+               relative.string());
+    TIT_ENSURE(std::ranges::all_of(fields,
+                                   [&](const auto& field) {
+                                     return field.size() == position->size();
+                                   }),
+               "Committed frame '{}' has inconsistent field sizes.",
+               relative.string());
+
+    const auto step = item.at("step").get<std::uint64_t>();
+    const auto time = item.at("time").get<double>();
+    xdmf += std::format("      <Grid Name=\"step-{}\" GridType=\"Uniform\">\n"
+                        "        <Time Value=\"{}\"/>\n"
+                        "        <Topology TopologyType=\"Polyvertex\" "
+                        "NumberOfElements=\"{}\"/>\n"
+                        "        <Geometry GeometryType=\"{}\">\n"
+                        "          {}\n"
+                        "        </Geometry>\n",
+                        step,
+                        time,
+                        position->size(),
+                        xdmf_geometry_type(metadata.dimension()),
+                        xdmf_data_item(relative, *position));
+    for (const auto& field : fields) {
+      if (field.name() == "r") continue;
+      xdmf += std::format("        <Attribute Name=\"{}\" AttributeType=\"{}\" "
+                          "Center=\"Node\">\n"
+                          "          {}\n"
+                          "        </Attribute>\n",
+                          xml_escape(field.name()),
+                          xdmf_attribute_type(field.type().rank()),
+                          xdmf_data_item(relative, field));
+    }
+    xdmf += "      </Grid>\n";
+  }
+  xdmf += "    </Grid>\n  </Domain>\n</Xdmf>\n";
+  write_text_atomic(path / "run.xdmf", xdmf);
+}
+
+void regenerate_xdmf_view(const std::filesystem::path& path) {
+  write_xdmf_view(path,
+                  read_metadata(path),
+                  read_json(path / "manifest.json"),
+                  read_json(path / "index.json"));
 }
 
 auto schema_json(const std::vector<FieldDescriptor>& fields) -> JSON {
@@ -290,6 +494,7 @@ public:
         {"checkpoints", JSON::array()},
     };
     write_json_atomic(path_ / "manifest.json", manifest_);
+    write_xdmf_view(path_, metadata_, manifest_, index_);
     write_json_atomic(path_ / "index.json", index_);
   }
 
@@ -352,10 +557,14 @@ public:
     index_[index_name].push_back({
         {"step", descriptor.step()},
         {"time", descriptor.time()},
+        {"size", id->size()},
         {"file",
          std::filesystem::relative(publication.final_path(), path_)
              .generic_string()},
     });
+    if (publication.kind() == PublicationKind::frame) {
+      write_xdmf_view(path_, metadata_, manifest_, index_);
+    }
     write_json_atomic(path_ / "index.json", index_);
     auto& last = publication.kind() == PublicationKind::frame ?
                      last_frame_ :
@@ -801,6 +1010,7 @@ void RunReader::copy_to(const std::filesystem::path& destination) const {
     index["frames"].push_back({
         {"step", descriptor.step()},
         {"time", descriptor.time()},
+        {"size", read_particle_count(source)},
         {"file", relative.generic_string()},
     });
   }
@@ -814,9 +1024,14 @@ void RunReader::copy_to(const std::filesystem::path& destination) const {
     index["checkpoints"].push_back({
         {"step", descriptor.step()},
         {"time", descriptor.time()},
+        {"size", read_particle_count(source)},
         {"file", relative.generic_string()},
     });
   }
+  write_xdmf_view(partial,
+                  read_metadata(partial),
+                  read_json(partial / "manifest.json"),
+                  index);
   write_json_atomic(partial / "index.json", index);
 
   std::error_code error;
@@ -826,6 +1041,10 @@ void RunReader::copy_to(const std::filesystem::path& destination) const {
              destination.string(),
              error.message());
   guard.release();
+}
+
+void RunReader::regenerate_xdmf() const {
+  regenerate_xdmf_view(path());
 }
 
 auto RunReader::path() const -> const std::filesystem::path& {
