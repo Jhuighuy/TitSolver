@@ -12,6 +12,7 @@
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
+#include "tit/dist/environment.hpp"
 #include "tit/geom/face_search.hpp"
 #include "tit/geom/search.hpp"
 #include "tit/geom/surface.hpp"
@@ -199,6 +200,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 } // namespace tit::sph::wcsph
 
 TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
+  const dist::Environment environment{argc, argv};
   par::init();
   sph::wcsph::sph_main<tit::float64_t>(argc, argv);
 });

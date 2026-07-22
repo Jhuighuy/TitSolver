@@ -31,6 +31,7 @@ find_package(gcem CONFIG REQUIRED)
 find_package(HighFive CONFIG REQUIRED)
 find_package(hwy CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
+find_package(MPI REQUIRED COMPONENTS CXX)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SymEngine CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
@@ -81,6 +82,7 @@ add_tit_library(
     HighFive::HighFive
     hwy::hwy
     mimalloc-static
+    MPI::MPI_CXX
     nlohmann_json::nlohmann_json
     node-addon-api::node-addon-api
     sqlite3::sqlite3

@@ -67,6 +67,10 @@ dist/
 native/
 node_modules/
 
+# `source/tit/dist` is the distributed-runtime module, not a web artifact.
+!/source/tit/dist/
+!/source/tit/dist/**
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Test files.
