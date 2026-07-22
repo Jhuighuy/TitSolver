@@ -25,6 +25,8 @@ namespace tit::io {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+class ParallelCheckpointReader;
+
 /// Current on-disk run-format version.
 inline constexpr std::uint32_t run_format_version = 1;
 
@@ -344,6 +346,7 @@ public:
 private:
 
   friend class RunReader;
+  friend class ParallelCheckpointReader;
 
   CheckpointReader(std::filesystem::path path, FrameDescriptor descriptor);
 

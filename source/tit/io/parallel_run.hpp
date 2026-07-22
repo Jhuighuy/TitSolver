@@ -7,12 +7,14 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <memory>
 #include <ranges>
 #include <span>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 #include "tit/dist/communicator.hpp"
 #include "tit/io/run.hpp"
@@ -24,6 +26,7 @@ namespace impl {
 
 class ParallelRunWriterState;
 class ParallelParticleFileWriterState;
+class ParallelCheckpointReaderState;
 
 } // namespace impl
 
@@ -151,6 +154,46 @@ private:
   std::shared_ptr<impl::ParallelRunWriterState> state_;
 
 }; // class ParallelRunWriter
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Collective reader for a balanced rank-local slice of a checkpoint.
+class ParallelCheckpointReader final {
+public:
+
+  /// Collectively open and validate a committed checkpoint.
+  explicit ParallelCheckpointReader(const CheckpointReader& checkpoint,
+                                    dist::Communicator communicator);
+
+  /// Checkpoint step and physical time.
+  auto descriptor() const noexcept -> const FrameDescriptor&;
+
+  /// Number of particles in the global checkpoint.
+  auto global_size() const noexcept -> std::size_t;
+
+  /// Number of contiguous checkpoint rows assigned to this rank.
+  auto local_size() const noexcept -> std::size_t;
+
+  /// Collectively read this rank's balanced row slice of a persistent field.
+  template<known_type_of Value>
+  auto read(std::string_view name) const -> std::vector<Value> {
+    static_assert(std::is_trivially_copyable_v<Value>);
+    static_assert(sizeof(Value) == type_of<Value>.width());
+    auto field = read_(name, type_of<Value>);
+    std::vector<Value> values(field.descriptor().size());
+    if (!field.data().empty()) {
+      std::memcpy(values.data(), field.data().data(), field.data().size());
+    }
+    return values;
+  }
+
+private:
+
+  auto read_(std::string_view name, Type expected_type) const -> FieldData;
+
+  std::shared_ptr<impl::ParallelCheckpointReaderState> state_;
+
+}; // class ParallelCheckpointReader
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

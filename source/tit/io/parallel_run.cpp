@@ -144,6 +144,17 @@ void write_attribute(hid_t object,
   check_hdf5(H5Awrite(attribute.get(), datatype, &value), "H5Awrite");
 }
 
+template<class Value>
+auto read_attribute(hid_t object, std::string_view name, hid_t datatype)
+    -> Value {
+  const HDF5Attribute attribute{
+      checked_hdf5_id(H5Aopen(object, std::string{name}.c_str(), H5P_DEFAULT),
+                      "H5Aopen")};
+  Value value{};
+  check_hdf5(H5Aread(attribute.get(), datatype, &value), "H5Aread");
+  return value;
+}
+
 auto field_dimensions(std::uint64_t size, Type type) -> std::vector<hsize_t> {
   TIT_ENSURE(size <= std::numeric_limits<hsize_t>::max(),
              "HDF5 dataset is too large.");
@@ -407,6 +418,158 @@ private:
 
 }; // class ParallelParticleFileWriterState
 
+class ParallelCheckpointReaderState final {
+public:
+
+  ParallelCheckpointReaderState(const std::filesystem::path& path,
+                                FrameDescriptor descriptor,
+                                dist::Communicator communicator)
+      : descriptor_{descriptor}, communicator_{std::move(communicator)} {
+    const HDF5PropertyList access{
+        checked_hdf5_id(H5Pcreate(H5P_FILE_ACCESS),
+                        "H5Pcreate(H5P_FILE_ACCESS)")};
+    check_hdf5(H5Pset_fapl_mpio(access.get(),
+                                dist::MPICommunicatorAccess::get(communicator_),
+                                MPI_INFO_NULL),
+               "H5Pset_fapl_mpio");
+    file_ = HDF5File{checked_hdf5_id(
+        H5Fopen(path.string().c_str(), H5F_ACC_RDONLY, access.get()),
+        "H5Fopen")};
+
+    TIT_ENSURE(read_attribute<std::uint32_t>(file_.get(),
+                                             "format_version",
+                                             H5T_NATIVE_UINT32) ==
+                   run_format_version,
+               "Unsupported checkpoint format version.");
+    TIT_ENSURE(read_attribute<std::uint8_t>(file_.get(),
+                                            "publication_kind",
+                                            H5T_NATIVE_UINT8) ==
+                   std::to_underlying(PublicationKind::checkpoint),
+               "The selected run object is not a checkpoint.");
+    TIT_ENSURE(
+        read_attribute<std::uint64_t>(file_.get(), "step", H5T_NATIVE_UINT64) ==
+            descriptor_.step(),
+        "Checkpoint step does not match the run index.");
+    TIT_ENSURE(read_attribute<double>(file_.get(), "time", H5T_NATIVE_DOUBLE) ==
+                   descriptor_.time(),
+               "Checkpoint time does not match the run index.");
+
+    const HDF5DataSet ids{
+        checked_hdf5_id(H5Dopen2(file_.get(), "/particles/id", H5P_DEFAULT),
+                        "H5Dopen2(/particles/id)")};
+    TIT_ENSURE(read_attribute<std::uint32_t>(ids.get(),
+                                             "type_id",
+                                             H5T_NATIVE_UINT32) ==
+                   type_of<std::uint64_t>.id(),
+               "Checkpoint particle IDs must have type uint64_t.");
+    global_size_ =
+        read_attribute<std::uint64_t>(ids.get(), "size", H5T_NATIVE_UINT64);
+    TIT_ENSURE(global_size_ <= std::numeric_limits<std::size_t>::max(),
+               "Checkpoint is too large for this platform.");
+
+    const auto rank = static_cast<std::uint64_t>(communicator_.rank());
+    const auto ranks = static_cast<std::uint64_t>(communicator_.size());
+    const auto base = global_size_ / ranks;
+    const auto remainder = global_size_ % ranks;
+    local_size_ = base + static_cast<std::uint64_t>(rank < remainder);
+    local_offset_ = rank * base + std::min(rank, remainder);
+  }
+
+  auto descriptor() const noexcept -> const FrameDescriptor& {
+    return descriptor_;
+  }
+
+  auto global_size() const noexcept -> std::size_t {
+    return static_cast<std::size_t>(global_size_);
+  }
+
+  auto local_size() const noexcept -> std::size_t {
+    return static_cast<std::size_t>(local_size_);
+  }
+
+  auto read(std::string_view name, Type expected_type) const -> FieldData {
+    TIT_ENSURE(!name.empty() && !name.contains('/'),
+               "Invalid checkpoint field name '{}'.",
+               name);
+    const std::string_view group =
+        name == "id" || name == "kind" ? "/particles/" : "/fields/";
+    const auto dataset_path = std::format("{}{}", group, name);
+    const HDF5DataSet dataset{checked_hdf5_id(
+        H5Dopen2(file_.get(), dataset_path.c_str(), H5P_DEFAULT),
+        "H5Dopen2(checkpoint field)")};
+    const auto type_id = read_attribute<std::uint32_t>(dataset.get(),
+                                                       "type_id",
+                                                       H5T_NATIVE_UINT32);
+    const Type type{type_id};
+    TIT_ENSURE(type == expected_type,
+               "Checkpoint field '{}' has type '{}', not '{}'.",
+               name,
+               type.name(),
+               expected_type.name());
+    const auto global_size =
+        read_attribute<std::uint64_t>(dataset.get(), "size", H5T_NATIVE_UINT64);
+    TIT_ENSURE(global_size == global_size_,
+               "Checkpoint field '{}' has an inconsistent particle count.",
+               name);
+
+    const HDF5DataSpace file_space{
+        checked_hdf5_id(H5Dget_space(dataset.get()), "H5Dget_space")};
+    auto local_dimensions = field_dimensions(local_size_, type);
+    HDF5DataSpace memory_space;
+    if (local_size_ == 0) {
+      check_hdf5(H5Sselect_none(file_space.get()), "H5Sselect_none");
+      memory_space = HDF5DataSpace{
+          checked_hdf5_id(H5Screate(H5S_NULL), "H5Screate(H5S_NULL)")};
+    } else {
+      std::vector<hsize_t> start(local_dimensions.size(), 0);
+      start.front() = static_cast<hsize_t>(local_offset_);
+      check_hdf5(H5Sselect_hyperslab(file_space.get(),
+                                     H5S_SELECT_SET,
+                                     start.data(),
+                                     nullptr,
+                                     local_dimensions.data(),
+                                     nullptr),
+                 "H5Sselect_hyperslab");
+      memory_space = HDF5DataSpace{checked_hdf5_id(
+          H5Screate_simple(static_cast<int>(local_dimensions.size()),
+                           local_dimensions.data(),
+                           nullptr),
+          "H5Screate_simple(memory)")};
+    }
+
+    TIT_ENSURE(local_size_ <=
+                   std::numeric_limits<std::size_t>::max() / type.width(),
+               "Checkpoint field '{}' local slice is too large.",
+               name);
+    std::vector<std::byte> data(static_cast<std::size_t>(local_size_) *
+                                type.width());
+    const HDF5PropertyList transfer{
+        checked_hdf5_id(H5Pcreate(H5P_DATASET_XFER),
+                        "H5Pcreate(H5P_DATASET_XFER)")};
+    check_hdf5(H5Pset_dxpl_mpio(transfer.get(), H5FD_MPIO_COLLECTIVE),
+               "H5Pset_dxpl_mpio");
+    check_hdf5(H5Dread(dataset.get(),
+                       hdf5_type(type.kind()),
+                       memory_space.get(),
+                       file_space.get(),
+                       transfer.get(),
+                       data.empty() ? nullptr : data.data()),
+               "H5Dread");
+    return FieldData{FieldDescriptor{std::string{name}, type, local_size()},
+                     std::move(data)};
+  }
+
+private:
+
+  FrameDescriptor descriptor_;
+  dist::Communicator communicator_;
+  HDF5File file_;
+  std::uint64_t global_size_ = 0;
+  std::uint64_t local_size_ = 0;
+  std::uint64_t local_offset_ = 0;
+
+}; // class ParallelCheckpointReaderState
+
 auto ParallelRunWriterState::begin(PublicationKind kind,
                                    std::uint64_t step,
                                    double time)
@@ -497,6 +660,34 @@ auto ParallelRunWriter::begin_checkpoint(std::uint64_t step, double time)
 
 auto ParallelRunWriter::path() const -> const std::filesystem::path& {
   return state_->path();
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ParallelCheckpointReader::ParallelCheckpointReader(
+    const CheckpointReader& checkpoint,
+    dist::Communicator communicator)
+    : state_{std::make_shared<impl::ParallelCheckpointReaderState>(
+          checkpoint.path_,
+          checkpoint.descriptor(),
+          std::move(communicator))} {}
+
+auto ParallelCheckpointReader::descriptor() const noexcept
+    -> const FrameDescriptor& {
+  return state_->descriptor();
+}
+
+auto ParallelCheckpointReader::global_size() const noexcept -> std::size_t {
+  return state_->global_size();
+}
+
+auto ParallelCheckpointReader::local_size() const noexcept -> std::size_t {
+  return state_->local_size();
+}
+
+auto ParallelCheckpointReader::read_(std::string_view name,
+                                     Type expected_type) const -> FieldData {
+  return state_->read(name, expected_type);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -107,6 +107,21 @@ TEST_CASE("io::ParallelRunWriter writes collective rank-major hyperslabs") {
           std::vector{Vec{0.1, 0.0}, Vec{0.2, 0.0}, Vec{0.3, 0.0}});
   }
   communicator.barrier();
+
+  const RunReader restart_run{"parallel.tit-run"};
+  const ParallelCheckpointReader checkpoint{restart_run.checkpoint(0),
+                                            communicator};
+  CHECK(checkpoint.global_size() == 3);
+  CHECK(checkpoint.local_size() == (communicator.rank() == 0 ? 2 : 1));
+  const auto ids = checkpoint.read<std::uint64_t>("id");
+  const auto positions = checkpoint.read<Vec<double, 2>>("r");
+  if (communicator.rank() == 0) {
+    CHECK(ids == std::vector<std::uint64_t>{1, 2});
+    CHECK(positions == std::vector{Vec{1.5, 0.0}, Vec{2.5, 0.0}});
+  } else {
+    CHECK(ids == std::vector<std::uint64_t>{3});
+    CHECK(positions == std::vector{Vec{3.5, 0.0}});
+  }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
