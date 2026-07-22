@@ -10,8 +10,8 @@ add_tit_executable(
     "wcsph.cpp"
   DEPENDS
     tit::core
-    tit::data
     tit::dist
+    tit::io
     tit::sph
   DESTINATION
     "bin"

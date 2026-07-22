@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <cstddef>
+#include <cstdint>
 
 #include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
@@ -12,7 +13,6 @@
 #include "tit/core/time.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
-#include "tit/data/storage.hpp"
 #include "tit/dist/communicator.hpp"
 #include "tit/dist/environment.hpp"
 #include "tit/geom/face_search.hpp"
@@ -21,6 +21,7 @@
 #include "tit/geom/tessellation.hpp"
 #include "tit/geom/winding.hpp"
 #include "tit/geom/winding/fast_winding.hpp"
+#include "tit/io/run.hpp"
 #include "tit/par/control.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
@@ -33,6 +34,22 @@
 
 namespace tit::sph::wcsph {
 namespace {
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+template<class Particles>
+void write_snapshot(io::RunWriter& run,
+                    const Particles& particles,
+                    std::uint64_t step,
+                    double time) {
+  const auto count = particles.num_owned();
+  auto frame = run.begin_frame(step, time);
+  frame.write("id", particles.ids().first(count));
+  frame.write("r", r[particles].first(count));
+  frame.write("v", v[particles].first(count));
+  frame.write("rho", rho[particles].first(count));
+  frame.commit();
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -163,12 +180,9 @@ auto sph_main(const dist::Communicator& communicator) -> int {
   // Initialize the particles.
   simulation.initialize(mesh, particles);
 
-  // Create a data storage to store the particles. We'll store only one last
-  // run result, all the previous runs will be discarded.
-  data::Storage storage{"./particles.ttdb"};
-  storage.set_max_series(1);
-  const auto series = storage.create_series();
-  particles.write(0.0, series);
+  // Publish immutable snapshots directly from the owned SoA spans.
+  io::RunWriter run{"./particles.tit-run", io::RunMetadata{"dam-breaking", 2}};
+  write_snapshot(run, particles, 0, 0.0);
 
   // Run the simulation.
   Real time{};
@@ -187,16 +201,17 @@ auto sph_main(const dist::Communicator& communicator) -> int {
       const StopwatchCycle cycle{exec_time};
       dt = simulation.step(mesh, particles);
     }
+    time += dt;
 
     const auto end_time = 10.0;
-    const auto end = scaled_time >= end_time;
+    const auto next_scaled_time = time * sqrt(g / H);
+    const auto end = next_scaled_time >= end_time;
     if ((step % 100 == 0) || end) {
       const StopwatchCycle cycle{print_time};
-      particles.write(scaled_time, series);
+      write_snapshot(run, particles, step, next_scaled_time);
     }
 
     if (end) break;
-    time += dt;
   }
 
   return 0;

@@ -39,7 +39,6 @@ add_tit_library(
     "time_integrator.hpp"
   DEPENDS
     tit::core
-    tit::data
     tit::dist
     tit::geom
     tit::par

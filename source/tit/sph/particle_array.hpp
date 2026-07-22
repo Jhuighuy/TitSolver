@@ -21,10 +21,8 @@
 
 #include "tit/core/assert.hpp"
 #include "tit/core/exception.hpp"
-#include "tit/core/float.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
-#include "tit/data/storage.hpp"
 #include "tit/sph/field.hpp"
 
 namespace tit::sph {
@@ -212,18 +210,6 @@ public:
   constexpr explicit ParticleArray(
       Space /*space*/,
       ParticleLayout<Uniforms, Varyings> /*layout*/) noexcept {}
-
-  /// Write a particle array into a series.
-  void write(field_value_t<h_t, Space> time,
-             data::SeriesView<data::Storage> series) const {
-    auto frame = series.create_frame(static_cast<float64_t>(time));
-    ParticleArray::varying_fields.for_each([&frame, this](auto field) {
-      const auto array = frame.create_array(field.field_name);
-      array.write(field[*this]);
-    });
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Number of particles.
   constexpr auto size() const noexcept -> std::size_t {
