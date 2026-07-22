@@ -15,7 +15,8 @@ built against:
 mpiexec -n 4 titwcsph --output dam-break.tit-run
 ```
 
-For a one-rank run, use `-n 1` or invoke `titwcsph` directly. Set
+For a one-rank run, use `-n 1`; this also works with MPI implementations that
+do not support singleton initialization without their launcher. Set
 `TIT_NUM_THREADS` to limit TBB workers in each rank. For example, two MPI ranks
 with four worker threads each can be launched with:
 
