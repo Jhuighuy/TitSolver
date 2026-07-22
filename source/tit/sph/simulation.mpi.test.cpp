@@ -55,8 +55,26 @@ public:
   }
 
   template<class ParticleMesh, class ParticleArray>
-  void post_integrate(ParticleMesh& /*mesh*/,
-                      ParticleArray& /*particles*/) const {}
+  void compute_shift_fields(ParticleMesh& /*mesh*/,
+                            ParticleArray& /*particles*/) const {}
+
+  template<class ParticleMesh, class ParticleArray>
+  void classify_free_surface(ParticleMesh& /*mesh*/,
+                             ParticleArray& /*particles*/) const {}
+
+  template<class ParticleMesh, class ParticleArray>
+  void classify_near_surface(ParticleMesh& /*mesh*/,
+                             ParticleArray& /*particles*/) const {}
+
+  template<class ParticleArray>
+  void apply_particle_shifts(ParticleArray& /*particles*/) const {}
+
+  template<class ParticleArray>
+  void prepare_density_correction(ParticleArray& /*particles*/) const {}
+
+  template<class ParticleMesh, class ParticleArray>
+  void apply_density_correction(ParticleMesh& /*mesh*/,
+                                ParticleArray& /*particles*/) const {}
 
 private:
 

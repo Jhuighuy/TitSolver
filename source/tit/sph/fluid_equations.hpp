@@ -309,27 +309,12 @@ public:
   // Post-integration steps.
   //
 
-  /// Run post-integration mesh refresh and correction steps.
+  /// Compute the fields used for particle shifting and surface detection.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  void post_integrate(ParticleMesh& mesh, ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::post_integrate()");
-
-    prepare(mesh, particles);
-    apply_shifts(mesh, particles);
-    apply_free_surface_correction(mesh, particles);
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /// Apply particle shifts and correct shifted fields.
-  ///
-  /// This is a post-integration step, thus it requires updated mesh and
-  /// boundary extrapolation.
-  template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  void apply_shifts(ParticleMesh& mesh, ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::apply_shifts()");
+  void compute_shift_fields(ParticleMesh& mesh,
+                            ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::compute_shift_fields()");
     using PV = ParticleView<ParticleArray>;
 
     // Compute normal vector, normalization matrix, and gradients for each
@@ -370,6 +355,17 @@ public:
       }
       N[a] = normalize(N[a]);
     });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Classify owned particles as free-surface or interior particles.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void classify_free_surface(ParticleMesh& mesh,
+                             ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::classify_free_surface()");
+    using PV = ParticleView<ParticleArray>;
 
     // Initialize the free surface flag indicators.
     // - `phi_max = 1` means that the particle is far from the free surface.
@@ -412,10 +408,20 @@ public:
           particle_dim_v<PV> == 2 ? 8 : 26;
       if (std::ranges::size(mesh[a]) <= neighbor_cutoff) phi[a] = phi_min_;
     });
+  }
 
-    // Classify the non-free surface particles into near and far categories.
-    // Distributed execution exchanges `phi` and `N` before this read-only
-    // neighbor phase.
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Classify interior particles as near to or far from the free surface.
+  ///
+  /// Ghost `phi` and `N` values must be fresh before entering this phase.
+  template<particle_mesh ParticleMesh,
+           particle_array<required_fields> ParticleArray>
+  void classify_near_surface(ParticleMesh& mesh,
+                             ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::classify_near_surface()");
+    using PV = ParticleView<ParticleArray>;
+
     par::for_each(particles.fluid(), [&mesh, this](PV a) {
       if (!bitwise_equal(phi[a], phi_max_)) return;
 
@@ -429,8 +435,16 @@ public:
         phi[a] *= abs(dot(N[b], r[a, b])) / kernel_.radius(a);
       }
     });
+  }
 
-    // Apply the particle shifts and correct fields.
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Apply particle shifts and correct shifted velocity and density.
+  template<particle_array<required_fields> ParticleArray>
+  void apply_particle_shifts(ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::apply_particle_shifts()");
+    using PV = ParticleView<ParticleArray>;
+
     par::for_each(particles.fluid(), [](PV a) {
       // Here we'll follow Leroy's PhD thesis (2014) and apply shifts only to
       // the far-away particles.
@@ -451,7 +465,17 @@ public:
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  /// Apply free-surface density correction.
+  /// Snapshot fresh density values for the free-surface correction.
+  template<particle_array<required_fields> ParticleArray>
+  void prepare_density_correction(ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::prepare_density_correction()");
+    using PV = ParticleView<ParticleArray>;
+    par::for_each(particles.all(), [](PV a) { rho_raw[a] = rho[a]; });
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  /// Apply the free-surface density correction to owned particles.
   ///
   /// This is a post-shifting step: it uses the free-surface marker produced
   /// while shifting. The caller may refresh the mesh and boundary state before
@@ -460,12 +484,10 @@ public:
   /// not already explained by gamma.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
-  void apply_free_surface_correction(ParticleMesh& mesh,
-                                     ParticleArray& particles) const {
-    TIT_PROFILE_SECTION("FluidEquations::apply_free_surface_correction()");
+  void apply_density_correction(ParticleMesh& mesh,
+                                ParticleArray& particles) const {
+    TIT_PROFILE_SECTION("FluidEquations::apply_density_correction()");
     using PV = ParticleView<ParticleArray>;
-
-    par::for_each(particles.all(), [](PV a) { rho_raw[a] = rho[a]; });
 
     par::for_each(particles.fluid(), [&mesh, this](PV a) {
       // Correction is not applied to far-away particles.

@@ -69,9 +69,20 @@ public:
       integrator_.advance_stage(stage, initial_state, particles, dt);
     }
 
-    // Post-integration synchronization points are split into explicit phases
-    // when state halo exchange is introduced.
-    equations_.post_integrate(mesh, particles);
+    // Refresh accepted state before post-integration corrections.
+    equations_.prepare(mesh, particles);
+    equations_.compute_shift_fields(mesh, particles);
+
+    // Exchange `N` before local surface classification when halos are active.
+    equations_.classify_free_surface(mesh, particles);
+
+    // Exchange `phi` before reading neighboring surface classifications.
+    equations_.classify_near_surface(mesh, particles);
+    equations_.apply_particle_shifts(particles);
+
+    // Exchange shifted position, velocity, and density before correction.
+    equations_.prepare_density_correction(particles);
+    equations_.apply_density_correction(mesh, particles);
     return dt;
   }
 
