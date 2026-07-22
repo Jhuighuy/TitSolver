@@ -4,10 +4,14 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <array>
+#include <climits>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <memory>
+#include <span>
 #include <utility>
+#include <vector>
 
 #include <mpi.h>
 
@@ -118,6 +122,76 @@ auto Communicator::exclusive_scan_sum(std::uint64_t value) const
       "MPI_Exscan");
   if (rank() == 0) result = 0;
   return result;
+}
+
+auto Communicator::all_to_all_bytes(
+    std::span<const std::vector<std::byte>> send_buffers) const
+    -> std::vector<std::vector<std::byte>> {
+  TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  const auto num_ranks = size();
+  TIT_ENSURE(send_buffers.size() == num_ranks,
+             "All-to-all exchange requires one send buffer per rank.");
+
+  std::vector<int> send_counts(num_ranks);
+  std::vector<int> send_offsets(num_ranks);
+  int send_size = 0;
+  for (std::size_t rank = 0; rank < num_ranks; ++rank) {
+    TIT_ENSURE(send_buffers[rank].size() <= INT_MAX,
+               "All-to-all send buffer is too large.");
+    send_counts[rank] = static_cast<int>(send_buffers[rank].size());
+    send_offsets[rank] = send_size;
+    TIT_ENSURE(send_counts[rank] <= INT_MAX - send_size,
+               "All-to-all send payload is too large.");
+    send_size += send_counts[rank];
+  }
+
+  std::vector<int> receive_counts(num_ranks);
+  check_mpi(MPI_Alltoall(send_counts.data(),
+                         1,
+                         MPI_INT,
+                         receive_counts.data(),
+                         1,
+                         MPI_INT,
+                         state_->get()),
+            "MPI_Alltoall");
+
+  std::vector<int> receive_offsets(num_ranks);
+  int receive_size = 0;
+  for (std::size_t rank = 0; rank < num_ranks; ++rank) {
+    TIT_ENSURE(receive_counts[rank] >= 0 &&
+                   receive_counts[rank] <= INT_MAX - receive_size,
+               "All-to-all receive payload is too large.");
+    receive_offsets[rank] = receive_size;
+    receive_size += receive_counts[rank];
+  }
+
+  std::vector<std::byte> send_data(static_cast<std::size_t>(send_size));
+  for (std::size_t rank = 0; rank < num_ranks; ++rank) {
+    if (send_buffers[rank].empty()) continue;
+    std::memcpy(send_data.data() + send_offsets[rank],
+                send_buffers[rank].data(),
+                send_buffers[rank].size());
+  }
+  std::vector<std::byte> receive_data(static_cast<std::size_t>(receive_size));
+  check_mpi(MPI_Alltoallv(send_data.data(),
+                          send_counts.data(),
+                          send_offsets.data(),
+                          MPI_BYTE,
+                          receive_data.data(),
+                          receive_counts.data(),
+                          receive_offsets.data(),
+                          MPI_BYTE,
+                          state_->get()),
+            "MPI_Alltoallv");
+
+  std::vector<std::vector<std::byte>> receive_buffers(num_ranks);
+  for (std::size_t rank = 0; rank < num_ranks; ++rank) {
+    const auto count = static_cast<std::size_t>(receive_counts[rank]);
+    const auto offset = static_cast<std::size_t>(receive_offsets[rank]);
+    const auto* const begin = receive_data.data() + offset;
+    receive_buffers[rank].assign(begin, begin + count);
+  }
+  return receive_buffers;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

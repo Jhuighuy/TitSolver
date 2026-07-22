@@ -3,7 +3,9 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include "tit/dist/communicator.hpp"
 #include "tit/dist/environment.hpp"
@@ -32,6 +34,21 @@ TEST_CASE("dist::Communicator collectives") {
 
   const auto expected_prefix = rank_value * (rank_value + 1) / 2;
   CHECK(communicator.exclusive_scan_sum(value) == expected_prefix);
+
+  REQUIRE(size <= 255);
+  std::vector<std::vector<std::byte>> send_buffers(size);
+  for (std::size_t destination = 0; destination < size; ++destination) {
+    send_buffers[destination] = {
+        static_cast<std::byte>(rank),
+        static_cast<std::byte>(destination),
+    };
+  }
+  const auto receive_buffers = communicator.all_to_all_bytes(send_buffers);
+  REQUIRE(receive_buffers.size() == size);
+  for (std::size_t source = 0; source < size; ++source) {
+    CHECK(receive_buffers[source] == std::vector{static_cast<std::byte>(source),
+                                                 static_cast<std::byte>(rank)});
+  }
   communicator.barrier();
 }
 

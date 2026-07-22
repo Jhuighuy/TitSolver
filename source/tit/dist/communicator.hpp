@@ -8,6 +8,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <span>
+#include <vector>
 
 namespace tit::dist {
 
@@ -40,6 +42,10 @@ public:
 
   /// Compute an exclusive prefix sum, returning zero on rank zero.
   auto exclusive_scan_sum(std::uint64_t value) const -> std::uint64_t;
+
+  /// Exchange a variable-size byte buffer with every rank.
+  auto all_to_all_bytes(std::span<const std::vector<std::byte>> send_buffers)
+      const -> std::vector<std::vector<std::byte>>;
 
 private:
 
