@@ -304,6 +304,52 @@ public:
     TIT_ASSERT(offset == buffer.size(), "Particle packing size mismatch.");
   }
 
+  /// Packed width of a stable ID followed by selected per-particle fields.
+  template<field... Fields>
+  static consteval auto packed_size(TypeSet<Fields...> /*fields*/)
+      -> std::size_t {
+    static_assert(TypeSet<Fields...>{} <= varying_fields);
+    static_assert(
+        (std::is_trivially_copyable_v<field_value_t<Fields, Space>> && ...));
+    return sizeof(ParticleID) +
+           (sizeof(field_value_t<Fields, Space>) + ... + std::size_t{0});
+  }
+
+  /// Serialize selected fields for an existing particle.
+  template<field... Fields>
+  void pack(std::size_t index,
+            std::span<std::byte> buffer,
+            TypeSet<Fields...> selected_fields) const {
+    TIT_ASSERT(index < size(), "Particle index is out of range.");
+    TIT_ENSURE(buffer.size() == packed_size(selected_fields),
+               "Particle field exchange buffer has an invalid size.");
+    std::size_t offset = 0;
+    pack_value_(buffer, offset, particle_ids_[index]);
+    (pack_value_(buffer, offset, (*this)[index, Fields{}]), ...);
+    TIT_ASSERT(offset == buffer.size(),
+               "Particle field packing size mismatch.");
+  }
+
+  /// Update selected fields of an existing ghost from an MPI record.
+  template<field... Fields>
+  void update_ghost_packed(std::span<const std::byte> buffer,
+                           TypeSet<Fields...> selected_fields) {
+    TIT_ENSURE(buffer.size() == packed_size(selected_fields),
+               "Particle field exchange buffer has an invalid size.");
+    std::size_t offset = 0;
+    const auto id = unpack_value_<ParticleID>(buffer, offset);
+    const auto index = find(id);
+    TIT_ENSURE(index.has_value(),
+               "Particle field exchange references an unknown particle.");
+    TIT_ENSURE(is_ghost(*index),
+               "Particle field exchange references non-ghost state.");
+    (((*this)[*index, Fields{}] =
+          unpack_value_<field_value_t<Fields, Space>>(buffer, offset)),
+     ...);
+    TIT_ASSERT(offset == buffer.size(),
+               "Particle field unpacking size mismatch.");
+  }
+
   /// Append an owned or fixed particle from the MPI exchange format.
   auto append_packed(ParticleType type, std::span<const std::byte> buffer)
       -> ParticleView<ParticleArray> {
@@ -314,6 +360,24 @@ public:
   auto append_ghost_packed(std::span<const std::byte> buffer)
       -> ParticleView<ParticleArray> {
     return append_packed_(ParticleType::fluid, true, buffer);
+  }
+
+  /// Append a read-only ghost containing selected exchanged fields.
+  template<field... Fields>
+  auto append_ghost_packed(std::span<const std::byte> buffer,
+                           TypeSet<Fields...> selected_fields)
+      -> ParticleView<ParticleArray> {
+    TIT_ENSURE(buffer.size() == packed_size(selected_fields),
+               "Particle field exchange buffer has an invalid size.");
+    std::size_t offset = 0;
+    const auto id = unpack_value_<ParticleID>(buffer, offset);
+    auto particle = append_ghost(id);
+    ((particle[Fields{}] =
+          unpack_value_<field_value_t<Fields, Space>>(buffer, offset)),
+     ...);
+    TIT_ASSERT(offset == buffer.size(),
+               "Particle field unpacking size mismatch.");
+    return particle;
   }
 
   /// Remove an owned mobile particle and invalidate views at or after it.

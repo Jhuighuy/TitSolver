@@ -149,6 +149,27 @@ TEST_CASE("sph::ParticleArray packs migration and halo records") {
   CHECK(rho[ghost] == 5.0);
 
   destination.clear_ghosts();
+  constexpr auto selected_fields = TypeSet{r, rho};
+  std::array<std::byte, TestParticles::packed_size(selected_fields)>
+      field_buffer{};
+  source.pack(a.index(), field_buffer, selected_fields);
+  const auto partial_ghost =
+      destination.append_ghost_packed(field_buffer, selected_fields);
+  CHECK(partial_ghost.id() == ParticleID{17});
+  CHECK(partial_ghost.is_ghost());
+  CHECK(m[partial_ghost] == 0.0);
+  CHECK(r[partial_ghost] == Vec{1.0, 2.0});
+  CHECK(v[partial_ghost] == Vec{0.0, 0.0});
+  CHECK(rho[partial_ghost] == 5.0);
+
+  r[a] = {6.0, 7.0};
+  rho[a] = 8.0;
+  source.pack(a.index(), field_buffer, selected_fields);
+  destination.update_ghost_packed(field_buffer, selected_fields);
+  CHECK(r[partial_ghost] == Vec{6.0, 7.0});
+  CHECK(rho[partial_ghost] == 8.0);
+
+  destination.clear_ghosts();
   const auto owned = destination.append_packed(ParticleType::fluid, buffer);
   CHECK(owned.id() == ParticleID{17});
   CHECK(owned.is_owned());

@@ -47,6 +47,9 @@ public:
       TypeSet{m, gamma, grad_gamma, rho, drho_dt, grad_rho, p, cs} |
       TypeSet{v, dv_dt, grad_v, r, dr, N, L, phi, rho_raw};
 
+  /// Fields consumed from neighboring fluid particles.
+  static constexpr auto halo_fields = TypeSet{m, r, v, rho};
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct the fluid equations.

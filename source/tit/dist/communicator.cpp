@@ -57,16 +57,34 @@ auto all_reduce(MPI_Comm communicator,
 class Communicator::State_ final {
 public:
 
-  explicit State_(MPI_Comm communicator) noexcept
-      : communicator_{communicator} {}
+  explicit State_(MPI_Comm communicator) : communicator_{communicator} {
+    int rank = 0;
+    int size = 0;
+    check_mpi(MPI_Comm_rank(communicator_, &rank), "MPI_Comm_rank");
+    check_mpi(MPI_Comm_size(communicator_, &size), "MPI_Comm_size");
+    TIT_ENSURE(rank >= 0, "MPI returned a negative rank.");
+    TIT_ENSURE(size > 0, "MPI returned an invalid communicator size.");
+    rank_ = static_cast<std::size_t>(rank);
+    size_ = static_cast<std::size_t>(size);
+  }
 
   auto get() const noexcept -> MPI_Comm {
     return communicator_;
   }
 
+  auto rank() const noexcept -> std::size_t {
+    return rank_;
+  }
+
+  auto size() const noexcept -> std::size_t {
+    return size_;
+  }
+
 private:
 
   MPI_Comm communicator_;
+  std::size_t rank_{};
+  std::size_t size_{};
 
 }; // class Communicator::State_
 
@@ -86,22 +104,17 @@ auto Communicator::world() -> Communicator {
 
 auto Communicator::rank() const -> std::size_t {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
-  int result = 0;
-  check_mpi(MPI_Comm_rank(state_->get(), &result), "MPI_Comm_rank");
-  TIT_ENSURE(result >= 0, "MPI returned a negative rank.");
-  return static_cast<std::size_t>(result);
+  return state_->rank();
 }
 
 auto Communicator::size() const -> std::size_t {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
-  int result = 0;
-  check_mpi(MPI_Comm_size(state_->get(), &result), "MPI_Comm_size");
-  TIT_ENSURE(result > 0, "MPI returned an invalid communicator size.");
-  return static_cast<std::size_t>(result);
+  return state_->size();
 }
 
 void Communicator::barrier() const {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return;
   check_mpi(MPI_Barrier(state_->get()), "MPI_Barrier");
 }
 
@@ -114,36 +127,43 @@ void Communicator::barrier() const {
 
 auto Communicator::all_reduce_min(float value) const -> float {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return value;
   return all_reduce(state_->get(), value, MPI_FLOAT, MPI_MIN);
 }
 
 auto Communicator::all_reduce_min(double value) const -> double {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return value;
   return all_reduce(state_->get(), value, MPI_DOUBLE, MPI_MIN);
 }
 
 auto Communicator::all_reduce_min(std::uint64_t value) const -> std::uint64_t {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return value;
   return all_reduce(state_->get(), value, MPI_UINT64_T, MPI_MIN);
 }
 
 auto Communicator::all_reduce_max(float value) const -> float {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return value;
   return all_reduce(state_->get(), value, MPI_FLOAT, MPI_MAX);
 }
 
 auto Communicator::all_reduce_max(double value) const -> double {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return value;
   return all_reduce(state_->get(), value, MPI_DOUBLE, MPI_MAX);
 }
 
 auto Communicator::all_reduce_max(std::uint64_t value) const -> std::uint64_t {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return value;
   return all_reduce(state_->get(), value, MPI_UINT64_T, MPI_MAX);
 }
 
 auto Communicator::all_reduce_sum(std::uint64_t value) const -> std::uint64_t {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return value;
   return all_reduce(state_->get(), value, MPI_UINT64_T, MPI_SUM);
 }
 
@@ -152,6 +172,7 @@ auto Communicator::all_reduce_sum(std::span<const std::uint64_t> values) const
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
   TIT_ENSURE(values.size() <= INT_MAX,
              "Collective reduction array is too large.");
+  if (size() == 1) return {values.begin(), values.end()};
   std::vector<std::uint64_t> result(values.size());
   check_mpi(MPI_Allreduce(values.data(),
                           result.data(),
@@ -166,6 +187,7 @@ auto Communicator::all_reduce_sum(std::span<const std::uint64_t> values) const
 auto Communicator::exclusive_scan_sum(std::uint64_t value) const
     -> std::uint64_t {
   TIT_ASSERT(state_ != nullptr, "Communicator is null.");
+  if (size() == 1) return 0;
   std::uint64_t result = 0;
   check_mpi(
       MPI_Exscan(&value, &result, 1, MPI_UINT64_T, MPI_SUM, state_->get()),
@@ -181,6 +203,7 @@ auto Communicator::all_to_all_bytes(
   const auto num_ranks = size();
   TIT_ENSURE(send_buffers.size() == num_ranks,
              "All-to-all exchange requires one send buffer per rank.");
+  if (num_ranks == 1) return {send_buffers.front()};
 
   std::vector<int> send_counts(num_ranks);
   std::vector<int> send_offsets(num_ranks);

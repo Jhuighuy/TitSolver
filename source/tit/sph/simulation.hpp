@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "tit/core/profiler.hpp"
+#include "tit/core/type.hpp"
 #include "tit/dist/communicator.hpp"
 #include "tit/sph/distributed_particles.hpp"
 #include "tit/sph/field.hpp"
@@ -45,7 +46,8 @@ public:
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void initialize(ParticleMesh& mesh, ParticleArray& particles) const {
-    static_cast<void>(topology_.exchange_halos(particles));
+    static_cast<void>(
+        topology_.exchange_halos(particles, Equations::halo_fields));
     equations_.initialize(mesh, particles);
   }
 
@@ -66,7 +68,8 @@ public:
     const auto initial_state = integrator_.capture(particles);
     Num dt{};
     for (std::size_t stage = 0; stage < integrator_.num_stages(); ++stage) {
-      static_cast<void>(topology_.exchange_halos(particles));
+      static_cast<void>(
+          topology_.exchange_halos(particles, Equations::halo_fields));
       equations_.prepare(mesh, particles);
 
       if (stage == 0) {
@@ -80,27 +83,25 @@ public:
     }
 
     // Refresh accepted state before post-integration corrections.
-    static_cast<void>(topology_.exchange_halos(particles));
+    static_cast<void>(
+        topology_.exchange_halos(particles, Equations::halo_fields));
     equations_.prepare(mesh, particles);
     equations_.compute_shift_fields(mesh, particles);
 
-    // Exchange `N` before local surface classification.
-    if (topology_.exchange_halos(particles)) {
-      equations_.prepare(mesh, particles);
-    }
+    // Exchange `N` before local surface classification. Particle positions and
+    // ghost membership are unchanged, so the existing mesh remains valid.
+    topology_.update_halo_fields(particles, TypeSet{N});
     equations_.classify_free_surface(mesh, particles);
 
     // Exchange `phi` before reading neighboring surface classifications.
-    if (topology_.exchange_halos(particles)) {
-      equations_.prepare(mesh, particles);
-    }
+    topology_.update_halo_fields(particles, TypeSet{phi});
     equations_.classify_near_surface(mesh, particles);
     equations_.apply_particle_shifts(particles);
 
-    // Exchange shifted position, velocity, and density before correction.
-    if (topology_.exchange_halos(particles)) {
-      equations_.prepare(mesh, particles);
-    }
+    // Refresh shifted source values in place before density correction. The
+    // correction targets only unshifted surface particles, so the accepted
+    // state mesh and boundary reconstruction remain valid.
+    topology_.update_halo_fields(particles, TypeSet{r, v, rho});
     equations_.prepare_density_correction(particles);
     equations_.apply_density_correction(mesh, particles);
     topology_.migrate(particles);

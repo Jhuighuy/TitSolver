@@ -34,6 +34,16 @@ public:
     return false;
   }
 
+  template<particle_array ParticleArray, field_set Fields>
+  constexpr auto exchange_halos(ParticleArray& /*particles*/,
+                                Fields /*fields*/) const noexcept -> bool {
+    return false;
+  }
+
+  template<particle_array ParticleArray, field_set Fields>
+  constexpr void update_halo_fields(ParticleArray& /*particles*/,
+                                    Fields /*fields*/) const noexcept {}
+
   template<particle_array ParticleArray>
   constexpr void migrate(ParticleArray& /*particles*/) const noexcept {}
 
@@ -76,22 +86,18 @@ public:
   /// Rebuild all process-local ghost records from current owned state.
   template<particle_array<r> ParticleArray>
   auto exchange_halos(ParticleArray& particles) const -> bool {
-    particles.clear_ghosts();
-    const auto rank = communicator_.rank();
-    const auto count = communicator_.size();
-    std::vector<std::vector<std::byte>> send_buffers(count);
-
-    for (const auto particle : particles.owned()) {
-      const auto x = r[particle][0];
-      for (std::size_t destination = 0; destination < count; ++destination) {
-        if (destination == rank) continue;
-        const auto [slab_lower, slab_upper] = bounds_(destination);
-        if (x < slab_lower - halo_width_ || x > slab_upper + halo_width_) {
-          continue;
-        }
-        append_record_(send_buffers[destination], particles, particle.index());
-      }
+    if (communicator_.size() == 1) {
+      TIT_ASSERT(particles.num_ghosts() == 0,
+                 "Single-rank topology contains ghost particles.");
+      return false;
     }
+
+    particles.clear_ghosts();
+    const auto send_buffers =
+        make_halo_send_buffers_(particles,
+                                [&](auto& buffer, std::size_t index) {
+                                  append_record_(buffer, particles, index);
+                                });
 
     const auto receive_buffers = communicator_.all_to_all_bytes(send_buffers);
     for (const auto& buffer : receive_buffers) {
@@ -100,10 +106,64 @@ public:
     return true;
   }
 
+  /// Rebuild ghosts with only the selected source fields.
+  template<particle_array<r> ParticleArray, field_set Fields>
+    requires (Fields{} <= ParticleArray::varying_fields)
+  auto exchange_halos(ParticleArray& particles, Fields fields) const -> bool {
+    if (communicator_.size() == 1) {
+      TIT_ASSERT(particles.num_ghosts() == 0,
+                 "Single-rank topology contains ghost particles.");
+      return false;
+    }
+
+    particles.clear_ghosts();
+    const auto send_buffers = make_halo_send_buffers_(
+        particles,
+        [&](auto& buffer, std::size_t index) {
+          append_field_record_(buffer, particles, index, fields);
+        });
+    const auto receive_buffers = communicator_.all_to_all_bytes(send_buffers);
+    for (const auto& buffer : receive_buffers) {
+      append_field_records_(buffer, particles, fields);
+    }
+    return true;
+  }
+
+  /// Update selected fields without invalidating the existing ghost layout.
+  template<particle_array<r> ParticleArray, field_set Fields>
+    requires (Fields{} <= ParticleArray::varying_fields)
+  void update_halo_fields(ParticleArray& particles, Fields fields) const {
+    if (communicator_.size() == 1) {
+      TIT_ASSERT(particles.num_ghosts() == 0,
+                 "Single-rank topology contains ghost particles.");
+      return;
+    }
+
+    const auto send_buffers = make_halo_send_buffers_(
+        particles,
+        [&](auto& buffer, std::size_t index) {
+          append_field_record_(buffer, particles, index, fields);
+        });
+
+    const auto receive_buffers = communicator_.all_to_all_bytes(send_buffers);
+    for (const auto& buffer : receive_buffers) {
+      update_field_records_(buffer, particles, fields);
+    }
+  }
+
   /// Transfer accepted owned state to the rank containing its current position.
   template<particle_array<r> ParticleArray>
   void migrate(ParticleArray& particles) const {
     particles.clear_ghosts();
+    if (communicator_.size() == 1) {
+      TIT_ASSERT(std::ranges::all_of(particles.owned(),
+                                     [&](const auto particle) {
+                                       return owner(r[particle]) == 0;
+                                     }),
+                 "Single-rank topology does not own all particle state.");
+      return;
+    }
+
     const auto rank = communicator_.rank();
     std::vector<std::vector<std::byte>> send_buffers(communicator_.size());
     std::vector<std::size_t> outbound;
@@ -114,6 +174,10 @@ public:
       append_record_(send_buffers[destination], particles, index);
       outbound.push_back(index);
     }
+
+    const auto global_outbound = communicator_.all_reduce_sum(
+        static_cast<std::uint64_t>(outbound.size()));
+    if (global_outbound == 0) return;
 
     const auto receive_buffers = communicator_.all_to_all_bytes(send_buffers);
     for (const auto index : outbound | std::views::reverse) {
@@ -134,6 +198,8 @@ public:
   /// migrate accepted state to the new owners.
   template<particle_array<r> ParticleArray>
   void rebalance(ParticleArray& particles) {
+    if (communicator_.size() == 1) return;
+
     constexpr std::size_t min_bins = 256;
     const auto num_bins = std::max(min_bins, communicator_.size() * 32);
     std::vector<std::uint64_t> local_histogram(num_bins);
@@ -177,6 +243,49 @@ public:
 
 private:
 
+  template<particle_array<r> ParticleArray, class AppendRecord>
+  auto make_halo_send_buffers_(const ParticleArray& particles,
+                               AppendRecord append_record) const
+      -> std::vector<std::vector<std::byte>> {
+    const auto rank = communicator_.rank();
+    const auto count = communicator_.size();
+    std::vector<std::vector<std::byte>> send_buffers(count);
+    for (const auto particle : particles.owned()) {
+      const auto x = r[particle][0];
+      const auto [first_destination, last_destination] = halo_destinations_(x);
+      for (std::size_t destination = first_destination;
+           destination <= last_destination;
+           ++destination) {
+        if (destination == rank) continue;
+        const auto [slab_lower, slab_upper] = bounds_(destination);
+        if (x < slab_lower - halo_width_ || x > slab_upper + halo_width_) {
+          continue;
+        }
+        append_record(send_buffers[destination], particle.index());
+      }
+    }
+    return send_buffers;
+  }
+
+  /// Inclusive rank range whose halo-extended slabs contain a coordinate.
+  auto halo_destinations_(Num x) const -> std::pair<std::size_t, std::size_t> {
+    const auto count = communicator_.size();
+    const auto first_cut =
+        std::lower_bound(cuts_.begin() + 1, cuts_.end(), x - halo_width_);
+    const auto first =
+        std::min(count - 1,
+                 static_cast<std::size_t>(first_cut - (cuts_.begin() + 1)));
+
+    const auto after_last_cut =
+        std::upper_bound(cuts_.begin(), cuts_.end() - 1, x + halo_width_);
+    const auto last = after_last_cut == cuts_.begin() ?
+                          std::size_t{0} :
+                          std::min(count - 1,
+                                   static_cast<std::size_t>(after_last_cut -
+                                                            cuts_.begin() - 1));
+    return {first, last};
+  }
+
   auto bounds_(std::size_t rank) const -> std::pair<Num, Num> {
     TIT_ASSERT(rank < communicator_.size(), "Slab rank is out of range.");
     return {cuts_[rank], cuts_[rank + 1]};
@@ -208,6 +317,47 @@ private:
       } else {
         particles.append_packed(ParticleType::fluid, record);
       }
+    }
+  }
+
+  template<particle_array ParticleArray, field_set Fields>
+  static void append_field_record_(std::vector<std::byte>& buffer,
+                                   const ParticleArray& particles,
+                                   std::size_t index,
+                                   Fields fields) {
+    const auto record_size = ParticleArray::packed_size(fields);
+    const auto offset = buffer.size();
+    buffer.resize(offset + record_size);
+    particles.pack(index,
+                   std::span{buffer}.subspan(offset, record_size),
+                   fields);
+  }
+
+  template<particle_array ParticleArray, field_set Fields>
+  static void update_field_records_(std::span<const std::byte> buffer,
+                                    ParticleArray& particles,
+                                    Fields fields) {
+    const auto record_size = ParticleArray::packed_size(fields);
+    TIT_ENSURE(buffer.size() % record_size == 0,
+               "Received particle field buffer has an invalid size.");
+    for (std::size_t offset = 0; offset < buffer.size();
+         offset += record_size) {
+      particles.update_ghost_packed(buffer.subspan(offset, record_size),
+                                    fields);
+    }
+  }
+
+  template<particle_array ParticleArray, field_set Fields>
+  static void append_field_records_(std::span<const std::byte> buffer,
+                                    ParticleArray& particles,
+                                    Fields fields) {
+    const auto record_size = ParticleArray::packed_size(fields);
+    TIT_ENSURE(buffer.size() % record_size == 0,
+               "Received particle field buffer has an invalid size.");
+    for (std::size_t offset = 0; offset < buffer.size();
+         offset += record_size) {
+      particles.append_ghost_packed(buffer.subspan(offset, record_size),
+                                    fields);
     }
   }
 

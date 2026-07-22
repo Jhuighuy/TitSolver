@@ -33,6 +33,7 @@ public:
 
   static constexpr auto required_fields = TypeSet{h, r, v, rho, dv_dt, drho_dt};
   static constexpr auto modified_fields = TypeSet{r, v, rho, dv_dt, drho_dt};
+  static constexpr auto halo_fields = TypeSet{r, v, rho};
 
   explicit ConstantEquations(double local_dt) noexcept : local_dt_{local_dt} {}
 
@@ -146,6 +147,23 @@ TEST_CASE("sph::SlabParticleTopology exchanges halos and migrates state") {
               .has_value());
   }
 
+  v[particle] = {static_cast<double>(rank) + 10.0, 0.0};
+  topology.update_halo_fields(particles, TypeSet{v});
+  if (rank > 0) {
+    const auto left =
+        particles.find(ParticleID{static_cast<std::uint64_t>(rank - 1)});
+    REQUIRE(left.has_value());
+    CHECK(v[particles[left.value_or(particles.size())]] ==
+          Vec{static_cast<double>(rank - 1) + 10.0, 0.0});
+  }
+  if (rank + 1 < size) {
+    const auto right =
+        particles.find(ParticleID{static_cast<std::uint64_t>(rank + 1)});
+    REQUIRE(right.has_value());
+    CHECK(v[particles[right.value_or(particles.size())]] ==
+          Vec{static_cast<double>(rank + 1) + 10.0, 0.0});
+  }
+
   const auto destination = rank % 2 == 0 ? rank + 1 : rank - 1;
   r[particles[0]] = {(static_cast<double>(destination) + 0.5) * slab_width,
                      0.0};
@@ -182,6 +200,36 @@ TEST_CASE("sph::SlabParticleTopology assigns shared faces consistently") {
   }
   CHECK(topology.owner(Vec{1.0, 0.0}) == size - 1);
   CHECK(topology.owner(Vec{1.1, 0.0}) == size - 1);
+}
+
+TEST_CASE("sph::SlabParticleTopology exchanges across multiple slabs") {
+  const auto communicator = dist::Communicator::world();
+  REQUIRE(communicator.size() >= 2);
+  const auto rank = communicator.rank();
+  const auto size = communicator.size();
+  const SlabParticleTopology topology{communicator, 0.0, 1.0, 1.0};
+
+  ParticleArray particles{Space<double, 2>{},
+                          ParticleLayout{TypeSet{h}, TypeSet{r, v, rho}}};
+  h[particles] = 0.1;
+  const auto particle =
+      particles.append(ParticleType::fluid,
+                       ParticleID{static_cast<std::uint64_t>(rank)});
+  r[particle] = {(static_cast<double>(rank) + 0.5) / static_cast<double>(size),
+                 0.0};
+  v[particle] = {static_cast<double>(rank), 0.0};
+  rho[particle] = 1000.0 + static_cast<double>(rank);
+
+  topology.exchange_halos(particles, TypeSet{r, v, rho});
+  CHECK(particles.num_ghosts() == size - 1);
+  for (std::size_t source = 0; source < size; ++source) {
+    const auto index =
+        particles.find(ParticleID{static_cast<std::uint64_t>(source)});
+    REQUIRE(index.has_value());
+    const auto source_particle = particles[index.value_or(particles.size())];
+    CHECK(v[source_particle] == Vec{static_cast<double>(source), 0.0});
+    CHECK(rho[source_particle] == 1000.0 + static_cast<double>(source));
+  }
 }
 
 TEST_CASE("sph::SlabParticleTopology supports empty ranks") {
