@@ -3,19 +3,30 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_tit_executable(
+add_tit_library(
   NAME
-    titwcsph
+    dist
   SOURCES
-    "wcsph.cpp"
+    "exchange.hpp"
+    "storage.hpp"
   DEPENDS
     tit::core
     tit::data
-    tit::dist
+    tit::geom
     tit::mpi
     tit::sph
-  DESTINATION
-    "bin"
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    dist_tests
+  SOURCES
+    "exchange.test.cpp"
+  DEPENDS
+    tit::dist
+    tit::testing_mpi
 )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

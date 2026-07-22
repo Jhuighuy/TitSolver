@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -216,6 +217,53 @@ TIT_DEFINE_VECTOR_FIELD(dr);
 
 /// Scratch field for free surface correction.
 TIT_DEFINE_SCALAR_FIELD(rho_raw);
+
+/// Particle global identifier.
+///
+/// Unlike the physical fields, the global identifier is a solver-internal
+/// field: it provides stable particle identity that survives reordering and,
+/// in distributed runs, ownership migration between processes.
+class gid_t final : public BaseField {
+public:
+
+  /** Field name. */
+  static constexpr std::string_view field_name = "gid";
+
+  /** Field type. */
+  template<class Real, size_t Dim>
+  using field_value_type = std::uint64_t;
+
+}; // class gid_t
+
+/// @copydoc gid_t
+inline constexpr gid_t gid;
+
+/// Boundary vertex identifier.
+///
+/// Fixed (boundary) particles are generated from the vertices of the boundary
+/// surface, and the boundary face adjacency refers to the particles by the
+/// surface vertex indices. This solver-internal field records the surface
+/// vertex a fixed particle was generated from, so that the reference can be
+/// resolved locally when the particles are distributed. The value is
+/// meaningless for the fluid particles.
+class vid_t final : public BaseField {
+public:
+
+  /** Field name. */
+  static constexpr std::string_view field_name = "vid";
+
+  /** Field type. */
+  template<class Real, size_t Dim>
+  using field_value_type = std::uint64_t;
+
+}; // class vid_t
+
+/// @copydoc vid_t
+inline constexpr vid_t vid;
+
+/// Set of the solver-internal fields that carry particle identity rather
+/// than physical state.
+inline constexpr TypeSet infra_fields{gid, vid};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

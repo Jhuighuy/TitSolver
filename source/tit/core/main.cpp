@@ -179,6 +179,18 @@ void print_logo_and_system_info() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+// Rank of the current process in a distributed launch.
+//
+// MPI is not initialized this early (and `tit::core` does not link against
+// it), but the MPI launchers export the rank into the environment before
+// spawning the processes: Open MPI as `OMPI_COMM_WORLD_RANK`, and the
+// PMI-based launchers (MPICH and derivatives, Slurm) as `PMI_RANK`.
+auto env_process_rank() -> std::size_t {
+  return get_env("OMPI_COMM_WORLD_RANK", get_env("PMI_RANK", std::size_t{0}));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 void setup_stdio_buffering() {
   // Enable line buffering for stdout.
   TIT_ENSURE_ERRNO(std::setvbuf(stdout, nullptr, _IOLBF, 0) == 0,
@@ -370,10 +382,11 @@ auto run_main(int argc,
     // Configure buffering for stdout and stderr.
     setup_stdio_buffering();
 
-    // Print the logo and system information. Skip the logo if requested. If
-    // logo is printed, set the variable to prevent printing it again in the
-    // child processes.
-    if (!get_env("TIT_NO_BANNER", false)) {
+    // Print the logo and system information. Skip the logo if requested, or
+    // if this is a secondary process of a distributed launch. If logo is
+    // printed, set the variable to prevent printing it again in the child
+    // processes.
+    if (!get_env("TIT_NO_BANNER", false) && env_process_rank() == 0) {
       print_logo_and_system_info();
       set_env("TIT_NO_BANNER", true);
     }

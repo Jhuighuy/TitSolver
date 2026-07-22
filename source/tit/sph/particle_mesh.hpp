@@ -74,10 +74,13 @@ public:
   constexpr auto operator[](const Domain& domain, PV a) const noexcept {
     auto& particles = a.array();
     return face_adjacency_[a.index()] |
-           std::views::transform([&domain, &particles](std::size_t face_index) {
+           std::views::transform([&domain, &particles, this](
+                                     std::size_t face_index) {
              const auto& [... vert_indices] = domain.face_verts(face_index);
-             return std::pair{domain.face(face_index),
-                              std::tuple{particles.fixed()[vert_indices]...}};
+             return std::pair{
+                 domain.face(face_index),
+                 std::tuple{
+                     particles[vert_particle_(particles, vert_indices)]...}};
            });
   }
 
@@ -111,6 +114,9 @@ public:
               const SearchRadiusFunc& radius_func) {
     TIT_PROFILE_SECTION("ParticleMesh::update()");
 
+    // Update the boundary vertex resolution map.
+    map_verts_(domain, particles);
+
     // Update the adjacency graphs.
     search_(domain, particles, radius_func);
 
@@ -119,6 +125,47 @@ public:
   }
 
 private:
+
+  // Update the boundary vertex resolution map.
+  //
+  // The boundary face adjacency refers to the fixed particles by the surface
+  // vertex indices. When the particles carry the vertex identifiers, the
+  // references are resolved through the map built here, so that the fixed
+  // particles may be stored in any order and, in distributed runs, be present
+  // locally as ghosts. Otherwise, the fixed particles are assumed to be
+  // stored exactly in the surface vertex order.
+  template<class Domain, particle_array ParticleArray>
+  void map_verts_(const Domain& domain, const ParticleArray& particles) {
+    using PV = ParticleView<const ParticleArray>;
+    if constexpr (has<PV>(vid)) {
+      vert_to_local_.assign(domain.num_verts(), invalid_index_);
+      for (const auto a : particles.all()) {
+        if (!a.is_fixed()) continue;
+        TIT_ASSERT(vid[a] < vert_to_local_.size(),
+                   "Vertex identifier is out of range.");
+        vert_to_local_[vid[a]] = a.index();
+      }
+    }
+  }
+
+  // Resolve a surface vertex index into a particle index.
+  template<particle_array ParticleArray>
+  constexpr auto vert_particle_(const ParticleArray& particles,
+                                std::size_t vert_index) const noexcept
+      -> std::size_t {
+    using PV = ParticleView<const ParticleArray>;
+    if constexpr (has<PV>(vid)) {
+      TIT_ASSERT(vert_index < vert_to_local_.size(),
+                 "Vertex index is out of range.");
+      const auto index = vert_to_local_[vert_index];
+      TIT_ASSERT(index != invalid_index_,
+                 "Boundary vertex has no local particle. In a distributed "
+                 "run this indicates an insufficient halo radius.");
+      return index;
+    } else {
+      return (*std::ranges::begin(particles.fixed())).index() + vert_index;
+    }
+  }
 
   template<class Domain, particle_array ParticleArray, class SearchRadiusFunc>
   void search_(const Domain& domain,
@@ -222,6 +269,11 @@ private:
         interface.swap(prev_interface);
         update_interface(prev_interface);
       }
+
+      // No interface particles to reassign: every adjacent pair already
+      // shares a partition on the current level. In particular, this is
+      // always the case for the single-threaded runs.
+      if (interface.empty()) break;
     }
 
     // Assemble the block adjacency graph.
@@ -247,9 +299,13 @@ private:
   using PartIndex_ = std::uint8_t;
   using PartVec_ = Vec<PartIndex_, max_num_levels_>;
 
+  static constexpr auto invalid_index_ =
+      std::numeric_limits<std::size_t>::max();
+
   std::vector<std::vector<std::size_t>> adjacency_;
   std::vector<std::vector<std::pair<std::size_t, std::size_t>>> block_edges_;
   std::vector<std::vector<std::size_t>> face_adjacency_;
+  std::vector<std::size_t> vert_to_local_;
   [[no_unique_address]] SearchFunc search_func_;
   [[no_unique_address]] FaceSearchFunc face_search_func_;
   [[no_unique_address]] PartitionFunc partition_func_;

@@ -12,6 +12,7 @@
 #include "tit/core/profiler.hpp"
 #include "tit/core/type.hpp"
 #include "tit/par/algorithms.hpp"
+#include "tit/sph/exchange.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -46,14 +47,18 @@ public:
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  auto step(ParticleMesh& mesh, ParticleArray& particles) const
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
+  auto step(ParticleMesh& mesh,
+            ParticleArray& particles,
+            Exchange& x = serial_exchange) const
       -> particle_num_t<ParticleArray> {
     TIT_PROFILE_SECTION("SymplecticEulerIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    equations_.prepare(mesh, particles);
-    const auto dt = equations_.compute_time_step(particles);
+    x.rebuild(particles);
+    equations_.prepare(mesh, particles, x);
+    const auto dt = equations_.compute_time_step(particles, x);
 
     equations_.compute_continuity(mesh, particles);
     par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
@@ -64,7 +69,7 @@ public:
       r[a] += dt * v[a];
     });
 
-    equations_.post_integrate(mesh, particles);
+    equations_.post_integrate(mesh, particles, x);
     return dt;
   }
 
@@ -95,14 +100,18 @@ public:
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  auto step(ParticleMesh& mesh, ParticleArray& particles) const
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
+  auto step(ParticleMesh& mesh,
+            ParticleArray& particles,
+            Exchange& x = serial_exchange) const
       -> particle_num_t<ParticleArray> {
     TIT_PROFILE_SECTION("VelocityVerletIntegrator::step()");
     using PV = ParticleView<ParticleArray>;
 
-    equations_.prepare(mesh, particles);
-    const auto dt = equations_.compute_time_step(particles);
+    x.rebuild(particles);
+    equations_.prepare(mesh, particles, x);
+    const auto dt = equations_.compute_time_step(particles, x);
     const auto dt_2 = dt / 2;
 
     equations_.compute_momentum(mesh, particles);
@@ -111,14 +120,14 @@ public:
       r[a] += dt * v[a];
     });
 
-    equations_.prepare(mesh, particles);
+    equations_.prepare(mesh, particles, x);
     equations_.compute_continuity(mesh, particles);
     par::for_each(particles.fluid(), [dt](PV a) { rho[a] += dt * drho_dt[a]; });
 
     equations_.compute_momentum(mesh, particles);
     par::for_each(particles.fluid(), [dt_2](PV a) { v[a] += dt_2 * dv_dt[a]; });
 
-    equations_.post_integrate(mesh, particles);
+    equations_.post_integrate(mesh, particles, x);
     return dt;
   }
 
@@ -157,44 +166,54 @@ public:
 
   /// Make a step in time.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  auto step(ParticleMesh& mesh, ParticleArray& particles) const
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
+  auto step(ParticleMesh& mesh,
+            ParticleArray& particles,
+            Exchange& x = serial_exchange) const
       -> particle_num_t<ParticleArray> {
     TIT_PROFILE_SECTION("SSPRKIntegrator::step()");
+
+    // Rebuild the decomposition before the snapshot below: the set of the
+    // local particles must stay stable within the step.
+    x.rebuild(particles);
+
     const auto old_particles(particles);
-    const auto dt = substep_(mesh, particles);
+    const auto dt = substep_(mesh, particles, x);
 
     using Num = particle_num_t<ParticleArray>;
     switch (order_) {
       case SSPRKOrder::two:
-        substep_(mesh, particles, dt);
+        substep_(mesh, particles, x, dt);
         lincomb_(old_particles, particles, Num{1.0 / 2.0});
         break;
       case SSPRKOrder::three:
-        substep_(mesh, particles, dt);
+        substep_(mesh, particles, x, dt);
         lincomb_(old_particles, particles, Num{1.0 / 4.0});
-        substep_(mesh, particles, dt);
+        substep_(mesh, particles, x, dt);
         lincomb_(old_particles, particles, Num{2.0 / 3.0});
         break;
       default: std::unreachable();
     }
 
-    equations_.post_integrate(mesh, particles);
+    equations_.post_integrate(mesh, particles, x);
     return dt;
   }
 
 private:
 
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange>
   auto substep_(ParticleMesh& mesh,
                 ParticleArray& particles,
+                Exchange& x,
                 std::optional<particle_num_t<ParticleArray>> dt =
                     std::nullopt) const -> particle_num_t<ParticleArray> {
     using PV = ParticleView<ParticleArray>;
 
-    equations_.prepare(mesh, particles);
-    if (!dt.has_value()) dt = equations_.compute_time_step(particles);
+    equations_.prepare(mesh, particles, x);
+    if (!dt.has_value()) dt = equations_.compute_time_step(particles, x);
     const auto dt_ = dt.value();
 
     equations_.compute_continuity(mesh, particles);

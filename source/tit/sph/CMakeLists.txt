@@ -50,6 +50,7 @@ add_tit_executable(
     sph_tests
   SOURCES
     "kernel.test.cpp"
+    "particle_array.test.cpp"
   DEPENDS
     tit::sph
     tit::testing
