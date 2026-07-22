@@ -20,6 +20,22 @@ add_tit_library(
     doctest::doctest
 )
 
+# Variant of the test entry point for the MPI-enabled test executables.
+# Test executables should link either against `tit::testing`, or against
+# `tit::testing_mpi`, never both.
+add_tit_library(
+  NAME
+    testing_mpi
+  TYPE
+    OBJECT
+  SOURCES
+    "test_main_mpi.cpp"
+  DEPENDS
+    tit::core
+    tit::mpi
+    doctest::doctest
+)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 add_tit_executable(

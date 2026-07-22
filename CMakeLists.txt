@@ -24,6 +24,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 
 # Find the third-party libraries.
+# MPI is a core dependency of the solver infrastructure: it is resolved from
+# the system (or cluster environment) rather than from the vcpkg manifest.
+find_package(MPI REQUIRED COMPONENTS CXX)
 find_package(assimp CONFIG REQUIRED)
 find_package(cpptrace CONFIG REQUIRED)
 find_package(doctest CONFIG REQUIRED)

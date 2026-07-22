@@ -3,13 +3,27 @@
 # See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-add_subdirectory("core")
-add_subdirectory("data")
-add_subdirectory("geom")
-add_subdirectory("mpi")
-add_subdirectory("par")
-add_subdirectory("prop")
-add_subdirectory("sph")
-add_subdirectory("testing")
+add_tit_library(
+  NAME
+    mpi
+  SOURCES
+    "mpi.cpp"
+    "mpi.hpp"
+  DEPENDS
+    tit::core
+    MPI::MPI_CXX
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+add_tit_executable(
+  NAME
+    mpi_tests
+  SOURCES
+    "mpi.test.cpp"
+  DEPENDS
+    tit::mpi
+    tit::testing_mpi
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
