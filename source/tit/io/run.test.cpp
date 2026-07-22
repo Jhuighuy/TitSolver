@@ -54,6 +54,12 @@ TEST_CASE("io::RunWriter publishes immutable HDF5 frames") {
   reader.refresh();
   REQUIRE(reader.num_frames() == 2);
   CHECK(reader.frame(1).descriptor() == FrameDescriptor{10, 0.5});
+
+  reader.copy_to("exported.tit-run");
+  const RunReader exported{"exported.tit-run"};
+  REQUIRE(exported.num_frames() == 2);
+  CHECK(exported.metadata() == reader.metadata());
+  CHECK(exported.frame(1).read<double>("rho") == std::vector{1000.5, 1001.5});
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

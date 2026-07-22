@@ -278,6 +278,9 @@ public:
   /// Open a committed frame by logical index.
   auto frame(std::size_t index) const -> FrameReader;
 
+  /// Atomically copy the currently visible committed run to a new path.
+  void copy_to(const std::filesystem::path& destination) const;
+
   /// Run directory path.
   auto path() const -> const std::filesystem::path&;
 

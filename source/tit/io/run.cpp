@@ -185,6 +185,35 @@ auto same_schema(const std::vector<FieldDescriptor>& left,
   });
 }
 
+class PartialDirectoryGuard final {
+public:
+
+  explicit PartialDirectoryGuard(std::filesystem::path path)
+      : path_{std::move(path)} {}
+
+  PartialDirectoryGuard(const PartialDirectoryGuard&) = delete;
+  PartialDirectoryGuard(PartialDirectoryGuard&&) = delete;
+  auto operator=(const PartialDirectoryGuard&)
+      -> PartialDirectoryGuard& = delete;
+  auto operator=(PartialDirectoryGuard&&) -> PartialDirectoryGuard& = delete;
+
+  ~PartialDirectoryGuard() {
+    if (!active_) return;
+    std::error_code error;
+    std::filesystem::remove_all(path_, error);
+  }
+
+  void release() noexcept {
+    active_ = false;
+  }
+
+private:
+
+  std::filesystem::path path_;
+  bool active_ = true;
+
+}; // class PartialDirectoryGuard
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 } // namespace
@@ -566,6 +595,53 @@ auto RunReader::frame(std::size_t index) const -> FrameReader {
              "Committed frame '{}' is missing.",
              path.string());
   return FrameReader{path, descriptor};
+}
+
+void RunReader::copy_to(const std::filesystem::path& destination) const {
+  TIT_ENSURE(!std::filesystem::exists(destination),
+             "Run export destination '{}' already exists.",
+             destination.string());
+  const auto partial = partial_path(destination);
+  TIT_ENSURE(!std::filesystem::exists(partial),
+             "Partial run export '{}' already exists.",
+             partial.string());
+
+  std::filesystem::create_directories(partial / "frames");
+  std::filesystem::create_directories(partial / "checkpoints");
+  PartialDirectoryGuard guard{partial};
+
+  const auto source_manifest = path() / "manifest.json";
+  TIT_ENSURE(std::filesystem::is_regular_file(source_manifest),
+             "Run manifest '{}' is missing.",
+             source_manifest.string());
+  std::filesystem::copy_file(source_manifest, partial / "manifest.json");
+
+  JSON index = {
+      {"version", run_format_version},
+      {"frames", JSON::array()},
+      {"checkpoints", JSON::array()},
+  };
+  for (const auto& [descriptor, source] : state_->frames()) {
+    TIT_ENSURE(std::filesystem::is_regular_file(source),
+               "Committed frame '{}' is missing.",
+               source.string());
+    const auto relative = std::filesystem::path{"frames"} / source.filename();
+    std::filesystem::copy_file(source, partial / relative);
+    index["frames"].push_back({
+        {"step", descriptor.step()},
+        {"time", descriptor.time()},
+        {"file", relative.generic_string()},
+    });
+  }
+  write_json_atomic(partial / "index.json", index);
+
+  std::error_code error;
+  std::filesystem::rename(partial, destination, error);
+  TIT_ENSURE(!error,
+             "Unable to publish run export '{}': {}.",
+             destination.string(),
+             error.message());
+  guard.release();
 }
 
 auto RunReader::path() const -> const std::filesystem::path& {
