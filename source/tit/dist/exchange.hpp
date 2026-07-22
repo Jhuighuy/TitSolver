@@ -18,8 +18,11 @@
 #include <vector>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/logging.hpp"
+#include "tit/core/math.hpp"
 #include "tit/core/profiler.hpp"
 #include "tit/core/serialization.hpp"
+#include "tit/core/vec.hpp"
 #include "tit/geom/bsphere.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
@@ -63,19 +66,28 @@ public:
 
   /// Construct a particle exchange.
   ///
-  /// @param halo_radius Radius of the ghost particle halo. Must cover the
-  ///                    maximal particle interaction radius, plus a margin
-  ///                    ("skin") that covers the particle displacement
-  ///                    within a single time step: the ghost membership is
-  ///                    rebuilt between the steps only.
+  /// @param interaction_radius Maximal particle interaction radius.
+  /// @param skin Extra margin added to the ghost halo. The wider the skin,
+  ///             the more ghost particles are mirrored, but the longer the
+  ///             decomposition and the ghost membership stay valid as the
+  ///             particles move: a full rebuild is triggered only once the
+  ///             accumulated displacement may consume the skin.
   /// @param partition_func Geometric partitioning function.
   /// @param comm Communicator to operate on.
-  explicit ParticleExchange(double halo_radius,
+  explicit ParticleExchange(double interaction_radius,
+                            double skin,
                             PartitionFunc partition_func = {},
                             mpi::Comm comm = mpi::world)
-      : halo_radius_{halo_radius}, partition_func_{std::move(partition_func)},
-        comm_{comm} {
-    TIT_ASSERT(halo_radius_ > 0.0, "Halo radius must be positive.");
+      : halo_radius_{interaction_radius + skin}, skin_{skin},
+        partition_func_{std::move(partition_func)}, comm_{comm} {
+    TIT_ASSERT(interaction_radius > 0.0,
+               "Interaction radius must be positive.");
+    TIT_ASSERT(skin_ > 0.0, "Skin must be positive.");
+  }
+
+  /// Number of the full decomposition rebuilds performed so far.
+  constexpr auto num_rebuilds() const noexcept -> std::size_t {
+    return num_rebuilds_;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,9 +138,16 @@ public:
   void rebuild(PA& particles) {
     TIT_PROFILE_SECTION("dist::ParticleExchange::rebuild()");
     if (comm_.size() == 1) return;
+
+    // Skip the rebuild while the accumulated particle displacement stays
+    // within the skin budget: the decomposition and the ghost membership
+    // remain valid, only the ghost field values need refreshing (which the
+    // solver phases do anyway).
+    if (has_plan_ && !needs_rebuild_(particles)) return;
+
     const auto my_rank = comm_.rank();
 
-    // The ghosts of the previous step are void.
+    // The ghosts of the previous plan are void.
     particles.clear_ghosts();
 
     // Gather the global particle data: positions and identifiers of the
@@ -457,6 +476,59 @@ private:
 
     // Fill the ghost fields.
     refresh(particles, PA::varying_fields);
+
+    // Snapshot the owned positions for the displacement tracking, and
+    // account the decomposition statistics.
+    snapshot_positions_(particles);
+    has_plan_ = true;
+    num_rebuilds_ += 1;
+    if (comm_.is_main()) {
+      std::vector<std::size_t> counts(num_ranks);
+      for (const auto label : global.labels) counts[label] += 1;
+      const auto [min_count, max_count] = std::ranges::minmax(counts);
+      log("dist: rebuild #{}: {} particles, {}..{} per process "
+          "(imbalance {:.2f})",
+          num_rebuilds_,
+          global.labels.size(),
+          min_count,
+          max_count,
+          static_cast<double>(max_count * num_ranks) /
+              static_cast<double>(global.labels.size()));
+    }
+  }
+
+  // Snapshot the owned particle positions for the displacement tracking.
+  template<sph::particle_array PA>
+  void snapshot_positions_(const PA& particles) {
+    snapshot_.clear();
+    for (const auto a : particles.owned()) {
+      snapshot_.append_range(to_byte_array(sph::r[a]));
+    }
+  }
+
+  // Check if the accumulated displacement requires a rebuild.
+  //
+  // Between the rebuilds every particle stays within the skin budget: two
+  // particles may approach each other at twice the maximal displacement,
+  // and half of the skin is reserved for the motion within the current
+  // step, since the rebuilds happen at the step boundaries only.
+  template<sph::particle_array PA>
+  auto needs_rebuild_(const PA& particles) -> bool {
+    using Vec_ = sph::particle_vec_t<PA>;
+    TIT_ASSERT(snapshot_.size() == particles.num_owned() * sizeof(Vec_),
+               "Position snapshot diverged from the owned particles.");
+    auto max_disp_sqr = 0.0;
+    for (const auto a : particles.owned()) {
+      const auto old_r = from_bytes<Vec_>(
+          std::span{std::as_const(snapshot_)}.subspan(
+              a.index() * sizeof(Vec_),
+              sizeof(Vec_)));
+      max_disp_sqr = std::max(max_disp_sqr,
+                              static_cast<double>(norm2(sph::r[a] - old_r)));
+    }
+    const auto max_disp =
+        sqrt(comm_.all_reduce(max_disp_sqr, mpi::Op::max));
+    return 2.0 * max_disp > 0.5 * skin_;
   }
 
   // Canonical global ordering: by type first (fluid before fixed), then by
@@ -502,13 +574,17 @@ private:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   double halo_radius_;
+  double skin_;
   [[no_unique_address]] PartitionFunc partition_func_;
   mpi::Comm comm_;
 
   // Ghost communication plan.
+  bool has_plan_ = false;
+  std::size_t num_rebuilds_ = 0;
   std::vector<std::vector<std::size_t>> send_indices_;
   std::vector<std::array<std::size_t, 2>> recv_offsets_;
   std::vector<std::array<std::size_t, 2>> recv_counts_;
+  std::vector<std::byte> snapshot_;
 
   // Scratch buffers.
   std::vector<std::byte> send_buffer_;

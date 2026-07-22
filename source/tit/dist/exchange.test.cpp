@@ -26,8 +26,10 @@ struct TestEquations {
   static constexpr auto modified_fields = TypeSet{sph::r, rho, v};
 };
 
-constexpr std::size_t N = 20;       // Particles per grid side.
-constexpr double halo_radius = 2.5; // Grid spacing is 1.
+constexpr std::size_t N = 20;              // Particles per grid side.
+constexpr double interaction_radius = 2.0; // Grid spacing is 1.
+constexpr double skin = 0.5;               // Extra halo margin.
+constexpr double halo_radius = interaction_radius + skin;
 
 // Generate the replicated test particle grid: `N x N` fluid particles at the
 // unit spacing, plus a row of fixed particles below.
@@ -112,7 +114,7 @@ void check_invariants(TestArray& particles) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TEST_CASE("dist::ParticleExchange") {
-  dist::ParticleExchange exchange{halo_radius};
+  dist::ParticleExchange exchange{interaction_radius, skin};
   auto particles = make_replicated_array();
   exchange.distribute(particles);
 
@@ -171,6 +173,27 @@ TEST_CASE("dist::ParticleExchange") {
     };
     CHECK(is_sorted_by_gid(particles.fluid()));
     CHECK(is_sorted_by_gid(particles.fixed()));
+  }
+
+  SUBCASE("rebuild cadence") {
+    if (mpi::world.size() == 1) return; // No plan in a single-process run.
+    const auto rebuilds_after_distribute = exchange.num_rebuilds();
+    CHECK(rebuilds_after_distribute == 1);
+
+    // A displacement well within the skin budget must not trigger a
+    // rebuild...
+    for (const auto a : particles.owned()) {
+      sph::r[a] += Vec{0.01, 0.0};
+    }
+    exchange.rebuild(particles);
+    CHECK(exchange.num_rebuilds() == rebuilds_after_distribute);
+
+    // ...while a displacement beyond the budget must.
+    for (const auto a : particles.owned()) {
+      sph::r[a] += Vec{skin, 0.0};
+    }
+    exchange.rebuild(particles);
+    CHECK(exchange.num_rebuilds() == rebuilds_after_distribute + 1);
   }
 
   SUBCASE("all_reduce_min") {

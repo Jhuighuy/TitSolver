@@ -149,8 +149,9 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 
   // Distribute the particles across the processes. The halo covers the
   // particle interaction radius plus a skin margin that absorbs the particle
-  // motion within a single time step.
-  dist::ParticleExchange exchange{/*halo_radius=*/kernel.radius(h_0) + h_0};
+  // motion between the decomposition rebuilds.
+  dist::ParticleExchange exchange{/*interaction_radius=*/kernel.radius(h_0),
+                                  /*skin=*/h_0};
   exchange.distribute(particles);
 
   // Setup the particle mesh structure.
