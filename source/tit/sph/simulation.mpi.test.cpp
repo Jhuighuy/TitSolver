@@ -3,8 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <cstddef>
 #include <cstdint>
-#include <utility>
 
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
@@ -113,56 +113,86 @@ TEST_CASE("sph::Simulation reduces the timestep across ranks") {
 
 TEST_CASE("sph::SlabParticleTopology exchanges halos and migrates state") {
   const auto communicator = dist::Communicator::world();
-  REQUIRE(communicator.size() == 2);
-  const SlabParticleTopology topology{communicator, 0.0, 1.0, 0.11};
+  REQUIRE(communicator.size() >= 2);
+  const auto rank = communicator.rank();
+  const auto size = communicator.size();
+  REQUIRE(size % 2 == 0);
+  const auto slab_width = 1.0 / static_cast<double>(size);
+  const SlabParticleTopology topology{communicator,
+                                      0.0,
+                                      1.0,
+                                      0.51 * slab_width};
 
   ParticleArray particles{Space<double, 2>{},
                           ParticleLayout{TypeSet{h}, TypeSet{r, v, rho}}};
   h[particles] = 0.1;
-  const auto append = [&](std::uint64_t id, double x) {
-    const auto particle = particles.append(ParticleType::fluid, ParticleID{id});
-    r[particle] = {x, 0.0};
-    v[particle] = {static_cast<double>(id), 0.0};
-    rho[particle] = 1000.0 + static_cast<double>(id);
-  };
-
-  if (communicator.rank() == 0) {
-    append(10, 0.10);
-    append(11, 0.45);
-    append(12, 0.75); // Migrates to rank one.
-  } else {
-    append(20, 0.55);
-    append(21, 0.90);
-    append(22, 0.25); // Migrates to rank zero.
-  }
+  const auto id = ParticleID{static_cast<std::uint64_t>(rank)};
+  const auto particle = particles.append(ParticleType::fluid, id);
+  r[particle] = {(static_cast<double>(rank) + 0.5) * slab_width, 0.0};
+  v[particle] = {static_cast<double>(rank), 0.0};
+  rho[particle] = 1000.0 + static_cast<double>(rank);
 
   topology.exchange_halos(particles);
-  CHECK(particles.num_ghosts() == 2);
-  if (communicator.rank() == 0) {
-    CHECK(particles.find(ParticleID{20}).has_value());
-    CHECK(particles.find(ParticleID{22}).has_value());
-  } else {
-    CHECK(particles.find(ParticleID{11}).has_value());
-    CHECK(particles.find(ParticleID{12}).has_value());
+  const auto expected_ghosts = static_cast<std::size_t>(rank > 0) +
+                               static_cast<std::size_t>(rank + 1 < size);
+  CHECK(particles.num_ghosts() == expected_ghosts);
+  if (rank > 0) {
+    CHECK(particles.find(ParticleID{static_cast<std::uint64_t>(rank - 1)})
+              .has_value());
+  }
+  if (rank + 1 < size) {
+    CHECK(particles.find(ParticleID{static_cast<std::uint64_t>(rank + 1)})
+              .has_value());
   }
 
+  const auto destination = rank % 2 == 0 ? rank + 1 : rank - 1;
+  r[particles[0]] = {(static_cast<double>(destination) + 0.5) * slab_width,
+                     0.0};
+
   topology.migrate(particles);
-  CHECK(particles.num_owned() == 3);
+  CHECK(particles.num_owned() == 1);
   CHECK(particles.num_ghosts() == 0);
-  const auto incoming_id =
-      communicator.rank() == 0 ? ParticleID{22} : ParticleID{12};
+  const auto source = rank % 2 == 0 ? rank + 1 : rank - 1;
+  const auto incoming_id = ParticleID{static_cast<std::uint64_t>(source)};
   const auto incoming_index = particles.find(incoming_id);
   REQUIRE(incoming_index.has_value());
   const auto incoming = particles[incoming_index.value_or(particles.size())];
   CHECK(incoming.is_owned());
-  CHECK(rho[incoming] ==
-        1000.0 + static_cast<double>(std::to_underlying(incoming_id)));
+  CHECK(rho[incoming] == 1000.0 + static_cast<double>(source));
 
   topology.exchange_halos(particles);
-  CHECK(particles.num_ghosts() == 1);
+  CHECK(particles.num_ghosts() == expected_ghosts);
   const auto global_owned = communicator.all_reduce_sum(
       static_cast<std::uint64_t>(particles.num_owned()));
-  CHECK(global_owned == 6);
+  CHECK(global_owned == size);
+}
+
+TEST_CASE("sph::SlabParticleTopology supports empty ranks") {
+  const auto communicator = dist::Communicator::world();
+  REQUIRE(communicator.size() >= 2);
+  const SlabParticleTopology topology{communicator, 0.0, 1.0, 0.01};
+  ParticleArray particles{Space<double, 2>{},
+                          ParticleLayout{TypeSet{h}, TypeSet{r, v, rho}}};
+  h[particles] = 0.1;
+  if (communicator.rank() == 0) {
+    const auto particle = particles.append(ParticleType::fluid, ParticleID{42});
+    r[particle] = {0.99, 0.0};
+    v[particle] = {4.2, 0.0};
+    rho[particle] = 1042.0;
+  }
+
+  topology.migrate(particles);
+  const auto owning_rank = communicator.size() - 1;
+  CHECK(particles.num_owned() ==
+        static_cast<std::size_t>(communicator.rank() == owning_rank));
+  if (communicator.rank() == owning_rank) {
+    const auto index = particles.find(ParticleID{42});
+    REQUIRE(index.has_value());
+    CHECK(v[particles[index.value_or(particles.size())]] == Vec{4.2, 0.0});
+  }
+  topology.exchange_halos(particles);
+  CHECK(particles.num_ghosts() == 0);
+  CHECK(communicator.all_reduce_sum(particles.num_owned()) == 1);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

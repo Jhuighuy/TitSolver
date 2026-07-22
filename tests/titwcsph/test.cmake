@@ -14,6 +14,15 @@ add_tit_test(
   MPI_RANKS 2
 )
 
+add_tit_test(
+  NAME "four_rank_smoke"
+  TARGET
+    tit::titwcsph
+    "--max-steps" "1"
+    "--particles-per-height" "8"
+  MPI_RANKS 4
+)
+
 # Checkpoint on one rank and resume the same state on two ranks.
 add_tit_test(
   NAME "restart_different_ranks"
