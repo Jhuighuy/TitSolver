@@ -5,8 +5,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
-#include "tit/core/exception.hpp"
 #include "tit/core/float.hpp"
 #include "tit/core/logging.hpp"
 #include "tit/core/main.hpp"
@@ -21,8 +21,9 @@
 #include "tit/geom/tessellation.hpp"
 #include "tit/geom/winding.hpp"
 #include "tit/geom/winding/fast_winding.hpp"
-#include "tit/io/run.hpp"
+#include "tit/io/parallel_run.hpp"
 #include "tit/par/control.hpp"
+#include "tit/sph/distributed_particles.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/fluid_equations.hpp"
@@ -38,13 +39,15 @@ namespace {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template<class Particles>
-void write_snapshot(io::RunWriter& run,
+void write_snapshot(io::ParallelRunWriter& run,
                     const Particles& particles,
                     std::uint64_t step,
                     double time) {
   const auto count = particles.num_owned();
+  const std::vector<ParticleType> kinds(count, ParticleType::fluid);
   auto frame = run.begin_frame(step, time);
   frame.write("id", particles.ids().first(count));
+  frame.write("kind", kinds);
   frame.write("r", r[particles].first(count));
   frame.write("v", v[particles].first(count));
   frame.write("rho", rho[particles].first(count));
@@ -55,10 +58,6 @@ void write_snapshot(io::RunWriter& run,
 
 template<class Real>
 auto sph_main(const dist::Communicator& communicator) -> int {
-  TIT_ENSURE(communicator.size() == 1,
-             "Distributed particle initialization and output are not yet "
-             "available.");
-
   constexpr Real H = 0.6;   // Water column height.
   constexpr Real L = 2 * H; // Water column length.
 
@@ -101,6 +100,11 @@ auto sph_main(const dist::Communicator& communicator) -> int {
   const geom::MakeFastWinding<Real> make_winding;
   const auto containment = make_winding(domain2);
 
+  const SixthOrderWendlandKernel kernel{};
+  const SlabParticleTopology topology{communicator,
+                                      Real{0},
+                                      POOL_WIDTH,
+                                      kernel.radius(h_0)};
   const Simulation simulation{
       FluidEquations{
           // Constants.
@@ -112,10 +116,11 @@ auto sph_main(const dist::Communicator& communicator) -> int {
           // Weakly compressible equation of state.
           TaitEquationOfState{cs_0, rho_0},
           // C4 Wendland's spline kernel.
-          SixthOrderWendlandKernel{},
+          kernel,
       },
       SSPRKIntegrator{SSPRKOrder::three},
       communicator,
+      topology,
   };
 
   // Setup the particles array:
@@ -131,12 +136,20 @@ auto sph_main(const dist::Communicator& communicator) -> int {
   // Generate individual particles.
   for (auto i = 0; i < WATER_M; ++i) {
     for (auto j = 0; j < WATER_N; ++j) {
-      auto a = particles.append(ParticleType::fluid);
-      r[a] = dr * Vec{i + Real{1.0}, j + Real{1.0}};
+      const auto position = dr * Vec{i + Real{1.0}, j + Real{1.0}};
+      if (topology.owner(position) != communicator.rank()) continue;
+      const auto id = ParticleID{static_cast<std::uint64_t>(i) *
+                                     static_cast<std::uint64_t>(WATER_N) +
+                                 static_cast<std::uint64_t>(j)};
+      auto a = particles.append(ParticleType::fluid, id);
+      r[a] = position;
     }
   }
+  const auto first_fixed_id =
+      static_cast<std::uint64_t>(WATER_M) * static_cast<std::uint64_t>(WATER_N);
   for (std::size_t i = 0; i < domain.num_verts(); ++i) {
-    auto a = particles.append(ParticleType::fixed);
+    auto a =
+        particles.append(ParticleType::fixed, ParticleID{first_fixed_id + i});
     r[a] = domain.vert(i);
   }
 
@@ -181,7 +194,9 @@ auto sph_main(const dist::Communicator& communicator) -> int {
   simulation.initialize(mesh, particles);
 
   // Publish immutable snapshots directly from the owned SoA spans.
-  io::RunWriter run{"./particles.tit-run", io::RunMetadata{"dam-breaking", 2}};
+  io::ParallelRunWriter run{"./particles.tit-run",
+                            io::RunMetadata{"dam-breaking", 2},
+                            communicator};
   write_snapshot(run, particles, 0, 0.0);
 
   // Run the simulation.
@@ -190,11 +205,13 @@ auto sph_main(const dist::Communicator& communicator) -> int {
   Stopwatch print_time{};
   for (std::size_t step = 1;; ++step) {
     const auto scaled_time = time * sqrt(g / H);
-    log("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
-        step,
-        scaled_time,
-        exec_time.cycle(),
-        print_time.cycle());
+    if (communicator.rank() == 0) {
+      log("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
+          step,
+          scaled_time,
+          exec_time.cycle(),
+          print_time.cycle());
+    }
 
     Real dt{};
     {

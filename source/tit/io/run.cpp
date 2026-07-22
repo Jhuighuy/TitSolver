@@ -264,15 +264,27 @@ public:
                const std::vector<FieldDescriptor>& fields) {
     TIT_ENSURE(frame_active_, "No frame is active.");
     TIT_ENSURE(!fields.empty(), "Cannot publish an empty frame.");
-    const auto has_id = std::ranges::any_of(fields, [](const auto& field) {
-      return field.name() == "id";
-    });
-    const auto has_position =
-        std::ranges::any_of(fields, [](const auto& field) {
-          return field.name() == "r";
-        });
-    TIT_ENSURE(has_id && has_position,
-               "A particle frame must contain 'id' and 'r' fields.");
+    const auto find_field = [&](std::string_view name) {
+      return std::ranges::find(fields, name, &FieldDescriptor::name);
+    };
+    const auto id = find_field("id");
+    const auto kind = find_field("kind");
+    const auto position = find_field("r");
+    TIT_ENSURE(id != fields.end() && kind != fields.end() &&
+                   position != fields.end(),
+               "A particle frame must contain 'id', 'kind', and 'r' fields.");
+    TIT_ENSURE(id->type() == type_of<std::uint64_t>,
+               "Particle field 'id' must have type uint64_t.");
+    TIT_ENSURE(kind->type() == type_of<std::uint8_t>,
+               "Particle field 'kind' must have type uint8_t.");
+    const auto position_type = position->type();
+    TIT_ENSURE(position_type.rank() == Rank::vector &&
+                   position_type.dim() == metadata_.dimension() &&
+                   (position_type.kind().id() == Kind::ID::float32 ||
+                    position_type.kind().id() == Kind::ID::float64),
+               "Particle field 'r' must be a floating-point vector with run "
+               "dimension {}.",
+               metadata_.dimension());
 
     if (schema_.empty()) {
       schema_ = fields;

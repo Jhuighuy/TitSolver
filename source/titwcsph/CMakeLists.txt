@@ -11,7 +11,7 @@ add_tit_executable(
   DEPENDS
     tit::core
     tit::dist
-    tit::io
+    tit::io_mpi
     tit::sph
   DESTINATION
     "bin"
