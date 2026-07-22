@@ -49,7 +49,9 @@ add_tit_executable(
   NAME
     sph_tests
   SOURCES
+    "fluid_equations.test.cpp"
     "kernel.test.cpp"
+    "particle_array.test.cpp"
   DEPENDS
     tit::sph
     tit::testing
