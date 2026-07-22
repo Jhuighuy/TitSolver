@@ -28,11 +28,11 @@ TEST_CASE("sph::ParticleMesh builds active target rows with ghost neighbors") {
 
   auto a = particles.append(ParticleType::fluid, ParticleID{1});
   r[a] = {0.0, 0.0};
-  auto b = particles.append(ParticleType::fluid, ParticleID{2});
+  auto b = particles.append(ParticleType::fluid, ParticleID{4});
   r[b] = {0.75, 0.0};
   auto fixed = particles.append(ParticleType::fixed, ParticleID{3});
   r[fixed] = {10.0, 0.0};
-  auto ghost = particles.append_ghost(ParticleID{4});
+  auto ghost = particles.append_ghost(ParticleID{2});
   r[ghost] = {0.25, 0.0};
 
   const geom::Surface<Vec<double, 2>> domain{};
@@ -45,7 +45,7 @@ TEST_CASE("sph::ParticleMesh builds active target rows with ghost neighbors") {
            std::ranges::to<std::vector>();
   };
   CHECK_RANGE_EQ(neighbor_ids(mesh[a]), {ParticleID{2}, ParticleID{4}});
-  CHECK_RANGE_EQ(neighbor_ids(mesh[b]), {ParticleID{1}, ParticleID{4}});
+  CHECK_RANGE_EQ(neighbor_ids(mesh[b]), {ParticleID{1}, ParticleID{2}});
   CHECK_RANGE_EMPTY(mesh[fixed]);
 }
 

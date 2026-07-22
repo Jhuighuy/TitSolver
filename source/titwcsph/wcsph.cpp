@@ -254,10 +254,14 @@ auto sph_main(const dist::Communicator& communicator,
   const auto containment = make_winding(domain2);
 
   const SixthOrderWendlandKernel kernel{};
+  // Wall state is reconstructed from fluid over one kernel radius and then
+  // consumed by owned fluid over another. The communication stencil must
+  // cover that composed two-hop dependency.
+  const auto halo_width = 2 * kernel.radius(h_0);
   const SlabParticleTopology topology{communicator,
                                       Real{0},
                                       POOL_WIDTH,
-                                      kernel.radius(h_0)};
+                                      halo_width};
   Simulation simulation{
       FluidEquations{
           // Constants.

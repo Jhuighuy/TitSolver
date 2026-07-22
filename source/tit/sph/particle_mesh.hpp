@@ -97,7 +97,7 @@ private:
     adjacency_.resize(std::ranges::size(particles.active()));
     par::for_each(
         particles.active(),
-        [&radius_func, &search_index, this](PV a) {
+        [&particles, &radius_func, &search_index, this](PV a) {
           const auto& search_point = r[a];
           const auto search_radius = radius_func(a);
           TIT_ASSERT(search_radius > 0.0, "Search radius must be positive.");
@@ -107,7 +107,13 @@ private:
           search_index.search(geom::BSphere{search_point, search_radius},
                               std::back_inserter(search_results));
           std::erase(search_results, a.index());
-          std::ranges::sort(search_results);
+          // Stable IDs make accumulation order independent of the local
+          // owned/fixed/ghost storage layout and therefore of the rank count.
+          std::ranges::sort(search_results,
+                            {},
+                            [&particles](std::size_t index) {
+                              return particles[index].id();
+                            });
         });
 
     // Search for adjacent boundary faces for the same target set.
