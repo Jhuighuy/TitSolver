@@ -180,13 +180,18 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute gamma and its gradient.
+  ///
+  /// Only the owned particles are processed: the ghost values are never
+  /// read (the pair interactions divide by the gamma of the particle they
+  /// update, and the ghost updates are discarded), and the boundary faces
+  /// adjacent to a ghost particle may refer to vertices beyond the halo.
   template<particle_mesh ParticleMesh,
            particle_array<required_fields> ParticleArray>
   void compute_gamma(ParticleMesh& mesh, ParticleArray& particles) const {
     TIT_PROFILE_SECTION("FluidEquations::compute_gamma_gradient()");
     using PV = ParticleView<ParticleArray>;
 
-    par::for_each(particles.all(), [&mesh, this](PV a) {
+    par::for_each(particles.owned(), [&mesh, this](PV a) {
       // Compute gamma gradient.
       grad_gamma[a] = {};
       for (const auto& [s_face, _] : mesh[domain_, a]) {
@@ -355,8 +360,11 @@ public:
     using PV = ParticleView<ParticleArray>;
 
     // Compute normal vector, normalization matrix, and gradients for each
-    // advected field.
-    par::for_each(particles.all(), [&mesh, this](PV a) {
+    // advected field. Owned particles only: the ghost normal vectors are
+    // refreshed from their owners below, the remaining quantities of the
+    // ghost particles are never read, and the boundary faces adjacent to a
+    // ghost particle may refer to vertices beyond the halo.
+    par::for_each(particles.owned(), [&mesh, this](PV a) {
       N[a] = {};
       L[a] = {};
       grad_v[a] = {};
@@ -385,7 +393,7 @@ public:
       grad_rho[a] += V_b / gamma[a] * rho[b, a] * grad_W_ab;
       grad_rho[b] -= V_a / gamma[b] * rho[a, b] * grad_W_ab;
     });
-    par::for_each(particles.all(), [](PV a) {
+    par::for_each(particles.owned(), [](PV a) {
       dr[a] = N[a];
       if (const auto fact = lu(transpose(L[a]))) {
         L[a] = fact->inverse();
