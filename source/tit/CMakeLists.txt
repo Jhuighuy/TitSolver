@@ -5,6 +5,7 @@
 
 add_subdirectory("core")
 add_subdirectory("data")
+add_subdirectory("dist")
 add_subdirectory("geom")
 add_subdirectory("mpi")
 add_subdirectory("par")

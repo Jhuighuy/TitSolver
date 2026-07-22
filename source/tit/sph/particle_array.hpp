@@ -182,7 +182,7 @@ public:
              data::SeriesView<data::Storage> series) const {
     auto frame = series.create_frame(static_cast<float64_t>(time));
     ParticleArray::varying_fields.for_each([&frame, this](auto field) {
-      if constexpr (!std::same_as<decltype(field), gid_t>) {
+      if constexpr (!infra_fields.contains(decltype(field){})) {
         const auto array = frame.create_array(field.field_name);
         array.write(field[*this].first(num_owned()));
       }
@@ -235,6 +235,58 @@ public:
     auto& [... cols] = varying_data_;
     ((cols.resize(num_owned())), ...);
     std::ranges::fill(ranges_ | std::views::drop(num_types_ + 1), num_owned());
+  }
+
+  /// Remove the owned particles at the specified indices.
+  ///
+  /// @param indices Sorted unique indices of the owned particles to remove.
+  constexpr void erase_owned(std::span<const std::size_t> indices) {
+    if (indices.empty()) return;
+    TIT_ASSERT(std::ranges::is_sorted(indices), "Indices must be sorted.");
+    TIT_ASSERT(indices.back() < num_owned(),
+               "Only the owned particles can be erased.");
+
+    // Compact each column by moving the surviving rows over the erased ones.
+    auto& [... cols] = varying_data_;
+    const auto erase_col = [indices](auto& col) {
+      auto out = col.begin() + static_cast<std::ptrdiff_t>(indices.front());
+      for (const auto [cursor, index] : std::views::enumerate(indices)) {
+        const auto next =
+            static_cast<std::size_t>(cursor) + 1 < indices.size() ?
+                indices[static_cast<std::size_t>(cursor) + 1] :
+                col.size();
+        out = std::move(col.begin() + static_cast<std::ptrdiff_t>(index) + 1,
+                        col.begin() + static_cast<std::ptrdiff_t>(next),
+                        out);
+      }
+      col.erase(out, col.end());
+    };
+    ((erase_col(cols)), ...);
+
+    // Adjust the segment boundaries.
+    for (auto& range : ranges_ | std::views::drop(1)) {
+      range -= static_cast<std::size_t>(
+          std::ranges::lower_bound(indices, range) - indices.begin());
+    }
+  }
+
+  /// Reorder the owned particles.
+  ///
+  /// @param perm Permutation of the owned particles: the particle that ends
+  ///             up at position `i` is the one currently at `perm[i]`. The
+  ///             permutation must map each segment onto itself.
+  constexpr void reorder_owned(std::span<const std::size_t> perm) {
+    TIT_ASSERT(perm.size() == num_owned(),
+               "Permutation size must match the number of owned particles.");
+    auto& [... cols] = varying_data_;
+    const auto reorder_col = [perm]<class Val>(std::vector<Val>& col) {
+      std::vector<Val> reordered(perm.size());
+      for (const auto [index, old_index] : std::views::enumerate(perm)) {
+        reordered[static_cast<std::size_t>(index)] = std::move(col[old_index]);
+      }
+      std::ranges::move(reordered, col.begin());
+    };
+    ((reorder_col(cols)), ...);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -445,7 +497,7 @@ ParticleArray(Space, Equations) -> ParticleArray<
     Space,
     decltype(Equations::required_fields - Equations::modified_fields),
     decltype((Equations::required_fields & Equations::modified_fields) |
-             TypeSet{gid})>;
+             infra_fields)>;
 
 /// Particle array type.
 ///

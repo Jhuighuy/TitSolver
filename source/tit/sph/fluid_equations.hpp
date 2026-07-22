@@ -19,6 +19,7 @@
 #include "tit/core/vec.hpp"
 #include "tit/par/algorithms.hpp"
 #include "tit/sph/equation_of_state.hpp"
+#include "tit/sph/exchange.hpp"
 #include "tit/sph/field.hpp"
 #include "tit/sph/kernel.hpp"
 #include "tit/sph/particle_array.hpp"
@@ -75,8 +76,11 @@ public:
 
   /// Initialize equation-owned particle fields.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  void initialize(ParticleMesh& mesh, ParticleArray& particles) const {
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
+  void initialize(ParticleMesh& mesh,
+                  ParticleArray& particles,
+                  Exchange& x = serial_exchange) const {
     TIT_PROFILE_SECTION("FluidEquations::initialize()");
     using PV = ParticleView<ParticleArray>;
 
@@ -86,6 +90,7 @@ public:
 
     // Fixed particles have mass fractions.
     par::for_each(particles.fixed(), [](PV a) { m[a] *= gamma[a]; });
+    x.refresh(particles, TypeSet{m});
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,13 +100,22 @@ public:
 
   /// Refresh mesh and boundary state before evaluating equations.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  void prepare(ParticleMesh& mesh, ParticleArray& particles) const {
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
+  void prepare(ParticleMesh& mesh,
+               ParticleArray& particles,
+               Exchange& x = serial_exchange) const {
     TIT_PROFILE_SECTION("FluidEquations::prepare()");
+
+    // The preceding phases have advanced the state of the owned particles.
+    x.refresh(particles, TypeSet{r, v, rho});
 
     index(mesh, particles);
     compute_gamma(mesh, particles);
+
+    // Boundary extrapolation updates the density of the owned wall particles.
     setup_boundary(mesh, particles);
+    x.refresh(particles, TypeSet{rho});
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -195,12 +209,14 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Compute the maximum allowed time step.
-  template<particle_array<required_fields> ParticleArray>
-  auto compute_time_step(ParticleArray& particles) const -> Num {
+  template<particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
+  auto compute_time_step(ParticleArray& particles,
+                         Exchange& x = serial_exchange) const -> Num {
     TIT_PROFILE_SECTION("FluidEquations::compute_time_step()");
     using PV = ParticleView<ParticleArray>;
 
-    return par::fold(
+    return x.all_reduce_min(par::fold(
         particles.fluid(),
         std::numeric_limits<Num>::max(),
         [this](Num dt, PV a) {
@@ -218,7 +234,7 @@ public:
 
           return std::min({dt, dt_acoustic, dt_visc, dt_force});
         },
-        [](Num dt_a, Num dt_b) { return std::min(dt_a, dt_b); });
+        [](Num dt_a, Num dt_b) { return std::min(dt_a, dt_b); }));
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -311,13 +327,16 @@ public:
 
   /// Run post-integration mesh refresh and correction steps.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  void post_integrate(ParticleMesh& mesh, ParticleArray& particles) const {
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
+  void post_integrate(ParticleMesh& mesh,
+                      ParticleArray& particles,
+                      Exchange& x = serial_exchange) const {
     TIT_PROFILE_SECTION("FluidEquations::post_integrate()");
 
-    prepare(mesh, particles);
-    apply_shifts(mesh, particles);
-    apply_free_surface_correction(mesh, particles);
+    prepare(mesh, particles, x);
+    apply_shifts(mesh, particles, x);
+    apply_free_surface_correction(mesh, particles, x);
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -327,8 +346,11 @@ public:
   /// This is a post-integration step, thus it requires updated mesh and
   /// boundary extrapolation.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
-  void apply_shifts(ParticleMesh& mesh, ParticleArray& particles) const {
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
+  void apply_shifts(ParticleMesh& mesh,
+                    ParticleArray& particles,
+                    Exchange& x = serial_exchange) const {
     TIT_PROFILE_SECTION("FluidEquations::apply_shifts()");
     using PV = ParticleView<ParticleArray>;
 
@@ -376,6 +398,11 @@ public:
       N[a] = normalize(N[a]);
     });
 
+    // Ghost normal vectors are incomplete: the pair sums above cover only
+    // the locally present neighbors. The visibility test below reads the
+    // neighbor normals, so pull the complete values from the owners.
+    x.refresh(particles, TypeSet{N});
+
     // Initialize the free surface flag indicators.
     // - `phi_max = 1` means that the particle is far from the free surface.
     // - Any value in the range `(phi_min, phi_max)` means that the particle is
@@ -386,6 +413,7 @@ public:
     //   comparisons.
     par::for_each(particles.fixed(), [](PV a) { phi[a] = phi_max_; });
     par::for_each(particles.fluid(), [](PV a) { phi[a] = phi_min_; });
+    x.refresh(particles, TypeSet{phi});
 
     // Classify the particles into free surface and non-free surface.
     //
@@ -424,6 +452,10 @@ public:
           particle_dim_v<PV> == 2 ? 8 : 26;
       if (std::ranges::size(mesh[a]) <= neighbor_cutoff) phi[a] = phi_min_;
     });
+
+    // The classification below reads the neighbor indicators, so pull the
+    // classified values onto the ghost particles.
+    x.refresh(particles, TypeSet{phi});
 
     // Classify the non-free surface particles into near and far categories.
     //
@@ -480,11 +512,16 @@ public:
   /// correction is applied only to unshifted particles whose kernel deficit is
   /// not already explained by gamma.
   template<particle_mesh ParticleMesh,
-           particle_array<required_fields> ParticleArray>
+           particle_array<required_fields> ParticleArray,
+           exchange_for<ParticleArray> Exchange = const SerialExchange>
   void apply_free_surface_correction(ParticleMesh& mesh,
-                                     ParticleArray& particles) const {
+                                     ParticleArray& particles,
+                                     Exchange& x = serial_exchange) const {
     TIT_PROFILE_SECTION("FluidEquations::apply_free_surface_correction()");
     using PV = ParticleView<ParticleArray>;
+
+    // The shifts have moved the owned particles and corrected their density.
+    x.refresh(particles, TypeSet{r, rho});
 
     par::for_each(particles.all(), [](PV a) { rho_raw[a] = rho[a]; });
 

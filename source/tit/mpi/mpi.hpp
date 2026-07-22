@@ -209,6 +209,38 @@ public:
     return result;
   }
 
+  /// Gather byte buffers of varying sizes from all the processes on all the
+  /// processes.
+  ///
+  /// @returns Concatenation of the buffers in the process rank order,
+  ///          together with the per-process buffer sizes.
+  auto all_gather_v(std::span<const std::byte> bytes) const
+      -> std::pair<std::vector<std::byte>, std::vector<std::size_t>> {
+    std::pair<std::vector<std::byte>, std::vector<std::size_t>> result{};
+    auto& [recv_bytes, recv_counts] = result;
+    recv_counts = all_gather(bytes.size());
+    std::vector<int> counts{};
+    std::vector<int> displs{};
+    counts.reserve(recv_counts.size());
+    displs.reserve(recv_counts.size());
+    std::size_t offset = 0;
+    for (const auto count : recv_counts) {
+      counts.push_back(to_int_(count));
+      displs.push_back(to_int_(offset));
+      offset += count;
+    }
+    recv_bytes.resize(offset);
+    TIT_MPI_CALL(MPI_Allgatherv(bytes.data(),
+                                to_int_(bytes.size()),
+                                MPI_BYTE,
+                                recv_bytes.data(),
+                                counts.data(),
+                                displs.data(),
+                                MPI_BYTE,
+                                comm_));
+    return result;
+  }
+
   /// Exchange a single count with every process.
   ///
   /// @param send_counts Per-process values to send, size of the communicator.

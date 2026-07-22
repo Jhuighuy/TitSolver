@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <cstddef>
+#include <optional>
 
 #include "tit/core/float.hpp"
 #include "tit/core/logging.hpp"
@@ -11,6 +12,8 @@
 #include "tit/core/time.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/data/storage.hpp"
+#include "tit/dist/exchange.hpp"
+#include "tit/dist/storage.hpp"
 #include "tit/geom/face_search.hpp"
 #include "tit/geom/partition.hpp"
 #include "tit/geom/search.hpp"
@@ -18,6 +21,7 @@
 #include "tit/geom/tessellation.hpp"
 #include "tit/geom/winding.hpp"
 #include "tit/geom/winding/fast_winding.hpp"
+#include "tit/mpi/mpi.hpp"
 #include "tit/par/control.hpp"
 #include "tit/sph/equation_of_state.hpp"
 #include "tit/sph/field.hpp"
@@ -76,6 +80,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   const geom::MakeFastWinding<Real> make_winding;
   const auto containment = make_winding(domain2);
 
+  const SixthOrderWendlandKernel kernel{};
   const FluidEquations equations{
       // Constants.
       g,
@@ -86,7 +91,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       // Weakly compressible equation of state.
       TaitEquationOfState{cs_0, rho_0},
       // C4 Wendland's spline kernel.
-      SixthOrderWendlandKernel{},
+      kernel,
   };
 
   // Setup the time integrator.
@@ -110,6 +115,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   for (std::size_t i = 0; i < domain.num_verts(); ++i) {
     auto a = particles.append(ParticleType::fixed);
     r[a] = domain.vert(i);
+    vid[a] = i;
   }
 
   // Set global particle constants.
@@ -141,6 +147,12 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
     rho[a] = rho_0 + p_a / pow2(cs_0);
   }
 
+  // Distribute the particles across the processes. The halo covers the
+  // particle interaction radius plus a skin margin that absorbs the particle
+  // motion within a single time step.
+  dist::ParticleExchange exchange{/*halo_radius=*/kernel.radius(h_0) + h_0};
+  exchange.distribute(particles);
+
   // Setup the particle mesh structure.
   ParticleMesh mesh{
       // Search for the particles using the grid search.
@@ -154,14 +166,18 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   };
 
   // Initialize the particles.
-  equations.initialize(mesh, particles);
+  equations.initialize(mesh, particles, exchange);
 
-  // Create a data storage to store the particles. We'll store only one last
-  // run result, all the previous runs will be discarded.
-  data::Storage storage{"./particles.ttdb"};
-  storage.set_max_series(1);
-  const auto series = storage.create_series();
-  particles.write(0.0, series);
+  // Create a data storage to store the particles on the main process. We'll
+  // store only one last run result, all the previous runs will be discarded.
+  std::optional<data::Storage> storage{};
+  std::optional<data::SeriesView<data::Storage>> series{};
+  if (mpi::world.is_main()) {
+    storage.emplace("./particles.ttdb");
+    storage->set_max_series(1);
+    series.emplace(storage->create_series());
+  }
+  dist::write_frame(particles, 0.0, series);
 
   // Run the simulation.
   Real time{};
@@ -169,23 +185,25 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
   Stopwatch print_time{};
   for (std::size_t step = 1;; ++step) {
     const auto scaled_time = time * sqrt(g / H);
-    log("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
-        step,
-        scaled_time,
-        exec_time.cycle(),
-        print_time.cycle());
+    if (mpi::world.is_main()) {
+      log("{:>15}\t\t{:>10.5f}\t\t{:>10.5f}\t\t{:>10.5f}",
+          step,
+          scaled_time,
+          exec_time.cycle(),
+          print_time.cycle());
+    }
 
     Real dt{};
     {
       const StopwatchCycle cycle{exec_time};
-      dt = time_integrator.step(mesh, particles);
+      dt = time_integrator.step(mesh, particles, exchange);
     }
 
     const auto end_time = 10.0;
     const auto end = scaled_time >= end_time;
     if ((step % 100 == 0) || end) {
       const StopwatchCycle cycle{print_time};
-      particles.write(scaled_time, series);
+      dist::write_frame(particles, scaled_time, series);
     }
 
     if (end) break;
@@ -201,6 +219,7 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
 } // namespace tit::sph::wcsph
 
 TIT_IMPLEMENT_MAIN([](int argc, char** argv) {
+  const mpi::Runtime mpi_runtime{argc, argv};
   par::init();
   sph::wcsph::sph_main<tit::float64_t>(argc, argv);
 });

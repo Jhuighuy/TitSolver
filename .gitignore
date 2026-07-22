@@ -67,6 +67,10 @@ dist/
 native/
 node_modules/
 
+# `dist/` above is a web build artifact directory; the C++ library named
+# `dist` is real source.
+!source/tit/dist/
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Test files.
