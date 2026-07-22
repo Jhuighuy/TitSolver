@@ -1,19 +1,62 @@
 # Distributed Solver Migration
 
-Status: design proposal
+Status: distributed milestone implemented; measured scaling optimizations remain
 
 Scope: WCSPH solver, particle infrastructure, parallel runtime, result storage,
 GUI readers, and tests
 
+## 0. Implementation Snapshot
+
+The first production migration described by this document is implemented in
+this codebase. The solver now has one hybrid MPI + TBB execution path for one
+or many ranks; it no longer writes SQLite results. The implemented vertical
+slices are:
+
+- `tit::dist` owns `MPI_THREAD_FUNNELED` initialization, communicators, typed
+  reductions, variable-size exchange, exclusive scans, and communicator-wide
+  fatal termination.
+- Particle storage has stable 64-bit IDs and explicit owned, fixed, and
+  read-only ghost ranges. Migration serializes every particle-local field and
+  invalidates transient ghost/index state.
+- `ParticleMesh` stores rows only for active local targets. Equation kernels
+  use target-centric gather and never initiate MPI communication.
+- `Simulation` makes SSPRK halo refreshes, the global minimum timestep,
+  free-surface field exchanges, shifting, correction, and accepted-state
+  migration visible in phase order.
+- WCSPH uses adaptive one-dimensional slab cuts built from a distributed
+  histogram. This matches the current two-dimensional dam-break workload while
+  preserving empty-rank behavior and avoiding a global coordinate gather.
+- Snapshots and checkpoints are immutable, collectively written HDF5 files in
+  a versioned `.tit-run` directory. Restart collectively reads balanced row
+  slices and supports a different rank count.
+- The GUI consumes the logical run-reader API, preserves 64-bit IDs exactly,
+  and refreshes only committed frames. `run.xdmf` provides a regenerable
+  ParaView view.
+- `titconvert` is the only supported SQLite transition path. It performs a
+  one-way, streaming `.ttdb` to `.tit-run` conversion; SQLite is not linked
+  into the solver, distributed I/O, or GUI.
+- MPI system tests cover two and four ranks, empty subdomains, migration,
+  concentrated-state rebalancing, collective output, restart on a different
+  rank count, and communicator abort on a root-only failure. A semantic gate
+  canonicalizes frames by stable ID and compares one-, two-, and four-rank
+  physical fields at `1e-9` relative and `1e-11` absolute tolerance.
+
+The remaining items in Phase 5 are evidence-driven optimizations, not alternate
+solver paths: field-specific exchange bundles, nonblocking interior/halo
+overlap, reusable exchange/search plans, unique-pair reverse accumulation,
+multidimensional space-filling-curve partitioning, I/O tuning, and multi-node
+scaling jobs. They should be selected from profiles on representative hardware
+and must retain the existing rank-count correctness suite.
+
 ## 1. Summary
 
-BlueTit should become a hybrid distributed solver: MPI distributes spatial
+BlueTit is now a hybrid distributed solver: MPI distributes spatial
 subdomains between processes, while TBB continues to parallelize work inside
 each process. This is an architectural migration rather than a mechanical
 replacement of TBB calls with MPI calls.
 
-The migration is expected to rewrite a substantial part of the current solver.
-That is acceptable. The mathematical SPH kernels, field types, geometry
+The migration rewrote a substantial part of the previous solver. The
+mathematical SPH kernels, field types, geometry
 algorithms, and useful TBB primitives should be retained, but particle
 ownership, neighbor indexing, equation orchestration, time integration, output,
 and testing need distributed-memory semantics designed into them.
@@ -34,7 +77,7 @@ The target design has the following properties:
 
 ## 2. Why the Current Design Cannot Just Be Extended
 
-The current `ParticleMesh` builds adjacency over a single complete
+The previous `ParticleMesh` built adjacency over a single complete
 `ParticleArray`. It partitions graph edges according to `par::num_threads()` so
 that TBB can update both ends of an SPH pair without races. This partitioning is
 a shared-memory scheduling mechanism, not distributed spatial ownership.
@@ -62,7 +105,7 @@ Preserving these interfaces would move distributed complexity into every
 caller. The cleaner approach is to replace them with explicit distributed
 concepts.
 
-The main current implementation touchpoints are:
+The main implementation touchpoints are:
 
 - [`source/tit/sph/particle_array.hpp`](source/tit/sph/particle_array.hpp) for
   field storage and type ranges.
@@ -72,13 +115,15 @@ The main current implementation touchpoints are:
   neighbor-dependent equation and correction phases.
 - [`source/tit/sph/time_integrator.hpp`](source/tit/sph/time_integrator.hpp) for
   stage ordering and old-state assumptions.
-- [`source/tit/data/storage.cpp`](source/tit/data/storage.cpp) and
-  [`source/tit/data/hdf5.cpp`](source/tit/data/hdf5.cpp) for SQLite BLOB storage
-  and serial HDF5 export.
-- [`source/titgui/bindings/storage.cpp`](source/titgui/bindings/storage.cpp) for
-  the GUI's physical-storage coupling.
+- [`source/tit/io/run.cpp`](source/tit/io/run.cpp) and
+  [`source/tit/io/parallel_run.cpp`](source/tit/io/parallel_run.cpp) for the
+  logical run format and collective HDF5 backend.
+- [`source/tit/data/legacy_ttdb.cpp`](source/tit/data/legacy_ttdb.cpp) for the
+  read-only SQLite conversion window.
+- [`source/titgui/bindings/run.cpp`](source/titgui/bindings/run.cpp) for the
+  GUI's logical run-reader binding.
 - [`tests/titwcsph/test.cmake`](tests/titwcsph/test.cmake) for the current
-  whole-file output checksum.
+  rank-aware lifecycle and semantic result gates.
 
 ## 3. Architectural Principles
 
@@ -564,7 +609,7 @@ runs should not write both formats indefinitely.
 
 ## 11. Build and Test Integration
 
-Add an MPI build option and link through CMake's `MPI::MPI_CXX` target. MPI
+The build links through CMake's `MPI::MPI_CXX` target. MPI
 implementation provisioning belongs to development and CI setup; MPI headers
 should not leak into unrelated targets. Parallel HDF5 must be configured against
 the same MPI implementation. Keep HDF5/MPI property-list operations behind a
@@ -572,9 +617,9 @@ narrow backend wrapper; if HighFive cannot express a required collective I/O
 operation reliably, use the HDF5 C API inside that wrapper rather than leaking
 backend limitations into solver code.
 
-Extend the existing test registration with an `add_tit_mpi_test` helper that
-invokes `${MPIEXEC_EXECUTABLE}` through the normal test driver and records the
-requested CTest `PROCESSORS`. All builds and tests continue to run through
+The existing `add_tit_test` registration accepts `MPI_RANKS`, invokes
+`${MPIEXEC_EXECUTABLE}` through the normal test driver, and records the requested
+CTest `PROCESSORS`. All builds and tests continue to run through
 `./build/build.sh`.
 
 The distributed test matrix should include:
@@ -605,6 +650,10 @@ complete solver implementations for a long period.
 
 ### Phase 0: Establish the reference
 
+Implementation status: complete for the distributed milestone. Focused
+equation, particle, mesh, storage, and end-to-end semantic tests replace the old
+whole-file checksum as the active baseline.
+
 - Record physical invariants and canonical field snapshots for representative
   small cases.
 - Add focused tests around continuity, momentum, shifting, and boundary
@@ -617,6 +666,10 @@ detect regressions after its data structures change.
 
 ### Phase 1: Rewrite local particle and neighbor infrastructure
 
+Implementation status: complete for the distributed milestone. Explicit
+ownership and layout are implemented; narrower per-phase field bundles remain
+a Phase 5 communication optimization.
+
 - Introduce stable IDs and explicit owned/ghost/boundary blocks.
 - Decouple field storage policy from equation requirement traits.
 - Replace full symmetric adjacency with target neighbor rows.
@@ -627,6 +680,10 @@ Acceptance: one-rank results match the Phase 0 baseline within agreed tolerances
 with no MPI communication required for the numerical unit tests.
 
 ### Phase 2: Replace storage and GUI bindings
+
+Implementation status: complete. New writes use `.tit-run`; XDMF is generated
+from committed metadata; the GUI uses logical readers; `titconvert` provides
+the one-way compatibility path.
 
 - Add the run reader/writer abstractions and serial HDF5 backend using the new
   schema.
@@ -640,8 +697,11 @@ Acceptance: one-rank runs, restart, GUI visualization, and export work without a
 
 ### Phase 3: Add the distributed runtime
 
-- Add `tit::dist`, MPI lifecycle, collectives, Cartesian topology, and MPI test
-  support.
+Implementation status: complete with funneled MPI and rank-consistent fatal
+termination.
+
+- Add `tit::dist`, MPI lifecycle, collectives, spatial slab topology, and MPI
+  test support.
 - Run the existing local storage/orchestration model under one MPI rank.
 - Add the global timestep reduction and rank-aware logging/profiling.
 
@@ -649,6 +709,9 @@ Acceptance: one-rank MPI results remain equivalent and distributed failures
 produce useful diagnostics instead of hanging.
 
 ### Phase 4: Static multi-rank solver
+
+Implementation status: complete. The initial static slab implementation was
+subsequently extended with distributed-histogram cut rebalancing.
 
 - Partition initial owned particles.
 - Exchange state halos and build local-plus-ghost search indices.
@@ -662,6 +725,11 @@ conservation, restart, and boundary-interface tests.
 
 ### Phase 5: Scale and optimize
 
+Implementation status: in progress by design. Particle-count histogram
+rebalancing is implemented. The remaining changes require representative
+single-node and multi-node profiles before choosing complexity that affects the
+validated phase graph.
+
 - Measure target-centric evaluation against unique-pair reverse accumulation.
 - Overlap interior computation with halo exchange.
 - Reuse halo/search plans while displacement bounds make that safe.
@@ -673,6 +741,11 @@ Acceptance: strong- and weak-scaling results identify expected limits, and every
 optimization retains the multi-rank correctness suite.
 
 ### Phase 6: Remove transitional code
+
+Implementation status: complete for production paths. The old GUI wrappers,
+solver SQLite output path, and monolithic SQLite-to-HDF5 exporter are gone. The
+legacy storage implementation remains linked only into `titconvert` and its
+tests for the documented migration window.
 
 - Remove the legacy SQLite writer and old GUI storage wrappers.
 - Remove obsolete edge partitioning if no non-distributed consumer needs it.
@@ -688,7 +761,7 @@ format, with no compatibility layer in numerical hot paths.
 The first useful distributed milestone is a two-rank dam-break simulation with:
 
 - Hybrid MPI plus TBB execution.
-- Static Cartesian decomposition.
+- Spatial slab decomposition with adaptive distributed-histogram cuts.
 - Read-only fluid halos and replicated boundary geometry.
 - A global timestep.
 - Target-centric continuity, momentum, shifting, and free-surface corrections.
@@ -703,3 +776,7 @@ This milestone deliberately favors explicit phases and correctness over maximum
 communication overlap. It establishes the architecture on which load balancing,
 pair reductions, asynchronous visualization, and large-cluster I/O can be added
 without rewriting the solver a second time.
+
+All items in this milestone are implemented. The automated suite exercises the
+same lifecycle on one, two, and four ranks, including restart from one rank to
+two ranks and strict semantic comparison across rank counts.
