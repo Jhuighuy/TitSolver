@@ -3,6 +3,8 @@
  * See /LICENSE.md for license information. SPDX-License-Identifier: MIT
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <array>
+#include <cstddef>
 #include <iterator>
 
 #include "tit/core/type.hpp"
@@ -121,6 +123,38 @@ TEST_CASE("sph::ParticleArray copy preserves values") {
   CHECK(r[copy_a] == Vec{1.0, 2.0});
   CHECK(v[copy_a] == Vec{3.0, 4.0});
   CHECK(rho[copy_a] == 5.0);
+}
+
+TEST_CASE("sph::ParticleArray packs migration and halo records") {
+  TestParticles source{Space<double, 2>{},
+                       ParticleLayout{TypeSet{h}, TestFields::modified_fields}};
+  const auto a = source.append(ParticleType::fluid, ParticleID{17});
+  m[a] = 2.0;
+  r[a] = {1.0, 2.0};
+  v[a] = {3.0, 4.0};
+  rho[a] = 5.0;
+
+  std::array<std::byte, TestParticles::packed_particle_size> buffer{};
+  source.pack(a.index(), buffer);
+
+  TestParticles destination{
+      Space<double, 2>{},
+      ParticleLayout{TypeSet{h}, TestFields::modified_fields}};
+  const auto ghost = destination.append_ghost_packed(buffer);
+  CHECK(ghost.id() == ParticleID{17});
+  CHECK(ghost.is_ghost());
+  CHECK(m[ghost] == 2.0);
+  CHECK(r[ghost] == Vec{1.0, 2.0});
+  CHECK(v[ghost] == Vec{3.0, 4.0});
+  CHECK(rho[ghost] == 5.0);
+
+  destination.clear_ghosts();
+  const auto owned = destination.append_packed(ParticleType::fluid, buffer);
+  CHECK(owned.id() == ParticleID{17});
+  CHECK(owned.is_owned());
+  destination.erase_owned(owned.index());
+  CHECK(destination.size() == 0);
+  CHECK_FALSE(destination.find(ParticleID{17}).has_value());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

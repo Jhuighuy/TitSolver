@@ -8,6 +8,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <limits>
 #include <optional>
@@ -201,6 +202,14 @@ public:
   /// Set of particle fields that are present.
   static constexpr field_set auto fields = uniform_fields | varying_fields;
 
+  /// Packed width of a stable ID followed by all per-particle field values.
+  static constexpr std::size_t packed_particle_size =
+      sizeof(ParticleID) + []<class... Fields>(TypeSet<Fields...> /*fields*/) {
+        static_assert((
+            std::is_trivially_copyable_v<field_value_t<Fields, Space>> && ...));
+        return (sizeof(field_value_t<Fields, Space>) + ... + std::size_t{0});
+      }(varying_fields);
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /// Construct a particle array.
@@ -281,6 +290,45 @@ public:
     particle_ids_.erase(particle_ids_.begin() + fixed_end, particle_ids_.end());
     auto& [... cols] = varying_data_;
     ((cols.erase(cols.begin() + fixed_end, cols.end())), ...);
+  }
+
+  /// Serialize one particle into the process-local MPI exchange format.
+  void pack(std::size_t index, std::span<std::byte> buffer) const {
+    TIT_ASSERT(index < size(), "Particle index is out of range.");
+    TIT_ENSURE(buffer.size() == packed_particle_size,
+               "Particle exchange buffer has an invalid size.");
+    std::size_t offset = 0;
+    pack_value_(buffer, offset, particle_ids_[index]);
+    const auto& [... cols] = varying_data_;
+    (pack_value_(buffer, offset, cols[index]), ...);
+    TIT_ASSERT(offset == buffer.size(), "Particle packing size mismatch.");
+  }
+
+  /// Append an owned or fixed particle from the MPI exchange format.
+  auto append_packed(ParticleType type, std::span<const std::byte> buffer)
+      -> ParticleView<ParticleArray> {
+    return append_packed_(type, false, buffer);
+  }
+
+  /// Append a read-only ghost from the MPI exchange format.
+  auto append_ghost_packed(std::span<const std::byte> buffer)
+      -> ParticleView<ParticleArray> {
+    return append_packed_(ParticleType::fluid, true, buffer);
+  }
+
+  /// Remove an owned mobile particle and invalidate views at or after it.
+  void erase_owned(std::size_t index) {
+    TIT_ENSURE(index < owned_end_, "Particle is not owned mobile state.");
+    id_to_index_.erase(particle_ids_[index]);
+    const auto offset = static_cast<std::ptrdiff_t>(index);
+    particle_ids_.erase(particle_ids_.begin() + offset);
+    auto& [... cols] = varying_data_;
+    ((cols.erase(cols.begin() + offset)), ...);
+    --owned_end_;
+    --fixed_end_;
+    for (std::size_t i = index; i < size(); ++i) {
+      id_to_index_.insert_or_assign(particle_ids_[i], i);
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -415,6 +463,48 @@ public:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 private:
+
+  template<class Value>
+  static void pack_value_(std::span<std::byte> buffer,
+                          std::size_t& offset,
+                          const Value& value) {
+    static_assert(std::is_trivially_copyable_v<Value>);
+    TIT_ASSERT(sizeof(Value) <= buffer.size() - offset,
+               "Particle exchange buffer overflow.");
+    std::memcpy(buffer.data() + offset, &value, sizeof(Value));
+    offset += sizeof(Value);
+  }
+
+  template<class Value>
+  static auto unpack_value_(std::span<const std::byte> buffer,
+                            std::size_t& offset) -> Value {
+    static_assert(std::is_trivially_copyable_v<Value>);
+    TIT_ASSERT(sizeof(Value) <= buffer.size() - offset,
+               "Particle exchange buffer overflow.");
+    Value value{};
+    std::memcpy(&value, buffer.data() + offset, sizeof(Value));
+    offset += sizeof(Value);
+    return value;
+  }
+
+  auto append_packed_(ParticleType type,
+                      bool ghost,
+                      std::span<const std::byte> buffer)
+      -> ParticleView<ParticleArray> {
+    TIT_ENSURE(buffer.size() == packed_particle_size,
+               "Particle exchange buffer has an invalid size.");
+    std::size_t offset = 0;
+    const auto id = unpack_value_<ParticleID>(buffer, offset);
+    auto particle = ghost ? append_ghost(id) : append(type, id);
+    auto& [... cols] = varying_data_;
+    ((cols[particle.index()] = unpack_value_<
+          typename std::remove_reference_t<decltype(cols)>::value_type>(
+          buffer,
+          offset)),
+     ...);
+    TIT_ASSERT(offset == buffer.size(), "Particle unpacking size mismatch.");
+    return particle;
+  }
 
   struct ParticleIDHash_ final {
     constexpr auto operator()(ParticleID id) const noexcept -> std::size_t {
