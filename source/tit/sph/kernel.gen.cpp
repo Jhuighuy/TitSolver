@@ -4,6 +4,7 @@
 \* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdlib>
 #include <exception>
@@ -12,6 +13,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <print>
 #include <ranges>
@@ -21,277 +23,47 @@
 #include <utility>
 #include <vector>
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcpp"
-#endif
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-literal-operator"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#endif
-#include <symengine/add.h>
-#include <symengine/basic-inl.h>
-#include <symengine/basic.h>
-#include <symengine/dict.h>
-#include <symengine/eval_double.h>
-#include <symengine/integer.h>
-#include <symengine/mul.h>
-#include <symengine/pow.h>
-#include <symengine/rational.h>
-#include <symengine/subs.h>
-#include <symengine/symbol.h>
-#include <symengine/symengine_casts.h>
-#include <symengine/symengine_rcp.h>
-#include <symengine/visitor.h>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
 #include "tit/core/exception.hpp"
+#include "tit/core/math.hpp"
+#include "tit/core/poly.hpp"
+#include "tit/core/rational.hpp"
 #include "tit/core/str.hpp"
 
 namespace tit::sph {
 namespace {
-
-namespace se = SymEngine;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // Symbolic math
 //
 
-/// Symbolic expression.
-class Expr final {
-public:
+/// Expression type.
+///
+/// Every expression the generator builds is a polynomial with rational
+/// coefficients over the variables below. The square roots `rho` and `beta`
+/// and the transcendental primitives `A`, `B` and `L` are carried as opaque
+/// variables: the runtime code evaluates them and substitutes them into the
+/// generated helpers.
+using Expr = Poly;
 
-  /// Construct from a raw SymEngine expression.
-  explicit(false) Expr(se::RCP<const se::Basic> basic)
-      : base_{std::move(basic)} {}
+const Expr q = Expr::var("q");         ///< Normalized radius.
+const Expr z = Expr::var("z");         ///< Along-edge coordinate.
+const Expr eta = Expr::var("eta");     ///< Wall distance.
+const Expr rho = Expr::var("rho");     ///< Radius, `rho^2 = z^2 + eta^2`.
+const Expr delta = Expr::var("delta"); ///< Edge offset.
+const Expr beta = Expr::var("beta");   ///< `beta^2 = eta^2 + delta^2`.
+const Expr A = Expr::var("A");         ///< `atan2` primitive.
+const Expr L = Expr::var("L");         ///< `log1p` primitive.
 
-  /// Construct an integer literal.
-  explicit(false) Expr(int value) : base_{se::integer(value)} {}
-
-  /// Underlying SymEngine expression.
-  auto base() const -> const se::RCP<const se::Basic>& {
-    return base_;
-  }
-
-  /// Expanded copy of this expression.
-  auto expand() const -> Expr {
-    return se::expand(base_);
-  }
-
-  /// Is this expression the integer zero?
-  auto is_zero() const -> bool {
-    return se::eq(*base_, *se::integer(0));
-  }
-
-  /// Numeric value of this expression.
-  auto as_double() const -> double {
-    return se::eval_double(*base_);
-  }
-
-  /// Does this expression contain the given symbol?
-  auto uses(const Expr& sym) const -> bool {
-    if (se::eq(*base_, *sym.base_)) return true;
-    return std::ranges::any_of(base_->get_args(), [&sym](const Expr& expr) {
-      return expr.uses(sym);
-    });
-  }
-
-  /// Substitute `value` for `var` in this expression.
-  auto subs(const Expr& var, const Expr& value) const -> Expr {
-    return se::subs(base_, {{var.base_, value.base_}});
-  }
-
-  /// Arithmetic operators.
-  /// @{
-  friend auto operator-(const Expr& a) -> Expr {
-    return se::neg(a.base_);
-  }
-  friend auto operator+(const Expr& a, const Expr& b) -> Expr {
-    return se::add(a.base_, b.base_);
-  }
-  friend auto operator-(const Expr& a, const Expr& b) -> Expr {
-    return se::sub(a.base_, b.base_);
-  }
-  friend auto operator*(const Expr& a, const Expr& b) -> Expr {
-    return se::mul(a.base_, b.base_);
-  }
-  friend auto operator/(const Expr& a, const Expr& b) -> Expr {
-    return se::div(a.base_, b.base_);
-  }
-  friend auto operator+=(Expr& a, const Expr& b) -> Expr& {
-    a = a + b;
-    return a;
-  }
-  /// @}
-
-private:
-
-  se::RCP<const se::Basic> base_;
-
-}; // class Expr
-
-/// Raise `base` to a power.
-auto pow(const Expr& base, const Expr& exp) -> Expr {
-  return se::pow(base.base(), exp.base());
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Univariate view of an expanded expression.
-class Poly final {
-public:
-
-  /// Expand `e` and extract its coefficients in `var`.
-  Poly(const Expr& e, const Expr& var) {
-    const auto expanded = e.expand();
-    for (int p = 0; p <= max_degree_; ++p) {
-      Expr c{se::coeff(*expanded.base(), *var.base(), *se::integer(p))};
-      if (!c.is_zero()) {
-        coeffs_.emplace(p, std::move(c));
-        degree_ = p;
-      }
+/// Non-zero coefficients of the expression in the given variable, by power.
+auto coeffs_in(const Expr& expr, std::string_view var) -> std::map<int, Expr> {
+  std::map<int, Expr> result;
+  for (std::size_t power = 0; power <= expr.degree(var); ++power) {
+    if (auto coeff = expr.coeff(var, power); !coeff.is_zero()) {
+      result.emplace(static_cast<int>(power), std::move(coeff));
     }
-  }
-
-  /// Degree of the polynomial.
-  auto degree() const -> int {
-    return degree_;
-  }
-
-  /// Coefficient of `var^power`, or zero if absent.
-  auto operator[](int power) const -> Expr {
-    const auto iter = coeffs_.find(power);
-    return iter != coeffs_.end() ? iter->second : Expr{0};
-  }
-
-  /// Non-zero `(power, coefficient)` terms, in ascending order of power.
-  auto terms() const -> const std::map<int, Expr>& {
-    return coeffs_;
-  }
-
-private:
-
-  // Maximum polynomial degree we ever encounter.
-  static constexpr int max_degree_ = 32;
-
-  std::map<int, Expr> coeffs_;
-  int degree_ = 0;
-
-}; // class Poly
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Optimizations
-//
-
-/// An expression with common subexpressions factored into named bindings.
-class OptExpr final {
-public:
-
-  /// Eliminate common subexpressions in `e`.
-  explicit OptExpr(const Expr& e) : result_{run_cse(e, reps_)} {}
-
-  /// Common-subexpression bindings, in evaluation order.
-  auto reps() const -> const std::vector<std::pair<Expr, Expr>>& {
-    return reps_;
-  }
-
-  /// Final result expression.
-  auto result() const -> const Expr& {
-    return result_;
-  }
-
-  /// Does the optimized expression reference the given symbol?
-  auto uses(const Expr& sym) const -> bool {
-    if (result_.uses(sym)) return true;
-    return std::ranges::any_of(reps_, [&sym](const auto& rep) {
-      return rep.second.uses(sym);
-    });
-  }
-
-private:
-
-  // Perform common-subexpression elimination, filling `reps` and returning the
-  // reduced result.
-  static auto run_cse(const Expr& e, std::vector<std::pair<Expr, Expr>>& reps)
-      -> Expr {
-    se::vec_pair se_reps;
-    se::vec_basic out;
-    se::cse(se_reps, out, {e.base()});
-    for (const auto& [sym, val] : se_reps) reps.emplace_back(sym, val);
-    return Expr{out[0]};
-  }
-
-  std::vector<std::pair<Expr, Expr>> reps_;
-  Expr result_;
-
-}; // class OptExpr
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/// Rewrite the expression in multivariate Horner form.
-auto horner(const Expr& e, std::span<const Expr> vars)
-    -> Expr { // NOLINT(*-no-recursion)
-  if (vars.empty()) return e;
-  const auto& var = vars.front();
-  const auto remaining_vars = vars.subspan(1);
-  const Poly poly{e, var};
-  const auto deg = poly.degree();
-  auto result = horner(poly[deg], remaining_vars);
-  for (int p = deg - 1; p >= 0; --p) {
-    result = horner(poly[p], remaining_vars) + var * result;
   }
   return result;
-}
-
-/// Rewrite the expression in multivariate Horner form.
-auto horner(const Expr& e, std::initializer_list<Expr> vars) -> Expr {
-  return horner(e, std::span{vars});
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// Rewrite `sym^n` in `expr` as powers of `squared` (`sym^2`) times an optional
-// leftover `sym`, so the generated code can reuse a precomputed square.
-auto power_reduce(const se::RCP<const se::Basic>& expr,
-                  const se::RCP<const se::Basic>& sym,
-                  const se::RCP<const se::Basic>& squared)
-    -> se::RCP<const se::Basic> {
-  if (se::is_a<se::Pow>(*expr)) {
-    const auto& p = se::down_cast<const se::Pow&>(*expr);
-    if (se::eq(*p.get_base(), *sym) && se::is_a<se::Integer>(*p.get_exp())) {
-      const auto n = se::down_cast<const se::Integer&>(*p.get_exp()).as_int();
-      if (n >= 2) {
-        auto reduced = se::pow(squared, se::integer(n / 2));
-        if (n % 2 != 0) reduced = se::mul(reduced, sym);
-        return reduced;
-      }
-    }
-  }
-  se::vec_basic new_args;
-  bool changed = false;
-  for (const auto& arg : expr->get_args()) {
-    auto new_arg = power_reduce(arg, sym, squared);
-    changed = changed || new_arg != arg;
-    new_args.emplace_back(std::move(new_arg));
-  }
-  if (!changed) return expr;
-  if (se::is_a<se::Add>(*expr)) return se::add(new_args);
-  if (se::is_a<se::Mul>(*expr)) return se::mul(new_args);
-  if (se::is_a<se::Pow>(*expr)) return se::pow(new_args[0], new_args[1]);
-  return expr;
-}
-
-/// Rewrite `sym^n` as powers of `squared`, wrapped for `Expr`.
-auto power_reduce(const Expr& e, const Expr& sym, const Expr& squared) -> Expr {
-  return Expr{power_reduce(e.base(), sym.base(), squared.base())};
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -299,23 +71,12 @@ auto power_reduce(const Expr& e, const Expr& sym, const Expr& squared) -> Expr {
 // Kernel math
 //
 
-const Expr q{se::symbol("q")};         ///< Normalized radius.
-const Expr z{se::symbol("z")};         ///< Along-edge coordinate.
-const Expr eta{se::symbol("eta")};     ///< Wall distance.
-const Expr rho{se::symbol("rho")};     ///< Radius, `rho^2 = z^2 + eta^2`.
-const Expr delta{se::symbol("delta")}; ///< Edge offset.
-const Expr beta{se::symbol("beta")};   ///< `beta^2 = eta^2 + delta^2`.
-const Expr A{se::symbol("A")};         ///< `atan2` primitive.
-const Expr L{se::symbol("L")};         ///< `log1p` primitive.
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 /// `J_p`: primitive of `rho^p` along a segment, with `rho^2 = z^2 + eta^2`.
 auto j_expr(int power) -> Expr {
   if (power == 0) return z;
   if (power == 1) return (z * rho + pow(eta, 2) * L) / 2;
   return (z * pow(rho, power) + power * pow(eta, 2) * j_expr(power - 2)) /
-         (power + 1);
+         Rational{power + 1};
 }
 
 /// `J_p` for the triangle edge, with `rho^2 = z^2 + beta^2`.
@@ -323,7 +84,7 @@ auto j_line_expr(int power) -> Expr {
   if (power == 0) return z;
   if (power == 1) return (z * rho + pow(beta, 2) * L) / 2;
   return (z * pow(rho, power) + power * pow(beta, 2) * j_line_expr(power - 2)) /
-         (power + 1);
+         Rational{power + 1};
 }
 
 /// `K_p`: edge primitive built on top of the line integrals `J`.
@@ -341,11 +102,11 @@ class Segment final {
 public:
 
   /// Construct a support piece from its cutoff and weight polynomial.
-  Segment(Expr cutoff, Expr weight)
-      : cutoff_{std::move(cutoff)}, weight_{std::move(weight)} {}
+  Segment(Rational cutoff, Expr weight)
+      : cutoff_{cutoff}, weight_{std::move(weight)} {}
 
   /// Support cutoff of this piece.
-  auto cutoff() const -> Expr {
+  auto cutoff() const -> Rational {
     return cutoff_;
   }
 
@@ -356,123 +117,114 @@ public:
 
   /// Radial derivative `w'(q)`.
   auto deriv() const -> Expr {
-    const Poly poly{weight_, q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) {
-      if (p >= 1) result += c * p * pow(q, p - 1);
+    Expr result;
+    for (const auto& [power, coeff] : coeffs_in(weight_, "q")) {
+      if (power >= 1) result += coeff * power * pow(q, power - 1);
     }
-    return horner(result.subs(q, q + cutoff_), {q}).subs(q, q - cutoff_);
+    return result;
   }
 
   /// Tail moment of order `dim`:
   /// integral of `q^(dim-1) w(q)` from `q` to cutoff.
   auto tail_moment(int dim) const -> Expr {
-    const Poly poly{weight_, q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) result += c * pow(q, p) / (dim + p);
-    result = horner(result, {q});
-    return pow(cutoff_, dim) * result.subs(q, cutoff_) - pow(q, dim) * result;
+    Expr result;
+    for (const auto& [power, coeff] : coeffs_in(weight_, "q")) {
+      result += coeff * pow(q, power) / Rational{dim + power};
+    }
+    const auto at_cutoff = result.substitute("q", cutoff_).as_rational();
+    return pow(cutoff_, dim) * at_cutoff - pow(q, dim) * result;
   }
 
   /// Kernel-flux primitive over a clipped 2D segment.
-  auto flux_primitive() const -> OptExpr {
-    const Poly poly{weight_, q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) result += c * j_expr(p);
-    return optimize_radial_(result);
+  auto flux_primitive() const -> Expr {
+    Expr result;
+    for (const auto& [power, coeff] : coeffs_in(weight_, "q")) {
+      result += coeff * j_expr(power);
+    }
+    return reduce_radial_(result);
   }
 
   /// Antigradient-flux primitive over a clipped 2D segment.
-  auto antigrad_flux_primitive() const -> OptExpr {
-    const Poly poly{tail_moment(2), q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) {
-      if (p == 0) result += c * A;
-      else if (p == 1) result += c * eta * L;
-      else result += c * eta * j_expr(p - 2);
+  auto antigrad_flux_primitive() const -> Expr {
+    Expr result;
+    for (const auto& [power, coeff] : coeffs_in(tail_moment(2), "q")) {
+      if (power == 0) result += coeff * A;
+      else if (power == 1) result += coeff * eta * L;
+      else result += coeff * eta * j_expr(power - 2);
     }
-    return optimize_radial_(result);
+    return reduce_radial_(result);
   }
 
   /// Kernel-flux line primitive over a triangle edge.
-  auto flux_line_primitive() const -> OptExpr {
-    const Poly poly{flux_moment_(rho), rho};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) result += c * k_line_expr(p);
-    return optimize_line_(result);
+  auto flux_line_primitive() const -> Expr {
+    Expr result;
+    for (const auto& [power, coeff] : coeffs_in(flux_moment_(rho), "rho")) {
+      result += coeff * k_line_expr(power);
+    }
+    return reduce_line_(result);
   }
 
   /// Antigradient-flux line primitive over a triangle edge.
-  auto antigrad_flux_line_primitive() const -> OptExpr {
-    const Poly poly{tail_moment(3), q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) {
-      if (p == 0) {
-        result += c * k_line_expr(0);
+  auto antigrad_flux_line_primitive() const -> Expr {
+    Expr result;
+    for (const auto& [power, coeff] : coeffs_in(tail_moment(3), "q")) {
+      if (power == 0) {
+        result += coeff * k_line_expr(0);
       } else {
-        result += c *
-                  (eta * k_line_expr(p - 1) - pow(eta, p) * k_line_expr(0)) /
-                  (p - 1);
+        result +=
+            coeff *
+            (eta * k_line_expr(power - 1) - pow(eta, power) * k_line_expr(0)) /
+            Rational{power - 1};
       }
     }
-    return optimize_line_(result);
+    return reduce_line_(result);
   }
 
   /// Kernel-flux sector primitive (angular part) over a triangle.
-  auto flux_sector() const -> OptExpr {
-    return optimize_sector_(flux_moment_(cutoff_));
+  auto flux_sector() const -> Expr {
+    return flux_moment_(cutoff_);
   }
 
   /// Antigradient-flux sector primitive (angular part) over a triangle.
-  auto antigrad_flux_sector() const -> OptExpr {
-    const Poly poly{tail_moment(3), q};
-    Expr result{0};
-    for (const auto& [p, c] : poly.terms()) {
-      if (p == 0) {
-        result += c * (1 - eta / cutoff_);
+  auto antigrad_flux_sector() const -> Expr {
+    Expr result;
+    for (const auto& [power, coeff] : coeffs_in(tail_moment(3), "q")) {
+      if (power == 0) {
+        result += coeff * (1 - eta / cutoff_);
       } else {
-        result += c * (eta * pow(cutoff_, p - 1) - pow(eta, p)) / (p - 1);
+        result += coeff * (eta * pow(cutoff_, power - 1) - pow(eta, power)) /
+                  Rational{power - 1};
       }
     }
-    return optimize_sector_(result);
+    return result;
   }
 
 private:
 
   // Moment of `w(q)` with `upper^(p+2)` bounds (2D flux, `rho`-parameterized).
   auto flux_moment_(const Expr& upper) const -> Expr {
-    const Poly poly{weight_, q};
-    Expr result = 0;
-    for (const auto& [p, c] : poly.terms()) {
-      const int e = p + 2;
-      result += c * (pow(upper, e) - pow(eta, e)) / e;
+    Expr result;
+    for (const auto& [power, coeff] : coeffs_in(weight_, "q")) {
+      const auto exponent = power + 2;
+      result += coeff * (pow(upper, exponent) - pow(eta, exponent)) /
+                Rational{exponent};
     }
     return result;
   }
 
-  // Optimize a radial primitive: reduce `rho`, Horner in `z` and `eta`, then
-  // do common-subexpression elimination.
-  static auto optimize_radial_(const Expr& e) -> OptExpr {
-    const auto rho_reduced = power_reduce(e, rho, pow(z, 2) + pow(eta, 2));
-    return OptExpr{horner(rho_reduced, {z, eta})};
+  // Rewrite the powers of `rho` in a radial primitive, so that the generated
+  // code can reuse the precomputed radius.
+  static auto reduce_radial_(const Expr& expr) -> Expr {
+    return expr.reduce_square("rho", pow(z, 2) + pow(eta, 2));
   }
 
-  // Optimize an edge primitive: reduce `rho` and `beta`, Horner, then
-  // do common-subexpression elimination.
-  static auto optimize_line_(const Expr& e) -> OptExpr {
-    const auto rho_reduced =
-        power_reduce(e, rho, pow(z, 2) + pow(eta, 2) + pow(delta, 2));
-    const auto beta_reduced =
-        power_reduce(rho_reduced, beta, pow(eta, 2) + pow(delta, 2));
-    return OptExpr{horner(beta_reduced, {z, delta, eta})};
+  // Rewrite the powers of `rho` and `beta` in an edge primitive.
+  static auto reduce_line_(const Expr& expr) -> Expr {
+    return expr.reduce_square("rho", pow(z, 2) + pow(eta, 2) + pow(delta, 2))
+        .reduce_square("beta", pow(eta, 2) + pow(delta, 2));
   }
 
-  // Optimize a sector primitive: Horner in `eta`, then CSE.
-  static auto optimize_sector_(const Expr& e) -> OptExpr {
-    return OptExpr{horner(e, {eta})};
-  }
-
-  Expr cutoff_;
+  Rational cutoff_;
   Expr weight_;
 
 }; // class Segment
@@ -498,13 +250,8 @@ public:
   }
 
   /// Support radius in units of the smoothing length (largest cutoff).
-  auto unit_radius() const -> Expr {
-    return std::ranges::max(segments_,
-                            {},
-                            [](const Segment& segment) {
-                              return segment.cutoff().as_double();
-                            })
-        .cutoff();
+  auto unit_radius() const -> Rational {
+    return std::ranges::max(segments_, {}, &Segment::cutoff).cutoff();
   }
 
 private:
@@ -521,14 +268,14 @@ auto kernels() -> std::vector<Kernel> {
   return {
       {"CubicSplineKernel",
        {
-           {2, Expr{1} / 4 * pow(2 - q, 3)},
+           {2, Rational{1, 4} * pow(2 - q, 3)},
            {1, -pow(1 - q, 3)},
        }},
       {"QuarticSplineKernel",
        {
-           {Expr{5} / 2, pow(Expr{5} / 2 - q, 4)},
-           {Expr{3} / 2, -5 * pow(Expr{3} / 2 - q, 4)},
-           {Expr{1} / 2, 10 * pow(Expr{1} / 2 - q, 4)},
+           {Rational{5, 2}, pow(Rational{5, 2} - q, 4)},
+           {Rational{3, 2}, -5 * pow(Rational{3, 2} - q, 4)},
+           {Rational{1, 2}, 10 * pow(Rational{1, 2} - q, 4)},
        }},
       {"QuinticSplineKernel",
        {
@@ -542,12 +289,12 @@ auto kernels() -> std::vector<Kernel> {
        }},
       {"SixthOrderWendlandKernel",
        {
-           {2, (1 + 3 * q + Expr{35} / 12 * pow(q, 2)) * pow(1 - q / 2, 6)},
+           {2, (1 + 3 * q + Rational{35, 12} * pow(q, 2)) * pow(1 - q / 2, 6)},
        }},
       {"EighthOrderWendlandKernel",
        {
            {2,
-            (1 + 4 * q + Expr{25} / 4 * pow(q, 2) + 4 * pow(q, 3)) *
+            (1 + 4 * q + Rational{25, 4} * pow(q, 2) + 4 * pow(q, 3)) *
                 pow(1 - q / 2, 8)},
        }},
   };
@@ -558,87 +305,203 @@ auto kernels() -> std::vector<Kernel> {
 // C++ expression printer
 //
 
-/// Render symbolic expression as C++ code.
-auto to_cxx(const se::RCP<const se::Basic>& expr)
-    -> std::string { // NOLINT(*-no-recursion)
-  if (se::is_a<se::Integer>(*expr)) {
-    const auto n = se::down_cast<const se::Integer&>(*expr).as_int();
-    return std::format("Num{{{}}}", n);
+/// Rendered C++ expression.
+class Code final {
+public:
+
+  /// Render a plain number.
+  static auto number(const Rational& value) -> Code {
+    auto text = value.is_integer() ?
+                    std::format("Num{{{}}}", value.num()) :
+                    std::format("Num{{{}.0 / {}.0}}", value.num(), value.den());
+    return Code{std::move(text), false, value};
   }
-  if (se::is_a<se::Rational>(*expr)) {
-    const auto& r = se::down_cast<const se::Rational&>(*expr);
-    auto num = r.get_num()->as_int();
-    auto den = r.get_den()->as_int();
-    if (den < 0) {
-      num = -num;
-      den = -den;
-    }
-    return std::format("Num{{{}.0 / {}.0}}", num, den);
+
+  /// Render a sum of two or more terms.
+  static auto sum(std::string text) -> Code {
+    return Code{std::move(text), true, std::nullopt};
   }
-  if (se::is_a<se::Symbol>(*expr)) {
-    return se::down_cast<const se::Symbol&>(*expr).get_name();
+
+  /// Render a term that is not a sum and not a plain number.
+  static auto atom(std::string text) -> Code {
+    return Code{std::move(text), false, std::nullopt};
   }
-  if (se::is_a<se::Add>(*expr)) {
-    const auto args = expr->get_args();
-    if (args.empty()) return "Num{0.0}";
-    std::vector<std::string> parts;
-    parts.reserve(args.size());
-    for (const auto& arg : args) parts.emplace_back(to_cxx(arg));
-    return std::format("({})", str_join(parts, " + "));
+
+  /// Expression text.
+  auto text() const -> const std::string& {
+    return text_;
   }
-  if (se::is_a<se::Mul>(*expr)) {
-    se::RCP<const se::Basic> coeff = se::integer(1);
-    std::vector<std::string> parts;
-    for (const auto& arg : expr->get_args()) {
-      if (se::is_a<se::Integer>(*arg) || se::is_a<se::Rational>(*arg)) {
-        coeff = se::mul(coeff, arg);
-      } else {
-        parts.emplace_back(to_cxx(arg));
-      }
-    }
-    if (se::eq(*coeff, *se::integer(-1))) {
-      if (parts.empty()) return "Num{-1.0}";
-      parts.front() = "-" + parts.front();
-    } else if (!se::eq(*coeff, *se::integer(1))) {
-      parts.insert(parts.begin(), to_cxx(coeff));
-    }
-    if (parts.empty()) return "Num{1.0}";
-    return str_join(parts, " * ");
+
+  /// Expression text as an operand of a product, parenthesized if needed.
+  auto factor() const -> std::string {
+    return is_sum_ ? std::format("({})", text_) : text_;
   }
-  if (se::is_a<se::Pow>(*expr)) {
-    const auto& p = se::down_cast<const se::Pow&>(*expr);
-    const auto& base = p.get_base();
-    const auto& exp = p.get_exp();
-    if (se::is_a<se::Integer>(*exp)) {
-      const auto n = se::down_cast<const se::Integer&>(*exp).as_int();
-      if (n == -1) return std::format("inverse({})", to_cxx(base));
-      if (n < -1) return std::format("inverse(pow({}, {}))", to_cxx(base), -n);
-      return std::format("pow({}, {})", to_cxx(base), n);
-    }
-    return std::format("pow({}, {})", to_cxx(base), to_cxx(exp));
+
+  /// Value of this expression, if it is a plain number.
+  auto value() const -> const std::optional<Rational>& {
+    return value_;
   }
-  TIT_THROW("Cannot translate expression to C++.");
+
+private:
+
+  Code(std::string text, bool is_sum, std::optional<Rational> value)
+      : text_{std::move(text)}, is_sum_{is_sum}, value_{value} {}
+
+  std::string text_;
+  bool is_sum_;
+  std::optional<Rational> value_;
+
+}; // class Code
+
+/// Render a rational number as C++ code.
+auto to_cxx(const Rational& value) -> std::string {
+  return Code::number(value).text();
 }
 
-/// Render symbolic expression as C++ code.
-auto to_cxx(const Expr& e) -> std::string {
-  return to_cxx(e.base());
+/// Render a monomial as C++ code.
+auto render_monomial(const Monomial& mono) -> std::string {
+  std::vector<std::string> factors;
+  for (const auto& [name, power] : mono.powers()) {
+    factors.emplace_back(power == 1 ? name :
+                                      std::format("pow({}, {})", name, power));
+  }
+  return str_join(factors, " * ");
+}
+
+/// Render an expression as a plain sum of its terms.
+auto render_flat(const Expr& expr) -> Code {
+  if (expr.is_constant()) return Code::number(expr.as_rational());
+  std::vector<std::string> terms;
+  for (const auto& [mono, coeff] : expr.terms()) {
+    if (mono.is_unit()) {
+      terms.emplace_back(to_cxx(coeff));
+    } else if (coeff == 1) {
+      terms.emplace_back(render_monomial(mono));
+    } else if (coeff == -1) {
+      terms.emplace_back(std::format("-{}", render_monomial(mono)));
+    } else {
+      terms.emplace_back(
+          std::format("{} * {}", to_cxx(coeff), render_monomial(mono)));
+    }
+  }
+  if (terms.size() > 1) return Code::sum(str_join(terms, " + "));
+  return Code::atom(std::move(terms.front()));
+}
+
+/// Multiply a power of a variable by an already rendered expression.
+auto render_product(std::string_view var_text,
+                    std::size_t power,
+                    const Code& code) -> std::string {
+  auto power_text = power == 1 ? std::string{var_text} :
+                                 std::format("pow({}, {})", var_text, power);
+  if (code.value() == Rational{1}) return power_text;
+  if (code.value() == Rational{-1}) return std::format("-{}", power_text);
+  // A plain number reads better as the leading operand.
+  if (code.value().has_value()) {
+    return std::format("{} * {}", code.text(), power_text);
+  }
+  return std::format("{} * {}", power_text, code.factor());
+}
+
+/// Render an expression in the multivariate Horner form about the origin,
+/// nesting the variables in the given order.
+///
+/// Runs of zero coefficients are folded into a single power, so that a factor
+/// common to the remaining terms is taken out rather than repeated.
+auto render_horner(const Expr& expr, std::span<const std::string_view> vars)
+    -> Code {
+  if (vars.empty()) return render_flat(expr);
+
+  // Pull out whatever divides every term. The transcendental primitives are
+  // never nested, so without this a factor common to a whole group -- `L` in
+  // `L * a + eta^2 * (L * b + ...)` -- would be repeated in each term.
+  if (const auto factor = expr.common_factor(); !factor.is_unit()) {
+    const auto rest = render_horner(expr.divide(factor), vars);
+    return Code::atom(
+        std::format("{} * {}", render_monomial(factor), rest.factor()));
+  }
+
+  const auto var = vars.front();
+  const auto& var_text = var;
+  const auto rest = vars.subspan(1);
+
+  const auto degree = expr.degree(var);
+  auto result = render_horner(expr.coeff(var, degree), rest);
+  std::size_t pending = 0;
+  for (auto power = degree; power-- > 0;) {
+    ++pending;
+    const auto coeff = expr.coeff(var, power);
+    if (coeff.is_zero()) continue;
+    const auto tail = render_product(var_text, pending, result);
+    const auto head = render_horner(coeff, rest);
+    result = Code::sum(std::format("{} + {}", head.text(), tail));
+    pending = 0;
+  }
+  if (pending > 0) {
+    result = Code::atom(render_product(var_text, pending, result));
+  }
+  return result;
+}
+
+/// Render an expression in the multivariate Horner form about the origin.
+auto render_horner(const Expr& expr,
+                   std::initializer_list<std::string_view> vars) -> Code {
+  return render_horner(expr, std::span{vars});
+}
+
+/// Render a univariate expression with its root at `root` factored out, as
+/// `(var - root)^m * P(var)`, where `P` no longer vanishes at `root`.
+///
+/// Everything that is built by integrating the kernel weight inherits the
+/// weight's root at the support cutoff, usually with an even higher
+/// multiplicity: the weight and its radial derivative vanish there, and so do
+/// the tail moments and the triangle sector primitives. Keeping that root as an
+/// explicit factor makes the generated code exact at the cutoff and much more
+/// compact, while the remaining factor is expanded about the origin, where the
+/// kernel is largest. Expanding about either point alone would suffer
+/// cancellation at the other.
+///
+/// The radial and edge flux primitives are the exception: they are
+/// antiderivatives evaluated at the clipped endpoints rather than quantities
+/// that vanish at the cutoff, so they have no such root and are rendered as
+/// plain Horner forms.
+auto render_root_factored(const Expr& expr,
+                          std::string_view var,
+                          const Rational& root) -> Code {
+  if (expr.is_zero()) return Code::number(Rational{});
+
+  // Find the multiplicity of the root.
+  const auto var_expr = Expr::var(var);
+  const auto shifted = expr.substitute(var, var_expr + root);
+  const auto degree = shifted.degree(var);
+  std::size_t mult = 0;
+  while (mult <= degree && shifted.coeff(var, mult).is_zero()) ++mult;
+  if (mult == 0) return render_horner(expr, {var});
+
+  // Divide the root out and return to the powers of the variable.
+  Expr rest = shifted.coeff(var, mult);
+  for (auto power = mult + 1; power <= degree; ++power) {
+    rest += shifted.coeff(var, power) * pow(var_expr, power - mult);
+  }
+  rest = rest.substitute(var, var_expr - root);
+
+  const auto root_text = std::format("({} + {})", to_cxx(-root), var);
+  return Code::atom(
+      render_product(root_text, mult, render_horner(rest, {var})));
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// A support term guarded by its cutoff: `(q < cutoff ? expr : Num{0})`.
-auto truncated(const Segment& segment, const Expr& e) -> std::string {
+auto truncated(const Segment& segment, const Code& code) -> std::string {
   return std::format("(q < {} ? {} : Num{{0}})",
                      to_cxx(segment.cutoff()),
-                     to_cxx(e));
+                     code.text());
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// Join truncated support terms into a single returned sum expression.
 auto join_terms(const std::vector<std::string>& terms) -> std::string {
-  return terms.empty() ? "Num{0.0}" : str_join(terms, " + ");
+  return terms.empty() ? "Num{0}" : str_join(terms, " + ");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -646,33 +509,45 @@ auto join_terms(const std::vector<std::string>& terms) -> std::string {
 // Generated helper functions
 //
 
-/// Fully-qualified `<Num>`-instantiated name of a per-segment helper.
+/// Fully-qualified name of a per-segment helper object.
 auto helper_ref(const Kernel& kernel,
                 std::string_view name,
                 std::ptrdiff_t index) -> std::string {
-  return std::format("&impl::{}_gen::{}_{}<Num>", kernel.name(), name, index);
+  return std::format("impl::{}_gen::{}_{}", kernel.name(), name, index);
 }
 
-/// Emit a templated helper function from an optimized expression.
+/// Emit a helper from an expression, as a named generic lambda rather than a
+/// plain function template.
+///
+/// The integrals instantiate these at both the scalar number type and a SIMD
+/// register, so the caller has to be able to pick the type itself. A function
+/// pointer would have to be bound to one instantiation up front.
 void emit_helper(std::ostream& os,
                  const std::string& name,
-                 std::initializer_list<Expr> params,
-                 const OptExpr& opt) {
-  std::println(os, "template<class Num>");
-  const auto head = std::format("constexpr auto {}(", name);
+                 std::initializer_list<std::string_view> params,
+                 std::initializer_list<std::string_view> horner_vars,
+                 const Expr& expr,
+                 const std::optional<Rational>& root = std::nullopt) {
+  std::println(os, "inline constexpr auto {} =", name);
+  const std::string head = "    []<class Num>(";
   const std::string cont(head.size(), ' ');
   std::print(os, "{}", head);
   for (const auto& [i, param] : std::views::enumerate(params)) {
     if (i != 0) std::print(os, ",\n{}", cont);
-    if (!opt.uses(param)) std::print(os, "[[maybe_unused]] ");
-    std::print(os, "Num {}", to_cxx(param));
+    if (!expr.uses(param)) std::print(os, "[[maybe_unused]] ");
+    std::print(os, "Num {}", param);
   }
-  std::println(os, ") noexcept -> Num {{");
-  for (const auto& [sym, val] : opt.reps()) {
-    std::println(os, "  const auto {} = {};", to_cxx(sym), to_cxx(val));
+  std::println(os, ") constexpr noexcept -> Num {{");
+  if (root.has_value()) {
+    TIT_ENSURE(horner_vars.size() == 1,
+               "Root factoring needs a single variable!");
   }
-  std::println(os, "  return {};", to_cxx(opt.result()));
-  std::println(os, "}}");
+  const auto code =
+      root.has_value() ?
+          render_root_factored(expr, *horner_vars.begin(), *root) :
+          render_horner(expr, horner_vars);
+  std::println(os, "      return {};", code.text());
+  std::println(os, "    }};");
   std::println(os);
 }
 
@@ -683,28 +558,36 @@ void emit_helpers(std::ostream& os, const Kernel& kernel) {
   for (const auto& [i, segment] : std::views::enumerate(kernel.segments())) {
     emit_helper(os,
                 std::format("unit_flux_{}", i),
-                {eta, z, rho, A, L},
+                {"eta", "z", "rho", "A", "L"},
+                {"z", "eta"},
                 segment.flux_primitive());
     emit_helper(os,
                 std::format("unit_antigrad_flux_{}", i),
-                {eta, z, rho, A, L},
+                {"eta", "z", "rho", "A", "L"},
+                {"z", "eta"},
                 segment.antigrad_flux_primitive());
     emit_helper(os,
                 std::format("unit_flux_line_{}", i),
-                {eta, delta, z, rho, A, L},
+                {"eta", "delta", "z", "rho", "A", "L"},
+                {"z", "delta", "eta"},
                 segment.flux_line_primitive());
     emit_helper(os,
                 std::format("unit_antigrad_flux_line_{}", i),
-                {eta, delta, z, rho, A, L},
+                {"eta", "delta", "z", "rho", "A", "L"},
+                {"z", "delta", "eta"},
                 segment.antigrad_flux_line_primitive());
     emit_helper(os,
                 std::format("unit_flux_sector_{}", i),
-                {eta},
-                segment.flux_sector());
+                {"eta"},
+                {"eta"},
+                segment.flux_sector(),
+                segment.cutoff());
     emit_helper(os,
                 std::format("unit_antigrad_flux_sector_{}", i),
-                {eta},
-                segment.antigrad_flux_sector());
+                {"eta"},
+                {"eta"},
+                segment.antigrad_flux_sector(),
+                segment.cutoff());
   }
   std::println(os, "}} // namespace impl::{}_gen", kernel.name());
   std::println(os);
@@ -728,7 +611,9 @@ void emit_radius(std::ostream& os, const Kernel& kernel) {
 void emit_value(std::ostream& os, const Kernel& kernel) {
   std::vector<std::string> terms;
   for (const auto& segment : kernel.segments()) {
-    terms.emplace_back(truncated(segment, segment.value()));
+    terms.emplace_back(truncated(
+        segment,
+        render_root_factored(segment.value(), "q", segment.cutoff())));
   }
   std::println(os, "template<>");
   std::println(os, "template<class Num>");
@@ -742,7 +627,9 @@ void emit_value(std::ostream& os, const Kernel& kernel) {
 void emit_deriv(std::ostream& os, const Kernel& kernel) {
   std::vector<std::string> terms;
   for (const auto& segment : kernel.segments()) {
-    terms.emplace_back(truncated(segment, segment.deriv()));
+    terms.emplace_back(truncated(
+        segment,
+        render_root_factored(segment.deriv(), "q", segment.cutoff())));
   }
   std::println(os, "template<>");
   std::println(os, "template<class Num>");
@@ -757,7 +644,11 @@ void emit_antideriv_moment(std::ostream& os, const Kernel& kernel) {
   const auto make_terms = [&kernel](int dim) {
     std::vector<std::string> terms;
     for (const auto& segment : kernel.segments()) {
-      terms.emplace_back(truncated(segment, segment.tail_moment(dim)));
+      terms.emplace_back(
+          truncated(segment,
+                    render_root_factored(segment.tail_moment(dim),
+                                         "q",
+                                         segment.cutoff())));
     }
     return terms;
   };
