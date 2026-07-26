@@ -8,7 +8,7 @@
     "gcem",
     { "name": "hdf5", "default-features": false },
     { "name": "highfive", "default-features": false },
-    "highway",
+    { "name": "highway", "features": ["contrib"] },
     "mimalloc",
     "nlohmann-json",
     "node-addon-api",
