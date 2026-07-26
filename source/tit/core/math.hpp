@@ -17,6 +17,8 @@
 #ifdef __clang__
 #include <gcem.hpp> // IWYU pragma: keep
 #endif
+#include <hwy/contrib/math/math-inl.h>
+#include <hwy/highway.h>
 
 #include "tit/core/assert.hpp"
 
@@ -48,11 +50,31 @@ TIT_MAKE_CONSTEXPR_MATH_FUNC_(exp)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(floor)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(log)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(log1p)
+TIT_MAKE_CONSTEXPR_MATH_FUNC_(pow)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(round)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(sin)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(sqrt)
 TIT_MAKE_CONSTEXPR_MATH_FUNC_(tgamma)
 #undef TIT_MAKE_CONSTEXPR_MATH_FUNC_
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// Fast math functions.
+//
+
+namespace hn = hwy::HWY_NAMESPACE;
+
+#define TIT_MAKE_FAST_MATH_FUNC_(func, HwyFunc)                                \
+  constexpr auto fast_##func(std::floating_point auto... args) noexcept {      \
+    if consteval {                                                             \
+      return func(args...);                                                    \
+    }                                                                          \
+    constexpr hn::CappedTag<decltype(auto{args...[0]}), 1> tag;                \
+    return hn::GetLane(hn::HwyFunc(tag, hn::Set(tag, args)...));               \
+  }
+TIT_MAKE_FAST_MATH_FUNC_(atan2, Atan2)
+TIT_MAKE_FAST_MATH_FUNC_(log1p, Log1p)
+#undef TIT_MAKE_FAST_MATH_FUNC_
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
@@ -84,18 +106,6 @@ constexpr auto pow(Num a) -> Num {
   return pow(a, Power);
 }
 /// @}
-
-/// Raise to the floating-point power.
-/// @note This function accepts only standard floating-point types.
-template<std::floating_point Float>
-constexpr auto pow(Float a, std::floating_point auto power) noexcept -> Float {
-#ifdef __clang__
-  if consteval {
-    return gcem::pow(a, power);
-  }
-#endif
-  return std::pow(a, power);
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
