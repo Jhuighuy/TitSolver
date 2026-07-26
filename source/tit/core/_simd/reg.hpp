@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <span>
 
+#include <hwy/contrib/math/math-inl.h>
 #include <hwy/highway.h>
 
 #include "tit/core/_simd/reg_mask.hpp"
@@ -182,6 +183,26 @@ public:
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/// Broadcast the first lane of the SIMD register to all lanes.
+template<class Num, std::size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto broadcast(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
+  return hn::Broadcast<0>(a.base);
+}
+
+/// Build the smallest register whose two lowest lanes are `a` and `b`.
+/// Any further lanes repeat the pair.
+template<class Num, std::size_t Size = std::max(2UZ, min_reg_size_v<Num>)>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto make_pair(Num a, Num b) noexcept -> Reg<Num, Size> {
+  constexpr typename Reg<Num, Size>::Tag tag;
+  return hn::InterleaveLower(hn::Set(tag, a), hn::Set(tag, b));
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// SIMD element-wise cast.
 template<class To, class From, std::size_t Size>
   requires castable_to<From, To, Size>
@@ -199,6 +220,15 @@ template<class Num, std::size_t Size>
 [[gnu::always_inline]]
 inline auto abs(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
   return hn::Abs(a.base);
+}
+
+/// SIMD element-wise copy of `a` with the sign of `b`.
+template<class Num, std::size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto copysign(const Reg<Num, Size>& a, const Reg<Num, Size>& b) noexcept
+    -> Reg<Num, Size> {
+  return hn::CopySign(a.base, b.base);
 }
 
 /// SIMD element-wise minimum algorithm.
@@ -219,6 +249,8 @@ inline auto max(const Reg<Num, Size>& a, const Reg<Num, Size>& b) noexcept
   return hn::Max(a.base, b.base);
 }
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// SIMD element-wise filter algorithm.
 template<class Num, std::size_t Size>
   requires supported<Num, Size>
@@ -237,6 +269,8 @@ inline auto select(const RegMask<Num, Size>& m,
                    const Reg<Num, Size>& b) noexcept -> Reg<Num, Size> {
   return hn::IfThenElse(m.base, a.base, b.base);
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /// SIMD take first N elements, fill the rest with zeroes.
 template<class Num, std::size_t Size>
@@ -261,14 +295,6 @@ inline auto merge_n(std::size_t n,
   return hn::IfThenElse(hn::FirstN(typename Reg<Num, Size>::Tag{}, n),
                         a.base,
                         b.base);
-}
-
-/// Broadcast the first lane of the SIMD register to all lanes.
-template<class Num, std::size_t Size>
-  requires supported<Num, Size>
-[[gnu::always_inline]]
-inline auto broadcast(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
-  return hn::Broadcast<0>(a.base);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -297,6 +323,8 @@ inline auto ceil(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
   return hn::Ceil(a.base);
 }
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /// SIMD fused multiply-add operation.
 template<class Num, std::size_t Size>
   requires supported<Num, Size>
@@ -307,7 +335,41 @@ inline auto fma(const Reg<Num, Size>& a,
   return hn::MulAdd(a.base, b.base, c.base);
 }
 
+/// SIMD element-wise square root.
+template<class Num, std::size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto sqrt(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
+  return hn::Sqrt(a.base);
+}
+
+/// SIMD element-wise arc tangent of `y / x`, using the signs to select the
+/// quadrant.
+template<class Num, std::size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto fast_atan2(const Reg<Num, Size>& y,
+                       const Reg<Num, Size>& x) noexcept -> Reg<Num, Size> {
+  return hn::Atan2(typename Reg<Num, Size>::Tag{}, y.base, x.base);
+}
+
+/// SIMD element-wise natural logarithm of `1 + a`.
+template<class Num, std::size_t Size>
+  requires supported<Num, Size>
+[[gnu::always_inline]]
+inline auto fast_log1p(const Reg<Num, Size>& a) noexcept -> Reg<Num, Size> {
+  return hn::Log1p(typename Reg<Num, Size>::Tag{}, a.base);
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/// Extract a single lane of the SIMD register.
+template<std::size_t Lane, class Num, std::size_t Size>
+  requires supported<Num, Size> && (Lane < Size)
+[[gnu::always_inline]]
+inline auto extract(const Reg<Num, Size>& a) noexcept -> Num {
+  return hn::ExtractLane(a.base, Lane);
+}
 
 /// SIMD horizontal sum reduction.
 template<class Num, std::size_t Size>
