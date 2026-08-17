@@ -646,11 +646,11 @@ auto join_terms(const std::vector<std::string>& terms) -> std::string {
 // Generated helper functions
 //
 
-/// Fully-qualified `<Num>`-instantiated name of a per-segment helper.
-auto helper_ref(const Kernel& kernel,
-                std::string_view name,
-                std::ptrdiff_t index) -> std::string {
-  return std::format("&impl::{}_gen::{}_{}<Num>", kernel.name(), name, index);
+/// Fully-qualified name of a per-segment helper.
+auto helper_name(const Kernel& kernel,
+                 std::string_view name,
+                 std::ptrdiff_t index) -> std::string {
+  return std::format("impl::{}_gen::{}_{}", kernel.name(), name, index);
 }
 
 /// Emit a templated helper function from an optimized expression.
@@ -658,21 +658,18 @@ void emit_helper(std::ostream& os,
                  const std::string& name,
                  std::initializer_list<Expr> params,
                  const OptExpr& opt) {
-  std::println(os, "template<class Num>");
-  const auto head = std::format("constexpr auto {}(", name);
-  const std::string cont(head.size(), ' ');
-  std::print(os, "{}", head);
+  std::print(os, "inline constexpr auto {} = []<class Num>(", name);
   for (const auto& [i, param] : std::views::enumerate(params)) {
-    if (i != 0) std::print(os, ",\n{}", cont);
-    if (!opt.uses(param)) std::print(os, "[[maybe_unused]] ");
-    std::print(os, "Num {}", to_cxx(param));
+    if (i != 0) std::print(os, ", ");
+    if (opt.uses(param)) std::print(os, "Num {}", to_cxx(param));
+    else std::print(os, "Num /*{}*/", to_cxx(param));
   }
   std::println(os, ") noexcept -> Num {{");
   for (const auto& [sym, val] : opt.reps()) {
     std::println(os, "  const auto {} = {};", to_cxx(sym), to_cxx(val));
   }
   std::println(os, "  return {};", to_cxx(opt.result()));
-  std::println(os, "}}");
+  std::println(os, "}};");
   std::println(os);
 }
 
@@ -781,14 +778,13 @@ void emit_antideriv_moment(std::ostream& os, const Kernel& kernel) {
 
 void emit_segment_flux(std::ostream& os,
                        const Kernel& kernel,
-                       std::string_view method,
-                       std::string_view helper_name) {
+                       std::string_view method) {
   std::vector<std::string> terms;
   for (const auto& [i, segment] : std::views::enumerate(kernel.segments())) {
     terms.emplace_back(std::format( //
         "unit_segment_integral({}, eta, z_min, z_max, {})",
         to_cxx(segment.cutoff()),
-        helper_ref(kernel, helper_name, i)));
+        helper_name(kernel, method, i)));
   }
   std::println(os, "template<>");
   std::println(os, "template<class Num>");
@@ -802,16 +798,14 @@ void emit_segment_flux(std::ostream& os,
 
 void emit_triangle_flux(std::ostream& os,
                         const Kernel& kernel,
-                        std::string_view method,
-                        std::string_view line_name,
-                        std::string_view sector_name) {
+                        std::string_view method) {
   std::vector<std::string> terms;
   for (const auto& [i, segment] : std::views::enumerate(kernel.segments())) {
     terms.emplace_back(std::format( //
         "unit_triangle_integral({}, eta, a, b, c, {}, {})",
         to_cxx(segment.cutoff()),
-        helper_ref(kernel, line_name, i),
-        helper_ref(kernel, sector_name, i)));
+        helper_name(kernel, std::format("{}_line", method), i),
+        helper_name(kernel, std::format("{}_sector", method), i)));
   }
   std::println(os, "template<>");
   std::println(os, "template<class Num>");
@@ -834,21 +828,13 @@ void emit_methods(std::ostream& os, const Kernel& kernel) {
   std::println(os);
   emit_antideriv_moment(os, kernel);
   std::println(os);
-  emit_segment_flux(os, kernel, "unit_flux", "unit_flux");
+  emit_segment_flux(os, kernel, "unit_flux");
   std::println(os);
-  emit_triangle_flux(os,
-                     kernel,
-                     "unit_flux",
-                     "unit_flux_line",
-                     "unit_flux_sector");
+  emit_triangle_flux(os, kernel, "unit_flux");
   std::println(os);
-  emit_segment_flux(os, kernel, "unit_antigrad_flux", "unit_antigrad_flux");
+  emit_segment_flux(os, kernel, "unit_antigrad_flux");
   std::println(os);
-  emit_triangle_flux(os,
-                     kernel,
-                     "unit_antigrad_flux",
-                     "unit_antigrad_flux_line",
-                     "unit_antigrad_flux_sector");
+  emit_triangle_flux(os, kernel, "unit_antigrad_flux");
   std::println(os);
 }
 
