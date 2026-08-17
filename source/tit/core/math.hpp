@@ -66,15 +66,17 @@ constexpr auto pow2(Num a) -> Num {
 }
 
 /// Raise to the non-negative integer power.
+///
+/// @note A zero power yields `Num{1}` for every type, not just the arithmetic
+///       ones. The stricter behaviour this replaces rejected a zero power for
+///       the non-arithmetic types, which no longer suits the callers: the
+///       kernel generator raises exact rationals and polynomials to powers
+///       that may legitimately be zero.
 /// @{
 template<class Num>
 constexpr auto pow(Num a, std::integral auto power) -> Num {
-  if constexpr (std::integral<Num> || std::floating_point<Num>) {
-    TIT_ASSERT(power >= 0, "Power must be non-negative!");
-    if (power == 0) return Num{1};
-  } else {
-    TIT_ASSERT(power > 0, "Power must be positive!");
-  }
+  TIT_ASSERT(power >= 0, "Power must be non-negative!");
+  if (power == 0) return Num{1};
   if (power == 1) return a;
   if (power % 2 == 0) return pow(a * a, power / 2);
   return a * pow(a * a, power / 2);

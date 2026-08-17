@@ -13,7 +13,9 @@
 #include <ranges>
 
 #include "tit/core/assert.hpp"
+#include "tit/core/fast_math.hpp"
 #include "tit/core/math.hpp"
+#include "tit/core/simd.hpp"
 #include "tit/core/type.hpp"
 #include "tit/core/vec.hpp"
 #include "tit/geom/surface.hpp"
@@ -241,20 +243,17 @@ protected:
     const auto z_hi = std::min(z_max, +z_clip);
     if (z_lo >= z_hi) return {};
 
-    // Evaluate the primitive.
-    const auto eta_sqr = pow2(eta);
-    const auto eval = [&eta, &eta_sqr, &primitive](Num z) {
-      const auto rho = sqrt(pow2(z) + eta_sqr);
-      const auto A = atan2(z, eta);
+    // Evaluate the integral.
+    return difference_(z_hi, z_lo, [&eta, &primitive]<class Z>(Z z) {
+      const auto rho = sqrt(pow2(z) + pow2(Z{eta}));
+      const auto A = fast_atan2(z, Z{eta});
       const auto L =
           is_tiny(eta) ?
-              Num{} :
-              copysign(log1p((abs(z) + pow2(z) / (rho + eta)) / eta), z);
-      return std::invoke(primitive, eta, z, rho, A, L);
-    };
-
-    // Evaluate the integral.
-    return eval(z_hi) - eval(z_lo);
+              Z{} :
+              copysign(fast_log1p((abs(z) + pow2(z) / (rho + Z{eta})) / Z{eta}),
+                       z);
+      return std::invoke(primitive, Z{eta}, z, rho, A, L);
+    });
   }
 
   /// Integrate a scalar radial primitive over a clipped 3D triangle support
@@ -297,16 +296,19 @@ protected:
                               &delta_sqr,
                               &beta,
                               &beta_sqr,
-                              &line_primitive](Num z) {
-        const auto rho = sqrt(pow2(z) + beta_sqr);
-        const auto A = is_tiny(delta) ? Num{0.0} :
-                                        atan2(delta * z * (rho - eta),
-                                              delta_sqr * rho + pow2(z) * eta);
+                              &line_primitive]<class Z>(Z z) {
+        const auto rho = sqrt(pow2(z) + Z{beta_sqr});
+        const auto A = is_tiny(delta) ?
+                           Z{} :
+                           fast_atan2(Z{delta} * z * (rho - Z{eta}),
+                                      Z{delta_sqr} * rho + pow2(z) * Z{eta});
         const auto L =
             is_tiny(beta) ?
-                Num{} :
-                copysign(log1p((abs(z) + pow2(z) / (rho + beta)) / beta), z);
-        return std::invoke(line_primitive, eta, delta, z, rho, A, L);
+                Z{} :
+                copysign(
+                    fast_log1p((abs(z) + pow2(z) / (rho + Z{beta})) / Z{beta}),
+                    z);
+        return std::invoke(line_primitive, Z{eta}, Z{delta}, z, rho, A, L);
       };
 
       // Split the edge by support-circle intersections in edge coordinates.
@@ -325,10 +327,10 @@ protected:
       for (const auto& [z_lo, z_hi] : std::views::pairwise(zs)) {
         if (is_tiny(z_hi - z_lo)) continue;
         if (pow2(avg(z_lo, z_hi)) + delta_sqr < radius_sqr) {
-          result += eval_line(z_hi) - eval_line(z_lo);
+          result += difference_(z_hi, z_lo, eval_line);
         } else {
           const auto arc_angle =
-              atan2(delta * (z_hi - z_lo), z_lo * z_hi + delta_sqr);
+              fast_atan2(delta * (z_hi - z_lo), z_lo * z_hi + delta_sqr);
           result += sector_integral * arc_angle;
         }
       }
@@ -337,6 +339,19 @@ protected:
 
     // Evaluate the integral.
     return edge_integral(a, b) + edge_integral(b, c) + edge_integral(c, a);
+  }
+
+private:
+
+  /// Difference of a primitive evaluated at two points.
+  template<class Num>
+  static constexpr auto difference_(Num z_hi, Num z_lo, auto&& eval) noexcept
+      -> Num {
+    TIT_IF_SIMD_AVALIABLE(Num) {
+      const auto both = std::invoke(eval, simd::make_pair(z_hi, z_lo));
+      return simd::extract<0>(both) - simd::extract<1>(both);
+    }
+    return std::invoke(eval, z_hi) - std::invoke(eval, z_lo);
   }
 
 }; // class Kernel

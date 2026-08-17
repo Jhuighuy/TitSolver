@@ -10,7 +10,6 @@ add_tit_executable(
     "kernel.gen.cpp"
   DEPENDS
     tit::core
-    symengine::symengine
 )
 
 add_tit_codegen(
