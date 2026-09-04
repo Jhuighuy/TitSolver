@@ -31,7 +31,7 @@ public:
 
   // Construct a rotation state.
   constexpr HilbertRotation() = default;
-  constexpr HilbertRotation(std::size_t axis, int dirs) noexcept
+  constexpr HilbertRotation(std::size_t axis, unsigned dirs) noexcept
       : axis_{axis}, dirs_{dirs} {}
 
   // Get the current axis.
@@ -41,7 +41,7 @@ public:
 
   // Get the current direction.
   constexpr auto dir() const noexcept -> bool {
-    return (dirs_ & (1 << axis_)) != 0;
+    return (dirs_ & (1U << axis_)) != 0;
   }
 
   // Shift the current axis.
@@ -51,13 +51,13 @@ public:
 
   // Flip the current direction.
   constexpr auto flip() const noexcept -> HilbertRotation {
-    return {axis_, dirs_ ^ (1 << axis_)};
+    return {axis_, dirs_ ^ (1U << axis_)};
   }
 
   // Compute the next rotation state.
   constexpr auto next(std::size_t index) const noexcept -> HilbertRotation {
     TIT_ASSERT(index < (1U << Dim), "Index is out of range!");
-    const auto [shift, flip] = [index] -> std::pair<std::size_t, int> {
+    const auto [shift, flip] = [index] -> std::pair<std::size_t, unsigned> {
       if constexpr (Dim == 1) {
         return {0, 0};
       } else if constexpr (Dim == 2) {
@@ -83,7 +83,7 @@ public:
     std::size_t dist = 0;
     for (std::size_t i = 0; i < Dim; ++i) {
       const auto axis = (axis_ + i) % Dim;
-      const auto flipped = (flips & (1 << axis)) >> axis;
+      const auto flipped = (flips & (1U << axis)) >> axis;
       dist |= flipped << (Dim - i - 1);
     }
     return dist;
@@ -92,7 +92,7 @@ public:
 private:
 
   std::size_t axis_ = 0;
-  int dirs_ = 0;
+  unsigned dirs_ = 0;
 
 }; // class HilbertRotation
 
@@ -125,13 +125,17 @@ public:
     const auto next_rot = curr_rot_.shift();
     if (next_rot.axis() != init_rot_.axis()) {
       // Rotate the current state.
-      return {HilbertState{init_rot_, next_rot},
-              HilbertState{init_rot_, next_rot.flip()}};
+      return {
+          HilbertState{init_rot_, next_rot},
+          HilbertState{init_rot_, next_rot.flip()},
+      };
     }
     // Advance to the next state.
     const auto index = next_rot.index(init_rot_);
-    return {HilbertState{init_rot_.next(2 * index)},
-            HilbertState{init_rot_.next(2 * index + 1)}};
+    return {
+        HilbertState{init_rot_.next(2 * index)},
+        HilbertState{init_rot_.next(2 * index + 1)},
+    };
   }
 
 private:

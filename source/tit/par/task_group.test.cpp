@@ -28,9 +28,9 @@ TEST_CASE("par::TaskGroup") {
     par::TaskGroup group{};
 
     std::thread::id task_1_thread_id{};
-    group.run(SleepFunc{SleepFunc{[&task_1_thread_id] {
+    group.run(SleepFunc{[&task_1_thread_id] {
       task_1_thread_id = std::this_thread::get_id();
-    }}});
+    }});
 
     std::thread::id task_2_thread_id{};
     group.run(SleepFunc{[&task_2_thread_id] {

@@ -76,8 +76,10 @@ public:
     return face_adjacency_[a.index()] |
            std::views::transform([&domain, &particles](std::size_t face_index) {
              const auto& [... vert_indices] = domain.face_verts(face_index);
-             return std::pair{domain.face(face_index),
-                              std::tuple{particles.fixed()[vert_indices]...}};
+             return std::pair{
+                 domain.face(face_index),
+                 std::tuple{particles.fixed()[vert_indices]...},
+             };
            });
   }
 

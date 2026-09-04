@@ -419,6 +419,7 @@ constexpr auto type_name_of(const T& arg) -> std::string {
 
 /// Safely cast a pointer from one type to another between unrelated types.
 template<class ToPtr, class FromPtr>
+// NOLINTNEXTLINE(*-redundant-parentheses) -- LLVM 23 false positive.
   requires std::is_pointer_v<ToPtr> && std::is_pointer_v<FromPtr> && ([] {
              using T = std::remove_pointer_t<ToPtr>;
              using F = std::remove_pointer_t<FromPtr>;

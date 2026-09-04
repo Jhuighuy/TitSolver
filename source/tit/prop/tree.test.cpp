@@ -251,7 +251,7 @@ TEST_CASE("prop::Tree::get(key)") {
       }};
       CHECK(tree.has("b"));
       CHECK(tree.get("b").as_int() == 2);
-      auto& child = tree.get("new_key");
+      auto& child = tree.get("new_key"); // NOLINT(*-const-correctness)
       CHECK(child.is_null());
       CHECK(tree.has("new_key"));
     }

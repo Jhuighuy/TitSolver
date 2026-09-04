@@ -54,7 +54,7 @@ auto StorageWrap::constructor() -> Napi::FunctionReference& {
 }
 
 void StorageWrap::init(Napi::Env env) {
-  auto ctor = DefineClass( //
+  const auto ctor = DefineClass( //
       env,
       "Storage",
       {
@@ -129,7 +129,7 @@ auto SeriesWrap::constructor() -> Napi::FunctionReference& {
 }
 
 void SeriesWrap::init(Napi::Env env) {
-  auto ctor = DefineClass( //
+  const auto ctor = DefineClass( //
       env,
       "Series",
       {
@@ -212,7 +212,7 @@ auto FrameWrap::constructor() -> Napi::FunctionReference& {
 }
 
 void FrameWrap::init(Napi::Env env) {
-  auto ctor = DefineClass( //
+  const auto ctor = DefineClass( //
       env,
       "Frame",
       {
@@ -282,7 +282,7 @@ auto FieldWrap::constructor() -> Napi::FunctionReference& {
 }
 
 void FieldWrap::init(Napi::Env env) {
-  auto ctor = DefineClass( //
+  const auto ctor = DefineClass( //
       env,
       "Field",
       {

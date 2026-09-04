@@ -20,7 +20,7 @@ using Vec2D = Vec<double, 2>;
 TEST_CASE("geom::KMeansClustering") {
   SUBCASE("two clusters") {
     // Create points in two clearly separated groups.
-    const std::array<Vec2D, 6> points{{
+    const auto points = std::to_array<Vec2D>({
         // Group A near origin.
         {0.0, 0.0},
         {0.1, 0.0},
@@ -29,7 +29,7 @@ TEST_CASE("geom::KMeansClustering") {
         {10.0, 10.0},
         {10.1, 10.0},
         {10.0, 10.1},
-    }};
+    });
 
     // Cluster the points into 2 clusters.
     std::array<std::size_t, 6> clusters{};
@@ -48,7 +48,7 @@ TEST_CASE("geom::KMeansClustering") {
   SUBCASE("four clusters") {
     // Create points in four clearly separated groups at the corners of a
     // 10x10 square.
-    const std::array<Vec2D, 12> points{{
+    const auto points = std::to_array<Vec2D>({
         // Group A.
         {0.0, 0.0},
         {0.1, 0.0},
@@ -65,7 +65,7 @@ TEST_CASE("geom::KMeansClustering") {
         {10.0, 10.0},
         {10.1, 10.0},
         {10.0, 10.1},
-    }};
+    });
 
     // Cluster the points into 4 clusters.
     std::array<std::size_t, 12> clusters{};

@@ -177,15 +177,15 @@ public:
 
   /// Construct a data type from integer identifier.
   constexpr explicit Type(std::uint32_t id)
-      : Type{Kind{static_cast<Kind::ID>((id - 1) & 0xFF)},
-             static_cast<Rank>((id >> 8) & 0xFF),
-             static_cast<std::uint8_t>((id >> 16) & 0xFF)} {}
+      : Type{Kind{static_cast<Kind::ID>((id - 1) & 0xFFU)},
+             static_cast<Rank>((id >> 8U) & 0xFFU),
+             static_cast<std::uint8_t>((id >> 16U) & 0xFFU)} {}
 
   /// Data type integer identifier.
   constexpr auto id() const -> std::uint32_t {
     return static_cast<std::uint32_t>(std::to_underlying(kind_.id()) + 1) |
-           static_cast<std::uint32_t>(std::to_underlying(rank_)) << 8 |
-           static_cast<std::uint32_t>(dim_) << 16;
+           static_cast<std::uint32_t>(std::to_underlying(rank_)) << 8U |
+           static_cast<std::uint32_t>(dim_) << 16U;
   }
 
   /// Data type kind.

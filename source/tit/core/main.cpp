@@ -252,21 +252,18 @@ void setup_signal_handlers() noexcept {
       ewrite(iter != signals.end() ? iter->second : "Unknown signal.\n");
 
       // Print the stack trace, if needed, and exit.
-      if (sig == SIGINT || sig == SIGTERM) {
-        std::exit(-sig);
-      } else {
-        ewrite("\n");
-        ewrite("\n");
-        ewrite("Stack trace:\n");
-        ewrite("\n");
-        constexpr int max_depth = 1000;
-        std::array<void*, max_depth> trace{};
-        const auto depth = backtrace(trace.data(), max_depth);
-        backtrace_symbols_fd(trace.data(), depth, STDERR_FILENO);
+      if (sig == SIGINT || sig == SIGTERM) std::exit(-sig);
+      ewrite("\n");
+      ewrite("\n");
+      ewrite("Stack trace:\n");
+      ewrite("\n");
+      constexpr int max_depth = 1000;
+      std::array<void*, max_depth> trace{};
+      const auto depth = backtrace(trace.data(), max_depth);
+      backtrace_symbols_fd(trace.data(), depth, STDERR_FILENO);
 
-        // Since we consider this a crash, let's not invoke at-exit handlers.
-        fast_exit(-sig);
-      }
+      // Since we consider this a crash, let's not invoke at-exit handlers.
+      fast_exit(-sig);
     });
     if (prev_handler == SIG_ERR) {
       terminate_on_exception([descr] {

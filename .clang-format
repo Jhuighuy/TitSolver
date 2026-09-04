@@ -17,7 +17,6 @@ AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortLoopsOnASingleLine: Yes
 AlwaysBreakTemplateDeclarations: Yes
-BinPackArguments: No
 BinPackParameters: OnePerLine
 BreakAfterAttributes: Leave
 BreakBeforeTernaryOperators: No
@@ -30,6 +29,8 @@ IndentCaseLabels: Yes
 IndentRequiresClause: Yes
 KeepEmptyLinesAtTheStartOfBlocks: No
 MaxEmptyLinesToKeep: 1
+PackArguments:
+  BinPack: OnePerLine
 PenaltyReturnTypeOnItsOwnLine: 1000 # Never.
 PointerAlignment: Left
 QualifierAlignment: Left

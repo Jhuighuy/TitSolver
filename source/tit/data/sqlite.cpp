@@ -45,8 +45,10 @@ auto error_message(int status, sqlite3* db = nullptr) -> std::string {
 Database::Database(const std::filesystem::path& path, bool read_only) {
   // Open the database.
   sqlite3* db = nullptr;
+  // NOLINTBEGIN(*-signed-bitwise)
   const auto flags = read_only ? SQLITE_OPEN_READONLY :
                                  SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+  // NOLINTEND(*-signed-bitwise)
   if (const auto status = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
       status != SQLITE_OK) {
     TIT_THROW("SQLite database open failed ({}): {}.",

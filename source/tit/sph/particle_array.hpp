@@ -181,7 +181,7 @@ public:
   /// Reserve amount of particles.
   constexpr void reserve(std::size_t capacity) {
     auto& [... cols] = varying_data_;
-    ((cols.reserve(capacity)), ...);
+    (cols.reserve(capacity), ...);
   }
 
   /// Appends a new particle of the specified type @p type.
@@ -194,7 +194,7 @@ public:
     for (auto& p : particle_ranges_ | std::views::drop(type_index + 1)) p += 1;
     // Insert the new particle.
     auto& [... cols] = varying_data_;
-    ((cols.emplace(cols.begin() + index)), ...);
+    (cols.emplace(cols.begin() + index), ...);
     return (*this)[index];
   }
 
@@ -269,7 +269,8 @@ public:
       return std::get<uniform_fields.find(Field{})>(self.uniform_data_);
     } else if constexpr (varying_fields.contains(Field{})) {
       return std::span{
-          std::get<varying_fields.find(Field{})>(self.varying_data_)};
+          std::get<varying_fields.find(Field{})>(self.varying_data_),
+      };
     } else {
       static_assert(false);
     }

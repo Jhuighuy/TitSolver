@@ -20,15 +20,15 @@ namespace tit {
 
 /// Matrix part specification.
 enum class MatPart : std::uint8_t {
-  diag = 1 << 0,             ///< Diagonal.
-  unit = 1 << 1,             ///< Unit diagonal.
-  lower = 1 << 2,            ///< Lower triangular.
-  upper = 1 << 3,            ///< Upper triangular.
+  diag = 1U << 0U,           ///< Diagonal.
+  unit = 1U << 1U,           ///< Unit diagonal.
+  lower = 1U << 2U,          ///< Lower triangular.
+  upper = 1U << 3U,          ///< Upper triangular.
   lower_diag = lower | diag, ///< Lower triangular and diagonal.
   upper_diag = upper | diag, ///< Upper triangular and diagonal.
   lower_unit = lower | unit, ///< Lower triangular and a unit diagonal.
   upper_unit = upper | unit, ///< Upper triangular and a unit diagonal.
-  transposed = 1 << 7,       ///< Transpose the matrix.
+  transposed = 1U << 7U,     ///< Transpose the matrix.
 };
 
 /// Check if two matrix part flags enums intersect.

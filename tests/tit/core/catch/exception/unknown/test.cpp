@@ -16,7 +16,7 @@ namespace {
 [[gnu::noinline]] void func_3() {
   std::println(std::cerr, "func_3");
   std::println(std::cerr, "Doing something bad...");
-  throw 0xDEADBEEF;
+  throw 0xDEADBEEF; // NOLINT(*-std-exception-baseclass)
 }
 
 [[gnu::noinline]] void func_2() {

@@ -40,7 +40,7 @@ namespace {
 } // namespace
 } // namespace tit
 
-auto main() noexcept(false) -> int {
+auto main() -> int { // NOLINT(*-exception-escape)
   tit::Profiler::enable();
   tit::func_1();
   return 0;

@@ -86,7 +86,8 @@ auto sph_main(int /*argc*/, char** /*argv*/) -> int {
       // Weakly compressible equation of state.
       TaitEquationOfState{cs_0, rho_0},
       // C4 Wendland's spline kernel.
-      SixthOrderWendlandKernel{},
+      SixthOrderWendlandKernel{}, // NOLINT(*-trailing-comma) -- LLVM 23 false
+                                  // positive.
   };
 
   // Setup the time integrator.

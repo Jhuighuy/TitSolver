@@ -18,6 +18,13 @@
 #pragma clang diagnostic pop
 #endif
 
+// Doctest defines non-const variables under these macros, which triggers
+// warnings in clang-tidy. We redefine them to be const.
+#undef INFO
+#undef CAPTURE
+#define INFO(...) const DOCTEST_INFO(__VA_ARGS__)
+#define CAPTURE(x) const DOCTEST_CAPTURE(x)
+
 namespace tit::testing {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

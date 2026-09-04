@@ -135,7 +135,7 @@ public:
 
   /// Split the bounding box into parts by the point.
   constexpr auto split(const Vec& point) const
-      -> std::array<BBox, (1 << vec_dim_v<Vec>)> {
+      -> std::array<BBox, (1U << vec_dim_v<Vec>)> {
     TIT_ASSERT(point >= low_, "Split point is below lower bounds!");
     TIT_ASSERT(point <= high_, "Split point is above upper bounds!");
     return [&point]<std::size_t Axis>(

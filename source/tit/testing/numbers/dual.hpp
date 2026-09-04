@@ -106,8 +106,10 @@ public:
     return Dual{a / f.val(), -a * f.deriv() / pow2(f.val())};
   }
   friend constexpr auto operator/(const Dual& f, const Dual& g) -> Dual {
-    return Dual{f.val() / g.val(),
-                (f.deriv() * g.val() - f.val() * g.deriv()) / pow2(g.val())};
+    return Dual{
+        f.val() / g.val(),
+        (f.deriv() * g.val() - f.val() * g.deriv()) / pow2(g.val()),
+    };
   }
   /// @}
 
@@ -173,9 +175,11 @@ constexpr auto pow(const Dual<Num, Deriv>& f, std::type_identity_t<Num> a)
 template<class Num, class Deriv>
 constexpr auto pow(const Dual<Num, Deriv>& f, const Dual<Num, Deriv>& g)
     -> Dual<Num, Deriv> {
-  return Dual{pow(f.val(), g.val()),
-              pow(f.val(), g.val() - Num{1.0}) *
-                  (g.val() * f.deriv() + f.val() * log(f.val()) * g.deriv())};
+  return Dual{
+      pow(f.val(), g.val()),
+      pow(f.val(), g.val() - Num{1.0}) *
+          (g.val() * f.deriv() + f.val() * log(f.val()) * g.deriv()),
+  };
 }
 /// @}
 

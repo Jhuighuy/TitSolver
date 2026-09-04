@@ -182,7 +182,7 @@ public:
     TIT_ASSERT(sizeof...(Columns) == num_columns_(),
                "Number of return values does not match the number of columns!");
     auto index = std::numeric_limits<std::size_t>::max();
-    return {[&index, this]<class Column>() {
+    return {[&index, this]<class Column> {
       index += 1;
       if constexpr (std::integral<Column> || std::is_enum_v<Column>) {
         return static_cast<Column>(column_int_(index));
